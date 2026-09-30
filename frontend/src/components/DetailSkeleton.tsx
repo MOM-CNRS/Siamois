@@ -30,9 +30,9 @@ export function FormSkeleton({ panels = 2, fieldsPerPanel = 6 }: { panels?: numb
 // Everything under a fiche's header while the entity loads: breadcrumb, tab strip, then the form.
 export function DetailBodySkeleton() {
   return (
-    <div className="loading-skeleton detail-body-skeleton" aria-busy="true" aria-label="Chargement…">
-      <Skeleton width="12rem" height="1rem" className="detail-body-skeleton-breadcrumb" />
-      <div className="detail-body-skeleton-tabs">
+    <div className="loading-skeleton sia-detail-skeleton" aria-busy="true" aria-label="Chargement…">
+      <Skeleton width="12rem" height="1rem" className="sia-detail-skeleton-breadcrumb" />
+      <div className="sia-detail-skeleton-tabs">
         <Skeleton width="6rem" height="1.5rem" />
         <Skeleton width="9rem" height="1.5rem" />
         <Skeleton width="7rem" height="1.5rem" />

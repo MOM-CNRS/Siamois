@@ -9,3 +9,4 @@ import "primeicons/primeicons.css";
 // No PrimeFlex either: its global utilities (.grid, .col-N, .hidden, .p-2…) collided with Bootstrap's
 // on the host page, and the fiche grid — the only part used — is main-panel.css's own sia-grid/sia-col-N.
 import "./main-panel.css";
+import "./global.css";

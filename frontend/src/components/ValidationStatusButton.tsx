@@ -10,6 +10,7 @@ import {
   validationPresentation,
   type ValidationStatusValue,
 } from "./table/ValidationStatusBadge";
+import { t } from "../i18n";
 
 export interface ValidationStatusButtonProps {
   // The registry key: the cached list rows and fiche are keyed by it.
@@ -55,12 +56,12 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
         rounded
         tooltip={presentation.title}
         tooltipOptions={{ position: "bottom" }}
-        aria-label={`Statut : ${presentation.title}`}
+        aria-label={t("validation.status", { title: presentation.title })}
         disabled={!anyAllowed}
         onClick={(e) => overlayRef.current?.toggle(e)}
       />
       <OverlayPanel ref={overlayRef} className="validation-status-overlay">
-        <ul className="validation-status-options" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <ul className="validation-status-options">
           {VALIDATION_STATUSES.map((target) => {
             const option = VALIDATION_PRESENTATION[target];
             const isCurrent = target === current;
@@ -75,7 +76,7 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
                   aria-pressed={isCurrent}
                   tooltip={
                     !isCurrent && requiresValidator(current, target) && !canValidate
-                      ? "Réservé aux validateurs"
+                      ? t("validation.validatorsOnly")
                       : undefined
                   }
                   tooltipOptions={{ showOnDisabled: true, position: "left" }}

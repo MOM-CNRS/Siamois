@@ -228,6 +228,49 @@ describe("App client-side navigation", () => {
     expect(window.location.search).toBe("");
   });
 
+  // Browser Back after a client-side navigation: the state is rebuilt from the address, the page is
+  // not reloaded (jsdom would have no reload to run, so the panes changing is the proof).
+  it("rebuilds the previous view on browser Back and Forward, from the address alone", async () => {
+    window.history.replaceState(null, "", `/focus/${b64("/welcome")}`);
+    const setMain = vi.fn();
+    act(() => {
+      root.render(
+        <App
+          options={baseOptions({
+            panelKind: "home",
+            main: { resourceUri: "/welcome", title: "Home", bookmarked: false },
+            bridge: { setMain },
+          })}
+        />,
+      );
+    });
+    await flush();
+    const button = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Go to detail")!;
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    expect(container.textContent).toContain("Detail of Row A");
+
+    await act(async () => {
+      window.history.back();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    await flush();
+    expect(container.textContent).not.toContain("Detail of Row A");
+    expect(container.textContent).toContain("Go to detail");
+    // The server follows the browser back to the page it was mounted on.
+    expect(setMain).toHaveBeenLastCalledWith("/welcome");
+
+    await act(async () => {
+      window.history.forward();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    await flush();
+    expect(container.textContent).toContain("Detail of Row A");
+    expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity/1")}`);
+  });
+
   // The JSF session only learns of a client-side navigation through the bridge: without it, the
   // history sidebar never records it and a later overview is paired with the page loaded first.
   it("tells the server about a client-side navigation (history sidebar) through bridge.setMain", async () => {
@@ -455,8 +498,9 @@ describe("App focus mode", () => {
     expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Detail of Row A");
     expect(window.location.pathname).toBe(`/focus/${b64("/fake-app-entity")}`);
     expect(window.location.search).toBe(`?s=${b64("/fake-app-entity/1")}`);
-    // Bean never left that state — nothing to resync.
-    expect(setOverview).not.toHaveBeenCalled();
+    // The bean was told the overview left with the promotion, and gets it back.
+    expect(setOverview).toHaveBeenCalledTimes(1);
+    expect(setOverview).toHaveBeenCalledWith("fake-app-entity", "1");
     expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeNull();
     expect(mainPane().querySelector(".bi-bookmark")).toBeTruthy();
   });

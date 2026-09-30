@@ -10,6 +10,9 @@ import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } fro
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
 import { queryKeys } from "../api/queryKeys";
+import { messageForError } from "../api/errors";
+import { useNotify } from "../notify/NotifyProvider";
+import { t } from "../i18n";
 
 type Row = Record<string, unknown> & {
   id?: string | number;
@@ -70,8 +73,6 @@ const DUPLICATE_KEY = "duplicate";
 export function useRowActions({ entityType, config, organizationId, writeMode, onOpen, prefsKey }: UseRowActionsOptions): {
   render: (row: Row) => ReactNode;
   dialog: ReactNode;
-  error: string | null;
-  clearError: () => void;
   // What the last action did, when it has something to say (a duplication).
   notice: string | null;
   clearNotice: () => void;
@@ -82,7 +83,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
 } {
   const queryClient = useQueryClient();
   const [pendingCreate, setPendingCreate] = useState<PendingCreate | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const notify = useNotify();
   const [notice, setNotice] = useState<string | null>(null);
   // The row whose structure the duplication overlay is open for, next to the button that opened it.
   const [pendingDuplicate, setPendingDuplicate] = useState<{ id: string | number; anchor: HTMLElement | null } | null>(null);
@@ -115,7 +116,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
       // The JSF sidebar's bookmarks list, which no REST call reaches.
       bridge.refreshBookmarks?.();
     },
-    onError: (err: unknown) => setError(err instanceof Error ? err.message : "Échec du favori"),
+    onError: (err: unknown) => notify.error(messageForError(err, t("row.bookmarkFailed"))),
   });
 
   const duplicateMutation = useMutation({
@@ -124,7 +125,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
       refreshAfterChange();
       onOpen?.(entityType, copy.id);
     },
-    onError: (err: unknown) => setError(err instanceof Error ? err.message : "Échec de la duplication"),
+    onError: (err: unknown) => notify.error(messageForError(err, t("dup.failed"))),
   });
 
   const ctx: RowActionContext = {
@@ -142,7 +143,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
           {
             key: DUPLICATE_KEY,
             icon: "bi bi-copy",
-            label: "Dupliquer",
+            label: t("row.duplicate"),
             pending: (row: Row) => isPending(duplicateMutation, row),
             // With a structure to pick from, the button opens the overlay; otherwise it copies at once.
             run: (row: Row) =>
@@ -202,8 +203,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             text
             rounded
             size="small"
-            aria-label={row.bookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}
-            tooltip={row.bookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-label={row.bookmarked ? t("toolbar.removeBookmark") : t("toolbar.addBookmark")}
+            tooltip={row.bookmarked ? t("toolbar.removeBookmark") : t("toolbar.addBookmark")}
             tooltipOptions={{ position: "top" }}
             disabled={isPending(bookmarkMutation, row)}
             onClick={(e) => {
@@ -239,9 +240,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             rounded
             size="small"
             className="entity-list-panel-row-actions-more"
-            aria-label="Plus d'actions"
+            aria-label={t("toolbar.moreActions")}
             aria-haspopup
-            tooltip="Plus d'actions"
+            tooltip={t("toolbar.moreActions")}
             tooltipOptions={{ position: "top" }}
             onClick={(e) => openMenu(e, row)}
           />
@@ -291,8 +292,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
         const copies = result.copies.length;
         setNotice(
           copies === 1
-            ? `${unit} ${result.copies[0].label} créée`
-            : `${unit} ${source.label} dupliquée ${copies} fois`,
+            ? t("dup.created", { unit, label: result.copies[0].label })
+            : t("dup.duplicatedTimes", { unit, label: source.label, count: copies }),
         );
         // A single copy opens where a plain duplicate does; several are left to the refreshed list.
         if (copies === 1) onOpen?.(entityType, result.copies[0].id);
@@ -309,5 +310,5 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     </>
   );
 
-  return { render, dialog: shared, error, clearError: () => setError(null), notice, clearNotice: () => setNotice(null), items, actionBar, setActionBar };
+  return { render, dialog: shared, notice, clearNotice: () => setNotice(null), items, actionBar, setActionBar };
 }

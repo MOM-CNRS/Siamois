@@ -1,260 +1,158 @@
-# React main panel — architecture review
+# React main panel — architecture report
 
-**Scope:** `frontend/` (React 18 + PrimeReact 10 + TanStack Query 5, Vite, Vitest), as embedded in the JSF shell (`pages/focus.xhtml`).
-**Branch:** `feat/main-panel-react-migration`, 2026-09-25. First written at `c47abeea1`, then updated at `e31e1de8d` after the table/actions/styles commits and the JSF dead-code removal (see §3.12 for what changed).
-**Size:** ~10.8k lines of non-test TS/TSX, 73 test files, 587 tests (all green), `tsc --strict` clean.
-**Tone:** deliberately critical. The "what's good" section is short because it's the part that needs no action, not because there's little of it.
+**Scope:** `frontend/` (React 18, PrimeReact 10.9, TanStack Query 5, Vite, Vitest), embedded in the JSF shell (`pages/focus.xhtml`).
+**Date:** 2026-09-30, branch `feat/field-rules-engine`.
+**Size:** 12.7k lines of non-test TS/TSX, 92 test files, 758 tests. `tsc --strict`, ESLint and Vitest run in the Maven `test` phase.
+
+This document describes the architecture as it stands and lists what could still be improved, ranked by expected value. It does not track past work; `git log` does that.
 
 ---
 
-## 1. How it's built
+## 1. Architecture
 
 ```
 JSF page (focus.xhtml)
- ├─ <head>: PrimeFaces siamois theme.css, bootstrap 5.3, settings.css
- └─ body: <link main-panel.css>  <script main-panel.js>  reactPanelBootstrap.js
+ └─ <div data-contract-version data-panel-kind …>  ──  reactPanelBootstrap.js
                                      │
-            window.SiamoisMainPanel.mount(el, MountOptions)   (mount.ts)
+        window.SiamoisMainPanel.mountFromDataset(el)                     mount.ts
+          parseMountOptions(dataset)  — version check, typed options     mountOptions.ts
                                      │
-   App.tsx ── owns: view (home|list|detail), overview pane, focus-mode stack, URL (pushState)
-     │         providers: QueryClient · WriteMode (FlowBean.isWriteMode) · Bridge (JSF remoteCommands)
-     ├─ HomePanel         ← widgets from every registered entity's config.home
-     ├─ EntityListPanel   ← config.list  (columns, schema, filters, create form, row actions)
-     └─ EntityDetailPanel ← config.detail (tabs, header, chrome)
+   App.tsx
+     ├─ useNavigation()      pure reducer + URL codec + popstate + JSF server sync     navigation/
+     ├─ providers            QueryClient · Notify (Toast) · WriteMode · Bridge · EntityNavigation
+     ├─ PaneSplit            main pane (never remounted) + optional overview pane
+     │    each pane inside a PaneErrorBoundary
+     ├─ HomePanel            widgets from every entity's config.home
+     ├─ EntityListPanel      ← panels/list/{useEntityListData, useListColumns, EntityTable, …}
+     └─ EntityDetailPanel    ← config.detail; one PaneErrorBoundary per tab
                                      │
-   entities/registry.ts  Map<key, EntityTypeConfig>   ← registered in mount.ts, 6 entity types
-   entities/<type>/      api.ts · types.ts · config.tsx · columns · FicheTab · CreateForm · DetailHeader · form.ts · routes · homeWidgets
-   fields/               field-renderer registry (answerType → display/edit), FieldEditCell, CellEditOverlay
-   api/client.ts         fetch wrapper: bearer JWT, one retry on 401
-   auth/                 JSF session → JWT exchange (POST /api/auth/session-token, CSRF), in-memory token
+   entities/registry.ts      Map<EntityKey, EntityTypeConfig>   (6 entity types)
+   entities/<type>/          config.tsx + api + types (+ CreateForm, FicheTab, DetailHeader when specific)
+   entities/*.ts             shared: createEntityApi, typeCatalog, listApi, scope, routes, countCard
+   fields/                   answerType → renderer/display registry, layout, option sources
+   rules/                    field-rules engine (framework-free, conformance fixture shared with Java)
+   api/                      client (bearer JWT, retry on 401), queryKeys, queryClient, errors
 ```
 
-The central idea is **generic panels driven by a per-entity config registry** (`EntityTypeConfig`, `entities/types.ts`). Adding an entity type means writing one config module plus one `registerEntityType` call in `mount.ts:24-31`.
+### Layers and the rule that holds them
+
+- `panels/`, `fields/`, `components/`, `api/`, `auth/` never import an entity folder; an entity folder never imports another. Enforced by ESLint (`no-restricted-imports`, `error`), so this is a checked property, not a convention.
+- `rules/` imports nothing from the app.
+- One `QueryClient` for every mount (main, overview). Keys come from `api/queryKeys.ts`; nothing is written as a literal.
+- The JSF contract is three artifacts that must move together: `reactPanelMount.xhtml` (attributes), `reactPanelBootstrap.js` (stub), `mountOptions.ts` (parser). `MOUNT_CONTRACT_VERSION` makes a mismatch a visible error instead of a half-working panel.
+
+### Extension points
+
+Adding an entity type is: a folder in `entities/`, a config registered in `mount.ts`, a key in `EntityKey`. The config carries columns, list schema, tabs, chrome, create form, row actions, home widget, duplication, and `typesSegment`. Nothing in `panels/` switches on the entity.
 
 ---
 
-## 2. What's good
+## 2. Findings and possible improvements
 
-- **The registry pattern is the right shape** for a migration where N entity types share three screens. `PanelContent` (`App.tsx:85`) has no per-entity branching, and the list and detail panels only talk to `EntityTypeConfig`.
-- **Server-driven forms.** Fiches render the backend's layout JSON and field catalogue (`FicheTab` + `fields/registry.ts`), with renderers keyed by `answerType`. That's the correct way to reach parity with a configurable JSF form engine without hard-coding forms twice.
-- **The auth bridge is minimal and correct.** A single-flight token fetch (`auth/sessionAuth.ts:getAccessToken`), an in-memory token (never `localStorage`), a 30 s refresh skew, and one retry on 401 (`api/client.ts:31`). The backend fix that stops the JWT chain touching the JSF session is also well reasoned.
-- **TanStack Query** handles server state instead of a hand-rolled store, and `useMutation` is used consistently for writes.
-- **Test density is high**, and it covers behaviour (panels, renderers, table state, the virtual list, API mappers) rather than snapshots. `tsc --strict` is clean.
-- **Cheap performance wins are already in:** the `fields=` projection only asks for visible columns, labels are resolved in batch server-side, and the list is virtualised (`panels/useVirtualList.ts`). Showing a column no longer resets the list: only that column is fetched for the rows already loaded (see §3.12 for the cost of this).
+Ranked by value for the effort. **Bold** items are the ones I would do first.
 
----
+### 2.1 The entity registry is still string-keyed and untyped
 
-## 3. Honest criticism
+- `registry.ts` is `Map<string, EntityTypeConfig<any, any>>`, with 4 `eslint-disable no-explicit-any`, plus 2 more in `panels/listSiblings.ts`. `getEntityType(key)` returns a config whose row and detail types are `any`; every panel therefore works on `any` data.
+- `EntityKey` types the colour/route maps but not the lookup.
+- **Improvement:** make the registry a mapped type `{ [K in EntityKey]: EntityTypeConfig<Row[K], Detail[K]> }` and give `getEntityType<K extends EntityKey>` a precise return. Panels stay generic by taking `EntityTypeConfig<unknown, unknown>` through a single, documented widening point instead of six `any`s. Removes the largest remaining source of unchecked code.
+- **Effort:** medium (2–3 days). **Risk:** low, the compiler finds every site.
 
-### 3.1 Duplication across entity modules: the registry scales the *panels*, not the *entities*
-Each of the 6 entity folders contains its own `api.ts`, `types.ts`, `FicheTab.tsx`, `CreateForm.tsx`, `DetailHeader.tsx`, `form.ts` and `homeWidgets.tsx`. Measured with `diff`:
+### 2.2 DTOs are hand-written and drift silently from Java
 
-| File | container vs phase: lines differing / total |
-|---|---|
-| `FicheTab.tsx` | 65 / 287 (≈ **77 % identical**) |
-| `CreateForm.tsx` | 28 / 190 (≈ **85 %**) |
-| `columns.tsx` | 19 / 51 |
-| `api.ts` | 41 / 99 |
-| find vs phase `FicheTab.tsx` | 62 / 294 (≈ **79 %**) |
+- All `entities/*/types.ts` and `fields/types.ts` (212 lines) are written by hand from the OpenAPI responses. A renamed field on the Java side compiles here and fails at runtime, usually as a blank cell.
+- The backend already publishes OpenAPI (`OpenApiRestExceptionHandler`, `*OpenApiService`).
+- **Improvement:** generate types with `openapi-typescript` into `src/api/generated/`, commit the output, and add a Maven/CI check that regenerated output equals the committed file. Then narrow the hand-written types to `Pick`/`Omit` of the generated ones. Also gives request-body types (`*CreateBody`) for free.
+- **Effort:** medium; the value grows with every new endpoint. Already listed as post-merge.
 
-The "generic" architecture pushed the variation into config, but each config then re-implements the same fiche, create form and API adapter by copy-paste. The 7th entity type will cost roughly another 1,000 lines, most of them copied, and every bug fix in a fiche has to be applied six times.
+### 2.3 `fields/` knows the entity list
 
-**Fix:**
-- One generic `SchemaFicheTab`, parameterised by `{ loadForm(entity), patch(id, answers), entityType }`.
-- One `createEntityApi(collectionPath, mappers)` factory.
-- One `SchemaCreateForm`.
+- `fields/display.tsx` (lines ~100–107) and `fields/optionSources.ts` (lines ~76–82) map resource segments and answer types (`"recording-units"`, `_SPECIMEN`, …) to entity keys and colours. This is the one place a new entity type still requires editing generic code: the layering rule is respected only because these are string keys rather than imports.
+- **Improvement:** put `resourceSegment` (`"recording-units"`) and `referenceAnswerTypes` on the entity config and build both tables from the registry at startup. Adding an entity then touches only its own folder.
+- **Effort:** small (½ day). Also makes the "answer type → entity" mapping testable against the registry (a test that every `EntityKey` appears).
 
-Entity folders then keep only what really differs: columns, header chips, and odd cases like the project places tab.
+### 2.4 Five near-identical entity folders
 
-*(Update.)* The organization-wide column catalogues show both the good path and the trap. Phase, container and find went through the shared `typeCatalog.ts` (`typeCatalogPath`), so each needed only a one-line change. Recording unit has its own `recordingUnitTypes.ts`, so it got a separate `getOrganizationRecordingUnitTypes` that repeats the project/organization branch by hand. Nothing in the fiche/create-form duplication above has changed.
+- `container` and `phase` are 75–85-line configs, 15-line `api.ts`, 16–17-line `CreateForm` — the sharing is done. What remains:
+  - `project/FicheTab.tsx` (254 lines) and `DetailHeader.tsx` (203) are bespoke and not schema-driven; `recordingUnit/DetailHeader.tsx` (126) duplicates a large part of `project/DetailHeader.tsx` (identifier chip, category, inline error, save).
+  - `find/CreateForm.tsx` (153) and `place/CreateForm.tsx` re-implement the project-picker + type + error skeleton that `TypeOnlyCreateForm` already provides.
+- **Improvement:** extract `IdentifierChip` and the inline-edit error handling from the two DetailHeaders into `components/`; give `TypeOnlyCreateForm` an `extraFields` slot so find and place stop copying its shell. Do not try to make the project fiche schema-driven until its form is in the backend catalog (see 2.7).
+- **Effort:** small–medium.
 
-### 3.2 `App.tsx` is a hand-rolled router + state machine + layout in one component
-`App.tsx` (532 lines, 8 `useRef` + 5 `useState`) owns:
-- navigation state
-- the overview pane
-- the focus-mode stack
-- URL encoding (`base64url`/`focusUrl`)
-- history `pushState`
-- syncing FlowBean through the bridge
-- the splitter layout
+### 2.5 Type catalogs: one fetch, but four ways to ask for it
 
-The refs mirror state purely to keep callbacks stable (`viewRef`, `overviewRef`, `mainPathRef`, `focusStackRef`, `serverOverviewRef`…), which is a sign that this should be a reducer. `popstate` falls back to `window.location.reload()` (`App.tsx:374`), so browser Back is a full JSF round-trip. Removing `template.js` took away the competing jQuery `popstate` handler, so React is now the only owner of history. That makes the decode step below easier to add, not less needed.
+- The raw `GET …/<x>-types` is fetched once per path (`typesCatalog(path)`), good. But callers build the path themselves in four places (`typeCatalog.ts`, `useTypeRules.ts`, `recordingUnitTypes.ts`, `projectTypes.ts`) as template strings, and each derived view (`effectiveForm`, `typeRules`, list schema) has its own cache key.
+- **Improvement:** a single `useTypesCatalog(segment, scope, select)` hook owning the path and using `select` for each derivation, so there is exactly one key per catalog and the URL is written once. Removes `typeRules`, `effectiveForm`, `recordingUnitTypes`, `projectTypes` as separate keys.
+- **Effort:** small–medium. Removes a class of "same data fetched twice" bugs by construction.
 
-`navigate` is now also published through a context (`panels/entityNavigation.tsx`) so that a field's reference chip can open a fiche. That's the right fix for prop threading. It's also the fourth context `App` provides (QueryClient, WriteMode, Bridge, EntityNavigation), which is one more reason to give navigation its own store.
+### 2.6 Cache policy is uniform, the data is not
 
-**Fix:** extract a `useNavigationStore` built on `useReducer`, with pure `encodeUrl`/`decodeUrl` functions. Decoding is the missing half: once `/focus/<b64>?s=<b64>` can be parsed back into a state, `popstate` becomes a dispatch instead of a reload, and deep links stop depending on JSF. A tiny router is fine; a library isn't needed.
+- `queryClient.ts` sets only `retry`. Catalogs, forms and type rules change on admin action only, yet use the default `staleTime: 0` and refetch on window focus and on every new mount (each opened overview or tab).
+- **Improvement:** per-query `staleTime` (catalogs/forms/rules: `Infinity` or minutes, invalidated by the form builder's save; lists: 0). One `defaultOptions.queries.refetchOnWindowFocus: false` is the cheap first step.
+- **Effort:** small. Measurable in the Network tab: fewer `*-types` calls when switching tabs.
 
-### 3.3 Separation of concerns: generic layers import specific ones
-- `panels/EntityListPanel.tsx:17` imports `searchCreatableProjects` from `entities/project/api`. So the generic list panel knows about projects, and the dependency points the wrong way.
-- `entities/{phase,container,find,place,recordingUnit}/FicheTab.tsx` import `parseLayout`/`toGridClass` from `entities/project/form`. Generic form-layout code lives inside the *project* entity folder.
-- `EntityListPanel.tsx` has grown from 771 to **871 lines** since the first review. It mixes several jobs:
-  - query orchestration
-  - column-picker state
-  - filters
-  - cell-edit overlay coordination
-  - the create dialog
-  - row actions
-  - DOM hit-testing (`target.closest("td")`)
-  - *(new)* the gear menu and its two settings overlays (columns, action bar)
-  - *(new)* syncing PrimeReact's column order with `visibleColumns` (`resetColumnOrder` in a layout effect)
-  - *(new)* blocking drops on frozen headers (a capture-phase `display:contents` wrapper)
-- `useRowActions` went the right way: the action-bar layout lives there, not in the panel. `VisibilityChooser` is a proper reusable component, with a pure, tested `moveItem`.
+### 2.7 The bundle is one 940 KB chunk
 
-**Fix:**
-- Move `form.ts` layout parsing to `fields/layout.ts`.
-- Pass "creatable projects" through `config.list` (or a hook injected by config).
-- Split `EntityListPanel` into `useEntityList` (data), `useColumnSelection`, and a presentational `<EntityTable>`.
+- Everything loads on the first page, including the table filter UIs, the cell editor and all six entities.
+- **Improvement:** `React.lazy` per entity config (the registry already indirects through configs) and for `CellEditOverlay`/`DuplicateStructureOverlay`. The gain is not measured yet. Needs a `Suspense` fallback per pane, which the new `PaneErrorBoundary` slots already delimit.
+- **Effort:** medium. Already listed as post-merge; measure first (e.g. `rollup-plugin-visualizer`).
 
-### 3.4 Type safety stops at the network boundary
-- All API types are **hand-written** (`entities/*/types.ts`, `fields/types.ts`). The backend already has springdoc, yet nothing generates TS from `/v3/api-docs`. Every DTO change on the Java side is a silent runtime break. The API change report (`docs/api-changes-vs-main.md`) lists over 40 such shape changes on this branch alone.
-- The registry is `Map<string, EntityTypeConfig<any, any>>` (`entities/registry.ts`), so `getEntityType(key)` returns `any`-typed rows to the panels. Entity keys are free strings (`"recordingUnit"`, `"project"`…) scattered across modules. The latest commits added more of them: `REFERENCE_TARGETS.entityType` in `fields/optionSources.ts`, `ValidationStatusButton`/`ValidationStatusCell`'s `entityType` prop, and the catalogue segments (`"find-types"`…) in `typeCatalog.ts`. A typo in any of them fails silently: the chip just isn't a link, or the cache update misses.
-- Responses are cast (`JSON.parse(text) as T`, `api/client.ts`) with no runtime validation.
+### 2.8 Remaining large files
 
-**Fix:**
-- Generate types with `openapi-typescript` in the Maven build, and fail CI on drift.
-- Make the registry keyed by a string-literal union.
-- Optionally validate at the adapter boundary with zod, just for detail responses.
+`panels/list/EntityTable.tsx` (490), `fields/renderers.tsx` (438), `components/table/CellEditOverlay.tsx` (405), `entities/types.ts` (380), `panels/EntityDetailPanel.tsx` (373), `panels/useRowActions.tsx` (313).
 
-### 3.5 Server-state hygiene
-- **Query keys are ad-hoc string arrays** in ~40 places across 16 prefixes (`["entity-detail", …]`, `["recording-unit-effective-form", …]`, `["phase-effective-form", …]`), with no key factory.
-- *(Progress.)* A status change (`ValidationStatusButton`) now writes the new value into the cached list rows and fiche with `setQueriesData`, instead of refetching every list on screen. That's the right pattern. But the component now has to know the list cache's shape (`PagedResult`) and the detail key's layout (`[prefix, entityType, id]`, matched by a hand-written `predicate`). That's exactly the knowledge a key factory should own.
-- Invalidation is still very broad in 9 places: `invalidateQueries({ queryKey: ["entity-detail"] })` and `["entity-list"]` wipe *every* entity type after a single action (`PanelToolbar` bookmark, `useRowActions` bookmark/duplicate, `EntityDetailPanel`, creation from a relation tab). Broad invalidation now costs more than before, because each loaded chunk may carry column supplements (§3.12).
-- The `QueryClient` is still created with defaults (`App.tsx:15`): 0 ms `staleTime`, 3 retries, refetch on focus. That's aggressive for form catalogues that effectively never change during a session.
+- `entities/types.ts` mixes the config contract, list contract, duplication contract and shared DTOs. Splitting it by contract (`config`, `list`, `detail`, `duplication`) makes each panel import what it uses and makes the contract reviewable.
+- `renderers.tsx` holds every field renderer in one file; one file per family (text, number, date, reference, concept) keeps each testable alone and is the natural place for lazy loading.
+- `useRowActions` has an `exhaustive-deps` suppression (line ~168); the same rule is suppressed in `useRowRules`, `useTypeRules`, `frozenColumns`. Each suppression is a stale-closure risk; worth revisiting one by one (usually a ref or an event-handler pattern removes it).
+- **Effort:** small each; no behavior change.
 
-**Fix:**
-- Add a `queryKeys` module per entity.
-- Invalidate `[entity, id]` precisely, or use `setQueryData` from the PATCH response, which already returns the updated resource.
-- Set `staleTime: Infinity` for type and form catalogues, and `retry: (n, e) => e.status >= 500 && n < 2`.
+### 2.9 CSS: one 1 600-line global stylesheet, no cascade layer
 
-### 3.6 CSS isolation: the bundle restyles the host page
-Before this branch's theming pass, `mount.ts` imported the Lara theme, `primereact.min.css`, PrimeIcons and **PrimeFlex**. It now imports `src/styles/bundle.ts`: PrimeIcons and `main-panel.css`, with Lara and PrimeFlex gone. The result is loaded into the JSF page, *after* the PrimeFaces theme and Bootstrap (`focus.xhtml:362`). Consequences:
-- *(Resolved on this branch.)* PrimeFlex's global utilities (`.col-6`, `.grid`, `.flex`, `.hidden`, `.p-2`, …) collided with Bootstrap's same-named classes across the *whole* page. The fiche grid, the only part used, is now `main-panel.css`'s own `sia-grid`/`sia-col-N`, and PrimeFlex is no longer a dependency (bundle CSS 373 KB → 27 KB).
-- *(Resolved on this branch.)* Lara's `:root` variables and `.p-*` rules used to fight the Siamois theme. The host theme now skins PrimeReact itself, through `theme-base/_primereact.scss`.
-- `main-panel.css` has grown from 935 to **1,209 lines** of global selectors (new: `visibility-chooser-*`, gear menu, toolbar separators, compact status button, filler column). Most are scoped by a component-ish prefix (`entity-list-panel-*`, `visibility-chooser-*`), but they share one namespace with the JSF app.
-- There are 62 inline `style={{…}}` objects (66 before). Some are documented workarounds (`App.tsx` forces Splitter `display:flex` because of `@layer primereact` ordering), but most are just layout.
+- `main-panel.css` is unlayered and shares the page with Bootstrap and the JSF theme. A `@layer` was considered and rejected: the host theme is unlayered, so it would win over every rule regardless of specificity. The alternatives are to layer the *theme* too (the right long-term answer, but a change in the JSF build) or to keep prefixing.
+- What remains generic-named and could collide: `.entity-list-panel*`, `.home-panel*`, `.panel-toolbar`, `.validation-status-*`, `.duplicate-structure*` (all React-only) and `.sideview*` / `.panel-splitter-panel-*` (shared with the theme).
+- **Improvement:** rename the React-only families to `sia-*` when next touched (do not batch it: each rename must be checked against `docs/theme-class-map.md` and the theme SCSS), and split the file by component next to the `.tsx` it styles (CSS Modules or colocated `.css` imported by the component). The split also lets Vite drop CSS of lazily loaded entities (2.7).
+- **Effort:** medium, incremental.
 
-**Fix:**
-- ~~Drop Lara and use the host theme~~ (done).
-- ~~Scope or drop PrimeFlex~~ (done: replaced by `sia-grid`/`sia-col-N`).
-- Wrap bundle CSS in `@layer siamois-react` so precedence is explicit.
-- Move inline layout styles into classes.
+### 2.10 Navigation and the JSF bridge
 
-### 3.7 JSF coupling is wide and implicit
-`MountOptions` (`mountOptions.ts`) carries:
-- base path
-- CSRF
-- write mode
-- two chromes
-- organisation ids
-- a `goBackUrl`
-- a `bridge` of PrimeFaces `remoteCommand`s (`setOverview`, `closeOverview`, `openProjectSettings`)
+- Back/Forward no longer reload, but the **focus stack is lost on Back and on F5** and "close focus" then performs a real navigation to `back=`. If users go focus → focus → back often, encode the stack in the URL (`back` becomes a list) — the reducer and codec are already pure and round-trip tested, so this is a contained change.
+- The bridge is five named remoteCommands resolved through `window[name]`. A typo is a silent no-op. **Improvement:** the bootstrap should verify at mount that every declared `data-action-*` resolves to a function and report the missing ones once, in the same place as the contract-version error.
+- The `MOUNT_CONTRACT_VERSION` is bumped by hand on both sides. A Java test that reads `reactPanelMount.xhtml` and compares against a constant shared through a properties file would make forgetting it a build failure.
+- `focus.xhtml` with `data-contract-version` has not been rendered by the real JSF stack since the contract check was added — verify on first startup.
 
-All of this is read once at mount. Write mode can't change without a remount, and FlowBean's state is synced by fire-and-forget calls with no acknowledgement (`App.tsx openOverview`). The mount/unmount lifecycle relies on the JSF page never re-rendering the container through AJAX. `writeMode.tsx` documents this, but nothing enforces it.
+### 2.11 Error handling
 
-Short term, that's acceptable for a strangler migration. It is the part that will hurt most if both apps coexist for long.
+- `PaneErrorBoundary` covers render failures and `messageForError` covers API failures, but query errors on *reads* are still shown ad hoc (`Message` in each fiche/list). A shared `QueryErrorView` (message + retry calling `refetch`) would make them uniform and reuse `messageForError`.
+- `ApiError` now carries `body` and `path`; nothing reports them. A single `onError` on the `QueryCache`/`MutationCache` is the place to add telemetry (or a console group in dev) once, instead of per call site.
+- 5xx retries are capped at 2 by `shouldRetry`; consider surfacing "retrying…" after the first failure to avoid a silent 3–6 s wait.
 
-*(Update after `e31e1de8d`.)* The JSF side of the main panel is gone: the Java panels are now only descriptors (`AbstractPanel`, `AbstractListPanel`, `AbstractEntityPanel`), and `template.js`, jQuery UI, the JSF tables and the lazy data models were deleted (around 45k lines). The coupling surface is therefore smaller and easier to see: `MountOptions` plus the three bridge commands. It's a good moment to write down the typed contract recommended below, while the JSF side is small enough to check by hand.
+### 2.12 Accessibility and i18n
 
-**Fix:**
-- Write the bridge contract down as a typed, versioned interface, and add one test that checks the XHTML-generated options object against it.
-- Treat the bridge as an event bus (`CustomEvent`s on the mount element) rather than callbacks, so either side can be replaced independently.
+- Strings are French literals throughout (`"Échec de la création"`, tab labels, tooltips). The JSF side has i18n bundles; the React bundle has none. Introducing `t()` late is expensive, but the surface is still mostly leaf components. A message catalog keyed by id, initially returning the French literal, lets it be adopted file by file. Already listed as post-merge.
+- Keyboard and screen-reader behavior is covered ad hoc (a few `aria-label`s, `role="status"`, `role="alert"`). There is no axe check in tests. **Improvement:** add `vitest-axe` on the three panel kinds and the two overlays — a small test set that catches missing labels and roles cheaply.
 
-### 3.8 Error handling and UX resilience
-- There's **no React error boundary**. A render exception in one fiche field blanks the whole panel, including the other pane. The latest commits show the risk is real: an open `OverlayPanel` threw on the first scroll because `PrimeReactProvider` was missing. It's fixed in `mount.ts`, but with a boundary the failure would have stayed inside one pane.
-- Error messages are per-component strings (`"Échec du favori"`, `"Impossible de charger…"`) rendered in `<Message>`. There is no shared toast or notification channel and no mapping of `ApiError.status` to user messages. A `403` and a `500` look the same.
-- `ApiError` keeps only `status` and `message`. The backend's `ResponseStatusException` body (reason, path) is partly lost.
+### 2.13 Quality tooling
 
-**Fix:**
-- Add one `<ErrorBoundary>` per pane, plus one per fiche panel.
-- Use a `useNotify()` backed by a PrimeReact `Toast` at App level.
-- Add a status → message map.
-
-### 3.9 i18n, accessibility, conventions
-- **All UI strings are hard-coded French.** The JSF app has `langBean` and resource bundles; the React bundle has no i18n layer, so a language switch in JSF won't translate the React panel. Even a trivial `t()` over a JSON catalogue generated from the existing `.properties` files would do. Every new component makes this more expensive (the gear menu, `VisibilityChooser` and the compact toolbar menu added about 20 more strings).
-- Accessibility is mostly left to PrimeReact, but it's improving: 42 hand-written `aria-*` attributes (29 before). Prev/next are now real `Button`s with `aria-label`, not `<a role="button">`, and `VisibilityChooser` has a keyboard path for reordering (Alt+↑/↓ on the handle). Still to do: clickable table cells and `CellEditOverlay` need keyboard paths and focus return. Worth an axe pass.
-- **Comment density is very high:** ~2,350 comment lines for ~10.8k lines of code. Many cite "plan §x phase y", or explain *history* ("the bug this fixes") rather than intent. That's useful during the migration, but it will rot. Move the rationale to ADRs and PR descriptions, and keep code comments to the non-obvious *why*.
-- **Tooling gaps:**
-  - `npm run lint` still fails: ESLint 9 is installed, but there's no `eslint.config.js`. There's no Prettier config either. The missing `react-hooks` rules now show in new code: `useMemo(..., [fields.join(",")])` in `useVirtualList.ts`, and a `useLayoutEffect` keyed on a joined string in `EntityListPanel`. Both are intentional, but nothing checks the ones that aren't.
-  - ~~Two unhandled errors leak out of `CreateForm.test.tsx`~~ (fixed by mocking `searchCreatableProjects`).
-  - The test run prints about 3,900 `Could not parse CSS stylesheet` jsdom errors (the styles PrimeReact injects at runtime) plus `ReactDOMTestUtils.act` deprecation warnings. Everything passes, but a real warning won't be noticed in that noise. Silence it in the Vitest setup (a jsdom `virtualConsole` filter, or `css: false`).
-
-### 3.10 Scalability outlook
-| Axis | Today | At 12+ entity types / 2+ teams |
-|---|---|---|
-| Panels | Generic, good | Holds |
-| Entity modules | ~1k lines each, ~80 % copied | Linear growth of duplicate code, divergent bugs |
-| Types | Hand-written | Drift with every backend change |
-| Navigation | One component, reload on Back | Harder to add routes (settings, search pages) |
-| Bundle | Single chunk, everything eager | Grows with every entity; no code-splitting per entity type (`registerEntityType` could take a lazy `import()`) |
-| Styling | Host theme (Lara gone), but 1.2k lines of global CSS | Collisions multiply as more JSF screens sit next to React ones |
-
-### 3.11 Evidence from the theming pass (2026-09-25)
-
-These are concrete defects found while aligning the React panel with the JSF theme. They show where the current structure makes bugs easy to write.
-
-- **Colour scheme tied to what JSF mounted.** The per-entity colour classes (`siamois-panel action-unit-panel …`) lived only on the JSF wrapper around the mount. After a client-side navigation to another entity type, and in the overview pane, React kept rendering under the *mounted* entity's colours. Fixed by `EntityTypeConfig.panelClass` plus `App.tsx paneClassName`. It's the same root cause as §3.7: state duplicated between JSF and React with no single owner.
-- **`@layer primereact` vs Bootstrap.** PrimeReact 10 injects its structural CSS inside a cascade layer, and `primereact.min.css` is an empty stub. Bootstrap's unlayered reboot therefore overrides PrimeReact's own resets (`ul` padding in menus, for example). Nothing in the bundle documented or tested this. It's now handled in the shared theme.
-- **Font never loaded.** Sass interpolated the JSF expression in `_fonts.scss`, so production `theme.css` pointed at `url("resource [fonts:…]")`. It's a build-level bug, but it shows there's no visual check of the compiled theme. The new harness pages (`frontend/dev/theme`, `frontend/dev/panels`) are a first step. A Playwright screenshot test over them would make this permanent.
-- **A default that the API rejects.** `/recording-units/{id}/mobiliers` defaults `sort=creationTime:desc`, but the code path used as soon as a field filter is present rejects `creationTime` with a 400. That's the typing gap of §3.4 on the backend side: a shared, generated contract for sortable/filterable fields per list would make this impossible.
-- **Dead styling hooks.** 46 of the 112 custom class names the JSX emits have no rule anywhere. Only 16 are shared with the JSF markup, although the theme's app-level rules are all keyed on JSF class names. Reusing the JSF names, which is now documented in `docs/theme-class-map.md`, is what lets one theme serve both apps.
-
-### 3.12 What changed after the first review (`cce4d8e4c` → `e31e1de8d`)
-
-The four commits since the first version were about the table and its actions, styling, and removing dead JSF code. In short: **the product got better and the generic layers held up, but `EntityListPanel` took most of the new weight, and the list now depends more on PrimeReact internals.**
-
-**Good moves**
-- **Validation status became generic.** `ColumnDef.leading` is gone. `EntityListPanel` renders `ValidationStatusCell` in every identifier cell, because `validated` is a root property of every entity. The cell is an editable picker when write mode and the row's rights allow it, and a read-only badge otherwise (never a disabled button). Status changes update the cache in place (§3.5).
-- **Toolbar.** `PanelToolbar` now works from a list of actions (navigation group, then create/duplicate, then settings) instead of repeated `Button` blocks. In the narrow overview pane, the secondary actions fold into a "…" menu. Prev/next moved into the navigation group, and `SiblingNav` dropped its ref-targeted `Tooltip` workaround.
-- **Reference chips open their fiche** through `useOpenEntity()` (`panels/entityNavigation.tsx`), with no prop threading.
-- **Dynamic columns for finds**, and organization-level catalogues for recording units, phases, containers and finds.
-- **The list waits for its columns.** A list with a schema holds its first request until the columns are seeded (`columnsSeeded`), instead of fetching once without them and again with them.
-- **Browser-local list preferences** (`panels/listPreferences.ts`): visible columns, their order, and the action-bar layout. Reads are tolerant (versioned, validated, `try/catch`), and `reconcileActionBar` handles actions that were added or removed since the layout was saved. Well tested.
-
-**New concerns**
-1. **Column supplements multiply requests.** When a column is shown, `useVirtualList` fetches it once *per loaded chunk* (`fields=<that field>`). Supplements accumulate: each chunk's base fields are frozen when it's first requested. With K chunks loaded and N columns shown afterwards, that's K×N extra queries, and all of them sit under the `["entity-list", type]` prefix. A single cell edit then refetches K bases plus K×N supplements. Fixes:
-   - one supplement per chunk carrying *all* its missing fields;
-   - or, on refetch, re-base the chunk with the full current field set and drop its supplements.
-2. **`cellMemo={false}` next to the search input's state.** `searchInput` lives in `EntityListPanel` (it's debounced before `setSearch`), so every keystroke re-renders the whole panel. With cell memoisation off, that includes every mounted cell and its field renderer. The virtual scroller limits this to one screen, but that screen can be 30 rows × 15 columns. Move the search box into its own component that only reports the debounced value.
-3. **More dependence on PrimeReact internals**:
-   - `resetColumnOrder()` in a layout effect, because DataTable keeps its own column order after a drag;
-   - a capture-phase drop blocker, because DataTable only checks the *dragged* column's `reorderable`;
-   - a `Button` ref cast, because the typings disagree with the runtime;
-   - a `PrimeReactProvider` that has to be present or `OverlayPanel` throws.
-
-   Each one is commented, which is good. None is covered by a test that would fail on a PrimeReact upgrade. Pin PrimeReact's minor version, and add one integration test per workaround (drag a header onto a frozen one; show a column after a drag).
-4. **Two persistence mechanisms for table layout.** `listPreferences` (localStorage) is new, while `UiViewService`/`TableViewState` (server-side saved views) are still in the backend with no consumer (`react-migration-apres-merge.md` §5). Also, the localStorage key is `siamois.list.<type>.<context>`, with no organisation or user in it. Additional field ids are institution-specific, so switching organisation in the same browser silently drops the saved columns (`knownFieldIds` filters them out), and two people sharing a browser share one layout. Put `organizationId` in the key now, and decide whether the server-side views are coming back or should be deleted.
-5. **Free-string entity keys keep spreading** (§3.4).
-6. **CSS and component size keep growing** (§3.3, §3.6). The table-settings UI (the gear `Menu`, two `OverlayPanel`s, their `VisibilityChooser`s, and the action-bar reconciliation) is about 100 lines inside `EntityListPanel` that could be an `<EntityTableSettings>` component taking `{catalog, visibleColumns, rowActions}`.
+- `frontend/src` is not analyzed by SonarCloud (12.7k lines the gate never sees). Enable it after merge so the new-code window starts clean rather than absorbing the whole migration.
+- No coverage measurement or threshold for Vitest. Add `@vitest/coverage-v8` with the lcov report wired to Sonar, and start with a floor at the current value so it can only ratchet up.
+- ESLint has no formatting rule set and there is no Prettier: diffs mix style and content. Adopting Prettier once, in its own commit, is cheap and makes later review easier.
+- Test style: the suite drives React with `createRoot` + `act` by hand in every file. A tiny `renderInto(container)` helper in `src/test/` would remove ~10 lines of setup per file.
 
 ---
 
-## 4. Prioritised recommendations
+## 3. What is solid and should be left alone
 
-| # | Action | Value | Effort |
-|---|---|---|---|
-| 1 | Generate API types from OpenAPI (`openapi-typescript`) and wire into the build | High: kills a whole class of silent breaks | S |
-| 2 | Extract `SchemaFicheTab` / `SchemaCreateForm` / `createEntityApi`, and delete the per-entity copies | High: roughly −3k lines, one place to fix bugs | M |
-| 3 | ~~Drop Lara, host-theme parity~~ (**done on this branch**, see `docs/theme-class-map.md`); PrimeFlex dropped too; still to do: add a screenshot test over the dev harnesses | High: visual consistency, no page-wide collisions | S–M |
-| 4 | Query-key factory, precise invalidation (started: status changes use `setQueriesData`), `staleTime` for catalogues | Medium: fewer refetch storms, snappier UI; more urgent now that chunks carry supplements | S |
-| 4b | *(new)* One supplement per chunk for all missing fields, or re-base on refetch (§3.12 #1) | Medium: bounds request count after column toggles | S |
-| 4c | *(new)* Isolate the search input from `EntityListPanel` render (§3.12 #2) | Medium: typing cost with `cellMemo={false}` | S |
-| 5 | Error boundaries per pane plus a central notifier | Medium | S |
-| 6 | Move generic code out of `entities/project` (`form.ts` → `fields/layout.ts`); remove the `panels → entities/project` import | Medium: dependency direction | S |
-| 7 | Split `App.tsx` into a navigation reducer with URL decode (Back without reload); React now owns `popstate` alone | Medium | M |
-| 8 | Split `EntityListPanel` (now 871 lines) into hooks, `<EntityTableSettings>` and a presentational table | Medium, rising | M |
-| 9 | Add `eslint.config.js` (typescript-eslint, react-hooks, jsx-a11y) and Prettier; silence jsdom CSS noise in tests | Medium: currently no lint at all | S |
-| 9b | *(new)* Add `organizationId` to the `listPreferences` key; decide the fate of server-side saved views | Low–Medium | S |
-| 9c | *(new)* Pin the PrimeReact minor version, and add one integration test per DataTable workaround | Medium: upgrade safety | S |
-| 10 | i18n layer seeded from the JSF bundles | Medium, higher if non-French users exist | M |
-| 11 | Lazy-load entity modules | Low now, grows later | S |
-| 12 | Trim migration-history comments into ADRs | Low | S |
+- The pure navigation reducer and URL codec (round-trip tested against Java's base64url).
+- `rules/` as an isolated module with a shared conformance fixture.
+- The layering rule enforced by lint.
+- The registry-driven panels: no `switch (entityType)` in `panels/`.
+- `PaneSplit`: the main pane's position in the tree is stable, so opening the overview never remounts it.
+- Mock harness (`dev/panels`) for visual and perf checks without the backend.
 
-**Bottom line:** the panel-level architecture is sound and above average for a JSF strangler migration. The debt sits one level down:
-- per-entity copy-paste,
-- untyped API contracts,
-- global CSS,
-- a monolithic `App`.
+## 4. Suggested order
 
-All four are cheap to fix *now*, with six entity types, and expensive at twelve.
-
-The latest round confirms this. The new features (status in lists, table settings, column supplements) went through the generic layers without per-entity work, which is the architecture paying off. But nearly all of that weight landed in `EntityListPanel` and `main-panel.css`, and none of the four debts above got smaller.
+1. 2.6 (`staleTime`, no focus refetch) and 2.3 (registry-derived tables) — small, no risk.
+2. 2.1 (typed registry) then 2.2 (generated DTOs) — they compound: generated DTOs are what the typed registry should be parameterized by.
+3. 2.5 (one catalog hook) and 2.4 (remaining duplication).
+4. 2.7 + 2.8 (lazy entities, split `renderers.tsx` / `types.ts`) once the above shrinks the surface.
+5. 2.13 (Sonar on frontend, coverage) right after the merge; 2.9/2.12 incrementally.

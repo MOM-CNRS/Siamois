@@ -59,8 +59,8 @@ async function open() {
 }
 
 const boxes = () => [...document.querySelectorAll<HTMLInputElement>(".duplicate-structure-tree input[type=checkbox]")].filter((b) => b.id !== "dup-root");
-const summary = () => document.querySelector(".create-form-footer-note")?.textContent?.replace(/\s+/g, " ").trim();
-const submit = () => [...document.querySelectorAll<HTMLButtonElement>(".create-form-footer button")].find((b) => b.type === "submit")!;
+const summary = () => document.querySelector(".sia-create-form-footer-note")?.textContent?.replace(/\s+/g, " ").trim();
+const submit = () => [...document.querySelectorAll<HTMLButtonElement>(".sia-create-form-footer button")].find((b) => b.type === "submit")!;
 
 async function tick(box: HTMLInputElement) {
   await act(async () => box.click());

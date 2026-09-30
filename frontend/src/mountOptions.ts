@@ -93,3 +93,85 @@ export interface MountOptions {
   // since the client-side focus stack App keeps doesn't survive a reload.
   goBackUrl?: string;
 }
+
+/**
+ * The version of the contract between reactPanelMount.xhtml (the data-* attributes) and this
+ * bundle. Both sides are built and shipped apart (the template is server-side, the bundle a static
+ * resource the browser may have cached): bump it on both when an attribute changes meaning, and a
+ * page rendered by one build never silently mounts with the other's reading of it.
+ */
+export const MOUNT_CONTRACT_VERSION = 1;
+
+export class MountContractError extends Error {}
+
+// A DOMStringMap, or a plain object in a test.
+export type MountDataset = Readonly<Record<string, string | undefined>>;
+
+// Turns the name of a JSF remoteCommand function (data-action-*) into a callable, or nothing when
+// the page didn't define it. `window` in the browser; injected in tests.
+export type ActionResolver = (name: string | undefined) => ((params: Record<string, unknown>) => unknown) | undefined;
+
+/**
+ * Reads the mount div's data-* attributes (reactPanelMount.xhtml) into MountOptions. An empty
+ * attribute is an absent one: Facelets renders a null EL value as "".
+ */
+export function parseMountOptions(dataset: MountDataset, resolveAction: ActionResolver): MountOptions {
+  if (dataset.contractVersion !== String(MOUNT_CONTRACT_VERSION)) {
+    throw new MountContractError(
+      `React panel: the page speaks mount contract "${dataset.contractVersion ?? "none"}", this bundle ${MOUNT_CONTRACT_VERSION}. ` +
+        "The page and main-panel.js come from different builds (a stale cached bundle?).",
+    );
+  }
+  const text = (key: string) => dataset[key] || undefined;
+  const number = (key: string) => (dataset[key] ? Number(dataset[key]) : undefined);
+  const panelKind = dataset.panelKind;
+  if (panelKind !== "home" && panelKind !== "list" && panelKind !== "detail") {
+    throw new MountContractError(`React panel: unknown panel kind "${panelKind}".`);
+  }
+
+  const action = (key: string) => resolveAction(dataset[key]);
+  const setOverview = action("actionSetOverview");
+  const setMain = action("actionSetMain");
+  const openProjectSettings = action("actionOpenProjectSettings");
+
+  return {
+    panelIndex: text("panelIndex"),
+    panelKind,
+    entityType: dataset.entityType ?? "",
+    entityId: text("entityId"),
+    overviewEntityType: text("overviewEntityType"),
+    overviewEntityId: text("overviewEntityId"),
+    organizationId: number("organizationId"),
+    overviewOrganizationId: number("overviewOrganizationId"),
+    // FlowBean.isWriteMode: the topbar's global read/write switch. No change event is needed: its
+    // p:ajax updates "flow", which replaces the mount div, so React is mounted again with the new
+    // value (reactPanelBootstrap's data-mounted guard is what makes that a remount, not a duplicate).
+    writeMode: dataset.writeMode === "true",
+    // AbstractPanel.goBackUrl (the `back=` param): this page was loaded in focus mode.
+    goBackUrl: text("goBackUrl"),
+    basePath: dataset.basePath ?? "",
+    csrf: { headerName: dataset.csrfHeader ?? "", token: dataset.csrfToken ?? "" },
+    main: {
+      resourceUri: dataset.mainResourceUri ?? "",
+      title: dataset.mainTitle ?? "",
+      bookmarked: dataset.mainBookmarked === "true",
+    },
+    overview: dataset.overviewResourceUri
+      ? {
+          resourceUri: dataset.overviewResourceUri,
+          title: dataset.overviewTitle ?? "",
+          bookmarked: dataset.overviewBookmarked === "true",
+        }
+      : undefined,
+    // The only calls left into the JSF session (reactPanelActions.xhtml): every toolbar action is
+    // built by React from the displayed entity's own REST data. Each remoteCommand takes named
+    // params; the bridge speaks positional arguments.
+    bridge: {
+      setOverview: setOverview && ((entityType, id) => setOverview({ entityType, id })),
+      closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
+      setMain: setMain && ((path) => setMain({ path })),
+      refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
+      openProjectSettings: openProjectSettings && ((projectId) => openProjectSettings({ projectId })),
+    },
+  };
+}

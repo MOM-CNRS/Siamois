@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 // The left-hand half of JSF's merged "statut | identifiant" column (entityDataTable.xhtml's
 // statusIdActionsCol → /panel/header/validationButton.xhtml), read-only: what a list row shows when
 // its status can't be changed right now (ValidationStatusCell swaps in the picker otherwise).
@@ -11,10 +12,10 @@ export type ValidationStatusValue = "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "C
 export const VALIDATION_STATUSES: ValidationStatusValue[] = ["INCOMPLETE", "COMPLETE", "VALIDATED", "CANCELLED"];
 
 export const VALIDATION_PRESENTATION: Record<ValidationStatusValue, { icon: string; modifier: string; title: string }> = {
-  INCOMPLETE: { icon: "bi bi-circle", modifier: "incomplete", title: "En cours" },
-  COMPLETE: { icon: "bi bi-circle-fill", modifier: "complete", title: "Terminé" },
-  VALIDATED: { icon: "bi bi-check-circle", modifier: "validated", title: "Validé" },
-  CANCELLED: { icon: "bi bi-x-circle", modifier: "cancelled", title: "Annulé" },
+  INCOMPLETE: { icon: "bi bi-circle", modifier: "incomplete", title: t("validation.incomplete") },
+  COMPLETE: { icon: "bi bi-circle-fill", modifier: "complete", title: t("validation.complete") },
+  VALIDATED: { icon: "bi bi-check-circle", modifier: "validated", title: t("validation.validated") },
+  CANCELLED: { icon: "bi bi-x-circle", modifier: "cancelled", title: t("validation.cancelled") },
 };
 
 // Anything else (null, an enum value added server-side later) degrades to INCOMPLETE, which is

@@ -3,7 +3,6 @@ import { apiFetch } from "../api/client";
 import {
   fetchConceptOptions,
   fetchPlaceOptions,
-  filterKindForAnswerType,
   optionSourceFor,
   referenceTargetOf,
 } from "./optionSources";
@@ -26,23 +25,6 @@ function field(overrides: Partial<FieldResource>): FieldResource {
     ...overrides,
   };
 }
-
-describe("filterKindForAnswerType", () => {
-  it.each([
-    ["TEXT", "contains"],
-    ["DECIMAL", "range"],
-    ["SELECT_ONE_FROM_FIELD_CODE", "concept-one"],
-    ["SELECT_MULTIPLE_FROM_FIELD_CODE", "concept-many"],
-    ["SELECT_ONE_SPATIAL_UNIT", "spatial-one"],
-  ] as const)("maps %s to %s", (answerType, expected) => {
-    expect(filterKindForAnswerType(answerType)).toBe(expected);
-  });
-
-  it("returns null for an answerType with no filter widget (e.g. INTEGER, MEASUREMENT)", () => {
-    expect(filterKindForAnswerType("INTEGER")).toBeNull();
-    expect(filterKindForAnswerType("MEASUREMENT")).toBeNull();
-  });
-});
 
 describe("fetchConceptOptions", () => {
   it("calls the org-scoped concepts endpoint and maps resolvedLabel to label", async () => {

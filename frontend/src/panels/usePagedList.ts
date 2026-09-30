@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { ListParams, PagedResult } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
 
 // Set on a row while one of its visible columns is still being fetched (see usePagedList's column
 // supplements) — the cell renders a skeleton instead of an empty value.
-export const PENDING_FIELDS = "__pendingFields";
+const PENDING_FIELDS = "__pendingFields";
 
 export function isFieldPending(row: unknown, fieldId: string): boolean {
   const pending = (row as Record<string, unknown> | null)?.[PENDING_FIELDS];
@@ -13,26 +13,23 @@ export function isFieldPending(row: unknown, fieldId: string): boolean {
 }
 
 /**
- * Merges column supplements (the same rows, fetched with `fields=<one field>`) into a page's base
- * rows, matched by id: the supplement's `answers` are added to the base row's, and its top-level
- * properties fill in only what the base row lacks — the base row is the complete one. A supplement
- * still in flight marks its field pending on every row instead.
+ * Merges a column supplement (the same rows, fetched with `fields=<the missing fields>`) into a page's
+ * base rows, matched by id: the supplement's `answers` are added to the base row's, and its
+ * top-level properties fill in only what the base row lacks — the base row is the complete one. A
+ * supplement still in flight (`rows` undefined) marks its fields pending on every row instead.
  */
 export function mergeSupplementRows<T>(
   baseRows: T[],
-  supplements: ReadonlyArray<{ fieldId: string; rows: T[] | undefined }>,
+  supplement: { fieldIds: readonly string[]; rows: T[] | undefined } | null,
 ): T[] {
-  if (supplements.length === 0) return baseRows;
-  const pending = supplements.filter((s) => !s.rows).map((s) => s.fieldId);
-  const loaded = supplements
-    .filter((s) => s.rows)
-    .map((s) => new Map(s.rows!.map((r) => [(r as { id?: unknown }).id, r as Record<string, unknown>])));
+  if (!supplement || supplement.fieldIds.length === 0) return baseRows;
+  const pending = supplement.rows ? [] : [...supplement.fieldIds];
+  const byId = new Map((supplement.rows ?? []).map((r) => [(r as { id?: unknown }).id, r as Record<string, unknown>]));
   return baseRows.map((base) => {
     const row = base as Record<string, unknown>;
     let merged: Record<string, unknown> = row;
-    for (const byId of loaded) {
-      const extra = byId.get(row.id);
-      if (!extra) continue;
+    const extra = byId.get(row.id);
+    if (extra) {
       const answers = { ...(merged.answers as object | undefined), ...(extra.answers as object | undefined) };
       merged = { ...extra, ...merged, answers };
     }
@@ -69,8 +66,8 @@ function fieldsParam(fields: readonly string[]): string | undefined {
  * it. While the next page loads, the previous one stays on screen.
  *
  * Columns don't define the result set. A page is fetched with the columns visible when it was
- * first requested; a column shown afterwards is fetched on its own (`fields=<that field>`, same
- * sort/filters/offset) and merged in by row id — the rows and the loading state stay put. Hiding a
+ * first requested; a column shown afterwards is fetched on its own (`fields=<the missing fields>`, same
+ * sort/filters/offset, one request for all of them) and merged in by row id — the rows and the loading state stay put. Hiding a
  * column fetches nothing.
  */
 export function usePagedList<T>({ entityType, params, offset, limit, fields = [], fetch, enabled }: UsePagedListOptions<T>) {
@@ -99,37 +96,27 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
     placeholderData: keepPreviousData,
   });
 
+  // One request for every column shown since the page was fetched, not one per column: the server
+  // projects them together (and resolves their labels in one batch).
   const supplementFields = missingFields(sortedFields, baseFields);
-  const supplements = useQueries({
-    queries: supplementFields.map((fieldId) => {
-      const supplementParams: ListParams = { ...pageParams, fields: fieldId };
-      return {
-        queryKey: queryKeys.entityListPage(entityType, supplementParams),
-        queryFn: () => fetch(supplementParams),
-        enabled,
-      };
-    }),
+  const supplementParams: ListParams = { ...pageParams, fields: fieldsParam(supplementFields) };
+  const supplement = useQuery({
+    queryKey: queryKeys.entityListPage(entityType, supplementParams),
+    queryFn: () => fetch(supplementParams),
+    enabled: enabled && supplementFields.length > 0,
   });
 
   const baseRows = base.data?.data;
-  const supplementSignature = supplements.map((r, i) => `${supplementFields[i]}:${r.dataUpdatedAt}/${r.errorUpdatedAt}`).join(",");
-  const rows = useMemo(
-    () =>
-      baseRows
-        ? mergeSupplementRows(
-            baseRows,
-            supplementFields.map((fieldId, i) => {
-              const r = supplements[i];
-              // A failed supplement stops being pending (its cells stay empty; the error shows).
-              return { fieldId, rows: r?.data?.data ?? (r?.error ? [] : undefined) };
-            }),
-          )
-        : [],
-    // `supplements` itself is a new array every render; what matters is which supplements there
-    // are and when they last changed, so the deps name exactly that.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [baseRows, supplementSignature],
-  );
+  const supplementFieldsKey = supplementFields.join(",");
+  const supplementData = supplement.data?.data;
+  const supplementFailed = supplement.error != null;
+  const rows = useMemo(() => {
+    if (!baseRows) return [];
+    if (!supplementFieldsKey) return baseRows;
+    // A failed supplement stops being pending (its cells stay empty; the error shows).
+    const fetched = supplementData ?? (supplementFailed ? [] : undefined);
+    return mergeSupplementRows(baseRows, { fieldIds: supplementFieldsKey.split(","), rows: fetched });
+  }, [baseRows, supplementFieldsKey, supplementData, supplementFailed]);
 
   return {
     rows,
@@ -141,7 +128,7 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
     isLoading: base.isPending && !base.isError,
     // Any request in flight — a page change, a column being added, or a background refetch after
     // an invalidation (cell edit, creation). Drives the list's progress bar.
-    isFetching: base.isFetching || supplements.some((r) => r.isFetching),
-    error: base.error ?? supplements.find((r) => r.error)?.error ?? null,
+    isFetching: base.isFetching || supplement.isFetching,
+    error: base.error ?? supplement.error ?? null,
   };
 }

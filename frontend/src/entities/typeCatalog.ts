@@ -43,7 +43,7 @@ export interface EffectiveForm {
 }
 
 /** The form of an entity of type `typeId` — its type's own, else the untyped (`_default`) one. */
-export function effectiveFormOf(body: TypesCatalogBody, typeId: string | null | undefined): EffectiveForm {
+function effectiveFormOf(body: TypesCatalogBody, typeId: string | null | undefined): EffectiveForm {
   const match = typeId != null ? body.data?.find((t) => t.id === typeId) : undefined;
   const effective = match ?? body._default;
   return { layoutJson: effective?.formBundle?.layoutJson ?? "", fields: effective?.fields ?? {} };
@@ -64,7 +64,7 @@ export async function getEffectiveForm(
  * forms (GET /api/v1/organizations/{id}/<segment>). A scoped list with no project (none today for
  * these entities) has no catalog.
  */
-export function typeCatalogPath(ctx: { organizationId?: number; scope?: ListScope }, segment: string): string | undefined {
+function typeCatalogPath(ctx: { organizationId?: number; scope?: ListScope }, segment: string): string | undefined {
   const projectId = scopeProjectId(ctx.scope);
   if (projectId != null) return `/api/v1/projects/${projectId}/${segment}`;
   if (!ctx.scope && ctx.organizationId != null) return `/api/v1/organizations/${ctx.organizationId}/${segment}`;

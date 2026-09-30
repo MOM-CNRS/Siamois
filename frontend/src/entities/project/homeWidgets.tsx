@@ -47,7 +47,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
   return (
     <Panel header="Projets récents" toggleable className="sia-form-panel">
       {isLoading && (
-        <div className="loading-skeleton" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+        <div className="loading-skeleton sia-card-grid">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} height="3rem" />
           ))}
@@ -55,7 +55,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
       )}
       {!isLoading && projects.length === 0 && <div>Aucun projet</div>}
       {projects.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+        <div className="sia-card-grid">
           {projects.map((project) => (
             <ClickableCard
               key={project.id}
@@ -63,16 +63,16 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
               onOpen={() => onNavigate?.("project", project.id)}
               style={{ background: "var(--siamois-green-light-50)" }}
             >
-              <div style={{ display: "flex", gap: "1em" }}>
-                <i className="bi bi-arrow-down-square" style={{ color: "var(--context-main-color)" }} />
+              <div className="sia-row-gap">
+                <i className="bi bi-arrow-down-square sia-icon-context" />
                 <span>{project.name}</span>
               </div>
-              <div style={{ display: "flex", gap: "1em" }}>
-                <i className="bi bi-geo-alt" style={{ color: "var(--context-main-color)" }} />
+              <div className="sia-row-gap">
+                <i className="bi bi-geo-alt sia-icon-context" />
                 <span>{project.mainLocation?.name ?? "—"}</span>
               </div>
-              <div style={{ display: "flex", gap: "1em" }}>
-                <i className="bi bi-pencil-square" style={{ color: "var(--ground-main-color)" }} />
+              <div className="sia-row-gap">
+                <i className="bi bi-pencil-square sia-icon-ground" />
                 <span>{project._counts?.recordingUnits ?? 0} enregistrements</span>
               </div>
             </ClickableCard>

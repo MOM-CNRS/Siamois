@@ -7,6 +7,7 @@ import { readMultiValue, unwrapAnswer } from "./types";
 import { getEntityType } from "../entities/registry";
 import { isEntityKey, type EntityKey } from "../entities/keys";
 import { useOpenEntity } from "../panels/entityNavigation";
+import { t } from "../i18n";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.
 interface StratigraphicQualifier {
@@ -122,7 +123,7 @@ export function refColor(resourceType: string): string {
  * Without, it is only a chip: in a list cell or a fiche field, the first click opens the field's
  * overlay, and it is the chips there that open fiches.
  */
-export function RefChip({
+function RefChip({
   label,
   id,
   resourceType,
@@ -155,7 +156,7 @@ export function RefChip({
       style={style}
       role="link"
       tabIndex={0}
-      title={`Ouvrir « ${label} »`}
+      title={t("field.open", { label })}
       onClick={open}
       onKeyDown={(e) => {
         if (e.key === "Enter") open(e);
@@ -243,7 +244,7 @@ export function renderAnswerCell(
   // The counter's tooltip lists every value when the row has them all; a preview's are only
   // counted (the overlay loads them).
   const complete = multi == null || multi.complete;
-  const title = complete ? items.map((item) => formatOne(field, item)).join(", ") : `${total} valeurs`;
+  const title = complete ? items.map((item) => formatOne(field, item)).join(", ") : t("field.valuesCount", { count: total });
   return (
     <span className={options.all ? "cell-multi cell-multi-all" : "cell-multi"}>
       {options.all

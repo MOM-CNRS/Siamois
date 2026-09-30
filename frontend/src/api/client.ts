@@ -2,7 +2,13 @@ import { apiUrl } from "./basePath";
 import { getAccessToken, resetSession } from "../auth/sessionAuth";
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+    // The parsed error body ({error, message}…) and the request path, for diagnostics and messages.
+    public readonly body?: unknown,
+    public readonly path?: string,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -47,7 +53,8 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
   }
 
   if (!response.ok) {
-    throw new ApiError(response.status, await extractErrorMessage(response));
+    const { message, body } = await readError(response);
+    throw new ApiError(response.status, message, body, path);
   }
 
   if (response.status === 204) {
@@ -63,13 +70,13 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
 // OpenApiRestExceptionHandler always answers errors as JSON {error, message} — surface that
 // human-readable message rather than the raw response body (previously shown verbatim, e.g. to
 // the identifier inline-edit error in the Project fiche).
-async function extractErrorMessage(response: Response): Promise<string> {
+async function readError(response: Response): Promise<{ message: string; body?: unknown }> {
   const text = await response.text().catch(() => "");
-  if (!text) return response.statusText;
+  if (!text) return { message: response.statusText };
   try {
     const body = JSON.parse(text) as { message?: string };
-    return body.message || response.statusText;
+    return { message: body.message || response.statusText, body };
   } catch {
-    return text;
+    return { message: text };
   }
 }

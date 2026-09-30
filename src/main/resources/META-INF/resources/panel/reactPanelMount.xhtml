@@ -8,11 +8,13 @@
     The mount div React attaches to (plan §7.2/§8 phase 8), included by focus.xhtml.
     Everything here is HTML-attribute-escaped by Facelets, never interpolated into a JS string —
     resources/js/reactPanelBootstrap.js (a plain static file, no EL) reads it all back off
-    container.dataset.
+    container.dataset. data-contract-version must equal MOUNT_CONTRACT_VERSION
+    (frontend/src/mountOptions.ts): bump both when an attribute changes meaning.
     -->
     <div id="react-main-panel-mount-${panelModel.panelIndex}"
          class="react-main-panel-mount"
          style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
+         data-contract-version="1"
          data-panel-index="#{panelModel.panelIndex}"
          data-panel-kind="#{panelModel.reactPanelKind()}"
          data-entity-type="#{panelModel.reactEntityType()}"

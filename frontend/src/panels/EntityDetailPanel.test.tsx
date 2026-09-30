@@ -577,7 +577,7 @@ describe("EntityDetailPanel entity actions", () => {
     list: {
       columns: [],
       searchable: false,
-      createForm: (ctx) => <div data-testid="create-form">scope {String(ctx.scope?.id)}</div>,
+      createForm: (ctx) => <div data-testid="sia-create-form">scope {String(ctx.scope?.id)}</div>,
     },
     detail: {
       tabs: [{ key: "fiche", label: "Fiche", render: (e) => <span>{e.name}</span> }],
@@ -656,7 +656,7 @@ describe("EntityDetailPanel entity actions", () => {
     });
     await flush();
 
-    const form = document.querySelector("[data-testid='create-form']");
+    const form = document.querySelector("[data-testid='sia-create-form']");
     expect(form?.textContent).toBe("scope 42");
   });
 
@@ -705,13 +705,13 @@ describe("EntityDetailPanel loading state", () => {
     await flush();
 
     expect(container.querySelector(".entity-detail-panel-preview-chip")?.textContent).toBe("UE-12");
-    expect(container.querySelector(".detail-body-skeleton")).toBeTruthy();
+    expect(container.querySelector(".sia-detail-skeleton")).toBeTruthy();
     expect(container.textContent).not.toContain("Loading");
 
     await act(async () => resolve({ id: "1", name: "First" }));
     await flush();
 
-    expect(container.querySelector(".detail-body-skeleton")).toBeNull();
+    expect(container.querySelector(".sia-detail-skeleton")).toBeNull();
     expect(container.querySelector('[data-testid="name"]')?.textContent).toBe("First");
   });
 

@@ -10,11 +10,6 @@ import type { FilterValue } from "../entities/types";
 export type { FilterValue };
 
 export interface TableState {
-  // Bumped whenever the shape changes — decodeTableState refuses anything else outright rather
-  // than guessing, so a stale `?s=` or saved view degrades to "start over", never to a crash or a
-  // silently wrong filter.
-  // v2 dropped offset/limit while the list virtual-scrolled; v3 brings them back with the
-  // paginator (v1 and v2 views decode to null and start over, per the rule above).
   v: 3;
   // Always a multiple of `limit`: the list endpoints page with PageRequest.of(offset / limit, limit)
   // and reject any other offset (ProjectApiService#validatePagedListRequest).
@@ -67,44 +62,4 @@ export function filtersToQueryParams(filters: Record<string, FilterValue>): URLS
     }
   }
   return params;
-}
-
-function isFilterValue(value: unknown): value is FilterValue {
-  if (value == null || typeof value !== "object") return false;
-  const op = (value as { op?: unknown }).op;
-  if (op === "contains") return typeof (value as { v?: unknown }).v === "string";
-  if (op === "in") return Array.isArray((value as { v?: unknown }).v);
-  if (op === "range") return true;
-  return false;
-}
-
-function isTableState(value: unknown): value is TableState {
-  if (value == null || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  if (v.v !== 3) return false;
-  if (typeof v.limit !== "number" || !PAGE_SIZE_OPTIONS.includes(v.limit)) return false;
-  if (typeof v.offset !== "number" || v.offset < 0 || v.offset % v.limit !== 0) return false;
-  if (!Array.isArray(v.visibleColumns) || !v.visibleColumns.every((c) => typeof c === "string")) return false;
-  if (v.filters == null || typeof v.filters !== "object") return false;
-  return Object.values(v.filters as Record<string, unknown>).every(isFilterValue);
-}
-
-// btoa/atob are ASCII-only; the encodeURIComponent/unescape round trip keeps this safe for
-// non-ASCII search text or labels without pulling in a UTF-8 base64 library.
-export function encodeTableState(state: TableState): string {
-  const json = JSON.stringify(state);
-  const base64 = btoa(unescape(encodeURIComponent(json)));
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-/** Tolerant by design: a corrupt or outdated `?s=`/saved view yields `null`, never a thrown error. */
-export function decodeTableState(encoded: string): TableState | null {
-  try {
-    const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(escape(atob(padded)));
-    const parsed: unknown = JSON.parse(json);
-    return isTableState(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
 }

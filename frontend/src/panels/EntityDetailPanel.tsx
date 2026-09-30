@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BreadCrumb } from "primereact/breadcrumb";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
+import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
 import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
@@ -19,6 +20,7 @@ import { siblingsQuery } from "./listSiblings";
 
 import type { EntityPreview, EntitySibling } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
+import { t } from "../i18n";
 
 export type { EntityPreview };
 
@@ -319,7 +321,7 @@ export function EntityDetailPanel({
         model={[
           {
             // ActionUnitPanel.createRootTypeItem: "Tous les projets", linking to the entity's list.
-            label: config.labels.all ?? `Tous les ${config.labels.plural.toLowerCase()}`,
+            label: config.labels.all ?? t("detail.allOf", { plural: config.labels.plural.toLowerCase() }),
             icon: config.icon,
             command: onNavigate ? () => onNavigate(entityType) : undefined,
           },
@@ -354,13 +356,15 @@ export function EntityDetailPanel({
               header={
                 // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
                 // bold label, then the count in parentheses when the tab has one.
-                <div style={{ display: "flex", gap: "0.2em", alignItems: "center", fontWeight: "bold" }}>
+                <div className="sia-tab-title">
                   {tab.label}
                   {badge != null && <span>{` (${badge})`}</span>}
                 </div>
               }
             >
-              {tab.render(data, helpers)}
+              <PaneErrorBoundary label={t("detail.tabError", { label: tab.label })} resetKey={`${entityType}:${entityId}`}>
+                {tab.render(data, helpers)}
+              </PaneErrorBoundary>
             </TabPanel>
           );
         })}

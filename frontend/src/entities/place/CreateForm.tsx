@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { InputText } from "primereact/inputtext";
-import { ApiError } from "../../api/client";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createPlace } from "./api";
+import { messageForError } from "../../api/errors";
 
 // The list toolbar's "Créer" overlay for places — name and type only (PlaceCreateRequest's
 // required pair), like the other create overlays. Unlike them, places belong to the organization,
@@ -50,7 +50,7 @@ export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de la création");
+      setError(messageForError(err, "Échec de la création"));
     },
   });
 

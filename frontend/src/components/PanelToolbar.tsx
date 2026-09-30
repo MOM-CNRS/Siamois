@@ -7,6 +7,7 @@ import { createBookmark, deleteBookmark, getBookmarkStatus } from "../api/bookma
 import type { PanelActions, PanelChrome } from "../mountOptions";
 import { useBridge } from "../panels/bridge";
 import { queryKeys } from "../api/queryKeys";
+import { t } from "../i18n";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
@@ -98,7 +99,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
   );
 
   return (
-    <div className="panel-toolbar" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+    <div className="panel-toolbar">
       {/* Navigation group: leave focus / close or promote the overview, prev/next, bookmark. */}
       {actions?.closeFocus && (
         <Button
@@ -106,7 +107,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
           className="sideview-topbar-button"
           text
           rounded
-          tooltip="Fermer le mode focus"
+          tooltip={t("toolbar.closeFocus")}
           onClick={actions.closeFocus}
         />
       )}
@@ -116,7 +117,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
           className="sideview-topbar-button"
           text
           rounded
-          tooltip="Fermer l'aperçu latéral"
+          tooltip={t("toolbar.closeOverview")}
           onClick={actions.closeOverview}
         />
       )}
@@ -126,7 +127,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
           className="sideview-topbar-button"
           text
           rounded
-          tooltip="Ouvrir en mode focus"
+          tooltip={t("toolbar.openFocus")}
           onClick={actions.fullscreen}
         />
       )}
@@ -136,7 +137,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
         className="sideview-topbar-button"
         text
         rounded
-        tooltip={bookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}
+        tooltip={bookmarked ? t("toolbar.removeBookmark") : t("toolbar.addBookmark")}
         tooltipOptions={{ position: "bottom" }}
         disabled={bookmarkMutation.isPending || organizationId == null || chrome.resourceUri === ""}
         onClick={() => bookmarkMutation.mutate()}
@@ -151,9 +152,9 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
               className="sideview-topbar-button"
               text
               rounded
-              tooltip="Plus d'actions"
+              tooltip={t("toolbar.moreActions")}
               tooltipOptions={{ position: "bottom" }}
-              aria-label="Plus d'actions"
+              aria-label={t("toolbar.moreActions")}
               aria-haspopup
               onClick={(e) => moreMenuRef.current?.toggle(e)}
             />

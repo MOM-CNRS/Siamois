@@ -18,7 +18,7 @@ export interface EntityCountCardProps {
 export function EntityCountCard({ icon, label, description, count, className, chipClassName, onOpen }: EntityCountCardProps) {
   return (
     <ClickableCard onOpen={onOpen} className={className} ariaLabel={label}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <div className="sia-count-card-row">
         <i className={icon} aria-hidden="true" />
         <span>{label}</span>
         <Chip label={count == null ? "…" : String(count)} className={chipClassName} />

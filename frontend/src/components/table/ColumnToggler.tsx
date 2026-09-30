@@ -1,4 +1,5 @@
 import { VisibilityChooser } from "./VisibilityChooser";
+import { t } from "../../i18n";
 
 // Mirrors pages/shared/table/tableToolbar.xhtml's gear-overlay column chooser
 // (p:columnToggler → EntityTableViewModel.onToggle): every catalog column, split into the shown
@@ -25,10 +26,10 @@ export function ColumnToggler({ options, value, onChange }: ColumnTogglerProps) 
       items={options.map((o) => ({ id: o.fieldId, label: o.label }))}
       visible={value}
       onChange={onChange}
-      visibleTitle="Colonnes visibles"
-      hiddenTitle="Colonnes masquées"
+      visibleTitle={t("columns.visible")}
+      hiddenTitle={t("columns.hidden")}
       searchable
-      searchPlaceholder="Rechercher une colonne"
+      searchPlaceholder={t("columns.search")}
     />
   );
 }

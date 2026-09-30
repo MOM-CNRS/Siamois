@@ -881,7 +881,7 @@
   padding: 0;
 }
 
-.create-form {
+.sia-create-form {
   display: flex;
   flex-direction: column;
   min-width: 22rem;
@@ -891,7 +891,7 @@
   overflow: hidden;
 }
 
-.create-form-header {
+.sia-create-form-header {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -899,19 +899,19 @@
   color: var(--entity-chip-color, var(--main-color, #669966));
 }
 
-.create-form-header > i {
+.sia-create-form-header > i {
   font-size: 1.5rem;
   line-height: 1;
 }
 
-.create-form-header h4 {
+.sia-create-form-header h4 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   color: inherit;
 }
 
-.create-form-body {
+.sia-create-form-body {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -919,36 +919,36 @@
 }
 
 /* Every widget fills its field, as in the cell editor (p-fluid). */
-.create-form-body .p-inputtext,
-.create-form-body .p-autocomplete,
-.create-form-body .p-autocomplete-input,
-.create-form-body .p-autocomplete-multiple-container {
+.sia-create-form-body .p-inputtext,
+.sia-create-form-body .p-autocomplete,
+.sia-create-form-body .p-autocomplete-input,
+.sia-create-form-body .p-autocomplete-multiple-container {
   width: 100%;
 }
 
 /* One field: its label above it, the fiche's label look (FieldLabel: grey, .875rem). */
-.project-create-form-field {
+.sia-create-form-field {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 
-.create-form-label {
+.sia-create-form-label {
   color: var(--text-light, #6b7280);
   font-size: 0.875rem;
 }
 
-.create-form-label-required::after {
+.sia-create-form-label-required::after {
   content: " *";
 }
 
-.create-form-hint {
+.sia-create-form-hint {
   color: var(--text-light, #6b7280);
   font-size: 0.85rem;
   font-style: italic;
 }
 
-.create-form-footer {
+.sia-create-form-footer {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -958,16 +958,16 @@
   border-top: 1px solid color-mix(in srgb, var(--entity-chip-color, #669966) 18%, transparent);
 }
 
-.create-form-footer .p-button.p-button-text {
+.sia-create-form-footer .p-button.p-button-text {
   color: var(--text-light, #6b7280);
 }
 
-.create-form-footer .p-button:not(.p-button-text) {
+.sia-create-form-footer .p-button:not(.p-button-text) {
   background: var(--entity-chip-color, var(--primary-color, #669966));
   border-color: var(--entity-chip-color, var(--primary-color, #669966));
 }
 
-.create-form-footer .p-button:not(.p-button-text):enabled:hover {
+.sia-create-form-footer .p-button:not(.p-button-text):enabled:hover {
   filter: brightness(1.1);
 }
 
@@ -992,62 +992,6 @@
 .sia-clickable-card:focus-visible {
   outline: 2px solid var(--primary-color, #669966);
   outline-offset: 2px;
-}
-
-/* ---- Pane transitions (panels/panelTransition.ts) --------------------------------------------
-   Each pane carries a view-transition-name derived from the entity it shows, so:
-   - a pane present before AND after (same entity) morphs between its two boxes: the main pane
-     shrinking when the overview opens, or the overview's fiche growing to full width on focus;
-   - a pane only present after (the overview opening) / only before (the overview closing, the old
-     main on focus) is an ":only-child" image — animated below by which transition is running
-     (html[data-panel-transition]). */
-::view-transition-group(*) {
-  animation-duration: 220ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
-}
-
-/* Everything outside the panes (topbar, sidebar, splitter gutter) doesn't move: no page-wide
-   cross-fade on top of the pane animations. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-
-@keyframes pane-slide-in-right {
-  from { transform: translateX(40%); opacity: 0; }
-}
-@keyframes pane-slide-out-right {
-  to { transform: translateX(40%); opacity: 0; }
-}
-@keyframes pane-fade-out {
-  to { opacity: 0; }
-}
-@keyframes pane-fade-in {
-  from { opacity: 0; }
-}
-
-/* Overview opening / leaving focus: the pane that appears is the overview (or the restored main):
-   it slides in from the right when opening, fades in when coming back from focus. */
-html[data-panel-transition="overview-open"]::view-transition-new(*):only-child {
-  animation: pane-slide-in-right 220ms cubic-bezier(0.2, 0, 0, 1) both;
-}
-html[data-panel-transition="overview-close"]::view-transition-old(*):only-child {
-  animation: pane-slide-out-right 180ms cubic-bezier(0.3, 0, 1, 1) both;
-}
-/* Entering focus: the old main steps back while the overview's fiche grows over it. */
-html[data-panel-transition="focus-enter"]::view-transition-old(*):only-child {
-  animation: pane-fade-out 160ms ease-out both;
-}
-html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
-  animation: pane-fade-in 220ms ease-in both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
 }
 
 /* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
@@ -1257,14 +1201,6 @@ html[data-panel-transition="focus-exit"]::view-transition-new(*):only-child {
   background: var(--surface-border, #dee2e6);
 }
 
-/* ------------------------------------------------------------ room at the end of every scroll
-
-   Fixed buttons sit in the screen's bottom-left corner (feedback): every panel's scroll ends with
-   some empty room so its last row/field can be scrolled out from under them. */
-:root {
-  --panel-scroll-end-gap: 4rem;
-}
-
 /* A fiche tab: the tab panels box is what scrolls. A tab holding an embedded list is left alone —
    the list scrolls itself, and gets its gap from the rule below. */
 .entity-detail-panel .p-tabview-panels:not(:has(.entity-list-panel.embedded)) {
@@ -1332,16 +1268,6 @@ body button.p-button.status-button.status-button-compact {
   background: var(--surface-100, #f5f5f5);
 }
 
-/* ---------------------------------------------------------------------------
-   No page-level scroll. The shell is a fixed 100vh frame (template.xhtml's div.d-flex) and every
-   panel scrolls inside its own box, so anything that lands past it (a popup appended to <body>)
-   must not grow the document and bring up a page scrollbar with nothing to scroll. This file is
-   only loaded by focus.xhtml, so other pages are untouched. */
-html,
-body {
-  overflow: hidden;
-}
-
 /* A date picker opened from the cell editor lives inside the editor's own fixed box
    (DateRenderer's appendTo="self"): it overflows that box downward rather than being clipped. */
 .cell-edit-overlay .p-datepicker:not(.p-datepicker-inline) {
@@ -1384,14 +1310,14 @@ body {
   gap: 0.5rem;
 }
 
-.detail-body-skeleton {
+.sia-detail-skeleton {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   padding: 0.75rem 1rem;
 }
 
-.detail-body-skeleton-tabs {
+.sia-detail-skeleton-tabs {
   display: flex;
   gap: 1rem;
   padding-bottom: 0.5rem;
@@ -1553,7 +1479,7 @@ body {
 }
 
 /* What the form is about to create, at the footer's left. */
-.create-form-footer-note {
+.sia-create-form-footer-note {
   margin-right: auto;
   font-size: 0.9rem;
   color: var(--text-color, inherit);
@@ -1577,4 +1503,112 @@ body {
 .entity-list-panel-cell-warning {
   color: var(--yellow-600, #d97706);
   margin-right: 0.3rem;
+}
+
+/* A pane (or tab) whose render failed: PaneErrorBoundary's message and retry. */
+.pane-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+/* ---- Layout helpers the components used to inline (style={{}}) -------------------------------- */
+.sia-hstack {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+}
+.sia-flex-center {
+  display: flex;
+  align-items: center;
+}
+.sia-inline-center {
+  display: inline-flex;
+  align-items: center;
+}
+.sia-inline-flex {
+  display: inline-flex;
+}
+.sia-contents {
+  display: contents;
+}
+.sia-min-w-0 {
+  min-width: 0;
+}
+.sia-grow {
+  flex: 1;
+}
+.sia-filled-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+}
+.sia-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5em;
+  width: 100%;
+}
+.sia-titlebar-split {
+  justify-content: space-between;
+}
+.sia-tab-title {
+  display: flex;
+  gap: 0.2em;
+  align-items: center;
+  font-weight: bold;
+}
+.sia-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.sia-count-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sia-row-gap {
+  display: flex;
+  gap: 1em;
+}
+.sia-icon-context {
+  color: var(--context-main-color);
+}
+.sia-icon-ground {
+  color: var(--ground-main-color);
+}
+.sia-list-title-icon {
+  font-size: 2rem;
+  color: var(--main-color);
+}
+.sia-list-title-text {
+  padding-right: 0.5em;
+}
+.entity-list-panel.embedded {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.home-panel-content {
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.validation-status-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }

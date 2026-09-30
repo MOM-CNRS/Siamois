@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Checkbox } from "primereact/checkbox";
 import { InputNumber } from "primereact/inputnumber";
-import { OverlayPanel } from "primereact/overlaypanel";
 import { Skeleton } from "primereact/skeleton";
 import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import type { DuplicationConfig, DuplicationResult, DuplicationStructure } from "../entities/types";
 import { entityChipStyle } from "../fields/display";
+import { AnchoredFormOverlay } from "./AnchoredFormOverlay";
 import { CreateFormShell } from "./CreateFormShell";
 import { check, createdCount, indexStructure, selectAll, uncheck } from "./duplicateSelection";
 import { queryKeys } from "../api/queryKeys";
+import { messageForError } from "../api/errors";
+import { t, tn } from "../i18n";
 
 export interface DuplicateStructureOverlayProps {
   entityType: string;
@@ -28,37 +30,16 @@ export interface DuplicateStructureOverlayProps {
  * what that makes in all.
  */
 export function DuplicateStructureOverlay({ entityType, entityId, anchor, onDone, onHide }: DuplicateStructureOverlayProps) {
-  const config = getEntityType(entityType);
-  const overlayRef = useRef<OverlayPanel>(null);
-
-  useEffect(() => {
-    if (anchor) overlayRef.current?.show(null as never, anchor);
-    else overlayRef.current?.hide();
-  }, [anchor]);
-
-  const duplication = config?.duplication;
+  const duplication = getEntityType(entityType)?.duplication;
   if (!duplication) return null;
   return (
-    // Keys typed in the form must not reach whatever hosts it, as in CreateEntityOverlay.
-    <div onKeyDown={(e) => e.stopPropagation()} style={{ display: "contents" }}>
-      <OverlayPanel
-        ref={overlayRef}
-        className="entity-list-panel-create-overlay create-entity-overlay"
-        onHide={onHide}
-        aria-label="Dupliquer la structure"
-      >
-        {/* Unmounted while closed, so each opening starts from its own fresh tree. */}
-        {anchor && entityId != null && (
-          <DuplicateForm
-            entityType={entityType}
-            entityId={entityId}
-            duplication={duplication}
-            onDone={onDone}
-            onCancel={() => overlayRef.current?.hide()}
-          />
-        )}
-      </OverlayPanel>
-    </div>
+    <AnchoredFormOverlay anchor={anchor} ariaLabel={t("dup.title")} onHide={onHide}>
+      {(close) =>
+        entityId != null && (
+          <DuplicateForm entityType={entityType} entityId={entityId} duplication={duplication} onDone={onDone} onCancel={close} />
+        )
+      }
+    </AnchoredFormOverlay>
   );
 }
 
@@ -114,10 +95,10 @@ function DuplicateForm({
   const total = createdCount(selected.size, copies);
   const copiesValid = Number.isInteger(copies) && copies >= 1 && copies <= duplication.maxCopies;
   const error =
-    mutation.error instanceof Error
-      ? mutation.error.message || "Échec de la duplication"
+    mutation.error != null
+      ? messageForError(mutation.error, t("dup.failed"))
       : structure.isError
-        ? "La structure n'a pas pu être chargée"
+        ? messageForError(structure.error, t("dup.loadFailed"))
         : null;
 
   function toggle(id: string, on: boolean) {
@@ -135,14 +116,16 @@ function DuplicateForm({
   return (
     <CreateFormShell
       entityType={entityType}
-      title="Dupliquer la structure"
-      submitLabel="Dupliquer la structure"
+      title={t("dup.title")}
+      submitLabel={t("dup.title")}
       canSubmit={data != null && copiesValid && !mutation.isPending}
       pending={mutation.isPending}
       error={error}
       footerNote={
         <span role="status">
-          {1 + selected.size} {duplication.unit} × {Math.max(1, copies)} = <strong>{total}</strong> nouvelle{total > 1 ? "s" : ""} {duplication.unit}
+          {t("dup.summaryPrefix", { selected: 1 + selected.size, unit: duplication.unit, copies: Math.max(1, copies) })}
+          <strong>{total}</strong>
+          {tn("dup.summarySuffix", total, { unit: duplication.unit })}
         </span>
       }
       onSubmit={() => mutation.mutate()}
@@ -150,14 +133,14 @@ function DuplicateForm({
     >
       <div className="duplicate-structure">
         <label className="duplicate-structure-copies">
-          <span className="create-form-label">Nombre de duplicata</span>
+          <span className="sia-create-form-label">{t("dup.copies")}</span>
           <InputNumber
             value={copies}
             onValueChange={(e) => setCopies(e.value ?? 0)}
             min={1}
             max={duplication.maxCopies}
             inputClassName="duplicate-structure-count-input"
-            aria-label="Nombre de duplicata"
+            aria-label={t("dup.copies")}
           />
         </label>
 
@@ -168,17 +151,17 @@ function DuplicateForm({
               className="duplicate-structure-toggle-all"
               onClick={() => setSelected(allSelected ? new Set() : selectAll(descendants))}
             >
-              {allSelected ? "Tout décocher" : "Tout cocher"}
+              {allSelected ? t("dup.uncheckAll") : t("dup.checkAll")}
             </button>
           )}
 
           {structure.isLoading ? (
             <Skeleton height="6rem" />
           ) : data ? (
-            <ul className="duplicate-structure-tree" aria-label="Éléments à dupliquer">
+            <ul className="duplicate-structure-tree" aria-label={t("dup.elements")}>
               <li className="duplicate-structure-node">
                 {/* The unit itself is always copied: a tick that can't be changed. */}
-                <Checkbox inputId="dup-root" checked disabled aria-label="Toujours dupliquée" />
+                <Checkbox inputId="dup-root" checked disabled aria-label={t("dup.alwaysCopied")} />
                 <label htmlFor="dup-root">{chip(data.root.label)}</label>
               </li>
               {descendants.map((node) => (
@@ -194,7 +177,7 @@ function DuplicateForm({
             </ul>
           ) : null}
           {data?.truncated && (
-            <Message severity="warn" text="La structure est trop grande pour être affichée en entier : seuls les premiers éléments sont proposés." />
+            <Message severity="warn" text={t("dup.truncated")} />
           )}
         </section>
       </div>

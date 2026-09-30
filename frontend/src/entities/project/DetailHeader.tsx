@@ -4,7 +4,6 @@ import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
 import { InputText } from "primereact/inputtext";
 import { Message } from "primereact/message";
-import { ApiError } from "../../api/client";
 import { useCanEdit } from "../../panels/writeMode";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
@@ -13,6 +12,7 @@ import { getProjectTypes } from "./projectTypes";
 import type { ProjectDetail } from "./types";
 import { getEntityType } from "../registry";
 import { queryKeys } from "../../api/queryKeys";
+import { messageForError } from "../../api/errors";
 
 // actionUnitPanelHeader.xhtml's content (identifier chip + pencil/apply/cancel, the editable
 // category chip, then name/location chips) — lives in EntityDetailPanel's own PrimeReact <Panel>
@@ -42,8 +42,7 @@ export function ProjectDetailHeader({ entity, onSaved }: ProjectDetailHeaderProp
   const canEdit = useCanEdit(entity);
   return (
     <div
-      className="project-detail-header"
-      style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}
+      className="project-detail-header sia-hstack"
     >
       <IdentifierChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
       <CategoryChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
@@ -69,7 +68,7 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de l'enregistrement");
+      setError(messageForError(err, "Échec de l'enregistrement"));
     },
   });
 
@@ -83,7 +82,7 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
   }
 
   return (
-    <div className="project-fiche-tab-identifier" style={{ display: "flex", alignItems: "center" }}>
+    <div className="project-fiche-tab-identifier sia-flex-center">
       {editing ? (
         <>
           <InputText value={draft} onChange={(e) => setDraft(e.target.value)} />
@@ -153,7 +152,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de l'enregistrement");
+      setError(messageForError(err, "Échec de l'enregistrement"));
     },
   });
 
@@ -162,7 +161,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
 
   if (editing && editable) {
     return (
-      <span className="project-detail-header-category" style={{ display: "inline-flex", alignItems: "center" }}>
+      <span className="project-detail-header-category sia-inline-center">
         <SelectOneConceptRenderer
           field={typeField}
           value={entity.type}
@@ -180,7 +179,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
   if (!label && !editable) return null;
 
   return (
-    <span className="project-detail-header-category" style={{ display: "inline-flex", alignItems: "center" }}>
+    <span className="project-detail-header-category sia-inline-center">
       <Chip label={label ?? "Sans type"} className="action-unit-type-chip" />
       {editable && (
         <Button

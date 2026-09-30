@@ -16,7 +16,7 @@ export interface IdentifierTypeHeaderProps {
  */
 export function IdentifierTypeHeader({ entityType, chipPrefix, label, typeLabel }: IdentifierTypeHeaderProps) {
   return (
-    <div className={`${chipPrefix}-detail-header`} style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}>
+    <div className={`${chipPrefix}-detail-header sia-hstack`}>
       <Chip label={label || ""} className={`${chipPrefix}-chip-alt entity-nav-chip`} icon={getEntityType(entityType)?.icon} />
       {typeLabel && <Chip label={typeLabel} className={`mr-2 ${chipPrefix}-type-chip`} />}
     </div>

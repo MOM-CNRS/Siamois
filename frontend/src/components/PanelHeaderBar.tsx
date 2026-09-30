@@ -38,17 +38,10 @@ export function PanelHeaderBar({ title, toolbar, navigation, layout = "main" }: 
   );
   return (
     <div
-      className={`sideview-titlebar sideview-titlebar-${layout}`}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: overview ? "flex-start" : "space-between",
-        gap: "0.5em",
-        width: "100%",
-      }}
+      className={`sideview-titlebar sideview-titlebar-${layout} sia-titlebar${overview ? "" : " sia-titlebar-split"}`}
     >
       {overview && toolbarNode}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap", minWidth: 0 }}>{title}</div>
+      <div className="sia-hstack sia-min-w-0">{title}</div>
       {!overview && toolbarNode}
     </div>
   );

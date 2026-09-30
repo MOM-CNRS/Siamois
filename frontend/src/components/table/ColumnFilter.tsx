@@ -5,6 +5,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import type { FilterValue } from "../../panels/tableState";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
+import { t } from "../../i18n";
 
 /**
  * One filter widget, dispatching on {@link FilterKind} — the client-side counterpart of
@@ -99,14 +100,14 @@ function RangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilterPro
   return (
     <span className="entity-list-panel-range-filter">
       <InputNumber
-        placeholder={`${label} (min)`}
+        placeholder={t("filter.min", { label })}
         autoFocus={autoFocus}
         value={from != null ? Number(from) : null}
         onBlur={(e) => commit(e.target.value ? e.target.value : undefined, to)}
         onValueChange={(e) => commit(e.value != null ? String(e.value) : undefined, to)}
       />
       <InputNumber
-        placeholder={`${label} (max)`}
+        placeholder={t("filter.max", { label })}
         value={to != null ? Number(to) : null}
         onBlur={(e) => commit(from, e.target.value ? e.target.value : undefined)}
         onValueChange={(e) => commit(from, e.value != null ? String(e.value) : undefined)}
@@ -140,7 +141,7 @@ function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilte
   return (
     <span className="entity-list-panel-range-filter">
       <Calendar
-        placeholder={`${label} (du)`}
+        placeholder={t("filter.from", { label })}
         autoFocus={autoFocus}
         dateFormat="dd/mm/yy"
         value={fromIsoDate(from)}
@@ -148,7 +149,7 @@ function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilte
         onChange={(e) => commit(toIsoDate(e.value as Date | null), to)}
       />
       <Calendar
-        placeholder={`${label} (au)`}
+        placeholder={t("filter.to", { label })}
         dateFormat="dd/mm/yy"
         value={fromIsoDate(to)}
         showButtonBar

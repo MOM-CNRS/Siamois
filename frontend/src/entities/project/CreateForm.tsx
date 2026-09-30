@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { InputText } from "primereact/inputtext";
-import { ApiError } from "../../api/client";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
@@ -10,6 +9,7 @@ import type { CreateFormContext } from "../types";
 import { createProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import { queryKeys } from "../../api/queryKeys";
+import { messageForError } from "../../api/errors";
 
 // The list toolbar's "Créer" overlay (migration plan follow-up — see entities/types.ts's own
 // CreateFormContext doc for why this is an overlay, not a JSF-style modal dialog). Deliberately
@@ -61,7 +61,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de la création");
+      setError(messageForError(err, "Échec de la création"));
     },
   });
 

@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createTableState,
-  decodeTableState,
-  encodeTableState,
   filtersToQueryParams,
-  type TableState,
 } from "./tableState";
 
 describe("createTableState", () => {
@@ -27,65 +24,6 @@ describe("createTableState", () => {
       visibleColumns: [],
       filters: {},
     });
-  });
-});
-
-describe("encodeTableState / decodeTableState", () => {
-  const state: TableState = {
-    v: 3,
-    offset: 50,
-    limit: 50,
-    sort: "name:desc",
-    search: "fouillé été", // non-ASCII, exercises the UTF-8 round trip
-    visibleColumns: ["-118", "-109"],
-    filters: { name: { op: "contains", v: "fos" } },
-  };
-
-  it("round-trips a full state", () => {
-    expect(decodeTableState(encodeTableState(state))).toEqual(state);
-  });
-
-  it("produces a URL-safe string (no +, / or padding =)", () => {
-    const encoded = encodeTableState(state);
-    expect(encoded).not.toMatch(/[+/=]/);
-  });
-
-  it("returns null for garbage input rather than throwing", () => {
-    expect(decodeTableState("not valid base64url json!!")).toBeNull();
-  });
-
-  it("returns null for a differently-versioned or malformed state", () => {
-    const badVersion = btoa(JSON.stringify({ ...state, v: 2 }));
-    expect(decodeTableState(badVersion)).toBeNull();
-
-    // An offset the server would reject (not a multiple of the page size), or an unoffered size.
-    expect(decodeTableState(encodeTableState({ ...state, offset: 30 }))).toBeNull();
-    expect(decodeTableState(encodeTableState({ ...state, limit: 500, offset: 0 }))).toBeNull();
-
-    const missingFields = btoa(JSON.stringify({ v: 1, offset: 0 }));
-    expect(decodeTableState(missingFields)).toBeNull();
-  });
-
-  it("rejects a filters map with an unrecognized shape", () => {
-    const bad = btoa(JSON.stringify({
-      v: 1,
-      offset: 0,
-      limit: 10,
-      visibleColumns: [],
-      filters: { name: { op: "bogus" } },
-    }));
-    expect(decodeTableState(bad)).toBeNull();
-  });
-
-  it("round-trips every filter kind", () => {
-    const s: TableState = createTableState({
-      filters: {
-        name: { op: "contains", v: "fos" },
-        status: { op: "in", v: ["12", "44"] },
-        zmin: { op: "range", from: "10", to: "40" },
-      },
-    });
-    expect(decodeTableState(encodeTableState(s))).toEqual(s);
   });
 });
 
@@ -113,17 +51,5 @@ describe("filtersToQueryParams", () => {
     const fromOnly = filtersToQueryParams({ zmin: { op: "range", from: "10" } });
     expect(fromOnly.get("f.zmin.from")).toBe("10");
     expect(fromOnly.has("f.zmin.to")).toBe(false);
-  });
-});
-
-describe("decodeTableState across versions", () => {
-  // v1 was the first paginated shape, v2 the virtual-scrolled one without a page: an old saved view
-  // or ?s= must start over rather than be half-applied.
-  it("rejects a v1 or v2 state", () => {
-    const v1 = { v: 1, offset: 20, limit: 25, visibleColumns: [], filters: {} };
-    const encoded = btoa(JSON.stringify(v1)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-    expect(decodeTableState(encoded)).toBeNull();
-    const v2 = btoa(JSON.stringify({ v: 2, visibleColumns: [], filters: {} }));
-    expect(decodeTableState(v2)).toBeNull();
   });
 });

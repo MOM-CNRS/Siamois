@@ -14,8 +14,9 @@ import {
   type AnswerInputBody,
   type FieldResource,
 } from "../../fields/types";
-import { ApiError } from "../../api/client";
 import { numberOf, type Bound, type FieldState } from "../../rules";
+import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked
@@ -137,7 +138,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         setDraft(all);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof ApiError ? e.message : "Impossible de charger toutes les valeurs.");
+        if (!cancelled) setError(messageForError(e, t("cell.loadFailed")));
       })
       .finally(() => {
         if (!cancelled) setLoadingValues(false);
@@ -159,7 +160,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       // the ajax submit that leaves the field. Clearing a required field has no valid target
       // value, so it is refused here rather than sent for the server to reject.
       if (target.required && isEmptyValue(value)) {
-        setError("Ce champ est obligatoire");
+        setError(t("cell.required"));
         return false;
       }
       const outOfBounds = boundViolation(value, target.fieldState, target.fieldLabelOf);
@@ -186,7 +187,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       } catch (e) {
         // Surfaces ProjectApiService's own message inline — in particular the 409 from a duplicate
         // identifier (ActionUnitAlreadyExistsException), matching JSF's handleLinkEdit validation.
-        setError(e instanceof ApiError ? e.message : "La modification a échoué.");
+        setError(messageForError(e, t("cell.saveFailed")));
         return false;
       } finally {
         savingRef.current = false;
@@ -208,7 +209,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const clear = useCallback(async () => {
     if (!target || target.row.id == null || savingRef.current) return;
     if (target.required) {
-      setError("Ce champ est obligatoire");
+      setError(t("cell.required"));
       return;
     }
     const multiple = target.field.answerType.startsWith("SELECT_MULTIPLE");
@@ -220,7 +221,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       onSaved();
       onClose();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "La modification a échoué.");
+      setError(messageForError(e, t("cell.saveFailed")));
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -342,7 +343,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           </div>
           {target.canClear && !isEmptyValue(draft) && (
             <button type="button" className="cell-edit-overlay-clear" disabled={saving} onClick={() => void clear()}>
-              Vider
+              {t("cell.clear")}
             </button>
           )}
         </div>
@@ -382,7 +383,10 @@ function partialAnswerOf<TRow>(target: CellEditTarget<TRow>) {
   return answer && !answer.complete && answer._links?.values ? answer : null;
 }
 
-const BOUND_TEXT = { min: ["supérieure ou égale à", "supérieure à"], max: ["inférieure ou égale à", "inférieure à"] } as const;
+const BOUND_KEYS = {
+  min: ["cell.boundMinIncl", "cell.boundMinExcl"],
+  max: ["cell.boundMaxIncl", "cell.boundMaxExcl"],
+} as const;
 
 /** The message for a value outside the bounds the rules put on it, or null when it fits (or is empty). */
 function boundViolation(
@@ -399,7 +403,7 @@ function boundViolation(
       side === "min"
         ? bound.exclusive ? n > bound.value : n >= bound.value
         : bound.exclusive ? n < bound.value : n <= bound.value;
-    return ok ? null : `La valeur doit être ${BOUND_TEXT[side][bound.exclusive ? 1 : 0]} « ${labelOf(bound.fieldId)} ».`;
+    return ok ? null : t(BOUND_KEYS[side][bound.exclusive ? 1 : 0], { label: labelOf(bound.fieldId) });
   };
   return check("min", bounds.min) ?? check("max", bounds.max);
 }

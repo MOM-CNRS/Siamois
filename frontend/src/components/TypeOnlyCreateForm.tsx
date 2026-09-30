@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
-import { ApiError } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../entities/types";
@@ -9,6 +8,8 @@ import { SelectOneConceptRenderer } from "../fields/renderers";
 import type { FieldResource } from "../fields/types";
 import { CreateFormField, CreateFormShell } from "./CreateFormShell";
 import { useCreateProject } from "./useCreateProject";
+import { messageForError } from "../api/errors";
+import { t } from "../i18n";
 
 interface ConceptPick {
   resourceId: string;
@@ -64,7 +65,7 @@ export function TypeOnlyCreateForm({
   const mutation = useMutation({
     mutationFn: () => create(projectId as string, type!.resourceId),
     onSuccess: (created) => onCreated(created.id),
-    onError: (err: unknown) => setError(err instanceof ApiError ? err.message : "Échec de la création"),
+    onError: (err: unknown) => setError(messageForError(err, t("create.failed"))),
   });
 
   const canSubmit = projectId != null && type != null && !mutation.isPending;
@@ -80,9 +81,9 @@ export function TypeOnlyCreateForm({
       onCancel={onCancel}
     >
       {projectPicker}
-      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
+      {projectId == null && !projectPicker && <Message severity="warn" text={t("create.unknownProject")} />}
 
-      <CreateFormField label="Type" required>
+      <CreateFormField label={t("common.type")} required>
         {typeField ? (
           <SelectOneConceptRenderer
             field={typeField}
@@ -93,7 +94,7 @@ export function TypeOnlyCreateForm({
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
-          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
+          <span className="sia-create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
       </CreateFormField>
 

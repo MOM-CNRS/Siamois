@@ -21,6 +21,7 @@ import {
   type FilterOption,
   type ReferenceTarget,
 } from "./optionSources";
+import { t } from "../i18n";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
 // generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,
@@ -37,7 +38,7 @@ export function TextRenderer(props: FieldRendererProps) {
   return props.field.isTextArea ? <TextAreaRenderer {...props} /> : <SingleLineTextRenderer {...props} />;
 }
 
-export function SingleLineTextRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+function SingleLineTextRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   return (
     <InputText
@@ -49,7 +50,7 @@ export function SingleLineTextRenderer({ value, readOnly, required, onChange }: 
   );
 }
 
-export function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
   const stringValue = typeof value === "string" ? value : "";
   return (
     <InputTextarea
@@ -251,7 +252,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
             text
             size="small"
             icon="bi bi-plus-lg"
-            label={`Nouveau : ${createConfig.labels.singular.toLowerCase()}`}
+            label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
             onClick={() => {
               hide();
               setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
@@ -271,7 +272,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
               className="resource-ref-token-link"
               role="link"
               tabIndex={-1}
-              title={`Ouvrir « ${option.label} »`}
+              title={t("field.open", { label: option.label })}
               // mousedown would focus the input and open the suggestions first.
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -306,11 +307,11 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         onFocus={onFocus}
         // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
         // depends on is empty — say so rather than showing an unexplained empty list.
-        placeholder={waitingForParent ? "Renseignez d'abord le champ dont dépend cette liste" : undefined}
+        placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
         // With a footer, the panel must open even on no match: that is exactly when « Nouveau »
         // is wanted.
         showEmptyMessage={footer != null || waitingForParent}
-        emptyMessage={waitingForParent ? "Renseignez d'abord le champ dont dépend cette liste" : "Aucun résultat"}
+        emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
@@ -363,9 +364,6 @@ export function SelectManyRefRenderer(props: FieldRendererProps) {
 export const SelectOneConceptRenderer = SelectOneRefRenderer;
 export const SelectManyConceptRenderer = SelectManyRefRenderer;
 export const SelectOneSpatialUnitRenderer = SelectOneRefRenderer;
-// SPATIAL_CONTEXT is a tree picker in JSF (siaInplace:spatialMultiple); here it is the flat "pick
-// several places" sibling over the same /api/v1/places/autocomplete source.
-export const SelectManySpatialUnitRenderer = SelectManyRefRenderer;
 
 interface MeasurementValue {
   numericValue?: number | null;
@@ -406,7 +404,7 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
       <InputText
         value={current.comment ?? ""}
         disabled={readOnly}
-        placeholder="Commentaire"
+        placeholder={t("field.comment")}
         onChange={(e) => emit({ ...current, comment: e.target.value })}
       />
     </div>

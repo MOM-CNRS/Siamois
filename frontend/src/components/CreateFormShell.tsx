@@ -3,6 +3,7 @@ import { Button } from "primereact/button";
 import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import { entityChipStyle } from "../fields/display";
+import { t } from "../i18n";
 
 /**
  * The frame every entity's create form shares — JSF's newUnitDialog.xhtml, as an overlay: a header
@@ -14,7 +15,7 @@ export function CreateFormShell({
   entityType,
   title,
   canSubmit,
-  submitLabel = "Créer",
+  submitLabel = t("create.submit"),
   pending,
   error,
   footerNote,
@@ -39,26 +40,26 @@ export function CreateFormShell({
   const icon = getEntityType(entityType)?.icon;
   return (
     <form
-      className="create-form"
+      className="sia-create-form"
       style={entityChipStyle(entityType)}
       onSubmit={(e) => {
         e.preventDefault();
         if (canSubmit) onSubmit();
       }}
     >
-      <div className="create-form-header">
+      <div className="sia-create-form-header">
         {icon && <i className={icon} aria-hidden="true" />}
         <h4>{title}</h4>
       </div>
 
-      <div className="create-form-body">
+      <div className="sia-create-form-body">
         {children}
         {error && <Message severity="error" text={error} />}
       </div>
 
-      <div className="create-form-footer">
-        {footerNote && <span className="create-form-footer-note">{footerNote}</span>}
-        <Button type="button" label="Annuler" text onClick={onCancel} />
+      <div className="sia-create-form-footer">
+        {footerNote && <span className="sia-create-form-footer-note">{footerNote}</span>}
+        <Button type="button" label={t("common.cancel")} text onClick={onCancel} />
         <Button type="submit" label={submitLabel} disabled={!canSubmit} loading={pending} />
       </div>
     </form>
@@ -68,8 +69,8 @@ export function CreateFormShell({
 /** One field of a create form: its label above it, like a fiche field's; "*" when required. */
 export function CreateFormField({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
   return (
-    <label className="project-create-form-field">
-      <span className={required ? "create-form-label create-form-label-required" : "create-form-label"}>{label}</span>
+    <label className="sia-create-form-field">
+      <span className={required ? "sia-create-form-label sia-create-form-label-required" : "sia-create-form-label"}>{label}</span>
       {children}
     </label>
   );

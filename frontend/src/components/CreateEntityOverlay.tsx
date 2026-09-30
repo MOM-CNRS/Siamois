@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
-import { OverlayPanel } from "primereact/overlaypanel";
 import { getEntityType } from "../entities/registry";
+import { AnchoredFormOverlay } from "./AnchoredFormOverlay";
 import type { CreatePrefill, ListScope } from "../entities/types";
+import { t } from "../i18n";
 
 export interface CreateEntityOverlayProps {
   entityType: string;
@@ -25,29 +25,10 @@ export interface CreateEntityOverlayProps {
  */
 export function CreateEntityOverlay({ entityType, anchor, organizationId, scope, prefill, onCreated, onHide }: CreateEntityOverlayProps) {
   const config = getEntityType(entityType);
-  const overlayRef = useRef<OverlayPanel>(null);
-
-  useEffect(() => {
-    if (anchor) overlayRef.current?.show(null as never, anchor);
-    else overlayRef.current?.hide();
-  }, [anchor]);
-
   if (!config?.list.createForm) return null;
   return (
-    // Keys typed in the form must not bubble through the React tree to whatever hosts it (a cell
-    // editor cancels its edit on Escape): the overlay is portalled out of its DOM box, not out of
-    // its React tree.
-    <div onKeyDown={(e) => e.stopPropagation()} style={{ display: "contents" }}>
-      <OverlayPanel
-        ref={overlayRef}
-        className="entity-list-panel-create-overlay create-entity-overlay"
-        onHide={onHide}
-        aria-label={`Nouveau : ${config.labels.singular}`}
-      >
-        {/* Unmounted while closed, so each opening starts from an empty form. */}
-        {anchor &&
-          config.list.createForm({ organizationId, scope, prefill, onCreated, onCancel: () => overlayRef.current?.hide() })}
-      </OverlayPanel>
-    </div>
+    <AnchoredFormOverlay anchor={anchor} ariaLabel={t("create.newOf", { label: config.labels.singular })} onHide={onHide}>
+      {(close) => config.list.createForm!({ organizationId, scope, prefill, onCreated, onCancel: close })}
+    </AnchoredFormOverlay>
   );
 }

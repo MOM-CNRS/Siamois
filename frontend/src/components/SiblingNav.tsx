@@ -1,5 +1,6 @@
 import { Button } from "primereact/button";
 import type { EntitySibling, EntitySiblings } from "../entities/types";
+import { t } from "../i18n";
 
 export interface SiblingNavProps {
   // undefined while the siblings query hasn't resolved yet — both arrows render disabled rather
@@ -34,8 +35,8 @@ export function SiblingNav({ siblings, onNavigate, onPrefetch, disabled }: Sibli
         className="sideview-topbar-button"
         text
         rounded
-        aria-label="Fiche précédente"
-        tooltip={previous ? `Fiche précédente — ${previous.label}` : undefined}
+        aria-label={t("sibling.previous")}
+        tooltip={previous ? t("sibling.previousNamed", { label: previous.label }) : undefined}
         tooltipOptions={{ position: "bottom" }}
         disabled={previous == null || disabled}
         onClick={() => previous && onNavigate(previous)}
@@ -47,8 +48,8 @@ export function SiblingNav({ siblings, onNavigate, onPrefetch, disabled }: Sibli
         className="sideview-topbar-button"
         text
         rounded
-        aria-label="Fiche suivante"
-        tooltip={next ? `Fiche suivante — ${next.label}` : undefined}
+        aria-label={t("sibling.next")}
+        tooltip={next ? t("sibling.nextNamed", { label: next.label }) : undefined}
         tooltipOptions={{ position: "bottom" }}
         disabled={next == null || disabled}
         onClick={() => next && onNavigate(next)}

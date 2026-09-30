@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
 import { Message } from "primereact/message";
-import { ApiError } from "../../api/client";
 import { useCanEdit } from "../../panels/writeMode";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import { toAnswerInput } from "../../fields/types";
@@ -13,6 +12,7 @@ import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { RecordingUnitDetail } from "./types";
 import { getEntityType } from "../registry";
 import { queryKeys } from "../../api/queryKeys";
+import { messageForError } from "../../api/errors";
 
 // recordingUnitPanelHeader.xhtml's content (identifier chip, then the editable category chip) —
 // lives in EntityDetailPanel's own PrimeReact <Panel> `header`, matching Project's own
@@ -36,8 +36,7 @@ export function RecordingUnitDetailHeader({ entity, onSaved }: RecordingUnitDeta
   const canEdit = useCanEdit(entity);
   return (
     <div
-      className="recording-unit-detail-header"
-      style={{ display: "flex", alignItems: "center", gap: "0.5em", flexWrap: "wrap" }}
+      className="recording-unit-detail-header sia-hstack"
     >
       <Chip label={entity.fullIdentifier} className="recording-unit-chip-alt entity-nav-chip" icon={getEntityType("recordingUnit")?.icon} />
       <CategoryChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
@@ -85,7 +84,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de l'enregistrement");
+      setError(messageForError(err, "Échec de l'enregistrement"));
     },
   });
 
@@ -94,7 +93,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
 
   if (editing && editable) {
     return (
-      <span className="recording-unit-detail-header-category" style={{ display: "inline-flex", alignItems: "center" }}>
+      <span className="recording-unit-detail-header-category sia-inline-center">
         <SelectOneConceptRenderer
           field={typeField}
           value={entity.type}
@@ -112,7 +111,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
   if (!label && !editable) return null;
 
   return (
-    <span className="recording-unit-detail-header-category" style={{ display: "inline-flex", alignItems: "center" }}>
+    <span className="recording-unit-detail-header-category sia-inline-center">
       <Chip label={label ?? "Sans type"} className="mr-2 recording-unit-type-chip" />
       {editable && (
         <Button

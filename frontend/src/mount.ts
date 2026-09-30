@@ -12,7 +12,7 @@ import { findEntityConfig } from "./entities/find/config";
 import { phaseEntityConfig } from "./entities/phase/config";
 import { containerEntityConfig } from "./entities/container/config";
 import { placeEntityConfig } from "./entities/place/config";
-import type { MountOptions } from "./mountOptions";
+import { MountContractError, parseMountOptions, type ActionResolver, type MountOptions } from "./mountOptions";
 import { App } from "./App";
 
 registerDefaultFieldRenderers();
@@ -26,19 +26,48 @@ registerEntityType(containerEntityConfig);
 registerEntityType(placeEntityConfig);
 
 // One generic mount function parameterized by panel kind + entity type (plan §3) — never one
-// mount function per entity. focus.xhtml calls this once isReactPanelEnabled() gates a panel
-// in (plan §7); until then, nothing else in the JSF app references this bundle.
+// mount function per entity. focus.xhtml's bootstrap (reactPanelBootstrap.js) calls it once per
+// mount div.
 const roots = new Map<HTMLElement, Root>();
 
+// JSF replaces a mount div whenever it re-renders the flow (the write-mode switch, an institution
+// change): the old container leaves the DOM without anyone calling unmount, and its React root
+// (its tree, its listeners) would live on. Every mount sweeps those away.
+function unmountDetached(): void {
+  for (const container of roots.keys()) {
+    if (!container.isConnected) unmount(container);
+  }
+}
+
 function mount(container: HTMLElement, options: MountOptions): void {
+  unmountDetached();
   configureBasePath(options.basePath);
   configureCsrf(options.csrf);
 
+  // A container mounted twice (a bootstrap run again on the same div) keeps a single root.
+  unmount(container);
   const root = createRoot(container);
   roots.set(container, root);
   // PrimeReactProvider with its defaults: some components read the context unguarded (an open
   // OverlayPanel throws on the first scroll without it).
   root.render(createElement(PrimeReactProvider, null, createElement(App, { options })));
+}
+
+// What reactPanelBootstrap.js calls: the mount div carries its own options (reactPanelMount.xhtml).
+function mountFromDataset(container: HTMLElement): void {
+  let options: MountOptions;
+  try {
+    options = parseMountOptions(container.dataset, (name) => {
+      const fn = name ? (window as unknown as Record<string, unknown>)[name] : undefined;
+      return typeof fn === "function" ? (fn as ReturnType<ActionResolver>) : undefined;
+    });
+  } catch (error) {
+    if (!(error instanceof MountContractError)) throw error;
+    console.error(error.message);
+    container.textContent = error.message;
+    return;
+  }
+  mount(container, options);
 }
 
 function unmount(container: HTMLElement): void {
@@ -50,17 +79,20 @@ function unmount(container: HTMLElement): void {
 
 declare global {
   interface Window {
-    SiamoisMainPanel: { mount: typeof mount; unmount: typeof unmount; _queue?: [HTMLElement, MountOptions][] };
+    SiamoisMainPanel: {
+      mount: typeof mount;
+      mountFromDataset: typeof mountFromDataset;
+      unmount: typeof unmount;
+      _queue?: HTMLElement[];
+    };
   }
 }
 
-// focus.xhtml's own inline bootstrap script (plan §7.2/§8 phase 8) runs synchronously, before
-// this module — an ES module script always loads/executes asynchronously relative to a classic
-// script — has had a chance to run. It installs a stub SiamoisMainPanel that just queues
-// mount() calls; drain that queue now that the real implementation exists, so no mount() call
-// made before this module was ready gets silently dropped.
+// reactPanelBootstrap.js may run before this module (an ES module always executes after classic
+// scripts): it then installs a stub SiamoisMainPanel that queues the containers to mount. Drain that
+// queue now that the real implementation exists, so nothing is silently dropped.
 const queued = window.SiamoisMainPanel?._queue ?? [];
-window.SiamoisMainPanel = { mount, unmount };
-for (const [container, options] of queued) {
-  mount(container, options);
+window.SiamoisMainPanel = { mount, mountFromDataset, unmount };
+for (const container of queued) {
+  mountFromDataset(container);
 }

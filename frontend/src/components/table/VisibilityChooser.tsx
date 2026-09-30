@@ -1,6 +1,7 @@
 import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputSwitch } from "primereact/inputswitch";
+import { t } from "../../i18n";
 
 // The gear's two settings overlays (columns, row actions) are the same control: what is shown, in
 // which order, and what is put away. Two sections — the shown items, reorderable by dragging their
@@ -44,7 +45,7 @@ export function VisibilityChooser({
   hiddenTitle,
   locked = [],
   searchable,
-  searchPlaceholder = "Rechercher",
+  searchPlaceholder = t("chooser.search"),
   className,
 }: VisibilityChooserProps) {
   const [query, setQuery] = useState("");
@@ -130,7 +131,7 @@ export function VisibilityChooser({
                   <i className="bi bi-lock" />
                 </span>
                 {renderLabel(item)}
-                <InputSwitch checked disabled aria-label={`${item.label} : toujours visible`} />
+                <InputSwitch checked disabled aria-label={t("chooser.alwaysVisible", { label: item.label })} />
               </li>
             ))}
             {shownMatches.map(({ item, index }) => (
@@ -156,8 +157,8 @@ export function VisibilityChooser({
                   draggable={canReorder}
                   role="button"
                   tabIndex={canReorder ? 0 : -1}
-                  aria-label={`Déplacer « ${item.label} » (Alt+↑/↓)`}
-                  title={canReorder ? "Glisser pour réordonner" : "Effacez la recherche pour réordonner"}
+                  aria-label={t("chooser.move", { label: item.label })}
+                  title={canReorder ? t("chooser.dragToReorder") : t("chooser.clearToReorder")}
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = "move";
                     e.dataTransfer.setData("text/plain", item.id);
@@ -172,7 +173,7 @@ export function VisibilityChooser({
                   <i className="bi bi-grip-vertical" aria-hidden="true" />
                 </span>
                 {renderLabel(item)}
-                <InputSwitch checked aria-label={`Masquer « ${item.label} »`} onChange={() => hide(item.id)} />
+                <InputSwitch checked aria-label={t("chooser.hide", { label: item.label })} onChange={() => hide(item.id)} />
               </li>
             ))}
           </ul>
@@ -189,7 +190,7 @@ export function VisibilityChooser({
               <li key={item.id} className="visibility-chooser-item" data-id={item.id}>
                 <span className="visibility-chooser-handle is-disabled" aria-hidden="true" />
                 {renderLabel(item)}
-                <InputSwitch checked={false} aria-label={`Afficher « ${item.label} »`} onChange={() => show(item.id)} />
+                <InputSwitch checked={false} aria-label={t("chooser.show", { label: item.label })} onChange={() => show(item.id)} />
               </li>
             ))}
           </ul>

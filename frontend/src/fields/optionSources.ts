@@ -92,7 +92,7 @@ export function referenceTargetOf(field: FieldResource): ReferenceTarget {
  * (OrganizationProjectsControllerApi#getConcepts' fieldId mode), scoped to the edited entity's
  * project when there is one.
  */
-export async function fetchFieldConceptOptions(
+async function fetchFieldConceptOptions(
   organizationId: number,
   fieldId: string,
   projectId?: string,
@@ -117,7 +117,7 @@ interface UsersResponseBody {
 }
 
 /** GET /api/v1/users — the organization's members (UsersControllerApi), searched by name/e-mail. */
-export async function fetchPersonOptions(organizationId: number, q?: string): Promise<FilterOption[]> {
+async function fetchPersonOptions(organizationId: number, q?: string): Promise<FilterOption[]> {
   const query = new URLSearchParams({ organizationId: String(organizationId), limit: String(PICKER_PAGE) });
   if (q) query.set("search", q);
   const body = await apiFetch<UsersResponseBody>(`/api/v1/users?${query.toString()}`);
@@ -257,18 +257,6 @@ export function optionSourceFor(
  * {@code f.<key>} for anything else is a 400, so the UI never offers one for those).
  */
 export type FilterKind = "contains" | "concept-one" | "concept-many" | "spatial-one" | "range" | "date-range" | "in";
-
-const FILTER_KIND_BY_ANSWER_TYPE: Record<string, FilterKind> = {
-  TEXT: "contains",
-  DECIMAL: "range",
-  SELECT_ONE_FROM_FIELD_CODE: "concept-one",
-  SELECT_MULTIPLE_FROM_FIELD_CODE: "concept-many",
-  SELECT_ONE_SPATIAL_UNIT: "spatial-one",
-};
-
-export function filterKindForAnswerType(answerType: string): FilterKind | null {
-  return FILTER_KIND_BY_ANSWER_TYPE[answerType] ?? null;
-}
 
 /**
  * The filter widget for a catalog column, from what the server says the column accepts

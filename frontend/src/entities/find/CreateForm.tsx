@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Message } from "primereact/message";
-import { ApiError } from "../../api/client";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
@@ -13,6 +12,7 @@ import { createFind } from "./api";
 import { getEffectiveForm } from "../typeCatalog";
 import { queryKeys } from "../../api/queryKeys";
 import { useCreateProject } from "../../components/useCreateProject";
+import { messageForError } from "../../api/errors";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -87,7 +87,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
     mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: category!.resourceId }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de la création");
+      setError(messageForError(err, "Échec de la création"));
     },
   });
 
@@ -144,7 +144,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
             onChange={(v) => setCategory(v as ConceptPick | null)}
           />
         ) : (
-          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
+          <span className="sia-create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
         )}
       </CreateFormField>
 

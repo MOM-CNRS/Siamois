@@ -3,6 +3,7 @@ import { OverlayPanel } from "primereact/overlaypanel";
 import { ColumnFilter, describeFilterValue } from "./ColumnFilter";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
 import type { FilterValue } from "../../panels/tableState";
+import { t } from "../../i18n";
 
 /**
  * Notion-style filter bar living in the table's own header: no enable/disable switch and no
@@ -90,7 +91,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
             <button
               type="button"
               className="filter-chip-remove"
-              aria-label={`Retirer le filtre ${spec.label}`}
+              aria-label={t("filter.remove", { label: spec.label })}
               onClick={() => removeFilter(key)}
             >
               <i className="bi bi-x" />
@@ -107,7 +108,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
           onClick={(e) => addPanel.current?.toggle(e)}
         >
           <i className="bi bi-plus" />
-          {activeKeys.length === 0 ? "Ajouter un filtre" : "Filtre"}
+          {activeKeys.length === 0 ? t("filter.add") : t("filter.one")}
         </button>
       )}
 

@@ -2,6 +2,7 @@ import type { HomeWidgetDef } from "../entities/types";
 import { Panel } from "primereact/panel";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import type { PanelToolbarSlot } from "../mountOptions";
+import { t } from "../i18n";
 
 // Widget-slot design (plan §3/§8 phase 2): HomePanel itself never knows about "recent projects"
 // or "Project card" — those are widgets each entity's config.tsx contributes via its optional
@@ -36,9 +37,9 @@ export function HomePanel({ widgets, toolbar }: HomePanelProps) {
       {/* homePanelHeader.xhtml (icon + title) plus the generic toolbar — this is focus.xhtml's
           own outer titlebar chrome (like EntityListPanel's/EntityDetailPanel's own header), not
           one of the two content panels below, so it's a plain row, not itself a <Panel>. */}
-      <PanelHeaderBar title={"Accueil"} toolbar={toolbar} />
+      <PanelHeaderBar title={t("home.title")} toolbar={toolbar} />
 
-      <div className="home-panel-content" style={{ padding: "1em", display: "flex", flexDirection: "column", gap: "1em" }}>
+      <div className="home-panel-content">
         {panelWidgets.map((widget) => (
           <div key={widget.key} className="home-panel-widget">
             {widget.render()}
@@ -46,11 +47,8 @@ export function HomePanel({ widgets, toolbar }: HomePanelProps) {
         ))}
 
         {cardWidgets.length > 0 && (
-          <Panel header="Accéder aux bases de données" toggleable className="sia-form-panel">
-            <div
-              className="home-panel-database-grid"
-              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}
-            >
+          <Panel header={t("home.databases")} toggleable className="sia-form-panel">
+            <div className="home-panel-database-grid sia-card-grid">
               {cardWidgets.map((widget) => (
                 <div key={widget.key} className="home-panel-widget">
                   {widget.render()}

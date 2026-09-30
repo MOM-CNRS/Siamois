@@ -176,7 +176,7 @@ describe("list row actions", () => {
 
       expect(duplicateMock).not.toHaveBeenCalled();
       expect(duplication.load).toHaveBeenCalledWith("1");
-      const submit = [...document.querySelectorAll<HTMLButtonElement>(".create-form-footer button")].find((b) => b.type === "submit")!;
+      const submit = [...document.querySelectorAll<HTMLButtonElement>(".sia-create-form-footer button")].find((b) => b.type === "submit")!;
       await act(async () => submit.click());
       await flush();
 
