@@ -1,6 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.form.rules.ConceptIdLookup;
+import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -575,6 +578,7 @@ public class ProjectApiService {
             dto.setGeom(patch.getGeom());
         }
         applyAnswerPatch(dto, patch.getAnswers());
+        checkAnswerRules(dto, patch.getAnswers());
         // applyAnswerPatch may have overwritten `type` (fieldId -101, valueBinding "type") via
         // reflection — save(...) takes it as its own parameter (see save's own javadoc for why),
         // so re-read it from the DTO rather than passing the now-possibly-stale local.
@@ -694,6 +698,40 @@ public class ProjectApiService {
             Object raw = input == null ? null : input.value();
             Object coerced = raw == null ? null : coerceScalarAnswer(field, raw);
             writeAnswerBinding(dto, field, coerced);
+        }
+    }
+
+    /**
+     * The details form's rules (ordering constraints between dates and depths, see
+     * {@code ActionUnitDetailsForm}) for the fields this patch wrote, against the DTO once patched —
+     * the counterpart of {@code FieldAnswerPatchService}'s check, which project answers don't go
+     * through. Only the written fields can be refused: an incoherence already there is kept.
+     */
+    private static void checkAnswerRules(ActionUnitDTO dto, Map<String, AnswerInput> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return;
+        }
+        List<FieldRulesEvaluator.RuledColumn> columns = ActionUnit.DETAILS_FORM.getLayout().stream()
+                .flatMap(panel -> panel.getRows().stream())
+                .flatMap(row -> row.getColumns().stream())
+                .filter(col -> col.getField() != null && col.getField().getId() != null)
+                .map(col -> new FieldRulesEvaluator.RuledColumn(col.getField().getId(), col.isRequired(), col.getRules()))
+                .toList();
+        Map<Long, Object> values = new HashMap<>();
+        for (CustomField field : new PanelFieldSource(ActionUnit.DETAILS_FORM).getAllFields()) {
+            values.put(field.getId(), ProjectAnswersProjector.readBinding(dto, field));
+        }
+        Map<Long, FieldRulesEvaluator.FieldState> states =
+                new FieldRulesEvaluator(ConceptIdLookup.NONE).evaluate(columns, values::get);
+        for (String key : answers.keySet()) {
+            FieldRulesEvaluator.FieldState state = states.get(Long.parseLong(key));
+            if (state == null) continue;
+            for (FieldRulesEvaluator.Incoherence incoherence : state.incoherent()) {
+                if (incoherence.kind() == FieldRulesEvaluator.IncoherenceKind.CONSTRAINT) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Valeur incompatible avec le champ " + incoherence.otherFieldId() + " : " + key);
+                }
+            }
         }
     }
 

@@ -127,6 +127,26 @@ class EffectiveFormResolverTest {
         verify(tableFieldConfigService).getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.UE, (Long) null);
     }
 
+    @Test
+    void resolveEffectiveForm_marksMandatoryFieldsRequired_withoutTouchingTheBaseForm() {
+        FormUiDto baseForm = formOf(col("optional", "optional"), col("mandatory", "mandatory"));
+        TypeFieldFormConfig mandatory = TypeFieldFormConfig.builder().active(true).mandatory(true).valueBinding("mandatory").build();
+        TypeFieldFormConfig additionalMandatory = TypeFieldFormConfig.builder().active(true).mandatory(true).valueBinding("couleur").build();
+        when(tableFieldConfigService.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID))
+                .thenReturn(fieldsConfig(mandatory, additionalMandatory));
+        CustomFieldText additionalField = CustomFieldText.builder().id(9L).label("Couleur").valueBinding("couleur").build();
+        when(tableFieldConfigService.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID))
+                .thenReturn(List.of(additionalField));
+
+        FormUiDto result = resolver.resolveEffectiveForm(baseForm, PROJECT_ID, ConfigurableTable.UE, TYPE_CONCEPT_ID);
+
+        List<CustomColUiDto> baseColumns = result.getLayout().get(0).getRows().get(0).getColumns();
+        assertThat(baseColumns).extracting(CustomColUiDto::isRequired).containsExactly(false, true);
+        assertThat(result.getLayout().get(1).getRows().get(0).getColumns().get(0).isRequired()).isTrue();
+        // the shared system form singleton must not be mutated
+        assertThat(baseForm.getLayout().get(0).getRows().get(0).getColumns().get(1).isRequired()).isFalse();
+    }
+
     // ---------- helpers ----------
 
     private FormUiDto formOf(CustomColUiDto... columns) {

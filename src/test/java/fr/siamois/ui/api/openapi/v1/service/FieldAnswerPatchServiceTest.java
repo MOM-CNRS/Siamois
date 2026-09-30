@@ -7,6 +7,13 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.rules.Condition;
+import fr.siamois.domain.models.form.rules.FieldConstraint;
+import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.rules.FieldValueSpec;
+import fr.siamois.domain.models.form.rules.OptionsFilter;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.dto.entity.PhaseDTO;
@@ -57,19 +64,22 @@ class FieldAnswerPatchServiceTest {
     private PhaseRepository phaseRepository;
     @Mock
     private PhaseMapper phaseMapper;
+    @Mock
+    private ConceptMapper conceptMapper;
 
     private FieldAnswerPatchService service;
     private final PhaseDTO entity = new PhaseDTO();
 
     @BeforeEach
     void setUp() {
-        service = new FieldAnswerPatchService(formService, conceptRepository, mock(ConceptMapper.class),
+        service = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class),
                 mock(ActionUnitSummaryMapper.class), mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class),
+                fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE);
     }
 
     @Test
@@ -258,6 +268,148 @@ class FieldAnswerPatchServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("multivalué");
         verify(formService, never()).applyTypedValueToAnswer(any(), any());
+    }
+
+    // ========== Form rules (FieldRules) checked at PATCH ==========
+
+    @Test
+    void apply_refusesAValueInAFieldTheRulesDisable_butAcceptsClearingIt() {
+        CustomFieldText nature = text(1L, false);
+        CustomFieldText erosion = text(2L, false);
+        CustomFieldAnswerTextViewModel natureVm = new CustomFieldAnswerTextViewModel();
+        givenResponse(Map.of(nature, natureVm, erosion, new CustomFieldAnswerTextViewModel()));
+        lenient().when(formService.readAnswerValueForApi(natureVm)).thenReturn("fosse");
+        FormUiDto form = formOf(col(nature), col(erosion, FieldRules.NONE.withEnabledWhen(
+                Condition.eq(1L, FieldValueSpec.literal("érosion")))));
+
+        assertThatThrownBy(() -> service.apply(entity, form, Map.of("2", new AnswerInput("en V", null)), PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("inactif");
+
+        Map<String, AnswerInput> clear = new HashMap<>();
+        clear.put("2", new AnswerInput(null, null));
+        service.apply(entity, form, clear, PROJECT_ID);
+        verify(formService).applyTypedValueToAnswer(any(), isNull());
+    }
+
+    @Test
+    void apply_refusesClearingARequiredField() {
+        CustomFieldText title = text(1L, false);
+        givenResponse(Map.of(title, new CustomFieldAnswerTextViewModel()));
+        CustomColUiDto required = col(title);
+        required.setRequired(true);
+
+        Map<String, AnswerInput> clear = new HashMap<>();
+        clear.put("1", new AnswerInput(null, null));
+        assertThatThrownBy(() -> service.apply(entity, formOf(required), clear, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("obligatoire");
+    }
+
+    @Test
+    void apply_refusesBreakingAnOrderingConstraint_onEitherSide() {
+        CustomFieldDecimal zInf = new CustomFieldDecimal();
+        zInf.setId(3L);
+        CustomFieldDecimal zSup = new CustomFieldDecimal();
+        zSup.setId(4L);
+        CustomFieldAnswerDecimalViewModel zSupVm = new CustomFieldAnswerDecimalViewModel();
+        givenResponse(Map.of(zInf, new CustomFieldAnswerDecimalViewModel(), zSup, zSupVm));
+        lenient().when(formService.readAnswerValueForApi(zSupVm)).thenReturn(10.0);
+        FormUiDto form = formOf(col(zInf), col(zSup, FieldRules.NONE.withConstraints(FieldConstraint.gte(3L))));
+
+        // Z inf written above the stored Z sup: the constraint is declared on Z sup, checked from Z inf too.
+        assertThatThrownBy(() -> service.apply(entity, form, Map.of("3", new AnswerInput(12.0, null)), PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("incompatible");
+
+        service.apply(entity, form, Map.of("3", new AnswerInput(8.0, null)), PROJECT_ID);
+    }
+
+    @Test
+    void apply_neverBlocksOnAnIncoherenceOfAnotherField() {
+        CustomFieldText nature = text(1L, false);
+        CustomFieldText erosion = text(2L, false);
+        CustomFieldText note = text(5L, false);
+        CustomFieldAnswerTextViewModel erosionVm = new CustomFieldAnswerTextViewModel();
+        givenResponse(Map.of(nature, new CustomFieldAnswerTextViewModel(), erosion, erosionVm, note, new CustomFieldAnswerTextViewModel()));
+        // erosion holds a value although the nature doesn't enable it: kept, flagged by the client.
+        lenient().when(formService.readAnswerValueForApi(erosionVm)).thenReturn("en V");
+        FormUiDto form = formOf(col(nature), col(erosion, FieldRules.NONE.withEnabledWhen(
+                Condition.eq(1L, FieldValueSpec.literal("érosion")))), col(note));
+
+        service.apply(entity, form, Map.of("1", new AnswerInput("fosse", null), "5", new AnswerInput("ok", null)), PROJECT_ID);
+
+        verify(formService).updateJpaEntityFromResponse(any(), same(entity));
+    }
+
+    @Test
+    void apply_refusesAConceptOutsideTheListRelatedToTheParentAnswer() {
+        CustomFieldSelectOneFromFieldCode nature = new CustomFieldSelectOneFromFieldCode();
+        nature.setId(1L);
+        CustomFieldSelectOneFromFieldCode interpretation = new CustomFieldSelectOneFromFieldCode();
+        interpretation.setId(2L);
+        CustomFieldAnswerSelectOneFromFieldCodeViewModel natureVm = new CustomFieldAnswerSelectOneFromFieldCodeViewModel();
+        givenResponse(Map.of(nature, natureVm, interpretation, new CustomFieldAnswerSelectOneFromFieldCodeViewModel()));
+        ConceptDTO natureValue = new ConceptDTO();
+        natureValue.setId(77L);
+        lenient().when(formService.readAnswerValueForApi(natureVm)).thenReturn(natureValue);
+        fr.siamois.domain.models.vocabulary.Concept related = new fr.siamois.domain.models.vocabulary.Concept();
+        related.setId(80L);
+        related.setExternalId("80");
+        fr.siamois.domain.models.vocabulary.Concept unrelated = new fr.siamois.domain.models.vocabulary.Concept();
+        unrelated.setId(81L);
+        unrelated.setExternalId("81");
+        when(conceptRepository.findById(80L)).thenReturn(Optional.of(related));
+        when(conceptRepository.findById(81L)).thenReturn(Optional.of(unrelated));
+        ConceptDTO relatedDto = new ConceptDTO();
+        relatedDto.setId(80L);
+        ConceptDTO unrelatedDto = new ConceptDTO();
+        unrelatedDto.setId(81L);
+        when(conceptMapper.convert(related)).thenReturn(relatedDto);
+        when(conceptMapper.convert(unrelated)).thenReturn(unrelatedDto);
+        when(conceptRepository.isRelated(77L, 80L)).thenReturn(true);
+        when(conceptRepository.isRelated(77L, 81L)).thenReturn(false);
+        FormUiDto form = formOf(col(nature), col(interpretation, FieldRules.NONE.withOptions(new OptionsFilter.RelatedConcepts(1L))));
+
+        service.apply(entity, form, Map.of("2", new AnswerInput("80", null)), PROJECT_ID);
+        assertThatThrownBy(() -> service.apply(entity, form, Map.of("2", new AnswerInput("81", null)), PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("hors de la liste");
+    }
+
+    @Test
+    void applyLenient_keepsAValueBreakingTheRules() {
+        CustomFieldText title = text(1L, false);
+        givenResponse(Map.of(title, new CustomFieldAnswerTextViewModel()));
+        CustomColUiDto required = col(title);
+        required.setRequired(true);
+        Map<String, AnswerInput> clear = new HashMap<>();
+        clear.put("1", new AnswerInput(null, null));
+
+        service.applyLenient(entity, formOf(required), clear, PROJECT_ID);
+
+        verify(formService).applyTypedValueToAnswer(any(), isNull());
+    }
+
+    private static CustomColUiDto col(CustomField field) {
+        return col(field, FieldRules.NONE);
+    }
+
+    private static CustomColUiDto col(CustomField field, FieldRules rules) {
+        CustomColUiDto col = new CustomColUiDto();
+        col.setField(field);
+        col.setRules(rules);
+        return col;
+    }
+
+    private static FormUiDto formOf(CustomColUiDto... columns) {
+        CustomRowUiDto row = new CustomRowUiDto();
+        row.setColumns(new ArrayList<>(List.of(columns)));
+        CustomFormPanelUiDto panel = new CustomFormPanelUiDto();
+        panel.setRows(List.of(row));
+        FormUiDto form = new FormUiDto();
+        form.setLayout(List.of(panel));
+        return form;
     }
 
     private static PhaseDTO phase(long id) {

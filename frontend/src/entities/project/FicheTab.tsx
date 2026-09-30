@@ -1,15 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
-import { Panel } from "primereact/panel";
 import { Toolbar } from "primereact/toolbar";
-import { FieldEditCell } from "../../fields/FieldEditCell";
-import { FieldLabel, isEmptyValue } from "../../fields/FieldLabel";
-import { resolveValueBinding, toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/types";
+import { FormLayoutView } from "../../fields/FormLayoutView";
+import { isEmptyValue } from "../../fields/FieldLabel";
+import { toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/types";
 import type { FieldResource } from "../../fields/types";
 import { useCanEdit } from "../../panels/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
-import { parseLayout, panelLabel, toGridClass, type FormLayoutCol } from "./form";
+import { parseLayout, panelLabel } from "./form";
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
@@ -125,36 +124,20 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
       )}
       {typesQuery.isLoading && <FormSkeleton />}
       {typesQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
-      {fields &&
-        panels.map((panel, panelIndex) => (
-          // customForm.xhtml wraps each CustomFormPanelUiDto in a toggleable p:panel with the
-          // sia-form-panel class, not a fieldset.
-          <Panel
-            key={panelIndex}
-            header={panelLabel(panel.name)}
-            toggleable
-            className={`sia-form-panel ${panel.className ?? ""}`.trim()}
-          >
-            {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
-                {row.columns.map((col, colIndex) => (
-                  <FormField
-                    key={colIndex}
-                    col={col}
-                    fields={fields}
-                    entity={entity}
-                    canEdit={canEdit}
-                    organizationId={organizationId}
-                    inactiveFieldIds={inactiveFieldIds}
-                    onSave={save}
-                    onSaved={onSaved}
-                  />
-                ))}
-              </div>
-            ))}
-            {panel.rows.length === 0 && <i>Aucun champ</i>}
-          </Panel>
-        ))}
+      {fields && (
+        <FormLayoutView
+          entity={entity}
+          entityType="project"
+          fields={fields}
+          panels={panels}
+          panelLabel={panelLabel}
+          canEdit={canEdit}
+          organizationId={organizationId}
+          onSave={save}
+          onSaved={onSaved}
+          isFieldShown={(field, stored) => !inactiveFieldIds.has(field.id) || !isEmptyValue(unwrapAnswer(stored))}
+        />
+      )}
 
       <FicheFooter entity={entity} history={historyQuery.data} />
     </div>
@@ -226,58 +209,6 @@ function FooterLine({ label, date, author }: { label: string; date: string; auth
 function authorName(entry: ProjectHistoryEntry): string | null {
   const name = [entry.author?.name, entry.author?.lastname].filter(Boolean).join(" ");
   return name || null;
-}
-
-function FormField({
-  col,
-  fields,
-  entity,
-  canEdit,
-  organizationId,
-  inactiveFieldIds,
-  onSave,
-  onSaved,
-}: {
-  col: FormLayoutCol;
-  fields: Record<string, FieldResource>;
-  entity: ProjectDetail;
-  canEdit: boolean;
-  organizationId?: number;
-  inactiveFieldIds: Set<string>;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
-  onSaved: () => void;
-}) {
-  // The identifier column is marked readOnly + hidden in the real layout (ActionUnitDetailsForm)
-  // because JSF edits it outside this grid, via the panel header's own affordance — same reason
-  // ProjectDetailHeader's identifier control exists separately rather than as a form field here.
-  if (col.fieldId == null || col.hidden) return null;
-
-  const fieldId = String(col.fieldId);
-  const field = fields[fieldId];
-  if (!field) return null;
-
-  const stored = resolveValueBinding(field).readRaw(entity);
-  if (inactiveFieldIds.has(fieldId) && isEmptyValue(unwrapAnswer(stored))) return null;
-
-  return (
-    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
-      <div className="field-value-group">
-        <FieldLabel field={field} required={col.isRequired} />
-        <FieldEditCell
-          entityType="project"
-          key={JSON.stringify(stored ?? null)}
-          field={field}
-          row={entity}
-          stored={stored}
-          readOnly={!canEdit || col.isReadOnly}
-          required={col.isRequired}
-          organizationId={organizationId}
-          onSave={onSave}
-          onSaved={onSaved}
-        />
-      </div>
-    </div>
-  );
 }
 
 export { isEmptyValue } from "../../fields/FieldLabel";

@@ -2,7 +2,8 @@ package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customform.DependsOnJson;
+import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.rules.OptionsFilter;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class PanelFieldSourceTest {
 
@@ -25,19 +26,13 @@ class PanelFieldSourceTest {
     }
 
     @Test
-    void getDependsOnSpec_shouldReturnIndexedSpecForField() {
+    void getRules_shouldReturnIndexedRulesForField() {
         CustomField dependentField = CustomFieldText.builder().id(1L).concept(conceptWithId(1L)).build();
         CustomField independentField = CustomFieldText.builder().id(2L).concept(conceptWithId(2L)).build();
 
-        DependsOnJson dependsOn = new DependsOnJson();
-        dependsOn.setFieldId(99L);
-
-        CustomColUiDto dependentCol = new CustomColUiDto();
-        dependentCol.setField(dependentField);
-        dependentCol.setDependsOnSpec(dependsOn);
-
-        CustomColUiDto independentCol = new CustomColUiDto();
-        independentCol.setField(independentField);
+        FieldRules rules = FieldRules.NONE.withOptions(new OptionsFilter.RelatedConcepts(99L));
+        CustomColUiDto dependentCol = new CustomColUiDto.Builder().field(dependentField).rules(rules).build();
+        CustomColUiDto independentCol = new CustomColUiDto.Builder().field(independentField).build();
 
         CustomRowUiDto row = new CustomRowUiDto();
         row.setColumns(List.of(dependentCol, independentCol));
@@ -50,7 +45,7 @@ class PanelFieldSourceTest {
 
         PanelFieldSource fieldSource = new PanelFieldSource(form);
 
-        assertEquals(99L, fieldSource.getDependsOnSpec(dependentField).getFieldId());
-        assertNull(fieldSource.getDependsOnSpec(independentField));
+        assertEquals(rules, fieldSource.getRules(dependentField));
+        assertSame(FieldRules.NONE, fieldSource.getRules(independentField));
     }
 }

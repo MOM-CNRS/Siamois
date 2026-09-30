@@ -61,8 +61,7 @@ public final class SystemFieldCatalog {
                 .className(column.getClassName())
                 .readOnly(column.isReadOnly())
                 .isRequired(column.isRequired())
-                .enabledWhenSpec(column.getEnabledWhenSpec())
-                .dependsOnSpec(column.getDependsOnSpec())
+                .rules(column.getRules())
                 .build();
     }
 

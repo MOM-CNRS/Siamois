@@ -1,13 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
-import { Panel } from "primereact/panel";
 import { useCanEdit } from "../../panels/writeMode";
-import { FieldEditCell } from "../../fields/FieldEditCell";
-import { FieldLabel } from "../../fields/FieldLabel";
-import { resolveValueBinding } from "../../fields/types";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { parseLayout, toGridClass, type FormLayoutCol } from "../project/form";
+import { FormLayoutView } from "../../fields/FormLayoutView";
+import type { AnswerInputBody } from "../../fields/types";
+import { parseLayout } from "../project/form";
 import { recordingUnitPanelLabel } from "./form";
 import { getRecordingUnitEffectiveForm } from "./recordingUnitTypes";
 import { patchRecordingUnitAnswers } from "./api";
@@ -29,11 +26,10 @@ import { FormSkeleton } from "../../components/DetailSkeleton";
 // `identifier`/`typeId` aliases the way ProjectPatchRequest has), so the save callback below just
 // forwards CellEditOverlay's own answers map straight through, no patch-shaping needed.
 //
+// The layout's conditional rules (erosion fields enabled by the nature, interpretation's list
+// filtered by it — RecordingUnitDetailsForm's `rules`) are applied by FormLayoutView.
+//
 // Deliberately absent, same reasons as ProjectFicheTab (no REST equivalent, not by oversight):
-// - conditional field visibility (erosion fields' `enabledWhen`, interpretation's `dependsOn` —
-//   RecordingUnitDetailsForm.java declares both, but neither is modeled client-side yet; the
-//   fields render unconditionally rather than silently disappearing, which is the safer gap to
-//   have — a visible-but-currently-irrelevant field beats a hidden one with no way to reach it).
 // - the per-column active/inactive toggle ProjectFicheTab's `inactiveFieldIds` applies: RU's own
 //   type/default resource (RecordingUnitType/RecordingUnitDefaultType) carries no `fieldConfigs`
 //   at all, unlike Project's — every field the layout places is always shown.
@@ -79,82 +75,19 @@ export function RecordingUnitFicheTab({ entity, onSaved }: RecordingUnitFicheTab
       )}
       {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
-      {fields &&
-        panels.map((panel, panelIndex) => (
-          <Panel
-            key={panelIndex}
-            header={recordingUnitPanelLabel(panel.name)}
-            toggleable
-            className={`sia-form-panel ${panel.className ?? ""}`.trim()}
-          >
-            {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
-                {row.columns.map((col, colIndex) => (
-                  <RecordingUnitFormField
-                    key={colIndex}
-                    col={col}
-                    fields={fields}
-                    entity={entity}
-                    canEdit={canEdit}
-                    organizationId={organizationId}
-                    onSave={save}
-                    onSaved={onSaved}
-                  />
-                ))}
-              </div>
-            ))}
-            {panel.rows.length === 0 && <i>Aucun champ</i>}
-          </Panel>
-        ))}
-    </div>
-  );
-}
-
-function RecordingUnitFormField({
-  col,
-  fields,
-  entity,
-  canEdit,
-  organizationId,
-  onSave,
-  onSaved,
-}: {
-  col: FormLayoutCol;
-  fields: Record<string, FieldResource>;
-  entity: RecordingUnitDetail;
-  canEdit: boolean;
-  organizationId?: number;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
-  onSaved: () => void;
-}) {
-  // ACTION_UNIT_FIELD and FULL_IDENTIFIER_FIELD are both hidden + readOnly in
-  // RecordingUnitDetailsForm.generalPanel() — same reason as Project's own identifier column:
-  // edited (or, for the identifier, merely displayed) outside this grid, via the panel header.
-  if (col.fieldId == null || col.hidden) return null;
-
-  const fieldId = String(col.fieldId);
-  const field = fields[fieldId];
-  if (!field) return null;
-
-  const stored = resolveValueBinding(field).readRaw(entity);
-
-  return (
-    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
-      <div className="field-value-group">
-        <FieldLabel field={field} required={col.isRequired} />
-        <FieldEditCell
+      {fields && (
+        <FormLayoutView
+          entity={entity}
           entityType="recordingUnit"
-          key={JSON.stringify(stored ?? null)}
-          field={field}
-          row={entity}
-          stored={stored}
-          readOnly={!canEdit || col.isReadOnly}
-          required={col.isRequired}
+          fields={fields}
+          panels={panels}
+          panelLabel={recordingUnitPanelLabel}
+          canEdit={canEdit}
           organizationId={organizationId}
-          onSave={onSave}
+          onSave={save}
           onSaved={onSaved}
         />
-      </div>
+      )}
     </div>
   );
 }

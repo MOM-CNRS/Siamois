@@ -1,13 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
-import { Panel } from "primereact/panel";
 import { useCanEdit } from "../../panels/writeMode";
-import { FieldEditCell } from "../../fields/FieldEditCell";
-import { FieldLabel } from "../../fields/FieldLabel";
-import { resolveValueBinding } from "../../fields/types";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { parseLayout, toGridClass, type FormLayoutCol } from "../project/form";
+import { FormLayoutView } from "../../fields/FormLayoutView";
+import type { AnswerInputBody } from "../../fields/types";
+import { parseLayout } from "../project/form";
 import { phasePanelLabel } from "./form";
 import { getPhaseEffectiveForm } from "./phaseTypes";
 import { patchPhaseAnswers } from "./api";
@@ -27,7 +24,6 @@ import { FormSkeleton } from "../../components/DetailSkeleton";
 // through.
 //
 // Deliberately absent, same reasons as the other fiches (no REST equivalent, not by oversight):
-// - conditional field visibility (no rules engine ported in this architecture yet).
 // - per-column active/inactive toggle: Phase's own type resource carries no `fieldConfigs`.
 // - a history footer: no GET .../phases/{id}/history endpoint exists yet.
 // - identifier editing: PhasePatchRequest has no flat alias for identifier (server-generated).
@@ -68,82 +64,19 @@ export function PhaseFicheTab({ entity, onSaved }: PhaseFicheTabProps) {
       )}
       {formQuery.isLoading && <FormSkeleton />}
       {formQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
-      {fields &&
-        panels.map((panel, panelIndex) => (
-          <Panel
-            key={panelIndex}
-            header={phasePanelLabel(panel.name)}
-            toggleable
-            className={`sia-form-panel ${panel.className ?? ""}`.trim()}
-          >
-            {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
-                {row.columns.map((col, colIndex) => (
-                  <PhaseFormField
-                    key={colIndex}
-                    col={col}
-                    fields={fields}
-                    entity={entity}
-                    canEdit={canEdit}
-                    organizationId={organizationId}
-                    onSave={save}
-                    onSaved={onSaved}
-                  />
-                ))}
-              </div>
-            ))}
-            {panel.rows.length === 0 && <i>Aucun champ</i>}
-          </Panel>
-        ))}
-    </div>
-  );
-}
-
-function PhaseFormField({
-  col,
-  fields,
-  entity,
-  canEdit,
-  organizationId,
-  onSave,
-  onSaved,
-}: {
-  col: FormLayoutCol;
-  fields: Record<string, FieldResource>;
-  entity: PhaseDetail;
-  canEdit: boolean;
-  organizationId?: number;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
-  onSaved: () => void;
-}) {
-  // identifierField/actionUnitField are both hidden + readOnly in PhaseDetailsForm.build() — same
-  // reason as Project's/RecordingUnit's own hidden identifier/parent columns: shown (or, for the
-  // identifier, merely displayed) outside this grid instead, via the panel header.
-  if (col.fieldId == null || col.hidden) return null;
-
-  const fieldId = String(col.fieldId);
-  const field = fields[fieldId];
-  if (!field) return null;
-
-  const stored = resolveValueBinding(field).readRaw(entity);
-
-  return (
-    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
-      <div className="field-value-group">
-        <FieldLabel field={field} required={col.isRequired} />
-        <FieldEditCell
+      {fields && (
+        <FormLayoutView
+          entity={entity}
           entityType="phase"
-          key={JSON.stringify(stored ?? null)}
-          field={field}
-          row={entity}
-          stored={stored}
-          readOnly={!canEdit || col.isReadOnly}
-          required={col.isRequired}
+          fields={fields}
+          panels={panels}
+          panelLabel={phasePanelLabel}
+          canEdit={canEdit}
           organizationId={organizationId}
-          onSave={onSave}
+          onSave={save}
           onSaved={onSaved}
         />
-      </div>
+      )}
     </div>
   );
 }

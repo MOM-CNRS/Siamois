@@ -1,8 +1,7 @@
 package fr.siamois.ui.form.dto;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.DependsOnJson;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.rules.FieldRules;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -20,8 +19,8 @@ public class CustomColUiDto implements Serializable {
     // `className` directly, which getClassName() falls back to when `width` is null.
     private ColumnWidth width;
     private boolean hidden = false;
-    private EnabledWhenJson enabledWhenSpec;
-    private DependsOnJson dependsOnSpec;
+    // Règles conditionnelles (actif / requis / liste filtrée / contraintes) — voir FieldRules.
+    private FieldRules rules = FieldRules.NONE;
 
     /**
      * The PrimeFaces styleClass {@code customFormPanelContent.xhtml} binds via {@code col.className}
@@ -71,13 +70,8 @@ public class CustomColUiDto implements Serializable {
             return this;
         }
 
-        public Builder enabledWhenSpec(EnabledWhenJson enabledWhenSpec) {
-            col.setEnabledWhenSpec(enabledWhenSpec);
-            return this;
-        }
-
-        public Builder dependsOnSpec(DependsOnJson dependsOnSpec) {
-            col.setDependsOnSpec(dependsOnSpec);
+        public Builder rules(FieldRules rules) {
+            col.setRules(rules == null ? FieldRules.NONE : rules);
             return this;
         }
 

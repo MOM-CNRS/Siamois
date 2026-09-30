@@ -51,6 +51,8 @@ class VocabularyOpenApiServiceTest {
     private VocabularyOpenApiMapper vocabularyOpenApiMapper;
     @Mock
     private CustomFieldRepository customFieldRepository;
+    @Mock
+    private fr.siamois.domain.services.vocabulary.ConceptService conceptService;
 
     @InjectMocks
     private VocabularyOpenApiService service;
@@ -178,5 +180,42 @@ class VocabularyOpenApiServiceTest {
         assertThatThrownBy(() -> service.getConceptsForField(10L, 404L, null, null, null, "fr", caller.person()))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void getRelatedConcepts_returnsTheConceptsRelatedToTheParentAnswer() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        fr.siamois.domain.models.vocabulary.Concept nature = new fr.siamois.domain.models.vocabulary.Concept();
+        nature.setId(77L);
+        when(conceptService.findById(77L)).thenReturn(Optional.of(nature));
+        ConceptAutocompleteDTO related = new ConceptAutocompleteDTO(null, "Chenal", "fr");
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), org.mockito.ArgumentMatchers.eq("SIARU.INTERPRETATION"),
+                same(nature), org.mockito.ArgumentMatchers.eq("ch"), org.mockito.ArgumentMatchers.eq(5L)))
+                .thenReturn(List.of(related));
+
+        List<ConceptAutocompleteDTO> result = service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, 5L, "ch", "fr", caller.person());
+
+        assertThat(result).containsExactly(related);
+    }
+
+    @Test
+    void getRelatedConcepts_withoutFieldCode_is400() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, null, null, 77L, null, null, "fr", caller.person()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getRelatedConcepts_unknownConcept_is404() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(conceptService.findById(77L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, null, null, "fr", caller.person()))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

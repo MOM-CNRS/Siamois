@@ -189,7 +189,7 @@ public class ProjectAnswersProjector {
      * configuration du champ, pas une erreur d'appel : on la journalise et on rend {@code null} plutôt que
      * de faire échouer toute la page.
      */
-    private static Object readBinding(ActionUnitDTO row, CustomField field) {
+    static Object readBinding(ActionUnitDTO row, CustomField field) {
         String binding = field.getValueBinding();
         if (binding == null || binding.isBlank()) {
             return null;

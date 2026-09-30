@@ -1,0 +1,240 @@
+{
+  "_doc": "Conformance cases shared by the TS evaluator (frontend/src/rules/evaluate.conformance.test.ts) and the Java one (FieldRulesEvaluatorConformanceTest). `values` are answers as the API serves them, already unwrapped: concept/ref = {resourceId}, measurement = {numericValue}, date = ISO string, multi-valued = array. `expected` lists only the asserted parts of each field's state; `incoherent` lists reason kinds; bounds give {value, exclusive} with dates in epoch ms.",
+  "cases": [
+    {
+      "name": "no rules: enabled, static required",
+      "columns": [{ "fieldId": 1, "isRequired": true }, { "fieldId": 2 }],
+      "values": {},
+      "expected": { "1": { "enabled": true, "required": true, "incoherent": [] }, "2": { "enabled": true, "required": false } }
+    },
+    {
+      "name": "EQ concept: enabled when matching",
+      "columns": [
+        { "fieldId": 10 },
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "4287639", "conceptId": "77" }] } } }
+      ],
+      "values": { "10": { "resourceId": "77", "resourceType": "concepts", "label": "Érosion" } },
+      "expected": { "11": { "enabled": true, "incoherent": [] } }
+    },
+    {
+      "name": "EQ concept: disabled when not matching, value kept and flagged",
+      "columns": [
+        { "fieldId": 10 },
+        { "fieldId": 11, "isRequired": true, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "4287639", "conceptId": "77" }] } } }
+      ],
+      "values": { "10": { "resourceId": "78" }, "11": "forme en V" },
+      "expected": { "11": { "enabled": false, "required": false, "incoherent": ["DISABLED_WITH_VALUE"] } }
+    },
+    {
+      "name": "EQ on an empty field is false",
+      "columns": [
+        { "fieldId": 10 },
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "id": "5" }] } } }
+      ],
+      "values": {},
+      "expected": { "11": { "enabled": false, "incoherent": [] } }
+    },
+    {
+      "name": "unresolved concept id matches nothing",
+      "columns": [
+        { "fieldId": 10 },
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "EQ", "values": [{ "vocabularyExtId": "th230", "conceptExtId": "404" }] } } }
+      ],
+      "values": { "10": { "resourceId": "77" } },
+      "expected": { "11": { "enabled": false } }
+    },
+    {
+      "name": "NEQ on an empty field is true",
+      "columns": [
+        { "fieldId": 10 },
+        { "fieldId": 11, "rules": { "enabledWhen": { "fieldId": 10, "op": "NEQ", "values": [{ "id": "5" }] } } }
+      ],
+      "values": {},
+      "expected": { "11": { "enabled": true } }
+    },
+    {
+      "name": "IN on a multi-valued reference field matches when it contains one",
+      "columns": [
+        { "fieldId": 20 },
+        { "fieldId": 21, "rules": { "enabledWhen": { "fieldId": 20, "op": "IN", "values": [{ "id": "3" }, { "id": "9" }] } } }
+      ],
+      "values": { "20": [{ "resourceId": "1" }, { "resourceId": "9" }] },
+      "expected": { "21": { "enabled": true } }
+    },
+    {
+      "name": "NOT_IN on a multi-valued field",
+      "columns": [
+        { "fieldId": 20 },
+        { "fieldId": 21, "rules": { "enabledWhen": { "fieldId": 20, "op": "NOT_IN", "values": [{ "id": "3" }] } } }
+      ],
+      "values": { "20": [{ "resourceId": "1" }, { "resourceId": "3" }] },
+      "expected": { "21": { "enabled": false } }
+    },
+    {
+      "name": "EMPTY / NOT_EMPTY, empty string and empty array are empty",
+      "columns": [
+        { "fieldId": 30 },
+        { "fieldId": 31 },
+        { "fieldId": 32, "rules": { "enabledWhen": { "fieldId": 30, "op": "EMPTY" } } },
+        { "fieldId": 33, "rules": { "enabledWhen": { "fieldId": 31, "op": "NOT_EMPTY" } } }
+      ],
+      "values": { "30": "", "31": [] },
+      "expected": { "32": { "enabled": true }, "33": { "enabled": false } }
+    },
+    {
+      "name": "text EQ literal",
+      "columns": [
+        { "fieldId": 40 },
+        { "fieldId": 41, "rules": { "enabledWhen": { "fieldId": 40, "op": "EQ", "values": ["oui"] } } }
+      ],
+      "values": { "40": "oui" },
+      "expected": { "41": { "enabled": true } }
+    },
+    {
+      "name": "integer GTE literal",
+      "columns": [
+        { "fieldId": 50 },
+        { "fieldId": 51, "rules": { "enabledWhen": { "fieldId": 50, "op": "GTE", "values": [10] } } },
+        { "fieldId": 52, "rules": { "enabledWhen": { "fieldId": 50, "op": "GT", "values": [10] } } }
+      ],
+      "values": { "50": 10 },
+      "expected": { "51": { "enabled": true }, "52": { "enabled": false } }
+    },
+    {
+      "name": "measurement LT literal",
+      "columns": [
+        { "fieldId": 60 },
+        { "fieldId": 61, "rules": { "enabledWhen": { "fieldId": 60, "op": "LT", "values": [1.5] } } }
+      ],
+      "values": { "60": { "numericValue": 1.2, "symbol": "m" } },
+      "expected": { "61": { "enabled": true } }
+    },
+    {
+      "name": "date comparison: date-only literal vs server offset date-time",
+      "columns": [
+        { "fieldId": 70 },
+        { "fieldId": 71, "rules": { "enabledWhen": { "fieldId": 70, "op": "GTE", "values": ["2024-01-15"] } } },
+        { "fieldId": 72, "rules": { "enabledWhen": { "fieldId": 70, "op": "GT", "values": ["2024-01-15"] } } }
+      ],
+      "values": { "70": "2024-01-15T00:00:00Z" },
+      "expected": { "71": { "enabled": true }, "72": { "enabled": false } }
+    },
+    {
+      "name": "comparison on an empty field is false",
+      "columns": [
+        { "fieldId": 50 },
+        { "fieldId": 51, "rules": { "enabledWhen": { "fieldId": 50, "op": "LT", "values": [10] } } }
+      ],
+      "values": {},
+      "expected": { "51": { "enabled": false } }
+    },
+    {
+      "name": "all / any / not composition",
+      "columns": [
+        { "fieldId": 80 },
+        { "fieldId": 81 },
+        { "fieldId": 82, "rules": { "enabledWhen": { "all": [
+          { "fieldId": 80, "op": "EQ", "values": ["a"] },
+          { "any": [ { "fieldId": 81, "op": "EQ", "values": [1] }, { "not": { "fieldId": 81, "op": "NOT_EMPTY" } } ] }
+        ] } } },
+        { "fieldId": 83, "rules": { "enabledWhen": { "not": { "fieldId": 80, "op": "EQ", "values": ["a"] } } } }
+      ],
+      "values": { "80": "a" },
+      "expected": { "82": { "enabled": true }, "83": { "enabled": false } }
+    },
+    {
+      "name": "requiredWhen",
+      "columns": [
+        { "fieldId": 90 },
+        { "fieldId": 91, "rules": { "requiredWhen": { "fieldId": 90, "op": "EQ", "values": [true] } } },
+        { "fieldId": 92, "rules": { "requiredWhen": { "fieldId": 90, "op": "EQ", "values": [false] } } }
+      ],
+      "values": { "90": true },
+      "expected": { "91": { "required": true }, "92": { "required": false } }
+    },
+    {
+      "name": "a disabled field is never required",
+      "columns": [
+        { "fieldId": 90 },
+        { "fieldId": 91, "isRequired": true, "rules": { "enabledWhen": { "fieldId": 90, "op": "NOT_EMPTY" }, "requiredWhen": { "fieldId": 90, "op": "EMPTY" } } }
+      ],
+      "values": {},
+      "expected": { "91": { "enabled": false, "required": false } }
+    },
+    {
+      "name": "rules are not transitive: they read values, not states",
+      "columns": [
+        { "fieldId": 100 },
+        { "fieldId": 101, "rules": { "enabledWhen": { "fieldId": 100, "op": "NOT_EMPTY" } } },
+        { "fieldId": 102, "rules": { "enabledWhen": { "fieldId": 101, "op": "NOT_EMPTY" } } }
+      ],
+      "values": { "101": "x" },
+      "expected": { "101": { "enabled": false, "incoherent": ["DISABLED_WITH_VALUE"] }, "102": { "enabled": true } }
+    },
+    {
+      "name": "RELATED_CONCEPTS options context",
+      "columns": [
+        { "fieldId": 110 },
+        { "fieldId": 111, "rules": { "options": { "kind": "RELATED_CONCEPTS", "fieldId": 110 } } },
+        { "fieldId": 112, "rules": { "options": { "kind": "RELATED_CONCEPTS", "fieldId": 113 } } },
+        { "fieldId": 113 }
+      ],
+      "values": { "110": { "resourceId": "77" } },
+      "expected": {
+        "111": { "enabled": true, "optionsContext": { "kind": "RELATED_CONCEPTS", "parentFieldId": "110", "relatedTo": "77" } },
+        "112": { "optionsContext": { "kind": "RELATED_CONCEPTS", "parentFieldId": "113", "relatedTo": null } }
+      }
+    },
+    {
+      "name": "REF_MATCH options context",
+      "columns": [
+        { "fieldId": 120 },
+        { "fieldId": 121, "rules": { "options": { "kind": "REF_MATCH", "fieldId": 120, "candidateFieldId": 120 } } }
+      ],
+      "values": { "120": { "resourceId": "4" } },
+      "expected": { "121": { "optionsContext": { "kind": "REF_MATCH", "parentFieldId": "120", "candidateFieldId": "120", "value": "4" } } }
+    },
+    {
+      "name": "constraint satisfied: bounds on both sides",
+      "columns": [
+        { "fieldId": 130 },
+        { "fieldId": 131, "rules": { "constraints": [{ "op": "GTE", "fieldId": 130 }] } }
+      ],
+      "values": { "130": "2024-01-10T00:00:00Z", "131": "2024-01-15T00:00:00Z" },
+      "expected": {
+        "131": { "incoherent": [], "bounds": { "min": { "value": 1704844800000, "exclusive": false } } },
+        "130": { "incoherent": [], "bounds": { "max": { "value": 1705276800000, "exclusive": false } } }
+      }
+    },
+    {
+      "name": "constraint violated: both sides flagged",
+      "columns": [
+        { "fieldId": 130 },
+        { "fieldId": 131, "rules": { "constraints": [{ "op": "GTE", "fieldId": 130 }] } }
+      ],
+      "values": { "130": "2024-01-15", "131": "2024-01-10" },
+      "expected": { "131": { "incoherent": ["CONSTRAINT"] }, "130": { "incoherent": ["CONSTRAINT"] } }
+    },
+    {
+      "name": "strict constraint on measurements, equal values violate",
+      "columns": [
+        { "fieldId": 140 },
+        { "fieldId": 141, "rules": { "constraints": [{ "op": "GT", "fieldId": 140 }] } }
+      ],
+      "values": { "140": { "numericValue": 2 }, "141": { "numericValue": 2 } },
+      "expected": {
+        "141": { "incoherent": ["CONSTRAINT"], "bounds": { "min": { "value": 2, "exclusive": true } } },
+        "140": { "incoherent": ["CONSTRAINT"], "bounds": { "max": { "value": 2, "exclusive": true } } }
+      }
+    },
+    {
+      "name": "constraint with an empty side: no bound, no flag",
+      "columns": [
+        { "fieldId": 150 },
+        { "fieldId": 151, "rules": { "constraints": [{ "op": "LTE", "fieldId": 150 }] } }
+      ],
+      "values": { "151": 5 },
+      "expected": { "151": { "incoherent": [] }, "150": { "incoherent": [] } }
+    }
+  ]
+}

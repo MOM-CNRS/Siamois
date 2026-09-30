@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
@@ -19,7 +18,6 @@ import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
-import fr.siamois.ui.form.rules.EnabledRulesEngine;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Data;
@@ -602,46 +600,6 @@ class FormServiceTest {
     }
 
     @Test
-    void buildEnabledEngine_createsEngineWithCorrectRulesAndDependencies() {
-        // Arrange
-        FieldSource fieldSource = mock(FieldSource.class);
-        CustomField field1 = mock(CustomField.class);
-        CustomField field2 = mock(CustomField.class);
-        CustomField field3 = mock(CustomField.class);
-
-        // Mock EnabledWhenJson for field2 (depends on field1)
-        EnabledWhenJson specForField2 = new EnabledWhenJson();
-        specForField2.setFieldId(1L);
-        specForField2.setOp(EnabledWhenJson.Op.EQ);
-        EnabledWhenJson.ValueJson valueJson = new EnabledWhenJson.ValueJson();
-        valueJson.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
-        valueJson.setValue(new ObjectMapper().createObjectNode().put("value", "test"));
-        specForField2.setValues(List.of(valueJson));
-
-        // Mock EnabledWhenJson for field3 (depends on field2)
-        EnabledWhenJson specForField3 = new EnabledWhenJson();
-        specForField3.setFieldId(2L);
-        specForField3.setOp(EnabledWhenJson.Op.NEQ);
-        specForField3.setValues(List.of(valueJson));
-
-        // Setup mocks
-        when(fieldSource.getAllFields()).thenReturn(List.of(field1, field2, field3));
-        when(fieldSource.getEnabledSpec(field1)).thenReturn(null); // No spec for field1
-        when(fieldSource.getEnabledSpec(field2)).thenReturn(specForField2);
-        when(fieldSource.getEnabledSpec(field3)).thenReturn(specForField3);
-        when(fieldSource.findFieldById(1L)).thenReturn(field1);
-        when(fieldSource.findFieldById(2L)).thenReturn(field2);
-
-        // Act
-        EnabledRulesEngine engine = formService.buildEnabledEngine(fieldSource);
-
-        // Assert
-        assertNotNull(engine, "Engine should not be null");
-
-
-    }
-
-    @Test
     void initOrReuseResponse_populatesSystemFields_fromEntity_allHandlers() {
         // Arrange
         FieldSource fieldSource = mock(FieldSource.class);
@@ -913,53 +871,6 @@ class FormServiceTest {
         response.setAnswers(new HashMap<>());
 
         assertDoesNotThrow(() -> formService.initOneAnswer(response, entity, titleField));
-    }
-
-    // =====================================================================
-    // buildEnabledEngine / toCondition / toMatcher
-    // =====================================================================
-
-    @Test
-    void buildEnabledEngine_throwsWhenComparedFieldNotFound() {
-        FieldSource fieldSource = mock(FieldSource.class);
-        CustomField field1 = mock(CustomField.class);
-
-        EnabledWhenJson spec = new EnabledWhenJson();
-        spec.setFieldId(999L);
-        spec.setOp(EnabledWhenJson.Op.EQ);
-        EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText");
-        spec.setValues(List.of(vj));
-
-        when(fieldSource.getAllFields()).thenReturn(List.of(field1));
-        when(fieldSource.getEnabledSpec(field1)).thenReturn(spec);
-        when(fieldSource.findFieldById(999L)).thenReturn(null);
-
-        assertThrows(IllegalStateException.class, () -> formService.buildEnabledEngine(fieldSource));
-    }
-
-    @Test
-    void buildEnabledEngine_supportsInOperatorAndConceptCodeMatcher() {
-        FieldSource fieldSource = mock(FieldSource.class);
-        CustomField compared = mock(CustomField.class);
-        CustomField field1 = mock(CustomField.class);
-
-        EnabledWhenJson.ValueJson vj = new EnabledWhenJson.ValueJson();
-        vj.setAnswerClass("fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode");
-        vj.setValue(new ObjectMapper().createObjectNode().put("vocabularyExtId", "voc1").put("conceptExtId", "c1"));
-
-        EnabledWhenJson spec = new EnabledWhenJson();
-        spec.setFieldId(1L);
-        spec.setOp(EnabledWhenJson.Op.IN);
-        spec.setValues(List.of(vj));
-
-        when(fieldSource.getAllFields()).thenReturn(List.of(field1));
-        when(fieldSource.getEnabledSpec(field1)).thenReturn(spec);
-        when(fieldSource.findFieldById(1L)).thenReturn(compared);
-
-        EnabledRulesEngine engine = formService.buildEnabledEngine(fieldSource);
-
-        assertNotNull(engine);
     }
 
     // =====================================================================

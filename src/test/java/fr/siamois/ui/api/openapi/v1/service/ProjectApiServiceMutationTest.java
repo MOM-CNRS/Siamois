@@ -287,6 +287,44 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void patchProject_answers_refusesAnEndDateBeforeTheBeginDate() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        au.setBeginDate(java.time.OffsetDateTime.parse("2024-05-10T00:00:00Z"));
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-106", new AnswerInput("2024-05-01", null)); // END_DATE_FIELD
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("incompatible");
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void patchProject_answers_acceptsAnEndDateAfterTheBeginDate() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        au.setBeginDate(java.time.OffsetDateTime.parse("2024-05-10T00:00:00Z"));
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-106", new AnswerInput("2024-06-01", null));
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getEndDate()).isEqualTo(java.time.OffsetDateTime.parse("2024-06-01T00:00:00Z"));
+    }
+
+    @Test
     void patchProject_answers_clearsAScalarFieldOnNullValue() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

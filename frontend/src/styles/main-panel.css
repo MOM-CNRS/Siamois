@@ -544,6 +544,38 @@
   font-size: 0.8rem;
 }
 
+/* A value that no longer fits the form's rules (rules/evaluate.ts): why, and « Vider ». */
+.cell-edit-overlay-incoherent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  background: var(--yellow-50, #fffbeb);
+  color: var(--yellow-900, #78350f);
+  font-size: 0.8rem;
+}
+
+.cell-edit-overlay-incoherent > .bi {
+  color: var(--yellow-600, #d97706);
+  margin-top: 0.1rem;
+}
+
+.cell-edit-overlay-incoherent-text {
+  flex: 1;
+}
+
+.cell-edit-overlay-clear {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+
 /* A read-only overlay: the whole value, wrapping, its chips linking to their fiches. */
 .cell-edit-overlay-readonly {
   padding: 0.4rem 0.5rem;
@@ -1525,4 +1557,24 @@ body {
   margin-right: auto;
   font-size: 0.9rem;
   color: var(--text-color, inherit);
+}
+
+/* A field the form's rules disable with the current answers: greyed, read-only. */
+.sia-fiche-tab .sia-field--disabled .field-value-group {
+  opacity: 0.55;
+}
+
+.field-value-cell-warning {
+  color: var(--yellow-600, #d97706);
+  margin-right: 0.3rem;
+}
+
+/* A list cell the form's rules disable with the row's answers: greyed; a value they made incoherent is flagged. */
+.entity-list-panel-cell-disabled {
+  opacity: 0.55;
+}
+
+.entity-list-panel-cell-warning {
+  color: var(--yellow-600, #d97706);
+  margin-right: 0.3rem;
 }

@@ -93,6 +93,9 @@ public class OrganizationProjectsControllerApi {
             @RequestParam(required = false) Long projectId,
             @Parameter(description = "Avec fieldId : concept de type de l'entité éditée.")
             @RequestParam(required = false) Long valueConceptId,
+            @Parameter(description = "Liste dépendante (règle options RELATED_CONCEPTS) : seuls les concepts liés "
+                    + "à ce concept — la réponse du champ dont celui-ci dépend.")
+            @RequestParam(required = false) Long relatedToConceptId,
             @Parameter(description = "Texte de recherche — active le mode suggestion si présent.")
             @RequestParam(required = false) String q,
             @Parameter(description = "Nombre de résultats (ignoré en mode suggestion).")
@@ -109,9 +112,14 @@ public class OrganizationProjectsControllerApi {
         projectApiService.assertOrganizationInCallerScope(id, caller.accessibleInstitutionIds());
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
-        List<ConceptAutocompleteDTO> all = fieldId != null
-                ? vocabularyOpenApiService.getConceptsForField(id, fieldId, projectId, valueConceptId, q, lang, caller.person())
-                : vocabularyOpenApiService.getConceptsForOrganization(id, fieldCode, q, lang, caller.person());
+        List<ConceptAutocompleteDTO> all;
+        if (relatedToConceptId != null) {
+            all = vocabularyOpenApiService.getRelatedConcepts(id, fieldCode, fieldId, relatedToConceptId, projectId, q, lang, caller.person());
+        } else if (fieldId != null) {
+            all = vocabularyOpenApiService.getConceptsForField(id, fieldId, projectId, valueConceptId, q, lang, caller.person());
+        } else {
+            all = vocabularyOpenApiService.getConceptsForOrganization(id, fieldCode, q, lang, caller.person());
+        }
 
         boolean isSuggestMode = q != null;
         List<ResolvedConceptResource> page = (isSuggestMode ? all : paginate(all, offset, limit))

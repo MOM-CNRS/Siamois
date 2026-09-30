@@ -1863,3 +1863,140 @@ describe("EntityListPanel read-only and project columns", () => {
     expect(container.textContent).not.toContain("OA-7");
   });
 });
+
+// The catalog's field rules (FieldResource.rules) on a list, which has no layout: dependencies are
+// requested with the rows, and a cell the rules disable is greyed / flagged per row.
+describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
+  const NATURE = "-307";
+  const EROSION = "-311";
+  const OPENING = "-303";
+  const CLOSING = "-318";
+  const erosionConcept = { vocabularyExtId: "th252", conceptExtId: "4287639", conceptId: "77" };
+
+  const ruleCatalog = {
+    fields: {
+      [NATURE]: { id: NATURE, resourceType: "fields", label: "Nature", answerType: "SELECT_ONE_FROM_FIELD_CODE", isSystemField: false, fieldCode: "SIARU.GEOMORPHO" },
+      [EROSION]: {
+        id: EROSION,
+        resourceType: "fields",
+        label: "Forme",
+        answerType: "TEXT",
+        isSystemField: false,
+        rules: { enabledWhen: { fieldId: NATURE, op: "EQ", values: [erosionConcept] } },
+      },
+      [OPENING]: { id: OPENING, resourceType: "fields", label: "Ouverture", answerType: "DATETIME", isSystemField: false },
+      [CLOSING]: {
+        id: CLOSING,
+        resourceType: "fields",
+        label: "Fermeture",
+        answerType: "DATETIME",
+        isSystemField: false,
+        rules: { constraints: [{ op: "GTE", fieldId: OPENING }] },
+      },
+    },
+    // Only the erosion and closing columns are on screen: what they depend on is not.
+    columns: [
+      { fieldId: NATURE, columnId: NATURE, visible: false, order: 0 },
+      { fieldId: EROSION, columnId: EROSION, visible: true, order: 1 },
+      { fieldId: OPENING, columnId: OPENING, visible: false, order: 2 },
+      { fieldId: CLOSING, columnId: CLOSING, visible: true, order: 3 },
+    ],
+  };
+
+  beforeEach(() => {
+    schemaListMock.mockReset();
+    schemaLoadMock.mockReset();
+    schemaLoadMock.mockResolvedValue(ruleCatalog);
+  });
+
+  function renderRules() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            <EntityListPanel entityType="fake-schema-entity" />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  function rowWith(answers: Record<string, unknown>) {
+    schemaListMock.mockResolvedValue({
+      data: [{ id: "1", name: "Row A", answers, _permissions: { canEdit: true } }],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+  }
+
+  function cellOf(text: string): HTMLElement | null {
+    return (
+      (Array.from(container.querySelectorAll(".entity-list-panel-editable-cell, .entity-list-panel-cell-value")).find((el) =>
+        el.textContent?.includes(text),
+      ) as HTMLElement | undefined) ?? null
+    );
+  }
+
+  it("requests the fields the visible cells' rules read, though their columns are hidden", async () => {
+    rowWith({});
+    renderRules();
+    await flush();
+    await flush();
+
+    const fields = (schemaListMock.mock.calls[0][0] as { fields: string }).fields.split(",").sort();
+    // The nature (erosion's enabledWhen) and the opening date (bounds the closing date) ride along.
+    expect(fields).toEqual([CLOSING, EROSION, NATURE, OPENING].sort());
+  });
+
+  it("greys a cell whose rule is false for that row, and flags the value it still holds", async () => {
+    rowWith({ [NATURE]: { resourceId: "78", resourceType: "concepts" }, [EROSION]: "en V" });
+    renderRules();
+    await flush();
+    await flush();
+
+    const cell = cellOf("en V")!;
+    expect(cell.className).toContain("entity-list-panel-cell-disabled");
+    expect(cell.className).toContain("entity-list-panel-cell-incoherent");
+    expect(cell.querySelector(".entity-list-panel-cell-warning")).not.toBeNull();
+  });
+
+  it("leaves the cell alone when the rule holds for the row", async () => {
+    rowWith({ [NATURE]: { resourceId: "77", resourceType: "concepts" }, [EROSION]: "en V" });
+    renderRules();
+    await flush();
+    await flush();
+
+    const cell = cellOf("en V")!;
+    expect(cell.className).not.toContain("entity-list-panel-cell-disabled");
+    expect(cell.querySelector(".entity-list-panel-cell-warning")).toBeNull();
+  });
+
+  it("flags a closing date before the opening one, which is a hidden column", async () => {
+    rowWith({ [NATURE]: { resourceId: "77", resourceType: "concepts" }, [OPENING]: "2024-05-10", [CLOSING]: "2024-05-01" });
+    renderRules();
+    await flush();
+    await flush();
+
+    const cell = cellOf("2024-05-01")!;
+    expect(cell.querySelector(".entity-list-panel-cell-warning")).not.toBeNull();
+    expect(cell.getAttribute("title")).toContain("« Ouverture »");
+  });
+
+  it("opens a disabled cell read-only, with « Vider » offered for the value the rules made incoherent", async () => {
+    rowWith({ [NATURE]: { resourceId: "78", resourceType: "concepts" }, [EROSION]: "en V" });
+    renderRules();
+    await flush();
+    await flush();
+
+    await act(async () => {
+      cellOf("en V")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(document.body.querySelector(".cell-edit-overlay-readonly")).toBeTruthy();
+    expect(document.body.querySelector(".cell-edit-overlay-incoherent")?.textContent).toContain("ne s'applique plus");
+    expect(document.body.querySelector(".cell-edit-overlay-clear")).toBeTruthy();
+  });
+});

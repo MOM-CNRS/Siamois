@@ -15,6 +15,7 @@ import {
   type FieldResource,
 } from "../../fields/types";
 import { ApiError } from "../../api/client";
+import { numberOf, type Bound, type FieldState } from "../../rules";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked
@@ -49,6 +50,16 @@ export interface CellEditTarget<TRow> {
   // user can't edit. The overlay opens all the same — a cell's first click always does — and its
   // chips are the links that open the referenced fiches.
   readOnly?: boolean;
+  // The field's state under the form's rules, when edited inside a form that has them: its bounds
+  // are checked before saving, its options context reaches the picker.
+  fieldState?: FieldState;
+  // Why the stored value no longer fits the rules, in words (fields/incoherence.ts) — shown above
+  // the editor, with the one way out: « Vider ».
+  incoherences?: string[];
+  // The field could be edited but for the rules (disabled): clearing it is still allowed.
+  canClear?: boolean;
+  // Names the other field a bound comes from in the error message.
+  fieldLabelOf?: (fieldId: string) => string;
 }
 
 export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
@@ -151,6 +162,11 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         setError("Ce champ est obligatoire");
         return false;
       }
+      const outOfBounds = boundViolation(value, target.fieldState, target.fieldLabelOf);
+      if (outOfBounds) {
+        setError(outOfBounds);
+        return false;
+      }
       savingRef.current = true;
       setSaving(true);
       setError(null);
@@ -187,6 +203,29 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     },
     [save, onClose],
   );
+
+  // « Vider »: the one edit an incoherent value always allows — even on a field the rules disabled.
+  const clear = useCallback(async () => {
+    if (!target || target.row.id == null || savingRef.current) return;
+    if (target.required) {
+      setError("Ce champ est obligatoire");
+      return;
+    }
+    const multiple = target.field.answerType.startsWith("SELECT_MULTIPLE");
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(target.row.id, { [target.field.id]: multiple ? { values: [] } : { value: null } }, multiple ? [] : null);
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "La modification a échoué.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }, [target, onSave, onSaved, onClose]);
 
   // The editor opens on a click, so the user's hands are already on the mouse and their intent is
   // already "change this value" — landing them on a box they still have to click into is a wasted
@@ -293,6 +332,21 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       }}
       onKeyDown={onKeyDown}
     >
+      {target.incoherences && target.incoherences.length > 0 && (
+        <div className="cell-edit-overlay-incoherent" role="alert">
+          <i className="bi bi-exclamation-triangle-fill" aria-hidden />
+          <div className="cell-edit-overlay-incoherent-text">
+            {target.incoherences.map((text) => (
+              <div key={text}>{text}</div>
+            ))}
+          </div>
+          {target.canClear && !isEmptyValue(draft) && (
+            <button type="button" className="cell-edit-overlay-clear" disabled={saving} onClick={() => void clear()}>
+              Vider
+            </button>
+          )}
+        </div>
+      )}
       {loadingValues ? (
         <div className="cell-edit-overlay-loading">Chargement des valeurs…</div>
       ) : target.readOnly ? (
@@ -310,6 +364,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           required={target.required ?? false}
           organizationId={organizationId}
           context={editContextOf(target.row, entityType, organizationId)}
+          bounds={target.fieldState?.bounds}
+          optionsContext={target.fieldState?.optionsContext}
           onChange={onValueChange}
         />
       )}
@@ -324,4 +380,26 @@ function partialAnswerOf<TRow>(target: CellEditTarget<TRow>) {
   if (!target.field.answerType.startsWith("SELECT_MULTIPLE")) return null;
   const answer = readMultiValue(resolveValueBinding(target.field).readRaw(target.row));
   return answer && !answer.complete && answer._links?.values ? answer : null;
+}
+
+const BOUND_TEXT = { min: ["supérieure ou égale à", "supérieure à"], max: ["inférieure ou égale à", "inférieure à"] } as const;
+
+/** The message for a value outside the bounds the rules put on it, or null when it fits (or is empty). */
+function boundViolation(
+  value: unknown,
+  state: FieldState | undefined,
+  labelOf: (fieldId: string) => string = (id) => id,
+): string | null {
+  const bounds = state?.bounds;
+  const n = numberOf(value);
+  if (!bounds || n == null) return null;
+  const check = (side: "min" | "max", bound: Bound | undefined) => {
+    if (!bound) return null;
+    const ok =
+      side === "min"
+        ? bound.exclusive ? n > bound.value : n >= bound.value
+        : bound.exclusive ? n < bound.value : n <= bound.value;
+    return ok ? null : `La valeur doit être ${BOUND_TEXT[side][bound.exclusive ? 1 : 0]} « ${labelOf(bound.fieldId)} ».`;
+  };
+  return check("min", bounds.min) ?? check("max", bounds.max);
 }

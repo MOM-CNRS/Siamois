@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.form;
 
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customform.CustomFormComposer;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
@@ -13,11 +14,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
  * Composes a base system form with a project's {@link TableFieldConfigService} configuration:
- * inactive system fields removed, active additional fields appended.
+ * inactive system fields removed, mandatory fields marked required, active additional fields
+ * appended.
  * <p>
  * This is the single implementation of the logic single-item panels (e.g.
  * {@code RecordingUnitPanel}) and the OpenAPI services both rely on, so a project's configured
@@ -38,12 +41,34 @@ public class EffectiveFormResolver {
      * additional fields for that type
      */
     public FormUiDto resolveEffectiveForm(FormUiDto baseForm, Long projectId, ConfigurableTable table, Long typeConceptId) {
-        Set<String> inactive = tableFieldConfigService.getFieldsConfig(projectId, table, typeConceptId).getFields().stream()
+        List<TypeFieldFormConfig> configs = tableFieldConfigService.getFieldsConfig(projectId, table, typeConceptId).getFields();
+        Set<String> inactive = configs.stream()
                 .filter(field -> !field.isActive())
                 .map(TypeFieldFormConfig::getValueBinding)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        // Mandatory per type: matched by valueBinding when the config carries one, else by name (the
+        // field's label — the same key TableFieldConfigService#findField uses).
+        List<TypeFieldFormConfig> mandatory = configs.stream()
+                .filter(field -> field.isActive() && field.isMandatory())
+                .toList();
+        Set<String> mandatoryBindings = mandatory.stream()
+                .map(TypeFieldFormConfig::getValueBinding)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<String> mandatoryNames = mandatory.stream()
+                .filter(field -> field.getValueBinding() == null)
+                .map(TypeFieldFormConfig::getName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Predicate<CustomField> isMandatory = field -> field.getValueBinding() != null
+                ? mandatoryBindings.contains(field.getValueBinding())
+                : mandatoryNames.contains(field.getLabel());
+
         FormUiDto base = CustomFormComposer.withoutFields(baseForm, inactive);
+        if (!mandatory.isEmpty()) {
+            base = CustomFormComposer.withRequiredFields(base, isMandatory);
+        }
 
         // ColumnWidth.STANDARD, not left unset: this column reaches the same
         // FormUiDtoLayoutJson.serialize as ActionUnitDetailsForm/RecordingUnitDetailsForm's own
@@ -51,7 +76,8 @@ public class EffectiveFormResolver {
         // assumes every column carries a width — leaving this one without any caused
         // toPrimeFlexClass(col.width) to crash on `undefined`.
         List<CustomColUiDto> additional = tableFieldConfigService.getActiveAdditionalFields(projectId, table, typeConceptId).stream()
-                .map(field -> new CustomColUiDto.Builder().field(field).width(ColumnWidth.STANDARD).build())
+                .map(field -> new CustomColUiDto.Builder().field(field).width(ColumnWidth.STANDARD)
+                        .isRequired(isMandatory.test(field)).build())
                 .toList();
         return CustomFormComposer.withAdditionalFields(base, "Champs additionnels", additional);
     }

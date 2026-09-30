@@ -1,6 +1,8 @@
 import { useState, type SyntheticEvent } from "react";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
+import type { FieldState } from "../rules";
 import { renderAnswerCell, renderAnswerValue } from "./display";
+import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
 
@@ -23,10 +25,15 @@ export interface FieldEditCellProps<TRow extends { id?: string | number }> {
   stored: unknown;
   readOnly: boolean;
   required?: boolean;
+  // The field's state under the form's rules (FormLayoutView): a disabled field is shown read-only
+  // (greyed) and, when it still holds a value, can only be cleared; an incoherent value is flagged.
+  fieldState?: FieldState;
+  // Names the other field of a constraint in the incoherence message.
+  fieldLabelOf?: (fieldId: string) => string;
   organizationId?: number;
   // Registry key of the entity the fiche shows (see CellEditOverlayProps.entityType).
   entityType?: string;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
+  onSave: (id: string | number, answers: Record<string, AnswerInputBody>, value?: unknown) => Promise<unknown>;
   onSaved: () => void;
 }
 
@@ -36,6 +43,8 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   stored,
   readOnly: readOnlyProp,
   required,
+  fieldState,
+  fieldLabelOf = (id) => id,
   organizationId,
   entityType,
   onSave,
@@ -44,20 +53,28 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   const [editTarget, setEditTarget] = useState<CellEditTarget<TRow> | null>(null);
   // A field with no editor (action code, address) is shown, never offered for editing.
   // Nor is a read-only one (the entity's project, a generated identifier).
-  const readOnly = readOnlyProp || field.readOnly === true || !hasFieldRenderer(field.answerType);
+  const editable = !readOnlyProp && field.readOnly !== true && hasFieldRenderer(field.answerType);
+  const disabled = fieldState?.enabled === false;
+  const readOnly = !editable || disabled;
+  const incoherences = (fieldState?.incoherent ?? []).map((r) => describeIncoherence(r, fieldLabelOf));
 
   // Same gesture as a list cell: the click opens the overlay, to edit the field or — read-only —
   // to show it, its chips linking to their fiches.
   function open(e: SyntheticEvent) {
     const anchor = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setEditTarget({ row, field, anchor, required, readOnly });
+    // Clearing stays possible on a field the user could edit if it weren't for the rules: that is
+    // how an incoherent value is resolved (never cleared automatically).
+    setEditTarget({ row, field, anchor, required, readOnly, fieldState, incoherences, canClear: editable, fieldLabelOf });
   }
 
   const content = renderAnswerCell(field, stored, { all: true });
   // An empty field nobody can edit has nothing to open — just the same dash as any empty field.
   if (readOnly && !content) {
     return (
-      <span className="field-value-cell field-value-cell-readonly">
+      <span
+        className={`field-value-cell field-value-cell-readonly${disabled ? " field-value-cell-disabled" : ""}`}
+        title={disabled ? "Ne s'applique pas avec les réponses actuelles" : undefined}
+      >
         <span className="field-value-cell-empty">—</span>
       </span>
     );
@@ -66,14 +83,23 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   return (
     <>
       <span
-        className={`field-value-cell ${readOnly ? "field-value-cell-readonly" : "field-value-cell-editable"}`}
+        className={`field-value-cell ${readOnly ? "field-value-cell-readonly" : "field-value-cell-editable"}${
+          disabled ? " field-value-cell-disabled" : ""
+        }${incoherences.length > 0 ? " field-value-cell-incoherent" : ""}`}
         role="button"
         tabIndex={0}
         // Same affordance as the table's own editable cell: the full value as the native tooltip,
-        // falling back to naming the field when it's empty.
-        title={renderAnswerValue(field, stored) || `Modifier « ${field.label} »`}
+        // falling back to naming the field when it's empty. An incoherent value says why first.
+        title={
+          incoherences.length > 0
+            ? incoherences.join("\n")
+            : renderAnswerValue(field, stored) || `Modifier « ${field.label} »`
+        }
         onClick={open}
       >
+        {incoherences.length > 0 && (
+          <i className="bi bi-exclamation-triangle-fill field-value-cell-warning" aria-label="Valeur incohérente" />
+        )}
         {content || <span className="field-value-cell-empty">—</span>}
       </span>
       <CellEditOverlay

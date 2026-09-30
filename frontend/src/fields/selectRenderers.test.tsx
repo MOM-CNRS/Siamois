@@ -130,7 +130,7 @@ describe("SelectOneConceptRenderer", () => {
         />,
       );
     });
-    expect(mockedOptionSourceFor).toHaveBeenCalledWith(conceptField(), 100, undefined);
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(conceptField(), 100, undefined, { valueConceptId: undefined, optionsContext: undefined });
   });
 
   it("builds no loader when organizationId is absent", async () => {
@@ -343,7 +343,7 @@ describe("« Nouveau » footer", () => {
   it("offers to create the target in the edited entity's project, even when nothing matches", async () => {
     await openPicker({ organizationId: 100, projectId: "5", entityType: "recordingUnit", entityId: 4 });
 
-    expect(mockedOptionSourceFor).toHaveBeenCalledWith(phaseField(), 100, "5");
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(phaseField(), 100, "5", { valueConceptId: undefined, optionsContext: undefined });
     expect(newButton()?.textContent).toContain("Nouveau : phase");
   });
 

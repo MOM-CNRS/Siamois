@@ -1,6 +1,8 @@
 // Mirrors fr.siamois.ui.api.openapi.v1.resource.form.FieldResource exactly (field-side of the
 // "field vs field-configuration" split, plan §6) — this is the shared catalog entry, not a
 // per-type config row. Keep in sync with that record if it changes.
+import type { FieldRules } from "../rules/types";
+
 export interface FieldResource {
   id: string;
   resourceType: string;
@@ -28,6 +30,9 @@ export interface FieldResource {
   // Never editable, in the fiche as in a list (a readOnly column of the details form: the project an
   // entity belongs to, a generated identifier). Absent = editable.
   readOnly?: boolean | null;
+  // The conditional rules of the field's column in its entity's details form (FieldQueryService):
+  // what a list, having no layout, evaluates to grey a cell out, bound it or flag its value.
+  rules?: FieldRules | null;
 }
 
 /** The field holding the project an entity belongs to: set at creation, never edited, and — as a

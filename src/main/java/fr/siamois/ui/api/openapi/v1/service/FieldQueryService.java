@@ -36,6 +36,10 @@ import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.ManagedType;
 import jakarta.persistence.metamodel.PluralAttribute;
+import fr.siamois.domain.models.form.rules.ConceptIdLookup;
+import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.rules.FieldRulesJson;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
@@ -127,6 +131,7 @@ public class FieldQueryService {
 
     private final CustomFieldRepository customFieldRepository;
     private final EntityManager entityManager;
+    private final ConceptIdLookup conceptIdLookup;
 
     private enum Kind {
         TEXT("contains"), NUMBER("range"), DATE("date-range"), REFERENCE("in"), REFERENCES("in");
@@ -176,7 +181,28 @@ public class FieldQueryService {
      */
     public FieldResource withQuery(FieldResource resource, Class<?> entityType, CustomField field) {
         FieldResource withCapability = resource.withQuery(capabilityOf(entityType, field));
-        return isReadOnly(entityType, field) ? withCapability.withReadOnly(true) : withCapability;
+        FieldResource maybeReadOnly = isReadOnly(entityType, field) ? withCapability.withReadOnly(true) : withCapability;
+        FieldRules rules = rulesOf(entityType, field);
+        return rules.isEmpty() ? maybeReadOnly : maybeReadOnly.withRules(FieldRulesJson.toWire(rules, conceptIdLookup));
+    }
+
+    /**
+     * The conditional rules {@code field}'s column carries in {@code entityType}'s details form
+     * ({@link FieldRules#NONE} when it has none, or isn't in it — an additional field). A list has no
+     * layout to read them from, so they travel with the catalog entry, the way {@code readOnly} does.
+     */
+    static FieldRules rulesOf(Class<?> entityType, CustomField field) {
+        if (field == null || field.getId() == null) return FieldRules.NONE;
+        FormUiDto form = DETAILS_FORMS.get(entityType);
+        if (form == null || form.getLayout() == null) return FieldRules.NONE;
+        return form.getLayout().stream()
+                .flatMap(panel -> panel.getRows().stream())
+                .flatMap(row -> row.getColumns().stream())
+                .filter(column -> column.getField() != null && field.getId().equals(column.getField().getId()))
+                .map(CustomColUiDto::getRules)
+                .filter(rules -> rules != null && !rules.isEmpty())
+                .findFirst()
+                .orElse(FieldRules.NONE);
     }
 
     /**

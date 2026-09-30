@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { FieldState, OptionsContext } from "../rules";
 import type { FieldEditContext } from "./editContext";
 import type { FieldResource } from "./types";
 
@@ -17,6 +18,11 @@ export interface FieldRendererProps {
   // Where the field is edited (project, edited entity) — what the project-scoped relation pickers
   // and their « Nouveau » footer need. Absent outside an edit surface (tests, filters).
   context?: FieldEditContext;
+  // From the form's rules (rules/evaluate.ts), when the field is edited inside a form that has them:
+  // the bounds another field's value puts on this one (a date picker limits its days to them), and
+  // what the options source must filter by (the concepts related to another field's answer…).
+  bounds?: FieldState["bounds"];
+  optionsContext?: OptionsContext;
 }
 
 export type FieldRenderer = (props: FieldRendererProps) => ReactNode;

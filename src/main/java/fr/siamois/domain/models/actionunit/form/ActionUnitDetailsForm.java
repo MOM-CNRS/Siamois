@@ -1,5 +1,7 @@
 package fr.siamois.domain.models.actionunit.form;
 
+import fr.siamois.domain.models.form.rules.FieldConstraint;
+import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -53,6 +55,8 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .width(ColumnWidth.STANDARD)
                                                         .field(END_DATE_FIELD)
                                                         .isRequired(false)
+                                                        // the end can't precede the beginning
+                                                        .rules(FieldRules.NONE.withConstraints(FieldConstraint.gte(BEGIN_DATE_FIELD.getId())))
                                                         .build())
                                                 .build()
                                 ).build()
@@ -183,6 +187,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .readOnly(false)
                                                         .width(ColumnWidth.STANDARD)
                                                         .field(ZMAX_FIELD)
+                                                        .rules(FieldRules.NONE.withConstraints(FieldConstraint.gte(ZMIN_FIELD.getId())))
                                                         .build())
                                                 .build()
                                 )

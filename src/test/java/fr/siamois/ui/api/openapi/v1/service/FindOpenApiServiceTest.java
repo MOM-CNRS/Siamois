@@ -125,7 +125,7 @@ class FindOpenApiServiceTest {
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
-                mock(UnitDefinitionMapper.class));
+                mock(UnitDefinitionMapper.class), fr.siamois.domain.models.form.rules.ConceptIdLookup.NONE);
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,

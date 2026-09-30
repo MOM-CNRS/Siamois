@@ -9,6 +9,7 @@ import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import { useOpenEntity } from "../panels/entityNavigation";
 import { getEntityType } from "../entities/registry";
 import type { CreatePrefill } from "../entities/types";
+import type { Bound } from "../rules";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
@@ -97,13 +98,17 @@ export function DecimalRenderer({ field, value, readOnly, required, onChange }: 
   );
 }
 
-export function DateRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+export function DateRenderer({ field, value, readOnly, required, onChange, bounds }: FieldRendererProps) {
   const showTime = field.constraints?.showTime === true;
   return (
     <Calendar
       value={parseDateAnswer(value, showTime)}
       disabled={readOnly}
       required={required}
+      // Days outside another field's date (closing before opening…) can't be picked; the overlay
+      // still refuses a typed-in one (CellEditOverlay's bound check).
+      minDate={dayBound(bounds?.min, showTime, +1)}
+      maxDate={dayBound(bounds?.max, showTime, -1)}
       dateFormat="dd/mm/yy"
       showTime={showTime}
       hourFormat="24"
@@ -114,6 +119,15 @@ export function DateRenderer({ field, value, readOnly, required, onChange }: Fie
       onChange={(e) => onChange(e.value ? formatDateAnswer(e.value as Date, showTime) : null)}
     />
   );
+}
+
+/** A rules bound as a Calendar limit: the bound's own day, shifted a day for an exclusive one. */
+function dayBound(bound: Bound | undefined, showTime: boolean, exclusiveShift: 1 | -1): Date | undefined {
+  if (!bound) return undefined;
+  const date = parseDateAnswer(bound.raw, showTime);
+  if (!date) return undefined;
+  if (bound.exclusive && !showTime) date.setDate(date.getDate() + exclusiveShift);
+  return date;
 }
 
 interface ResourceRefLike {
@@ -155,14 +169,18 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // concept", "pick persons" or "pick phases" is only the loader, the ResourceRef's resourceType and
 // whether a « Nouveau » footer can create the target — all derived from the field
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
-  const loadOptions = orgId != null ? optionSourceFor(field, orgId, context?.projectId) : null;
+  const loadOptions =
+    orgId != null
+      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
+      : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const target = referenceTargetOf(field);
+  const waitingForParent = optionsContext?.kind === "RELATED_CONCEPTS" && optionsContext.relatedTo == null;
   const openEntity = useOpenEntity();
   // Only a value this app has a fiche for is a link.
   const linkEntityType = target.entityType && getEntityType(target.entityType) ? target.entityType : undefined;
@@ -286,10 +304,13 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         disabled={readOnly}
         required={required}
         onFocus={onFocus}
+        // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
+        // depends on is empty — say so rather than showing an unexplained empty list.
+        placeholder={waitingForParent ? "Renseignez d'abord le champ dont dépend cette liste" : undefined}
         // With a footer, the panel must open even on no match: that is exactly when « Nouveau »
         // is wanted.
-        showEmptyMessage={footer != null}
-        emptyMessage="Aucun résultat"
+        showEmptyMessage={footer != null || waitingForParent}
+        emptyMessage={waitingForParent ? "Renseignez d'abord le champ dont dépend cette liste" : "Aucun résultat"}
         panelFooterTemplate={footer}
         selectedItemTemplate={renderToken}
         onChange={(e) => {

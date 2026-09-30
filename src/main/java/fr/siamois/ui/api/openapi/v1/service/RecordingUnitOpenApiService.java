@@ -69,6 +69,7 @@ import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTy
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -120,6 +121,7 @@ public class RecordingUnitOpenApiService {
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
     private final MultiValueAnswers multiValueAnswers;
+    private final ConceptIdLookup conceptIdLookup;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -257,7 +259,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         defaultType.setFields(fields);
@@ -292,7 +294,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     RecordingUnit.DETAILS_FORM, projectId, ConfigurableTable.UE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
         });
         type.setFields(fields);
@@ -310,7 +312,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         defaultType.setFields(fields);
@@ -330,7 +332,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Specimen.DETAILS_FORM, projectId, ConfigurableTable.MOBILIER, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
         });
         type.setFields(fields);
@@ -378,7 +380,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         defaultType.setFields(fields);
@@ -398,7 +400,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Phase.DETAILS_FORM, projectId, ConfigurableTable.PHASE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
         });
         type.setFields(fields);
@@ -445,7 +447,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, null);
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         defaultType.setFields(fields);
@@ -465,7 +467,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(
                     Container.DETAILS_FORM, projectId, ConfigurableTable.CONTENANT, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout(), conceptIdLookup)));
             return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
         });
         type.setFields(fields);
@@ -495,7 +497,7 @@ public class RecordingUnitOpenApiService {
         FormUiDto systemForm = ActionUnit.DETAILS_FORM;
         FormUiDto formUiDto = conversionService.convert(systemForm, FormUiDto.class);
         FieldSource fieldSource = new PanelFieldSource(formUiDto);
-        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout());
+        String layoutJson = FormUiDtoLayoutJson.serialize(systemForm.getLayout(), conceptIdLookup);
         FormResource form = new FormResource(layoutJson);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);

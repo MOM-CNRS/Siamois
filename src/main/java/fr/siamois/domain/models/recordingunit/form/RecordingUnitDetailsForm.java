@@ -1,9 +1,10 @@
 package fr.siamois.domain.models.recordingunit.form;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import fr.siamois.domain.models.form.customform.DependsOnJson;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.rules.Condition;
+import fr.siamois.domain.models.form.rules.FieldConstraint;
+import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.rules.FieldValueSpec;
+import fr.siamois.domain.models.form.rules.OptionsFilter;
 import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -28,9 +29,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
     /** Panel users add their own measurement fields to; those fields are re-injected here on reopen. */
     public static final String MEASUREMENTS_PANEL_NAME = "recordingunit.panel.measurements";
 
-    private static final String SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS =
-            "fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswerSelectOneFromFieldAnswerCode";
-    private static final String EROSION_ANSWER_VOCABULARY_EXT_ID = "th230";
+    private static final String EROSION_ANSWER_VOCABULARY_EXT_ID = "th252";
     private static final String EROSION_ANSWER_CONCEPT_EXT_ID = "4287639";
 
     private RecordingUnitDetailsForm() {
@@ -38,18 +37,16 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
     }
 
     public static FormUiDto build() {
-        EnabledWhenJson erosionEnabledWhen = erosionEnabledWhen();
-        DependsOnJson interpretationDependsOnNature = dependsOnNature();
-
         return new FormUiDto.Builder()
-                .addPanel(generalPanel(erosionEnabledWhen, interpretationDependsOnNature))
+                .addPanel(generalPanel())
                 .addPanel(chronologyPanel())
                 .addPanel(measurementsPanel())
                 .addPanel(datesPanel())
                 .build();
     }
 
-    private static CustomFormPanelUiDto generalPanel(EnabledWhenJson erosionEnabledWhen, DependsOnJson interpretationDependsOnNature) {
+    private static CustomFormPanelUiDto generalPanel() {
+        FieldRules erosionRules = erosionRules();
         return new CustomFormPanelUiDto.Builder()
                 .name(COMMON_HEADER_GENERAL)
                 .isSystemPanel(true)
@@ -64,7 +61,7 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(NATURE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(GEOMORPHO_AGENT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(INTERPRETATION_FIELD)
-                                        .dependsOnSpec(interpretationDependsOnNature).build())
+                                        .rules(interpretationRules()).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(MATRIX_COLOR_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).hidden(true).readOnly(true).field(ACTION_UNIT_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).hidden(true).readOnly(true).field(FULL_IDENTIFIER_FIELD).build())
@@ -73,11 +70,11 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .addRow(
                         new CustomRowUiDto.Builder()
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_SHAPE_FIELD)
-                                        .enabledWhenSpec(erosionEnabledWhen).build())
+                                        .rules(erosionRules).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_PROFILE_FIELD)
-                                        .enabledWhenSpec(erosionEnabledWhen).build())
+                                        .rules(erosionRules).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(EROSION_ORIENTATION_FIELD)
-                                        .enabledWhenSpec(erosionEnabledWhen).build())
+                                        .rules(erosionRules).build())
                                 .build()
                 )
                 .addRow(
@@ -101,7 +98,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                         new CustomRowUiDto.Builder()
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CHRONOLOGICAL_PHASE_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(TPQ_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(TAQ_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(TAQ_FIELD)
+                                        .rules(FieldRules.NONE.withConstraints(FieldConstraint.gte(TPQ_FIELD.getId()))).build())
                                 .build()
                 )
                 .addRow(
@@ -120,7 +118,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .addRow(
                         new CustomRowUiDto.Builder()
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.HALF).field(Z_INF_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.HALF).field(Z_SUP_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.HALF).field(Z_SUP_FIELD)
+                                        .rules(FieldRules.NONE.withConstraints(FieldConstraint.gte(Z_INF_FIELD.getId()))).build())
                                 .build()
                 )
                 .build();
@@ -133,7 +132,8 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .addRow(
                         new CustomRowUiDto.Builder()
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(OPENING_DATE_FIELD).build())
-                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CLOSING_DATE_FIELD).build())
+                                .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CLOSING_DATE_FIELD)
+                                        .rules(FieldRules.NONE.withConstraints(FieldConstraint.gte(OPENING_DATE_FIELD.getId()))).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).isRequired(true).field(AUTHOR_FIELD).build())
                                 .addColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(CONTRIBUTORS_FIELD).build())
                                 .build()
@@ -141,24 +141,14 @@ public class RecordingUnitDetailsForm extends RecordingUnitForm {
                 .build();
     }
 
-    private static EnabledWhenJson erosionEnabledWhen() {
-        EnabledWhenJson.ValueJson erosionValue = new EnabledWhenJson.ValueJson();
-        erosionValue.setAnswerClass(SELECT_ONE_FROM_FIELD_CODE_ANSWER_CLASS);
-        ObjectNode erosionConceptNode = JsonNodeFactory.instance.objectNode()
-                .put("vocabularyExtId", EROSION_ANSWER_VOCABULARY_EXT_ID)
-                .put("conceptExtId", EROSION_ANSWER_CONCEPT_EXT_ID);
-        erosionValue.setValue(erosionConceptNode);
-
-        EnabledWhenJson enabledWhen = new EnabledWhenJson();
-        enabledWhen.setOp(EnabledWhenJson.Op.EQ);
-        enabledWhen.setFieldId(NATURE_FIELD.getId());
-        enabledWhen.setValues(List.of(erosionValue));
-        return enabledWhen;
+    /** Forme, profil et orientation d'érosion : actifs seulement si la nature est « érosion ». */
+    private static FieldRules erosionRules() {
+        return FieldRules.NONE.withEnabledWhen(Condition.eq(NATURE_FIELD.getId(),
+                FieldValueSpec.concept(EROSION_ANSWER_VOCABULARY_EXT_ID, EROSION_ANSWER_CONCEPT_EXT_ID)));
     }
 
-    private static DependsOnJson dependsOnNature() {
-        DependsOnJson dependsOn = new DependsOnJson();
-        dependsOn.setFieldId(NATURE_FIELD.getId());
-        return dependsOn;
+    /** Interprétation : concepts liés à la nature choisie. */
+    private static FieldRules interpretationRules() {
+        return FieldRules.NONE.withOptions(new OptionsFilter.RelatedConcepts(NATURE_FIELD.getId()));
     }
 }

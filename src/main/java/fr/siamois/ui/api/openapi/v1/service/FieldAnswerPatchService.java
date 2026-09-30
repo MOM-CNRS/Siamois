@@ -23,7 +23,11 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.rules.ConceptIdLookup;
+import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
+import fr.siamois.domain.services.form.rules.RuleValues;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
@@ -91,6 +95,7 @@ public class FieldAnswerPatchService {
     private final SpecimenRepository specimenRepository;
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final UnitDefinitionMapper unitDefinitionMapper;
+    private final ConceptIdLookup conceptIdLookup;
 
     /**
      * @param dto           the entity DTO to write system fields onto
@@ -130,6 +135,13 @@ public class FieldAnswerPatchService {
 
         FieldSource fieldSource = new PanelFieldSource(effectiveForm);
         CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+
+        // Every field's value once the patch is applied — what the form's rules are checked against.
+        Map<Long, Object> values = new HashMap<>();
+        for (CustomField field : fieldSource.getAllFields()) {
+            values.put(field.getId(), formService.readAnswerValueForApi(viewModelOf(response, field)));
+        }
+        List<CustomField> written = new ArrayList<>();
 
         Map<CustomField, CustomFieldAnswerViewModel> touchedAdditional = new HashMap<>();
         List<CustomField> clearedSystemFields = new ArrayList<>();
@@ -188,6 +200,8 @@ public class FieldAnswerPatchService {
                 }
             }
             formService.applyTypedValueToAnswer(viewModel, typed);
+            values.put(field.getId(), typed);
+            written.add(field);
 
             if (Boolean.TRUE.equals(field.getIsSystemField())) {
                 if (raw == null) clearedSystemFields.add(field);
@@ -196,9 +210,82 @@ public class FieldAnswerPatchService {
             }
         }
 
+        checkRules(effectiveForm, values, written, strict);
+
         formService.updateJpaEntityFromResponse(response, dto);
         clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
         return touchedAdditional;
+    }
+
+    /**
+     * The form's conditional rules, for the fields this patch wrote — never for the others: a value
+     * a change elsewhere made incoherent is kept (and flagged by the client), not refused. Refused
+     * with a 400: a value in a field the rules disable (clearing it is always accepted), a required
+     * field left empty, a value breaking an ordering constraint with another field (either side), a
+     * concept outside the ones related to the answer a dependent list follows. The lenient (mobile
+     * legacy) path logs instead: an offline record is kept, its client flags it.
+     */
+    private void checkRules(FormUiDto form, Map<Long, Object> values, List<CustomField> written, boolean strict) {
+        if (written.isEmpty()) return;
+        List<FieldRulesEvaluator.RuledColumn> columns = ruledColumns(form);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator(conceptIdLookup).evaluate(columns, values::get);
+        for (CustomField field : written) {
+            FieldRulesEvaluator.FieldState state = states.get(field.getId());
+            if (state == null) continue;
+            String violation = violationOf(field.getId(), values.get(field.getId()), state);
+            if (violation == null) continue;
+            if (strict) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, violation);
+            log.warn("Règle de formulaire non respectée, réponse conservée : {}", violation);
+        }
+    }
+
+    private String violationOf(long fieldId, Object value, FieldRulesEvaluator.FieldState state) {
+        boolean empty = RuleValues.isEmpty(value);
+        if (!state.enabled() && !empty) {
+            return "Champ inactif avec les réponses actuelles : " + fieldId;
+        }
+        if (state.required() && empty) {
+            return "Champ obligatoire : " + fieldId;
+        }
+        for (FieldRulesEvaluator.Incoherence incoherence : state.incoherent()) {
+            if (incoherence.kind() == FieldRulesEvaluator.IncoherenceKind.CONSTRAINT) {
+                return "Valeur incompatible avec le champ " + incoherence.otherFieldId() + " (" + describe(incoherence.op()) + ") : " + fieldId;
+            }
+        }
+        FieldRulesEvaluator.OptionsContext options = state.optionsContext();
+        if (!empty && options != null && "RELATED_CONCEPTS".equals(options.kind())) {
+            if (options.value() == null) {
+                return "Renseignez d'abord le champ " + options.parentFieldId() + " : " + fieldId;
+            }
+            long parent = Long.parseLong(options.value());
+            for (Object id : RuleValues.scalarsOf(value)) {
+                if (!conceptRepository.isRelated(parent, Long.parseLong(String.valueOf(id)))) {
+                    return "Concept " + id + " hors de la liste liée au champ " + options.parentFieldId() + " : " + fieldId;
+                }
+            }
+        }
+        // REF_MATCH is only applied client side for now (the picker's own filter).
+        return null;
+    }
+
+    private static String describe(FieldConstraint.Op op) {
+        return switch (op) {
+            case GT -> "doit être supérieure";
+            case GTE -> "doit être supérieure ou égale";
+            case LT -> "doit être inférieure";
+            case LTE -> "doit être inférieure ou égale";
+        };
+    }
+
+    private static List<FieldRulesEvaluator.RuledColumn> ruledColumns(FormUiDto form) {
+        if (form == null || form.getLayout() == null) return List.of();
+        return form.getLayout().stream()
+                .filter(Objects::nonNull)
+                .flatMap(panel -> panel.getRows() == null ? java.util.stream.Stream.empty() : panel.getRows().stream())
+                .flatMap(row -> row.getColumns() == null ? java.util.stream.Stream.empty() : row.getColumns().stream())
+                .filter(column -> column.getField() != null && column.getField().getId() != null)
+                .map(column -> new FieldRulesEvaluator.RuledColumn(column.getField().getId(), column.isRequired(), column.getRules()))
+                .toList();
     }
 
     private static CustomField requireField(FieldSource fieldSource, String key) {

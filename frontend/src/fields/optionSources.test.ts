@@ -198,3 +198,52 @@ describe("referenceTargetOf", () => {
     expect(referenceTargetOf(field({ answerType }))).toEqual(expected);
   });
 });
+
+describe("optionSourceFor with an option scope", () => {
+  it("asks for the concepts related to the parent answer", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+    const loader = optionSourceFor(field({ fieldCode: "SIARU.INTERPRETATION" }), 100, "5", {
+      optionsContext: { kind: "RELATED_CONCEPTS", parentFieldId: "-310", relatedTo: "77" },
+    });
+
+    await loader!("ch");
+
+    const url = String(mockedApiFetch.mock.calls[0][0]);
+    expect(url).toContain("fieldCode=SIARU.INTERPRETATION");
+    expect(url).toContain("relatedToConceptId=77");
+    expect(url).toContain("projectId=5");
+  });
+
+  it("offers nothing while the parent is empty, without a request", async () => {
+    const loader = optionSourceFor(field({ fieldCode: "SIARU.INTERPRETATION" }), 100, "5", {
+      optionsContext: { kind: "RELATED_CONCEPTS", parentFieldId: "-310", relatedTo: null },
+    });
+
+    expect(await loader!("ch")).toEqual([]);
+    expect(mockedApiFetch).not.toHaveBeenCalled();
+  });
+
+  it("sends the entity's type for a vocabulary field resolved by id", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+    const loader = optionSourceFor(field({ answerType: "SELECT_ONE", fieldCode: null, id: "12" }), 100, "5", {
+      valueConceptId: "33",
+    });
+
+    await loader!();
+
+    expect(String(mockedApiFetch.mock.calls[0][0])).toContain("valueConceptId=33");
+  });
+
+  it("filters reference candidates on their own field for REF_MATCH", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+    const loader = optionSourceFor(field({ answerType: "SELECT_MULTIPLE_RECORDING_UNIT", id: "-319" }), 100, "5", {
+      optionsContext: { kind: "REF_MATCH", parentFieldId: "-304", candidateFieldId: "-304", value: "8" },
+    });
+
+    await loader!();
+
+    const url = String(mockedApiFetch.mock.calls[0][0]);
+    expect(url).toContain("/api/v1/projects/5/recording-units?");
+    expect(url).toContain("f.-304=8");
+  });
+});

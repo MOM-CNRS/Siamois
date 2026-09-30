@@ -1,4 +1,5 @@
 import { apiFetch } from "../api/client";
+import type { OptionsContext } from "../rules";
 import type { FieldResource } from "./types";
 
 /**
@@ -25,9 +26,15 @@ export async function fetchConceptOptions(
   organizationId: number,
   fieldCode: string,
   q?: string,
+  related?: { conceptId: string; projectId?: string },
 ): Promise<FilterOption[]> {
   const query = new URLSearchParams({ fieldCode });
   if (q) query.set("q", q);
+  // A dependent list (rule options RELATED_CONCEPTS): the concepts related to the parent's answer.
+  if (related) {
+    query.set("relatedToConceptId", related.conceptId);
+    if (related.projectId) query.set("projectId", related.projectId);
+  }
   const body = await apiFetch<ConceptsResponseBody>(
     `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
   );
@@ -89,10 +96,15 @@ export async function fetchFieldConceptOptions(
   fieldId: string,
   projectId?: string,
   q?: string,
+  scope: OptionScope = {},
 ): Promise<FilterOption[]> {
   const query = new URLSearchParams({ fieldId });
   if (projectId) query.set("projectId", projectId);
   if (q) query.set("q", q);
+  // The edited entity's type narrows the field's own restriction (a type-specific configuration).
+  if (scope.valueConceptId) query.set("valueConceptId", scope.valueConceptId);
+  const related = relatedConceptOf(scope.optionsContext);
+  if (related) query.set("relatedToConceptId", related);
   const body = await apiFetch<ConceptsResponseBody>(
     `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
   );
@@ -142,9 +154,16 @@ async function fetchEntityOptions(
   organizationId: number,
   projectId: string | undefined,
   q?: string,
+  context?: OptionsContext,
 ): Promise<FilterOption[]> {
   const query = new URLSearchParams({ offset: "0", limit: String(PICKER_PAGE) });
   if (q) query.set("search", q);
+  // Rule options REF_MATCH: only the candidates whose own field holds the parent's value — the
+  // list's own reference filter (f.<fieldId>=<id>, FieldQueryService). An empty parent restricts
+  // nothing (the server checks the same way).
+  if (context?.kind === "REF_MATCH" && context.value != null) {
+    query.set(`f.${context.candidateFieldId}`, context.value);
+  }
   let path: string;
   if (projectId) {
     path = `/api/v1/projects/${projectId}/${segments.projectPath}`;
@@ -164,6 +183,28 @@ const ENTITY_SEGMENTS: Record<string, { projectPath: string; orgPath: string }> 
 };
 
 /**
+ * What narrows a field's options beyond the field itself, when it is edited on an entity: the
+ * entity's type (a type-specific vocabulary restriction) and the form's rules (a list depending on
+ * another field's answer — rules/evaluate.ts's optionsContext).
+ */
+export interface OptionScope {
+  valueConceptId?: string;
+  optionsContext?: OptionsContext;
+}
+
+function relatedConceptOf(context: OptionsContext | undefined): string | undefined {
+  return context?.kind === "RELATED_CONCEPTS" && context.relatedTo != null ? context.relatedTo : undefined;
+}
+
+/** A dependent list whose parent field is still empty offers nothing until the parent is answered. */
+function waitsForParent(context: OptionsContext | undefined): boolean {
+  if (context?.kind === "RELATED_CONCEPTS") return context.relatedTo == null;
+  return false;
+}
+
+const NOTHING = async (): Promise<FilterOption[]> => [];
+
+/**
  * The async option loader for a reference field, or null when it has none (scalars, and the
  * reference kinds that stay read-only: action codes, addresses). {@code projectId} scopes the
  * project-bound kinds; a filter (organization-wide list, no project) leaves it out.
@@ -172,14 +213,20 @@ export function optionSourceFor(
   field: FieldResource,
   organizationId: number,
   projectId?: string,
+  scope: OptionScope = {},
 ): ((q?: string) => Promise<FilterOption[]>) | null {
+  if (waitsForParent(scope.optionsContext)) return NOTHING;
   switch (field.answerType) {
     case "SELECT_ONE_FROM_FIELD_CODE":
-    case "SELECT_MULTIPLE_FROM_FIELD_CODE":
-      return field.fieldCode ? (q) => fetchConceptOptions(organizationId, field.fieldCode as string, q) : null;
+    case "SELECT_MULTIPLE_FROM_FIELD_CODE": {
+      if (!field.fieldCode) return null;
+      const related = relatedConceptOf(scope.optionsContext);
+      return (q) =>
+        fetchConceptOptions(organizationId, field.fieldCode as string, q, related ? { conceptId: related, projectId } : undefined);
+    }
     case "SELECT_ONE":
     case "SELECT_MULTIPLE":
-      return (q) => fetchFieldConceptOptions(organizationId, field.id, projectId, q);
+      return (q) => fetchFieldConceptOptions(organizationId, field.id, projectId, q, scope);
     case "SELECT_ONE_SPATIAL_UNIT":
     case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
       return (q) => fetchPlaceOptions(organizationId, q);
@@ -194,7 +241,7 @@ export function optionSourceFor(
     case "SELECT_MULTIPLE_PHASE":
     case "SELECT_MULTIPLE_CONTAINER": {
       const segments = ENTITY_SEGMENTS[referenceTargetOf(field).resourceType];
-      return (q) => fetchEntityOptions(segments, organizationId, projectId, q);
+      return (q) => fetchEntityOptions(segments, organizationId, projectId, q, scope.optionsContext);
     }
     default:
       return null;

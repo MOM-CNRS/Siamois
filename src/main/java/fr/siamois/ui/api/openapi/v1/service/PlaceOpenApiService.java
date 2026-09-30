@@ -36,6 +36,7 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
+import fr.siamois.domain.models.form.rules.ConceptIdLookup;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
@@ -73,6 +74,7 @@ public class PlaceOpenApiService {
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
+    private final ConceptIdLookup conceptIdLookup;
 
     /**
      * {@code GET /api/v1/places?organizationId=…} — the React counterpart of JSF's
@@ -213,7 +215,7 @@ public class PlaceOpenApiService {
 
         Locale locale = langService.localeForApiLang(lang);
         FieldSource fieldSource = new PanelFieldSource(SpatialUnit.DETAILS_FORM);
-        resource.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(SpatialUnit.DETAILS_FORM.getLayout())));
+        resource.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(SpatialUnit.DETAILS_FORM.getLayout(), conceptIdLookup)));
         resource.setFields(buildPlaceFieldsMetadataOnly(fieldSource, locale));
         // resource.getType() is already the resolved concept ref (placeOpenApiMapper.toResource
         // above) — reused here rather than re-resolving the same label a second time.

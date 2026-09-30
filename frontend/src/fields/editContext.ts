@@ -15,6 +15,8 @@ export interface FieldEditContext {
   entityType?: string;
   entityId?: string | number;
   entityLabel?: string;
+  // The edited entity's type concept — narrows a vocabulary field to its type-specific configuration.
+  typeConceptId?: string;
 }
 
 interface EntityLike {
@@ -25,6 +27,7 @@ interface EntityLike {
   identifier?: string | null;
   name?: string | null;
   title?: string | null;
+  type?: { id?: string | number; resourceId?: string | number } | null;
 }
 
 export function editContextOf(row: unknown, entityType: string | undefined, organizationId: number | undefined): FieldEditContext {
@@ -39,5 +42,11 @@ export function editContextOf(row: unknown, entityType: string | undefined, orga
     entityType,
     entityId: entity.id,
     entityLabel: entity.fullIdentifier ?? entity.identifier ?? entity.name ?? entity.title ?? undefined,
+    typeConceptId: typeIdOf(entity.type),
   };
+}
+
+function typeIdOf(type: EntityLike["type"]): string | undefined {
+  const id = type?.id ?? type?.resourceId;
+  return id != null ? String(id) : undefined;
 }

@@ -3,8 +3,6 @@ package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
-import fr.siamois.domain.models.form.customform.ValueMatcher;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -13,9 +11,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.mapper.UnitDefinitionMapper;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
-import fr.siamois.ui.form.ValueMatcherFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
-import fr.siamois.ui.form.rules.*;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import lombok.Getter;
@@ -179,55 +175,6 @@ public class FormService {
         }
 
     }
-
-    // ------------------- Enabled rules
-
-    /**
-     * Build an EnabledRulesEngine for all fields in the given FieldSource.
-     * Uses EnabledWhenJson on each field (if any).
-     */
-    public EnabledRulesEngine buildEnabledEngine(FieldSource fieldSource) {
-        List<ColumnRule> rules = new ArrayList<>();
-
-        for (CustomField field : fieldSource.getAllFields()) {
-            EnabledWhenJson spec = fieldSource.getEnabledSpec(field);
-            if (spec == null) continue;
-
-            Condition cond = toCondition(spec, fieldSource);
-            rules.add(new ColumnRule(field, cond));
-        }
-
-        return new EnabledRulesEngine(rules);
-    }
-
-    private Condition toCondition(EnabledWhenJson ew, FieldSource fieldSource) {
-        // Compared field from its id
-        CustomField comparedField = fieldSource.findFieldById(ew.getFieldId());
-        if (comparedField == null) {
-            throw new IllegalStateException("enabledWhen.fieldId=" + ew.getFieldId() + " not found in layout");
-        }
-
-        // expected values (JSON) -> generic ValueMatcher
-        List<ValueMatcher> matchers = ew.getValues().stream()
-                .map(this::toMatcher)
-                .toList();
-
-        return switch (ew.getOp()) {
-            case EQ -> new EqCondition(comparedField, matchers.get(0));
-            case NEQ -> new NeqCondition(comparedField, matchers.get(0));
-            case IN -> new InCondition(comparedField, matchers);
-        };
-    }
-
-    private ValueMatcher toMatcher(EnabledWhenJson.ValueJson vj) {
-        String className = vj.getAnswerClass();
-        return switch (className) {
-            case "fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectOneFromFieldAnswerCode" ->
-                    ValueMatcherFactory.forSelectOneFromFieldCode(vj);
-            default -> ValueMatcherFactory.defaultMatcher();
-        };
-    }
-
 
     // -------------- Entity <-> answer binding
 

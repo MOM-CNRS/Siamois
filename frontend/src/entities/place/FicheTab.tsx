@@ -1,12 +1,9 @@
 import { useMemo } from "react";
 import { Message } from "primereact/message";
-import { Panel } from "primereact/panel";
 import { useCanEdit } from "../../panels/writeMode";
-import { FieldEditCell } from "../../fields/FieldEditCell";
-import { FieldLabel } from "../../fields/FieldLabel";
-import { resolveValueBinding } from "../../fields/types";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { parseLayout, toGridClass, type FormLayoutCol } from "../project/form";
+import { FormLayoutView } from "../../fields/FormLayoutView";
+import type { AnswerInputBody } from "../../fields/types";
+import { parseLayout } from "../project/form";
 import { placePanelLabel } from "./form";
 import { patchPlaceAnswers } from "./api";
 import type { PlaceDetail } from "./types";
@@ -53,82 +50,21 @@ export function PlaceFicheTab({ entity, onSaved }: PlaceFicheTabProps) {
       {!entity.formBundle && (
         <Message severity="error" text="Impossible de charger la configuration du formulaire" />
       )}
-      {fields &&
-        panels.map((panel, panelIndex) => (
-          <Panel
-            key={panelIndex}
-            header={placePanelLabel(panel.name)}
-            toggleable
-            className={`sia-form-panel ${panel.className ?? ""}`.trim()}
-          >
-            {panel.rows.map((row, rowIndex) => (
-              <div key={rowIndex} className="project-fiche-tab-row sia-grid">
-                {row.columns.map((col, colIndex) => (
-                  <PlaceFormField
-                    key={colIndex}
-                    col={col}
-                    fields={fields}
-                    entity={entity}
-                    canEdit={canEdit}
-                    organizationId={organizationId}
-                    onSave={save}
-                    onSaved={onSaved}
-                  />
-                ))}
-              </div>
-            ))}
-            {panel.rows.length === 0 && <i>Aucun champ</i>}
-          </Panel>
-        ))}
-    </div>
-  );
-}
-
-function PlaceFormField({
-  col,
-  fields,
-  entity,
-  canEdit,
-  organizationId,
-  onSave,
-  onSaved,
-}: {
-  col: FormLayoutCol;
-  fields: Record<string, FieldResource>;
-  entity: PlaceDetail;
-  canEdit: boolean;
-  organizationId?: number;
-  onSave: (id: string | number, answers: Record<string, AnswerInputBody>) => Promise<unknown>;
-  onSaved: () => void;
-}) {
-  if (col.fieldId == null || col.hidden) return null;
-
-  const fieldId = String(col.fieldId);
-  const field = fields[fieldId];
-  if (!field) return null;
-  // Address field: present in the field catalog/layout (SpatialUnit.DETAILS_FORM), never in
-  // `answers` — see this file's own top-of-file doc.
-  if (field.valueBinding === "address") return null;
-
-  const stored = resolveValueBinding(field).readRaw(entity);
-
-  return (
-    <div className={`project-fiche-tab-col ${toGridClass(col.width)}`} data-field-id={fieldId}>
-      <div className="field-value-group">
-        <FieldLabel field={field} required={col.isRequired} />
-        <FieldEditCell
+      {fields && (
+        <FormLayoutView
+          entity={entity}
           entityType="place"
-          key={JSON.stringify(stored ?? null)}
-          field={field}
-          row={entity}
-          stored={stored}
-          readOnly={!canEdit || col.isReadOnly}
-          required={col.isRequired}
+          fields={fields}
+          panels={panels}
+          panelLabel={placePanelLabel}
+          canEdit={canEdit}
           organizationId={organizationId}
-          onSave={onSave}
+          onSave={save}
           onSaved={onSaved}
+          // The address has its own block in the place header.
+          isFieldShown={(field) => field.valueBinding !== "address"}
         />
-      </div>
+      )}
     </div>
   );
 }

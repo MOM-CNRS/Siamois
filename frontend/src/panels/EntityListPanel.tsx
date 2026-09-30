@@ -39,6 +39,8 @@ import { listPrefsKey } from "./listPreferences";
 import { useWriteMode } from "./writeMode";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../components/table/ValidationStatusCell";
 import { useRowActions } from "./useRowActions";
+import { useRowRules, useRuleFields } from "./useRowRules";
+import { describeIncoherence } from "../fields/incoherence";
 import { Message } from "primereact/message";
 import { entityChipStyle } from "../fields/display";
 
@@ -221,17 +223,23 @@ export function EntityListPanel({
     scope,
   };
 
+  // What the cells' rules read on top of the visible columns (rules/dependencies.ts): fetched with
+  // the rows although not shown, so a cell can be greyed by an answer whose column is hidden.
+  const shownFieldIds = useMemo(() => [...pinnedFieldIds, ...state.visibleColumns], [pinnedFieldIds, state.visibleColumns]);
+  const ruleFields = useRuleFields(catalog?.fields, shownFieldIds);
+
   const { rows, totalCount, isLoading, isFetching, error } = usePagedList<RowRecord>({
     entityType,
     params,
     offset: state.offset,
     limit: state.limit,
-    fields: state.visibleColumns,
+    fields: useMemo(() => [...state.visibleColumns, ...ruleFields], [state.visibleColumns, ruleFields]),
     fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
     // A list with a schema waits for its columns, rather than fetching once without them and then
     // adding each one (a failed catalog just means no dynamic columns).
     enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
+  const rowRules = useRowRules(catalog?.fields, shownFieldIds, ruleFields, rows);
 
   // The titlebar's count chip is the whole collection, not the filtered result set (that one is the
   // toolbar's selected/total chip). While nothing narrows the list they are the same number, so the
@@ -280,7 +288,20 @@ export function EntityListPanel({
     // by the cell's padding).
     const target = e.currentTarget as HTMLElement;
     const cell = target.closest("td") ?? target;
-    setEditTarget({ row, field, anchor: cell.getBoundingClientRect(), readOnly: !isEditable(field, row) });
+    const state = rowRules.stateOf(row, field.id);
+    const editable = isEditable(field, row);
+    setEditTarget({
+      row,
+      field,
+      anchor: cell.getBoundingClientRect(),
+      // A cell the rules disable is shown, not edited — but if it holds a value the rules made
+      // incoherent, it can still be cleared (never cleared for the user).
+      readOnly: !editable || state?.enabled === false,
+      fieldState: state,
+      incoherences: (state?.incoherent ?? []).map((r) => describeIncoherence(r, rowRules.labelOf)),
+      canClear: editable,
+      fieldLabelOf: rowRules.labelOf,
+    });
   }
 
   // entityDataTable.xhtml's isRendered(col, "writeMode", item): the app's write mode and the row's
@@ -509,24 +530,44 @@ export function EntityListPanel({
 
     const field = fieldByColumn.get(col.key);
     const content = col.render(row);
-    const editable = field != null && isEditable(field, row);
+    const state = field ? rowRules.stateOf(row, field.id) : undefined;
+    const disabledByRules = state?.enabled === false;
+    const incoherences = (state?.incoherent ?? []).map((r) => describeIncoherence(r, rowRules.labelOf));
+    const editable = field != null && isEditable(field, row) && !disabledByRules;
     // An empty cell nobody can edit has nothing to open.
     if (!field || (!editable && !content)) {
-      return <span className="entity-list-panel-cell-value">{content}</span>;
+      return (
+        <span
+          className={`entity-list-panel-cell-value${disabledByRules ? " entity-list-panel-cell-disabled" : ""}`}
+          title={disabledByRules ? "Ne s'applique pas avec les réponses actuelles" : undefined}
+        >
+          {content}
+        </span>
+      );
     }
 
     // One gesture for every field cell: the first click opens the overlay — its editor, or the
     // value itself when it can't be edited — and the chips there open the referenced fiches.
     return (
       <span
-        className="entity-list-panel-editable-cell"
+        className={`entity-list-panel-editable-cell${disabledByRules ? " entity-list-panel-cell-disabled" : ""}${
+          incoherences.length > 0 ? " entity-list-panel-cell-incoherent" : ""
+        }`}
         role="button"
         tabIndex={0}
         // The cell is one line and may be truncated, so the full text is always reachable as the
-        // native tooltip; an empty cell falls back to naming what clicking it would edit.
-        title={renderAnswerValue(field, resolveValueBinding(field).readRaw(row)) || `Modifier « ${field.label} »`}
+        // native tooltip; an empty cell falls back to naming what clicking it would edit. A value
+        // the rules made incoherent says why first.
+        title={
+          incoherences.length > 0
+            ? incoherences.join("\n")
+            : renderAnswerValue(field, resolveValueBinding(field).readRaw(row)) || `Modifier « ${field.label} »`
+        }
         onClick={(e) => openCellEditor(e, row, field)}
       >
+        {incoherences.length > 0 && (
+          <i className="bi bi-exclamation-triangle-fill entity-list-panel-cell-warning" aria-label="Valeur incohérente" />
+        )}
         {/* An empty cell shows nothing: a non-breaking space keeps it one line tall, so the whole cell
             stays a click target (the hover outline and the tooltip say it is editable). */}
         {content || <span className="entity-list-panel-editable-cell-empty">{"\u00a0"}</span>}

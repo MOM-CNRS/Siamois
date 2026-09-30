@@ -1,3 +1,5 @@
+import type { FieldRules } from "../../rules/types";
+
 // Mirrors the JSON shape FormUiDtoLayoutJson.serialize produces for FormResource.layoutJson
 // (plan §6/§8 phase 6) — panels/rows/columns referencing fieldId into the sibling `fields`
 // catalog from GET /api/v1/organizations/{id}/project-types. Kept generic (nothing Project-typed
@@ -25,6 +27,8 @@ export interface FormLayoutCol {
   isRequired: boolean;
   isReadOnly: boolean;
   fieldId?: number | string | null;
+  // Conditional rules (enabledWhen / requiredWhen / options / constraints) — see rules/types.ts.
+  rules?: FieldRules | null;
 }
 
 /**
