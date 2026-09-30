@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
 import type { DuplicationResult, DuplicationStructure, EntityTypeConfig } from "../entities/types";
 import { DuplicateStructureOverlay } from "./DuplicateStructureOverlay";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const loadMock = vi.fn<(id: string | number) => Promise<DuplicationStructure>>();
 const runMock = vi.fn<(id: string | number, o: { copies: number; descendantIds: (string | number)[] }) => Promise<DuplicationResult>>();

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneRefRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
 import { registerEntityType } from "../entities/registry";
@@ -7,7 +7,6 @@ import { EntityNavigationProvider } from "../panels/entityNavigation";
 import type { FieldRendererProps } from "./registry";
 import type { FieldResource } from "./types";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("./optionSources", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./optionSources")>();
@@ -310,7 +309,7 @@ describe("« Nouveau » footer", () => {
     collectionPath: "phases",
     icon: "bi bi-clock",
     api: { list: vi.fn(), get: vi.fn() },
-    list: { columns: [], searchable: true, createForm: () => <div className="fake-phase-form" /> },
+    list: { columns: [], searchable: true, createForm: () => <div className="fake-phase-form" />, createProjectKind: "phase" },
     detail: { tabs: [] },
     routes: { list: "/phases", detail: (id) => `/phases/${id}` },
   });

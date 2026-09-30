@@ -1,9 +1,8 @@
-import type { FieldRules } from "../../rules/types";
+import type { FieldRules } from "../rules/types";
 
-// Mirrors the JSON shape FormUiDtoLayoutJson.serialize produces for FormResource.layoutJson
-// (plan §6/§8 phase 6) — panels/rows/columns referencing fieldId into the sibling `fields`
-// catalog from GET /api/v1/organizations/{id}/project-types. Kept generic (nothing Project-typed
-// here): any future entity whose form is schema-driven the same way can reuse this parser.
+// The fiche layout of every entity type: the JSON FormUiDtoLayoutJson.serialize produces for
+// FormResource.layoutJson — panels/rows/columns whose fieldId points into the sibling `fields`
+// catalog.
 
 // Mirrors the server's own ColumnWidth (fr.siamois.ui.form.dto.ColumnWidth) exactly: mobile-first,
 // `span` is the width below `md`, `md`/`lg` override it from that breakpoint up when present. The
@@ -114,13 +113,19 @@ function normalizeCol(col: FormLayoutCol): FormLayoutCol {
 }
 
 // Panel `name` is an i18n message code (JSF resolves it against the message bundle), not a
-// ready-to-display label — ActionUnitDetailsForm only ever uses these four. Falls back to the
-// raw code for any panel this map doesn't know about, rather than crashing on the next one added.
+// ready-to-display label. One map for every entity type — the codes don't collide. Falls back to
+// the raw code for a panel it doesn't know (a group created in the form builder).
 const PANEL_LABELS: Record<string, string> = {
   "common.header.general": "Général",
   "common.label.localisation": "Localisation",
+  "common.header.chronology": "Chronologie",
+  "common.header.chronologie": "Chronologie",
+  "common.header.measurement": "Mesures",
+  "common.header.dimensions": "Dimensions",
   "actionunit.header.administrative": "Administratif",
   "actionunit.header.documentation": "Documentation",
+  "recordingunit.panel.chronology": "Chronologie",
+  "recordingunit.panel.measurements": "Mesures",
 };
 
 export function panelLabel(nameCode: string): string {

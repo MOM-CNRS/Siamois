@@ -1,3 +1,4 @@
+import { PROJECT_KEY } from "./keys";
 import type { ListScope } from "./types";
 
 // The project a scoped list lives in: the scope itself when it IS a project (a project's own
@@ -6,6 +7,6 @@ import type { ListScope } from "./types";
 // has no project at all (a place's children).
 export function scopeProjectId(scope: ListScope | undefined): string | undefined {
   if (!scope) return undefined;
-  if (scope.entityType === "project") return String(scope.id);
+  if (scope.entityType === PROJECT_KEY) return String(scope.id);
   return scope.projectId != null ? String(scope.projectId) : undefined;
 }

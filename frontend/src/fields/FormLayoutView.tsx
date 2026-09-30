@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { Panel } from "primereact/panel";
 import { evaluateForm, type FieldState } from "../rules";
-import { toGridClass, type FormLayoutCol, type FormLayoutPanel } from "../entities/project/form";
+import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";
 import { FieldEditCell } from "./FieldEditCell";
 import { FieldLabel } from "./FieldLabel";
-import { resolveValueBinding, unwrapAnswer, type AnswerInputBody, type FieldResource } from "./types";
+import { resolveValueBinding, type AnswerInputBody, type FieldResource } from "./types";
+import { valueOfField } from "./values";
 
 /**
  * The fiche's form, for every entity type: panels → rows → columns of FieldLabel + FieldEditCell,
@@ -21,7 +22,6 @@ export interface FormLayoutViewProps<TEntity extends { id?: string | number }> {
   entityType: string;
   fields: Record<string, FieldResource>;
   panels: FormLayoutPanel[];
-  panelLabel: (name: string) => string;
   canEdit: boolean;
   organizationId?: number;
   onSave: (id: string | number, answers: Record<string, AnswerInputBody>, value?: unknown) => Promise<unknown>;
@@ -35,7 +35,6 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
   entityType,
   fields,
   panels,
-  panelLabel,
   canEdit,
   organizationId,
   onSave,
@@ -80,18 +79,6 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
       ))}
     </>
   );
-}
-
-/**
- * A field's value for the rules: through its binding when the catalog knows it (system fields read
- * their own property), else straight from the answers map — a rule may read a field the layout
- * doesn't place.
- */
-export function valueOfField(entity: unknown, fields: Record<string, FieldResource>, id: string): unknown {
-  const field = fields[id];
-  if (field) return resolveValueBinding(field).read(entity);
-  const answers = (entity as { answers?: Record<string, unknown> } | null)?.answers;
-  return answers ? unwrapAnswer(answers[id]) : undefined;
 }
 
 function FormLayoutField<TEntity extends { id?: string | number }>({

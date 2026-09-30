@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { panelLabel, parseLayout, toGridClass } from "./form";
+import { panelLabel, parseLayout, toGridClass } from "./layout";
 
 describe("parseLayout", () => {
   it("returns an empty array for an empty layoutJson", () => {

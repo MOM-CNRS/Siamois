@@ -1,16 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../api/client";
 import type { HomeWidgetContext, HomeWidgetDef } from "./types";
-import { placeHomeWidgets } from "./place/homeWidgets";
-import { recordingUnitHomeWidgets } from "./recordingUnit/homeWidgets";
-import { findHomeWidgets } from "./find/homeWidgets";
-import { phaseHomeWidgets } from "./phase/homeWidgets";
-import { containerHomeWidgets } from "./container/homeWidgets";
+import { placeEntityConfig } from "./place/config";
+import { recordingUnitEntityConfig } from "./recordingUnit/config";
+import { findEntityConfig } from "./find/config";
+import { phaseEntityConfig } from "./phase/config";
+import { containerEntityConfig } from "./container/config";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("../api/client", () => ({ apiFetch: vi.fn() }));
 
@@ -21,11 +20,11 @@ const COUNTS = { projects: 1, places: 2, recordingUnits: 3, finds: 4, phases: 5,
 // The five non-project cards: each shows its own count and opens its organization-wide React list
 // through App's router, in homePanel.xhtml's order.
 const CASES: [string, (ctx: HomeWidgetContext) => HomeWidgetDef[], string, string, number][] = [
-  ["Lieux", placeHomeWidgets, "2", "place", 20],
-  ["Unités d'enregistrement", recordingUnitHomeWidgets, "3", "recordingUnit", 30],
-  ["Mobilier", findHomeWidgets, "4", "find", 40],
-  ["Phases", phaseHomeWidgets, "5", "phase", 50],
-  ["Contenants", containerHomeWidgets, "6", "container", 60],
+  ["Lieux", placeEntityConfig.home!.widgets!, "2", "place", 20],
+  ["Unités d'enregistrement", recordingUnitEntityConfig.home!.widgets!, "3", "recordingUnit", 30],
+  ["Mobilier", findEntityConfig.home!.widgets!, "4", "find", 40],
+  ["Phases", phaseEntityConfig.home!.widgets!, "5", "phase", 50],
+  ["Contenants", containerEntityConfig.home!.widgets!, "6", "container", 60],
 ];
 
 let container: HTMLDivElement;

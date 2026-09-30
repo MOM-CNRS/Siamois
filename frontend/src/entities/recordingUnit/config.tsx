@@ -7,10 +7,10 @@ import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUn
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
-import { RecordingUnitFicheTab } from "./FicheTab";
+import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { getOrganizationRecordingUnitTypes, getRecordingUnitTypes } from "./recordingUnitTypes";
-import { RECORDING_UNIT_ROUTES } from "./routes";
-import { recordingUnitHomeWidgets } from "./homeWidgets";
+import { jsfRoutes } from "../routes";
+import { countCardWidgets } from "../countCard";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 
 function recordingUnitRef(ru: RecordingUnitSummary): EntityRef {
@@ -66,7 +66,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         return { fields: types.fields, columns: types.tableColumns };
       },
     },
-    rulesSegment: "recording-unit-types",
+    typesSegment: "recording-unit-types",
     defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
@@ -100,7 +100,9 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       {
         key: "fiche",
         label: "Détails",
-        render: (entity, helpers) => <RecordingUnitFicheTab entity={entity} onSaved={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <SchemaFicheTab entity={entity} entityType="recordingUnit" typesSegment="recording-unit-types" save={patchRecordingUnitAnswers} onSaved={helpers.refetch} />
+        ),
       },
       // JSF's hierarchy tab, reduced to what the recording unit contains (its direct children).
       relationTab<RecordingUnitDetail>({
@@ -130,8 +132,17 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     // The titlebar's "Créer" makes a sibling in the same project.
     createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
-  routes: RECORDING_UNIT_ROUTES,
+  routes: jsfRoutes("recording-unit"),
   home: {
-    widgets: recordingUnitHomeWidgets,
+    widgets: countCardWidgets({
+      entityType: "recordingUnit",
+      count: "recordingUnits",
+      icon: "bi bi-pencil-square",
+      label: "Unités d'enregistrement",
+      description: "Les unités d'enregistrement",
+      className: "sia-welcome-card sia-recording-unit",
+      chipClassName: "recording-unit-count-chip-alt",
+      order: 30,
+    }),
   },
 };

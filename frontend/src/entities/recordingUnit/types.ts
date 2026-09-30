@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/recording-units (list) and GET /api/v1/recording-units/{id} (detail) both
 // return this shape, like ProjectResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
 
 export interface RecordingUnitCounts {
   children?: number | null;

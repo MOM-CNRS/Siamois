@@ -10,6 +10,7 @@ import type { DuplicationConfig, DuplicationResult, DuplicationStructure } from 
 import { entityChipStyle } from "../fields/display";
 import { CreateFormShell } from "./CreateFormShell";
 import { check, createdCount, indexStructure, selectAll, uncheck } from "./duplicateSelection";
+import { queryKeys } from "../api/queryKeys";
 
 export interface DuplicateStructureOverlayProps {
   entityType: string;
@@ -75,7 +76,7 @@ function DuplicateForm({
   onCancel: () => void;
 }) {
   const structure = useQuery({
-    queryKey: ["duplication-structure", entityType, entityId],
+    queryKey: queryKeys.duplicationStructure(entityType, entityId),
     queryFn: () => duplication.load(entityId),
     // What is picked from is the tree as it is now.
     gcTime: 0,

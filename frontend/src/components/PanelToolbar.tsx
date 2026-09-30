@@ -6,6 +6,7 @@ import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark, getBookmarkStatus } from "../api/bookmarks";
 import type { PanelActions, PanelChrome } from "../mountOptions";
 import { useBridge } from "../panels/bridge";
+import { queryKeys } from "../api/queryKeys";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
@@ -34,7 +35,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
   // chrome.bookmarked is unknown for a list/Home reached client-side — ask the server then.
   const statusKnown = chrome.bookmarked !== undefined;
   const { data: fetchedBookmarked } = useQuery({
-    queryKey: ["bookmark-status", chrome.resourceUri, organizationId],
+    queryKey: queryKeys.bookmark(chrome.resourceUri, organizationId),
     queryFn: () => getBookmarkStatus(chrome.resourceUri, organizationId!),
     enabled: !statusKnown && organizationId != null && chrome.resourceUri !== "",
   });
@@ -63,9 +64,10 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
       setBookmarked((current) => !current);
       // Every cached copy of this flag is now stale: the entity's own `bookmarked` (detail and
       // list rows) and a list/Home status lookup.
-      void queryClient.invalidateQueries({ queryKey: ["bookmark-status"] });
-      void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
-      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+      // The toolbar doesn't know which entity type it shows (it also serves lists and Home).
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityLists() });
       // The JSF sidebar's bookmarks list, which no REST call reaches.
       bridge.refreshBookmarks?.();
     },

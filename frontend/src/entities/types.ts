@@ -5,9 +5,10 @@
 import type { ReactNode } from "react";
 import type { AnswerInputBody, FieldResource } from "../fields/types";
 import type { PanelChrome } from "../mountOptions";
+import type { EntityKey } from "./keys";
 
 // The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
-export type CreatableKind = "recordingUnit" | "find" | "phase" | "container";
+export type CreatableKind = Extract<EntityKey, "recordingUnit" | "find" | "phase" | "container">;
 
 export interface PagedResult<T> {
   data: T[];
@@ -177,9 +178,9 @@ export interface CreateFormContext {
   onCancel: () => void;
 }
 
-// Passed to a tab's render alongside the entity (plan §8 phase 6) — `refetch` so a tab that
-// mutates the entity (Project's fiche: field edits, identifier rename) can ask EntityDetailPanel's
-// own query to reload rather than each tab wiring its own cache invalidation. The rest
+// Passed to a tab's render alongside the entity — `refetch` after a tab mutates the entity (field
+// edits, identifier rename): EntityDetailPanel reloads it and refreshes the lists of its type,
+// rather than each tab wiring its own cache invalidation. The rest
 // (organizationId/onNavigate/onOpenOverview/overviewEntityId) is what a related-list tab needs to
 // render an embedded EntityListPanel exactly as App.tsx's own top-level list does — plumbed
 // straight through from EntityDetailPanel's own props, not rebuilt per tab.
@@ -324,10 +325,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       // under the organization).
       load: (ctx: { organizationId?: number; scope?: ListScope }) => Promise<FieldCatalog>;
     };
-    // The project endpoint serving this entity's per-type forms (e.g. "recording-unit-types"), whose
-    // layouts carry the conditional rules of each (project, type). Set for the entities whose form is
-    // configured per type; the others keep the rules their field catalog carries.
-    rulesSegment?: string;
+    // The types catalog segment of an entity whose form is configured per type in its project
+    // (GET /api/v1/projects/{id}/<typesSegment>, e.g. "recording-unit-types"): its layouts give the
+    // fiche's form and the conditional rules of each (project, type). The others keep the rules
+    // their field catalog carries.
+    typesSegment?: string;
     defaultSort?: string;
     searchable: boolean;
     // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button
@@ -340,6 +342,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // `createForm` lets the user pick one among those where they may create this kind
     // (useCreateProject), and the "Créer" button is disabled when there is none.
     createProjectKind?: CreatableKind;
+    // What a « Nouveau » from a reference field pre-fills from the entity being edited (a find
+    // created from a recording unit's field is created ON that recording unit).
+    createPrefillFrom?: (edited: { entityType?: string; entityId?: string | number; entityLabel?: string }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
   };

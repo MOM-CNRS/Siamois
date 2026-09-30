@@ -44,5 +44,8 @@ export function useFrozenColumnOffsets(getTable: () => HTMLElement | null | unde
     const observer = new ResizeObserver(update);
     headers.forEach((th) => observer.observe(th));
     return () => observer.disconnect();
+    // Keyed on `signature` only: `getTable` is a fresh closure every render, and re-attaching the
+    // observer on each one is exactly what the signature avoids.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 }

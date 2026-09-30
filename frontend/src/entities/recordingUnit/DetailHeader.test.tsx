@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { patchRecordingUnitAnswers } from "./api";
@@ -9,7 +9,6 @@ import type { FieldResource } from "../../fields/types";
 import { WriteModeProvider } from "../../panels/writeMode";
 import type { RecordingUnitDetail } from "./types";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("./api", () => ({ patchRecordingUnitAnswers: vi.fn() }));
 vi.mock("./recordingUnitTypes", () => ({ getRecordingUnitTypes: vi.fn() }));

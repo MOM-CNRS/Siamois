@@ -1,19 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { ContainerCreateForm } from "./CreateForm";
-import { getContainerEffectiveForm } from "./containerTypes";
+import { getEffectiveForm } from "../typeCatalog";
 import { createContainer } from "./api";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-vi.mock("./containerTypes", () => ({ getContainerEffectiveForm: vi.fn() }));
+vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createContainer: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
-vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
+vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (
@@ -23,7 +22,7 @@ vi.mock("../../fields/renderers", () => ({
   ),
 }));
 
-const mockedGetContainerEffectiveForm = vi.mocked(getContainerEffectiveForm);
+const mockedGetContainerEffectiveForm = vi.mocked(getEffectiveForm);
 const mockedCreateContainer = vi.mocked(createContainer);
 
 const typeField: FieldResource = {
@@ -84,7 +83,7 @@ describe("ContainerCreateForm", () => {
     render();
     await flush();
 
-    expect(mockedGetContainerEffectiveForm).toHaveBeenCalledWith("5", null);
+    expect(mockedGetContainerEffectiveForm).toHaveBeenCalledWith("container-types", "5", null);
   });
 
   it("disables submit until a type is picked", async () => {

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { patchValidation, requiresValidator } from "../api/validation";
-import type { PagedResult } from "../entities/types";
+import { patchCachedEntity } from "../api/entityCache";
 import {
   VALIDATION_PRESENTATION,
   VALIDATION_STATUSES,
@@ -41,21 +41,8 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
     mutationFn: (target: ValidationStatusValue) => patchValidation(collectionPath, entityId, target),
     onSuccess: (_, target) => {
       overlayRef.current?.hide();
-      // The new state is known: write it into the cached rows and fiche rather than refetching
-      // every list page on screen for one property.
-      const isThis = (id: unknown) => String(id) === String(entityId);
-      queryClient.setQueriesData<PagedResult<{ id?: unknown }>>({ queryKey: ["entity-list", entityType] }, (page) =>
-        page?.data?.some((row) => isThis(row.id))
-          ? { ...page, data: page.data.map((row) => (isThis(row.id) ? { ...row, validated: target } : row)) }
-          : page,
-      );
-      queryClient.setQueriesData<object>(
-        {
-          predicate: ({ queryKey }) =>
-            queryKey[0] === "entity-detail" && queryKey[1] === entityType && isThis(queryKey[2]),
-        },
-        (entity) => entity && { ...entity, validated: target },
-      );
+      // The new state is known: written into the cached rows and fiche, no refetch for one property.
+      patchCachedEntity(queryClient, entityType, entityId, { validated: target });
     },
   });
 

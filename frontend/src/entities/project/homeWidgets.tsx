@@ -6,6 +6,7 @@ import { EntityCountCard } from "../../components/home/EntityCountCard";
 import { useOrganizationCounts } from "../organizationCounts";
 import type { HomeWidgetContext, HomeWidgetDef } from "../types";
 import { listProjects } from "./api";
+import { queryKeys } from "../../api/queryKeys";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
@@ -34,7 +35,7 @@ const RECENT_LIMIT = 5;
 
 function useRecentProjects(organizationId?: number) {
   return useQuery({
-    queryKey: ["project-home-recent", organizationId],
+    queryKey: queryKeys.projectHomeRecent(organizationId),
     queryFn: () => listProjects({ offset: 0, limit: RECENT_LIMIT, sort: "creationTime:desc", organizationId }),
   });
 }

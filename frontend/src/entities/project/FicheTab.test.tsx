@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiError } from "../../api/client";
@@ -12,7 +12,6 @@ import { getProjectHistory } from "./history";
 import { patchProject } from "./api";
 import type { ProjectDetail } from "./types";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
 vi.mock("./history", () => ({ getProjectHistory: vi.fn() }));

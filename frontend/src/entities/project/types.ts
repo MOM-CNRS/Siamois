@@ -3,22 +3,14 @@
 // detail entity are the same resource, unlike some entities with separate summary/detail DTOs).
 // Keep in sync with that class if it changes.
 
-export interface ResolvedConcept {
-  resourceType: string;
-  id: string;
-  externalUrl?: string | null;
-  resolvedLabel?: string | null;
-}
+import type { OrganizationIdentifier, ResolvedConcept } from "../common";
+
+export type { OrganizationIdentifier, ProjectRef, ResolvedConcept } from "../common";
 
 export interface PlaceLight {
   resourceType: string;
   id: string;
   name?: string | null;
-}
-
-export interface OrganizationIdentifier {
-  resourceType: string;
-  id: string;
 }
 
 export interface ProjectCounts {
@@ -86,10 +78,3 @@ export interface ResourceRef {
 export type ProjectSummary = ProjectResource;
 export type ProjectDetail = ProjectResource;
 
-// A row's project on an organization-wide list (ResourceRef server side, set by
-// OrganizationListsControllerApi only) — absent on project-scoped lists and on details.
-export interface ProjectRef {
-  resourceId: string;
-  resourceType: string;
-  label?: string | null;
-}

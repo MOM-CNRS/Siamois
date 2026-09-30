@@ -8,10 +8,10 @@ import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
-import { listRecordingUnits } from "../recordingUnit/api";
-import type { RecordingUnitSummary } from "../recordingUnit/types";
+import { fetchList } from "../listApi";
 import { createFind } from "./api";
-import { getFindEffectiveForm } from "./findTypes";
+import { getEffectiveForm } from "../typeCatalog";
+import { queryKeys } from "../../api/queryKeys";
 import { useCreateProject } from "../../components/useCreateProject";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
@@ -20,8 +20,7 @@ import { useCreateProject } from "../../components/useCreateProject";
 // created ON a recording unit (`recordingUnitId`), but this tab — like the rest of the project
 // fiche — is scoped by PROJECT, not by any one UE. So the form itself has to let the user find
 // the UE within this project first, via a plain search-as-you-type over
-// GET /api/v1/projects/{id}/recording-units (entities/recordingUnit/api.ts's own listRecordingUnits,
-// scoped the same way this tab's own list already is) — there is no dedicated
+// GET /api/v1/projects/{id}/recording-units (scoped the same way this tab's own list already is) — there is no dedicated
 // "recording units of a project" autocomplete endpoint, and building the whole list page for 20
 // rows would be overkill for what's a small, bounded set per project in practice.
 //
@@ -37,15 +36,21 @@ interface ConceptPick {
   label?: string | null;
 }
 
+// The fields of a recording unit row the picker needs.
+interface RecordingUnitOption {
+  id: string | number;
+  fullIdentifier?: string | null;
+}
+
 export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCancel }: CreateFormContext) {
   // The list's own project, or — on an organization-wide list — the one picked first in the form.
   const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "find" });
   // Created from a recording unit (its row action, its "Mobilier" tab): that UE, no picker.
   const fixedRecordingUnit = prefill?.recordingUnit;
-  const [recordingUnit, setRecordingUnit] = useState<RecordingUnitSummary | null>(null);
+  const [recordingUnit, setRecordingUnit] = useState<RecordingUnitOption | null>(null);
   const recordingUnitId = fixedRecordingUnit?.id ?? recordingUnit?.id;
   const [ruQuery, setRuQuery] = useState("");
-  const [ruSuggestions, setRuSuggestions] = useState<RecordingUnitSummary[]>([]);
+  const [ruSuggestions, setRuSuggestions] = useState<RecordingUnitOption[]>([]);
   const [category, setCategory] = useState<ConceptPick | null>(null);
   // Categories and recording units are per project: a pick from the previous project no longer applies.
   useEffect(() => {
@@ -57,8 +62,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   const autoCompleteRef = useRef<AutoComplete>(null);
 
   const typesQuery = useQuery({
-    queryKey: ["find-effective-form", projectId, null],
-    queryFn: () => getFindEffectiveForm(projectId as string, null),
+    queryKey: queryKeys.effectiveForm("find-types", projectId, null),
+    queryFn: () => getEffectiveForm("find-types", projectId as string, null),
     enabled: projectId != null,
   });
 
@@ -69,7 +74,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
 
   async function searchRecordingUnits(e: AutoCompleteCompleteEvent) {
     if (projectId == null) return;
-    const result = await listRecordingUnits({
+    const result = await fetchList<RecordingUnitOption>("recording-units", {
       offset: 0,
       limit: 20,
       search: e.query || undefined,
@@ -116,8 +121,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
                 setRuQuery(e.value);
                 setRecordingUnit(null);
               } else {
-                setRecordingUnit(e.value as RecordingUnitSummary);
-                setRuQuery((e.value as RecordingUnitSummary).fullIdentifier ?? "");
+                setRecordingUnit(e.value as RecordingUnitOption);
+                setRuQuery((e.value as RecordingUnitOption).fullIdentifier ?? "");
               }
             }}
             completeMethod={searchRecordingUnits}

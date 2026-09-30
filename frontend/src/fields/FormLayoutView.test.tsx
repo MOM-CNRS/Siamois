@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FormLayoutView } from "./FormLayoutView";
 import { registerDefaultFieldRenderers } from "./registerDefaultRenderers";
-import type { FormLayoutPanel } from "../entities/project/form";
+import type { FormLayoutPanel } from "../fields/layout";
 import type { FieldResource } from "./types";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 registerDefaultFieldRenderers();
 
@@ -86,7 +85,6 @@ function render(answers: Record<string, unknown>, onSave = vi.fn().mockResolvedV
         entityType="recordingUnit"
         fields={fields}
         panels={panels}
-        panelLabel={(n) => n}
         canEdit
         onSave={onSave}
         onSaved={onSaved}

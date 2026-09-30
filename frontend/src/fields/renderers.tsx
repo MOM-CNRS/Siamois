@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import { useOpenEntity } from "../panels/entityNavigation";
 import { getEntityType } from "../entities/registry";
-import type { CreatePrefill } from "../entities/types";
+import { PROJECT_KEY } from "../entities/keys";
 import type { Bound } from "../rules";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
@@ -330,8 +330,8 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
           entityType={target.createEntityType!}
           anchor={createAnchor}
           organizationId={orgId}
-          scope={context?.projectId ? { entityType: "project", id: context.projectId } : undefined}
-          prefill={createPrefill(target, context)}
+          scope={context?.projectId ? { entityType: PROJECT_KEY, id: context.projectId } : undefined}
+          prefill={context ? createConfig.list.createPrefillFrom?.(context) : undefined}
           onCreated={(id) => void onCreated(id)}
           onHide={() => setCreateAnchor(null)}
         />
@@ -346,18 +346,9 @@ function creatableConfig(target: ReferenceTarget, context: FieldEditContext | un
   if (!target.createEntityType) return undefined;
   const config = getEntityType(target.createEntityType);
   if (!config?.list.createForm) return undefined;
-  const projectBound = target.createEntityType !== "place";
-  if (projectBound && !context?.projectId) return undefined;
+  // Created inside a project: needs the edited entity's one.
+  if (config.list.createProjectKind && !context?.projectId) return undefined;
   return config;
-}
-
-// A find created from a recording unit's field is created ON that recording unit — what JSF's
-// "new find" row action does too. Nothing else has a link implied by the field it comes from.
-function createPrefill(target: ReferenceTarget, context: FieldEditContext | undefined): CreatePrefill | undefined {
-  if (target.createEntityType === "find" && context?.entityType === "recordingUnit" && context.entityId != null) {
-    return { recordingUnit: { id: context.entityId, label: context.entityLabel ?? String(context.entityId) } };
-  }
-  return undefined;
 }
 
 export function SelectOneRefRenderer(props: FieldRendererProps) {

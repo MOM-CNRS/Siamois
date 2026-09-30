@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 
 // Mirrors OrganizationCountsResource — one request feeds every home "database access" card.
 export interface OrganizationCounts {
@@ -19,7 +20,7 @@ export async function getOrganizationCounts(organizationId: number): Promise<Org
 // Same query key for every card, so react-query dedupes the six cards down to one request.
 export function useOrganizationCounts(organizationId?: number) {
   return useQuery({
-    queryKey: ["organization-counts", organizationId],
+    queryKey: queryKeys.organizationCounts(organizationId),
     queryFn: () => getOrganizationCounts(organizationId as number),
     enabled: organizationId != null,
   });

@@ -34,6 +34,16 @@ describe("findEntityConfig", () => {
     expect(findEntityConfig.list.createProjectKind).toBe("find");
   });
 
+  it("is created ON the recording unit whose field offers « Nouveau », and on nothing else", () => {
+    const prefillFrom = findEntityConfig.list.createPrefillFrom!;
+    expect(prefillFrom({ entityType: "recordingUnit", entityId: 31, entityLabel: "INST-UE31" })).toEqual({
+      recordingUnit: { id: 31, label: "INST-UE31" },
+    });
+    expect(prefillFrom({ entityType: "recordingUnit", entityId: 31 })).toEqual({ recordingUnit: { id: 31, label: "31" } });
+    expect(prefillFrom({ entityType: "phase", entityId: 4 })).toBeUndefined();
+    expect(prefillFrom({ entityType: "recordingUnit" })).toBeUndefined();
+  });
+
   it("derives its bookmark chrome from the resource itself", () => {
     const entity = { id: "7", fullIdentifier: "M-7", resourceUri: "/specimen/7", bookmarked: true } as unknown as Parameters<NonNullable<typeof findEntityConfig.detail.chrome>>[0];
     expect(findEntityConfig.detail.chrome?.(entity)).toEqual({ resourceUri: "/specimen/7", title: "M-7", bookmarked: true });

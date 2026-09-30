@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldRendererProps } from "../../fields/registry";
@@ -7,7 +7,6 @@ import { PlaceCreateForm } from "./CreateForm";
 import type { CreatePrefill } from "../types";
 import { createPlace } from "./api";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("./api", () => ({ createPlace: vi.fn() }));
 

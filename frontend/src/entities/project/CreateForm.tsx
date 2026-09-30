@@ -9,6 +9,7 @@ import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
+import { queryKeys } from "../../api/queryKeys";
 
 // The list toolbar's "Créer" overlay (migration plan follow-up — see entities/types.ts's own
 // CreateFormContext doc for why this is an overlay, not a JSF-style modal dialog). Deliberately
@@ -36,7 +37,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
-    queryKey: ["project-types", organizationId],
+    queryKey: queryKeys.projectTypes(organizationId),
     queryFn: () => getProjectTypes(organizationId as number),
     enabled: organizationId != null,
   });

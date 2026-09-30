@@ -1,4 +1,4 @@
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 import type { FieldResource } from "../fields/types";
@@ -24,7 +24,6 @@ const typeRules: TypeRules = {
 const rowA = { id: 1, projectId: "p", type: { id: "A" }, "20": null };
 const rowB = { id: 2, projectId: "p", type: { id: "B" }, "20": null };
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Runs a hook once in a throwaway component and returns what it returned. */
 function renderHook<T>(hook: () => T): { result: { current: T } } {

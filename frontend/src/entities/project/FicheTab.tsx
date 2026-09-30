@@ -8,11 +8,12 @@ import { toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/
 import type { FieldResource } from "../../fields/types";
 import { useCanEdit } from "../../panels/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
-import { parseLayout, panelLabel } from "./form";
+import { parseLayout } from "../../fields/layout";
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
 import { FormSkeleton } from "../../components/DetailSkeleton";
+import { queryKeys } from "../../api/queryKeys";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
 // panel/row/field ActionUnit.DETAILS_FORM's layout defines (4 panels, 33 fields), same as JSF's
@@ -62,13 +63,13 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
   const canEdit = useCanEdit(entity);
 
   const typesQuery = useQuery({
-    queryKey: ["project-types", organizationIdRaw],
+    queryKey: queryKeys.projectTypes(organizationIdRaw),
     queryFn: () => getProjectTypes(organizationIdRaw as string),
     enabled: organizationIdRaw != null,
   });
 
   const historyQuery = useQuery({
-    queryKey: ["project-history", entity.id],
+    queryKey: queryKeys.projectHistory(entity.id),
     queryFn: () => getProjectHistory(entity.id),
   });
 
@@ -130,7 +131,6 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
           entityType="project"
           fields={fields}
           panels={panels}
-          panelLabel={panelLabel}
           canEdit={canEdit}
           organizationId={organizationId}
           onSave={save}

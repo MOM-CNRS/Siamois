@@ -12,6 +12,7 @@ import { patchRecordingUnitAnswers } from "./api";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { RecordingUnitDetail } from "./types";
 import { getEntityType } from "../registry";
+import { queryKeys } from "../../api/queryKeys";
 
 // recordingUnitPanelHeader.xhtml's content (identifier chip, then the editable category chip) —
 // lives in EntityDetailPanel's own PrimeReact <Panel> `header`, matching Project's own
@@ -58,7 +59,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
-    queryKey: ["recording-unit-types", entity.projectId],
+    queryKey: queryKeys.recordingUnitTypes(entity.projectId),
     queryFn: () => getRecordingUnitTypes(entity.projectId as string),
     enabled: entity.projectId != null,
   });

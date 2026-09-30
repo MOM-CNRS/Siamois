@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/containers (list) and GET /api/v1/containers/{id} (detail) both return
 // this shape, like PhaseResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
 
 export interface ContainerPermissions {
   canEdit: boolean;

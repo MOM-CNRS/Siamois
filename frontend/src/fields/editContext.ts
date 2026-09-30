@@ -1,3 +1,5 @@
+import { PROJECT_KEY } from "../entities/keys";
+
 /**
  * Where a field is being edited: what a relation picker needs besides the field itself — the
  * organization for org-wide sources (persons, projects, places, concepts), the project the edited
@@ -33,7 +35,7 @@ interface EntityLike {
 export function editContextOf(row: unknown, entityType: string | undefined, organizationId: number | undefined): FieldEditContext {
   const entity = (row ?? {}) as EntityLike;
   const projectId =
-    entityType === "project"
+    entityType === PROJECT_KEY
       ? entity.id
       : entity.projectId ?? entity.project?.resourceId ?? undefined;
   return {

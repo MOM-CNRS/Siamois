@@ -1,23 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { RecordingUnitCreateForm } from "./CreateForm";
-import { getRecordingUnitTypes } from "./recordingUnitTypes";
+import { getEffectiveForm } from "../typeCatalog";
 import { createRecordingUnit } from "./api";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-vi.mock("./recordingUnitTypes", () => ({ getRecordingUnitTypes: vi.fn() }));
+vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
-vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 
 // The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
 // project 8, same stand-in as FindCreateForm's own recording-unit picker test.
-vi.mock("primereact/autocomplete", () => ({
-  AutoComplete: ({ onChange }: { onChange: (e: { value: unknown }) => void }) => (
+vi.mock("primereact/autocomplete", async () => ({
+  // forwardRef: CreateFormField hands the picker a ref, like the real AutoComplete takes.
+  AutoComplete: (await import("react")).forwardRef(({ onChange }: { onChange: (e: { value: unknown }) => void }, _ref) => (
     <button
       type="button"
       data-testid="pick-project"
@@ -25,7 +25,7 @@ vi.mock("primereact/autocomplete", () => ({
     >
       Choisir un projet
     </button>
-  ),
+  )),
 }));
 
 // Same reduction as entities/project/CreateForm.test.tsx: the concept autocomplete is exercised
@@ -39,7 +39,7 @@ vi.mock("../../fields/renderers", () => ({
   ),
 }));
 
-const mockedGetRecordingUnitTypes = vi.mocked(getRecordingUnitTypes);
+const mockedGetRecordingUnitTypes = vi.mocked(getEffectiveForm);
 const mockedCreateRecordingUnit = vi.mocked(createRecordingUnit);
 
 const typeField: FieldResource = {
@@ -81,7 +81,7 @@ function submitButton(): HTMLButtonElement {
 
 beforeEach(() => {
   mockedGetRecordingUnitTypes.mockReset();
-  mockedGetRecordingUnitTypes.mockResolvedValue({ tableColumns: [], fields: { "-101": typeField } });
+  mockedGetRecordingUnitTypes.mockResolvedValue({ layoutJson: "[]", fields: { "-101": typeField } });
   mockedCreateRecordingUnit.mockReset();
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -100,7 +100,7 @@ describe("RecordingUnitCreateForm", () => {
     render();
     await flush();
 
-    expect(mockedGetRecordingUnitTypes).toHaveBeenCalledWith("5");
+    expect(mockedGetRecordingUnitTypes).toHaveBeenCalledWith("recording-unit-types", "5", null);
   });
 
   it("disables submit until a type is picked", async () => {
@@ -172,7 +172,7 @@ describe("RecordingUnitCreateForm", () => {
       container.querySelector<HTMLButtonElement>('[data-testid="pick-project"]')!.click();
     });
     await flush();
-    expect(mockedGetRecordingUnitTypes).toHaveBeenCalledWith("8");
+    expect(mockedGetRecordingUnitTypes).toHaveBeenCalledWith("recording-unit-types", "8", null);
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();

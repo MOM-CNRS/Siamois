@@ -4,7 +4,7 @@
 // class if it changes.
 
 import type { FieldResource } from "../../fields/types";
-import type { OrganizationIdentifier, ResolvedConcept } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept } from "../common";
 
 export interface GeometryDTO {
   type?: string | null;

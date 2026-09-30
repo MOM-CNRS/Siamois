@@ -9,6 +9,7 @@ import { DuplicateStructureOverlay } from "../components/DuplicateStructureOverl
 import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
+import { queryKeys } from "../api/queryKeys";
 
 type Row = Record<string, unknown> & {
   id?: string | number;
@@ -92,10 +93,10 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const [menuRow, setMenuRow] = useState<Row | null>(null);
 
   function refreshAfterChange() {
-    // A new or copied entity shows up in every list of its type, and its parent's relation
-    // counts (a detail's tab badges) change too.
-    void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
-    void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
+    // A new or copied entity shows up in the lists of its type, and its parent's relation counts
+    // (a detail's tab badges) change too — a parent of any type, hence every open detail.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
   }
 
   const bridge = useBridge();
@@ -106,10 +107,11 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
       const title = config?.detail.chrome?.(row).title || String(row.fullIdentifier ?? row.name ?? row.id ?? "");
       return createBookmark({ resourceUri, titleCode: title, organizationId: organizationId! });
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
-      void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
-      void queryClient.invalidateQueries({ queryKey: ["bookmark-status"] });
+    onSuccess: (_result, row) => {
+      // The row's own `bookmarked` flag: the lists of its type and its detail; plus the status lookups.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+      if (row.id != null) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetail(entityType, row.id as string | number) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks() });
       // The JSF sidebar's bookmarks list, which no REST call reaches.
       bridge.refreshBookmarks?.();
     },
@@ -161,6 +163,9 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const keysSignature = descriptors.map((d) => d.key).join(",");
   const items = useMemo<RowActionItem[]>(
     () => descriptors.map(({ key, icon, label }) => ({ key, icon, label })),
+    // `descriptors` is rebuilt every render; its icon and label are fixed per key, so the key list
+    // is what identifies it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [keysSignature],
   );
 

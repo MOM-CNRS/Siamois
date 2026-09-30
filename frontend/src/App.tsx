@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./api/queryClient";
 import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
 import { apiUrl } from "./api/basePath";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
@@ -12,7 +13,7 @@ import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName, withPanelTransition } from "./panels/panelTransition";
 import { PaneSplit } from "./panels/PaneSplit";
 
-const queryClient = new QueryClient();
+// One cache for the whole app: see api/queryClient.ts.
 
 // What's actually on screen in the main pane right now — starts from the mount options JSF gave
 // us, but from then on this is owned entirely client-side (see App below). Deliberately NOT the

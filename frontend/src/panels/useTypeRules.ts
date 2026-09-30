@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { apiFetch } from "../api/client";
-import { parseLayout } from "../entities/project/form";
+import { queryKeys } from "../api/queryKeys";
+import { fetchTypesCatalog, type TypesCatalogBody } from "../entities/typeCatalog";
+import { parseLayout } from "../fields/layout";
 import type { FieldRules, RuledColumn } from "../rules";
 
 /**
@@ -9,7 +10,8 @@ import type { FieldRules, RuledColumn } from "../rules";
  * a type in a project, so a list mixing several projects and types can't read them off one catalog:
  * each row is evaluated with the rules of its own project's form for its own type. They come from the
  * layouts the project's types endpoint already serves (GET /api/v1/projects/{id}/<segment> — the form
- * of each type, rules on its columns), fetched once per project present in the rows and cached.
+ * of each type, rules on its columns), fetched once per project present in the rows — the same
+ * cached catalog the fiches and create forms read.
  */
 export interface TypeRules {
   /** The rules of a field for the row's (project, type); undefined while they are not loaded or there are none. */
@@ -21,11 +23,6 @@ export interface TypeRules {
 export interface RowTypeRef {
   projectId?: string | null;
   type?: { id: string } | null;
-}
-
-interface TypesBody {
-  data?: { id: string; formBundle?: { layoutJson: string } | null }[];
-  _default?: { formBundle?: { layoutJson: string } | null };
 }
 
 const DEFAULT_KEY = "_default";
@@ -45,7 +42,7 @@ function rulesOfLayout(layoutJson: string | undefined): FormRules {
   return out;
 }
 
-function projectRulesOf(body: TypesBody): ProjectRules {
+function projectRulesOf(body: TypesCatalogBody): ProjectRules {
   const out: ProjectRules = new Map();
   out.set(DEFAULT_KEY, rulesOfLayout(body._default?.formBundle?.layoutJson));
   for (const type of body.data ?? []) out.set(type.id, rulesOfLayout(type.formBundle?.layoutJson));
@@ -63,13 +60,13 @@ export function useProjectIdsOf(rows: readonly RowTypeRef[]): string[] {
  *                   for the fields the rules read only once it knows which projects it shows)
  */
 export function useTypeRules(segment: string | undefined, projectIds: readonly string[]): TypeRules | undefined {
-
   const queries = useQueries({
     queries: projectIds.map((projectId) => ({
-      queryKey: ["type-rules", segment, projectId],
-      queryFn: () => apiFetch<TypesBody>(`/api/v1/projects/${projectId}/${segment}`),
+      queryKey: queryKeys.typeRules(segment, projectId),
+      queryFn: () => fetchTypesCatalog(`/api/v1/projects/${projectId}/${segment}`),
       select: projectRulesOf,
-      staleTime: 60_000,
+      staleTime: Infinity,
+      enabled: segment != null,
     })),
   });
 

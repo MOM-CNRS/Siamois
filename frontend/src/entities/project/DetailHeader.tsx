@@ -12,6 +12,7 @@ import { patchProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import type { ProjectDetail } from "./types";
 import { getEntityType } from "../registry";
+import { queryKeys } from "../../api/queryKeys";
 
 // actionUnitPanelHeader.xhtml's content (identifier chip + pencil/apply/cancel, the editable
 // category chip, then name/location chips) — lives in EntityDetailPanel's own PrimeReact <Panel>
@@ -132,7 +133,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
   const [error, setError] = useState<string | null>(null);
 
   const typesQuery = useQuery({
-    queryKey: ["project-types", organizationIdRaw],
+    queryKey: queryKeys.projectTypes(organizationIdRaw),
     queryFn: () => getProjectTypes(organizationIdRaw as string),
     enabled: organizationIdRaw != null,
   });

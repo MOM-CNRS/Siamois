@@ -1,10 +1,9 @@
 import { useRef, useState, type ReactNode } from "react";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { CreateFormField } from "./CreateFormShell";
-import { searchCreatableProjects, type CreatableKind } from "../entities/project/api";
-import type { ProjectSummary } from "../entities/project/types";
+import { searchCreatableProjects, type CreatableProject } from "../entities/creatableProjects";
 import { scopeProjectId } from "../entities/scope";
-import type { ListScope } from "../entities/types";
+import type { CreatableKind, ListScope } from "../entities/types";
 
 export interface CreateProject {
   // The project the entity will be created in: the list's own when it has one, else the picked one.
@@ -14,7 +13,7 @@ export interface CreateProject {
 }
 
 /**
- * The project a create form works in (lot 7). A project-scoped list (a project's tab, a recording
+ * The project a create form works in. A project-scoped list (a project's tab, a recording
  * unit's children…) fixes it; an organization-wide list lets the user pick it here, among the
  * projects where they may create `kind` (GET /projects?canCreate=…) — everything else in the form
  * depends on it (types catalog, recording units), so the form keeps those disabled until then.
@@ -29,9 +28,9 @@ export function useCreateProject({
   kind: CreatableKind;
 }): CreateProject {
   const fixedProjectId = scopeProjectId(scope);
-  const [picked, setPicked] = useState<ProjectSummary | null>(null);
+  const [picked, setPicked] = useState<CreatableProject | null>(null);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<ProjectSummary[]>([]);
+  const [suggestions, setSuggestions] = useState<CreatableProject[]>([]);
   const autoCompleteRef = useRef<AutoComplete>(null);
 
   if (fixedProjectId != null || organizationId == null) {
@@ -50,7 +49,7 @@ export function useCreateProject({
         value={query}
         suggestions={suggestions}
         field="fullIdentifier"
-        itemTemplate={(project: ProjectSummary) => (
+        itemTemplate={(project: CreatableProject) => (
           <span>
             {project.fullIdentifier}
             {project.name ? ` — ${project.name}` : ""}
@@ -62,7 +61,7 @@ export function useCreateProject({
             setQuery(e.value);
             setPicked(null);
           } else {
-            const project = e.value as ProjectSummary;
+            const project = e.value as CreatableProject;
             setPicked(project);
             setQuery(project.fullIdentifier ?? "");
           }

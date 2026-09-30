@@ -6,10 +6,10 @@ import { fetchSiblings } from "../siblingsApi";
 import { getPhase, listPhases, patchPhaseAnswers } from "./api";
 import { phaseColumns } from "./columns";
 import { PhaseCreateForm } from "./CreateForm";
-import { PhaseDetailHeader } from "./DetailHeader";
-import { PhaseFicheTab } from "./FicheTab";
-import { PHASE_ROUTES } from "./routes";
-import { phaseHomeWidgets } from "./homeWidgets";
+import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaFicheTab } from "../../components/SchemaFicheTab";
+import { jsfRoutes } from "../routes";
+import { countCardWidgets } from "../countCard";
 import type { PhaseDetail, PhaseSummary } from "./types";
 
 // Phase's own EntityTypeConfig (migration plan, lot 2 "Phases") — registered so it can be looked
@@ -34,8 +34,8 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
     // Dynamic columns: every field of the project's phase forms, additional ones included.
     schema: { load: (ctx) => loadTypeCatalog(ctx, "phase-types") },
     columns: phaseColumns,
+    typesSegment: "phase-types",
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
-    rulesSegment: "phase-types",
     defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
@@ -48,7 +48,9 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
       {
         key: "fiche",
         label: "Détails",
-        render: (entity, helpers) => <PhaseFicheTab entity={entity} onSaved={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <SchemaFicheTab entity={entity} entityType="phase" typesSegment="phase-types" save={patchPhaseAnswers} onSaved={helpers.refetch} />
+        ),
       },
       relationTab<PhaseDetail>({
         key: "recording-units",
@@ -60,13 +62,24 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
         creatable: false,
       }),
     ],
-    header: (entity, helpers) => <PhaseDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity) => (
+      <IdentifierTypeHeader entityType="phase" chipPrefix="phase" label={entity.label || entity.identifier} typeLabel={entity.type?.resolvedLabel} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.identifier ?? entity.label),
     // The titlebar's "Créer" makes a sibling in the same project.
     createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
-  routes: PHASE_ROUTES,
+  routes: jsfRoutes("phase"),
   home: {
-    widgets: phaseHomeWidgets,
+    widgets: countCardWidgets({
+      entityType: "phase",
+      count: "phases",
+      icon: "bi bi-layers",
+      label: "Phases",
+      description: "Phases et sous-phases chronologiques",
+      className: "sia-welcome-card sia-recording-unit",
+      chipClassName: "recording-unit-count-chip-alt",
+      order: 50,
+    }),
   },
 };

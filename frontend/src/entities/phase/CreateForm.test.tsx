@@ -1,19 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { PhaseCreateForm } from "./CreateForm";
-import { getPhaseEffectiveForm } from "./phaseTypes";
+import { getEffectiveForm } from "../typeCatalog";
 import { createPhase } from "./api";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-vi.mock("./phaseTypes", () => ({ getPhaseEffectiveForm: vi.fn() }));
+vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createPhase: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
-vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
+vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (
@@ -23,7 +22,7 @@ vi.mock("../../fields/renderers", () => ({
   ),
 }));
 
-const mockedGetPhaseEffectiveForm = vi.mocked(getPhaseEffectiveForm);
+const mockedGetPhaseEffectiveForm = vi.mocked(getEffectiveForm);
 const mockedCreatePhase = vi.mocked(createPhase);
 
 const typeField: FieldResource = {
@@ -84,7 +83,7 @@ describe("PhaseCreateForm", () => {
     render();
     await flush();
 
-    expect(mockedGetPhaseEffectiveForm).toHaveBeenCalledWith("5", null);
+    expect(mockedGetPhaseEffectiveForm).toHaveBeenCalledWith("phase-types", "5", null);
   });
 
   it("disables submit until a type is picked", async () => {

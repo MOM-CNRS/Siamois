@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
@@ -7,7 +7,6 @@ import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { relationTab } from "./relationTab";
 import { WriteModeProvider } from "./writeMode";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 interface FakeChildRow {
   id: string;

@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/phases (list) and GET /api/v1/phases/{id} (detail) both return this
 // shape, like FindResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
 
 export interface PhasePermissions {
   canEdit: boolean;

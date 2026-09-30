@@ -1,21 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { FindCreateForm } from "./CreateForm";
-import { getFindEffectiveForm } from "./findTypes";
+import { getEffectiveForm } from "../typeCatalog";
 import { createFind } from "./api";
-import { listRecordingUnits } from "../recordingUnit/api";
+import { fetchList } from "../listApi";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-vi.mock("./findTypes", () => ({ getFindEffectiveForm: vi.fn() }));
+vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createFind: vi.fn() }));
-vi.mock("../recordingUnit/api", () => ({ listRecordingUnits: vi.fn() }));
+vi.mock("../listApi", () => ({ fetchList: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
-vi.mock("../project/api", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
+vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 // Same reduction as the other CreateForm test files: the concept picker is exercised elsewhere.
 vi.mock("../../fields/renderers", () => ({
@@ -30,8 +29,9 @@ vi.mock("../../fields/renderers", () => ({
 // nowhere else in this codebase's own tests either — mocked here to a plain clickable stand-in so
 // this file stays a test of CreateForm's own logic (which UE/category actually get submitted),
 // not of AutoComplete's internals.
-vi.mock("primereact/autocomplete", () => ({
-  AutoComplete: ({ onChange }: { onChange: (e: { value: unknown }) => void }) => (
+vi.mock("primereact/autocomplete", async () => ({
+  // forwardRef: CreateFormField hands the picker a ref, like the real AutoComplete takes.
+  AutoComplete: (await import("react")).forwardRef(({ onChange }: { onChange: (e: { value: unknown }) => void }, _ref) => (
     <button
       type="button"
       data-testid="pick-recording-unit"
@@ -39,12 +39,12 @@ vi.mock("primereact/autocomplete", () => ({
     >
       Choisir une UE
     </button>
-  ),
+  )),
 }));
 
-const mockedGetFindEffectiveForm = vi.mocked(getFindEffectiveForm);
+const mockedGetFindEffectiveForm = vi.mocked(getEffectiveForm);
 const mockedCreateFind = vi.mocked(createFind);
-const mockedListRecordingUnits = vi.mocked(listRecordingUnits);
+const mockedListRecordingUnits = vi.mocked(fetchList);
 
 const categoryField: FieldResource = {
   id: "-201",
@@ -106,7 +106,7 @@ describe("FindCreateForm", () => {
     render();
     await flush();
 
-    expect(mockedGetFindEffectiveForm).toHaveBeenCalledWith("5", null);
+    expect(mockedGetFindEffectiveForm).toHaveBeenCalledWith("find-types", "5", null);
   });
 
   it("disables submit until both a recording unit and a category are picked", async () => {

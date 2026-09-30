@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
@@ -17,7 +17,6 @@ import type { PanelBridge } from "../mountOptions";
 // handing each one a working `refetch` helper (plan §8 phase 6 — added so a tab that mutates the
 // entity, like Project's fiche, can ask the panel's own query to reload).
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 interface FakeEntity {
   id: string;
@@ -114,6 +113,26 @@ describe("EntityDetailPanel", () => {
     await flush();
 
     expect(getMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("refreshes the lists of the entity's type, and only those, when the tab saves", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-detail-entity" entityId="1" />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    const button = container.querySelector("button.fake-refetch") as HTMLElement;
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["entity-list", "fake-detail-entity"] });
   });
 
   it("renders its toolbar inside its own header, not as a separate strip (plan §7/§8 follow-up)", async () => {

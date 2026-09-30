@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
@@ -11,15 +11,14 @@ import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { recallListContext } from "./listContext";
 import { EntityListPanel } from "./EntityListPanel";
 import { WriteModeProvider } from "./writeMode";
-import { searchCreatableProjects } from "../entities/project/api";
+import { searchCreatableProjects } from "../entities/creatableProjects";
 
-vi.mock("../entities/project/api", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../entities/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 const mockedSearchCreatableProjects = vi.mocked(searchCreatableProjects);
 
 // Some PrimeReact internals (ripple, resize listeners) schedule state updates outside any act()
 // call this file makes; this flag is React 18's own escape hatch for that noise and doesn't
 // affect what the assertions below actually verify.
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Exercises EntityListPanel as the generic component it is (plan §3/§8 phase 5) — registered
 // against a throwaway fake entity type, not Project, so this stays a test of the mechanism

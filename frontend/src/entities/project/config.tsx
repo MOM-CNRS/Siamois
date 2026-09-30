@@ -8,7 +8,7 @@ import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
 import { PlacesTab } from "./PlacesTab";
 import { getProjectTypes } from "./projectTypes";
-import { PROJECT_ROUTES } from "./routes";
+import { jsfRoutes } from "../routes";
 import type { ProjectDetail, ProjectSummary } from "./types";
 
 // The only Project-specific file this phase produces (plan §3/§4/§8 phase 4) — everything it
@@ -134,7 +134,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     }),
     settingsProjectId: (entity) => (entity._permissions?.canManageSettings ? entity.id : undefined),
   },
-  routes: PROJECT_ROUTES,
+  routes: jsfRoutes("action-unit"),
   home: {
     widgets: projectHomeWidgets,
   },

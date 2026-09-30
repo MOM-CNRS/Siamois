@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
 import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
 import { getEntityType } from "../entities/registry";
+import { isEntityKey, type EntityKey } from "../entities/keys";
 import { useOpenEntity } from "../panels/entityNavigation";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.
@@ -63,7 +64,7 @@ function asRef(value: unknown): { id: string; label: string; resourceType: strin
 // Each entity type's colour — the theme's own (themed-panel in _panels.scss): context for places and
 // projects, ground for recording units, finds and phases, third for containers. A chip showing an
 // entity always takes its entity's colour, never the colour of the panel it sits in.
-const ENTITY_COLORS: Record<string, string> = {
+const ENTITY_COLORS: Record<EntityKey, string> = {
   place: "var(--context-main-color, #068da9)",
   project: "var(--context-main-color, #068da9)",
   recordingUnit: "var(--ground-main-color, #7e1717)",
@@ -74,7 +75,7 @@ const ENTITY_COLORS: Record<string, string> = {
 
 /** An entity type's colour (registry key), or undefined for a type without one. */
 export function entityColor(entityType: string | undefined): string | undefined {
-  return entityType ? ENTITY_COLORS[entityType] : undefined;
+  return isEntityKey(entityType) ? ENTITY_COLORS[entityType] : undefined;
 }
 
 /** The inline style giving an entity chip (.entity-nav-chip) its entity's colour. */
@@ -95,7 +96,7 @@ const GREEN_BORDER = "var(--siamois-green-light-100, #e6f0e6)";
 // What a reference points at, by its resourceType: the registry entity type its chip opens (none
 // for concepts and persons, which have no fiche), its colour — its entity's, Siamois green for
 // vocabulary concepts — and the lighter one its read-only chip is outlined with.
-const REF_KINDS: Record<string, { entityType?: string; color: string; border: string }> = {
+const REF_KINDS: Record<string, { entityType?: EntityKey; color: string; border: string }> = {
   "spatial-units": { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
   places: { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
   "action-units": { entityType: "project", color: ENTITY_COLORS.project, border: CONTEXT_BORDER },

@@ -5,10 +5,10 @@ import { fetchSiblings } from "../siblingsApi";
 import { duplicateFind, getFind, listFinds, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
-import { FindDetailHeader } from "./DetailHeader";
-import { FindFicheTab } from "./FicheTab";
-import { FIND_ROUTES } from "./routes";
-import { findHomeWidgets } from "./homeWidgets";
+import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaFicheTab } from "../../components/SchemaFicheTab";
+import { jsfRoutes } from "../routes";
+import { countCardWidgets } from "../countCard";
 import type { FindDetail, FindSummary } from "./types";
 
 // Find's own EntityTypeConfig (migration plan, lot 1 "Mobilier") — registered so it can be looked
@@ -34,8 +34,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     // Dynamic columns: every field of the project's find forms, additional ones included.
     schema: { load: (ctx) => loadTypeCatalog(ctx, "find-types") },
     columns: findColumns,
+    typesSegment: "find-types",
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
-    rulesSegment: "find-types",
     defaultSort: "creationTime:desc",
     searchable: true,
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
@@ -43,22 +43,40 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     createForm: (ctx) => <FindCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "find",
+    // Created from a recording unit's field: ON that recording unit, as JSF's "new find" row action.
+    createPrefillFrom: ({ entityType, entityId, entityLabel }) =>
+      entityType === "recordingUnit" && entityId != null
+        ? { recordingUnit: { id: entityId, label: entityLabel ?? String(entityId) } }
+        : undefined,
   },
   detail: {
     tabs: [
       {
         key: "fiche",
         label: "Détails",
-        render: (entity, helpers) => <FindFicheTab entity={entity} onSaved={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <SchemaFicheTab entity={entity} entityType="find" typesSegment="find-types" save={patchFindAnswers} onSaved={helpers.refetch} />
+        ),
       },
     ],
-    header: (entity, helpers) => <FindDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity) => (
+      <IdentifierTypeHeader entityType="find" chipPrefix="specimen" label={entity.fullIdentifier} typeLabel={entity.type?.resolvedLabel} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),
     // The titlebar's "Créer" makes a sibling in the same project.
     createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
   },
-  routes: FIND_ROUTES,
+  routes: jsfRoutes("specimen"),
   home: {
-    widgets: findHomeWidgets,
+    widgets: countCardWidgets({
+      entityType: "find",
+      count: "finds",
+      icon: "bi bi-bucket",
+      label: "Mobilier",
+      description: "Mobiliers, prélèvements et VAB",
+      className: "sia-welcome-card sia-specimen",
+      chipClassName: "specimen-count-chip-alt",
+      order: 40,
+    }),
   },
 };

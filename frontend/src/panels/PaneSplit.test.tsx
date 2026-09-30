@@ -3,7 +3,6 @@ import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { PaneSplit } from "./PaneSplit";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let container: HTMLDivElement;
 let root: Root;

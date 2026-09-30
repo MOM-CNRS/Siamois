@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { valueOfField } from "../fields/FormLayoutView";
+import { valueOfField } from "../fields/values";
 import type { FieldResource } from "../fields/types";
 import { columnsDependencies, evaluateForm, type FieldState, type RuledColumn } from "../rules";
 import type { RowTypeRef, TypeRules } from "./useTypeRules";

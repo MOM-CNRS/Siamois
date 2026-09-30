@@ -1,102 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Message } from "primereact/message";
-import { ApiError } from "../../api/client";
-import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import type { FieldResource } from "../../fields/types";
+import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
 import type { CreateFormContext } from "../types";
 import { createRecordingUnit } from "./api";
-import { getRecordingUnitTypes } from "./recordingUnitTypes";
-import { useCreateProject } from "../../components/useCreateProject";
 
-// The "Unités d'enregistrement" relation tab's own "Créer" overlay (migration plan follow-up —
-// see entities/project/CreateForm.tsx's own doc for the overlay-not-dialog rationale, and
-// entities/types.ts's CreateFormContext for why `scope` — the project this tab is scoped to — is
-// what supplies `projectId` here, not a prop of this form's own). Reduced to a single field: type.
-// RecordingUnitCreateRequest needs nothing else to create a valid UE (no client-supplied
-// identifier — RecordingUnitIdentifierConfig generates one server-side, same as JSF); every other
-// field is editable right after, on the fiche this overlay navigates straight into.
-//
-// The concept picker shape is {resourceId, resourceType, label} (fields/renderers.tsx's own
-// ResourceRefLike), same convention as ProjectCreateForm's own type picker.
-interface ConceptPick {
-  resourceId: string;
-  resourceType: string;
-  label?: string | null;
-}
-
-export function RecordingUnitCreateForm({ organizationId, scope, prefill, onCreated, onCancel }: CreateFormContext) {
-  // The list's own project, or — on an organization-wide list — the one picked first in the form.
-  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "recordingUnit" });
-  const [type, setType] = useState<ConceptPick | null>(null);
-  // Types are per project: a pick from the previous project's catalog no longer applies.
-  useEffect(() => {
-    setType(null);
-  }, [projectId]);
-  const [error, setError] = useState<string | null>(null);
-
-  const typesQuery = useQuery({
-    queryKey: ["recording-unit-types", projectId],
-    queryFn: () => getRecordingUnitTypes(projectId as string),
-    enabled: projectId != null,
-  });
-
-  // RecordingUnitForm.RECORDING_UNIT_TYPE_FIELD, located by its valueBinding like every other
-  // place this app resolves the RU type field (RecordingUnit/DetailHeader.tsx's own CategoryChip).
-  const typeField = useMemo<FieldResource | undefined>(
-    () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
-    [typesQuery.data],
-  );
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      createRecordingUnit({
-        projectId: projectId as string,
-        typeId: type!.resourceId,
-        parentRecordingUnitId: prefill?.parent?.id,
-        childRecordingUnitId: prefill?.child?.id,
-      }),
-    onSuccess: (created) => onCreated(created.id),
-    onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Échec de la création");
-    },
-  });
-
-  const canSubmit = projectId != null && type != null && !mutation.isPending;
-
+// A recording unit needs only its type (the identifier is generated server-side, as in JSF). Created
+// from another UE's row action, it is linked to it in the same transaction: as its child (`parent`)
+// or its parent (`child`).
+export function RecordingUnitCreateForm(ctx: CreateFormContext) {
+  const { prefill } = ctx;
   return (
-    <CreateFormShell
+    <TypeOnlyCreateForm
+      {...ctx}
       entityType="recordingUnit"
       title="Nouvelle unité d'enregistrement"
-      canSubmit={canSubmit}
-      pending={mutation.isPending}
-      error={error}
-      onSubmit={() => mutation.mutate()}
-      onCancel={onCancel}
+      typesSegment="recording-unit-types"
+      create={(projectId, typeId) =>
+        createRecordingUnit({
+          projectId,
+          typeId,
+          parentRecordingUnitId: prefill?.parent?.id,
+          childRecordingUnitId: prefill?.child?.id,
+        })
+      }
     >
-      {projectPicker}
-      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
-
       {prefill?.parent && <CreateLinkField label="Contenue dans" entityType="recordingUnit" value={prefill.parent} />}
       {prefill?.child && <CreateLinkField label="Contient" entityType="recordingUnit" value={prefill.child} />}
-
-      <CreateFormField label="Type" required>
-        {typeField ? (
-          <SelectOneConceptRenderer
-            field={typeField}
-            value={type}
-            readOnly={false}
-            required
-            organizationId={organizationId}
-            onChange={(v) => setType(v as ConceptPick | null)}
-          />
-        ) : (
-          <span className="create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
-        )}
-      </CreateFormField>
-
-    </CreateFormShell>
+    </TypeOnlyCreateForm>
   );
 }

@@ -18,6 +18,7 @@ import { recallListContext, rememberListContext, type ListContext } from "./list
 import { siblingsQuery } from "./listSiblings";
 
 import type { EntityPreview, EntitySibling } from "../entities/types";
+import { queryKeys } from "../api/queryKeys";
 
 export type { EntityPreview };
 
@@ -111,7 +112,7 @@ export function EntityDetailPanel({
   }
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["entity-detail", entityType, entityId],
+    queryKey: queryKeys.entityDetail(entityType, entityId),
     queryFn: () => config!.api.get(entityId),
     enabled: config != null,
   });
@@ -140,7 +141,7 @@ export function EntityDetailPanel({
     (sibling: EntitySibling) => {
       if (!config) return;
       void queryClient.prefetchQuery({
-        queryKey: ["entity-detail", entityType, sibling.id],
+        queryKey: queryKeys.entityDetail(entityType, sibling.id),
         queryFn: () => config.api.get(sibling.id),
       });
       if (config.api.siblings) {
@@ -164,7 +165,8 @@ export function EntityDetailPanel({
   const duplicateMutation = useMutation({
     mutationFn: () => config!.api.duplicate!(entityId),
     onSuccess: (copy) => {
-      void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+      // The copy shows up in the lists of its type only.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
       // JSF opens the copy in the overview (FlowBean.addRecordingUnitToOverview).
       (onOpenOverview ?? onNavigate)?.(entityType, copy.id);
     },
@@ -240,7 +242,13 @@ export function EntityDetailPanel({
     return null;
   }
 
-  const helpers = { refetch: () => void refetch(), organizationId, onNavigate, onOpenOverview, overviewEntityId };
+  // After a save from the fiche or its header: this detail, and the rows showing this entity in the
+  // lists of its type (a list in the other pane shows the new value without a reload).
+  const afterSave = () => {
+    void refetch();
+    void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+  };
+  const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId };
 
   // A toolbar built server-side (MountOptions) has no entity data to derive chrome from at that
   // point — it's the initial mount's own entity. Once we have the fetched entity, prefer chrome
@@ -325,7 +333,7 @@ export function EntityDetailPanel({
         onHide={() => setCreateAnchor(null)}
         onCreated={(id) => {
           setCreateAnchor(null);
-          void queryClient.invalidateQueries({ queryKey: ["entity-list"] });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
           // Same destination as the list toolbar's create: the overview, so the current view stays
           // in place (the full fiche is one click away, the overview's focus button).
           (onOpenOverview ?? onNavigate)?.(entityType, id);

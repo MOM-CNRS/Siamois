@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
 import { registerFieldRenderer } from "../../fields/registry";
@@ -10,7 +10,6 @@ import { registerEntityType } from "../../entities/registry";
 import type { EntityTypeConfig } from "../../entities/types";
 import { EntityNavigationProvider } from "../../panels/entityNavigation";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const { fetchAllValues } = vi.hoisted(() => ({ fetchAllValues: vi.fn() }));
 vi.mock("../../fields/multiValues", () => ({ fetchAllValues }));

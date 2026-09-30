@@ -17,7 +17,7 @@ import { OverlayPanel } from "primereact/overlaypanel";
 import { Menu } from "primereact/menu";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
-import { searchCreatableProjects } from "../entities/project/api";
+import { searchCreatableProjects } from "../entities/creatableProjects";
 import type { ColumnDef, CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
@@ -44,6 +44,7 @@ import { useProjectIdsOf, useTypeRules, type RowTypeRef } from "./useTypeRules";
 import { describeIncoherence } from "../fields/incoherence";
 import { Message } from "primereact/message";
 import { entityChipStyle } from "../fields/display";
+import { queryKeys } from "../api/queryKeys";
 
 export interface EntityListPanelProps {
   entityType: string;
@@ -169,7 +170,7 @@ export function EntityListPanel({
   // so "Créer" needs at least one project where the caller may create this kind.
   const createNeedsPickedProject = config?.list.createProjectKind != null && scopeProjectId(scope) == null;
   const creatableProjects = useQuery({
-    queryKey: ["creatable-projects", config?.list.createProjectKind, organizationId],
+    queryKey: queryKeys.creatableProjects(config?.list.createProjectKind, organizationId),
     queryFn: () => searchCreatableProjects(organizationId!, config!.list.createProjectKind!, undefined, 1),
     enabled: createNeedsPickedProject && organizationId != null && creatable !== false,
   });
@@ -177,7 +178,7 @@ export function EntityListPanel({
 
   const hasSchema = config?.list.schema != null;
   const { data: catalog, isError: catalogFailed } = useQuery({
-    queryKey: ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id],
+    queryKey: queryKeys.entityListSchema(entityType, organizationId, scope),
     queryFn: () => config!.list.schema!.load({ organizationId, scope }),
     enabled: hasSchema,
   });
@@ -230,7 +231,7 @@ export function EntityListPanel({
   // Rules belong to a (project, type): the forms to read them from are those of the projects the rows
   // fetched so far belong to, so the fields they read are requested from the second fetch on.
   const [seenRows, setSeenRows] = useState<RowRecord[]>([]);
-  const typeRules = useTypeRules(config?.list.rulesSegment, useProjectIdsOf(seenRows as RowTypeRef[]));
+  const typeRules = useTypeRules(config?.list.typesSegment, useProjectIdsOf(seenRows as RowTypeRef[]));
   const ruleFields = useRuleFields(catalog?.fields, shownFieldIds, typeRules);
 
   const { rows, totalCount, isLoading, isFetching, error } = usePagedList<RowRecord>({
@@ -254,7 +255,7 @@ export function EntityListPanel({
   // badge already is that total.
   const narrowed = Boolean(state.search) || Object.keys(state.filters).length > 0;
   const unfilteredTotal = useQuery({
-    queryKey: ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id],
+    queryKey: queryKeys.entityListTotal(entityType, organizationId, scope),
     queryFn: () => config!.api.list({ offset: 0, limit: 1, organizationId, scope }) as Promise<PagedResult<RowRecord>>,
     select: (page) => page.totalCount,
     enabled: config != null && !embedded && narrowed,
@@ -343,7 +344,7 @@ export function EntityListPanel({
         };
       })
       .filter((c): c is ColumnDef<RowRecord> => c != null);
-  }, [catalog, state.visibleColumns, canPatchAnswers]);
+  }, [catalog, state.visibleColumns]);
 
   // Each catalog-driven column's field, keyed by the ColumnDef key the body renderer below
   // receives: a click on its cell opens the overlay — to edit it, or to read it (isEditable). A
@@ -411,9 +412,9 @@ export function EntityListPanel({
   // case the same entity is open in a detail view or the overview pane, that too — the overlay
   // itself doesn't know which other views might be showing this row.
   function onCellEditSaved() {
-    void queryClient.invalidateQueries({ queryKey: ["entity-list", entityType] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
     if (editTarget?.row.id != null) {
-      void queryClient.invalidateQueries({ queryKey: ["entity-detail", entityType, editTarget.row.id] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetail(entityType, editTarget.row.id as string | number) });
     }
   }
 
@@ -745,7 +746,7 @@ export function EntityListPanel({
                 tooltip={
                   creatableProjects.isLoading
                     ? undefined
-                    : `Vous n'avez le droit de créer ce type (${config.list.createProjectKind === "find" ? "mobilier" : config.labels.singular.toLowerCase()}) dans aucun projet.`
+                    : `Vous n'avez le droit de créer ce type (${config.labels.singular.toLowerCase()}) dans aucun projet.`
                 }
                 tooltipOptions={{ showOnDisabled: true, position: "left" }}
               />
@@ -763,9 +764,9 @@ export function EntityListPanel({
                     prefill: createPrefill,
                     onCreated: (id) => {
                       createOverlayRef.current?.hide();
-                      queryClient.invalidateQueries({ queryKey: ["entity-list", entityType] });
+                      void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
                       // A linked create changes the parent's relation counts (its tab badges).
-                      if (createPrefill) void queryClient.invalidateQueries({ queryKey: ["entity-detail"] });
+                      if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
                       // Opens in the overview, so the list stays where it was; the full fiche is
                       // one click away (the overview's focus button).
                       (onOpenOverview ?? onNavigate)?.(entityType, id);

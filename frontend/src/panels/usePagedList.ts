@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import type { ListParams, PagedResult } from "../entities/types";
+import { queryKeys } from "../api/queryKeys";
 
 // Set on a row while one of its visible columns is still being fetched (see usePagedList's column
 // supplements) — the cell renders a skeleton instead of an empty value.
@@ -73,7 +74,9 @@ function fieldsParam(fields: readonly string[]): string | undefined {
  * column fetches nothing.
  */
 export function usePagedList<T>({ entityType, params, offset, limit, fields = [], fetch, enabled }: UsePagedListOptions<T>) {
-  const sortedFields = useMemo(() => [...fields].sort(), [fields.join(",")]);
+  // Keyed on the field ids, not the array: callers pass a fresh array on every render.
+  const fieldsKey = fields.join(",");
+  const sortedFields = useMemo(() => (fieldsKey ? fieldsKey.split(",").sort() : []), [fieldsKey]);
 
   // The fields the current page's base request carries — fixed for as long as the same page of the
   // same result set is shown, so showing or hiding a column never refetches it. `enabled` is part
@@ -90,7 +93,7 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
   const pageParams: ListParams = { ...params, offset, limit };
   const baseParams: ListParams = { ...pageParams, fields: fieldsParam(baseFields) };
   const base = useQuery({
-    queryKey: ["entity-list", entityType, baseParams],
+    queryKey: queryKeys.entityListPage(entityType, baseParams),
     queryFn: () => fetch(baseParams),
     enabled,
     placeholderData: keepPreviousData,
@@ -101,7 +104,7 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
     queries: supplementFields.map((fieldId) => {
       const supplementParams: ListParams = { ...pageParams, fields: fieldId };
       return {
-        queryKey: ["entity-list", entityType, supplementParams],
+        queryKey: queryKeys.entityListPage(entityType, supplementParams),
         queryFn: () => fetch(supplementParams),
         enabled,
       };
@@ -124,6 +127,7 @@ export function usePagedList<T>({ entityType, params, offset, limit, fields = []
         : [],
     // `supplements` itself is a new array every render; what matters is which supplements there
     // are and when they last changed, so the deps name exactly that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [baseRows, supplementSignature],
   );
 

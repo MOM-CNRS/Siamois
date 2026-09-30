@@ -6,10 +6,10 @@ import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
-import { PlaceDetailHeader } from "./DetailHeader";
-import { PlaceFicheTab } from "./FicheTab";
-import { PLACE_ROUTES } from "./routes";
-import { placeHomeWidgets } from "./homeWidgets";
+import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaFicheTab } from "../../components/SchemaFicheTab";
+import { jsfRoutes } from "../routes";
+import { countCardWidgets } from "../countCard";
 import type { PlaceDetail, PlaceSummary } from "./types";
 
 // Place's own EntityTypeConfig (migration plan, lot 4 "Lieux", then the organization-wide list
@@ -71,7 +71,9 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       {
         key: "fiche",
         label: "Détails",
-        render: (entity, helpers) => <PlaceFicheTab entity={entity} onSaved={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <SchemaFicheTab entity={entity} entityType="place" isFieldShown={(field) => field.valueBinding !== "address"} save={patchPlaceAnswers} onSaved={helpers.refetch} />
+        ),
       },
       // JSF's hierarchy tab, reduced to the places this one contains.
       relationTab<PlaceDetail>({
@@ -94,11 +96,22 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         badge: (entity) => entity._counts?.projects ?? 0,
       }),
     ],
-    header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity) => (
+      <IdentifierTypeHeader entityType="place" chipPrefix="spatial-unit" label={entity.name} typeLabel={entity.type?.resolvedLabel} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.name),
   },
-  routes: PLACE_ROUTES,
+  routes: jsfRoutes("spatial-unit"),
   home: {
-    widgets: placeHomeWidgets,
+    widgets: countCardWidgets({
+      entityType: "place",
+      count: "places",
+      icon: "bi bi-geo-alt",
+      label: "Lieux",
+      description: "Les lieux et leurs découpages spatiaux",
+      className: "sia-welcome-card sia-spatial-unit",
+      chipClassName: "spatial-unit-count-chip-alt",
+      order: 20,
+    }),
   },
 };

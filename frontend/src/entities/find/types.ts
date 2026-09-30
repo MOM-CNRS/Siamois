@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/mobiliers (list) and GET /api/v1/finds/{id} (detail) both return this
 // shape, like RecordingUnitResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../project/types";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
 
 export interface FindPermissions {
   canEdit: boolean;

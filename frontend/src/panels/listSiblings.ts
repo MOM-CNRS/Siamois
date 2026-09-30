@@ -1,6 +1,7 @@
 import type { EntitySibling, EntitySiblings, EntityTypeConfig, PagedResult } from "../entities/types";
 import { entityRowLabel } from "../fields/optionSources";
 import type { ListContext } from "./listContext";
+import { queryKeys } from "../api/queryKeys";
 
 type Row = { id?: string | number | null } & Record<string, unknown>;
 
@@ -18,6 +19,7 @@ type Row = { id?: string | number | null } & Record<string, unknown>;
  * caller then falls back to the entity's default order rather than walking a stale list.
  */
 export async function fetchListSiblings(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as the registry's configs (entities/registry.ts)
   config: EntityTypeConfig<any, any>,
   id: string | number,
   context: ListContext,
@@ -57,6 +59,7 @@ export async function fetchListSiblings(
  * query and for the hover prefetch, so both land on the same cache entry.
  */
 export function siblingsQuery(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as the registry's configs (entities/registry.ts)
   config: EntityTypeConfig<any, any>,
   entityType: string,
   id: string | number,
@@ -64,7 +67,7 @@ export function siblingsQuery(
   context: ListContext | undefined,
 ) {
   return {
-    queryKey: ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
+    queryKey: queryKeys.entitySiblings(entityType, id, organizationId, context),
     queryFn: async (): Promise<EntitySiblings> =>
       (context ? await fetchListSiblings(config, id, context) : null) ?? config.api.siblings!(id, { organizationId }),
   };

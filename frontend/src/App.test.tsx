@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react-dom/test-utils";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { App, paneClassName } from "./App";
 import { registerEntityType } from "./entities/registry";
@@ -7,7 +7,6 @@ import { relationTab } from "./panels/relationTab";
 import type { EntityTypeConfig } from "./entities/types";
 import type { MountOptions } from "./mountOptions";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // App.tsx owns navigation itself now (plan §8 phase 8 follow-up): clicking a list row or a Home
 // widget link must swap what's rendered and update the URL via history.pushState, never a real
@@ -85,6 +84,7 @@ registerEntityType(fakeChildConfig);
 const fakeParentWithChildTabConfig: EntityTypeConfig<FakeRow, FakeRow> = {
   ...fakeConfig,
   key: "fake-parent-with-child-tab",
+  home: undefined,
   detail: {
     tabs: [
       { key: "fiche", label: "Fiche", render: (entity) => <span>Detail of {entity.name}</span> },
@@ -560,6 +560,7 @@ describe("App pane classes", () => {
   const themedConfig: EntityTypeConfig<FakeRow, FakeRow> = {
     ...fakeConfig,
     key: "fake-themed-entity",
+    home: undefined,
     panelClass: "fake-themed-panel",
     routes: { list: "/fake-themed-entity", detail: (id) => `/fake-themed-entity/${id}` },
   };

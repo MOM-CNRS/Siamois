@@ -1,6 +1,7 @@
 import { apiFetch } from "../api/client";
 import type { OptionsContext } from "../rules";
 import type { FieldResource } from "./types";
+import type { EntityKey } from "../entities/keys";
 
 /**
  * Where a filter widget's option list comes from, for {@code answerType}s that reference another
@@ -67,8 +68,8 @@ export interface ReferenceTarget {
   resourceType: string;
   // The registry entity type a picked value is — what its chip opens. Absent for targets with no
   // fiche of their own (concepts, persons).
-  entityType?: string;
-  createEntityType?: string;
+  entityType?: EntityKey;
+  createEntityType?: EntityKey;
 }
 
 const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: ReferenceTarget][] = [
