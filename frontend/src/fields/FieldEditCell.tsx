@@ -5,6 +5,7 @@ import { renderAnswerCell, renderAnswerValue } from "./display";
 import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
+import { t } from "../i18n";
 
 /**
  * The fiche's own field value, edited exactly the way a table cell is: a plain read-only display
@@ -73,7 +74,7 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
     return (
       <span
         className={`field-value-cell field-value-cell-readonly${disabled ? " field-value-cell-disabled" : ""}`}
-        title={disabled ? "Ne s'applique pas avec les réponses actuelles" : undefined}
+        title={disabled ? t("field.notApplicable") : undefined}
       >
         <span className="field-value-cell-empty">—</span>
       </span>
@@ -93,12 +94,12 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
         title={
           incoherences.length > 0
             ? incoherences.join("\n")
-            : renderAnswerValue(field, stored) || `Modifier « ${field.label} »`
+            : renderAnswerValue(field, stored) || t("list.editCell", { label: field.label })
         }
         onClick={open}
       >
         {incoherences.length > 0 && (
-          <i className="bi bi-exclamation-triangle-fill field-value-cell-warning" aria-label="Valeur incohérente" />
+          <i className="bi bi-exclamation-triangle-fill field-value-cell-warning" aria-label={t("list.incoherent")} />
         )}
         {content || <span className="field-value-cell-empty">—</span>}
       </span>

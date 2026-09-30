@@ -1,4 +1,5 @@
 import { ApiError } from "./client";
+import { t } from "../i18n";
 
 /**
  * The sentence shown to the user for a failed call. A server message is kept when there is one
@@ -7,12 +8,12 @@ import { ApiError } from "./client";
  */
 export function messageForError(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
-    if (error.status === 403) return "Vous n'avez pas le droit d'effectuer cette action.";
-    if (error.status === 404) return "Cet élément n'existe plus.";
-    if (error.status >= 500) return `${fallback} : erreur du serveur, réessayez dans un instant.`;
+    if (error.status === 403) return t("error.forbidden");
+    if (error.status === 404) return t("error.notFound");
+    if (error.status >= 500) return t("error.server", { action: fallback });
     return error.message || fallback;
   }
-  if (error instanceof TypeError) return `${fallback} : le serveur est injoignable.`;
+  if (error instanceof TypeError) return t("error.unreachable", { action: fallback });
   if (error instanceof Error && error.message) return error.message;
   return fallback;
 }

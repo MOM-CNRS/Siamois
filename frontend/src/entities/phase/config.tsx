@@ -11,6 +11,7 @@ import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { PhaseDetail, PhaseSummary } from "./types";
+import { t } from "../../i18n";
 
 // Phase's own EntityTypeConfig (migration plan, lot 2 "Phases") — registered so it can be looked
 // up by key ("phase") both by the registry's generics-erasure boundary and by
@@ -19,7 +20,7 @@ import type { PhaseDetail, PhaseSummary } from "./types";
 // Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   key: "phase",
-  labels: { singular: "Phase", plural: "Phases", all: "Toutes les phases" },
+  labels: { singular: t("entity.phase.singular"), plural: t("entity.phase.plural"), all: t("entity.phase.all") },
   collectionPath: "phases",
   // Matches PhaseTableDefinitionFactory/PhasePanel's own icon.
   icon: "bi bi-layers",
@@ -47,14 +48,14 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => (
           <SchemaFicheTab entity={entity} entityType="phase" typesSegment="phase-types" save={patchPhaseAnswers} onSaved={helpers.refetch} />
         ),
       },
       relationTab<PhaseDetail>({
         key: "recording-units",
-        label: "Unités d'enregistrement",
+        label: t("entity.recordingUnit.plural"),
         target: "recordingUnit",
         scopeEntityType: "phase",
         path: "recording-units",
@@ -75,8 +76,8 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
       entityType: "phase",
       count: "phases",
       icon: "bi bi-layers",
-      label: "Phases",
-      description: "Phases et sous-phases chronologiques",
+      label: t("entity.phase.plural"),
+      description: t("home.phase.description"),
       className: "sia-welcome-card sia-recording-unit",
       chipClassName: "recording-unit-count-chip-alt",
       order: 50,

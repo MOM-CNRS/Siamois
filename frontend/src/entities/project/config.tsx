@@ -10,6 +10,7 @@ import { PlacesTab } from "./PlacesTab";
 import { getProjectTypes } from "./projectTypes";
 import { jsfRoutes } from "../routes";
 import type { ProjectDetail, ProjectSummary } from "./types";
+import { t } from "../../i18n";
 
 // The only Project-specific file this phase produces (plan §3/§4/§8 phase 4) — everything it
 // plugs into (EntityListPanel, EntityDetailPanel, HomePanel, the registry mechanism itself) is
@@ -18,7 +19,7 @@ import type { ProjectDetail, ProjectSummary } from "./types";
 // client-side router, per the plan's "React does not own global routing" rule (§7.4).
 export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail> = {
   key: "project",
-  labels: { singular: "Projet", plural: "Projets" },
+  labels: { singular: t("entity.project.singular"), plural: t("entity.project.plural") },
   collectionPath: "projects",
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
@@ -66,14 +67,14 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
       // actionUnitTabView.xhtml's own order is détails, documents, UE, contenants, phases; only
       // the fiche and this one are migrated so far, so UE comes right after détails for now.
       relationTab<ProjectDetail>({
         key: "recording-units",
-        label: "Unités d'enregistrement",
+        label: t("entity.recordingUnit.plural"),
         target: "recordingUnit",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.recordingUnits ?? 0,
@@ -83,14 +84,14 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       // phases, mobilier, lieux — see the migration plan).
       relationTab<ProjectDetail>({
         key: "containers",
-        label: "Contenants",
+        label: t("entity.container.plural"),
         target: "container",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.containers ?? 0,
       }),
       relationTab<ProjectDetail>({
         key: "phases",
-        label: "Phases",
+        label: t("entity.phase.plural"),
         target: "phase",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.phases ?? 0,
@@ -102,7 +103,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       // (GET /api/v1/projects/{id}/mobiliers) differs from Find's own collectionPath ("finds").
       relationTab<ProjectDetail>({
         key: "finds",
-        label: "Mobilier",
+        label: t("entity.find.plural"),
         target: "find",
         scopeEntityType: "project",
         path: "mobiliers",
@@ -114,7 +115,7 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       // PlacesTab.tsx's own doc.
       {
         key: "places",
-        label: "Lieux",
+        label: t("entity.place.plural"),
         badge: (entity) => entity.spatialContext?.length ?? 0,
         render: (entity, helpers) => <PlacesTab entity={entity} helpers={helpers} />,
       },

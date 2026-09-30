@@ -3,6 +3,7 @@ import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import { Tooltip } from "primereact/tooltip";
 import type { FieldResource } from "./types";
+import { t } from "../i18n";
 
 /**
  * panelField.xhtml's header-toggle-container: the flat label button — the field's own icon
@@ -62,7 +63,7 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
           appendTo={document.body}
           model={[
             {
-              label: "Voir dans le thésaurus",
+              label: t("field.thesaurus"),
               icon: "bi bi-info-circle",
               url: field.conceptUri as string,
               target: "_blank",

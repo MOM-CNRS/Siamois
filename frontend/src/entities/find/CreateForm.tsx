@@ -13,6 +13,7 @@ import { getEffectiveForm } from "../typeCatalog";
 import { queryKeys } from "../../api/queryKeys";
 import { useCreateProject } from "../../components/useCreateProject";
 import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -87,7 +88,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
     mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: category!.resourceId }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de la création"));
+      setError(messageForError(err, t("create.failed")));
     },
   });
 
@@ -96,7 +97,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   return (
     <CreateFormShell
       entityType="find"
-      title="Nouveau mobilier"
+      title={t("create.newFind")}
       canSubmit={canSubmit}
       pending={mutation.isPending}
       error={error}
@@ -104,12 +105,12 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
       onCancel={onCancel}
     >
       {projectPicker}
-      {projectId == null && !projectPicker && <Message severity="warn" text="Projet inconnu : création impossible" />}
+      {projectId == null && !projectPicker && <Message severity="warn" text={t("create.unknownProject")} />}
 
       {fixedRecordingUnit ? (
-        <CreateLinkField label="Unité d'enregistrement" entityType="recordingUnit" value={fixedRecordingUnit} />
+        <CreateLinkField label={t("entity.recordingUnit.singular")} entityType="recordingUnit" value={fixedRecordingUnit} />
       ) : (
-        <CreateFormField label="Unité d'enregistrement" required>
+        <CreateFormField label={t("entity.recordingUnit.singular")} required>
           <AutoComplete
             ref={autoCompleteRef}
             value={ruQuery}
@@ -127,13 +128,13 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
             }}
             completeMethod={searchRecordingUnits}
             onFocus={(e) => autoCompleteRef.current?.search(e, e.currentTarget.value ?? "", "dropdown")}
-            placeholder={projectId == null ? "Choisissez d'abord un projet" : "Rechercher une UE…"}
+            placeholder={projectId == null ? t("create.chooseProjectFirst") : t("create.searchRecordingUnit")}
             disabled={projectId == null}
           />
         </CreateFormField>
       )}
 
-      <CreateFormField label="Catégorie" required>
+      <CreateFormField label={t("common.category")} required>
         {categoryField ? (
           <SelectOneConceptRenderer
             field={categoryField}
@@ -144,7 +145,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
             onChange={(v) => setCategory(v as ConceptPick | null)}
           />
         ) : (
-          <span className="sia-create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
+          <span className="sia-create-form-hint">{projectId == null ? t("create.chooseProjectFirst") : t("common.loading")}</span>
         )}
       </CreateFormField>
 

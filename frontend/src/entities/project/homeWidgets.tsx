@@ -7,6 +7,7 @@ import { useOrganizationCounts } from "../organizationCounts";
 import type { HomeWidgetContext, HomeWidgetDef } from "../types";
 import { listProjects } from "./api";
 import { queryKeys } from "../../api/queryKeys";
+import { t } from "../../i18n";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
@@ -45,7 +46,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
   const projects = data?.data ?? [];
 
   return (
-    <Panel header="Projets récents" toggleable className="sia-form-panel">
+    <Panel header={t("home.recentProjects")} toggleable className="sia-form-panel">
       {isLoading && (
         <div className="loading-skeleton sia-card-grid">
           {Array.from({ length: 3 }, (_, i) => (
@@ -53,7 +54,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
           ))}
         </div>
       )}
-      {!isLoading && projects.length === 0 && <div>Aucun projet</div>}
+      {!isLoading && projects.length === 0 && <div>{t("home.noProject")}</div>}
       {projects.length > 0 && (
         <div className="sia-card-grid">
           {projects.map((project) => (
@@ -89,8 +90,8 @@ function ProjectCountCardWidget({ organizationId, onNavigate }: HomeWidgetContex
   return (
     <EntityCountCard
       icon="bi bi-arrow-down-square"
-      label="Projets"
-      description="Interventions, opérations, fouilles, etc."
+      label={t("entity.project.plural")}
+      description={t("home.project.description")}
       count={data?.projects}
       className="sia-welcome-card sia-action-unit"
       chipClassName="action-unit-count-chip-alt"

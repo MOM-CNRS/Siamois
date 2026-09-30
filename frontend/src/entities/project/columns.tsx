@@ -1,5 +1,6 @@
 import type { ColumnDef } from "../types";
 import type { ProjectSummary } from "./types";
+import { t } from "../../i18n";
 
 // Pinned, hand-written columns only — the identifier chip (also the navigation link), the name
 // (ActionUnitTableDefinitionFactory's own leading FormFieldColumn, kept hand-written rather than
@@ -19,7 +20,7 @@ export const projectColumns: ColumnDef<ProjectSummary>[] = [
     // navigation chip, in this one column. `render` returns the
     // chip's LABEL — EntityListPanel wraps it in the chip itself, using the entity's own icon.
     key: "fullIdentifier",
-    header: "Identifiant",
+    header: t("common.identifier"),
     sortable: true,
     filterable: true,
     identifier: true,
@@ -27,7 +28,7 @@ export const projectColumns: ColumnDef<ProjectSummary>[] = [
   },
   {
     key: "name",
-    header: "Nom",
+    header: t("common.name"),
     sortable: true,
     filterable: true,
     render: (row) => row.name,

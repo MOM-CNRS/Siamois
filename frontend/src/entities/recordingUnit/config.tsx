@@ -12,6 +12,7 @@ import { getOrganizationRecordingUnitTypes, getRecordingUnitTypes } from "./reco
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
+import { t } from "../../i18n";
 
 function recordingUnitRef(ru: RecordingUnitSummary): EntityRef {
   return { id: ru.id, label: ru.fullIdentifier };
@@ -32,7 +33,7 @@ function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
 // Project's is.
 export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, RecordingUnitDetail> = {
   key: "recordingUnit",
-  labels: { singular: "Unité d'enregistrement", plural: "Unités d'enregistrement", all: "Toutes les unités d'enregistrement" },
+  labels: { singular: t("entity.recordingUnit.singular"), plural: t("entity.recordingUnit.plural"), all: t("entity.recordingUnit.all") },
   collectionPath: "recording-units",
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",
@@ -48,7 +49,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   duplication: {
     load: getRecordingUnitStructure,
     run: duplicateRecordingUnitStructure,
-    unit: "UE",
+    unit: t("entity.recordingUnit.unit"),
     maxCopies: 50,
   },
   list: {
@@ -78,19 +79,19 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       {
         key: "new-parent",
         icon: "bi bi-node-plus-fill rotate-minus90",
-        tooltip: "Créer une UE parente",
+        tooltip: t("row.newParentRU"),
         run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { child: recordingUnitRef(row) } }),
       },
       {
         key: "new-child",
         icon: "bi bi-node-plus-fill rotate-90",
-        tooltip: "Créer une UE enfant",
+        tooltip: t("row.newChildRU"),
         run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { parent: recordingUnitRef(row) } }),
       },
       {
         key: "new-find",
         icon: "bi bi-bucket",
-        tooltip: "Créer un mobilier",
+        tooltip: t("row.newFind"),
         run: (row, ctx) => ctx.openCreate("find", { scope: projectScope(row), prefill: { recordingUnit: recordingUnitRef(row) } }),
       },
     ],
@@ -99,7 +100,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => (
           <SchemaFicheTab entity={entity} entityType="recordingUnit" typesSegment="recording-unit-types" save={patchRecordingUnitAnswers} onSaved={helpers.refetch} />
         ),
@@ -107,7 +108,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       // JSF's hierarchy tab, reduced to what the recording unit contains (its direct children).
       relationTab<RecordingUnitDetail>({
         key: "children",
-        label: "Unités d'enregistrement",
+        label: t("entity.recordingUnit.plural"),
         target: "recordingUnit",
         scopeEntityType: "recordingUnit",
         path: "children",
@@ -118,7 +119,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       // JSF's SpecimenTab. REST segment "mobiliers", not Find's own collectionPath.
       relationTab<RecordingUnitDetail>({
         key: "finds",
-        label: "Mobilier",
+        label: t("entity.find.plural"),
         target: "find",
         scopeEntityType: "recordingUnit",
         path: "mobiliers",
@@ -138,8 +139,8 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       entityType: "recordingUnit",
       count: "recordingUnits",
       icon: "bi bi-pencil-square",
-      label: "Unités d'enregistrement",
-      description: "Les unités d'enregistrement",
+      label: t("entity.recordingUnit.plural"),
+      description: t("home.recordingUnit.description"),
       className: "sia-welcome-card sia-recording-unit",
       chipClassName: "recording-unit-count-chip-alt",
       order: 30,

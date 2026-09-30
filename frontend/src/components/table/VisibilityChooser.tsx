@@ -178,7 +178,7 @@ export function VisibilityChooser({
             ))}
           </ul>
           {shownMatches.length === 0 && locked.filter(matches).length === 0 && (
-            <p className="visibility-chooser-empty">Aucun élément</p>
+            <p className="visibility-chooser-empty">{t("chooser.empty")}</p>
           )}
         </section>
         <section className="visibility-chooser-section" data-section="hidden">
@@ -194,7 +194,7 @@ export function VisibilityChooser({
               </li>
             ))}
           </ul>
-          {hiddenMatches.length === 0 && <p className="visibility-chooser-empty">Aucun élément</p>}
+          {hiddenMatches.length === 0 && <p className="visibility-chooser-empty">{t("chooser.empty")}</p>}
         </section>
       </div>
     </div>

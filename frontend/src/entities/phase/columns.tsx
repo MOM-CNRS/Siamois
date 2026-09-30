@@ -1,5 +1,6 @@
 import type { ColumnDef } from "../types";
 import type { PhaseSummary } from "./types";
+import { t } from "../../i18n";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Phase yet (reduced
 // scope, migration plan lot 2: dynamic columns via GET /api/v1/projects/{id}/phase-types are
@@ -7,7 +8,7 @@ import type { PhaseSummary } from "./types";
 export const phaseColumns: ColumnDef<PhaseSummary>[] = [
   {
     key: "identifier",
-    header: "Identifiant",
+    header: t("common.identifier"),
     sortable: true,
     filterable: true,
     identifier: true,
@@ -16,13 +17,13 @@ export const phaseColumns: ColumnDef<PhaseSummary>[] = [
   {
     key: "type",
     fieldId: "-502",
-    header: "Type",
+    header: t("common.type"),
     render: (row) => row.type?.resolvedLabel ?? "",
   },
   {
     key: "title",
     fieldId: "-503",
-    header: "Titre",
+    header: t("common.title"),
     render: (row) => row.title ?? "",
   },
 ];

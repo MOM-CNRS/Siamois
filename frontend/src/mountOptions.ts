@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from "react";
+import { resolveLocale, type Locale } from "./i18n";
 // Shape of the options object focus.xhtml's inline script passes to window.SiamoisMainPanel.mount
 // (plan §7.2/§8 phase 8).
 export type PanelKind = "home" | "list" | "detail";
@@ -82,6 +83,9 @@ export interface MountOptions {
   // is a nuisance, offering edit controls to someone in read mode is a lie the API then rejects.
   writeMode?: boolean;
   basePath: string;
+  // The page language (LangBean), from data-locale; absent on a page that predates the attribute,
+  // the bundle then reads <html lang> (see i18n/index.ts).
+  locale?: Locale;
   csrf: { headerName: string; token: string };
   // Chrome of the view JSF mounted with (its bookmark state included) — used until React
   // navigates away from it; a detail panel replaces it with its entity's own anyway.
@@ -150,6 +154,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
     // AbstractPanel.goBackUrl (the `back=` param): this page was loaded in focus mode.
     goBackUrl: text("goBackUrl"),
     basePath: dataset.basePath ?? "",
+    locale: dataset.locale ? resolveLocale(dataset.locale) : undefined,
     csrf: { headerName: dataset.csrfHeader ?? "", token: dataset.csrfToken ?? "" },
     main: {
       resourceUri: dataset.mainResourceUri ?? "",

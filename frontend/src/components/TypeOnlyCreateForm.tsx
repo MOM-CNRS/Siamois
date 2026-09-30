@@ -94,7 +94,7 @@ export function TypeOnlyCreateForm({
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
-          <span className="sia-create-form-hint">{projectId == null ? "Choisissez d'abord un projet" : "Chargement…"}</span>
+          <span className="sia-create-form-hint">{projectId == null ? t("create.chooseProjectFirst") : t("common.loading")}</span>
         )}
       </CreateFormField>
 

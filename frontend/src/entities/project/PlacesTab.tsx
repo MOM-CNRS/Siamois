@@ -4,6 +4,7 @@ import { Chip } from "primereact/chip";
 import type { DetailTabHelpers } from "../types";
 import type { PlaceLight, ProjectDetail } from "./types";
 import { entityChipStyle } from "../../fields/display";
+import { t } from "../../i18n";
 
 // Migration plan Lot 4 ("Lieux") decision: unlike the other relation tabs on this fiche
 // (recording-units/containers/phases/finds, all built with panels/relationTab.tsx's generic
@@ -42,9 +43,9 @@ export function PlacesTab({ entity, helpers }: PlacesTabProps) {
 
   return (
     <div className="places-tab sia-fiche-tab">
-      <DataTable value={rows} dataKey="id" emptyMessage="Aucun lieu">
+      <DataTable value={rows} dataKey="id" emptyMessage={t("places.none")}>
         <Column
-          header="Nom"
+          header={t("common.name")}
           body={(row: PlaceRow) => (
             <span
               className="entity-list-panel-identifier-link entity-nav-chip"
@@ -59,8 +60,8 @@ export function PlacesTab({ entity, helpers }: PlacesTabProps) {
           )}
         />
         <Column
-          header="Rôle"
-          body={(row: PlaceRow) => (row.isMain ? <Chip label="Localisation principale" /> : null)}
+          header={t("common.role")}
+          body={(row: PlaceRow) => (row.isMain ? <Chip label={t("places.main")} /> : null)}
         />
       </DataTable>
     </div>

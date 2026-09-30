@@ -10,6 +10,7 @@ import { createProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 // The list toolbar's "Créer" overlay (migration plan follow-up — see entities/types.ts's own
 // CreateFormContext doc for why this is an overlay, not a JSF-style modal dialog). Deliberately
@@ -61,7 +62,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de la création"));
+      setError(messageForError(err, t("create.failed")));
     },
   });
 
@@ -71,24 +72,24 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   return (
     <CreateFormShell
       entityType="project"
-      title="Nouveau projet"
+      title={t("create.newProject")}
       canSubmit={canSubmit}
       pending={mutation.isPending}
       error={error}
       onSubmit={() => mutation.mutate()}
       onCancel={onCancel}
     >
-      {prefill?.spatialContext && <CreateLinkField label="Lieu" entityType="place" value={prefill.spatialContext} />}
+      {prefill?.spatialContext && <CreateLinkField label={t("common.place")} entityType="place" value={prefill.spatialContext} />}
 
-      <CreateFormField label="Nom" required>
+      <CreateFormField label={t("common.name")} required>
         <InputText value={name} onChange={(e) => setName(e.target.value)} required />
       </CreateFormField>
 
-      <CreateFormField label="Identifiant" required>
+      <CreateFormField label={t("common.identifier")} required>
         <InputText value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
       </CreateFormField>
 
-      <CreateFormField label="Type" required>
+      <CreateFormField label={t("common.type")} required>
         {typeField ? (
           <SelectOneConceptRenderer
             field={typeField}
@@ -99,7 +100,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
-          <span>Chargement…</span>
+          <span>{t("common.loading")}</span>
         )}
       </CreateFormField>
 

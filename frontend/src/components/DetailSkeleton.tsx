@@ -1,4 +1,5 @@
 import { Skeleton } from "primereact/skeleton";
+import { t } from "../i18n";
 
 /**
  * Loading placeholders for a fiche. Wrapped in .loading-skeleton, which fades them in only after a
@@ -9,7 +10,7 @@ import { Skeleton } from "primereact/skeleton";
 // The fiche form: a couple of panels of label/value pairs, on the same grid as the real one.
 export function FormSkeleton({ panels = 2, fieldsPerPanel = 6 }: { panels?: number; fieldsPerPanel?: number }) {
   return (
-    <div className="loading-skeleton form-skeleton" aria-busy="true" aria-label="Chargement…">
+    <div className="loading-skeleton form-skeleton" aria-busy="true" aria-label={t("common.loading")}>
       {Array.from({ length: panels }, (_, p) => (
         <div key={p} className="form-skeleton-panel">
           <Skeleton width="10rem" height="1.25rem" className="form-skeleton-title" />
@@ -30,7 +31,7 @@ export function FormSkeleton({ panels = 2, fieldsPerPanel = 6 }: { panels?: numb
 // Everything under a fiche's header while the entity loads: breadcrumb, tab strip, then the form.
 export function DetailBodySkeleton() {
   return (
-    <div className="loading-skeleton sia-detail-skeleton" aria-busy="true" aria-label="Chargement…">
+    <div className="loading-skeleton sia-detail-skeleton" aria-busy="true" aria-label={t("common.loading")}>
       <Skeleton width="12rem" height="1rem" className="sia-detail-skeleton-breadcrumb" />
       <div className="sia-detail-skeleton-tabs">
         <Skeleton width="6rem" height="1.5rem" />

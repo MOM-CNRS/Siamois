@@ -1,5 +1,6 @@
 import type { ColumnDef } from "../types";
 import type { RecordingUnitSummary } from "./types";
+import { t } from "../../i18n";
 
 // The one pinned, hand-written column — the identifier chip RecordingUnitTableColumnDefaults
 // excludes (identifierCol): no CustomField behind it, built from `fullIdentifier` directly. Every
@@ -10,7 +11,7 @@ import type { RecordingUnitSummary } from "./types";
 export const recordingUnitColumns: ColumnDef<RecordingUnitSummary>[] = [
   {
     key: "fullIdentifier",
-    header: "Identifiant",
+    header: t("common.identifier"),
     sortable: true,
     filterable: true,
     identifier: true,

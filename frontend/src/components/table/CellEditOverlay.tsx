@@ -349,7 +349,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         </div>
       )}
       {loadingValues ? (
-        <div className="cell-edit-overlay-loading">Chargement des valeurs…</div>
+        <div className="cell-edit-overlay-loading">{t("common.loadingValues")}</div>
       ) : target.readOnly ? (
         <div className="cell-edit-overlay-readonly">
           {/* A chip opens its fiche in the overview; the overlay's job is done then. */}

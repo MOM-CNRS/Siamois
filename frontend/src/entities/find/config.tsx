@@ -10,6 +10,7 @@ import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { FindDetail, FindSummary } from "./types";
+import { t } from "../../i18n";
 
 // Find's own EntityTypeConfig (migration plan, lot 1 "Mobilier") — registered so it can be looked
 // up by key ("find") both by the registry's generics-erasure boundary and by
@@ -18,7 +19,7 @@ import type { FindDetail, FindSummary } from "./types";
 // Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   key: "find",
-  labels: { singular: "Mobilier", plural: "Mobilier", all: "Tout le mobilier" },
+  labels: { singular: t("entity.find.singular"), plural: t("entity.find.plural"), all: t("entity.find.all") },
   collectionPath: "finds",
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",
@@ -53,7 +54,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => (
           <SchemaFicheTab entity={entity} entityType="find" typesSegment="find-types" save={patchFindAnswers} onSaved={helpers.refetch} />
         ),
@@ -72,8 +73,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
       entityType: "find",
       count: "finds",
       icon: "bi bi-bucket",
-      label: "Mobilier",
-      description: "Mobiliers, prélèvements et VAB",
+      label: t("entity.find.plural"),
+      description: t("home.find.description"),
       className: "sia-welcome-card sia-specimen",
       chipClassName: "specimen-count-chip-alt",
       order: 40,

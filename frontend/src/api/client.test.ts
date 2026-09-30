@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch, ApiError } from "./client";
+import { setLocale } from "../i18n";
 
 vi.mock("../auth/sessionAuth", () => ({
   getAccessToken: vi.fn().mockResolvedValue("test-token"),
@@ -74,5 +75,19 @@ describe("apiFetch credentials", () => {
     const init = vi.mocked(fetch).mock.calls[0][1]!;
     expect(init.credentials).toBe("omit");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
+  });
+});
+
+describe("apiFetch language", () => {
+  it("asks for the labels in the page language, not the browser's", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
+    setLocale("en");
+    try {
+      await apiFetch("/api/v1/projects");
+    } finally {
+      setLocale("fr");
+    }
+    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers["Accept-Language"]).toBe("en");
   });
 });

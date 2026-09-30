@@ -10,6 +10,7 @@ import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { ContainerDetail, ContainerSummary } from "./types";
+import { t } from "../../i18n";
 
 // Container's own EntityTypeConfig (migration plan, lot 3 "Contenants") — registered so it can be
 // looked up by key ("container") both by the registry's generics-erasure boundary and by
@@ -18,7 +19,7 @@ import type { ContainerDetail, ContainerSummary } from "./types";
 // Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
 export const containerEntityConfig: EntityTypeConfig<ContainerSummary, ContainerDetail> = {
   key: "container",
-  labels: { singular: "Contenant", plural: "Contenants" },
+  labels: { singular: t("entity.container.singular"), plural: t("entity.container.plural") },
   collectionPath: "containers",
   // Matches ContainerTableDefinitionFactory/ContainerPanel's own icon.
   icon: "bi bi-box-seam",
@@ -46,7 +47,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => (
           <SchemaFicheTab entity={entity} entityType="container" typesSegment="container-types" save={patchContainerAnswers} onSaved={helpers.refetch} />
         ),
@@ -65,8 +66,8 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
       entityType: "container",
       count: "containers",
       icon: "bi bi-box-seam",
-      label: "Contenants",
-      description: "Contenants mobile (boites, sacs, etc.) pour le stockage des mobiliers et documents",
+      label: t("entity.container.plural"),
+      description: t("home.container.description"),
       className: "sia-welcome-card sia-container",
       chipClassName: "container-count-chip-alt",
       order: 60,

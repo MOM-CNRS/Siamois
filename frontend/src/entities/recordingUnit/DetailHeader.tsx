@@ -13,6 +13,7 @@ import type { RecordingUnitDetail } from "./types";
 import { getEntityType } from "../registry";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 // recordingUnitPanelHeader.xhtml's content (identifier chip, then the editable category chip) —
 // lives in EntityDetailPanel's own PrimeReact <Panel> `header`, matching Project's own
@@ -75,7 +76,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
     mutationFn: (value: unknown) => {
       // Only ever invoked from the picker below, which is only rendered once `typeField` is
       // resolved (`editable` gates it) — this branch is unreachable in practice.
-      if (!typeField) return Promise.reject(new Error("Type de champ inconnu"));
+      if (!typeField) return Promise.reject(new Error(t("header.unknownFieldType")));
       return patchRecordingUnitAnswers(entity.id, { [typeField.id]: toAnswerInput(typeField, value) });
     },
     onSuccess: () => {
@@ -84,7 +85,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de l'enregistrement"));
+      setError(messageForError(err, t("header.saveFailed")));
     },
   });
 
@@ -117,7 +118,7 @@ function CategoryChip({ entity, onSaved, canEdit }: RecordingUnitDetailHeaderPro
         <Button
           icon="pi pi-pencil"
           className="p-button-text"
-          aria-label="Modifier le type"
+          aria-label={t("header.editType")}
           onClick={() => setEditing(true)}
         />
       )}

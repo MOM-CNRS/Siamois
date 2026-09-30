@@ -8,6 +8,7 @@ import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { createPlace } from "./api";
 import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 // The list toolbar's "Créer" overlay for places — name and type only (PlaceCreateRequest's
 // required pair), like the other create overlays. Unlike them, places belong to the organization,
@@ -21,7 +22,7 @@ import { messageForError } from "../../api/errors";
 const PLACE_TYPE_FIELD: FieldResource = {
   id: "-201",
   resourceType: "fields",
-  label: "Type",
+  label: t("common.type"),
   answerType: "SELECT_ONE_FROM_FIELD_CODE",
   isSystemField: true,
   valueBinding: "category",
@@ -50,7 +51,7 @@ export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de la création"));
+      setError(messageForError(err, t("create.failed")));
     },
   });
 
@@ -59,21 +60,21 @@ export function PlaceCreateForm({ organizationId, prefill, onCreated, onCancel }
   return (
     <CreateFormShell
       entityType="place"
-      title="Nouveau lieu"
+      title={t("create.newPlace")}
       canSubmit={canSubmit}
       pending={mutation.isPending}
       error={error}
       onSubmit={() => mutation.mutate()}
       onCancel={onCancel}
     >
-      {prefill?.parent && <CreateLinkField label="Contenu dans" entityType="place" value={prefill.parent} />}
-      {prefill?.child && <CreateLinkField label="Contient" entityType="place" value={prefill.child} />}
+      {prefill?.parent && <CreateLinkField label={t("create.containedIn")} entityType="place" value={prefill.parent} />}
+      {prefill?.child && <CreateLinkField label={t("create.contains")} entityType="place" value={prefill.child} />}
 
-      <CreateFormField label="Nom" required>
+      <CreateFormField label={t("common.name")} required>
         <InputText value={name} onChange={(e) => setName(e.target.value)} required />
       </CreateFormField>
 
-      <CreateFormField label="Type" required>
+      <CreateFormField label={t("common.type")} required>
         <SelectOneConceptRenderer
           field={PLACE_TYPE_FIELD}
           value={type}

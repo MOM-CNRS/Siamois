@@ -1,5 +1,6 @@
 import type { ColumnDef } from "../types";
 import type { ContainerSummary } from "./types";
+import { t } from "../../i18n";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Container yet (reduced
 // scope, migration plan lot 3: dynamic columns via GET /api/v1/projects/{id}/container-types are
@@ -7,7 +8,7 @@ import type { ContainerSummary } from "./types";
 export const containerColumns: ColumnDef<ContainerSummary>[] = [
   {
     key: "identifier",
-    header: "Identifiant",
+    header: t("common.identifier"),
     sortable: true,
     filterable: true,
     identifier: true,
@@ -16,7 +17,7 @@ export const containerColumns: ColumnDef<ContainerSummary>[] = [
   {
     key: "type",
     fieldId: "-602",
-    header: "Type",
+    header: t("common.type"),
     render: (row) => row.type?.resolvedLabel ?? "",
   },
 ];

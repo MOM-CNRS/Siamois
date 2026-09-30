@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { setLocale } from "../i18n";
 import { PaneErrorBoundary } from "./PaneErrorBoundary";
 
 let broken = true;
@@ -19,6 +20,7 @@ beforeEach(() => {
   broken = true;
 });
 afterEach(() => {
+  setLocale("fr");
   act(() => root.unmount());
   container.remove();
   vi.restoreAllMocks();
@@ -50,5 +52,18 @@ describe("PaneErrorBoundary", () => {
     broken = false;
     act(() => root.render(tree("b")));
     expect(container.textContent).toContain("ok");
+  });
+
+  it("speaks the page language", () => {
+    setLocale("en");
+    act(() =>
+      root.render(
+        <PaneErrorBoundary label="the preview">
+          <Bomb />
+        </PaneErrorBoundary>,
+      ),
+    );
+    expect(container.querySelector("[role=alert]")?.textContent).toContain("An error occurred in the preview.");
+    expect(container.querySelector("button")?.textContent).toBe("Try again");
   });
 });

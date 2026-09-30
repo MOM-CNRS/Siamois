@@ -6,6 +6,7 @@ import { FieldEditCell } from "./FieldEditCell";
 import { FieldLabel } from "./FieldLabel";
 import { resolveValueBinding, type AnswerInputBody, type FieldResource } from "./types";
 import { valueOfField } from "./values";
+import { t } from "../i18n";
 
 /**
  * The fiche's form, for every entity type: panels → rows → columns of FieldLabel + FieldEditCell,
@@ -74,7 +75,7 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
               ))}
             </div>
           ))}
-          {panel.rows.length === 0 && <i>Aucun champ</i>}
+          {panel.rows.length === 0 && <i>{t("field.noField")}</i>}
         </Panel>
       ))}
     </>

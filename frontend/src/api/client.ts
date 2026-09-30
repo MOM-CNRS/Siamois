@@ -1,4 +1,5 @@
 import { apiUrl } from "./basePath";
+import { getLocale } from "../i18n";
 import { getAccessToken, resetSession } from "../auth/sessionAuth";
 
 export class ApiError extends Error {
@@ -41,6 +42,9 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
     ...rest,
     headers: {
       Authorization: `Bearer ${token}`,
+      // The labels the API resolves itself (field names, concepts, types) follow the page language,
+      // not the browser's: the user picks it in SIAMOIS (LangBean).
+      "Accept-Language": getLocale(),
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...headers,
     },

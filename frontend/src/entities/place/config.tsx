@@ -11,6 +11,7 @@ import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { PlaceDetail, PlaceSummary } from "./types";
+import { t } from "../../i18n";
 
 // Place's own EntityTypeConfig (migration plan, lot 4 "Lieux", then the organization-wide list
 // lot). Two list contexts: the organization-wide list (GET /api/v1/places?organizationId=…, JSF's
@@ -22,7 +23,7 @@ function placeRef(place: PlaceSummary): EntityRef {
 
 export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   key: "place",
-  labels: { singular: "Lieu", plural: "Lieux" },
+  labels: { singular: t("entity.place.singular"), plural: t("entity.place.plural") },
   collectionPath: "places",
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
@@ -49,19 +50,19 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       {
         key: "new-parent",
         icon: "bi bi-node-plus-fill rotate-minus90",
-        tooltip: "Créer un lieu parent",
+        tooltip: t("row.newParentPlace"),
         run: (row, ctx) => ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
       },
       {
         key: "new-child",
         icon: "bi bi-node-plus-fill rotate-90",
-        tooltip: "Créer un lieu enfant",
+        tooltip: t("row.newChildPlace"),
         run: (row, ctx) => ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
       },
       {
         key: "new-project",
         icon: "bi bi-arrow-down-square",
-        tooltip: "Créer un projet",
+        tooltip: t("row.newProject"),
         run: (row, ctx) => ctx.openCreate("project", { prefill: { spatialContext: placeRef(row) } }),
       },
     ],
@@ -70,7 +71,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     tabs: [
       {
         key: "fiche",
-        label: "Détails",
+        label: t("common.details"),
         render: (entity, helpers) => (
           <SchemaFicheTab entity={entity} entityType="place" isFieldShown={(field) => field.valueBinding !== "address"} save={patchPlaceAnswers} onSaved={helpers.refetch} />
         ),
@@ -78,7 +79,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       // JSF's hierarchy tab, reduced to the places this one contains.
       relationTab<PlaceDetail>({
         key: "children",
-        label: "Lieux",
+        label: t("entity.place.plural"),
         target: "place",
         scopeEntityType: "place",
         path: "children",
@@ -88,7 +89,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       // JSF's ActionTab: the projects whose spatial context contains this place.
       relationTab<PlaceDetail>({
         key: "projects",
-        label: "Projets",
+        label: t("entity.project.plural"),
         target: "project",
         scopeEntityType: "place",
         path: "projects",
@@ -107,8 +108,8 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       entityType: "place",
       count: "places",
       icon: "bi bi-geo-alt",
-      label: "Lieux",
-      description: "Les lieux et leurs découpages spatiaux",
+      label: t("entity.place.plural"),
+      description: t("home.place.description"),
       className: "sia-welcome-card sia-spatial-unit",
       chipClassName: "spatial-unit-count-chip-alt",
       order: 20,

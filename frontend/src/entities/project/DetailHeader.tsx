@@ -13,6 +13,7 @@ import type { ProjectDetail } from "./types";
 import { getEntityType } from "../registry";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
+import { t } from "../../i18n";
 
 // actionUnitPanelHeader.xhtml's content (identifier chip + pencil/apply/cancel, the editable
 // category chip, then name/location chips) — lives in EntityDetailPanel's own PrimeReact <Panel>
@@ -68,14 +69,14 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de l'enregistrement"));
+      setError(messageForError(err, t("header.saveFailed")));
     },
   });
 
   function save() {
     const trimmed = draft.trim();
     if (!trimmed) {
-      setError("L'identifiant est obligatoire");
+      setError(t("header.identifierRequired"));
       return;
     }
     mutation.mutate(trimmed);
@@ -90,7 +91,7 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
           <Button
             icon="pi pi-times"
             className="p-button-text"
-            aria-label="Annuler"
+            aria-label={t("common.cancel")}
             onClick={() => {
               setEditing(false);
               setError(null);
@@ -105,7 +106,7 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
             <Button
               icon="pi pi-pencil"
               className="p-button-text"
-              aria-label="Modifier l'identifiant"
+              aria-label={t("header.editIdentifier")}
               onClick={() => setEditing(true)}
             />
           )}
@@ -152,7 +153,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
       onSaved();
     },
     onError: (err: unknown) => {
-      setError(messageForError(err, "Échec de l'enregistrement"));
+      setError(messageForError(err, t("header.saveFailed")));
     },
   });
 
@@ -170,7 +171,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
           organizationId={organizationId}
           onChange={(v) => mutation.mutate(conceptId(v))}
         />
-        <Button icon="pi pi-times" className="p-button-text" aria-label="Annuler" onClick={() => setEditing(false)} />
+        <Button icon="pi pi-times" className="p-button-text" aria-label={t("common.cancel")} onClick={() => setEditing(false)} />
         {error && <Message severity="error" text={error} />}
       </span>
     );
@@ -185,7 +186,7 @@ function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & {
         <Button
           icon="pi pi-pencil"
           className="p-button-text"
-          aria-label="Modifier le type"
+          aria-label={t("header.editType")}
           onClick={() => setEditing(true)}
         />
       )}

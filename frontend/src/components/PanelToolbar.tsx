@@ -76,11 +76,11 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
 
   const secondary = [
     // The click itself, so the creation form opens next to the button that was clicked.
-    actions?.create && { label: "Créer", icon: "bi bi-plus-square", command: (e: { originalEvent: SyntheticEvent }) => actions.create!(e.originalEvent) },
+    actions?.create && { label: t("list.create"), icon: "bi bi-plus-square", command: (e: { originalEvent: SyntheticEvent }) => actions.create!(e.originalEvent) },
     actions?.duplicate && { label: "Dupliquer", icon: "bi bi-copy", command: actions.duplicate },
   ].filter(Boolean) as MenuItem[];
   const tertiary = [
-    actions?.settings && { label: "Paramètres", icon: "bi bi-gear", command: actions.settings },
+    actions?.settings && { label: t("toolbar.settings"), icon: "bi bi-gear", command: actions.settings },
   ].filter(Boolean) as MenuItem[];
   const moreMenuRef = useRef<Menu>(null);
 

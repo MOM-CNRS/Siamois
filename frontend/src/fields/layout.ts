@@ -1,4 +1,5 @@
 import type { FieldRules } from "../rules/types";
+import { t, type MessageKey } from "../i18n";
 
 // The fiche layout of every entity type: the JSON FormUiDtoLayoutJson.serialize produces for
 // FormResource.layoutJson — panels/rows/columns whose fieldId points into the sibling `fields`
@@ -115,19 +116,20 @@ function normalizeCol(col: FormLayoutCol): FormLayoutCol {
 // Panel `name` is an i18n message code (JSF resolves it against the message bundle), not a
 // ready-to-display label. One map for every entity type — the codes don't collide. Falls back to
 // the raw code for a panel it doesn't know (a group created in the form builder).
-const PANEL_LABELS: Record<string, string> = {
-  "common.header.general": "Général",
-  "common.label.localisation": "Localisation",
-  "common.header.chronology": "Chronologie",
-  "common.header.chronologie": "Chronologie",
-  "common.header.measurement": "Mesures",
-  "common.header.dimensions": "Dimensions",
-  "actionunit.header.administrative": "Administratif",
-  "actionunit.header.documentation": "Documentation",
-  "recordingunit.panel.chronology": "Chronologie",
-  "recordingunit.panel.measurements": "Mesures",
+const PANEL_LABELS: Record<string, MessageKey> = {
+  "common.header.general": "panel.general",
+  "common.label.localisation": "panel.localisation",
+  "common.header.chronology": "panel.chronology",
+  "common.header.chronologie": "panel.chronology",
+  "common.header.measurement": "panel.measurements",
+  "common.header.dimensions": "panel.dimensions",
+  "actionunit.header.administrative": "panel.administrative",
+  "actionunit.header.documentation": "panel.documentation",
+  "recordingunit.panel.chronology": "panel.chronology",
+  "recordingunit.panel.measurements": "panel.measurements",
 };
 
 export function panelLabel(nameCode: string): string {
-  return PANEL_LABELS[nameCode] ?? nameCode;
+  const key = PANEL_LABELS[nameCode];
+  return key ? t(key) : nameCode;
 }

@@ -2,6 +2,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
 import { PrimeReactProvider } from "primereact/api";
 import "./styles/bundle";
+import { getLocale, setLocale } from "./i18n";
+import { applyPrimeLocale } from "./i18n/primeLocale";
 import { configureBasePath } from "./api/basePath";
 import { configureCsrf } from "./auth/sessionAuth";
 import { registerDefaultFieldRenderers } from "./fields/registerDefaultRenderers";
@@ -41,6 +43,8 @@ function unmountDetached(): void {
 
 function mount(container: HTMLElement, options: MountOptions): void {
   unmountDetached();
+  if (options.locale) setLocale(options.locale);
+  applyPrimeLocale(getLocale());
   configureBasePath(options.basePath);
   configureCsrf(options.csrf);
 

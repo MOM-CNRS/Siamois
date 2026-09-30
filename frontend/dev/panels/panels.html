@@ -14,6 +14,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="../.generated/settings.css" />
+    <!-- ?lang=en|fr: the bundle reads <html lang> when it loads, as on the JSF page (template.xhtml). -->
+    <script>
+      document.documentElement.lang = new URLSearchParams(location.search).get("lang") || "fr";
+    </script>
     <style>
       html, body { height: 100%; margin: 0; }
     </style>
@@ -45,6 +49,7 @@
         overviewOrganizationId: 1,
         writeMode: q.get("write") !== "0",
         basePath: "",
+        locale: q.get("lang") ?? undefined,
         csrf: { headerName: "X-CSRF-TOKEN", token: "dev-harness" },
         main: { resourceUri: kind === "list" ? "/action-unit" : `/action-unit/${id}`, title: "Projets", bookmarked: false },
       });

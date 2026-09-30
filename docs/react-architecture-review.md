@@ -128,7 +128,7 @@ Ranked by value for the effort. **Bold** items are the ones I would do first.
 
 ### 2.12 Accessibility and i18n
 
-- Strings are French literals throughout (`"Échec de la création"`, tab labels, tooltips). The JSF side has i18n bundles; the React bundle has none. Introducing `t()` late is expensive, but the surface is still mostly leaf components. A message catalog keyed by id, initially returning the French literal, lets it be adopted file by file. Already listed as post-merge.
+- i18n exists (`frontend/src/i18n/`, French and English): `t(key, params)` and `tn(key, count)` for plurals, catalogs `fr.ts` (source) and `en.ts` (typed to the same keys, so a missing translation fails `tsc`). The language is `langBean.languageCode`, read from `<html xml:lang>` when the bundle loads (module-level labels such as entity names are evaluated on import) and confirmed by `data-locale` at mount; a language change reloads the JSF page, so nothing re-renders on a switch. The API client sends `Accept-Language` so server-resolved labels follow the same language. Improvement left: labels resolved by the API itself must be translated server-side; and a lint rule (or test) rejecting a French literal in JSX would keep new strings from bypassing the catalog.
 - Keyboard and screen-reader behavior is covered ad hoc (a few `aria-label`s, `role="status"`, `role="alert"`). There is no axe check in tests. **Improvement:** add `vitest-axe` on the three panel kinds and the two overlays — a small test set that catches missing labels and roles cheaply.
 
 ### 2.13 Quality tooling
@@ -155,4 +155,4 @@ Ranked by value for the effort. **Bold** items are the ones I would do first.
 2. 2.1 (typed registry) then 2.2 (generated DTOs) — they compound: generated DTOs are what the typed registry should be parameterized by.
 3. 2.5 (one catalog hook) and 2.4 (remaining duplication).
 4. 2.7 + 2.8 (lazy entities, split `renderers.tsx` / `types.ts`) once the above shrinks the surface.
-5. 2.13 (Sonar on frontend, coverage) right after the merge; 2.9/2.12 incrementally.
+5. 2.13 (Sonar on frontend, coverage) right after the merge; 2.9 incrementally.

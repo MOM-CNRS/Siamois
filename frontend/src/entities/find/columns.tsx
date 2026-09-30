@@ -1,5 +1,6 @@
 import type { ColumnDef } from "../types";
 import type { FindSummary } from "./types";
+import { intlLocale, t } from "../../i18n";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Find yet (reduced
 // scope, migration plan lot 1: dynamic columns via GET /api/v1/projects/{id}/find-types are
@@ -8,7 +9,7 @@ import type { FindSummary } from "./types";
 export const findColumns: ColumnDef<FindSummary>[] = [
   {
     key: "fullIdentifier",
-    header: "Identifiant",
+    header: t("common.identifier"),
     sortable: true,
     filterable: true,
     identifier: true,
@@ -19,20 +20,20 @@ export const findColumns: ColumnDef<FindSummary>[] = [
     // in a project's Mobilier tab alike (the UE differs from row to row in both).
     key: "recordingUnit",
     fieldId: "-401",
-    header: "UE",
+    header: t("column.recordingUnitShort"),
     render: (row) => row.recordingUnit?.fullIdentifier ?? "",
     link: (row) => (row.recordingUnit ? { entityType: "recordingUnit", id: row.recordingUnit.id } : null),
   },
   {
     key: "type",
     fieldId: "-409",
-    header: "Catégorie",
+    header: t("common.category"),
     render: (row) => row.type?.resolvedLabel ?? "",
   },
   {
     key: "collectionDate",
-    header: "Date de collecte",
+    header: t("column.collectionDate"),
     sortable: true,
-    render: (row) => (row.collectionDate ? new Date(row.collectionDate).toLocaleDateString("fr-FR") : ""),
+    render: (row) => (row.collectionDate ? new Date(row.collectionDate).toLocaleDateString(intlLocale()) : ""),
   },
 ];

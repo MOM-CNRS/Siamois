@@ -14,6 +14,7 @@ import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
 import { FormSkeleton } from "../../components/DetailSkeleton";
 import { queryKeys } from "../../api/queryKeys";
+import { t, intlLocale } from "../../i18n";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
 // panel/row/field ActionUnit.DETAILS_FORM's layout defines (4 panels, 33 fields), same as JSF's
@@ -121,10 +122,10 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
           itself. The identifier and category chips keep their explicit pencil/apply/cancel, in
           ProjectDetailHeader — that is what JSF does too (headerEditControls.xhtml). */}
       {organizationIdRaw == null && (
-        <Message severity="warn" text="Organisation inconnue : impossible de charger le formulaire" />
+        <Message severity="warn" text={t("fiche.unknownOrganization")} />
       )}
       {typesQuery.isLoading && <FormSkeleton />}
-      {typesQuery.error && <Message severity="error" text="Impossible de charger la configuration du formulaire" />}
+      {typesQuery.error && <Message severity="error" text={t("fiche.formConfigError")} />}
       {fields && (
         <FormLayoutView
           entity={entity}
@@ -168,19 +169,19 @@ function FicheFooter({ entity, history }: { entity: ProjectDetail; history?: Pro
       className="panel-footer"
       start={
         <div className="project-fiche-tab-footer">
-          <FooterLine label="Créé le" date={created.revisionDate} author={authorName(created)} />
-          <FooterLine label="Modifié le" date={latest.revisionDate} author={authorName(latest)} />
+          <FooterLine label={t("fiche.createdOn")} date={created.revisionDate} author={authorName(created)} />
+          <FooterLine label={t("fiche.modifiedOn")} date={latest.revisionDate} author={authorName(latest)} />
           {entity.validated === "VALIDATED" && (
             <small>
               <i>
-                Validé <span className="panel-history-colored-span">oui</span>
+                {t("fiche.validated")} <span className="panel-history-colored-span">{t("fiche.yes")}</span>
               </i>
             </small>
           )}
           {contributors.length > 0 && (
             <small>
               <i>
-                Contributeurs : <span className="panel-history-colored-span">{contributors.join(", ")}</span>
+                {t("fiche.contributors")}<span className="panel-history-colored-span">{contributors.join(", ")}</span>
               </i>
             </small>
           )}
@@ -198,7 +199,7 @@ function FooterLine({ label, date, author }: { label: string; date: string; auth
         {author && (
           <>
             {" "}
-            par <span className="panel-history-colored-span">{author}</span>
+            {t("fiche.by")} <span className="panel-history-colored-span">{author}</span>
           </>
         )}
       </i>
@@ -250,5 +251,5 @@ function refId(value: unknown): string {
 }
 
 function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString("fr-FR");
+  return new Date(value).toLocaleString(intlLocale());
 }
