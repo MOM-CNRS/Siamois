@@ -626,8 +626,14 @@ public class CustomFieldAnswerService {
                                              Function<Object, K> keyOf,
                                              Function<List<K>, Iterable<E>> loadAll,
                                              Function<E, K> keyOfEntity) {
-        List<Object> picked = raw == null ? List.of()
-                : raw instanceof Collection<?> collection ? new ArrayList<>(collection) : List.of(raw);
+        List<Object> picked;
+        if (raw == null) {
+            picked = List.of();
+        } else if (raw instanceof Collection<?> collection) {
+            picked = new ArrayList<>(collection);
+        } else {
+            picked = List.of(raw);
+        }
 
         Map<K, E> resolved = new HashMap<>();
         List<K> keys = new ArrayList<>();

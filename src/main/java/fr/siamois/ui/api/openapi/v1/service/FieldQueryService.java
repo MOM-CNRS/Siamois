@@ -663,8 +663,9 @@ public class FieldQueryService {
         if (target.kind == Kind.DATE) {
             LocalDateTime utc;
             try {
+                long extraDays = lower ? 0 : 1;
                 utc = raw.length() == 10
-                        ? LocalDate.parse(raw).plusDays(lower ? 0 : 1).atStartOfDay()
+                        ? LocalDate.parse(raw).plusDays(extraDays).atStartOfDay()
                         : OffsetDateTime.parse(raw).withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
             } catch (DateTimeParseException e) {
                 throw badRequest("Date invalide (ISO-8601 attendu) pour f." + fieldId + " : " + raw);

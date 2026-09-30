@@ -107,28 +107,32 @@ class RecordingUnitListFilterTest {
 
     @Test
     void parse_unknownKey_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.description", "x")))
+        var arg1_30 = params("f.description", "x");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_30))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_actionUnitFilter_isRejected_becauseThePathAlreadyScopesToOneProject() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.actionUnit", "5")))
+        var arg1_29 = params("f.actionUnit", "5");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_29))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_rangeSuffixOnANonRangeField_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.fullIdentifier.from", "UE")))
+        var arg1_28 = params("f.fullIdentifier.from", "UE");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_28))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_rangeFieldWithoutSuffix_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.tpq", "10")))
+        var arg1_27 = params("f.tpq", "10");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_27))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -146,21 +150,24 @@ class RecordingUnitListFilterTest {
 
     @Test
     void parse_nonNumericId_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.type", "not-a-number")))
+        var arg1_26 = params("f.type", "not-a-number");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_26))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_nonIsoDate_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.openingDate.from", "not-a-date")))
+        var arg1_25 = params("f.openingDate.from", "not-a-date");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_25))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_nonNumericIntRangeBound_throws400() {
-        assertThatThrownBy(() -> RecordingUnitListFilter.parse(params("f.tpq.from", "abc")))
+        var arg1_24 = params("f.tpq.from", "abc");
+        assertThatThrownBy(() -> RecordingUnitListFilter.parse(arg1_24))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }

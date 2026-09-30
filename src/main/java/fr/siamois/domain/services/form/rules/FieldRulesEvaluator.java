@@ -179,21 +179,7 @@ public final class FieldRulesEvaluator {
     public Map<Long, FieldState> evaluate(List<RuledColumn> columns, Function<Long, Object> valueOf) {
         Map<Long, FieldState> states = new LinkedHashMap<>();
         for (RuledColumn col : columns) {
-            FieldRules rules = col.rules() == null ? FieldRules.NONE : col.rules();
-            boolean enabled = safe(rules.enabledWhen(), valueOf, true);
-            boolean required = enabled && (col.required() || safe(rules.requiredWhen(), valueOf, false));
-            FieldState state = new FieldState(enabled, required);
-            if (!enabled && !RuleValues.isEmpty(valueOf.apply(col.fieldId()))) {
-                state.incoherent.add(Incoherence.of(IncoherenceKind.DISABLED_WITH_VALUE));
-            }
-            if (rules.options() instanceof OptionsFilter.RelatedConcepts rc) {
-                state.optionsContext = new OptionsContext("RELATED_CONCEPTS", rc.fieldId(), null,
-                        RuleValues.idOf(valueOf.apply(rc.fieldId())));
-            } else if (rules.options() instanceof OptionsFilter.RefMatch rm) {
-                state.optionsContext = new OptionsContext("REF_MATCH", rm.fieldId(), rm.candidateFieldId(),
-                        RuleValues.idOf(valueOf.apply(rm.fieldId())));
-            }
-            states.put(col.fieldId(), state);
+            states.put(col.fieldId(), initialState(col, valueOf));
         }
         for (RuledColumn col : columns) {
             if (col.rules() == null) continue;
@@ -203,6 +189,25 @@ public final class FieldRulesEvaluator {
             }
         }
         return states;
+    }
+
+    /** A column's state before the ordering constraints: enabled, required, what it holds while disabled, its options' context. */
+    private FieldState initialState(RuledColumn col, Function<Long, Object> valueOf) {
+        FieldRules rules = col.rules() == null ? FieldRules.NONE : col.rules();
+        boolean enabled = safe(rules.enabledWhen(), valueOf, true);
+        boolean required = enabled && (col.required() || safe(rules.requiredWhen(), valueOf, false));
+        FieldState state = new FieldState(enabled, required);
+        if (!enabled && !RuleValues.isEmpty(valueOf.apply(col.fieldId()))) {
+            state.incoherent.add(Incoherence.of(IncoherenceKind.DISABLED_WITH_VALUE));
+        }
+        if (rules.options() instanceof OptionsFilter.RelatedConcepts rc) {
+            state.optionsContext = new OptionsContext("RELATED_CONCEPTS", rc.fieldId(), null,
+                    RuleValues.idOf(valueOf.apply(rc.fieldId())));
+        } else if (rules.options() instanceof OptionsFilter.RefMatch rm) {
+            state.optionsContext = new OptionsContext("REF_MATCH", rm.fieldId(), rm.candidateFieldId(),
+                    RuleValues.idOf(valueOf.apply(rm.fieldId())));
+        }
+        return state;
     }
 
     private static void applyConstraint(@Nullable FieldState state, long selfId, FieldConstraint.Op op, long otherId,

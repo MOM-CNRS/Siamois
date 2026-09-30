@@ -167,7 +167,8 @@ class VocabularyOpenApiServiceTest {
         text.setId(6L);
         when(customFieldRepository.findById(6L)).thenReturn(Optional.of(text));
 
-        assertThatThrownBy(() -> service.getConceptsForField(10L, 6L, null, null, null, "fr", caller.person()))
+        var arg7_12 = caller.person();
+        assertThatThrownBy(() -> service.getConceptsForField(10L, 6L, null, null, null, "fr", arg7_12))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -177,7 +178,8 @@ class VocabularyOpenApiServiceTest {
         when(institutionService.findById(10L)).thenReturn(institution);
         when(customFieldRepository.findById(404L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getConceptsForField(10L, 404L, null, null, null, "fr", caller.person()))
+        var arg7_11 = caller.person();
+        assertThatThrownBy(() -> service.getConceptsForField(10L, 404L, null, null, null, "fr", arg7_11))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -202,7 +204,8 @@ class VocabularyOpenApiServiceTest {
     void getRelatedConcepts_withoutFieldCode_is400() {
         when(institutionService.findById(10L)).thenReturn(institution);
 
-        assertThatThrownBy(() -> service.getRelatedConcepts(10L, null, null, 77L, null, null, "fr", caller.person()))
+        var arg8_10 = caller.person();
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, null, null, 77L, null, null, "fr", arg8_10))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
@@ -213,7 +216,8 @@ class VocabularyOpenApiServiceTest {
         when(institutionService.findById(10L)).thenReturn(institution);
         when(conceptService.findById(77L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, null, null, "fr", caller.person()))
+        var arg8_9 = caller.person();
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, null, null, "fr", arg8_9))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);

@@ -927,8 +927,8 @@ public class ActionUnitService implements ArkEntityService {
         // Walking backwards reverses both the sort field's own direction and the id tie-break —
         // ActionUnitSpec.cursor's own "forward" flag already accounts for the field, id here just
         // has to match the direction cursor() compares it in.
-        Sort.Direction walkFieldDirection = forward ? sortDirection
-                : (sortDirection == Sort.Direction.ASC ? Sort.Direction.DESC : Sort.Direction.ASC);
+        Sort.Direction reversedDirection = sortDirection == Sort.Direction.ASC ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort.Direction walkFieldDirection = forward ? sortDirection : reversedDirection;
         Sort.Direction idDirection = forward ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable onePage = PageRequest.of(0, 1, Sort.by(walkFieldDirection, sortField).and(Sort.by(idDirection, "id")));
 

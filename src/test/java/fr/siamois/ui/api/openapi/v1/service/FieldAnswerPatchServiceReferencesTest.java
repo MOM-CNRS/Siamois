@@ -146,8 +146,10 @@ class FieldAnswerPatchServiceReferencesTest {
         answers.put(field, mock(CustomFieldAnswerViewModel.class));
         response.setAnswers(answers);
         when(formService.initOrReuseResponse(isNull(), same(entity), any(), eq(true))).thenReturn(response);
+        FormUiDto form = form(field);
+        Map<String, AnswerInput> patch = Map.of("1", input);
         ResponseStatusException e = org.junit.jupiter.api.Assertions.assertThrows(ResponseStatusException.class,
-                () -> service.apply(entity, form(field), Map.of("1", input), PROJECT));
+                () -> service.apply(entity, form, patch, PROJECT));
         return HttpStatus.valueOf(e.getStatusCode().value());
     }
 

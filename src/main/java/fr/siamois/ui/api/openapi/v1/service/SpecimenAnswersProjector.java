@@ -176,8 +176,14 @@ public class SpecimenAnswersProjector {
         if (field instanceof CustomFieldMeasurement) {
             return raw instanceof MeasurementAnswerDTO m ? measurementRef(m) : null;
         }
-        // Every remaining DETAILS_FORM field is a reference, single or multiple: the value's own
-        // shape (one DTO or a collection) decides, same as FieldAnswerWireService on the detail.
+        return referenceWireValue(field, raw, labels);
+    }
+
+    /**
+     * Every remaining DETAILS_FORM field is a reference, single or multiple: the value's own
+     * shape (one DTO or a collection) decides, same as FieldAnswerWireService on the detail.
+     */
+    private static Object referenceWireValue(CustomField field, Object raw, Map<Long, String> labels) {
         if (raw instanceof Collection<?> items) {
             List<ResourceRef> refs = new ArrayList<>(items.size());
             for (Object item : items) {

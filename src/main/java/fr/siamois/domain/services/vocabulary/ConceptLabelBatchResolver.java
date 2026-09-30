@@ -55,22 +55,12 @@ public class ConceptLabelBatchResolver {
         Set<Long> ids = new LinkedHashSet<>(byId.keySet());
         Map<Long, String> resolved = new HashMap<>();
 
-        for (ConceptPrefLabel pref : conceptLabelRepository.findAllPrefLabelsByLangCodeAndConcept_IdIn(lang, ids)) {
-            Long id = conceptIdOf(pref.getConcept());
-            if (id != null) {
-                resolved.putIfAbsent(id, pref.getLabel());
-            }
-        }
+        addLabels(resolved, conceptLabelRepository.findAllPrefLabelsByLangCodeAndConcept_IdIn(lang, ids));
 
         // Second passage seulement pour ce qui n'a pas de libellé préféré, mais toujours en une requête :
         // filtrer côté base sur un sous-ensemble ne vaut pas un aller-retour supplémentaire ici.
         if (resolved.size() < ids.size()) {
-            for (ConceptAltLabel alt : conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept_IdIn(lang, ids)) {
-                Long id = conceptIdOf(alt.getConcept());
-                if (id != null) {
-                    resolved.putIfAbsent(id, alt.getLabel());
-                }
-            }
+            addLabels(resolved, conceptLabelRepository.findAllAltLabelsByLangCodeAndConcept_IdIn(lang, ids));
         }
 
         // Repli identique à LabelService.findLabelOf : "[externalId]".
@@ -79,6 +69,16 @@ public class ConceptLabelBatchResolver {
         }
 
         return resolved;
+    }
+
+    /** Keeps, per concept, the first label met. */
+    private static void addLabels(Map<Long, String> resolved, Iterable<? extends fr.siamois.domain.models.vocabulary.label.ConceptLabel> found) {
+        for (var label : found) {
+            Long id = conceptIdOf(label.getConcept());
+            if (id != null) {
+                resolved.putIfAbsent(id, label.getLabel());
+            }
+        }
     }
 
     private static Long conceptIdOf(Object concept) {

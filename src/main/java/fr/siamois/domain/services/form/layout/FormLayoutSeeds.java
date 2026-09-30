@@ -123,22 +123,28 @@ public class FormLayoutSeeds {
                 out.put("conceptId", String.valueOf(id.get()));
                 return out;
             }
-            ObjectNode object = (ObjectNode) node;
-            for (var it = object.fields(); it.hasNext(); ) {
-                var entry = it.next();
-                JsonNode replaced = withInternalConceptIds(entry.getValue());
-                if (replaced == null) return null;
-                entry.setValue(replaced);
-            }
-        } else if (node.isArray()) {
-            ArrayNode array = (ArrayNode) node;
-            for (int i = 0; i < array.size(); i++) {
-                JsonNode replaced = withInternalConceptIds(array.get(i));
-                if (replaced == null) return null;
-                array.set(i, replaced);
-            }
+            return replaceInFields((ObjectNode) node);
         }
-        return node;
+        return node.isArray() ? replaceInElements((ArrayNode) node) : node;
+    }
+
+    private JsonNode replaceInFields(ObjectNode object) {
+        for (var it = object.fields(); it.hasNext(); ) {
+            var entry = it.next();
+            JsonNode replaced = withInternalConceptIds(entry.getValue());
+            if (replaced == null) return null;
+            entry.setValue(replaced);
+        }
+        return object;
+    }
+
+    private JsonNode replaceInElements(ArrayNode array) {
+        for (int i = 0; i < array.size(); i++) {
+            JsonNode replaced = withInternalConceptIds(array.get(i));
+            if (replaced == null) return null;
+            array.set(i, replaced);
+        }
+        return array;
     }
 
     private synchronized JsonNode rawOf(ConfigurableTable table) {

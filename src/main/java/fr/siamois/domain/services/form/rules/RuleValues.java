@@ -133,7 +133,8 @@ public final class RuleValues {
         try {
             Method getter = value.getClass().getMethod("getId");
             Object id = getter.invoke(value);
-            return id == null ? null : asString(id instanceof Number n ? n.doubleValue() : id);
+            if (id == null) return null;
+            return asString(id instanceof Number n ? n.doubleValue() : id);
         } catch (ReflectiveOperationException e) {
             return null;
         }

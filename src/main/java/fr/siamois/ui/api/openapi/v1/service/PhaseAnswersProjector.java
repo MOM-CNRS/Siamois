@@ -98,17 +98,21 @@ public class PhaseAnswersProjector {
         for (PhaseDTO row : rows) {
             if (row == null) continue;
             for (CustomField field : fields) {
-                Object raw = readBinding(row, field);
-                if (raw instanceof ConceptDTO c) {
-                    concepts.add(c);
-                } else if (raw instanceof Collection<?> items) {
-                    for (Object item : items) {
-                        if (item instanceof ConceptDTO c) concepts.add(c);
-                    }
-                }
+                addConcepts(readBinding(row, field), concepts);
             }
         }
         return concepts;
+    }
+
+    /** The concept a binding holds, or those of the collection it holds. */
+    private static void addConcepts(Object raw, List<ConceptDTO> concepts) {
+        if (raw instanceof ConceptDTO c) {
+            concepts.add(c);
+        } else if (raw instanceof Collection<?> items) {
+            for (Object item : items) {
+                if (item instanceof ConceptDTO c) concepts.add(c);
+            }
+        }
     }
 
     public Map<Long, Map<String, Object>> project(Collection<PhaseDTO> rows,

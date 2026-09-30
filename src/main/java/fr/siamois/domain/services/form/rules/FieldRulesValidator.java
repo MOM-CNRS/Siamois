@@ -104,7 +104,15 @@ public class FieldRulesValidator {
         int count = leaf.values().size();
         boolean many = leaf.op() == ConditionOp.IN || leaf.op() == ConditionOp.NOT_IN;
         boolean none = EMPTINESS.contains(leaf.op());
-        if (none ? count != 0 : many ? count == 0 : count != 1) {
+        boolean wrongCount;
+        if (none) {
+            wrongCount = count != 0;
+        } else if (many) {
+            wrongCount = count == 0;
+        } else {
+            wrongCount = count != 1;
+        }
+        if (wrongCount) {
             issues.add(new Issue("rules.error.valueCount", label(field)));
             return;
         }

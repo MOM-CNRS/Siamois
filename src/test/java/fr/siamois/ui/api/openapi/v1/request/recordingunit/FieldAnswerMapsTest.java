@@ -30,9 +30,11 @@ class FieldAnswerMapsTest {
 
     @Test
     void delta_rejectsValuesTogetherWithAddRemove_andANonListAdd() {
-        assertThatThrownBy(() -> FieldAnswerMaps.delta(new AnswerInput(null, List.of(1), List.of(2), null)))
+        var arg1_14 = new AnswerInput(null, List.of(1), List.of(2), null);
+        assertThatThrownBy(() -> FieldAnswerMaps.delta(arg1_14))
                 .isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(() -> FieldAnswerMaps.delta(Map.of("add", "3")))
+        var arg1_13 = Map.of("add", "3");
+        assertThatThrownBy(() -> FieldAnswerMaps.delta(arg1_13))
                 .isInstanceOf(ResponseStatusException.class);
     }
 

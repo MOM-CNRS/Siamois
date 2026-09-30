@@ -27,27 +27,33 @@ public final class FormLayoutComposer {
         throw new UnsupportedOperationException();
     }
 
+    /** The columns a group shows: its active fields, once each, less the hidden system ones. */
+    private static List<CustomColUiDto> visibleColumns(FormLayout.Group group, List<SystemFieldSpec> specs) {
+        List<CustomColUiDto> visible = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (FormLayout.Item item : group.items()) {
+            if (!item.active() || !seen.add(item.field().getId())) continue;
+            SystemFieldSpec spec = specs.stream()
+                    .filter(s -> s.field().getId().equals(item.field().getId()))
+                    .findFirst().orElse(null);
+            if (spec != null && spec.hidden()) continue;
+            visible.add(new CustomColUiDto.Builder()
+                    .field(item.field())
+                    .width(item.width().toColumnWidth())
+                    .readOnly(spec != null && spec.readOnly())
+                    .isRequired(item.mandatory())
+                    .rules(item.rules())
+                    .build());
+        }
+        return visible;
+    }
+
     public static FormUiDto compose(FormLayout layout, ConfigurableTable table) {
         List<SystemFieldSpec> specs = SystemFieldCatalog.specsOf(table);
         FormUiDto.Builder form = new FormUiDto.Builder();
         boolean hiddenPending = true;
         for (FormLayout.Group group : layout.groups()) {
-            List<CustomColUiDto> visible = new ArrayList<>();
-            Set<Long> seen = new HashSet<>();
-            for (FormLayout.Item item : group.items()) {
-                if (!item.active() || !seen.add(item.field().getId())) continue;
-                SystemFieldSpec spec = specs.stream()
-                        .filter(s -> s.field().getId().equals(item.field().getId()))
-                        .findFirst().orElse(null);
-                if (spec != null && spec.hidden()) continue;
-                visible.add(new CustomColUiDto.Builder()
-                        .field(item.field())
-                        .width(item.width().toColumnWidth())
-                        .readOnly(spec != null && spec.readOnly())
-                        .isRequired(item.mandatory())
-                        .rules(item.rules())
-                        .build());
-            }
+            List<CustomColUiDto> visible = visibleColumns(group, specs);
             // A group with nothing to show is not a section of the form.
             if (visible.isEmpty()) continue;
             CustomRowUiDto.Builder row = new CustomRowUiDto.Builder();
