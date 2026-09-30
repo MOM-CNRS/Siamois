@@ -81,21 +81,24 @@ class ProjectListFilterTest {
 
     @Test
     void parse_unknownKey_throws400() {
-        assertThatThrownBy(() -> ProjectListFilter.parse(params("f.zmin", "10")))
+        var arg1 = params("f.zmin", "10");
+        assertThatThrownBy(() -> ProjectListFilter.parse(arg1))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_rangeSuffixOnANonRangeField_throws400() {
-        assertThatThrownBy(() -> ProjectListFilter.parse(params("f.name.from", "foss")))
+        var arg1 = params("f.name.from", "foss");
+        assertThatThrownBy(() -> ProjectListFilter.parse(arg1))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_rangeFieldWithoutSuffix_throws400() {
-        assertThatThrownBy(() -> ProjectListFilter.parse(params("f.openingRate", "10")))
+        var arg1 = params("f.openingRate", "10");
+        assertThatThrownBy(() -> ProjectListFilter.parse(arg1))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -113,14 +116,16 @@ class ProjectListFilterTest {
 
     @Test
     void parse_nonNumericConceptId_throws400() {
-        assertThatThrownBy(() -> ProjectListFilter.parse(params("f.status", "not-a-number")))
+        var arg1 = params("f.status", "not-a-number");
+        assertThatThrownBy(() -> ProjectListFilter.parse(arg1))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
     void parse_nonNumericRangeBound_throws400() {
-        assertThatThrownBy(() -> ProjectListFilter.parse(params("f.openingRate.from", "abc")))
+        var arg1 = params("f.openingRate.from", "abc");
+        assertThatThrownBy(() -> ProjectListFilter.parse(arg1))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }

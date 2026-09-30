@@ -1,7 +1,5 @@
 package fr.siamois.domain.services.vocabulary;
 
-import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
-import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;

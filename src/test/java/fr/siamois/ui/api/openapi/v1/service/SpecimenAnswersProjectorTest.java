@@ -101,8 +101,8 @@ class SpecimenAnswersProjectorTest {
         Map<String, Object> answers = projector.project(List.of(dto),
                 new LinkedHashSet<>(List.of(fieldId("material"), fieldId("containers"))), Map.of(7L, "Os")).get(2L);
 
-        assertThat(answers).containsEntry(fieldId("material"), List.of(new ResourceRef("7", "concepts", "Os")));
-        assertThat(answers).containsEntry(fieldId("containers"), List.of(new ResourceRef("9", "containers", "CAISSE-9")));
+        assertThat(answers).containsEntry(fieldId("material"), List.of(new ResourceRef("7", "concepts", "Os")))
+                .containsEntry(fieldId("containers"), List.of(new ResourceRef("9", "containers", "CAISSE-9")));
     }
 
     @Test

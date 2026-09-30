@@ -93,8 +93,8 @@ class RecordingUnitAnswersProjectorTest {
         Map<String, Object> answers = projector.project(
                 List.of(dto), Set.of(fieldId("description"), fieldId("tpq")), Map.of()).get(1L);
 
-        assertThat(answers).containsEntry(fieldId("description"), "Une couche de remblai");
-        assertThat(answers).containsEntry(fieldId("tpq"), -500);
+        assertThat(answers).containsEntry(fieldId("description"), "Une couche de remblai")
+                .containsEntry(fieldId("tpq"), -500);
     }
 
     @Test

@@ -14,9 +14,12 @@ class AbstractPanelTest {
 
     private static ApplicationContext context() {
         ApplicationContext context = mock(ApplicationContext.class);
-        when(context.getBean(SessionSettingsBean.class)).thenReturn(mock(SessionSettingsBean.class));
-        when(context.getBean(LangBean.class)).thenReturn(mock(LangBean.class));
-        when(context.getBean(BookmarkService.class)).thenReturn(mock(BookmarkService.class));
+        SessionSettingsBean sessionSettingsBeanMock = mock(SessionSettingsBean.class);
+        when(context.getBean(SessionSettingsBean.class)).thenReturn(sessionSettingsBeanMock);
+        LangBean langBeanMock = mock(LangBean.class);
+        when(context.getBean(LangBean.class)).thenReturn(langBeanMock);
+        BookmarkService bookmarkServiceMock = mock(BookmarkService.class);
+        when(context.getBean(BookmarkService.class)).thenReturn(bookmarkServiceMock);
         return context;
     }
 

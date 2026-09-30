@@ -153,9 +153,9 @@ class FieldAnswerPatchServiceTest {
         elsewhere.setActionUnit(otherProject);
         when(phaseRepository.findById(30L)).thenReturn(Optional.of(elsewhere));
 
-        var arg2_8 = form(phases);
-        var arg3_8 = Map.of("8", new AnswerInput(null, List.of(30)));
-        assertThatThrownBy(() -> service.apply(entity, arg2_8, arg3_8, PROJECT_ID))
+        var arg2 = form(phases);
+        var arg3 = Map.of("8", new AnswerInput(null, List.of(30)));
+        assertThatThrownBy(() -> service.apply(entity, arg2, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -166,8 +166,8 @@ class FieldAnswerPatchServiceTest {
         givenResponse(Map.of(known, new CustomFieldAnswerTextViewModel()));
         Map<String, AnswerInput> answers = Map.of("1", new AnswerInput("ok", null), "404", new AnswerInput("x", null));
 
-        var arg2_7 = form(known);
-        assertThatThrownBy(() -> service.apply(entity, arg2_7, answers, PROJECT_ID))
+        var arg2 = form(known);
+        assertThatThrownBy(() -> service.apply(entity, arg2, answers, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class);
 
         Map<CustomField, CustomFieldAnswerViewModel> lenient = service.applyLenient(entity, form(known), answers, PROJECT_ID);
@@ -181,8 +181,8 @@ class FieldAnswerPatchServiceTest {
         givenResponse(Map.of(decimal, new CustomFieldAnswerDecimalViewModel()));
         Map<String, AnswerInput> answers = Map.of("6", new AnswerInput("douze", null));
 
-        var arg2_6 = form(decimal);
-        assertThatThrownBy(() -> service.apply(entity, arg2_6, answers, PROJECT_ID))
+        var arg2 = form(decimal);
+        assertThatThrownBy(() -> service.apply(entity, arg2, answers, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class);
 
         service.applyLenient(entity, form(decimal), answers, PROJECT_ID);
@@ -262,14 +262,14 @@ class FieldAnswerPatchServiceTest {
         CustomFieldText title = text(1L, false);
         givenResponse(Map.of(phases, new CustomFieldAnswerSelectMultiplePhaseViewModel(), title, new CustomFieldAnswerTextViewModel()));
 
-        var arg2_5 = form(phases, title);
-        var arg3_5 = Map.of("8", new AnswerInput(null, List.of(1), List.of(2), null));
-        assertThatThrownBy(() -> service.apply(entity, arg2_5, arg3_5, PROJECT_ID))
+        var arg2 = form(phases, title);
+        var arg3 = Map.of("8", new AnswerInput(null, List.of(1), List.of(2), null));
+        assertThatThrownBy(() -> service.apply(entity, arg2, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("ne se combinent pas");
-        var arg2_4 = form(phases, title);
-        var arg3_4 = Map.of("1", new AnswerInput(null, null, List.of("x"), null));
-        assertThatThrownBy(() -> service.apply(entity, arg2_4, arg3_4, PROJECT_ID))
+        var scalarForm = form(phases, title);
+        var addOnScalar = Map.of("1", new AnswerInput(null, null, List.of("x"), null));
+        assertThatThrownBy(() -> service.apply(entity, scalarForm, addOnScalar, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("multivalué");
         verify(formService, never()).applyTypedValueToAnswer(any(), any());
@@ -287,8 +287,8 @@ class FieldAnswerPatchServiceTest {
         FormUiDto form = formOf(col(nature), col(erosion, FieldRules.NONE.withEnabledWhen(
                 Condition.eq(1L, FieldValueSpec.literal("érosion")))));
 
-        var arg3_3 = Map.of("2", new AnswerInput("en V", null));
-        assertThatThrownBy(() -> service.apply(entity, form, arg3_3, PROJECT_ID))
+        var arg3 = Map.of("2", new AnswerInput("en V", null));
+        assertThatThrownBy(() -> service.apply(entity, form, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("inactif");
 
@@ -307,8 +307,8 @@ class FieldAnswerPatchServiceTest {
 
         Map<String, AnswerInput> clear = new HashMap<>();
         clear.put("1", new AnswerInput(null, null));
-        var arg2_2 = formOf(required);
-        assertThatThrownBy(() -> service.apply(entity, arg2_2, clear, PROJECT_ID))
+        var arg2 = formOf(required);
+        assertThatThrownBy(() -> service.apply(entity, arg2, clear, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("obligatoire");
     }
@@ -325,8 +325,8 @@ class FieldAnswerPatchServiceTest {
         FormUiDto form = formOf(col(zInf), col(zSup, FieldRules.NONE.withConstraints(FieldConstraint.gte(3L))));
 
         // Z inf written above the stored Z sup: the constraint is declared on Z sup, checked from Z inf too.
-        var arg3_1 = Map.of("3", new AnswerInput(12.0, null));
-        assertThatThrownBy(() -> service.apply(entity, form, arg3_1, PROJECT_ID))
+        var arg3 = Map.of("3", new AnswerInput(12.0, null));
+        assertThatThrownBy(() -> service.apply(entity, form, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("incompatible");
 
@@ -380,8 +380,8 @@ class FieldAnswerPatchServiceTest {
         FormUiDto form = formOf(col(nature), col(interpretation, FieldRules.NONE.withOptions(new OptionsFilter.RelatedConcepts(1L))));
 
         service.apply(entity, form, Map.of("2", new AnswerInput("80", null)), PROJECT_ID);
-        var arg3_0 = Map.of("2", new AnswerInput("81", null));
-        assertThatThrownBy(() -> service.apply(entity, form, arg3_0, PROJECT_ID))
+        var arg3 = Map.of("2", new AnswerInput("81", null));
+        assertThatThrownBy(() -> service.apply(entity, form, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("hors de la liste");
     }

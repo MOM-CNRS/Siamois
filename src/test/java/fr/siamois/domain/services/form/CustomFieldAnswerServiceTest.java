@@ -1006,7 +1006,7 @@ class CustomFieldAnswerServiceTest {
         Map<Long, CustomField> fields = new HashMap<>();
         answers.add(withField(fields, 1L, CustomFieldText.builder().id(1L).build(), new CustomFieldAnswerText(), set, "t"));
         answers.add(withField(fields, 2L, CustomFieldDecimal.builder().id(2L).build(), new fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal(), set, 1.5));
-        answers.add(withField(fields, 3L, CustomFieldDateTime.builder().id(3L).build(), new CustomFieldAnswerDateTime(), set, LocalDateTime.of(2026, 1, 2, 3, 4)));
+        answers.add(withField(fields, 3L, CustomFieldDateTime.builder().id(3L).build(), new CustomFieldAnswerDateTime(), set, LocalDateTime.of(2026, java.time.Month.JANUARY, 2, 3, 4)));
         answers.add(withField(fields, 4L, CustomFieldSelectOnePerson.builder().id(4L).build(), new CustomFieldAnswerSelectOnePerson(), set, person));
         answers.add(withField(fields, 5L, CustomFieldSelectMultiplePerson.builder().id(5L).build(), new CustomFieldAnswerSelectMultiplePerson(), set, new ArrayList<>(List.of(person))));
         answers.add(withField(fields, 6L, CustomFieldSelectOneSpatialUnit.builder().id(6L).build(), new CustomFieldAnswerSelectOneSpatialUnit(), set, place));
@@ -1021,7 +1021,7 @@ class CustomFieldAnswerServiceTest {
 
         assertThat(read).hasSize(9);
         assertThat(read.get(fields.get(2L)).getValue()).isEqualTo(1.5);
-        assertThat(read.get(fields.get(3L)).getValue()).isEqualTo(LocalDateTime.of(2026, 1, 2, 3, 4));
+        assertThat(read.get(fields.get(3L)).getValue()).isEqualTo(LocalDateTime.of(2026, java.time.Month.JANUARY, 2, 3, 4));
         assertThat(read.get(fields.get(4L)).getValue()).isSameAs(personDto);
         assertThat((List<Object>) read.get(fields.get(5L)).getValue()).containsExactly(personDto);
         assertThat(read.get(fields.get(6L)).getValue()).isSameAs(suggestion);

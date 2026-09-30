@@ -124,7 +124,8 @@ class ContainerOpenApiServiceTest {
     void getContainerById_notFound_throws404() {
         when(containerService.findById(5L)).thenReturn(null);
 
-        assertThatThrownBy(() -> service.getContainerById(5L, personDto, Set.of(10L), "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.getContainerById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -134,7 +135,8 @@ class ContainerOpenApiServiceTest {
         ContainerDTO container = containerOn(projectWithInstitution());
         when(containerService.findById(5L)).thenReturn(container);
 
-        assertThatThrownBy(() -> service.getContainerById(5L, personDto, Set.of(999L), "fr"))
+        var arg3 = Set.of(999L);
+        assertThatThrownBy(() -> service.getContainerById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -145,7 +147,8 @@ class ContainerOpenApiServiceTest {
         when(containerService.findById(5L)).thenReturn(container);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.getContainerById(5L, personDto, Set.of(10L), "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.getContainerById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -173,7 +176,8 @@ class ContainerOpenApiServiceTest {
         req.setProjectId(" ");
         req.setTypeId("2");
 
-        assertThatThrownBy(() -> service.createContainer(req, personDto, Set.of(10L), "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createContainer(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -192,7 +196,8 @@ class ContainerOpenApiServiceTest {
         req.setProjectId("7");
         req.setTypeId("2");
 
-        assertThatThrownBy(() -> service.createContainer(req, personDto, Set.of(10L), "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createContainer(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 
@@ -212,7 +217,8 @@ class ContainerOpenApiServiceTest {
         req.setProjectId("7");
         req.setTypeId("2");
 
-        assertThatThrownBy(() -> service.createContainer(req, personDto, Set.of(10L), "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createContainer(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -263,7 +269,9 @@ class ContainerOpenApiServiceTest {
                 eq(PermissionConstants.PROJECT_EDIT_CONTAINERS)))
                 .thenReturn(false);
 
-        assertThatThrownBy(() -> service.patchContainer(5L, new ContainerPatchRequest(), personDto, Set.of(10L), "fr"))
+        var arg2 = new ContainerPatchRequest();
+        var arg4 = Set.of(10L);
+        assertThatThrownBy(() -> service.patchContainer(5L, arg2, personDto, arg4, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 

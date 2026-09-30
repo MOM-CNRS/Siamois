@@ -44,8 +44,8 @@ class MultiValueAnswersTest {
         Map<String, Object> shaped = answers.shape(RecordingUnit.class, Map.of(42L, row), null, 1, "fr").get(42L);
 
         assertThat(shaped).containsEntry("-324", new MultiValue(List.of(ref("1")), 3, false,
-                new MultiValue.Links("/api/v1/recording-units/42/fields/-324/values")));
-        assertThat(shaped).containsEntry("-302", "texte");
+                new MultiValue.Links("/api/v1/recording-units/42/fields/-324/values")))
+                .containsEntry("-302", "texte");
         assertThat(shaped.get("-322")).isInstanceOf(MeasurementRef.class);
         assertThat(shaped).containsEntry("-303", null);
         verify(relations, never()).previews(any(), any(), anyInt(), any(), any());

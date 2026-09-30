@@ -82,9 +82,9 @@ class ProjectAnswersProjectorTest {
                         fieldId(ActionUnitForm.VOLUME_COUNT_FIELD)),
                 Map.of()).get(1L);
 
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.OA_CODE_FIELD), "OA-2024-01");
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.OPENING_RATE_FIELD), 0.42);
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.VOLUME_COUNT_FIELD), 3);
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.OA_CODE_FIELD), "OA-2024-01")
+                .containsEntry(fieldId(ActionUnitForm.OPENING_RATE_FIELD), 0.42)
+                .containsEntry(fieldId(ActionUnitForm.VOLUME_COUNT_FIELD), 3);
     }
 
     @Test
@@ -104,9 +104,9 @@ class ProjectAnswersProjectorTest {
                         fieldId(ActionUnitForm.MAIN_LOCATION_FIELD)),
                 Map.of(7L, "En cours", 8L, "Néolithique")).get(1L);
 
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.STATUS_FIELD), new ResourceRef("7", "concepts", "En cours"));
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.PERIODS_FIELD), List.of(new ResourceRef("8", "concepts", "Néolithique")));
-        assertThat(answers).containsEntry(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD), new ResourceRef("9", "spatial-units", "Lyon"));
+        assertThat(answers).containsEntry(fieldId(ActionUnitForm.STATUS_FIELD), new ResourceRef("7", "concepts", "En cours"))
+                .containsEntry(fieldId(ActionUnitForm.PERIODS_FIELD), List.of(new ResourceRef("8", "concepts", "Néolithique")))
+                .containsEntry(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD), new ResourceRef("9", "spatial-units", "Lyon"));
     }
 
     /**

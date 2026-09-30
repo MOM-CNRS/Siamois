@@ -542,7 +542,7 @@ class ProjectApiServiceMutationTest {
         patch.getAnswers().put("-105", new AnswerInput("2024-05-01", null)); // BEGIN_DATE_FIELD
         patch.getAnswers().put("-106", new AnswerInput("2024-06-01T10:00:00+02:00", null)); // END_DATE_FIELD
         service.patchProject(caller, "7", patch, "fr");
-        assertThat(au.getBeginDate().toLocalDate()).isEqualTo(java.time.LocalDate.of(2024, 5, 1));
+        assertThat(au.getBeginDate().toLocalDate()).isEqualTo(java.time.LocalDate.of(2024, java.time.Month.MAY, 1));
         assertThat(au.getEndDate().getOffset()).isEqualTo(java.time.ZoneOffset.ofHours(2));
 
         ProjectPatchRequest again = new ProjectPatchRequest();

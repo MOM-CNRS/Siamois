@@ -51,7 +51,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static fr.siamois.domain.models.ValidationStatus.*;
 
 @Service
 @RequiredArgsConstructor

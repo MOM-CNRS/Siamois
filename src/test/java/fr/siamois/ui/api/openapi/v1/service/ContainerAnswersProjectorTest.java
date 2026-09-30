@@ -79,10 +79,10 @@ class ContainerAnswersProjectorTest {
                 Set.of(idOf("identifier"), idOf("type"), idOf("spatialUnit"), idOf("length"), idOf("width")),
                 Map.of(5L, "Boîte")).get(1L);
 
-        assertThat(answers).containsEntry(idOf("identifier"), "C-1");
-        assertThat(answers).containsEntry(idOf("type"), new ResourceRef("5", "concepts", "Boîte"));
-        assertThat(answers).containsEntry(idOf("spatialUnit"), new ResourceRef("9", "spatial-units", "Lieu"));
-        assertThat(answers).containsEntry(idOf("length"), new MeasurementRef(2.5, "cm", 0.025, "ok"));
+        assertThat(answers).containsEntry(idOf("identifier"), "C-1")
+                .containsEntry(idOf("type"), new ResourceRef("5", "concepts", "Boîte"))
+                .containsEntry(idOf("spatialUnit"), new ResourceRef("9", "spatial-units", "Lieu"))
+                .containsEntry(idOf("length"), new MeasurementRef(2.5, "cm", 0.025, "ok"));
         assertThat(((MeasurementRef) answers.get(idOf("width"))).symbol()).isNull();
     }
 

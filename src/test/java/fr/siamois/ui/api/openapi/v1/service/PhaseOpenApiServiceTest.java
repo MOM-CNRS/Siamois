@@ -127,8 +127,8 @@ class PhaseOpenApiServiceTest {
     void getPhaseById_notFound_throws404() {
         when(phaseService.findById(5L)).thenReturn(null);
 
-        var arg3_23 = Set.of(10L);
-        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3_23, "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -138,8 +138,8 @@ class PhaseOpenApiServiceTest {
         PhaseDTO phase = phaseOn(projectWithInstitution());
         when(phaseService.findById(5L)).thenReturn(phase);
 
-        var arg3_22 = Set.of(999L);
-        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3_22, "fr"))
+        var arg3 = Set.of(999L);
+        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -150,8 +150,8 @@ class PhaseOpenApiServiceTest {
         when(phaseService.findById(5L)).thenReturn(phase);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(false);
 
-        var arg3_21 = Set.of(10L);
-        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3_21, "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.getPhaseById(5L, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -179,8 +179,8 @@ class PhaseOpenApiServiceTest {
         req.setProjectId(" ");
         req.setTypeId("2");
 
-        var arg3_20 = Set.of(10L);
-        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3_20, "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -199,8 +199,8 @@ class PhaseOpenApiServiceTest {
         req.setProjectId("7");
         req.setTypeId("2");
 
-        var arg3_19 = Set.of(10L);
-        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3_19, "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 
@@ -220,8 +220,8 @@ class PhaseOpenApiServiceTest {
         req.setProjectId("7");
         req.setTypeId("2");
 
-        var arg3_18 = Set.of(10L);
-        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3_18, "fr"))
+        var arg3 = Set.of(10L);
+        assertThatThrownBy(() -> service.createPhase(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
@@ -274,9 +274,9 @@ class PhaseOpenApiServiceTest {
                 eq(PermissionConstants.PROJECT_EDIT_PHASES)))
                 .thenReturn(false);
 
-        var arg2_17 = new PhasePatchRequest();
-        var arg4_17 = Set.of(10L);
-        assertThatThrownBy(() -> service.patchPhase(5L, arg2_17, personDto, arg4_17, "fr"))
+        var arg2 = new PhasePatchRequest();
+        var arg4 = Set.of(10L);
+        assertThatThrownBy(() -> service.patchPhase(5L, arg2, personDto, arg4, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 
@@ -306,8 +306,8 @@ class PhaseOpenApiServiceTest {
         PhasePatchRequest withAnswers = new PhasePatchRequest();
         withAnswers.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         withAnswers.setAnswers(Map.of("-503", new AnswerInput("Titre", null)));
-        var arg4_16 = Set.of(10L);
-        assertThatThrownBy(() -> service.patchPhase(5L, withAnswers, personDto, arg4_16, "fr"))
+        var arg4 = Set.of(10L);
+        assertThatThrownBy(() -> service.patchPhase(5L, withAnswers, personDto, arg4, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -323,8 +323,8 @@ class PhaseOpenApiServiceTest {
         PhasePatchRequest req = new PhasePatchRequest();
         req.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
 
-        var arg4_15 = Set.of(10L);
-        assertThatThrownBy(() -> service.patchPhase(5L, req, personDto, arg4_15, "fr"))
+        var arg4 = Set.of(10L);
+        assertThatThrownBy(() -> service.patchPhase(5L, req, personDto, arg4, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
         verify(validationStatusService, never()).setStatus(any(), anyLong(), any(), any());
