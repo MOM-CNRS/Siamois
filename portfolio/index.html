@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grégory Bliault — Product Manager & Ingénieur logiciel</title>
+<meta name="description" content="Grégory Bliault, Product Manager & ingénieur développement logiciel fullstack, spécialisé en traitement d'image. Projets et parcours.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,400&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --violet:#6E5BA6; --violet-active:#4F3F85; --violet-100:#ECE8F6; --violet-50:#F7F5FB; --violet-350:#B8AED9;
+  --accent:#5B4A94; --accent-soft:#EEEAF7;
+  --ink:#1D1B26; --ink-2:#55526A; --line:#E1DEEA; --bg:#FBFAFD; --surface:#FFFFFF; --dark:#1D1B26;
+  --radius:12px; --serif:"Spectral",Georgia,serif; --sans:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--ink:#EFEDF7;--ink-2:#AAA6C2;--line:#312E42;--bg:#14121C;--surface:#1C1A27;--violet:#9A88D6;--violet-active:#B3A4E6;--violet-100:#2A2640;--violet-50:#201D30;--violet-350:#5D5190;--accent:#B3A4E6;--accent-soft:#2F2A48}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.2;margin:0}
+.eyebrow{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--accent)}
+
+/* header */
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+.brand{font-family:var(--serif);font-weight:600;font-size:1.1rem;text-decoration:none}
+.brand span{color:var(--violet-active)}
+nav a{margin-left:20px;text-decoration:none;font-size:.9rem;color:var(--ink-2)}
+nav a:hover{color:var(--ink)}
+
+/* hero */
+.hero{padding:64px 0 40px;display:grid;gap:28px}
+.hero h1{font-size:clamp(2.2rem,5vw,3.4rem)}
+.hero .role{font-family:var(--serif);font-style:italic;font-size:1.25rem;color:var(--accent);margin-top:10px}
+.hero p.lead{max-width:62ch;color:var(--ink-2);font-size:1.05rem;margin:0}
+.rule{width:48px;height:3px;background:var(--accent);border:0;margin:0 0 18px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:var(--surface);text-decoration:none;font-weight:500;font-size:.92rem;transition:.15s}
+.btn:hover{border-color:var(--violet)}
+.btn.primary{background:var(--violet-active);border-color:var(--violet-active);color:#fff}
+@media (prefers-color-scheme:dark){.btn.primary,.chip[aria-pressed=true]{color:#14121C}}
+.btn.primary:hover{background:var(--violet)}
+.stats{display:flex;flex-wrap:wrap;gap:12px 36px;padding-top:8px}
+.stats div b{display:block;font-family:var(--serif);font-size:1.6rem}
+.stats div span{font-size:.82rem;color:var(--ink-2)}
+
+section{padding:48px 0}
+.sec-head{margin-bottom:22px}
+.sec-head h2{font-size:1.7rem;margin-top:6px}
+
+/* workspace (cards left / panel right) */
+.workspace{display:flex;gap:0;height:640px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.list{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--violet-50)}
+.chip{font:inherit;font-size:.82rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--violet-active);border-color:var(--violet-active);color:#fff}
+.cards{flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;align-content:start}
+.card{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--line);border-left:4px solid var(--violet);border-radius:10px;background:var(--surface);transition:.15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card[aria-selected=true]{background:var(--violet-100);border-color:var(--violet-active);border-left-color:var(--violet-active)}
+.card h3{font-size:1.1rem}
+.card p{margin:0;font-size:.88rem;color:var(--ink-2)}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--ink-2)}
+.tag{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.tag.violet{background:var(--violet-100);color:var(--violet-active)}
+.stack{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.stack i{font-style:normal;font-size:.72rem;padding:2px 8px;border-radius:6px;background:var(--violet-50);border:1px solid var(--line)}
+
+/* drag handle + panel */
+.handle{flex:none;width:10px;cursor:col-resize;background:var(--violet-50);border-left:1px solid var(--line);border-right:1px solid var(--line);position:relative;touch-action:none}
+.handle::after{content:"";position:absolute;top:50%;left:50%;width:3px;height:36px;margin:-18px 0 0 -1.5px;border-radius:3px;background:var(--violet-350)}
+.handle:hover,.handle:focus-visible,.handle.drag{background:var(--violet-100);outline:none}
+.panel{flex:none;width:44%;min-width:280px;max-width:75%;display:flex;flex-direction:column;background:var(--surface)}
+.panel-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:flex-start;background:var(--violet-50)}
+.panel-head h3{font-size:1.35rem}
+.panel-head .sub{font-size:.85rem;color:var(--ink-2);margin-top:2px}
+.close{display:none;font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer}
+.panel-body{padding:20px;overflow:auto;flex:1}
+.panel-body h4{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:22px 0 8px}
+.panel-body h4:first-child{margin-top:0}
+.panel-body ul{margin:0;padding-left:18px}
+.panel-body li{margin-bottom:6px}
+.panel-body p{margin:0 0 8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.9rem;margin:0}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-weight:500}
+
+/* timeline */
+.timeline{display:grid;gap:0}
+.job{display:grid;grid-template-columns:170px 1fr;gap:8px 28px;padding:20px 0;border-top:1px solid var(--line)}
+.job .when{font-size:.85rem;color:var(--ink-2)}
+.job h3{font-size:1.15rem}
+.job .org{color:var(--accent);font-size:.92rem;margin:2px 0 8px}
+.job ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:.95rem}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.box h3{font-size:1.1rem;margin-bottom:10px}
+.box ul{margin:0;padding-left:18px;font-size:.93rem;color:var(--ink-2)}
+.pubs li{margin-bottom:10px}
+
+footer{border-top:1px solid var(--line);padding:40px 0;margin-top:20px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px;align-items:center}
+footer small{color:var(--ink-2)}
+
+/* mobile: panel becomes a bottom sheet */
+@media (max-width:820px){
+  nav a:not(:last-child){display:none}
+  .workspace{height:auto;display:block;border:0;background:none;overflow:visible}
+  .list{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+  .cards{max-height:none;overflow:visible}
+  .handle{display:none}
+  .panel{position:fixed;left:0;right:0;bottom:0;width:100%!important;max-width:none;height:72vh;z-index:30;border-radius:16px 16px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25);transform:translateY(105%);transition:transform .25s}
+  .panel.open{transform:none}
+  .close{display:block}
+  .job{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top">Grégory <span>Bliault</span></a>
+    <nav>
+      <a href="#projets">Projets</a>
+      <a href="#parcours">Parcours</a>
+      <a href="#competences">Compétences</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <hr class="rule">
+        <h1>Grégory Bliault</h1>
+        <div class="role">Product Manager &amp; Ingénieur développement logiciel — Fullstack &amp; traitement d'image</div>
+      </div>
+      <p class="lead">Je conçois et livre des applications web pour la recherche scientifique : de l'écriture des spécifications et l'animation d'ateliers avec les métiers, jusqu'au code, aux tests et à l'intégration continue. Formé en traitement du signal et de l'image (INSA Lyon), j'ai travaillé avec des équipes internationales (Harvard Medical School, Brigham &amp; Women's Hospital) avant de piloter aujourd'hui le produit Siamois au CNRS.</p>
+      <div class="cta">
+        <a class="btn primary" href="#projets">Voir mes projets</a>
+        <a class="btn" href="https://www.linkedin.com/in/gr%C3%A9gory-bliault-bb796a61/" target="_blank" rel="noopener">LinkedIn</a>
+        <a class="btn" href="https://github.com/gregblt" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn" href="mailto:gregorybliault@gmail.com">Me contacter</a>
+      </div>
+      <div class="stats">
+        <div><b>8+ ans</b><span>de développement fullstack</span></div>
+        <div><b>2</b><span>publications (Radiology, J. Neuroimaging)</span></div>
+        <div><b>Lyon</b><span>télétravail &amp; international</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="projets">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Réalisations</div>
+        <h2>Projets</h2>
+      </div>
+
+      <div class="workspace" id="workspace">
+        <div class="list">
+          <div class="toolbar" id="filters" role="group" aria-label="Filtrer les projets"></div>
+          <div class="cards" id="cards" role="listbox" aria-label="Projets"></div>
+        </div>
+        <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau de détails" tabindex="0"></div>
+        <aside class="panel" id="panel" aria-live="polite">
+          <div class="panel-head">
+            <div><h3 id="p-title"></h3><div class="sub" id="p-sub"></div></div>
+            <button class="close" id="close" type="button">Fermer</button>
+          </div>
+          <div class="panel-body" id="p-body"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="parcours">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Expérience professionnelle</div>
+        <h2>Parcours</h2>
+      </div>
+      <div class="timeline">
+        <article class="job">
+          <div class="when">Oct. 2024 – aujourd'hui<br><span class="tag violet">CDD</span></div>
+          <div>
+            <h3>Ingénieur en développement logiciel</h3>
+            <div class="org">Maison de l'Orient et de la Méditerranée (CNRS) — Lyon</div>
+            <ul>
+              <li>Développement fullstack d'une application web (Java, Spring Boot, JSF) pour l'enregistrement de terrain archéologique.</li>
+              <li>Écriture des spécifications, du modèle, des tests, CI.</li>
+              <li>Pilotage des développements en environnement Agile, de la priorisation des besoins jusqu'à la livraison, en coordination avec les équipes métiers et techniques.</li>
+              <li>Organisation et animation d'ateliers de cadrage, de recueil des besoins et de validation fonctionnelle.</li>
+            </ul>
+          </div>
+        </article>
+        <article class="job">
+          <div class="when">Mars 2021 – 2025<br><span class="tag">Freelance</span></div>
+          <div>
+            <h3>Ingénieur de recherche / Dev Web / Traitement d'image</h3>
+            <div class="org">Center for Neurological Imaging (Harvard Medical School, Brigham &amp; Women's Hospital) — Lyon</div>
+            <ul>
+              <li>Développement fullstack avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web (code, tests, CI) et d'un jeu tablette éducatif et d'outils de traitement d'image.</li>
+              <li>Supervision et mentorat.</li>
+            </ul>
+          </div>
+        </article>
+        <article class="job">
+          <div class="when">Sept. 2018 – Mars 2021<br><span class="tag violet">CDD</span> <span class="tag">Freelance</span></div>
+          <div>
+            <h3>Ingénieur de recherche / Dev Web / Traitement d'image</h3>
+            <div class="org">Université de Bordeaux</div>
+            <ul>
+              <li>Développement fullstack et consulting en collaboration avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web, d'un jeu tablette éducatif et d'outils de traitement d'image.</li>
+              <li>Supervision et mentorat ; coordination d'acteurs locaux et internationaux du monde de l'éducation.</li>
+            </ul>
+          </div>
+        </article>
+        <article class="job">
+          <div class="when">Juin 2018 – aujourd'hui<br><span class="tag">Freelance</span></div>
+          <div>
+            <h3>Dev Web Fullstack</h3>
+            <div class="org">Divers clients — Lyon</div>
+            <ul><li>Développement web fullstack (Node.js, Python, HTML) pour des clients variés.</li></ul>
+          </div>
+        </article>
+        <article class="job">
+          <div class="when">Avr. 2017 – Fév. 2018<br><span class="tag violet">Stage</span></div>
+          <div>
+            <h3>Dev Web / Ingénieur en traitement d'image</h3>
+            <div class="org">Center for Neurological Imaging (Harvard Medical School, Brigham &amp; Women's Hospital) — Boston</div>
+            <ul>
+              <li>Développement d'algorithmes (C++/Python) pour traiter et exploiter des IRM cérébrales (anatomie, diffusion).</li>
+              <li>Analyses statistiques mettant en lien les données d'imagerie et les données cliniques.</li>
+              <li>Développement backend (Node.js, Python) d'une application web.</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="competences">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow">Savoir-faire</div>
+        <h2>Compétences, formation &amp; publications</h2>
+      </div>
+      <div class="cols">
+        <div class="box">
+          <h3>Compétences</h3>
+          <ul>
+            <li>Node.js, JavaScript &amp; TypeScript, React</li>
+            <li>Java, Spring Boot, JSF</li>
+            <li>Python / C / C++</li>
+            <li>JSON / JSON Schema</li>
+            <li>CouchDB / PostgreSQL</li>
+            <li>Git / CircleCI</li>
+            <li>Docker / Singularity</li>
+            <li>Travail en équipe internationale</li>
+            <li>Produit : spécifications, Agile, ateliers de cadrage</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h3>Formation</h3>
+          <ul>
+            <li><b>Ingénieur Génie Électrique</b>, spéc. Traitement des Signaux et des Images — INSA Lyon, 2014–2017</li>
+            <li><b>Master Imagerie Médicale, Signaux et Système</b> — Université Lyon 1, 2014–2017</li>
+          </ul>
+          <h3 style="margin-top:18px">Langues</h3>
+          <ul><li>Français — langue maternelle</li><li>Anglais — courant</li></ul>
+        </div>
+        <div class="box">
+          <h3>Publications récentes</h3>
+          <ul class="pubs">
+            <li>Bouman, P. M., Noteboom, S., Santos, F. A. N., et al. (2023). <i>Multicenter Evaluation of AI-generated DIR and PSIR for Cortical and Juxtacortical Multiple Sclerosis Lesion Detection.</i> Radiology, 307(10). DOI: 10.1148/radiol.221425.</li>
+            <li>Deol, M., Palotai, M., Pinzón, A. M., et al. (2020). <i>Identification and Characterization of Leptomeningeal Metastases Using SPINE, A Web-Based Collaborative Platform.</i> J. Neuroimaging, 31(2). DOI: 10.1111/jon.12820.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="contact">
+  <div class="wrap">
+    <div>
+      <h2 style="font-size:1.4rem">Travaillons ensemble</h2>
+      <small>Produit, développement fullstack, traitement d'image.</small>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="mailto:gregorybliault@gmail.com">gregorybliault@gmail.com</a>
+      <a class="btn" href="https://www.linkedin.com/in/gr%C3%A9gory-bliault-bb796a61/" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="https://github.com/gregblt" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const PROJECTS = [
+  {
+    id:"siamois", name:"Siamois", cat:"Produit", year:"2024 – aujourd'hui", status:"En cours",
+    summary:"Application web d'enregistrement de terrain archéologique.",
+    org:"Maison de l'Orient et de la Méditerranée (CNRS)", role:"Ingénieur logiciel & Product Manager",
+    stack:["Java","Spring Boot","JSF","PostgreSQL","CI"],
+    sections:[
+      ["Contexte","Siamois permet aux équipes d'archéologues d'enregistrer et d'organiser leurs données de terrain dans une application web collaborative."],
+      ["Mon rôle",["Développement fullstack (Java, Spring Boot, JSF).","Écriture des spécifications, du modèle de données et des tests ; mise en place de la CI.","Pilotage Agile : de la priorisation des besoins jusqu'à la livraison.","Ateliers de cadrage, recueil des besoins et validation fonctionnelle avec les équipes métiers."]]
+    ]
+  },
+  {
+    id:"spine", name:"SPINE", cat:"Recherche", year:"2017 – 2025", status:"Publié",
+    summary:"Plateforme web collaborative qui accélère la recherche scientifique et l'éducation.",
+    org:"Center for Neurological Imaging — Harvard Medical School / BWH", role:"Développeur fullstack & traitement d'image",
+    stack:["Node.js","React","Python","CouchDB","Docker"],
+    sections:[
+      ["Contexte","Plateforme web collaborative permettant à des équipes internationales d'analyser des images médicales et d'accélérer la recherche clinique."],
+      ["Mon rôle",["Développement fullstack avec des équipes internationales (Node.js, React.js, Python, PHP).","Code, tests, CI ; supervision et mentorat.","Outils de traitement d'image pour l'exploitation d'IRM."]],
+      ["Publications",["Deol et al. (2020), Journal of Neuroimaging — Identification and Characterization of Leptomeningeal Metastases Using SPINE.","Bouman et al. (2023), Radiology — Multicenter Evaluation of AI-generated DIR and PSIR."]]
+    ]
+  },
+  {
+    id:"tablet", name:"SPINE Tablet Game", cat:"Recherche", year:"2018 – 2021", status:"Livré",
+    summary:"Jeu participatif ouvert (crowdsourcing) pour analyser des images d'IRM.",
+    org:"Université de Bordeaux / Harvard Medical School", role:"Développeur fullstack & consultant",
+    stack:["Node.js","React","Python","PHP"],
+    sections:[
+      ["Contexte","Jeu tablette éducatif de crowdsourcing sur l'analyse d'images biomédicales (IRM) pour faire avancer la recherche clinique en neurosciences."],
+      ["Mon rôle",["Développement fullstack et consulting scientifique.","Coordination d'acteurs locaux et internationaux du monde de l'éducation.","Supervision et mentorat."]]
+    ]
+  },
+  {
+    id:"mri", name:"Traitement d'IRM cérébrales", cat:"Image", year:"2017 – 2018", status:"Stage",
+    summary:"Algorithmes pour traiter et exploiter des IRM cérébrales (anatomie, diffusion).",
+    org:"Center for Neurological Imaging — Boston", role:"Ingénieur traitement d'image",
+    stack:["C++","Python","Statistiques"],
+    sections:[
+      ["Contexte","Stage de fin d'études à Boston autour du traitement d'images médicales."],
+      ["Réalisations",["Développement d'algorithmes C++/Python pour IRM anatomiques et de diffusion.","Analyses statistiques liant imagerie et données cliniques.","Backend Node.js / Python d'une application web."]]
+    ]
+  },
+  {
+    id:"freelance", name:"Développement web freelance", cat:"Freelance", year:"2018 – aujourd'hui", status:"Ouvert",
+    summary:"Applications web fullstack pour des clients variés.",
+    org:"Indépendant — Lyon", role:"Développeur web fullstack",
+    stack:["Node.js","Python","HTML"],
+    sections:[
+      ["Ce que je fais",["Développement web fullstack (Node.js, Python, HTML).","Du besoin à la mise en production, pour des clients variés."]]
+    ]
+  }
+];
+
+const $ = s => document.querySelector(s);
+const cardsEl = $("#cards"), filtersEl = $("#filters"), panel = $("#panel");
+const mobile = matchMedia("(max-width:820px)");
+let filter = "Tous", selected = null;
+
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderFilters(){
+  const cats = ["Tous", ...new Set(PROJECTS.map(p => p.cat))];
+  filtersEl.innerHTML = cats.map(c => `<button class="chip" type="button" aria-pressed="${c===filter}" data-c="${c}">${c}</button>`).join("");
+}
+function renderCards(){
+  cardsEl.innerHTML = PROJECTS.filter(p => filter==="Tous" || p.cat===filter).map(p => `
+    <button class="card" role="option" aria-selected="${p.id===selected}" data-id="${p.id}">
+      <div class="meta"><span class="tag violet">${esc(p.cat)}</span><span>${esc(p.year)}</span></div>
+      <h3>${esc(p.name)}</h3>
+      <p>${esc(p.summary)}</p>
+      <div class="stack">${p.stack.map(s => `<i>${esc(s)}</i>`).join("")}</div>
+    </button>`).join("");
+}
+function renderPanel(){
+  const p = PROJECTS.find(x => x.id===selected);
+  if(!p) return;
+  $("#p-title").textContent = p.name;
+  $("#p-sub").textContent = p.cat + " · " + p.year;
+  $("#p-body").innerHTML = `
+    <dl class="kv">
+      <dt>Rôle</dt><dd>${esc(p.role)}</dd>
+      <dt>Structure</dt><dd>${esc(p.org)}</dd>
+      <dt>Statut</dt><dd>${esc(p.status)}</dd>
+      <dt>Stack</dt><dd>${p.stack.map(esc).join(", ")}</dd>
+    </dl>` +
+    p.sections.map(([t,c]) => `<h4>${esc(t)}</h4>` + (Array.isArray(c) ? `<ul>${c.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>` : `<p>${esc(c)}</p>`)).join("");
+  $("#p-body").scrollTop = 0;
+}
+function select(id){
+  selected = id; renderCards(); renderPanel();
+  if(mobile.matches) panel.classList.add("open");
+}
+
+filtersEl.addEventListener("click", e => {
+  const b = e.target.closest("[data-c]"); if(!b) return;
+  filter = b.dataset.c; renderFilters(); renderCards();
+});
+cardsEl.addEventListener("click", e => {
+  const c = e.target.closest("[data-id]"); if(c) select(c.dataset.id);
+});
+$("#close").addEventListener("click", () => panel.classList.remove("open"));
+document.addEventListener("keydown", e => { if(e.key==="Escape") panel.classList.remove("open"); });
+
+/* drag-to-resize the details panel */
+const ws = $("#workspace"), handle = $("#handle");
+function setWidth(px){
+  const total = ws.clientWidth;
+  panel.style.width = Math.min(Math.max(px, 280), total*0.75) + "px";
+}
+handle.addEventListener("pointerdown", e => {
+  handle.setPointerCapture(e.pointerId); handle.classList.add("drag");
+  document.body.style.userSelect = "none";
+});
+handle.addEventListener("pointermove", e => {
+  if(!handle.hasPointerCapture(e.pointerId)) return;
+  setWidth(ws.getBoundingClientRect().right - e.clientX);
+});
+const stop = e => { handle.classList.remove("drag"); document.body.style.userSelect = ""; };
+handle.addEventListener("pointerup", stop);
+handle.addEventListener("pointercancel", stop);
+handle.addEventListener("keydown", e => {
+  const w = panel.getBoundingClientRect().width;
+  if(e.key==="ArrowLeft"){ setWidth(w+30); e.preventDefault(); }
+  if(e.key==="ArrowRight"){ setWidth(w-30); e.preventDefault(); }
+});
+
+renderFilters();
+selected = PROJECTS[0].id; renderCards(); renderPanel();
+</script>
+</body>
+</html>
