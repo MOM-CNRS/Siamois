@@ -1612,3 +1612,31 @@ body button.p-button.status-button.status-button-compact {
   margin: 0;
   padding: 0;
 }
+
+/* Concept suggestion (fields/ConceptOptionItem.tsx) */
+.concept-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.concept-item-link {
+  color: inherit;
+  padding-top: 0.1rem;
+}
+.concept-item-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: normal;
+}
+.concept-item-definition {
+  color: var(--text-light, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.concept-item-altlabel {
+  font-style: italic;
+  color: var(--siamois-green-active, #4f8a4f);
+}

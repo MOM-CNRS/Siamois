@@ -12,10 +12,42 @@ import type { EntityKey } from "../entities/keys";
 export interface FilterOption {
   id: string;
   label: string;
+  // Extra info a concept suggestion shows (the JSF concept item): absent for every other source.
+  concept?: ConceptItemInfo;
+}
+
+export interface ConceptItemInfo {
+  thesaurusUrl?: string;
+  /** The preferred label, only when `label` is an alternative one. */
+  prefLabel?: string;
+  definition?: string;
+  parents?: string;
 }
 
 interface ConceptsResponseBody {
-  data: { id: string; resolvedLabel?: string | null; externalUrl?: string | null }[];
+  data: ConceptResponseItem[];
+}
+
+interface ConceptResponseItem {
+  id: string;
+  resolvedLabel?: string | null;
+  externalUrl?: string | null;
+  definition?: string | null;
+  thesaurusUrl?: string | null;
+  prefLabel?: string | null;
+  parents?: string | null;
+}
+
+function toConceptOption(c: ConceptResponseItem): FilterOption {
+  const option: FilterOption = { id: c.id, label: c.resolvedLabel ?? c.externalUrl ?? c.id };
+  const concept: ConceptItemInfo = {
+    thesaurusUrl: c.thesaurusUrl ?? undefined,
+    prefLabel: c.prefLabel ?? undefined,
+    definition: c.definition ?? undefined,
+    parents: c.parents ?? undefined,
+  };
+  if (Object.values(concept).some(Boolean)) option.concept = concept;
+  return option;
 }
 
 /**
@@ -39,7 +71,7 @@ export async function fetchConceptOptions(
   const body = await apiFetch<ConceptsResponseBody>(
     `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
   );
-  return body.data.map((c) => ({ id: c.id, label: c.resolvedLabel ?? c.externalUrl ?? c.id }));
+  return body.data.map(toConceptOption);
 }
 
 interface PlaceAutocompleteResponseBody {
@@ -109,7 +141,7 @@ async function fetchFieldConceptOptions(
   const body = await apiFetch<ConceptsResponseBody>(
     `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
   );
-  return body.data.map((c) => ({ id: c.id, label: c.resolvedLabel ?? c.externalUrl ?? c.id }));
+  return body.data.map(toConceptOption);
 }
 
 interface UsersResponseBody {

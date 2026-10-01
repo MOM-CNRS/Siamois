@@ -1,3 +1,4 @@
+import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
 import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -170,6 +171,8 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // concept", "pick persons" or "pick phases" is only the loader, the ResourceRef's resourceType and
 // whether a « Nouveau » footer can create the target — all derived from the field
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
+const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
+
 function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
@@ -180,6 +183,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
       : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
+  const { capTo, panelStyle } = useFieldWidthCap();
   const target = referenceTargetOf(field);
   const waitingForParent = optionsContext?.kind === "RELATED_CONCEPTS" && optionsContext.relatedTo == null;
   const openEntity = useOpenEntity();
@@ -188,6 +192,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
+    capTo(e);
     setSuggestions(await loadOptions(e.query));
   }
 
@@ -296,7 +301,8 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
         className="resource-ref-picker"
         style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
-        value={asTokens ? tokens : selected}
+        // itemTemplate narrows the picker's value type, which excludes the null of an empty single pick.
+        value={(asTokens ? tokens : selected) as FilterOption[] | FilterOption | undefined}
         suggestions={suggestions}
         completeMethod={search}
         field="label"
@@ -313,6 +319,8 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         showEmptyMessage={footer != null || waitingForParent}
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
+        panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
+        itemTemplate={target.resourceType === "concepts" ? conceptItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (asTokens && !multiple) {

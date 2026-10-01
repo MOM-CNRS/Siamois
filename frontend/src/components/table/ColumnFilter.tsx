@@ -1,3 +1,4 @@
+import { ConceptOptionItem, useFieldWidthCap } from "../../fields/ConceptOptionItem";
 import { useEffect, useRef, useState } from "react";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Calendar } from "primereact/calendar";
@@ -168,9 +169,11 @@ function OptionsFilter({
 }: Pick<ColumnFilterProps, "label" | "value" | "onChange" | "loadOptions" | "selectedOptions" | "autoFocus">) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   const selected = selectedOptions ?? [];
+  const { capTo, panelStyle } = useFieldWidthCap();
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
+    capTo(e);
     setSuggestions(await loadOptions(e.query));
   }
 
@@ -186,6 +189,8 @@ function OptionsFilter({
       suggestions={suggestions}
       completeMethod={search}
       field="label"
+      panelStyle={panelStyle}
+      itemTemplate={(o: FilterOption) => <ConceptOptionItem option={o} />}
       multiple
       dropdown={false}
       onChange={(e) => commit(e.value as FilterOption[])}
