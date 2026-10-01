@@ -157,6 +157,43 @@ public record ProjectListFilter(
                 }
             }
         }
+
+        private static void requireNoRangeSuffix(String rawKey, String rangeBound) {
+            if (rangeBound != null) throw badRequest("Filtre non applicable en plage : " + rawKey);
+        }
+
+        private static void requireRangeSuffix(String rawKey, String rangeBound) {
+            if (rangeBound == null) {
+                throw badRequest("Filtre attendu en plage (.from/.to) : " + rawKey);
+            }
+        }
+
+        private static String requireSingleValue(String rawKey, List<String> values) {
+            if (values == null || values.size() != 1) {
+                throw badRequest("Une seule valeur attendue pour : " + rawKey);
+            }
+            return values.get(0);
+        }
+
+        private static List<Long> parseLongs(String rawKey, List<String> values) {
+            List<Long> out = new ArrayList<>(values.size());
+            for (String value : values) {
+                try {
+                    out.add(Long.parseLong(value.trim()));
+                } catch (NumberFormatException e) {
+                    throw badRequest("Identifiant invalide pour " + rawKey + " : " + value);
+                }
+            }
+            return out;
+        }
+
+        private static Double parseDouble(String rawKey, String value) {
+            try {
+                return Double.parseDouble(value.trim());
+            } catch (NumberFormatException e) {
+                throw badRequest("Valeur numérique invalide pour " + rawKey + " : " + value);
+            }
+        }
     }
 
     public static ProjectListFilter parse(MultiValueMap<String, String> queryParams) {
@@ -178,43 +215,6 @@ public record ProjectListFilter(
         java.util.Set<String> out = new java.util.LinkedHashSet<>(a);
         out.addAll(b);
         return out;
-    }
-
-    private static void requireNoRangeSuffix(String rawKey, String rangeBound) {
-        if (rangeBound != null) throw badRequest("Filtre non applicable en plage : " + rawKey);
-    }
-
-    private static void requireRangeSuffix(String rawKey, String rangeBound) {
-        if (rangeBound == null) {
-            throw badRequest("Filtre attendu en plage (.from/.to) : " + rawKey);
-        }
-    }
-
-    private static String requireSingleValue(String rawKey, List<String> values) {
-        if (values == null || values.size() != 1) {
-            throw badRequest("Une seule valeur attendue pour : " + rawKey);
-        }
-        return values.get(0);
-    }
-
-    private static List<Long> parseLongs(String rawKey, List<String> values) {
-        List<Long> out = new ArrayList<>(values.size());
-        for (String value : values) {
-            try {
-                out.add(Long.parseLong(value.trim()));
-            } catch (NumberFormatException e) {
-                throw badRequest("Identifiant invalide pour " + rawKey + " : " + value);
-            }
-        }
-        return out;
-    }
-
-    private static Double parseDouble(String rawKey, String value) {
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            throw badRequest("Valeur numérique invalide pour " + rawKey + " : " + value);
-        }
     }
 
     private static ResponseStatusException badRequest(String message) {

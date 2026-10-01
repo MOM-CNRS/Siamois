@@ -446,6 +446,16 @@ public class CustomFieldAnswerService {
         if (viewModel == null) return null;
 
         Object value = answer.getValue();
+        if (!fillScalar(viewModel, answer, value) && !fillReference(viewModel, value)) {
+            return null;
+        }
+
+        viewModel.setHasBeenModified(false);
+        return viewModel;
+    }
+
+    /** Fills a view-model whose value is held by the answer itself; false when it is not one of those. */
+    private boolean fillScalar(CustomFieldAnswerViewModel viewModel, CustomFieldAnswer answer, Object value) {
         if (viewModel instanceof CustomFieldAnswerTextViewModel v && value instanceof String s) {
             v.setValue(s);
         } else if (viewModel instanceof CustomFieldAnswerIntegerViewModel v && value instanceof Integer i) {
@@ -467,7 +477,15 @@ public class CustomFieldAnswerService {
         } else if (viewModel instanceof CustomFieldAnswerSelectMultipleFromFieldCodeViewModel v
                 && answer instanceof CustomFieldAnswerSelectConcept stored) {
             v.setValue(storedConcepts(stored));
-        } else if (viewModel instanceof CustomFieldAnswerSelectOnePersonViewModel v) {
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    /** Fills a view-model whose value is a stored reference to other entities; false when it is not one of those. */
+    private boolean fillReference(CustomFieldAnswerViewModel viewModel, Object value) {
+        if (viewModel instanceof CustomFieldAnswerSelectOnePersonViewModel v) {
             v.setValue(storedEntities(value, Person.class).stream().map(personMapper::convert).findFirst().orElse(null));
         } else if (viewModel instanceof CustomFieldAnswerSelectMultiplePersonViewModel v) {
             v.setValue(storedEntities(value, Person.class).stream().map(personMapper::convert)
@@ -482,11 +500,9 @@ public class CustomFieldAnswerService {
         } else if (viewModel instanceof CustomFieldAnswerSelectOneActionCodeViewModel v) {
             v.setValue(storedEntities(value, ActionCode.class).stream().map(actionCodeMapper::convert).findFirst().orElse(null));
         } else {
-            return null;
+            return false;
         }
-
-        viewModel.setHasBeenModified(false);
-        return viewModel;
+        return true;
     }
 
     private PlaceSuggestionDTO toPlaceSuggestion(SpatialUnit spatialUnit) {
@@ -591,16 +607,16 @@ public class CustomFieldAnswerService {
             return concepts.isEmpty() ? null : new ArrayList<>(concepts);
         }
         if (answer instanceof CustomFieldAnswerSelectPerson) {
-            return shaped(references(raw, Person.class, CustomFieldAnswerService::idOfEntity, keys -> personRepository.findAllById(keys), Person::getId), multiple);
+            return shaped(references(raw, Person.class, CustomFieldAnswerService::idOfEntity, personRepository::findAllById, Person::getId), multiple);
         }
         if (answer instanceof CustomFieldAnswerSpatialUnit) {
-            return shaped(references(raw, SpatialUnit.class, CustomFieldAnswerService::idOfSpatialUnit, keys -> spatialUnitRepository.findAllById(keys), SpatialUnit::getId), multiple);
+            return shaped(references(raw, SpatialUnit.class, CustomFieldAnswerService::idOfSpatialUnit, spatialUnitRepository::findAllById, SpatialUnit::getId), multiple);
         }
         if (answer instanceof CustomFieldAnswerActionUnit) {
-            return shaped(references(raw, ActionUnit.class, CustomFieldAnswerService::idOfEntity, keys -> actionUnitRepository.findAllById(keys), ActionUnit::getId), multiple);
+            return shaped(references(raw, ActionUnit.class, CustomFieldAnswerService::idOfEntity, actionUnitRepository::findAllById, ActionUnit::getId), multiple);
         }
         if (answer instanceof CustomFieldAnswerActionCode) {
-            return shaped(references(raw, ActionCode.class, CustomFieldAnswerService::codeOfActionCode, keys -> actionCodeRepository.findAllById(keys), ActionCode::getCode), multiple);
+            return shaped(references(raw, ActionCode.class, CustomFieldAnswerService::codeOfActionCode, actionCodeRepository::findAllById, ActionCode::getCode), multiple);
         }
         if (answer instanceof CustomFieldAnswerDateTime) {
             if (raw instanceof OffsetDateTime offset) return offset.toLocalDateTime();

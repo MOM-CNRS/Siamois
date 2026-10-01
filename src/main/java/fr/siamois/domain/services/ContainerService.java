@@ -54,7 +54,7 @@ public class ContainerService {
 
     private Specification<Container> userFilterSpecs(FilterDTO filters) {
         // The list's per-field sort/filters (FieldQuery), then the named ones.
-        Specification<Container> specs = filters.getFieldQuery().specificationFor(Container.class);
+        Specification<Container> specs = filters.getFieldQuery().specificationFor();
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(ContainerSpec.IDENTIFIER_FILTER);

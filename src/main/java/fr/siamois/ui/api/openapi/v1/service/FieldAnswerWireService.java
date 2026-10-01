@@ -77,15 +77,15 @@ public class FieldAnswerWireService {
                 constraintsOf(f));
     }
 
-    /**
-     * The entry constraints a field carries. The defaults its classes fall back to (Integer.MIN_VALUE,
-     * ±Double.MAX_VALUE) mean "unbounded" and are dropped rather than sent as bounds.
-     */
     /** A bound as a double, or null when it is absent or is the "unbounded" default. */
     private static Double boundOrNull(Number value, double unbounded) {
         return value == null || value.doubleValue() == unbounded ? null : value.doubleValue();
     }
 
+    /**
+     * The entry constraints a field carries. The defaults its classes fall back to (Integer.MIN_VALUE,
+     * ±Double.MAX_VALUE) mean "unbounded" and are dropped rather than sent as bounds.
+     */
     private static FieldResource.Constraints constraintsOf(Object f) {
         Double min = null;
         Double max = null;
@@ -168,10 +168,7 @@ public class FieldAnswerWireService {
         if (item == null) return null;
         if (item instanceof ConceptDTO || item instanceof ConceptAutocompleteDTO) return conceptResourceRef(item, lang);
         if (item instanceof PersonDTO p) return ref(p.getId(), "persons", p.displayName());
-        if (item instanceof PhaseDTO p) {
-            String label = p.getTitle() != null && !p.getTitle().isBlank() ? p.getTitle() : p.getIdentifier();
-            return ref(p.getId(), "phases", label);
-        }
+        if (item instanceof PhaseDTO p) return ref(p.getId(), "phases", phaseLabel(p));
         if (item instanceof SpatialUnitSummaryDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
         if (item instanceof PlaceSuggestionDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
         if (item instanceof SpatialUnitDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
@@ -180,10 +177,19 @@ public class FieldAnswerWireService {
         if (item instanceof ActionUnitDTO a) return ref(a.getId(), "action-units", a.getName());
         // An action code is keyed by its code: that is also what a PATCH sends back for it.
         if (item instanceof ActionCodeDTO ac) return new ResourceRef(ac.getCode(), "action-codes", ac.getCode());
+        return toExcavationRef(answerType, item);
+    }
+
+    /** The reference of a container, a find, or any other entity DTO; null for anything else. */
+    private static ResourceRef toExcavationRef(String answerType, Object item) {
         if (item instanceof ContainerDTO c) return ref(c.getId(), "containers", c.getIdentifier());
         if (item instanceof SpecimenSummaryDTO s) return ref(s.getId(), "finds", s.getFullIdentifier());
         if (item instanceof AbstractEntityDTO e) return ref(e.getId(), answerType.toLowerCase(Locale.ROOT), null);
         return null;
+    }
+
+    private static String phaseLabel(PhaseDTO p) {
+        return p.getTitle() != null && !p.getTitle().isBlank() ? p.getTitle() : p.getIdentifier();
     }
 
     private static ResourceRef ref(Long id, String resourceType, String label) {

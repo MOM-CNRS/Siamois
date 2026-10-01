@@ -1364,7 +1364,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personRepository.findById(Long.valueOf(4L))).thenReturn(Optional.ofNullable(person));
+        when(personRepository.findById(4L)).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1403,7 +1403,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personRepository.findById(Long.valueOf(6L))).thenReturn(Optional.ofNullable(person));
+        when(personRepository.findById(6L)).thenReturn(Optional.ofNullable(person));
         when(personMapper.convert(person)).thenReturn(personResult);
         when(recordingUnitService.save(same(ruDto), anyMap())).thenReturn(ruDto);
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
@@ -1468,7 +1468,7 @@ class RecordingUnitOpenApiServiceTest {
         when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDtoWithOneField(personField));
         when(formService.initOrReuseResponse(isNull(), same(ruDto), any(FieldSource.class), eq(true))).thenReturn(responseVm);
-        when(personRepository.findById(Long.valueOf(999L))).thenReturn(Optional.ofNullable(null));
+        when(personRepository.findById(999L)).thenReturn(Optional.ofNullable(null));
 
         RecordingUnitPatchRequest request = new RecordingUnitPatchRequest();
         request.setAnswers(Map.of("35", new AnswerInput(999, null)));

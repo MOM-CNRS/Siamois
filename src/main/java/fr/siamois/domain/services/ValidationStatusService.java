@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.NoSuchElementException;
 
 /**
@@ -38,7 +39,7 @@ public class ValidationStatusService {
         }
         entity.setValidated(status);
         if (status == ValidationStatus.VALIDATED) {
-            entity.setValidatedAt(OffsetDateTime.now());
+            entity.setValidatedAt(OffsetDateTime.now(ZoneOffset.UTC));
             entity.setValidatedBy(personId != null ? entityManager.getReference(Person.class, personId) : null);
         } else {
             entity.setValidatedAt(null);

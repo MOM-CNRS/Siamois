@@ -36,4 +36,15 @@ public class RecordingUnitPanel extends AbstractEntityPanel<RecordingUnitDTO> {
     protected boolean canView(PersonDTO user, RecordingUnitDTO unit) {
         return profilePermissionService.canViewRecordingUnit(user, unit);
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

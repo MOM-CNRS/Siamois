@@ -36,4 +36,15 @@ public class SpatialUnitPanel extends AbstractEntityPanel<SpatialUnitDTO> {
     protected boolean canView(PersonDTO user, SpatialUnitDTO unit) {
         return profilePermissionService.canViewInstitutionData(user, unit.getCreatedByInstitution());
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

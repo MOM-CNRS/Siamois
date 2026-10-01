@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 
 /** Normalise les réponses formulaire (OpenAPI {@link AnswerInput} + payload mobile legacy). */
 public final class FieldAnswerMaps {
@@ -36,18 +38,17 @@ public final class FieldAnswerMaps {
          * @param idOf the id an item of {@code current} or {@code added} is referenced by
          */
         public <T, C extends Collection<T>> C applyTo(@Nullable Collection<? extends T> current, Collection<? extends T> added,
-                                                      Function<Object, Long> idOf, C empty) {
-            Set<Long> removed = new HashSet<>();
-            for (Object id : remove) removed.add(idOf.apply(id));
+                                                      ToLongFunction<Object> idOf, C empty) {
+            Set<Long> removed = remove.stream().map(idOf::applyAsLong).collect(Collectors.toSet());
             Set<Long> kept = new HashSet<>();
             if (current != null) {
                 for (T item : current) {
-                    Long id = idOf.apply(item);
+                    long id = idOf.applyAsLong(item);
                     if (!removed.contains(id) && kept.add(id)) empty.add(item);
                 }
             }
             for (T item : added) {
-                if (kept.add(idOf.apply(item))) empty.add(item);
+                if (kept.add(idOf.applyAsLong(item))) empty.add(item);
             }
             return empty;
         }

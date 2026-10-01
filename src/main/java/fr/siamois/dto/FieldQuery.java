@@ -20,7 +20,7 @@ public record FieldQuery(@Nullable Specification<?> specification, boolean order
     public static final FieldQuery NONE = new FieldQuery(null, false);
 
     @SuppressWarnings("unchecked")
-    public <E> Specification<E> specificationFor(Class<E> entityType) {
+    public <E> Specification<E> specificationFor() {
         return specification == null ? (root, query, cb) -> null : (Specification<E>) specification;
     }
 

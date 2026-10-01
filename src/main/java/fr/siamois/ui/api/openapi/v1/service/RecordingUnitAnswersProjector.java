@@ -234,14 +234,18 @@ public class RecordingUnitAnswersProjector {
         if (field instanceof CustomFieldSelectOnePerson) {
             return raw instanceof PersonDTO p ? personRef(p) : null;
         }
-        if (field instanceof CustomFieldSelectMultiplePerson) {
-            return refList(raw, item -> item instanceof PersonDTO p ? personRef(p) : null);
-        }
         if (field instanceof CustomFieldSelectOneActionUnit) {
             return raw instanceof ActionUnitSummaryDTO au ? actionUnitRef(au) : null;
         }
         if (field instanceof CustomFieldSelectOneSpatialUnit) {
             return raw instanceof SpatialUnitSummaryDTO s ? spatialUnitRef(s) : null;
+        }
+        return multipleReferenceWireValue(field, raw);
+    }
+
+    private static Object multipleReferenceWireValue(CustomField field, Object raw) {
+        if (field instanceof CustomFieldSelectMultiplePerson) {
+            return refList(raw, item -> item instanceof PersonDTO p ? personRef(p) : null);
         }
         if (field instanceof CustomFieldSelectMultiplePhase) {
             return refList(raw, item -> item instanceof PhaseDTO p ? phaseRef(p) : null);

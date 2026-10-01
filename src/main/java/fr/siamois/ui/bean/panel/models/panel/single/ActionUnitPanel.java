@@ -36,4 +36,15 @@ public class ActionUnitPanel extends AbstractEntityPanel<ActionUnitDTO> {
     protected boolean canView(PersonDTO user, ActionUnitDTO unit) {
         return profilePermissionService.canViewProject(user, unit.getCreatedByInstitution(), unit.getId());
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

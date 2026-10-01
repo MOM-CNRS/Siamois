@@ -20,7 +20,7 @@ package fr.siamois.ui.form.dto;
  * verbatim when no {@code width} was set; React parses that raw class string as a fallback
  * (entities/project/form.ts's {@code toGridClass}).</p>
  */
-public record ColumnWidth(int span, Integer md, Integer lg) {
+public record ColumnWidth(int span, Integer md, Integer lg) implements java.io.Serializable {
 
     /** ui-g-12 ui-md-6 ui-lg-3 — the default column: full width, half at md, a quarter at lg. */
     public static final ColumnWidth STANDARD = new ColumnWidth(12, 6, 3);

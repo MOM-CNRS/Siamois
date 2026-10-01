@@ -27,4 +27,15 @@ public class ContainerPanel extends AbstractEntityPanel<ContainerDTO> {
     protected String titleOf(ContainerDTO unit) {
         return unit.getIdentifier();
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

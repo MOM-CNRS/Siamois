@@ -49,7 +49,7 @@ public class PhaseService {
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
         // The list's per-field sort/filters (FieldQuery), then the named ones.
-        Specification<Phase> specs = filters.getFieldQuery().specificationFor(Phase.class);
+        Specification<Phase> specs = filters.getFieldQuery().specificationFor();
 
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(PhaseSpec.IDENTIFIER_FILTER);

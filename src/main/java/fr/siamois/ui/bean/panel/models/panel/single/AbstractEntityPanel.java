@@ -111,4 +111,15 @@ public abstract class AbstractEntityPanel<T extends AbstractEntityDTO> extends A
     public Long reactOrganizationId() {
         return unit != null && unit.getCreatedByInstitution() != null ? unit.getCreatedByInstitution().getId() : null;
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

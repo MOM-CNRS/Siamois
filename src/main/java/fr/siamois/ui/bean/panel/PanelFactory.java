@@ -53,7 +53,7 @@ public class PanelFactory {
      * The panel of one entity, by the React registry key of its type ("project", "recordingUnit", …),
      * or null for an unknown key.
      */
-    public AbstractEntityPanel<?> createForReactEntityType(String entityType, Long id) {
+    public AbstractPanel createForReactEntityType(String entityType, Long id) {
         return switch (entityType) {
             case "project" -> entity(actionUnitPanelProvider, id);
             case "recordingUnit" -> entity(recordingUnitPanelProvider, id);

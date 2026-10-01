@@ -822,7 +822,7 @@ public class ActionUnitService implements ArkEntityService {
             return new PageImpl<>(List.of(), pageable, 0);
         }
         Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter)
-                .and(fieldQuery.specificationFor(ActionUnit.class));
+                .and(fieldQuery.specificationFor());
         if (recordingUnitCountOrder != null) {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
         }

@@ -464,10 +464,6 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Gabarit UI du formulaire de création projet ({@link ActionUnit#NEW_UNIT_FORM}) : layout et métadonnées des champs.
-     * Vocabulaires : {@code GET /api/v1/vocabularies}.
-     */
-    /**
      * {@code GET /api/v1/organizations/{id}/project-types} (plan §5/§6) — supersedes
      * {@link #buildProjectUiForm}/{@code GET /api/v1/projects/form}: layout, field configs and the
      * shared field catalog in one call. Phase 1 populates only {@code _default}, simulated from the

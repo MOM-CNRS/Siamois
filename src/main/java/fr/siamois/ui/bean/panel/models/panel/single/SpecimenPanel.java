@@ -27,4 +27,15 @@ public class SpecimenPanel extends AbstractEntityPanel<SpecimenDTO> {
     protected String titleOf(SpecimenDTO unit) {
         return unit.getFullIdentifier();
     }
+
+    // A panel is identified by its resource URI, which AbstractPanel already compares.
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

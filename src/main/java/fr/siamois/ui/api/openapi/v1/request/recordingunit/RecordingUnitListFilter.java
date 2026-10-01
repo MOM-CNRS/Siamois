@@ -135,6 +135,51 @@ public record RecordingUnitListFilter(
                 }
             }
         }
+
+        private static void requireNoRangeSuffix(String rawKey, String rangeBound) {
+            if (rangeBound != null) throw badRequest("Filtre non applicable en plage : " + rawKey);
+        }
+
+        private static void requireRangeSuffix(String rawKey, String rangeBound) {
+            if (rangeBound == null) {
+                throw badRequest("Filtre attendu en plage (.from/.to) : " + rawKey);
+            }
+        }
+
+        private static String requireSingleValue(String rawKey, List<String> values) {
+            if (values == null || values.size() != 1) {
+                throw badRequest("Une seule valeur attendue pour : " + rawKey);
+            }
+            return values.get(0);
+        }
+
+        private static List<Long> parseLongs(String rawKey, List<String> values) {
+            List<Long> out = new ArrayList<>(values.size());
+            for (String value : values) {
+                try {
+                    out.add(Long.parseLong(value.trim()));
+                } catch (NumberFormatException e) {
+                    throw badRequest("Identifiant invalide pour " + rawKey + " : " + value);
+                }
+            }
+            return out;
+        }
+
+        private static OffsetDateTime parseDate(String rawKey, String value) {
+            try {
+                return OffsetDateTime.parse(value.trim());
+            } catch (DateTimeParseException e) {
+                throw badRequest("Date invalide (ISO-8601 attendu) pour " + rawKey + " : " + value);
+            }
+        }
+
+        private static Integer parseInt(String rawKey, String value) {
+            try {
+                return Integer.parseInt(value.trim());
+            } catch (NumberFormatException e) {
+                throw badRequest("Valeur entière invalide pour " + rawKey + " : " + value);
+            }
+        }
     }
 
     public static RecordingUnitListFilter parse(MultiValueMap<String, String> queryParams) {
@@ -192,51 +237,6 @@ public record RecordingUnitListFilter(
         Set<String> out = new java.util.LinkedHashSet<>(a);
         out.addAll(b);
         return out;
-    }
-
-    private static void requireNoRangeSuffix(String rawKey, String rangeBound) {
-        if (rangeBound != null) throw badRequest("Filtre non applicable en plage : " + rawKey);
-    }
-
-    private static void requireRangeSuffix(String rawKey, String rangeBound) {
-        if (rangeBound == null) {
-            throw badRequest("Filtre attendu en plage (.from/.to) : " + rawKey);
-        }
-    }
-
-    private static String requireSingleValue(String rawKey, List<String> values) {
-        if (values == null || values.size() != 1) {
-            throw badRequest("Une seule valeur attendue pour : " + rawKey);
-        }
-        return values.get(0);
-    }
-
-    private static List<Long> parseLongs(String rawKey, List<String> values) {
-        List<Long> out = new ArrayList<>(values.size());
-        for (String value : values) {
-            try {
-                out.add(Long.parseLong(value.trim()));
-            } catch (NumberFormatException e) {
-                throw badRequest("Identifiant invalide pour " + rawKey + " : " + value);
-            }
-        }
-        return out;
-    }
-
-    private static OffsetDateTime parseDate(String rawKey, String value) {
-        try {
-            return OffsetDateTime.parse(value.trim());
-        } catch (DateTimeParseException e) {
-            throw badRequest("Date invalide (ISO-8601 attendu) pour " + rawKey + " : " + value);
-        }
-    }
-
-    private static Integer parseInt(String rawKey, String value) {
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            throw badRequest("Valeur entière invalide pour " + rawKey + " : " + value);
-        }
     }
 
     private static ResponseStatusException badRequest(String message) {

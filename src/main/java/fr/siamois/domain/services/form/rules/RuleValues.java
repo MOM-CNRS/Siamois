@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class RuleValues {
 
     private static final Pattern ISO_DATE =
-            Pattern.compile("^\\d{4}-\\d{2}-\\d{2}(?:[T ][\\d:.]+(?:Z|[+-]\\d{2}:?\\d{2})?)?$");
+            Pattern.compile("^\\d{4}(?:-\\d{2}){2}(?:[T ][\\d:.]+(?:Z|[+-][\\d:]{4,5})?)?$");
 
     private RuleValues() {
         throw new UnsupportedOperationException();

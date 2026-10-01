@@ -814,7 +814,7 @@ public class SpecimenService implements ArkEntityService {
 
     public static Specification<Specimen> userFilterSpecs(@NonNull FilterDTO filters) {
         // The list's per-field sort/filters (FieldQuery), then the named ones.
-        Specification<Specimen> specification = filters.getFieldQuery().specificationFor(Specimen.class);
+        Specification<Specimen> specification = filters.getFieldQuery().specificationFor();
 
         if (filters.containsColumn(SpecimenSpec.ACTION_UNIT_FILTER)) {
             specification = specification.and(SpecimenSpec.isInActionUnit(filters.valueAsIdListOf(SpecimenSpec.ACTION_UNIT_FILTER)));

@@ -123,6 +123,12 @@ class CustomFieldAnswerServiceTest {
     private fr.siamois.mapper.ActionCodeMapper actionCodeMapper;
     @Mock
     private RecordingUnitRepository recordingUnitRepository;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.SpatialUnitRepository spatialUnitRepository;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository actionUnitRepository;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository actionCodeRepository;
 
     @InjectMocks
     private CustomFieldAnswerService service;

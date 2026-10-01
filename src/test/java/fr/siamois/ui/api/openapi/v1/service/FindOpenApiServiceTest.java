@@ -378,7 +378,7 @@ class FindOpenApiServiceTest {
 
         Person personEntity = new Person();
         personEntity.setId(8L);
-        when(personRepository.findById(Long.valueOf(8L))).thenReturn(Optional.of(personEntity));
+        when(personRepository.findById(8L)).thenReturn(Optional.of(personEntity));
         PersonDTO personAnswer = new PersonDTO();
         personAnswer.setId(8L);
         when(personMapper.convert(personEntity)).thenReturn(personAnswer);
@@ -558,7 +558,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(personRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
+        when(personRepository.findById(99L)).thenReturn(Optional.empty());
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("5", new AnswerInput(99L, null)));

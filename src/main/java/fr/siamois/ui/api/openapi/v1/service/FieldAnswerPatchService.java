@@ -58,6 +58,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.stream.Collectors;
 
 /**
  * Applies a PATCH's {@code answers} (field id → {@code AnswerInput}) to an entity DTO, for every
@@ -509,24 +511,22 @@ public class FieldAnswerPatchService {
         return entity;
     }
 
-    private static <E, D> D one(Object raw, String label, Function<Long, Optional<E>> find, Function<E, D> convert) {
+    private static <E, D> D one(Object raw, String label, LongFunction<Optional<E>> find, Function<E, D> convert) {
         long id = requireLongId(raw, label);
         return find.apply(id).map(convert)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " introuvable : " + id));
     }
 
     /** A LinkedHashSet, keeping the picked order: the Set-based view-model handlers require a Set. */
-    private static <E, D> Set<D> many(Object raw, String label, Function<Long, Optional<E>> find, Function<E, D> convert) {
+    private static <E, D> Set<D> many(Object raw, String label, LongFunction<Optional<E>> find, Function<E, D> convert) {
         Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
-        Set<D> out = new LinkedHashSet<>();
-        for (Object item : items) {
-            out.add(one(item, label, find, convert));
-        }
-        return out;
+        return items.stream()
+                .map(item -> one(item, label, find, convert))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private Object actionCode(Object raw) {
-        String code = raw instanceof Map<?, ?> m && m.get("id") != null ? String.valueOf(m.get("id")) : String.valueOf(raw);
+        String code = String.valueOf(raw instanceof Map<?, ?> m && m.get("id") != null ? m.get("id") : raw);
         ActionCode actionCode = actionCodeRepository.findById(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code d'action introuvable : " + code));
         return actionCodeMapper.convert(actionCode);

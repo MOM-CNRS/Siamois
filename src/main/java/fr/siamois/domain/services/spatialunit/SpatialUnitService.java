@@ -645,7 +645,7 @@ public class SpatialUnitService implements ArkEntityService {
 
     private Specification<SpatialUnit> userFilterSpecs(FilterDTO filterDTO) {
         // The list's per-field sort/filters (FieldQuery), then the named ones.
-        Specification<SpatialUnit> specs = filterDTO.getFieldQuery().specificationFor(SpatialUnit.class);
+        Specification<SpatialUnit> specs = filterDTO.getFieldQuery().specificationFor();
 
         if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));

@@ -196,7 +196,7 @@ public class ProjectApiService {
      * appartenir à {@link #ALLOWED_PROJECT_SORT_FIELDS} — un champ inconnu est un 400, jamais un repli
      * silencieux (un repli silencieux est exactement ce qui a masqué le binding cassé de {@code ?sort=}).
      *
-     * <p>TODO: multi-tri ; un seul critère est supporté pour l'instant.</p>
+     * <p>Un seul critère de tri est supporté (pas de multi-tri).</p>
      */
     public Page<AccessibleProjectForApi> pageAccessibleProjects(
             ProjectApiCaller caller,
@@ -244,9 +244,8 @@ public class ProjectApiService {
         // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
         // retiré du Pageable, sinon Hibernate échoue sur une propriété inconnue.
         Sort.Direction countDirection = recordingUnitCountSortDirection(sortParam);
-        Pageable pageable = countDirection != null
-                ? PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.ASC, "id"))
-                : PageRequest.of(pageNumber, limit, parseProjectSort(sortParam));
+        Pageable pageable = PageRequest.of(pageNumber, limit,
+                countDirection != null ? Sort.by(Sort.Direction.ASC, "id") : parseProjectSort(sortParam));
 
         return actionUnitService.findAccessibleProjects(
                 caller.person().getId(),
@@ -560,12 +559,10 @@ public class ProjectApiService {
             return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
         }
         applyProjectPatch(dto, patch);
-        ConceptDTO type = dto.getType();
         if (patch.getTypeId() != null) {
             Concept concept = conceptService.findById(parseLong(patch.getTypeId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de projet inconnu"));
-            type = conceptMapper.convert(concept);
-            dto.setType(type);
+            dto.setType(conceptMapper.convert(concept));
         }
         if (patch.getMainLocationId() != null) {
             applyMainLocation(dto, patch.getMainLocationId());
@@ -581,7 +578,7 @@ public class ProjectApiService {
         // applyAnswerPatch may have overwritten `type` (fieldId -101, valueBinding "type") via
         // reflection — save(...) takes it as its own parameter (see save's own javadoc for why),
         // so re-read it from the DTO rather than passing the now-possibly-stale local.
-        type = dto.getType();
+        ConceptDTO type = dto.getType();
         try {
             actionUnitService.save(userInfo, dto, type);
         } catch (ActionUnitAlreadyExistsException e) {
@@ -950,13 +947,6 @@ public class ProjectApiService {
         return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort, filterDTO);
     }
 
-    /**
-     * Whether the caller can write recording units on this project — a single boolean for the
-     * whole {@link #pageRecordingUnitsForProject} page, since every row shares the same project
-     * (unlike {@link #permissionsFor}, which handles a project LIST that can span institutions).
-     * Mirrors {@link ProfilePermissionService#hasRecordingUnitWritePermission}'s own instance/
-     * organization/project triple, without needing a {@code RecordingUnitDTO} per row to get there.
-     */
     /**
      * Nombre de mobiliers du projet — un seul appel, pour {@code _counts.finds} sur le détail
      * uniquement (jamais batché sur une page de liste, qui ne l'affiche pas).

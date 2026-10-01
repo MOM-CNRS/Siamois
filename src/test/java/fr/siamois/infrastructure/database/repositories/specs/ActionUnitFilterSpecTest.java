@@ -277,9 +277,11 @@ class ActionUnitFilterSpecTest {
         when(subquery.select(any())).thenReturn(subquery);
         when(subRoot.get("id")).thenReturn(subRootId);
         when(root.get("id")).thenReturn(rootId);
-        when(cb.equal(subRootId, rootId)).thenReturn(mock(Predicate.class));
+        Predicate sameIdPredicate = mock(Predicate.class);
+        Predicate inPredicate = mock(Predicate.class);
+        when(cb.equal(subRootId, rootId)).thenReturn(sameIdPredicate);
         when(conceptJoin.get("id")).thenReturn(conceptId);
-        when(conceptId.in(List.of(1L))).thenReturn(mock(Predicate.class));
+        when(conceptId.in(List.of(1L))).thenReturn(inPredicate);
         when(subquery.where(any(Predicate.class), any(Predicate.class))).thenReturn(subquery);
         when(cb.exists(subquery)).thenReturn(existsPredicate);
 
