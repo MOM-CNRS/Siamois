@@ -32,6 +32,8 @@ header.top nav{display:flex;align-items:center;gap:22px;flex:none}
 header.top .ic{display:inline-flex;padding:4px;margin:0 -4px}
 header.top .ic+.ic{margin-left:0}
 header.top nav a:hover,.link:hover{color:var(--violet)}
+header.top nav a.nl{transition:color .12s}
+header.top nav a.nl.active{color:var(--violet);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:8px}
 header.top a:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
 section,#top{scroll-margin-top:64px}
 
@@ -487,6 +489,25 @@ hits.forEach(h => {
 $("#d-close").addEventListener("click", closeDrawer);
 document.addEventListener("click", e => { if(drawer.classList.contains("open") && !e.target.closest("#drawer, .hit")) closeDrawer(); });
 document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });
+
+/* menu: section active selon le défilement */
+const spy = [...document.querySelectorAll("header.top a.nl")].map(a => ({a, el: document.querySelector(a.getAttribute("href"))})).filter(x => x.el);
+const sections = [...document.querySelectorAll("main section[id]")].map(el => el.id);
+function updateSpy(){
+  const line = 56 + 80;
+  let current = null;
+  for(const id of sections){ if(document.getElementById(id).getBoundingClientRect().top <= line) current = id; }
+  if(innerHeight + scrollY >= document.documentElement.scrollHeight - 4) current = "contact";
+  else if(document.getElementById("contact").getBoundingClientRect().top <= line) current = "contact";
+  spy.forEach(({a}) => {
+    const on = a.getAttribute("href") === "#" + current;
+    a.classList.toggle("active", on);
+    if(on) a.setAttribute("aria-current","true"); else a.removeAttribute("aria-current");
+  });
+}
+addEventListener("scroll", updateSpy, {passive:true});
+addEventListener("resize", updateSpy);
+updateSpy();
 </script>
 </body>
 </html>
