@@ -24,12 +24,14 @@ h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0;line-height:1.1}
 header.top{border-bottom:1px solid var(--ink)}
 header.top .wrap{display:flex;justify-content:space-between;align-items:center;height:52px;font-family:var(--mono);font-size:.78rem}
 header.top a{text-decoration:none}
+header.top .brand{font-family:var(--serif);font-weight:500;font-size:1.3rem;letter-spacing:-.01em}
+header.top .brand em{font-style:italic;color:var(--violet)}
 header.top nav a{margin-left:24px}
 header.top nav a:hover,.link:hover{color:var(--violet)}
 
 .hero{display:grid;grid-template-columns:1.25fr 1fr;gap:56px;padding:88px 0 72px;align-items:end;border-bottom:1px solid var(--line)}
-.hero h1{font-size:clamp(3.2rem,8.5vw,6.8rem);letter-spacing:-.025em;font-weight:500}
-.hero h1 em{font-style:italic;color:var(--violet);display:block}
+.hero h1{font-size:clamp(2.4rem,5.6vw,4.4rem);letter-spacing:-.02em;font-weight:500}
+.hero h1 em{font-style:italic;color:var(--violet)}
 .hero .role{margin-top:24px;font-family:var(--mono);font-size:.82rem;color:var(--ink-2);max-width:46ch}
 .hero p{margin:0 0 24px;font-family:var(--serif);font-size:1.2rem;line-height:1.6}
 .links{display:flex;flex-direction:column;border-top:1px solid var(--ink)}
@@ -41,6 +43,22 @@ section{padding:72px 0 0}
 .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:28px}
 .sec-head .n{font-family:var(--mono);font-size:.8rem;color:var(--violet)}
 .sec-head h2{font-size:2.1rem}
+
+
+/* à la une */
+.featured{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.feat{display:flex;flex-direction:column;border:1px solid var(--ink);background:#fff;text-decoration:none;transition:transform .15s,box-shadow .15s}
+.feat:hover{transform:translate(-3px,-3px);box-shadow:5px 5px 0 var(--violet)}
+.feat:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+.feat-visual{height:200px;display:flex;align-items:center;justify-content:center;padding:28px;border-bottom:1px solid var(--ink);background:#fff}
+.feat-visual img{max-width:100%;max-height:100%;object-fit:contain}
+.feat-visual.word{background:var(--night);color:var(--night-ink)}
+.feat-visual.word span{font-family:var(--serif);font-size:3rem;line-height:1;letter-spacing:-.02em}
+.feat-visual.word em{color:#B7A5EE}
+.feat-body{padding:22px 24px 20px;display:flex;flex-direction:column;gap:6px;flex:1}
+.feat-body h3{font-size:1.8rem}
+.feat-body p{margin:0 0 12px;color:var(--ink-2);font-size:.95rem}
+.feat-url{margin-top:auto;display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.85rem;color:var(--violet)}
 
 /* workspace */
 .workspace{display:flex;height:660px;border:1px solid var(--ink);background:#fff}
@@ -160,8 +178,8 @@ footer .row a:hover{color:#fff}
 <body>
 <header class="top">
   <div class="wrap">
-    <a href="#top">G. Bliault</a>
-    <nav><a href="#projets">projets</a><a href="#parcours">parcours</a><a href="#competences">compétences</a><a href="#contact">contact</a></nav>
+    <a class="brand" href="#top">Grégory <em>Bliault</em></a>
+    <nav><a href="#parcours">parcours</a><a href="#projets">projets</a><a href="#competences">cv</a><a href="#contact">contact</a></nav>
   </div>
 </header>
 
@@ -169,8 +187,8 @@ footer .row a:hover{color:#fff}
   <div class="wrap">
     <div class="hero">
       <div>
-        <h1>Grégory<em>Bliault</em></h1>
-        <div class="role">Product Manager &amp; ingénieur logiciel — fullstack et traitement d'image. Lyon.</div>
+        <h1>Product Manager &amp; ingénieur <em>logiciel</em></h1>
+        <div class="role">Fullstack et traitement d'image. Lyon.</div>
       </div>
       <div>
         <p>Je construis des applications web pour la recherche scientifique, de la spécification à la mise en production. Ingénieur en traitement du signal et de l'image, passé par Harvard Medical School, aujourd'hui sur Siamois au CNRS.</p>
@@ -183,26 +201,31 @@ footer .row a:hover{color:#fff}
     </div>
   </div>
 
-  <section id="projets">
+  <section id="une">
     <div class="wrap">
-      <div class="sec-head"><span class="n">01</span><h2>Projets</h2></div>
-      <div class="workspace" id="workspace">
-        <div class="list">
-          <div class="toolbar" id="filters" role="group" aria-label="Filtrer les projets"></div>
-          <div class="cards" id="cards" role="listbox" aria-label="Projets"></div>
-        </div>
-        <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau de détails" tabindex="0"></div>
-        <aside class="panel" id="panel" aria-live="polite">
-          <div class="panel-head">
-            <div><h3 id="p-title"></h3><div class="sub" id="p-sub"></div></div>
-            <button class="close" id="close" type="button">fermer</button>
+      <div class="sec-head"><span class="n">01</span><h2>À la une</h2></div>
+      <div class="featured">
+        <a class="feat" href="https://siamois.eu" target="_blank" rel="noopener">
+          <div class="feat-visual"><img src="logos/siamois.png" alt="Siamois"></div>
+          <div class="feat-body">
+            <div class="meta"><span class="tag">Produit</span><span>CNRS · MOM</span></div>
+            <h3>Siamois</h3>
+            <p>Application web d'enregistrement de terrain archéologique : partager l'information archéologique, du chantier à la base de données.</p>
+            <div class="feat-url"><span>siamois.eu</span><span>→</span></div>
           </div>
-          <div class="panel-body" id="p-body"></div>
-        </aside>
+        </a>
+        <a class="feat" href="https://posetapeche.fr" target="_blank" rel="noopener">
+          <div class="feat-visual word"><span>Pose<br>ta <em>pêche</em></span></div>
+          <div class="feat-body">
+            <div class="meta"><span class="tag">Projet perso</span><span>Web</span></div>
+            <h3>Pose ta pêche</h3>
+            <p>Mon projet personnel, en ligne et ouvert à tous.</p>
+            <div class="feat-url"><span>posetapeche.fr</span><span>→</span></div>
+          </div>
+        </a>
       </div>
     </div>
   </section>
-
   <section id="parcours">
     <div class="wrap">
       <div class="sec-head"><span class="n">02</span><h2>Parcours</h2></div>
@@ -269,10 +292,28 @@ footer .row a:hover{color:#fff}
   
     </div>
   </section>
-
+  <section id="projets">
+    <div class="wrap">
+      <div class="sec-head"><span class="n">03</span><h2>Projets</h2></div>
+      <div class="workspace" id="workspace">
+        <div class="list">
+          <div class="toolbar" id="filters" role="group" aria-label="Filtrer les projets"></div>
+          <div class="cards" id="cards" role="listbox" aria-label="Projets"></div>
+        </div>
+        <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau de détails" tabindex="0"></div>
+        <aside class="panel" id="panel" aria-live="polite">
+          <div class="panel-head">
+            <div><h3 id="p-title"></h3><div class="sub" id="p-sub"></div></div>
+            <button class="close" id="close" type="button">fermer</button>
+          </div>
+          <div class="panel-body" id="p-body"></div>
+        </aside>
+      </div>
+    </div>
+  </section>
   <section id="competences">
     <div class="wrap">
-      <div class="sec-head"><span class="n">03</span><h2>Compétences &amp; formation</h2></div>
+      <div class="sec-head"><span class="n">04</span><h2>CV</h2></div>
       <div class="cols">
         <div class="box">
           <h3>Compétences</h3>
@@ -286,13 +327,6 @@ footer .row a:hover{color:#fff}
             <li>Docker / Singularity</li>
             <li>Travail en équipe internationale</li>
             <li>Produit : spécifications, Agile, ateliers de cadrage</li>
-          </ul>
-        </div>
-        <div class="box">
-          <h3>Formation</h3>
-          <ul>
-            <li><b>Ingénieur Génie Électrique</b>, spéc. Traitement des Signaux et des Images — INSA Lyon, 2014–2017</li>
-            <li><b>Master Imagerie Médicale, Signaux et Système</b> — Université Lyon 1, 2014–2017</li>
           </ul>
           <h3 style="margin-top:18px">Langues</h3>
           <ul><li>Français — langue maternelle</li><li>Anglais — courant</li></ul>
