@@ -78,20 +78,32 @@ section{padding:56px 0 0}
 .hit:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
 .hit[aria-pressed=true]{background:#fff;border-color:var(--violet)}
 .hit[aria-pressed=true] h3{color:var(--violet)}
-.drawer{position:fixed;top:56px;right:0;bottom:0;width:min(460px,100%);z-index:35;display:flex;flex-direction:column;background:var(--night);color:var(--night-ink);border-left:1px solid var(--ink);transform:translateX(102%);transition:transform .22s;visibility:hidden}
-.drawer.open{transform:none;visibility:visible}
-.drawer .close{display:block}
 
-/* workspace */
-.workspace{display:flex;height:660px;border:1px solid var(--ink);background:#fff}
-.list{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
+/* panneau de détail partagé */
+:root{--side-w:clamp(320px,38vw,440px)}
+.side{position:fixed;top:56px;right:0;bottom:0;width:var(--side-w);z-index:35;display:flex;flex-direction:column;background:var(--night);color:var(--night-ink);border-left:1px solid var(--ink);transform:translateX(102%);transition:transform .22s;visibility:hidden}
+.side.open{transform:none;visibility:visible}
+.side .close{display:block}
+.grip{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:col-resize;background:var(--night-2);touch-action:none;z-index:2}
+.grip::after{content:"";position:absolute;top:50%;left:3px;width:3px;height:34px;margin-top:-17px;background:radial-gradient(circle,var(--night-mute) 1px,transparent 1.5px) 0 0/3px 6px}
+.grip:hover,.grip:focus-visible,.grip.drag{background:#3E3566;outline:none}
+.side .panel-head{padding-left:34px}
+.side .panel-body{padding-left:34px}
+@media (min-width:821px){
+  main,footer{transition:padding-right .22s}
+  body.side-open main,body.side-open footer{padding-right:var(--side-w)}
+  body.dragging main,body.dragging footer,body.dragging .side{transition:none}
+}
+
+/* liste des projets */
+.plist{border:1px solid var(--ink);background:#fff;overflow:hidden}
 .toolbar{display:flex;flex-wrap:wrap;gap:6px 22px;padding:12px 20px;border-bottom:1px solid var(--ink);font-family:var(--mono);font-size:.78rem}
 .chip{all:unset;cursor:pointer;color:var(--ink-2);padding:2px 0;border-bottom:2px solid transparent}
 .chip:hover{color:var(--ink)}
 .chip[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--violet)}
 .chip:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
-.cards{flex:1;overflow:auto;counter-reset:p}
-.card{all:unset;box-sizing:border-box;display:grid;grid-template-columns:44px 1fr;gap:0 8px;width:100%;padding:20px;border-bottom:1px solid var(--line);cursor:pointer;counter-increment:p;transition:background .12s}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));counter-reset:p;margin-right:-1px}
+.card{all:unset;box-sizing:border-box;display:grid;grid-template-columns:44px 1fr;gap:0 8px;width:100%;padding:20px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);cursor:pointer;counter-increment:p;transition:background .12s}
 .card::before{content:counter(p,decimal-leading-zero);font-family:var(--mono);font-size:.78rem;color:var(--ink-2);padding-top:5px;grid-row:1/8}
 .card:hover{background:var(--paper)}
 .card[aria-selected=true]{background:var(--violet);color:#fff}
@@ -106,10 +118,6 @@ section{padding:56px 0 0}
 .stack i{font-style:normal;opacity:.75}
 .stack i+i::before{content:"/";margin-right:12px;opacity:.4}
 
-.handle{flex:none;width:9px;cursor:col-resize;background:var(--paper);border-left:1px solid var(--ink);position:relative;touch-action:none}
-.handle::after{content:"";position:absolute;top:50%;left:2px;width:3px;height:30px;margin-top:-15px;background:radial-gradient(circle,var(--ink-2) 1px,transparent 1.5px) 0 0/3px 6px}
-.handle:hover,.handle:focus-visible,.handle.drag{background:var(--violet-soft);outline:none}
-.panel{flex:none;width:44%;min-width:290px;max-width:75%;display:flex;flex-direction:column;background:var(--night);color:var(--night-ink)}
 .panel-head{padding:24px 28px 18px;border-bottom:1px solid var(--night-2);display:flex;justify-content:space-between;gap:12px}
 .panel-head h3{font-size:2rem;font-weight:500}
 .panel-head .sub{font-family:var(--mono);font-size:.74rem;color:var(--night-mute);margin-top:8px}
@@ -154,8 +162,25 @@ footer .row a{color:var(--night-mute);text-decoration:none}
 footer .row a:hover{color:#fff}
 
 
+/* le contenu de gauche s'adapte à la place restante quand le panneau est ouvert */
+main .wrap{container-type:inline-size}
+@container (max-width:760px){
+  .hero{grid-template-columns:minmax(0,1fr) 190px;gap:28px}
+  .portrait{box-shadow:5px 5px 0 var(--violet)}
+  .portrait .mono-gb{font-size:3rem}
+  .hero p{font-size:1.08rem}
+}
+@container (max-width:520px){
+  .hero{grid-template-columns:1fr;gap:24px}
+  .portrait{grid-column:1;grid-row:1;width:140px}
+  .hero .intro{grid-row:2}
+  .sec-head h2{font-size:1.7rem}
+  .feat-visual{height:160px}
+  .feat-body h3{font-size:1.5rem}
+}
+
 /* parcours graphique */
-.path{list-style:none;margin:0 0 64px;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:0 20px}
+.path{list-style:none;margin:0 0 24px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 20px}
 .step{position:relative;padding-top:26px}
 .step::before{content:"";position:absolute;top:5px;left:0;right:-20px;height:1px;background:var(--ink)}
 .step:first-child::before{background:linear-gradient(90deg,var(--violet),var(--ink))}
@@ -183,18 +208,16 @@ footer .row a:hover{color:#fff}
   .tiles{max-width:340px}
 }
 @media (max-width:820px){
+  .side{top:auto;left:0;width:100%;height:76vh;border-left:0;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(105%)}
+  .side.open{transform:none}
+  .grip{display:none}
+  .side .panel-head,.side .panel-body{padding-left:28px}
+  .cards{grid-template-columns:1fr}
   .hero{grid-template-columns:1fr;gap:28px;padding:28px 0 32px}
   .portrait{grid-column:1;grid-row:1;width:150px;box-shadow:5px 5px 0 var(--violet)}
   .hero .intro{grid-row:2}
   header.top .role-top,header.top .nl{display:none}
   header.top nav{gap:18px}
-  .workspace{display:block;height:auto}
-  .cards{overflow:visible}
-  .handle{display:none}
-  .panel{position:fixed;left:0;right:0;bottom:0;width:100%!important;max-width:none;height:76vh;z-index:30;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(105%);transition:transform .25s}
-  .panel.open{transform:none}
-  .drawer{top:auto;width:100%;height:76vh;border-left:0;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(105%)}
-  .close{display:block}
   .job{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
@@ -258,19 +281,9 @@ footer .row a:hover{color:#fff}
   <section id="projets">
     <div class="wrap">
       <div class="sec-head"><span class="n">03</span><h2>Projets</h2></div>
-      <div class="workspace" id="workspace">
-        <div class="list">
-          <div class="toolbar" id="filters" role="group" aria-label="Filtrer les projets"></div>
-          <div class="cards" id="cards" role="listbox" aria-label="Projets"></div>
-        </div>
-        <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau de détails" tabindex="0"></div>
-        <aside class="panel" id="panel" aria-live="polite">
-          <div class="panel-head">
-            <div><h3 id="p-title"></h3><div class="sub" id="p-sub"></div></div>
-            <button class="close" id="close" type="button">fermer</button>
-          </div>
-          <div class="panel-body" id="p-body"></div>
-        </aside>
+      <div class="plist">
+        <div class="toolbar" id="filters" role="group" aria-label="Filtrer les projets"></div>
+        <div class="cards" id="cards" role="listbox" aria-label="Projets"></div>
       </div>
     </div>
   </section>
@@ -319,7 +332,8 @@ footer .row a:hover{color:#fff}
   </div>
 </footer>
 
-<aside class="drawer" id="drawer" aria-live="polite" aria-hidden="true">
+<aside class="side" id="side" aria-live="polite" aria-hidden="true">
+  <div class="grip" id="grip" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau de détails" tabindex="0"></div>
   <div class="panel-head">
     <div><h3 id="d-title"></h3><div class="sub" id="d-sub"></div></div>
     <button class="close" id="d-close" type="button">fermer</button>
@@ -382,82 +396,13 @@ const PROJECTS = [
 ];
 
 const $ = s => document.querySelector(s);
-const cardsEl = $("#cards"), filtersEl = $("#filters"), panel = $("#panel");
+const cardsEl = $("#cards"), filtersEl = $("#filters"), side = $("#side");
 const mobile = matchMedia("(max-width:820px)");
 let filter = "Tous", selected = null;
 
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-function renderFilters(){
-  const cats = ["Tous", ...new Set(PROJECTS.map(p => p.cat))];
-  filtersEl.innerHTML = cats.map(c => `<button class="chip" type="button" aria-pressed="${c===filter}" data-c="${c}">${c}</button>`).join("");
-}
-function renderCards(){
-  cardsEl.innerHTML = PROJECTS.filter(p => filter==="Tous" || p.cat===filter).map(p => `
-    <button class="card" role="option" aria-selected="${p.id===selected}" data-id="${p.id}">
-      <div class="meta"><span class="tag">${esc(p.cat)}</span><span>${esc(p.year)}</span></div>
-      <h3>${esc(p.name)}</h3>
-      <p>${esc(p.summary)}</p>
-      <div class="stack">${p.stack.map(s => `<i>${esc(s)}</i>`).join("")}</div>
-    </button>`).join("");
-}
-function renderPanel(){
-  const p = PROJECTS.find(x => x.id===selected);
-  if(!p) return;
-  $("#p-title").textContent = p.name;
-  $("#p-sub").textContent = p.cat + " · " + p.year;
-  $("#p-body").innerHTML = `
-    <dl class="kv">
-      <dt>Rôle</dt><dd>${esc(p.role)}</dd>
-      <dt>Structure</dt><dd>${esc(p.org)}</dd>
-      <dt>Statut</dt><dd>${esc(p.status)}</dd>
-      <dt>Stack</dt><dd>${p.stack.map(esc).join(", ")}</dd>
-    </dl>` +
-    p.sections.map(([t,c]) => `<h4>${esc(t)}</h4>` + (Array.isArray(c) ? `<ul>${c.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>` : `<p>${esc(c)}</p>`)).join("");
-  $("#p-body").scrollTop = 0;
-}
-function select(id){
-  selected = id; renderCards(); renderPanel();
-  if(mobile.matches) panel.classList.add("open");
-}
-
-filtersEl.addEventListener("click", e => {
-  const b = e.target.closest("[data-c]"); if(!b) return;
-  filter = b.dataset.c; renderFilters(); renderCards();
-});
-cardsEl.addEventListener("click", e => {
-  const c = e.target.closest("[data-id]"); if(c) select(c.dataset.id);
-});
-$("#close").addEventListener("click", () => panel.classList.remove("open"));
-document.addEventListener("keydown", e => { if(e.key==="Escape") panel.classList.remove("open"); });
-
-/* drag-to-resize the details panel */
-const ws = $("#workspace"), handle = $("#handle");
-function setWidth(px){
-  const total = ws.clientWidth;
-  panel.style.width = Math.min(Math.max(px, 280), total*0.75) + "px";
-}
-handle.addEventListener("pointerdown", e => {
-  handle.setPointerCapture(e.pointerId); handle.classList.add("drag");
-  document.body.style.userSelect = "none";
-});
-handle.addEventListener("pointermove", e => {
-  if(!handle.hasPointerCapture(e.pointerId)) return;
-  setWidth(ws.getBoundingClientRect().right - e.clientX);
-});
-const stop = e => { handle.classList.remove("drag"); document.body.style.userSelect = ""; };
-handle.addEventListener("pointerup", stop);
-handle.addEventListener("pointercancel", stop);
-handle.addEventListener("keydown", e => {
-  const w = panel.getBoundingClientRect().width;
-  if(e.key==="ArrowLeft"){ setWidth(w+30); e.preventDefault(); }
-  if(e.key==="ArrowRight"){ setWidth(w-30); e.preventDefault(); }
-});
-
-renderFilters();
-selected = PROJECTS[0].id; renderCards(); renderPanel();
-
-/* parcours: volet de détail */
+/* parcours */
 const JOBS = {
   siamois:{title:"Ingénieur en développement logiciel", sub:"Oct. 2024 – aujourd'hui · CDD", org:"Maison de l'Orient et de la Méditerranée (CNRS) — Lyon",
     sections:[["Missions",["Développement fullstack d'une application web (Java, Spring Boot, JSF) pour l'enregistrement de terrain archéologique.","Écriture des spécifications, du modèle, des tests, CI.","Pilotage des développements en environnement Agile, de la priorisation des besoins jusqu'à la livraison, en coordination avec les équipes métiers et techniques.","Organisation et animation d'ateliers de cadrage, de recueil des besoins et de validation fonctionnelle afin de garantir l'adéquation des évolutions avec les attentes métiers."]]]},
@@ -470,25 +415,87 @@ const JOBS = {
   formation:{title:"Formation", sub:"2014 – 2017", org:"INSA Lyon · Université Lyon 1",
     sections:[["Diplômes",["Ingénieur Génie Électrique, spécialité Traitement des Signaux et des Images — INSA Lyon, 2014–2017.","Master Imagerie Médicale, Signaux et Système — Université Lyon 1, 2014–2017."]]]}
 };
-const drawer = $("#drawer"), hits = [...document.querySelectorAll(".hit")];
-function closeDrawer(){ drawer.classList.remove("open"); drawer.setAttribute("aria-hidden","true"); hits.forEach(h => h.setAttribute("aria-pressed","false")); }
-function openJob(key){
-  const j = JOBS[key], hit = hits.find(h => h.dataset.job===key);
-  if(hit.getAttribute("aria-pressed")==="true"){ closeDrawer(); return; }
-  hits.forEach(h => h.setAttribute("aria-pressed", String(h===hit)));
-  $("#d-title").textContent = j.title; $("#d-sub").textContent = j.sub;
-  $("#d-body").innerHTML = `<dl class="kv"><dt>Structure</dt><dd>${esc(j.org)}</dd></dl>` +
-    j.sections.map(([t,c]) => `<h4>${esc(t)}</h4><ul>${c.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`).join("");
-  $("#d-body").scrollTop = 0;
-  drawer.classList.add("open"); drawer.setAttribute("aria-hidden","false");
+
+/* un seul modèle de détail pour les projets et le parcours */
+const DETAILS = {};
+PROJECTS.forEach(p => DETAILS["p:"+p.id] = {title:p.name, sub:p.cat+" · "+p.year,
+  kv:[["Rôle",p.role],["Structure",p.org],["Statut",p.status],["Stack",p.stack.join(", ")]], sections:p.sections});
+Object.entries(JOBS).forEach(([k,j]) => DETAILS["j:"+k] = {title:j.title, sub:j.sub, kv:[["Structure",j.org]], sections:j.sections});
+
+const hits = [...document.querySelectorAll(".hit")];
+function renderFilters(){
+  const cats = ["Tous", ...new Set(PROJECTS.map(p => p.cat))];
+  filtersEl.innerHTML = cats.map(c => `<button class="chip" type="button" aria-pressed="${c===filter}" data-c="${c}">${c}</button>`).join("");
 }
-hits.forEach(h => {
-  h.addEventListener("click", () => openJob(h.dataset.job));
-  h.addEventListener("keydown", e => { if(e.key==="Enter" || e.key===" "){ e.preventDefault(); openJob(h.dataset.job); } });
+function renderCards(){
+  cardsEl.innerHTML = PROJECTS.filter(p => filter==="Tous" || p.cat===filter).map(p => `
+    <button class="card" role="option" aria-selected="${"p:"+p.id===selected}" data-key="p:${p.id}">
+      <div class="meta"><span class="tag">${esc(p.cat)}</span><span>${esc(p.year)}</span></div>
+      <h3>${esc(p.name)}</h3>
+      <p>${esc(p.summary)}</p>
+      <div class="stack">${p.stack.map(s => `<i>${esc(s)}</i>`).join("")}</div>
+    </button>`).join("");
+}
+function sync(){
+  cardsEl.querySelectorAll(".card").forEach(c => c.setAttribute("aria-selected", String(c.dataset.key===selected)));
+  hits.forEach(h => h.setAttribute("aria-pressed", String("j:"+h.dataset.job===selected)));
+}
+function closeSide(){
+  selected = null; side.classList.remove("open"); side.setAttribute("aria-hidden","true");
+  document.body.classList.remove("side-open"); sync();
+}
+function openDetail(key){
+  if(selected===key){ closeSide(); return; }
+  const d = DETAILS[key]; selected = key;
+  $("#d-title").textContent = d.title; $("#d-sub").textContent = d.sub;
+  $("#d-body").innerHTML = `<dl class="kv">${d.kv.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` +
+    d.sections.map(([t,c]) => `<h4>${esc(t)}</h4>` + (Array.isArray(c) ? `<ul>${c.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>` : `<p>${esc(c)}</p>`)).join("");
+  $("#d-body").scrollTop = 0;
+  side.classList.add("open"); side.setAttribute("aria-hidden","false");
+  document.body.classList.add("side-open"); sync();
+}
+
+filtersEl.addEventListener("click", e => {
+  const b = e.target.closest("[data-c]"); if(!b) return;
+  filter = b.dataset.c; renderFilters(); renderCards();
 });
-$("#d-close").addEventListener("click", closeDrawer);
-document.addEventListener("click", e => { if(drawer.classList.contains("open") && !e.target.closest("#drawer, .hit")) closeDrawer(); });
-document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });
+cardsEl.addEventListener("click", e => { const c = e.target.closest("[data-key]"); if(c) openDetail(c.dataset.key); });
+hits.forEach(h => {
+  h.addEventListener("click", () => openDetail("j:"+h.dataset.job));
+  h.addEventListener("keydown", e => { if(e.key==="Enter" || e.key===" "){ e.preventDefault(); openDetail("j:"+h.dataset.job); } });
+});
+$("#d-close").addEventListener("click", closeSide);
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeSide(); });
+document.addEventListener("click", e => { if(mobile.matches && selected && !e.target.closest("#side, .hit, .card")) closeSide(); });
+
+/* poignée : glisser pour élargir ou réduire le panneau */
+const grip = $("#grip"), root = document.documentElement;
+const clampW = px => Math.round(Math.min(Math.max(px, 320), Math.min(780, innerWidth * 0.6)));
+function setSideWidth(px, save){
+  const w = clampW(px); root.style.setProperty("--side-w", w + "px");
+  if(save){ try{ localStorage.setItem("sideW", String(w)); }catch(_){} }
+}
+try{ const saved = parseInt(localStorage.getItem("sideW"), 10); if(saved) setSideWidth(saved, false); }catch(_){}
+grip.addEventListener("pointerdown", e => {
+  grip.setPointerCapture(e.pointerId); grip.classList.add("drag");
+  document.body.classList.add("dragging"); document.body.style.userSelect = "none";
+});
+grip.addEventListener("pointermove", e => { if(grip.hasPointerCapture(e.pointerId)) setSideWidth(innerWidth - e.clientX, false); });
+const endDrag = () => {
+  if(!grip.classList.contains("drag")) return;
+  grip.classList.remove("drag"); document.body.classList.remove("dragging"); document.body.style.userSelect = "";
+  setSideWidth(side.getBoundingClientRect().width, true);
+};
+grip.addEventListener("pointerup", endDrag);
+grip.addEventListener("pointercancel", endDrag);
+grip.addEventListener("keydown", e => {
+  const w = side.getBoundingClientRect().width;
+  if(e.key==="ArrowLeft"){ setSideWidth(w+30, true); e.preventDefault(); }
+  if(e.key==="ArrowRight"){ setSideWidth(w-30, true); e.preventDefault(); }
+});
+addEventListener("resize", () => { const v = parseInt(root.style.getPropertyValue("--side-w"), 10); if(v) setSideWidth(v, false); });
+
+renderFilters(); renderCards();
 
 /* menu: section active selon le défilement */
 const spy = [...document.querySelectorAll("header.top a.nl")].map(a => ({a, el: document.querySelector(a.getAttribute("href"))})).filter(x => x.el);
