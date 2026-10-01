@@ -64,6 +64,17 @@ section{padding:56px 0 0}
 .feat-body p{margin:0 0 12px;color:var(--ink-2);font-size:.95rem}
 .feat-url{margin-top:auto;display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.85rem;color:var(--violet)}
 
+
+/* parcours: cartes cliquables + volet */
+.hit{display:block;cursor:pointer;padding:12px 12px 14px;margin:-12px -12px 0;border:1px solid transparent;transition:background .12s,border-color .12s}
+.hit:hover{background:#fff;border-color:var(--line)}
+.hit:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.hit[aria-pressed=true]{background:#fff;border-color:var(--violet)}
+.hit[aria-pressed=true] h3{color:var(--violet)}
+.drawer{position:fixed;top:56px;right:0;bottom:0;width:min(460px,100%);z-index:35;display:flex;flex-direction:column;background:var(--night);color:var(--night-ink);border-left:1px solid var(--ink);transform:translateX(102%);transition:transform .22s;visibility:hidden}
+.drawer.open{transform:none;visibility:visible}
+.drawer .close{display:block}
+
 /* workspace */
 .workspace{display:flex;height:660px;border:1px solid var(--ink);background:#fff}
 .list{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
@@ -155,7 +166,6 @@ footer .row a:hover{color:#fff}
 .step.now .logo{border-color:var(--violet)}
 .step h3{font-size:1.25rem;margin-bottom:6px}
 .step p{margin:0;font-size:.86rem;color:var(--ink-2);line-height:1.5}
-.detail-title{font-family:var(--mono);font-weight:400;font-size:.78rem;color:var(--ink-2);margin-bottom:12px}
 @media (max-width:980px){
   .path{grid-template-columns:1fr;gap:0}
   .step{padding:0 0 32px 34px}
@@ -174,6 +184,7 @@ footer .row a:hover{color:#fff}
   .handle{display:none}
   .panel{position:fixed;left:0;right:0;bottom:0;width:100%!important;max-width:none;height:76vh;z-index:30;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(105%);transition:transform .25s}
   .panel.open{transform:none}
+  .drawer{top:auto;width:100%;height:76vh;border-left:0;box-shadow:0 -12px 40px rgba(0,0,0,.35);transform:translateY(105%)}
   .close{display:block}
   .job{grid-template-columns:1fr}
 }
@@ -228,67 +239,7 @@ footer .row a:hover{color:#fff}
   <section id="parcours">
     <div class="wrap">
       <div class="sec-head"><span class="n">02</span><h2>Parcours</h2></div>
-      <ol class="path" aria-label="Parcours en images"><li class="step now"><div class="when">Oct. 2024 – aujourd'hui<br><span>CDD · Lyon</span></div><div class="tiles"><span class="logo "><img src="logos/cnrs.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>CNRS</b></span><span class="logo "><img src="logos/mom.svg" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>MOM</b></span><span class="logo wide"><img src="logos/siamois.png" alt="Siamois" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Siamois</b></span></div><h3>Siamois</h3><p>Développement et pilotage produit d'une application d'enregistrement de terrain archéologique.</p></li><li class="step "><div class="when">Mars 2021 – 2025<br><span>Freelance</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE</h3><p>Plateforme collaborative d'analyse d'imagerie, publiée dans Radiology et J. Neuroimaging.</p></li><li class="step "><div class="when">Sept. 2018 – Mars 2021<br><span>Lyon · à distance</span></div><div class="tiles"><span class="logo "><img src="logos/bordeaux.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>U. Bordeaux</b></span><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE Tablet Game</h3><p>Fullstack et consulting avec des équipes internationales, jeu éducatif de crowdsourcing.</p></li><li class="step "><div class="when">Avr. 2017 – Fév. 2018<br><span>Stage · Boston</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>Traitement d'IRM</h3><p>Algorithmes C++/Python sur IRM cérébrales, premier backend web.</p></li><li class="step "><div class="when">2014 – 2017<br><span>Formation</span></div><div class="tiles"><span class="logo "><img src="logos/insa.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>INSA Lyon</b></span><span class="logo "><img src="logos/ul1.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Lyon 1</b></span></div><h3>Ingénieur &amp; Master</h3><p>Génie électrique, traitement du signal et de l'image. Master imagerie médicale.</p></li></ol>
-      <h3 class="detail-title">Détail des postes</h3>
-      <div class="timeline">
-        <article class="job">
-          <div class="when">Oct. 2024 – aujourd'hui<span class="tag">CDD</span></div>
-          <div>
-            <h3>Ingénieur en développement logiciel</h3>
-            <div class="org">Maison de l'Orient et de la Méditerranée (CNRS) — Lyon</div>
-            <ul>
-              <li>Développement fullstack d'une application web (Java, Spring Boot, JSF) pour l'enregistrement de terrain archéologique.</li>
-              <li>Écriture des spécifications, du modèle, des tests, CI.</li>
-              <li>Pilotage des développements en environnement Agile, de la priorisation des besoins jusqu'à la livraison, en coordination avec les équipes métiers et techniques.</li>
-              <li>Organisation et animation d'ateliers de cadrage, de recueil des besoins et de validation fonctionnelle.</li>
-            </ul>
-          </div>
-        </article>
-        <article class="job">
-          <div class="when">Mars 2021 – 2025<span class="tag">Freelance</span></div>
-          <div>
-            <h3>Ingénieur de recherche / Dev Web / Traitement d'image</h3>
-            <div class="org">Center for Neurological Imaging (Harvard Medical School, Brigham &amp; Women's Hospital) — Lyon</div>
-            <ul>
-              <li>Développement fullstack avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web (code, tests, CI) et d'un jeu tablette éducatif et d'outils de traitement d'image.</li>
-              <li>Supervision et mentorat.</li>
-            </ul>
-          </div>
-        </article>
-        <article class="job">
-          <div class="when">Sept. 2018 – Mars 2021<span class="tag">CDD</span></div>
-          <div>
-            <h3>Ingénieur de recherche / Dev Web / Traitement d'image</h3>
-            <div class="org">Université de Bordeaux</div>
-            <ul>
-              <li>Développement fullstack et consulting en collaboration avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web, d'un jeu tablette éducatif et d'outils de traitement d'image.</li>
-              <li>Supervision et mentorat ; coordination d'acteurs locaux et internationaux du monde de l'éducation.</li>
-            </ul>
-          </div>
-        </article>
-        <article class="job">
-          <div class="when">Juin 2018 – aujourd'hui<span class="tag">Freelance</span></div>
-          <div>
-            <h3>Dev Web Fullstack</h3>
-            <div class="org">Divers clients — Lyon</div>
-            <ul><li>Développement web fullstack (Node.js, Python, HTML) pour des clients variés.</li></ul>
-          </div>
-        </article>
-        <article class="job">
-          <div class="when">Avr. 2017 – Fév. 2018<span class="tag">Stage</span></div>
-          <div>
-            <h3>Dev Web / Ingénieur en traitement d'image</h3>
-            <div class="org">Center for Neurological Imaging (Harvard Medical School, Brigham &amp; Women's Hospital) — Boston</div>
-            <ul>
-              <li>Développement d'algorithmes (C++/Python) pour traiter et exploiter des IRM cérébrales (anatomie, diffusion).</li>
-              <li>Analyses statistiques mettant en lien les données d'imagerie et les données cliniques.</li>
-              <li>Développement backend (Node.js, Python) d'une application web.</li>
-            </ul>
-          </div>
-        </article>
-      </div>
-    </div>
-  
+      <ol class="path" aria-label="Parcours en images"><li class="step now"><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="siamois"><div class="when">Oct. 2024 – aujourd'hui<br><span>CDD · Lyon</span></div><div class="tiles"><span class="logo "><img src="logos/cnrs.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>CNRS</b></span><span class="logo "><img src="logos/mom.svg" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>MOM</b></span><span class="logo wide"><img src="logos/siamois.png" alt="Siamois" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Siamois</b></span></div><h3>Siamois</h3><p>Développement et pilotage produit d'une application d'enregistrement de terrain archéologique.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="spine"><div class="when">Mars 2021 – 2025<br><span>Freelance</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE</h3><p>Plateforme collaborative d'analyse d'imagerie, publiée dans Radiology et J. Neuroimaging.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="tablet"><div class="when">Sept. 2018 – Mars 2021<br><span>Lyon · à distance</span></div><div class="tiles"><span class="logo "><img src="logos/bordeaux.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>U. Bordeaux</b></span><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE Tablet Game</h3><p>Fullstack et consulting avec des équipes internationales, jeu éducatif de crowdsourcing.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="stage"><div class="when">Avr. 2017 – Fév. 2018<br><span>Stage · Boston</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>Traitement d'IRM</h3><p>Algorithmes C++/Python sur IRM cérébrales, premier backend web.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="formation"><div class="when">2014 – 2017<br><span>Formation</span></div><div class="tiles"><span class="logo "><img src="logos/insa.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>INSA Lyon</b></span><span class="logo "><img src="logos/ul1.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Lyon 1</b></span></div><h3>Ingénieur &amp; Master</h3><p>Génie électrique, traitement du signal et de l'image. Master imagerie médicale.</p></div></li></ol>
     </div>
   </section>
   <section id="projets">
@@ -354,6 +305,14 @@ footer .row a:hover{color:#fff}
     </div>
   </div>
 </footer>
+
+<aside class="drawer" id="drawer" aria-live="polite" aria-hidden="true">
+  <div class="panel-head">
+    <div><h3 id="d-title"></h3><div class="sub" id="d-sub"></div></div>
+    <button class="close" id="d-close" type="button">fermer</button>
+  </div>
+  <div class="panel-body" id="d-body"></div>
+</aside>
 
 <script>
 const PROJECTS = [
@@ -484,6 +443,39 @@ handle.addEventListener("keydown", e => {
 
 renderFilters();
 selected = PROJECTS[0].id; renderCards(); renderPanel();
+
+/* parcours: volet de détail */
+const JOBS = {
+  siamois:{title:"Ingénieur en développement logiciel", sub:"Oct. 2024 – aujourd'hui · CDD", org:"Maison de l'Orient et de la Méditerranée (CNRS) — Lyon",
+    sections:[["Missions",["Développement fullstack d'une application web (Java, Spring Boot, JSF) pour l'enregistrement de terrain archéologique.","Écriture des spécifications, du modèle, des tests, CI.","Pilotage des développements en environnement Agile, de la priorisation des besoins jusqu'à la livraison, en coordination avec les équipes métiers et techniques.","Organisation et animation d'ateliers de cadrage, de recueil des besoins et de validation fonctionnelle afin de garantir l'adéquation des évolutions avec les attentes métiers."]]]},
+  spine:{title:"Ingénieur de recherche / Dev Web / Traitement d'image", sub:"Mars 2021 – 2025 · Freelance", org:"Center for Neurological Imaging (Harvard Medical School, Brigham & Women's Hospital) — Lyon",
+    sections:[["Missions",["Développement fullstack en collaboration avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web (code, tests, CI), d'un jeu tablette éducatif et d'outils de traitement d'image.","Supervision et mentorat."]]]},
+  tablet:{title:"Ingénieur de recherche / Dev Web / Traitement d'image", sub:"Sept. 2018 – Mars 2021 · CDD et freelance", org:"Université de Bordeaux — Bordeaux / Lyon",
+    sections:[["Missions",["Développement fullstack et consulting scientifique en collaboration avec des équipes internationales (Node.js, React.js, Python, PHP) d'une application web, d'un jeu tablette éducatif et d'outils de traitement d'image.","Supervision et mentorat ; coordination d'acteurs locaux et internationaux du monde de l'éducation."]],["En parallèle",["Dev web fullstack freelance (Node.js, Python, HTML) pour des clients variés, depuis juin 2018."]]]},
+  stage:{title:"Dev Web / Ingénieur en traitement d'image", sub:"Avr. 2017 – Fév. 2018 · Stage", org:"Center for Neurological Imaging (Harvard Medical School, Brigham & Women's Hospital) — Boston",
+    sections:[["Missions",["Développement d'algorithmes (C++/Python) pour traiter et exploiter des IRM cérébrales (anatomie, diffusion).","Analyses statistiques mettant en lien les données d'imagerie et les données cliniques.","Développement backend (Node.js, Python) d'une application web."]]]},
+  formation:{title:"Formation", sub:"2014 – 2017", org:"INSA Lyon · Université Lyon 1",
+    sections:[["Diplômes",["Ingénieur Génie Électrique, spécialité Traitement des Signaux et des Images — INSA Lyon, 2014–2017.","Master Imagerie Médicale, Signaux et Système — Université Lyon 1, 2014–2017."]]]}
+};
+const drawer = $("#drawer"), hits = [...document.querySelectorAll(".hit")];
+function closeDrawer(){ drawer.classList.remove("open"); drawer.setAttribute("aria-hidden","true"); hits.forEach(h => h.setAttribute("aria-pressed","false")); }
+function openJob(key){
+  const j = JOBS[key], hit = hits.find(h => h.dataset.job===key);
+  if(hit.getAttribute("aria-pressed")==="true"){ closeDrawer(); return; }
+  hits.forEach(h => h.setAttribute("aria-pressed", String(h===hit)));
+  $("#d-title").textContent = j.title; $("#d-sub").textContent = j.sub;
+  $("#d-body").innerHTML = `<dl class="kv"><dt>Structure</dt><dd>${esc(j.org)}</dd></dl>` +
+    j.sections.map(([t,c]) => `<h4>${esc(t)}</h4><ul>${c.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`).join("");
+  $("#d-body").scrollTop = 0;
+  drawer.classList.add("open"); drawer.setAttribute("aria-hidden","false");
+}
+hits.forEach(h => {
+  h.addEventListener("click", () => openJob(h.dataset.job));
+  h.addEventListener("keydown", e => { if(e.key==="Enter" || e.key===" "){ e.preventDefault(); openJob(h.dataset.job); } });
+});
+$("#d-close").addEventListener("click", closeDrawer);
+document.addEventListener("click", e => { if(drawer.classList.contains("open") && !e.target.closest("#drawer, .hit")) closeDrawer(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });
 </script>
 </body>
 </html>
