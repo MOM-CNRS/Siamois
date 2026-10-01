@@ -180,6 +180,10 @@ public record RecordingUnitListFilter(
                 throw badRequest("Valeur entière invalide pour " + rawKey + " : " + value);
             }
         }
+
+        private static ResponseStatusException badRequest(String message) {
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
     }
 
     public static RecordingUnitListFilter parse(MultiValueMap<String, String> queryParams) {
@@ -239,7 +243,4 @@ public record RecordingUnitListFilter(
         return out;
     }
 
-    private static ResponseStatusException badRequest(String message) {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-    }
 }

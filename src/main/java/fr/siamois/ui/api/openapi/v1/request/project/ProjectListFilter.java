@@ -194,6 +194,10 @@ public record ProjectListFilter(
                 throw badRequest("Valeur numérique invalide pour " + rawKey + " : " + value);
             }
         }
+
+        private static ResponseStatusException badRequest(String message) {
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+        }
     }
 
     public static ProjectListFilter parse(MultiValueMap<String, String> queryParams) {
@@ -217,7 +221,4 @@ public record ProjectListFilter(
         return out;
     }
 
-    private static ResponseStatusException badRequest(String message) {
-        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
-    }
 }
