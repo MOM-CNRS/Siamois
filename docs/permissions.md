@@ -53,6 +53,7 @@ en plus du contrôle organisationnel.
 | `PROJECT_EDIT_FINDS` | Créer/modifier le mobilier (finds/specimens). |
 | `PROJECT_EDIT_PHASES` | Créer/modifier les phases. |
 | `PROJECT_EDIT_CONTAINERS` | Créer/modifier les contenants. |
+| `PROJECT_EDIT_DOCUMENTS` | Créer/modifier/supprimer les documents du projet (un document appartient à un seul projet). Contreparties `ORGANIZATION_EDIT_DOCUMENTS` et `INSTANCE_EDIT_DOCUMENTS`. |
 
 > `ORGANIZATION_LIST_ACCESS` a été supprimée : elle n'était jamais assignée à un profil ni vérifiée nulle part.
 
@@ -67,8 +68,8 @@ portée correspondante :
 | `ORGANIZATION_MANAGER` | Organisation | `ORGANIZATION_MANAGE_SETTINGS`, `ORGANIZATION_MANAGE_ACTIONS`, `ORGANIZATION_MANAGE_PLACES`, `ORGANIZATION_ACCESS` |
 | `ORGANIZATION_PROJECT_MANAGER` | Organisation | `ORGANIZATION_MANAGE_ACTIONS`, `ORGANIZATION_MANAGE_PLACES`, `ORGANIZATION_ACCESS` |
 | `ORGANIZATION_MEMBER` | Organisation | `ORGANIZATION_ACCESS` |
-| `PROJECT_MANAGER` | Projet | `PROJECT_MANAGE_SETTINGS`, `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS` |
-| `PROJECT_MEMBER` | Projet | `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS` |
+| `PROJECT_MANAGER` | Projet | `PROJECT_MANAGE_SETTINGS`, `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS`, `PROJECT_EDIT_DOCUMENTS` |
+| `PROJECT_MEMBER` | Projet | `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS`, `PROJECT_EDIT_DOCUMENTS` |
 
 Défini dans `ProfileService` (`fr.siamois.domain.services.permissions.ProfileService`).
 
@@ -121,8 +122,6 @@ Le pattern de redirection réutilise `RedirectBean.redirectTo(HttpStatus)`, déj
 
 ## Dette technique connue (hors périmètre de cette itération)
 
-- `DELETE /api/v1/documents/{id}` réutilise la règle de lecture (appartenance à l'institution) au lieu d'une
-  règle d'écriture — potentiel bug de sécurité, à traiter séparément.
 - Route Spring Security `permitAll()` sur `/api/recording-units/**` sans contrôleur associé — configuration
   morte à nettoyer.
 - `Person.getAuthorities()` retourne toujours une liste vide : le système de permissions n'est pas branché sur

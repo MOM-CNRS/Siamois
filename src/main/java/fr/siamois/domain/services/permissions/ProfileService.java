@@ -42,7 +42,8 @@ public class ProfileService {
             PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
             PermissionConstants.INSTANCE_EDIT_PHASES,
             PermissionConstants.INSTANCE_EDIT_FINDS,
-            PermissionConstants.INSTANCE_EDIT_CONTAINERS
+            PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+            PermissionConstants.INSTANCE_EDIT_DOCUMENTS
     );
 
     private final PermissionRepository permissionRepository;
@@ -142,7 +143,8 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_FINDS,
-                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS
         ), institutionDTO);
     }
 
@@ -198,7 +200,8 @@ public class ProfileService {
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                 PermissionConstants.PROJECT_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS
+                PermissionConstants.PROJECT_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS
         ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 
@@ -208,7 +211,8 @@ public class ProfileService {
                 PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                 PermissionConstants.PROJECT_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS
+                PermissionConstants.PROJECT_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS
         ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 

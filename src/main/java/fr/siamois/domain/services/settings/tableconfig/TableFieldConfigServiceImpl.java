@@ -227,6 +227,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .orElseThrow(() -> new IllegalStateException("No type field configured for " + table));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isTypeFieldConfigured(Long projectId, ConfigurableTable table) {
+        return findFieldConcept(projectId, table).isPresent();
+    }
+
     /**
      * Fields of a type: the fields of the form that applies to it — that is where the system fields
      * come from, since nothing configures them until somebody changes one — carrying the stored

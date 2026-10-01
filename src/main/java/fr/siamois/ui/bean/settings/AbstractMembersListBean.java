@@ -183,6 +183,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.INSTANCE_EDIT_PHASES,
                     PermissionConstants.INSTANCE_EDIT_FINDS,
                     PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                    PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                     PermissionConstants.INSTANCE_VALIDATE))
     );
 
@@ -200,6 +201,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.ORGANIZATION_EDIT_PHASES,
                     PermissionConstants.ORGANIZATION_EDIT_FINDS,
                     PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                    PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                     PermissionConstants.ORGANIZATION_VALIDATE))
     );
 
@@ -211,6 +213,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.PROJECT_EDIT_PHASES,
                     PermissionConstants.PROJECT_EDIT_FINDS,
                     PermissionConstants.PROJECT_EDIT_CONTAINERS,
+                    PermissionConstants.PROJECT_EDIT_DOCUMENTS,
                     PermissionConstants.PROJECT_VALIDATE))
     );
 

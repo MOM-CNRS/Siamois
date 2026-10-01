@@ -5,20 +5,37 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
+import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
+import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.DocumentMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.DocumentUtils;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.InvalidFileNameException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
@@ -26,6 +43,8 @@ import org.springframework.util.MimeType;
 import java.io.*;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -45,8 +64,16 @@ public class DocumentService implements ArkEntityService {
 
     private final PersonMapper personMapper;
     private final InstitutionMapper institutionMapper;
+    private final DocumentMapper documentMapper;
+    private final EntityIdentifierGenerator identifierGenerator;
+    private final ProfilePermissionService profilePermissionService;
+    private final CustomFieldAnswerService customFieldAnswerService;
+    private final TableFieldConfigService tableFieldConfigService;
 
     private static final int MAX_GENERATIONS = 100;
+
+    /** Stands for the identifier of a document saved before its id is known (see {@link #allocateIdentifierIfNew}). */
+    private static final String PENDING_IDENTIFIER_PREFIX = "DOC-pending-";
     private final DocumentStorage documentStorage;
     private final Collection<FileCompressor> fileCompressors;
 
@@ -71,12 +98,224 @@ public class DocumentService implements ArkEntityService {
     public Document saveWithoutFile(UserInfo userInfo, Document document) {
         document.setCreatedBy(personMapper.invertConvert(userInfo.getUser()));
         document.setCreatedByInstitution(institutionMapper.invertConvert(userInfo.getInstitution()));
-        return documentRepository.save(document);
+        allocateIdentifierIfNew(document);
+        return persist(document);
     }
 
     @Override
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
-        throw new UnsupportedOperationException("DocumentService.save(AbstractEntityDTO) is not implemented");
+        if (toSave instanceof DocumentDTO dto) {
+            return save(dto);
+        }
+        throw new UnsupportedOperationException("DocumentService only saves documents");
+    }
+
+    private Specification<Document> userFilterSpecs(FilterDTO filters) {
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<Document> specs = filters.getFieldQuery().specificationFor();
+
+        FilterDTO.FilterInfo globalFilter = filters.filterOf(DocumentSpec.GLOBAL_FILTER);
+        FilterDTO.FilterInfo identifierFilter = filters.filterOf(DocumentSpec.IDENTIFIER_FILTER);
+
+        if (identifierFilter != null && identifierFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(DocumentSpec.identifierContaining(identifierFilter.valueAsString()));
+        } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
+            specs = specs.and(DocumentSpec.identifierContaining(globalFilter.valueAsString()));
+        }
+
+        if (filters.containsColumn(DocumentSpec.ACTION_UNIT_FILTER)) {
+            specs = specs.and(DocumentSpec.isInActionUnit(filters.valueAsIdListOf(DocumentSpec.ACTION_UNIT_FILTER)));
+        }
+        return specs;
+    }
+
+    private Specification<Document> prepareSpecs(InstitutionDTO institutionDTO, FilterDTO filters) {
+        return DocumentSpec.belongsToInstitution(institutionDTO.getId()).and(userFilterSpecs(filters));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DocumentDTO> searchDocuments(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
+        return documentRepository.findAll(prepareSpecs(institutionDTO, filters), pageable)
+                .map(documentMapper::convert);
+    }
+
+    @Transactional(readOnly = true)
+    public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
+        return Math.toIntExact(documentRepository.count(prepareSpecs(institutionDTO, filters)));
+    }
+
+    public int countByActionContext(ActionUnitDTO actionUnit) {
+        return documentRepository.countByActionUnitId(actionUnit.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean identifierAlreadyExistInProject(DocumentDTO document) {
+        if (document.getActionUnit() == null) {
+            return false;
+        }
+        return documentRepository.findByIdentifierAndActionUnitId(document.getIdentifier(), document.getActionUnit().getId())
+                .filter(existing -> !Objects.equals(existing.getId(), document.getId()))
+                .isPresent();
+    }
+
+    /**
+     * Saves the document, then its additional (non-system) field answers — the counterpart of
+     * {@code PhaseService.save(PhaseDTO, Map)}.
+     *
+     * @param dto                    the document to save
+     * @param additionalFieldAnswers answers to the category's additional fields, keyed by field
+     * @return the saved document
+     */
+    @Transactional
+    public DocumentDTO save(DocumentDTO dto, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
+        DocumentDTO saved = save(dto);
+        customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        return saved;
+    }
+
+    /**
+     * Saves the document's own fields and its links. The stored file's columns are never written from
+     * here: they belong to the upload ({@link #saveFile}).
+     *
+     * @throws IllegalArgumentException if the document has no project
+     * @throws ForbiddenOperationException if the user cannot edit documents of the project
+     * @throws IllegalStateException if the identifier is already used in the project
+     */
+    @Transactional
+    public DocumentDTO save(DocumentDTO dto) {
+        Document entity = documentMapper.invertConvert(dto);
+        Document managed = entity.getId() == null
+                ? entity
+                : documentRepository.findById(entity.getId()).orElse(entity);
+
+        if (managed != entity) {
+            copyEditableFields(entity, managed);
+        }
+
+        if (managed.getActionUnit() == null) {
+            throw new IllegalArgumentException("A project is required to save a document");
+        }
+
+        UserInfo info = ExecutionContextHolder.get();
+        if (info == null || !profilePermissionService.hasProjectPermission(
+                info, managed.getActionUnit().getId(), PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS)) {
+            throw new ForbiddenOperationException("You are not allowed to edit this document");
+        }
+
+        if (managed.getId() == null) {
+            managed.setCreatedBy(personMapper.invertConvert(info.getUser()));
+            managed.setCreatedByInstitution(institutionMapper.invertConvert(info.getInstitution()));
+        }
+
+        allocateIdentifierIfNew(managed);
+        if (managed.getIdentifier() == null || managed.getIdentifier().isBlank()) {
+            throw new IllegalArgumentException("A document needs an identifier");
+        }
+        if (documentRepository.findByIdentifierAndActionUnitId(managed.getIdentifier(), managed.getActionUnit().getId())
+                .filter(existing -> !Objects.equals(existing.getId(), managed.getId()))
+                .isPresent()) {
+            throw new IllegalStateException("Identifier " + managed.getIdentifier() + " is already used in this project");
+        }
+
+        return documentMapper.convert(persist(managed));
+    }
+
+    /** What a form save writes: everything but the stored file's columns and the project (fixed at creation). */
+    private static void copyEditableFields(Document from, Document to) {
+        to.setIdentifier(from.getIdentifier());
+        to.setOtherIdentifiers(from.getOtherIdentifiers());
+        to.setCategory(from.getCategory());
+        to.setDocumentType(from.getDocumentType());
+        to.setFormat(from.getFormat());
+        to.setTitle(from.getTitle());
+        to.setPublisher(from.getPublisher());
+        to.setProductionDate(from.getProductionDate());
+        to.setDescription(from.getDescription());
+        to.setScale(from.getScale());
+        to.setLanguage(from.getLanguage());
+        to.setRights(from.getRights());
+        to.setItemCount(from.getItemCount());
+        to.setSizeMb(from.getSizeMb());
+        to.setCrs(from.getCrs());
+        to.setOriginalPath(from.getOriginalPath());
+        to.setComments(from.getComments());
+        to.setExternalUrl(from.getExternalUrl());
+        synchronizeCollection(to.getSupportNatures(), from.getSupportNatures());
+        synchronizeCollection(to.getKeywords(), from.getKeywords());
+        synchronizeCollection(to.getAuthors(), from.getAuthors());
+        synchronizeCollection(to.getContributors(), from.getContributors());
+        synchronizeCollection(to.getRecordingUnits(), from.getRecordingUnits());
+        synchronizeCollection(to.getFinds(), from.getFinds());
+        synchronizeCollection(to.getPlaces(), from.getPlaces());
+        synchronizeCollection(to.getPhases(), from.getPhases());
+        synchronizeCollection(to.getContainers(), from.getContainers());
+    }
+
+    private static <T> void synchronizeCollection(Collection<T> managed, Collection<T> incoming) {
+        if (managed == null) return;
+        if (incoming == null || incoming.isEmpty()) {
+            managed.clear();
+            return;
+        }
+        managed.retainAll(incoming);
+        for (T item : incoming) {
+            if (!managed.contains(item)) managed.add(item);
+        }
+    }
+
+    /**
+     * A new document attached to a project gets its identifier from the project's format, unless it brings one.
+     * <p>
+     * That format lives on the form configuration of the category field ({@link Document#TYPE_FIELD}), which the
+     * institution's thesaurus has to declare. Where it does not (documents come from the mobile API too, which
+     * does not know about categories), the document gets a provisional identifier, replaced by {@code DOC-<id>}
+     * as soon as the row exists, rather than the creation failing.
+     */
+    private void allocateIdentifierIfNew(Document document) {
+        if (document.getId() != null || document.getActionUnit() == null
+                || (document.getIdentifier() != null && !document.getIdentifier().isBlank())) {
+            return;
+        }
+        if (tableFieldConfigService.isTypeFieldConfigured(document.getActionUnit().getId(), ConfigurableTable.DOCUMENT)) {
+            identifierGenerator.generateIdentifierIfRequired(document, documentIdentifierSpec());
+        } else {
+            document.setIdentifier(PENDING_IDENTIFIER_PREFIX + java.util.UUID.randomUUID());
+        }
+    }
+
+    /** Persists the document, giving it its final identifier when it only had a provisional one. */
+    private Document persist(Document document) {
+        Document saved = documentRepository.save(document);
+        if (saved.getIdentifier() != null && saved.getIdentifier().startsWith(PENDING_IDENTIFIER_PREFIX)) {
+            saved.setIdentifier("DOC-" + saved.getId());
+            saved = documentRepository.save(saved);
+        }
+        return saved;
+    }
+
+    private IdentifierGenerationSpec<Document> documentIdentifierSpec() {
+        return IdentifierGenerationSpec.<Document>builder()
+                .table(ConfigurableTable.DOCUMENT)
+                .entityName("document")
+                // A document that already carries an identifier (typed, or migrated) keeps it.
+                .generationRequired(document -> document.getId() == null
+                        && (document.getIdentifier() == null || document.getIdentifier().isBlank()))
+                .actionUnit(Document::getActionUnit)
+                .typeId(document -> document.getCategory() == null ? null : document.getCategory().getId())
+                .displayValue("ID_UA", document -> document.getActionUnit().getFullIdentifier())
+                .identifierAlreadyUsed((document, candidate) ->
+                        documentRepository.existsByActionUnitIdAndIdentifier(
+                                document.getActionUnit().getId(), candidate))
+                .numberSetter(Document::setGeneratedNumber)
+                .identifierSetter(Document::setIdentifier)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentDTO findDtoById(Long id) {
+        if (id == null) return null;
+        return documentRepository.findById(id).map(documentMapper::convert).orElse(null);
     }
 
     /**
@@ -125,13 +364,14 @@ public class DocumentService implements ArkEntityService {
             document.setCreatedBy(personMapper.invertConvert(userInfo.getUser()));
             document.setCreatedByInstitution(institutionMapper.invertConvert(userInfo.getInstitution()));
             document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
+            allocateIdentifierIfNew(document);
 
             documentStorage.save(userInfo, document, bufferedInputStream);
         }
 
         log.trace("Finished upload document {} to {}", document.getFileName(), userInfo.getInstitution().getId());
 
-        return documentRepository.save(document);
+        return persist(document);
     }
 
     void checkFileData(Document document) throws InvalidFileTypeException, InvalidFileSizeException {
@@ -197,7 +437,7 @@ public class DocumentService implements ArkEntityService {
      * @return a list of documents associated with the spatial unit
      */
     public List<Document> findForSpatialUnit(SpatialUnitDTO spatialUnit) {
-        return documentRepository.findDocumentsBySpatialUnit(spatialUnit.getId());
+        return documentRepository.findAll(DocumentSpec.linkedToPlace(spatialUnit.getId()));
     }
 
     /**
@@ -207,7 +447,7 @@ public class DocumentService implements ArkEntityService {
      * @return a list of documents associated with the action unit
      */
     public List<Document> findForActionUnit(ActionUnitDTO actionUnit) {
-        return documentRepository.findDocumentsByActionUnit(actionUnit.getId());
+        return documentRepository.findAll(DocumentSpec.belongsToActionUnit(actionUnit.getId()));
     }
 
     /**
@@ -217,7 +457,7 @@ public class DocumentService implements ArkEntityService {
      * @return a list of documents associated with the recording unit
      */
     public List<Document> findForRecordingUnit(RecordingUnitDTO recordingUnit) {
-        return documentRepository.findDocumentsByRecordingUnit(recordingUnit.getId());
+        return documentRepository.findAll(DocumentSpec.linkedToRecordingUnit(recordingUnit.getId()));
     }
 
     /**
@@ -227,14 +467,14 @@ public class DocumentService implements ArkEntityService {
      * @return a list of documents associated with the specimen
      */
     public List<Document> findForSpecimen(SpecimenDTO specimen) {
-        return documentRepository.findDocumentsBySpecimen(specimen.getId());
+        return documentRepository.findAll(DocumentSpec.linkedToFind(specimen.getId()));
     }
 
     /**
-     * Adds a document to a spatial unit.
+     * Links a document to a spatial unit.
      *
-     * @param document    the document to be added
-     * @param spatialUnit the spatial unit to which the document is to be added
+     * @param document    the document to be linked
+     * @param spatialUnit the spatial unit to which the document is to be linked
      */
     public void addToSpatialUnit(Document document, SpatialUnitDTO spatialUnit) {
         documentRepository.addDocumentToSpatialUnit(document.getId(), spatialUnit.getId());
@@ -251,13 +491,13 @@ public class DocumentService implements ArkEntityService {
     }
 
     /**
-     * Adds a document to a action unit.
+     * Attaches a document to its project (the document's single mandatory project).
      *
-     * @param document    the document to be added
-     * @param actionUnit the action unit to which the document is to be added
+     * @param document   the document to be attached
+     * @param actionUnit the project the document belongs to
      */
     public void addToActionUnit(Document document, ActionUnitDTO actionUnit) {
-        documentRepository.addDocumentToActionUnit(document.getId(), actionUnit.getId());
+        documentRepository.attachToActionUnit(document.getId(), actionUnit.getId());
     }
 
     /**
@@ -287,7 +527,8 @@ public class DocumentService implements ArkEntityService {
     }
 
     /**
-     * Supprime un document : liens de liaison (projets, UE, mobilier, etc.), fichier sur disque, ligne {@code siamois_document}.
+     * Supprime un document : liens de liaison (UE, mobilier, lieux, phases, contenants, études), réponses aux champs
+     * additionnels, fichier sur disque, ligne {@code siamois_document}.
      */
     @Transactional
     public void deleteDocument(Document document) {
@@ -295,12 +536,16 @@ public class DocumentService implements ArkEntityService {
             throw new IllegalArgumentException("Document id is required");
         }
         Long id = document.getId();
-        documentRepository.deleteActionUnitDocumentLinks(id);
         documentRepository.deleteSpatialUnitDocumentLinks(id);
         documentRepository.deleteRecordingUnitDocumentLinks(id);
         documentRepository.deleteSpecimenDocumentLinks(id);
+        documentRepository.deletePhaseDocumentLinks(id);
+        documentRepository.deleteContainerDocumentLinks(id);
         documentRepository.deleteSpecimenStudyDocumentLinks(id);
-        documentRepository.deleteRuStudyDocumentLinks(id);
+        // answers to the category's additional fields hold a foreign key to the document
+        DocumentDTO idOnly = new DocumentDTO();
+        idOnly.setId(id);
+        customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);
         documentStorage.deleteStoredFile(document);
         documentRepository.delete(document);
     }

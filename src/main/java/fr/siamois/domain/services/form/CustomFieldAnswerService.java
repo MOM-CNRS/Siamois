@@ -16,6 +16,7 @@ import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -163,6 +164,17 @@ public class CustomFieldAnswerService {
                 List::of);
     }
 
+    private AnswerOwner ownerOf(DocumentDTO dto) {
+        if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
+        // A document's form config is keyed by its category (Document.TYPE_FIELD).
+        return new AnswerOwner("document " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.DOCUMENT,
+                idOf(dto.getCategory()),
+                config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
+                config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
+                () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
+                List::of);
+    }
+
     /** A find carries its project directly, or only through its recording unit (as SpecimenPanel resolves it). */
     private Long specimenProjectId(SpecimenDTO dto) {
         if (dto.getActionUnit() != null) return dto.getActionUnit().getId();
@@ -213,6 +225,12 @@ public class CustomFieldAnswerService {
     @Transactional(rollbackFor = Exception.class)
     public void saveAdditionalFieldAnswers(ContainerDTO containerDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
         save(ownerOf(containerDTO), answers);
+    }
+
+    /** Same as {@link #saveAdditionalFieldAnswers(RecordingUnitDTO, Map)}, for a document. */
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAdditionalFieldAnswers(DocumentDTO documentDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
+        save(ownerOf(documentDTO), answers);
     }
 
     private void save(AnswerOwner owner, Map<CustomField, CustomFieldAnswerViewModel> answers) {
@@ -375,8 +393,13 @@ public class CustomFieldAnswerService {
         return load(ownerOf(containerDTO));
     }
 
+    @Transactional(readOnly = true)
+    public Map<CustomField, CustomFieldAnswerViewModel> loadAdditionalFieldAnswers(DocumentDTO documentDTO) {
+        return load(ownerOf(documentDTO));
+    }
+
     /** The entities a list can show additional-field answers for. */
-    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER }
+    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER, DOCUMENT }
 
     /**
      * The answers of a whole page of entities to some of their additional fields, in one query —
@@ -393,6 +416,7 @@ public class CustomFieldAnswerService {
             case SPECIMEN -> customFieldAnswerRepository.findAnswersOfSpecimens(ownerIds, fieldIds);
             case PHASE -> customFieldAnswerRepository.findAnswersOfPhases(ownerIds, fieldIds);
             case CONTAINER -> customFieldAnswerRepository.findAnswersOfContainers(ownerIds, fieldIds);
+            case DOCUMENT -> customFieldAnswerRepository.findAnswersOfDocuments(ownerIds, fieldIds);
         };
         Map<Long, Map<CustomField, CustomFieldAnswerViewModel>> result = new HashMap<>();
         answers.stream()
@@ -413,12 +437,23 @@ public class CustomFieldAnswerService {
             case SPECIMEN -> set.getSpecimen();
             case PHASE -> set.getPhase();
             case CONTAINER -> set.getContainer();
+            case DOCUMENT -> set.getDocument();
         };
         if (entity instanceof fr.siamois.domain.models.recordingunit.RecordingUnit ru) return ru.getId();
         if (entity instanceof fr.siamois.domain.models.specimen.Specimen sp) return sp.getId();
         if (entity instanceof fr.siamois.domain.models.phase.Phase ph) return ph.getId();
         if (entity instanceof fr.siamois.domain.models.container.Container c) return c.getId();
+        if (entity instanceof fr.siamois.domain.models.document.Document d) return d.getId();
         return null;
+    }
+
+    /** Removes every additional-field answer a document holds, whatever category's form they were saved under. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAdditionalFieldAnswers(DocumentDTO documentDTO) {
+        for (FormConfigAnswer set : formConfigAnswerService.findAllFormConfigAnswers(documentDTO)) {
+            customFieldAnswerRepository.deleteAll(answersOf(set));
+            formConfigAnswerService.delete(set);
+        }
     }
 
     private Map<CustomField, CustomFieldAnswerViewModel> load(AnswerOwner owner) {

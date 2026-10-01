@@ -1,8 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.dto.entity.InstitutionDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +27,7 @@ import java.util.Set;
 public class DocumentContentOpenApiService {
 
     private final DocumentService documentService;
+    private final ProfilePermissionService profilePermissionService;
 
     public record DocumentFilePayload(InputStream inputStream, MediaType mediaType, String fileName) {
     }
@@ -77,11 +82,35 @@ public class DocumentContentOpenApiService {
     }
 
     /**
-     * Supprime le document et son fichier si l'institution de création est dans le périmètre JWT.
+     * Document que l'appelant peut modifier : dans le périmètre JWT <em>et</em> droit d'édition des documents
+     * sur son projet (ou sur l'organisation / l'instance). Un document encore sans projet n'est modifiable que
+     * par un droit d'organisation ou d'instance.
+     *
+     * @throws ResponseStatusException 404 hors périmètre, 403 sans droit d'édition
+     */
+    @Transactional(readOnly = true)
+    public Document requireWritableDocument(long documentId, ProjectApiCaller caller) {
+        Document doc = resolveAccessibleDocument(documentId, caller.accessibleInstitutionIds());
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(doc.getCreatedByInstitution().getId());
+        UserInfo info = new UserInfo(institution, caller.person(), null);
+        Long projectId = doc.getActionUnit() == null ? null : doc.getActionUnit().getId();
+        if (!profilePermissionService.hasProjectPermission(info, projectId,
+                PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification de document non autorisée");
+        }
+        return doc;
+    }
+
+    /**
+     * Supprime le document et son fichier : l'institution de création doit être dans le périmètre JWT et
+     * l'appelant doit pouvoir éditer les documents du projet.
      */
     @Transactional
-    public void deleteAccessibleDocument(long documentId, Set<Long> accessibleInstitutionIds) {
-        Document doc = resolveAccessibleDocument(documentId, accessibleInstitutionIds);
+    public void deleteAccessibleDocument(long documentId, ProjectApiCaller caller) {
+        Document doc = requireWritableDocument(documentId, caller);
         documentService.deleteDocument(doc);
     }
 }

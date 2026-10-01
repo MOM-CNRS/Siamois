@@ -1,9 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.institution.Institution;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.document.compressor.BrowserDisplayableCompressor;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,12 +17,14 @@ import org.springframework.http.MediaType;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,12 +34,18 @@ class DocumentContentOpenApiServiceTest {
 
     @Mock
     private DocumentService documentService;
+    @Mock
+    private ProfilePermissionService profilePermissionService;
 
     private DocumentContentOpenApiService service;
 
+    private static ProjectApiCaller callerWithScope(Set<Long> scope) {
+        return new ProjectApiCaller(new PersonDTO(), scope, List.of());
+    }
+
     @BeforeEach
     void setUp() {
-        service = new DocumentContentOpenApiService(documentService);
+        service = new DocumentContentOpenApiService(documentService, profilePermissionService);
     }
 
     @Test
@@ -112,7 +124,7 @@ class DocumentContentOpenApiServiceTest {
 
     @Test
     void deleteAccessibleDocument_nullScope_throws404() {
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, null))
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, callerWithScope(null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verifyNoMoreInteractions(documentService);
@@ -120,7 +132,7 @@ class DocumentContentOpenApiServiceTest {
 
     @Test
     void deleteAccessibleDocument_emptyScope_throws404() {
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, Set.of()))
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, callerWithScope(Set.of())))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verifyNoMoreInteractions(documentService);
@@ -130,7 +142,7 @@ class DocumentContentOpenApiServiceTest {
     void deleteAccessibleDocument_unknown_throws404() {
         when(documentService.findById(77L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(77L, SCOPE))
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(77L, callerWithScope(SCOPE)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verify(documentService).findById(77L);
@@ -145,7 +157,7 @@ class DocumentContentOpenApiServiceTest {
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(999L);
 
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(6L, SCOPE))
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(6L, callerWithScope(SCOPE)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
 
@@ -160,10 +172,34 @@ class DocumentContentOpenApiServiceTest {
         when(documentService.findById(4L)).thenReturn(Optional.of(doc));
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
+        allowEditing(true);
 
-        service.deleteAccessibleDocument(4L, SCOPE);
+        service.deleteAccessibleDocument(4L, callerWithScope(SCOPE));
 
         verify(documentService).deleteDocument(same(doc));
+    }
+
+    @Test
+    void deleteAccessibleDocument_withoutEditRightOnTheProject_throws403() {
+        Document doc = mock(Document.class);
+        Institution inst = mock(Institution.class);
+        when(documentService.findById(4L)).thenReturn(Optional.of(doc));
+        when(doc.getCreatedByInstitution()).thenReturn(inst);
+        when(inst.getId()).thenReturn(10L);
+        allowEditing(false);
+
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(4L, callerWithScope(SCOPE)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(403));
+
+        verify(documentService, never()).deleteDocument(any());
+    }
+
+    private void allowEditing(boolean allowed) {
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), any(),
+                eq(PermissionConstants.INSTANCE_EDIT_DOCUMENTS),
+                eq(PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS),
+                eq(PermissionConstants.PROJECT_EDIT_DOCUMENTS))).thenReturn(allowed);
     }
 
     @Test

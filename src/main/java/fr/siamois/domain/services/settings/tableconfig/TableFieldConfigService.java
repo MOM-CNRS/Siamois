@@ -111,6 +111,12 @@ public interface TableFieldConfigService {
     FormConfig resolveIdentifierConfig(Long projectId, ConfigurableTable table, Long typeConceptId);
 
     /**
+     * Whether the table's type field (its field code) is configured for the project's institution. Nothing can
+     * be configured on a table — identifier format included — until it is.
+     */
+    boolean isTypeFieldConfigured(Long projectId, ConfigurableTable table);
+
+    /**
      * Reads the system and additional fields configured for a type. System fields come in the order
      * the form lays them out; the additional ones follow, in the display order set through
      * {@link #reorderAdditionalFields(Long, ConfigurableTable, String, List)}.

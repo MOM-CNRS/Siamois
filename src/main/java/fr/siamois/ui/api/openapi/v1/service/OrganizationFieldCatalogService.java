@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -84,6 +85,7 @@ public class OrganizationFieldCatalogService {
             case MOBILIER -> Specimen.class;
             case PHASE -> Phase.class;
             case CONTENANT -> Container.class;
+            case DOCUMENT -> Document.class;
         };
     }
 

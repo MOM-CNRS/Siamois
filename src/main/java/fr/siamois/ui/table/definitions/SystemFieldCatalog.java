@@ -2,6 +2,7 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.container.form.ContainerForm;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
+import fr.siamois.domain.models.document.form.DocumentForm;
 import fr.siamois.domain.models.phase.form.PhaseForm;
 import fr.siamois.domain.models.recordingunit.form.RecordingUnitForm;
 import fr.siamois.domain.models.specimen.form.SpecimenForm;
@@ -57,6 +58,7 @@ public final class SystemFieldCatalog {
             case MOBILIER -> SpecimenForm.systemFields();
             case PHASE -> PhaseForm.systemFields();
             case CONTENANT -> ContainerForm.systemFields();
+            case DOCUMENT -> DocumentForm.systemFields();
         };
     }
 

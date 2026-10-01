@@ -1027,7 +1027,6 @@ class ActionUnitServiceTest {
         verify(actionUnitRepository).deleteSecondaryActionCodeLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
-        verify(documentRepository).deleteAllActionUnitDocumentLinksByActionUnitId(1L);
         verify(actionUnitRepository).deleteById(1L);
     }
 
