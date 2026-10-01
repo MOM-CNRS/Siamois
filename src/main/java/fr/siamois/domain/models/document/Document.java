@@ -238,7 +238,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @NotAudited
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Concept> supportNatures = new HashSet<>();
+    private Set<Concept> supportNatures = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -249,7 +249,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @NotAudited
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Concept> keywords = new HashSet<>();
+    private Set<Concept> keywords = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -260,7 +260,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @NotAudited
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Person> authors = new HashSet<>();
+    private Set<Person> authors = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -271,7 +271,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @NotAudited
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Person> contributors = new HashSet<>();
+    private Set<Person> contributors = new HashSet<>();
 
     // ---------------------------------------------------------------- Links to other entities
     // Optional and multiple; the project link above is the single mandatory one.
@@ -286,7 +286,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<RecordingUnit> recordingUnits = new HashSet<>();
+    private Set<RecordingUnit> recordingUnits = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -298,7 +298,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Specimen> finds = new HashSet<>();
+    private Set<Specimen> finds = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -310,7 +310,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<SpatialUnit> places = new HashSet<>();
+    private Set<SpatialUnit> places = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -322,7 +322,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Phase> phases = new HashSet<>();
+    private Set<Phase> phases = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -334,7 +334,7 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    protected Set<Container> containers = new HashSet<>();
+    private Set<Container> containers = new HashSet<>();
 
     public static final int MAX_FILE_NAME_LENGTH = 255;
     public static final int FILE_INTERNAL_CODE_LENGTH = 10;

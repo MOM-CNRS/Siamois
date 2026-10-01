@@ -810,6 +810,14 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void isTypeFieldConfigured_isFalseWhenTheProjectHasNoVocabularyForTheTypeField() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.DOCUMENT)).isFalse();
+    }
+
+    @Test
     void getFieldsConfig_shouldMapVocabularyFieldsToTheirTypeAndSource() {
         CustomFieldSelectOneFromFieldCode vocabularyField = CustomFieldSelectOneFromFieldCode.builder()
                 .id(3L).label("Catégorie").isSystemField(true).fieldCode("SIAS.CAT").build();

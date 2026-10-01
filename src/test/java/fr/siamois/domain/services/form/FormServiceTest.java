@@ -275,6 +275,23 @@ class FormServiceTest {
     }
 
     @Test
+    void initOrReuseResponse_populatesAdditionalFieldValues_forDocument() {
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField additionalTextField = mock(CustomField.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(additionalTextField));
+        DocumentDTO document = new DocumentDTO();
+        document.setId(5L);
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("Plan");
+        when(customFieldAnswerService.loadAdditionalFieldAnswers(document))
+                .thenReturn(Map.of(additionalTextField, additionalAnswer));
+
+        CustomFormResponseViewModel res = formService.initOrReuseResponse(null, document, fieldSource, false);
+
+        assertSame(additionalAnswer, res.getAnswers().get(additionalTextField));
+    }
+
+    @Test
     void initOrReuseResponse_populatesConceptSystemField_andUiVal() {
         // arrange
         FieldSource fieldSource = mock(FieldSource.class);

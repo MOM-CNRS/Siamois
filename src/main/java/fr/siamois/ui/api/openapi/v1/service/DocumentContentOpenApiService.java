@@ -90,6 +90,10 @@ public class DocumentContentOpenApiService {
      */
     @Transactional(readOnly = true)
     public Document requireWritableDocument(long documentId, ProjectApiCaller caller) {
+        return resolveWritableDocument(documentId, caller);
+    }
+
+    private Document resolveWritableDocument(long documentId, ProjectApiCaller caller) {
         Document doc = resolveAccessibleDocument(documentId, caller.accessibleInstitutionIds());
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(doc.getCreatedByInstitution().getId());
@@ -110,7 +114,7 @@ public class DocumentContentOpenApiService {
      */
     @Transactional
     public void deleteAccessibleDocument(long documentId, ProjectApiCaller caller) {
-        Document doc = requireWritableDocument(documentId, caller);
+        Document doc = resolveWritableDocument(documentId, caller);
         documentService.deleteDocument(doc);
     }
 }

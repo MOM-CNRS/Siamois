@@ -233,6 +233,22 @@ class ProfilePermissionServiceTest {
                 .containsExactlyInAnyOrder(1L, 2L);
     }
 
+    @Test
+    void hasDocumentWritePermission_checksTheDocumentsOwnProjectCodes() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(eq(3L), eq(12L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 9L, PermissionConstants.PROJECT_EDIT_DOCUMENTS)).thenReturn(true);
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        fr.siamois.dto.entity.ActionUnitSummaryDTO project = new fr.siamois.dto.entity.ActionUnitSummaryDTO();
+        project.setId(9L);
+        document.setActionUnit(project);
+        UserInfo info = new UserInfo(institution, person, null);
+
+        assertTrue(profilePermissionService.hasDocumentWritePermission(info, document));
+        // a document without a project can only be written through an organisation or instance right
+        assertFalse(profilePermissionService.hasDocumentWritePermission(info, new fr.siamois.dto.entity.DocumentDTO()));
+    }
+
     // ---- actionUnitIdsGranting — which projects of the institution a capability covers ----
 
     @Test

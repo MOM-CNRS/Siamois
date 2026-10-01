@@ -3,6 +3,7 @@ package fr.siamois.domain.services.form;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.phase.Phase;
@@ -44,6 +45,8 @@ class FormConfigAnswerServiceTest {
     private PhaseMapper phaseMapper;
     @Mock
     private ContainerMapper containerMapper;
+    @Mock
+    private DocumentMapper documentMapper;
 
     @InjectMocks
     private FormConfigAnswerService service;
@@ -224,6 +227,52 @@ class FormConfigAnswerServiceTest {
         assertThatItHasASingleOwner(created);
     }
 
+    // ========== Document ==========
+
+    @Test
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnADocument() {
+        DocumentDTO documentDTO = new DocumentDTO();
+        Document document = new Document();
+        givenCurrentPerson();
+        when(documentMapper.invertConvert(documentDTO)).thenReturn(document);
+        when(formConfigAnswerRepository.findByFormConfigAndDocument(formConfig, document))
+                .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
+
+        assertThat(service.createOrGetFormConfigAnswer(formConfig, documentDTO)).isSameAs(stored);
+    }
+
+    @Test
+    void createOrGetFormConfigAnswer_shouldCreateTheAnswerOfADocumentThatHasNone() {
+        DocumentDTO documentDTO = new DocumentDTO();
+        Document document = new Document();
+        givenCurrentPerson();
+        when(documentMapper.invertConvert(documentDTO)).thenReturn(document);
+        when(formConfigAnswerRepository.findByFormConfigAndDocument(formConfig, document))
+                .thenReturn(Optional.empty());
+        when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
+
+        service.createOrGetFormConfigAnswer(formConfig, documentDTO);
+
+        FormConfigAnswer created = capturedSavedAnswer();
+        assertThat(created.getDocument()).isSameAs(document);
+        assertThat(created.getFormConfig()).isSameAs(formConfig);
+    }
+
+    @Test
+    void findFormConfigAnswer_andFindAll_ofADocument_queryTheRepository() {
+        DocumentDTO documentDTO = new DocumentDTO();
+        Document document = new Document();
+        when(documentMapper.invertConvert(documentDTO)).thenReturn(document);
+        when(formConfigAnswerRepository.findByFormConfigAndDocument(formConfig, document))
+                .thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.findByDocument(document)).thenReturn(java.util.List.of(stored));
+
+        assertThat(service.findFormConfigAnswer(formConfig, documentDTO)).contains(stored);
+        assertThat(service.findAllFormConfigAnswers(documentDTO)).containsExactly(stored);
+        verify(formConfigAnswerRepository, never()).save(any());
+    }
+
     // ========== Container ==========
 
     @Test
@@ -305,7 +354,7 @@ class FormConfigAnswerServiceTest {
      * of one another, so this guards the paste error of also setting somebody else's.
      */
     private void assertThatItHasASingleOwner(FormConfigAnswer answer) {
-        assertThat(Stream.of(answer.getRecordingUnit(), answer.getSpecimen(), answer.getPhase(), answer.getContainer())
+        assertThat(Stream.of(answer.getRecordingUnit(), answer.getSpecimen(), answer.getPhase(), answer.getContainer(), answer.getDocument())
                 .filter(Objects::nonNull))
                 .hasSize(1);
     }

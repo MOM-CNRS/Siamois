@@ -219,4 +219,161 @@ class DocumentServiceSaveTest {
 
         assertThat(managed.getRecordingUnits()).extracting("id").containsExactly(3L);
     }
+
+    // ---- search, counts, lookups
+
+    @Test
+    void searchDocuments_mapsThePageOfTheRepository() {
+        fr.siamois.dto.FilterDTO filters = new fr.siamois.dto.FilterDTO(false);
+        filters.add(fr.siamois.infrastructure.database.repositories.specs.DocumentSpec.IDENTIFIER_FILTER, "DOC",
+                fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(documentRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(entity)));
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+
+        var page = service.searchDocuments(institution, filters, pageable);
+
+        assertThat(page.getContent()).containsExactly(dto);
+    }
+
+    @Test
+    void searchDocuments_withGlobalAndProjectFilters_stillQueriesTheRepository() {
+        fr.siamois.dto.FilterDTO filters = new fr.siamois.dto.FilterDTO(false);
+        filters.add(fr.siamois.infrastructure.database.repositories.specs.DocumentSpec.GLOBAL_FILTER, "plan",
+                fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        filters.add(fr.siamois.infrastructure.database.repositories.specs.DocumentSpec.ACTION_UNIT_FILTER, List.of(PROJECT_ID),
+                fr.siamois.dto.FilterDTO.FilterType.EQUAL);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        when(documentRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), eq(pageable)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+
+        assertThat(service.searchDocuments(institution, filters, pageable).getContent()).isEmpty();
+    }
+
+    @Test
+    void countSearchResults_andCountByActionContext_delegateToTheRepository() {
+        when(documentRepository.count(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(4L);
+        when(documentRepository.countByActionUnitId(PROJECT_ID)).thenReturn(3);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        fr.siamois.dto.entity.ActionUnitDTO project = new fr.siamois.dto.entity.ActionUnitDTO();
+        project.setId(PROJECT_ID);
+
+        assertThat(service.countSearchResults(institution, new fr.siamois.dto.FilterDTO(false))).isEqualTo(4);
+        assertThat(service.countByActionContext(project)).isEqualTo(3);
+    }
+
+    @Test
+    void identifierAlreadyExistInProject_isTrueOnlyForAnotherDocument() {
+        dto.setIdentifier("DOC0001");
+        dto.setId(5L);
+        Document other = new Document();
+        other.setId(6L);
+        Document same = new Document();
+        same.setId(5L);
+
+        when(documentRepository.findByIdentifierAndActionUnitId("DOC0001", PROJECT_ID)).thenReturn(Optional.of(other));
+        assertThat(service.identifierAlreadyExistInProject(dto)).isTrue();
+
+        when(documentRepository.findByIdentifierAndActionUnitId("DOC0001", PROJECT_ID)).thenReturn(Optional.of(same));
+        assertThat(service.identifierAlreadyExistInProject(dto)).isFalse();
+
+        dto.setActionUnit(null);
+        assertThat(service.identifierAlreadyExistInProject(dto)).isFalse();
+    }
+
+    @Test
+    void findDtoById_mapsTheDocument_orReturnsNull() {
+        when(documentRepository.findById(5L)).thenReturn(Optional.of(entity));
+        when(documentRepository.findById(6L)).thenReturn(Optional.empty());
+
+        assertThat(service.findDtoById(5L)).isSameAs(dto);
+        assertThat(service.findDtoById(6L)).isNull();
+        assertThat(service.findDtoById(null)).isNull();
+    }
+
+    @Test
+    void save_abstractEntityDto_savesADocumentDto() {
+        allowEditing(true);
+
+        assertThat(service.save((fr.siamois.dto.entity.AbstractEntityDTO) dto)).isSameAs(dto);
+    }
+
+    @Test
+    void save_withAdditionalAnswers_savesThemForTheSavedDocument() {
+        allowEditing(true);
+        java.util.Map<fr.siamois.domain.models.form.customfield.CustomField,
+                fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = java.util.Map.of();
+
+        service.save(dto, answers);
+
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(dto, answers);
+    }
+
+    // ---- creation through the file upload (mobile)
+
+    private UserInfo uploader() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        return new UserInfo(institution, new PersonDTO(), "fr");
+    }
+
+    private Document uploadedDocument() {
+        Document document = new Document();
+        document.setActionUnit(project);
+        document.setFileName("plan.pdf");
+        document.setMimeType("application/pdf");
+        document.setSize(10L);
+        return document;
+    }
+
+    private void storageAccepts() {
+        when(documentStorage.supportedMimeTypes()).thenReturn(List.of(org.springframework.util.MimeType.valueOf("application/pdf")));
+        when(documentStorage.getMaxUploadSize()).thenReturn("10MB");
+    }
+
+    @Test
+    void saveFile_ofADocumentOfAProject_generatesItsIdentifierWhenTheCategoryIsConfigured() throws Exception {
+        storageAccepts();
+        Document document = uploadedDocument();
+        when(tableFieldConfigService.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.DOCUMENT)).thenReturn(true);
+
+        service.saveFile(uploader(), document, new java.io.ByteArrayInputStream("x".getBytes()), "/ctx");
+
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(document), any());
+    }
+
+    @Test
+    void saveFile_ofADocumentOfAProject_fallsBackToDocIdWhenTheCategoryIsNotConfigured() throws Exception {
+        storageAccepts();
+        Document document = uploadedDocument();
+        when(tableFieldConfigService.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.DOCUMENT)).thenReturn(false);
+        when(documentRepository.save(any(Document.class))).thenAnswer(i -> {
+            Document d = i.getArgument(0);
+            if (d.getId() == null) d.setId(77L);
+            return d;
+        });
+
+        Document saved = service.saveFile(uploader(), document, new java.io.ByteArrayInputStream("x".getBytes()), "/ctx");
+
+        assertThat(saved.getIdentifier()).isEqualTo("DOC-77");
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(any(Document.class), any());
+    }
+
+    @Test
+    void saveWithoutFile_ofADocumentOfAProject_getsAnIdentifier() {
+        Document document = uploadedDocument();
+        when(tableFieldConfigService.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.DOCUMENT)).thenReturn(false);
+        when(documentRepository.save(any(Document.class))).thenAnswer(i -> {
+            Document d = i.getArgument(0);
+            if (d.getId() == null) d.setId(78L);
+            return d;
+        });
+
+        assertThat(service.saveWithoutFile(uploader(), document).getIdentifier()).isEqualTo("DOC-78");
+    }
 }

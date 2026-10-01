@@ -1002,6 +1002,17 @@ class ActionUnitServiceTest {
     }
 
     @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenDocumentsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(documentRepository.countByActionUnitId(1L)).thenReturn(2);
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
     void deleteProjectWhenEmpty_throwsIllegalState_whenChildActionUnitsExist() {
         when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
         when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))

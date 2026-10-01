@@ -29,6 +29,8 @@ import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
  */
 public abstract class DocumentForm {
 
+    private static final String LABEL_PREFIX = "document.field.";
+
     protected DocumentForm() {}
 
     private static Concept concept(String externalId) {
@@ -37,7 +39,7 @@ public abstract class DocumentForm {
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {
         return CustomFieldText.builder()
-                .label("document.field." + binding)
+                .label(LABEL_PREFIX + binding)
                 .isSystemField(true)
                 .isTextArea(textArea)
                 .id(id)
@@ -48,7 +50,7 @@ public abstract class DocumentForm {
 
     private static CustomFieldSelectOneFromFieldCode one(long id, String binding, String fieldCode) {
         return CustomFieldSelectOneFromFieldCode.builder()
-                .label("document.field." + binding)
+                .label(LABEL_PREFIX + binding)
                 .isSystemField(true)
                 .id(id)
                 .valueBinding(binding)
@@ -59,7 +61,7 @@ public abstract class DocumentForm {
 
     private static CustomFieldSelectMultipleFromFieldCode many(long id, String binding, String fieldCode) {
         return CustomFieldSelectMultipleFromFieldCode.builder()
-                .label("document.field." + binding)
+                .label(LABEL_PREFIX + binding)
                 .isSystemField(true)
                 .id(id)
                 .valueBinding(binding)
@@ -76,7 +78,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-            .label("document.field.actionUnit")
+            .label(LABEL_PREFIX + "actionUnit")
             .isSystemField(true)
             .id(-703L)
             .valueBinding("actionUnit")
@@ -86,7 +88,7 @@ public abstract class DocumentForm {
     /** The category: the table's type, hence the field that selects the form configuration. */
     @Transient
     protected static final CustomFieldSelectOneFromFieldCode categoryField = CustomFieldSelectOneFromFieldCode.builder()
-            .label("document.field.category")
+            .label(LABEL_PREFIX + "category")
             .isSystemField(true)
             .id(-704L)
             .valueBinding("category")
@@ -111,7 +113,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultiplePerson authorsField = CustomFieldSelectMultiplePerson.builder()
-            .label("document.field.authors")
+            .label(LABEL_PREFIX + "authors")
             .isSystemField(true)
             .id(-709L)
             .valueBinding("authors")
@@ -120,7 +122,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultiplePerson contributorsField = CustomFieldSelectMultiplePerson.builder()
-            .label("document.field.contributors")
+            .label(LABEL_PREFIX + "contributors")
             .isSystemField(true)
             .id(-710L)
             .valueBinding("contributors")
@@ -132,7 +134,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldDateTime productionDateField = CustomFieldDateTime.builder()
-            .label("document.field.productionDate")
+            .label(LABEL_PREFIX + "productionDate")
             .isSystemField(true)
             .id(-712L)
             .valueBinding("productionDate")
@@ -156,7 +158,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldInteger itemCountField = CustomFieldInteger.builder()
-            .label("document.field.itemCount")
+            .label(LABEL_PREFIX + "itemCount")
             .isSystemField(true)
             .id(-717L)
             .minValue(0)
@@ -167,7 +169,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldDecimal sizeMbField = CustomFieldDecimal.builder()
-            .label("document.field.sizeMb")
+            .label(LABEL_PREFIX + "sizeMb")
             .isSystemField(true)
             .id(-718L)
             .minValue(0.0)
@@ -193,7 +195,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultipleRecordingUnit recordingUnitsField = CustomFieldSelectMultipleRecordingUnit.builder()
-            .label("document.field.recordingUnits")
+            .label(LABEL_PREFIX + "recordingUnits")
             .isSystemField(true)
             .id(-723L)
             .valueBinding("recordingUnits")
@@ -202,7 +204,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultipleSpecimen findsField = CustomFieldSelectMultipleSpecimen.builder()
-            .label("document.field.finds")
+            .label(LABEL_PREFIX + "finds")
             .isSystemField(true)
             .id(-724L)
             .valueBinding("finds")
@@ -211,7 +213,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultipleSpatialUnit placesField = CustomFieldSelectMultipleSpatialUnit.builder()
-            .label("document.field.places")
+            .label(LABEL_PREFIX + "places")
             .isSystemField(true)
             .id(-725L)
             .valueBinding("places")
@@ -220,7 +222,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
-            .label("document.field.phases")
+            .label(LABEL_PREFIX + "phases")
             .isSystemField(true)
             .id(-726L)
             .valueBinding("phases")
@@ -229,7 +231,7 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultipleContainer containersField = CustomFieldSelectMultipleContainer.builder()
-            .label("document.field.containers")
+            .label(LABEL_PREFIX + "containers")
             .isSystemField(true)
             .id(-727L)
             .valueBinding("containers")

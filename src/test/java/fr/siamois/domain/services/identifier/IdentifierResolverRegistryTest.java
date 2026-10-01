@@ -27,6 +27,13 @@ class IdentifierResolverRegistryTest {
     }
 
     @Test
+    void ownNumericalToken_ofADocument_isItsNumber() {
+        assertThat(registry.ownNumericalToken(ConfigurableTable.DOCUMENT)).isEqualTo("NUM_DOCUMENT");
+        assertThatCode(() -> registry.validate(ConfigurableTable.DOCUMENT, "DOC{NUM_DOCUMENT:0000}"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void validate_shouldRequireTheTablesOwnNumericalToken() {
         assertThatCode(() -> registry.validate(ConfigurableTable.MOBILIER, "M-{NUM_MOBILIER:000}"))
                 .doesNotThrowAnyException();

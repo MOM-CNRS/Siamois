@@ -124,7 +124,8 @@ class DocumentContentOpenApiServiceTest {
 
     @Test
     void deleteAccessibleDocument_nullScope_throws404() {
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, callerWithScope(null)))
+        ProjectApiCaller caller = callerWithScope(null);
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, caller))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verifyNoMoreInteractions(documentService);
@@ -132,7 +133,8 @@ class DocumentContentOpenApiServiceTest {
 
     @Test
     void deleteAccessibleDocument_emptyScope_throws404() {
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, callerWithScope(Set.of())))
+        ProjectApiCaller caller = callerWithScope(Set.of());
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(1L, caller))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verifyNoMoreInteractions(documentService);
@@ -142,7 +144,8 @@ class DocumentContentOpenApiServiceTest {
     void deleteAccessibleDocument_unknown_throws404() {
         when(documentService.findById(77L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(77L, callerWithScope(SCOPE)))
+        ProjectApiCaller caller = callerWithScope(SCOPE);
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(77L, caller))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
         verify(documentService).findById(77L);
@@ -157,7 +160,8 @@ class DocumentContentOpenApiServiceTest {
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(999L);
 
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(6L, callerWithScope(SCOPE)))
+        ProjectApiCaller caller = callerWithScope(SCOPE);
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(6L, caller))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(404));
 
@@ -188,7 +192,8 @@ class DocumentContentOpenApiServiceTest {
         when(inst.getId()).thenReturn(10L);
         allowEditing(false);
 
-        assertThatThrownBy(() -> service.deleteAccessibleDocument(4L, callerWithScope(SCOPE)))
+        ProjectApiCaller caller = callerWithScope(SCOPE);
+        assertThatThrownBy(() -> service.deleteAccessibleDocument(4L, caller))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(403));
 

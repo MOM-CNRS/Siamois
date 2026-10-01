@@ -870,6 +870,54 @@ class CustomFieldAnswerServiceTest {
         assertThat(saved.getValue().getValue()).isEqualTo("Phase ancienne");
     }
 
+    private static fr.siamois.dto.entity.DocumentDTO documentDto(long id, long projectId, Long categoryId) {
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        document.setId(id);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(projectId);
+        document.setActionUnit(project);
+        if (categoryId != null) document.setCategory(conceptDto(categoryId));
+        return document;
+    }
+
+    @Test
+    void saveAdditionalFieldAnswers_ofADocument_usesTheDocumentTableAndItsCategory() {
+        fr.siamois.dto.entity.DocumentDTO document = documentDto(500L, 7L, 80L);
+        CustomFieldText field = CustomFieldText.builder().id(1L).build();
+        FormConfig formConfig = new FormConfig();
+        when(tableFieldConfigService.getActiveAdditionalFields(7L, ConfigurableTable.DOCUMENT, 80L)).thenReturn(List.of(field));
+        when(tableFieldConfigService.createOrGetFormConfig(7L, ConfigurableTable.DOCUMENT, 80L)).thenReturn(Optional.of(formConfig));
+        when(formConfigAnswerService.createOrGetFormConfigAnswer(formConfig, document)).thenReturn(formConfigAnswer);
+
+        service.saveAdditionalFieldAnswers(document, Map.of(field, viewModelOf("Plan")));
+
+        ArgumentCaptor<CustomFieldAnswer> saved = ArgumentCaptor.forClass(CustomFieldAnswer.class);
+        verify(customFieldAnswerRepository).save(saved.capture());
+        assertThat(saved.getValue().getValue()).isEqualTo("Plan");
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_ofADocument_usesItsCategory_andIgnoresOneWithoutId() {
+        assertThat(service.loadAdditionalFieldAnswers(documentDto(500L, 7L, 80L))).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(new fr.siamois.dto.entity.DocumentDTO())).isEmpty();
+
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.DOCUMENT, 80L);
+    }
+
+    @Test
+    void deleteAdditionalFieldAnswers_ofADocument_removesEverySetAndItsAnswers() {
+        fr.siamois.dto.entity.DocumentDTO document = documentDto(500L, 7L, 80L);
+        FormConfigAnswer set = new FormConfigAnswer();
+        CustomFieldAnswerText answer = textAnswer(CustomFieldText.builder().id(1L).build(), set, "x");
+        set.setAnswers(new HashSet<>(Set.of(answer)));
+        when(formConfigAnswerService.findAllFormConfigAnswers(document)).thenReturn(List.of(set));
+
+        service.deleteAdditionalFieldAnswers(document);
+
+        verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
+        verify(formConfigAnswerService).delete(set);
+    }
+
     @Test
     void loadAdditionalFieldAnswers_ofAFindKnownOnlyThroughItsRecordingUnit_resolvesTheProjectFromIt() {
         ConceptDTO category = new ConceptDTO();
@@ -1068,7 +1116,11 @@ class CustomFieldAnswerServiceTest {
         specimen.setId(5L);
         fr.siamois.domain.models.container.Container container = new fr.siamois.domain.models.container.Container();
         container.setId(5L);
+        fr.siamois.domain.models.document.Document document = new fr.siamois.domain.models.document.Document();
+        document.setId(5L);
         return List.of(
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.DOCUMENT, set -> set.setDocument(document),
+                        (repo, ids) -> repo.findAnswersOfDocuments(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.RECORDING_UNIT, set -> set.setRecordingUnit(unit),
                         (repo, ids) -> repo.findAnswersOfRecordingUnits(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.SPECIMEN, set -> set.setSpecimen(specimen),

@@ -168,7 +168,7 @@ public class DocumentService implements ArkEntityService {
      */
     @Transactional
     public DocumentDTO save(DocumentDTO dto, Map<CustomField, CustomFieldAnswerViewModel> additionalFieldAnswers) {
-        DocumentDTO saved = save(dto);
+        DocumentDTO saved = doSave(dto);
         customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
         return saved;
     }
@@ -183,6 +183,10 @@ public class DocumentService implements ArkEntityService {
      */
     @Transactional
     public DocumentDTO save(DocumentDTO dto) {
+        return doSave(dto);
+    }
+
+    private DocumentDTO doSave(DocumentDTO dto) {
         Document entity = documentMapper.invertConvert(dto);
         Document managed = entity.getId() == null
                 ? entity
