@@ -1,6 +1,6 @@
 # SIAMOIS REST API — changes on `feat/main-panel-react-migration` vs `main`
 
-**Scope:** public API under `/api/v1/**` (JWT-authenticated). Generated 2026-09-25 from a source diff of controllers, request/response DTOs and mappers (`git diff main...feat/main-panel-react-migration`).
+**Scope:** public API under `/api/v1/**` (JWT-authenticated). First generated 2026-09-25 from a source diff of controllers, request/response DTOs and mappers; **updated 2026-10-01** on `feat/field-rules-engine` (see §7 for what changed since the first version).
 **Audience:** external API consumers.
 
 > Conventions used below: `{id}` for a project accepts the numeric id, the `fullIdentifier` or the short identifier (unchanged). All list endpoints keep the `offset` / `limit` pagination, the `meta: { total, limit, offset }` envelope and the `X-Total-Count` header unless stated otherwise.
@@ -13,8 +13,8 @@
 |---|---|
 | Endpoints **removed** | 3 |
 | Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks) |
-| Endpoints **added** | 35 |
-| Existing endpoints with **additive** changes (new params/fields) | ~15 |
+| Endpoints **added** | 43 |
+| Existing endpoints with **additive** changes (new params/fields) | ~17 |
 
 Things most likely to break an existing client, in order:
 
@@ -138,6 +138,28 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 |---|---|---|
 | `GET /api/v1/{collection}/{id}/fields/{fieldId}/values`, `collection` ∈ `recording-units`, `finds`, `phases`, `containers`, `projects` | `offset` (0), `limit` (default 50, max 200), `search` (label contains, case-insensitive), `sort` (`label:asc` default, `label:desc`) | `FieldValuesResponse { data: ResourceRef[], meta: { total, limit, offset } }` + `X-Total-Count`. Same access scope as the resource's detail. `400` if the field isn't multi-valued, `404` for an unknown field or resource. |
 
+**Organisation column catalogues** (new 2026-10-01). Drive the column picker of the organisation lists.
+
+| Endpoint | Notes |
+|---|---|
+| `GET /api/v1/organizations/{id}/recording-unit-types` | `OrganizationFieldCatalogResponse { data: [], _default: { fields, tableColumns? }, fields }`. `data` is always empty. `fields` = system fields of the detail form + the union of **active** additional fields of every project of the organisation, for the matching table. `403` if the organisation is out of scope. |
+| `GET /api/v1/organizations/{id}/find-types` | Same, for finds |
+| `GET /api/v1/organizations/{id}/phase-types` | Same, for phases |
+| `GET /api/v1/organizations/{id}/container-types` | Same, for containers |
+| `GET /api/v1/organizations/{id}/place-types` | Same shape. Places have no per-project configuration and no additional field: name, category, code and grouping number, with `query { sortable, filterOp }` on each. |
+
+The `fields` ids returned here are the ones accepted by `fields=`, `sort=<fieldId>` and `f.<fieldId>` on the matching organisation list (`/recording-units`, `/finds`, `/phases`, `/containers`, `/places`).
+
+**Duplication** (new 2026-10-01)
+
+| Endpoint | Notes |
+|---|---|
+| `GET /api/v1/recording-units/{id}/structure` | `{ data: { root: {id, label, parentId}, descendants: [{id, label, parentId}], truncated } }`. The RU and all its descendants, flat, a parent always before its children. At most 500 nodes; `truncated: true` when cut. Same access scope as `GET /recording-units/{id}`. `404` if not found or out of scope. |
+| `POST /api/v1/recording-units/{id}/duplicate-structure` | Body `{ copies?: 1..50 (default 1), descendantIds?: number[] }` → `201 { data: { copies: [{id, label}], createdCount } }`. The RU is always copied; each copy stays under the same parents as the original; a copied descendant is attached only to the copy of its parent; a descendant whose ancestor is not listed is ignored. All-or-nothing (one transaction), at most 500 RUs created (`400` beyond). Needs the same right as editing the source RU (`403`). `409` if a generated identifier is already used. |
+| `POST /api/v1/finds/{id}/duplicate` | No body → `201 FindResponse`. Copies the descriptive data (type, category, RU, authors/collectors, collection date, materials, interpretation, dating, description, comments, element count, weight as a new measurement) on the same RU with a regenerated identifier. **Not copied:** id, own identifiers (other identifier, isolate number, which designate one specific find), parent/child links, containers, phases, and answers to additional fields. Same right as creating a find on that RU. |
+
+`POST /api/v1/recording-units/{id}/duplicate` (simple copy) is unchanged. Additional-field answers are not copied by any duplication endpoint.
+
 **Siblings contract** (every `…/siblings` endpoint): `{ data: { previous: { id, label, resourceUri } | null, next: … | null } }`. The list wraps around, so the next of the last item is the first. A value is `null` only when there is no other item.
 
 ### 3.2 New query parameters on existing endpoints
@@ -149,6 +171,8 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 | `GET /api/v1/projects/{id}/recording-units` | `search` (on `fullIdentifier`), `fields`, `f.*` filters: `f.fullIdentifier`, `f.matrixColor` (contains); `f.type`, `f.geomorphologicalCycle`, `f.geomorphologicalAgent`, `f.normalizedInterpretation`, `f.author`, `f.contributors`, `f.spatialUnit`, `f.parents`, `f.children` (id lists); `f.openingDate` / `f.closingDate` `.from` / `.to` (ISO dates); `f.tpq` / `f.taq` `.from` / `.to` (integers). Extra sort keys: `specimenCount`, `relationshipCount`, `parentsCount`, `childrenCount`, `*Label`. `Accept-Language` is now used for labels. |
 | `GET /api/v1/recording-units/{id}/mobiliers` | `search`, `f.*` |
 | `GET /api/v1/places/{id}` | `Accept-Language` |
+| `GET /api/v1/places`, `GET /api/v1/places/{id}/children` | `fields` (projection, from `place-types`), `sort=<fieldId>:dir`, `f.<fieldId>` filters (contains), `search` on `name`. Address is a composite object with no list value: it is not sortable, filterable or projected. |
+| `GET /api/v1/organizations/…` lists (`/recording-units`, `/finds`, `/phases`, `/containers`) | `fields=` takes the ids of the organisation catalogues above (§3.1) |
 
 **Generic custom-field filtering and sort.** This applies to every list that accepts `f.*`.
 
@@ -214,10 +238,13 @@ On RU lists the value is computed once per page.
 |---|---|---|
 | Projects (`/projects`, `/places/{id}/projects`, `/projects/{id}/siblings`) | `id`, `name`, `identifier`, `fullIdentifier`, `beginDate`, `endDate`, `creationTime`, `recordingUnitCount`, `<fieldId>` | **400** (was: ignored) |
 | Recording units (all RU lists) | `creationTime`, `id`, `identifier`, `fullIdentifier`, `openingDate`, `closingDate`, plus every RU table column: `type`, `author`, `contributors`, `spatialUnit`, `matrixColor`, `geomorphologicalCycle`, `geomorphologicalAgent`, `normalizedInterpretation`, `tpq`, `taq`, `specimenCount`, `relationshipCount`, `parentsCount`, `childrenCount`, …, and `<fieldId>` | **400** (was: fallback to default) |
-| Finds | `fullIdentifier`, `collectionDate`, `creationTime`, `id`, `<fieldId>` | **400** |
+| Finds | `fullIdentifier`, `collectionDate`, `creationTime`, `id`, `<fieldId>` (`creationTime` is also the default of `/recording-units/{id}/mobiliers`, which used to answer `400` once an `f.*` filter was set) | **400** |
 | Phases | `identifier`, `orderNumber`, `title`, `id`, `<fieldId>` | **400** |
 | Containers | `identifier`, `id`, `<fieldId>` | **400** |
-| Places, organizations | `id`, `name`, `code`, `creationTime` / organisation fields | fallback to default (unchanged) |
+| Places | `id`, `name`, `code`, `creationTime`, `<fieldId>` (ids from `place-types`) | fallback to default (unchanged) |
+| Organizations | `id`, `name`, `code`, `creationTime` / organisation fields | fallback to default (unchanged) |
+
+`zInf` / `zSup` (RU altitudes, links to a measurement) sort and filter as numbers on the normalised value; a RU without altitude is **not** dropped by the sort (left join), and empty values sort last. `chronologicalPhase` sorts on the entity attribute. No catalogue declares a non-sortable field any more.
 
 Every sorted list now adds a **stable `id:asc` tie-breaker**, so pages no longer overlap or skip rows when several items share the sort value. That changes the order of equal-valued items compared with `main`.
 
@@ -280,3 +307,27 @@ These exist for the SIAMOIS web UI embedding and aren't part of the public contr
 ## 6. Unchanged
 
 Every other endpoint keeps its path, parameters and status codes. The only changes to them are the additive response fields in §3.4. This includes: auth (`/auth/login`, `/auth/me`), documents, concepts/vocabularies, users, `/projects/{id}/concepts|documents|field-codes|find-types|recording-unit-types|geopackage`, `/recording-units/{id}` (GET/PATCH/DELETE), stratigraphic relationships, parents/children link/unlink, finds CRUD and `/finds/form`, `/recording-units/creation-form`, `/places/autocomplete`, `/places/{id}/mobiliers|recording-units`, ARK resolver.
+
+---
+
+## 7. What changed since the first version (2026-09-25 → 2026-10-01)
+
+For clients that read the first version of this document.
+
+**Added**
+- Organisation column catalogues: `GET /organizations/{id}/{recording-unit|find|phase|container|place}-types` (§3.1).
+- `GET /recording-units/{id}/structure`, `POST /recording-units/{id}/duplicate-structure`, `POST /finds/{id}/duplicate` (§3.1).
+- Places: `fields`, `sort=<fieldId>`, `f.<fieldId>` on `GET /places` and `GET /places/{id}/children` (§3.2).
+
+**Changed**
+- Finds: `creationTime` accepted as sort (fixes a `400` on `/recording-units/{id}/mobiliers` with `f.*`).
+- Numeric altitudes (`zInf`, `zSup`) and `chronologicalPhase` are sortable and filterable.
+- Multi-valued fields are `MultiValue` / `SelectManyFieldAnswer` with `valuesLimit` (S5, unchanged since the first version).
+
+**Removed or breaking:** nothing beyond B1–B7 and S1–S5 above.
+
+**Known limits worth telling consumers**
+- A list's `answers` carry at most `valuesLimit` values per multi-valued field. Never write back a list you read with `complete: false`; use `add` / `remove`.
+- Sorting or filtering on an additional field is a correlated sub-query per row: measured at about 460 ms for 300 000 recording units. Fine today, to be re-measured at 10× that volume.
+- `offset` must still be a multiple of `limit`.
+- A fixed cost of about 430 table scans per page is not yet analysed (only matters if latency becomes an issue).
