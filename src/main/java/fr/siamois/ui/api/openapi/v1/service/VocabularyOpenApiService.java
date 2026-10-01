@@ -1,8 +1,16 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import org.hibernate.Hibernate;
+import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -35,6 +43,8 @@ public class VocabularyOpenApiService {
     private final FieldConfigurationService fieldConfigurationService;
     private final VocabularyService vocabularyService;
     private final VocabularyOpenApiMapper vocabularyOpenApiMapper;
+    private final CustomFieldRepository customFieldRepository;
+    private final ConceptService conceptService;
 
     /**
      * Vocabulaires complets pour une organisation : catalogue des thésaurus et concepts par field_code
@@ -96,6 +106,92 @@ public class VocabularyOpenApiService {
         } catch (NoConfigForFieldException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Aucun vocabulaire configuré pour le fieldCode : " + fieldCode);
+        }
+    }
+
+    /**
+     * The suggestions of one vocabulary field, resolved the way the JSF form resolves them
+     * ({@link FieldConfigurationService#fetchAutocomplete(CustomFieldConcept, String, Long, Long)}):
+     * the field's own branch/collection restriction first, then the project's thesaurus, then its
+     * field code. The only path for a vocabulary field that has no field code of its own.
+     *
+     * @param projectId      the project the edited entity belongs to, if any (project thesaurus)
+     * @param valueConceptId the entity's type concept, if any (type-scoped restriction)
+     */
+    @Transactional(readOnly = true)
+    public List<ConceptAutocompleteDTO> getConceptsForField(long organizationId,
+                                                            long fieldId,
+                                                            @Nullable Long projectId,
+                                                            @Nullable Long valueConceptId,
+                                                            @Nullable String q,
+                                                            String lang,
+                                                            PersonDTO person) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
+        }
+        CustomField field = customFieldRepository.findById(fieldId)
+                .map(f -> (CustomField) Hibernate.unproxy(f))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ introuvable : " + fieldId));
+        if (!(field instanceof CustomFieldConcept conceptField)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le champ " + fieldId + " n'est pas un champ de vocabulaire");
+        }
+        UserInfo userInfo = new UserInfo(institution, person, lang);
+        return OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            try {
+                return fieldConfigurationService.fetchAutocomplete(conceptField, q, projectId, valueConceptId);
+            } catch (NoConfigForFieldException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Aucun vocabulaire configuré pour le champ : " + fieldId);
+            }
+        });
+    }
+
+    /**
+     * The suggestions of a field whose list depends on another field's answer (rule
+     * {@code options: RELATED_CONCEPTS}): the concepts related to {@code relatedToConceptId} among
+     * those configured for the field's code ({@link FieldConfigurationService#fetchAutocompleteRelated}).
+     * Not read-only: related concepts still stubbed from an import are fetched from the thesaurus
+     * on first read.
+     *
+     * @param fieldCode the field's code, or null when {@code fieldId} names a field-code field
+     * @param fieldId   alternative to {@code fieldCode}
+     * @param projectId the project the edited entity belongs to, if any (project override)
+     */
+    @Transactional
+    public List<ConceptAutocompleteDTO> getRelatedConcepts(long organizationId,
+                                                           @Nullable String fieldCode,
+                                                           @Nullable Long fieldId,
+                                                           long relatedToConceptId,
+                                                           @Nullable Long projectId,
+                                                           @Nullable String q,
+                                                           String lang,
+                                                           PersonDTO person) {
+        InstitutionDTO institution = institutionService.findById(organizationId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
+        }
+        String code = fieldCode;
+        if ((code == null || code.isBlank()) && fieldId != null) {
+            CustomField field = customFieldRepository.findById(fieldId)
+                    .map(f -> (CustomField) Hibernate.unproxy(f))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ introuvable : " + fieldId));
+            if (field instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
+                code = fromFieldCode.getFieldCode();
+            }
+        }
+        if (code == null || code.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "relatedToConceptId demande un champ rattaché à un fieldCode");
+        }
+        Concept base = conceptService.findById(relatedToConceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Concept introuvable : " + relatedToConceptId));
+        UserInfo userInfo = new UserInfo(institution, person, lang);
+        try {
+            return fieldConfigurationService.fetchAutocompleteRelated(userInfo, code, base, q, projectId);
+        } catch (NoConfigForFieldException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Aucun vocabulaire configuré pour le fieldCode : " + code);
         }
     }
 

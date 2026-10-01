@@ -11,7 +11,6 @@ import fr.siamois.infrastructure.database.repositories.BookmarkRepository;
 import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +27,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -122,26 +123,6 @@ class BookmarkServiceTest {
     }
 
     @Test
-    void testSaveCreatesBookmark() {
-
-        AbstractPanel panel = mock(AbstractPanel.class);
-        Bookmark savedBookmark = new Bookmark();
-        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
-        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
-        when(panel.ressourceUri()).thenReturn("resourceUri");
-        when(panel.getTitleCodeOrTitle()).thenReturn("titleCode");
-        when(bookmarkRepository.save(any(Bookmark.class))).thenReturn(savedBookmark);
-
-        Bookmark result = bookmarkService.save(userInfo, panel);
-
-        assertNotNull(result);
-        assertEquals(savedBookmark, result);
-        verify(panel, times(1)).ressourceUri();
-        verify(panel, times(1)).getTitleCodeOrTitle();
-        verify(bookmarkRepository, times(1)).save(any(Bookmark.class));
-    }
-
-    @Test
     void testSave_Success() {
         String uri = "resource-uri";
         String title = "title";
@@ -198,6 +179,33 @@ class BookmarkServiceTest {
 
         verify(bookmarkRepository).deleteBookmarkByPersonAndInstitutionAndResourceUri(
                 person, institution, "resource-uri");
+    }
+
+    // ---- findBookmarkedResourceUris (bulk, plan §5/§6) -----------------------------------
+
+    @Test
+    void findBookmarkedResourceUris_returnsOnlyTheBookmarkedSubset() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+
+        Bookmark bookmarked = new Bookmark();
+        bookmarked.setResourceUri("/action-unit/1");
+        when(bookmarkRepository.findByPersonAndInstitutionAndResourceUriIn(
+                eq(person), eq(institution), anyCollection()))
+                .thenReturn(List.of(bookmarked));
+
+        java.util.Set<String> result = bookmarkService.findBookmarkedResourceUris(
+                userInfo, List.of("/action-unit/1", "/action-unit/2"));
+
+        assertEquals(java.util.Set.of("/action-unit/1"), result);
+    }
+
+    @Test
+    void findBookmarkedResourceUris_emptyInput_returnsEmptySetWithoutQuerying() {
+        java.util.Set<String> result = bookmarkService.findBookmarkedResourceUris(userInfo, List.of());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(bookmarkRepository);
     }
 
 }

@@ -1912,15 +1912,16 @@ class SpecimenServiceTest {
     }
 
     @Test
-    void toggleValidated_unknownStatus_throwsIllegalStateException() {
+    void toggleValidated_cancelled_reentersTheCycleAtIncomplete() {
+        // The validated column is NOT NULL: the only status outside the JSF cycle is CANCELLED.
         Specimen specimen = new Specimen();
-        specimen.setValidated(null);
+        specimen.setValidated(ValidationStatus.CANCELLED);
         when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
+        when(specimenRepository.save(specimen)).thenReturn(specimen);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> specimenService.toggleValidated(1L));
-        assertTrue(ex.getMessage().startsWith("Unknown status:"));
-        verify(specimenRepository, never()).save(any());
+        specimenService.toggleValidated(1L);
+
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
     }
 
     @Test

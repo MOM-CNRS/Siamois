@@ -182,7 +182,8 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
                     PermissionConstants.INSTANCE_EDIT_PHASES,
                     PermissionConstants.INSTANCE_EDIT_FINDS,
-                    PermissionConstants.INSTANCE_EDIT_CONTAINERS))
+                    PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                    PermissionConstants.INSTANCE_VALIDATE))
     );
 
     private static final List<PermissionThemeSpec> ORGANISATION_PERMISSION_THEMES = List.of(
@@ -198,7 +199,8 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.ORGANIZATION_EDIT_RECORDING_UNITS,
                     PermissionConstants.ORGANIZATION_EDIT_PHASES,
                     PermissionConstants.ORGANIZATION_EDIT_FINDS,
-                    PermissionConstants.ORGANIZATION_EDIT_CONTAINERS))
+                    PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                    PermissionConstants.ORGANIZATION_VALIDATE))
     );
 
     private static final List<PermissionThemeSpec> PROJECT_PERMISSION_THEMES = List.of(
@@ -208,7 +210,8 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
                     PermissionConstants.PROJECT_EDIT_PHASES,
                     PermissionConstants.PROJECT_EDIT_FINDS,
-                    PermissionConstants.PROJECT_EDIT_CONTAINERS))
+                    PermissionConstants.PROJECT_EDIT_CONTAINERS,
+                    PermissionConstants.PROJECT_VALIDATE))
     );
 
     /** One row of the read-only permission checkbox list: a permission's label and whether the profile grants it. */

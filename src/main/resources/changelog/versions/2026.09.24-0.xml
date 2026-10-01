@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    ValidationStatus gains CANCELLED ("Annulé"). Hibernate generated a CHECK constraint listing the
+    enum's values when it created each TraceableEntity table, and ddl-auto: update never alters an
+    existing constraint — so every table that has one must be widened here, or saving CANCELLED
+    fails. On a fresh database Liquibase runs before Hibernate creates the tables: the precondition
+    marks each change as ran, and Hibernate then creates the constraint with all four values.
+    -->
+
+    <changeSet id="2026.09.24-0-action_unit-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="action_unit"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE action_unit DROP CONSTRAINT IF EXISTS action_unit_validated_check;
+            ALTER TABLE action_unit ADD CONSTRAINT action_unit_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-1-recording_unit-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="recording_unit"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE recording_unit DROP CONSTRAINT IF EXISTS recording_unit_validated_check;
+            ALTER TABLE recording_unit ADD CONSTRAINT recording_unit_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-2-spatial_unit-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="spatial_unit"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE spatial_unit DROP CONSTRAINT IF EXISTS spatial_unit_validated_check;
+            ALTER TABLE spatial_unit ADD CONSTRAINT spatial_unit_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-3-specimen-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="specimen"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE specimen DROP CONSTRAINT IF EXISTS specimen_validated_check;
+            ALTER TABLE specimen ADD CONSTRAINT specimen_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-4-container-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="container"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE container DROP CONSTRAINT IF EXISTS container_validated_check;
+            ALTER TABLE container ADD CONSTRAINT container_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-5-phase-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="phase"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE phase DROP CONSTRAINT IF EXISTS phase_validated_check;
+            ALTER TABLE phase ADD CONSTRAINT phase_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-6-siamois_document-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE siamois_document DROP CONSTRAINT IF EXISTS siamois_document_validated_check;
+            ALTER TABLE siamois_document ADD CONSTRAINT siamois_document_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.24-7-specimen_study-validated-cancelled" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="specimen_study"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE specimen_study DROP CONSTRAINT IF EXISTS specimen_study_validated_check;
+            ALTER TABLE specimen_study ADD CONSTRAINT specimen_study_validated_check
+                CHECK (validated IN ('INCOMPLETE', 'COMPLETE', 'VALIDATED', 'CANCELLED'));
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,16 +1,12 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.phase.Phase;
-import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.ui.form.dto.FormUiDto;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import fr.siamois.utils.TestForms;
 
 import java.util.List;
 import java.util.Map;
@@ -29,35 +25,26 @@ class SystemFieldCatalogTest {
 
     @ParameterizedTest
     @EnumSource(ConfigurableTable.class)
-    void systemColumnsOf_shouldHoldTheSystemFieldsOfEveryConfigurableTable(ConfigurableTable table) {
-        assertThat(SystemFieldCatalog.systemColumnsOf(table))
+    void specsOf_shouldHoldTheSystemFieldsOfEveryConfigurableTable(ConfigurableTable table) {
+        assertThat(SystemFieldCatalog.specsOf(table))
                 .as("%s has no system field to configure", table)
                 .isNotEmpty()
-                .allSatisfy(column -> {
-                    Assertions.assertNotNull(column.getField());
-                    assertThat(column.getField().getIsSystemField()).isTrue();
-                });
+                .allSatisfy(spec -> assertThat(spec.field().getIsSystemField()).isTrue());
     }
 
     @ParameterizedTest
     @EnumSource(ConfigurableTable.class)
-    void systemColumnsOf_shouldFollowTheOrderOfTheDetailsForm(ConfigurableTable table) {
-        List<String> formOrder = detailsFormOf(table).getLayout().stream()
-                .flatMap(panel -> panel.getRows().stream())
-                .flatMap(row -> row.getColumns().stream())
-                .filter(column -> {
-                    Assertions.assertNotNull(column.getField());
-                    return Boolean.TRUE.equals(column.getField().getIsSystemField());
-                })
-                .map(column -> column.getField().getLabel())
+    void theInitialLayoutLaysOutEveryVisibleSystemFieldExactlyOnce(ConfigurableTable table) {
+        List<Long> laidOut = TestForms.layoutOf(table).groups().stream()
+                .flatMap(group -> group.items().stream())
+                .map(item -> item.field().getId())
+                .toList();
+        List<Long> visible = SystemFieldCatalog.specsOf(table).stream()
+                .filter(spec -> !spec.hidden())
+                .map(spec -> spec.field().getId())
                 .toList();
 
-        assertThat(SystemFieldCatalog.systemColumnsOf(table))
-                .extracting(column -> {
-                    Assertions.assertNotNull(column.getField());
-                    return column.getField().getLabel();
-                })
-                .containsExactlyElementsOf(formOrder);
+        assertThat(laidOut).doesNotHaveDuplicates().containsExactlyInAnyOrderElementsOf(visible);
     }
 
     /**
@@ -66,14 +53,11 @@ class SystemFieldCatalogTest {
      */
     @ParameterizedTest
     @EnumSource(ConfigurableTable.class)
-    void fieldsOf_shouldHoldTheFieldsOfTheColumns(ConfigurableTable table) {
+    void fieldsOf_shouldHoldTheFieldsOfTheSpecs(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.fieldsOf(table))
                 .extracting(CustomField::getLabel)
-                .containsExactlyElementsOf(SystemFieldCatalog.systemColumnsOf(table).stream()
-                        .map(column -> {
-                            Assertions.assertNotNull(column.getField());
-                            return column.getField().getLabel();
-                        })
+                .containsExactlyElementsOf(SystemFieldCatalog.specsOf(table).stream()
+                        .map(spec -> spec.field().getLabel())
                         .toList());
     }
 
@@ -115,11 +99,9 @@ class SystemFieldCatalogTest {
     }
 
     /**
-     * The details form is a shared, static singleton (e.g. {@link RecordingUnit#DETAILS_FORM}) —
-     * unlike the old table-factory-backed catalog, which rebuilt a fresh definition on every call,
-     * so the catalog must hand out independent copies of its fields rather than the form's own
-     * instances, or a caller mutating one (tests routinely stamp an id on a field to simulate a
-     * persisted row) would corrupt the singleton for the rest of the JVM's lifetime.
+     * The declared fields are shared static definitions, so the catalog must hand out independent
+     * copies of them, or a caller mutating one (tests routinely stamp an id on a field to simulate a
+     * persisted row) would corrupt the definition for the rest of the JVM's lifetime.
      */
     @Test
     void fieldsOf_shouldHandOutFreshFieldsSoACallerCannotAlterTheDefinition() {
@@ -130,22 +112,13 @@ class SystemFieldCatalogTest {
     }
 
     @Test
-    void systemColumnsOf_shouldRefuseToAnswerForNoTable() {
-        assertThatThrownBy(() -> SystemFieldCatalog.systemColumnsOf(null))
+    void specsOf_shouldRefuseToAnswerForNoTable() {
+        assertThatThrownBy(() -> SystemFieldCatalog.specsOf(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     private Map<String, CustomField> byLabel(ConfigurableTable table) {
         return SystemFieldCatalog.fieldsOf(table).stream()
                 .collect(Collectors.toMap(CustomField::getLabel, Function.identity(), (first, second) -> first));
-    }
-
-    private FormUiDto detailsFormOf(ConfigurableTable table) {
-        return switch (table) {
-            case UE -> RecordingUnit.DETAILS_FORM;
-            case MOBILIER -> Specimen.DETAILS_FORM;
-            case PHASE -> Phase.DETAILS_FORM;
-            case CONTENANT -> Container.DETAILS_FORM;
-        };
     }
 }

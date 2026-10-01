@@ -1,6 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
@@ -22,11 +25,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +49,10 @@ class VocabularyOpenApiServiceTest {
     private VocabularyService vocabularyService;
     @Mock
     private VocabularyOpenApiMapper vocabularyOpenApiMapper;
+    @Mock
+    private CustomFieldRepository customFieldRepository;
+    @Mock
+    private fr.siamois.domain.services.vocabulary.ConceptService conceptService;
 
     @InjectMocks
     private VocabularyOpenApiService service;
@@ -134,5 +143,83 @@ class VocabularyOpenApiServiceTest {
         assertThat(data.vocabulariesByFieldCode()).isEqualTo(vocab);
         assertThat(data.vocabularies()).isEmpty();
         verify(fieldConfigurationService).fetchAllConfiguredVocabularies(any());
+    }
+
+    @Test
+    void getConceptsForField_fetchesTheFieldsOwnSuggestions_scopedToProjectAndType() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(5L);
+        when(customFieldRepository.findById(5L)).thenReturn(Optional.of(field));
+        ConceptAutocompleteDTO item = new ConceptAutocompleteDTO(null, "Label", "fr");
+        when(fieldConfigurationService.fetchAutocomplete(same(field), any(), any(), any())).thenReturn(List.of(item));
+
+        List<ConceptAutocompleteDTO> result = service.getConceptsForField(10L, 5L, 7L, 121L, "la", "fr", caller.person());
+
+        assertThat(result).containsExactly(item);
+        verify(fieldConfigurationService).fetchAutocomplete(field, "la", 7L, 121L);
+    }
+
+    @Test
+    void getConceptsForField_rejectsANonVocabularyField() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        CustomFieldText text = new CustomFieldText();
+        text.setId(6L);
+        when(customFieldRepository.findById(6L)).thenReturn(Optional.of(text));
+
+        var arg7 = caller.person();
+        assertThatThrownBy(() -> service.getConceptsForField(10L, 6L, null, null, null, "fr", arg7))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void getConceptsForField_404sOnAnUnknownField() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(customFieldRepository.findById(404L)).thenReturn(Optional.empty());
+
+        var arg7 = caller.person();
+        assertThatThrownBy(() -> service.getConceptsForField(10L, 404L, null, null, null, "fr", arg7))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void getRelatedConcepts_returnsTheConceptsRelatedToTheParentAnswer() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        fr.siamois.domain.models.vocabulary.Concept nature = new fr.siamois.domain.models.vocabulary.Concept();
+        nature.setId(77L);
+        when(conceptService.findById(77L)).thenReturn(Optional.of(nature));
+        ConceptAutocompleteDTO related = new ConceptAutocompleteDTO(null, "Chenal", "fr");
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), org.mockito.ArgumentMatchers.eq("SIARU.INTERPRETATION"),
+                same(nature), org.mockito.ArgumentMatchers.eq("ch"), org.mockito.ArgumentMatchers.eq(5L)))
+                .thenReturn(List.of(related));
+
+        List<ConceptAutocompleteDTO> result = service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, 5L, "ch", "fr", caller.person());
+
+        assertThat(result).containsExactly(related);
+    }
+
+    @Test
+    void getRelatedConcepts_withoutFieldCode_is400() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+
+        var arg8 = caller.person();
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, null, null, 77L, null, null, "fr", arg8))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getRelatedConcepts_unknownConcept_is404() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(conceptService.findById(77L)).thenReturn(Optional.empty());
+
+        var arg8 = caller.person();
+        assertThatThrownBy(() -> service.getRelatedConcepts(10L, "SIARU.INTERPRETATION", null, 77L, null, null, "fr", arg8))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

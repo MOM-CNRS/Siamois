@@ -17,11 +17,8 @@ import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiple
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
-import fr.siamois.domain.models.recordingunit.form.RecordingUnitDetailsForm;
-import fr.siamois.domain.models.recordingunit.form.RecordingUnitNewForm;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.form.dto.FormUiDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,7 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 
 @Data
@@ -337,13 +334,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     public static final String COMMON_HEADER_GENERAL = "common.header.general";
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto NEW_UNIT_FORM = RecordingUnitNewForm.build();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto DETAILS_FORM = RecordingUnitDetailsForm.build();
 
 
 

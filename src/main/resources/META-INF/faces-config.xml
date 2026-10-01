@@ -4,9 +4,4 @@
         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_3.xsd"
         version="2.3">
 
-    <component>
-        <component-type>fr.siamois.ui.custom.LazyTreeTable</component-type>
-        <component-class>fr.siamois.ui.custom.LazyTreeTable</component-class>
-    </component>
-
 </faces-config>

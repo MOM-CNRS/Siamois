@@ -46,6 +46,15 @@ public class FilterDTO {
     @Getter
     private Set<Long> matchIds;
 
+    /**
+     * The list's sort and filters on form fields (by field id), which the services AND onto the
+     * specification they build from the named filters above.
+     */
+    @Setter
+    @Getter
+    @NonNull
+    private FieldQuery fieldQuery = FieldQuery.NONE;
+
     public enum FilterType {
         START_WITH,
         CONTAINS,

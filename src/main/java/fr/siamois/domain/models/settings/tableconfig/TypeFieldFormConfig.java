@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.settings.tableconfig;
 
+import fr.siamois.domain.models.form.rules.RuleFieldFamily;
 import lombok.*;
 
 import java.io.Serializable;
@@ -29,6 +30,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class TypeFieldFormConfig implements Serializable {
+    /** The custom field's id: what rules refer to. */
+    private Long id;
     private String name;
     private FieldType type;
     private String description;
@@ -39,4 +42,5 @@ public class TypeFieldFormConfig implements Serializable {
     private boolean configurable;
     private String sourceLabel;
     private String valueBinding;
+    private RuleFieldFamily ruleFamily;
 }

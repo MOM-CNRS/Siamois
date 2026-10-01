@@ -1,15 +1,19 @@
 package fr.siamois.domain.models.phase.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 public abstract class PhaseForm {
 
@@ -35,6 +39,8 @@ public abstract class PhaseForm {
             .vocabulary(SYSTEM_THESO).externalId("phase.keywords").build();
     protected static final Concept actionUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO).externalId("phase.actionUnit").build();
+    protected static final Concept recordingUnitsConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO).externalId("phase.recordingUnits").build();
 
     @Transient
     protected static final CustomFieldText identifierField = CustomFieldText.builder()
@@ -138,4 +144,34 @@ public abstract class PhaseForm {
             .valueBinding("actionUnit")
             .concept(actionUnitConcept)
             .build();
+
+    // The inverse of a recording unit's phases (recording_unit_phase): read-only here, written from
+    // the recording unit's side.
+    @Transient
+    protected static final CustomFieldSelectMultipleRecordingUnit recordingUnitsField = CustomFieldSelectMultipleRecordingUnit.builder()
+            .label("phase.field.recordingUnits")
+            .isSystemField(true)
+            .id(-511L)
+            .valueBinding("recordingUnits")
+            .concept(recordingUnitsConcept)
+            .build();
+
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.hiddenReadOnly(identifierField),
+            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.of(titleField),
+            SystemFieldSpec.hiddenReadOnly(actionUnitField),
+            SystemFieldSpec.of(orderNumberField),
+            SystemFieldSpec.of(keywordsField),
+            SystemFieldSpec.of(descriptionField),
+            SystemFieldSpec.readOnly(recordingUnitsField),
+            SystemFieldSpec.of(periodsField),
+            SystemFieldSpec.of(lowerBoundField),
+            SystemFieldSpec.of(upperBoundField));
+    }
 }

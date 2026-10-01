@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Additional-field answers, two fixes Hibernate's ddl-auto: update cannot make on its own.
+
+    1. The five custom_field_answer_*_answers join tables were mapped @OneToMany + @JoinTable, for
+       which Hibernate generates UNIQUE(<target column>): a concept/person/place/project/action code
+       could be the answer of only ONE additional field in the whole database. The mapping is now
+       @ManyToMany (no such constraint), but update never drops an existing one. The constraint
+       name is a Hibernate hash, so it is looked up in pg_constraint rather than hard-coded.
+
+    2. form_config_answer was keyed by (form config, PERSON, entity): each user got their own
+       answer set and saw only theirs. Answers belong to the entity now, and FormConfigAnswer
+       declares UNIQUE(entity, form config) — which Hibernate can only add once duplicates are
+       gone. Keep the most recent set (highest id) per (entity, form config), drop the others.
+
+    Liquibase runs before Hibernate: on a fresh database none of these tables exist yet, the
+    preconditions mark the changes as ran, and Hibernate creates the tables with the new mapping.
+    -->
+
+    <changeSet id="2026.09.25-0-drop-answer-join-table-unique" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="custom_field_answer_concept_answers"/>
+        </preConditions>
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                r record;
+            BEGIN
+                FOR r IN
+                    SELECT c.conrelid::regclass AS tbl, c.conname
+                    FROM pg_constraint c
+                    WHERE c.contype = 'u'
+                      AND c.conrelid::regclass::text IN (
+                          'custom_field_answer_concept_answers',
+                          'custom_field_answer_person_answers',
+                          'custom_field_answer_spatial_unit_answers',
+                          'custom_field_answer_action_unit_answers',
+                          'custom_field_answer_action_code_answers')
+                      -- only the single-column constraint on the target, never a composite one
+                      AND array_length(c.conkey, 1) = 1
+                LOOP
+                    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
+                END LOOP;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.09.25-1-dedupe-form-config-answer" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="form_config_answer"/>
+        </preConditions>
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                entity_col text;
+                join_tbl text;
+            BEGIN
+                CREATE TEMP TABLE stale_form_config_answer (id bigint PRIMARY KEY) ON COMMIT DROP;
+
+                FOREACH entity_col IN ARRAY ARRAY['fk_recording_unit_id', 'fk_specimen_id', 'fk_phase_id', 'fk_container_id']
+                LOOP
+                    EXECUTE format(
+                        'INSERT INTO stale_form_config_answer (id)
+                         SELECT form_config_answer_id FROM (
+                             SELECT form_config_answer_id,
+                                    row_number() OVER (PARTITION BY %1$I, fk_form_config_id
+                                                       ORDER BY form_config_answer_id DESC) AS rn
+                             FROM form_config_answer
+                             WHERE %1$I IS NOT NULL
+                         ) ranked
+                         WHERE rn > 1
+                         ON CONFLICT DO NOTHING', entity_col);
+                END LOOP;
+
+                FOREACH join_tbl IN ARRAY ARRAY[
+                    'custom_field_answer_concept_answers',
+                    'custom_field_answer_person_answers',
+                    'custom_field_answer_spatial_unit_answers',
+                    'custom_field_answer_action_unit_answers',
+                    'custom_field_answer_action_code_answers']
+                LOOP
+                    IF to_regclass(join_tbl) IS NOT NULL THEN
+                        EXECUTE format('DELETE FROM %I WHERE fk_form_config_answer_id IN (SELECT id FROM stale_form_config_answer)', join_tbl);
+                    END IF;
+                END LOOP;
+
+                DELETE FROM custom_field_answer WHERE fk_form_config_answer_id IN (SELECT id FROM stale_form_config_answer);
+                DELETE FROM form_config_answer WHERE form_config_answer_id IN (SELECT id FROM stale_form_config_answer);
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

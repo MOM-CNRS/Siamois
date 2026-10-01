@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
+import fr.siamois.domain.models.ValidationStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -14,6 +15,11 @@ import java.util.Map;
 @Data
 @Schema(description = "Mise à jour partielle d'une unité d'enregistrement")
 public class RecordingUnitPatchRequest {
+
+    @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
+            + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
+            + "avec le droit validateur (_permissions.canValidate).")
+    private ValidationStatus validated;
 
     @Schema(
             description = "Révision attendue (valeur de syncRevision au moment du chargement client). "

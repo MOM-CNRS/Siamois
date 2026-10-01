@@ -215,7 +215,7 @@ def build_place_number_map(client: SiamoisClient, project: dict) -> dict[int, st
     if not linked_ids:
         return {}
 
-    places = client.list_all(f"/api/v1/organizations/{org_id}/places")
+    places = client.list_all("/api/v1/places", {"organizationId": org_id})
     result = {}
     for place in places:
         if str(place.get("id")) in linked_ids and place.get("placeNumber") is not None:

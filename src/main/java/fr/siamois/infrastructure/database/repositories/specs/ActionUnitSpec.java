@@ -5,6 +5,7 @@ import fr.siamois.domain.models.permissions.*;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Root;
@@ -221,6 +222,49 @@ public class ActionUnitSpec {
             return cb.or(
                     root.get(SPATIAL_UNIT_FILTER).get(ID_FILTER).in(ids),
                     cb.exists(subquery));
+        };
+    }
+
+    /**
+     * The row strictly after (or before) the given one in the effective list order —
+     * {@code (sortField direction, id asc)}, exactly the order {@code ProjectApiService.parseProjectSort}
+     * builds. A plain lexicographic tuple comparison: the sort field decides, {@code id} only breaks
+     * a tie, which is what keeps the sequence deterministic when several units share a creation
+     * instant (a bulk import) — the same reason {@code SpatialUnitRepository.findNext} carries its
+     * own id tie-break.
+     *
+     * <p>{@code forward} walks that order as-is ("next"); {@code false} walks it reversed
+     * ("previous"). A caller walking backwards must reverse the {@code Sort} it pages with too,
+     * otherwise the row it gets back is the far end of the set rather than the adjacent one.</p>
+     *
+     * <p>{@code sortField} must be a column that is non-null for every row: Postgres orders NULLs
+     * (NULLS LAST on ASC) while this comparison simply drops them, silently truncating the
+     * sequence. Validating that is the caller's job — see
+     * {@code ProjectApiService#CURSORABLE_PROJECT_SORT_FIELDS}.</p>
+     */
+    @NonNull
+    public static Specification<ActionUnit> cursor(String sortField,
+                                                   Sort.Direction direction,
+                                                   @Nullable Comparable<?> value,
+                                                   @Nullable Long currentId,
+                                                   boolean forward) {
+        return (root, query, cb) -> {
+            if (value == null || currentId == null) {
+                return cb.conjunction();
+            }
+            Expression<Comparable<Object>> field = root.get(sortField);
+            @SuppressWarnings("unchecked")
+            Comparable<Object> bound = (Comparable<Object>) value;
+            // The travel direction on the sort field flips both with the sort's own direction and
+            // with which way we walk; the id tie-break only flips with the latter, since id is
+            // always the ASC second criterion of the effective order.
+            boolean fieldAscending = (direction == Sort.Direction.ASC) == forward;
+            Expression<Long> id = root.get(ID_FILTER);
+            return cb.or(
+                    fieldAscending ? cb.greaterThan(field, bound) : cb.lessThan(field, bound),
+                    cb.and(
+                            cb.equal(field, bound),
+                            forward ? cb.greaterThan(id, currentId) : cb.lessThan(id, currentId)));
         };
     }
 

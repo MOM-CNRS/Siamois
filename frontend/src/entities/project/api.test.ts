@@ -1,0 +1,184 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { apiFetch } from "../../api/client";
+import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
+
+vi.mock("../../api/client", () => ({
+  apiFetch: vi.fn(),
+}));
+
+const mockedApiFetch = vi.mocked(apiFetch);
+
+beforeEach(() => {
+  mockedApiFetch.mockClear();
+});
+
+describe("listProjects", () => {
+  it("builds the query string from ListParams and normalizes meta.total to totalCount", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      data: [{ resourceType: "projects", id: "1", name: "A", fullIdentifier: "A-1", identifier: "A-1" }],
+      meta: { total: 42, limit: 20, offset: 0 },
+    });
+
+    const result = await listProjects({
+      offset: 0,
+      limit: 20,
+      search: "fouille",
+      sort: "name:asc",
+      organizationId: 100,
+      fields: "-118,-109",
+    });
+
+    expect(mockedApiFetch).toHaveBeenCalledTimes(1);
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("/api/v1/projects?");
+    expect(path).toContain("offset=0");
+    expect(path).toContain("limit=20");
+    expect(path).toContain("search=fouille");
+    expect(path).toContain("sort=name%3Aasc");
+    expect(path).toContain("organizationId=100");
+    expect(path).toContain("fields=-118%2C-109");
+
+    expect(result).toEqual({
+      data: [{ resourceType: "projects", id: "1", name: "A", fullIdentifier: "A-1", identifier: "A-1" }],
+      totalCount: 42,
+      limit: 20,
+      offset: 0,
+    });
+  });
+
+  it("omits optional params from the query string when absent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+
+    await listProjects({ offset: 0, limit: 20 });
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).not.toContain("search=");
+    expect(path).not.toContain("sort=");
+    expect(path).not.toContain("organizationId=");
+    expect(path).not.toContain("fields=");
+  });
+});
+
+describe("listProjects filters", () => {
+  it("encodes a contains filter as a bare f.<key>", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { name: { op: "contains", v: "foss" } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.name=foss");
+  });
+
+  it("encodes an in filter as repeated f.<key> params", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { status: { op: "in", v: ["12", "44"] } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.status=12");
+    expect(path).toContain("f.status=44");
+  });
+
+  it("encodes a range filter as f.<key>.from / f.<key>.to", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20, filters: { openingRate: { op: "range", from: "10", to: "40" } } });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("f.openingRate.from=10");
+    expect(path).toContain("f.openingRate.to=40");
+  });
+
+  it("omits f.* params entirely when filters is absent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+    await listProjects({ offset: 0, limit: 20 });
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).not.toContain("f.");
+  });
+});
+
+describe("getProject", () => {
+  it("fetches by id and unwraps the data envelope", async () => {
+    const project = { resourceType: "projects", id: "5", name: "B", fullIdentifier: "B-1", identifier: "B-1" };
+    mockedApiFetch.mockResolvedValueOnce({ data: project });
+
+    const result = await getProject(5);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5");
+    expect(result).toEqual(project);
+  });
+
+  it("asks for the answers projection when given a fields spec (what the fiche needs)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await getProject(5, "all");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5?fields=all");
+  });
+
+  it("encodes a comma-separated field list rather than sending it raw", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await getProject(5, "-102,42");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5?fields=-102%2C42");
+  });
+
+  it("forwards an answers map as-is (the click-to-edit overlay's write path)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await patchProject(5, { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
+    });
+  });
+});
+
+describe("patchProject", () => {
+  it("sends a PATCH with the given fields and unwraps the data envelope", async () => {
+    const project = { resourceType: "projects", id: "5", name: "Renamed", fullIdentifier: "B-1", identifier: "B-1" };
+    mockedApiFetch.mockResolvedValueOnce({ data: project });
+
+    const result = await patchProject(5, { name: "Renamed" });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { name: "Renamed" },
+    });
+    expect(result).toEqual(project);
+  });
+
+  it("forwards an answers map as-is (the click-to-edit overlay's write path)", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await patchProject(5, { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5", {
+      method: "PATCH",
+      body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
+    });
+  });
+});
+
+describe("getProjectSiblings", () => {
+  it("fetches /siblings with organizationId and unwraps null sides to undefined", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      data: {
+        previous: { id: "4", label: "OA-4", resourceUri: "/action-unit/4" },
+        next: null,
+      },
+    });
+
+    const result = await getProjectSiblings(5, { organizationId: 100 });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/siblings?organizationId=100");
+    expect(result).toEqual({
+      previous: { id: "4", label: "OA-4", resourceUri: "/action-unit/4" },
+      next: undefined,
+    });
+  });
+
+  it("omits organizationId from the query string when absent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { previous: null, next: null } });
+
+    await getProjectSiblings(5, {});
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/siblings");
+  });
+});

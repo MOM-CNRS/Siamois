@@ -22,6 +22,7 @@ public interface ContainerMapper extends Converter<Container, ContainerDTO> {
 
     @InheritInverseConfiguration
     @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "specimens", ignore = true)
     @DelegatingConverter
     Container invertConvert(ContainerDTO containerDTO);
 

@@ -1,0 +1,103 @@
+{
+  "groups" : [ {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -401,
+      "binding" : "recordingUnit",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -402,
+      "binding" : "parents",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -403,
+      "binding" : "children",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -423,
+      "binding" : "actionUnit",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -405,
+      "binding" : "otherIdentifier",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -409,
+      "binding" : "category",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -406,
+      "binding" : "isolationNumber",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -421,
+      "binding" : "containers",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -411,
+      "binding" : "material",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -412,
+      "binding" : "materialClass",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -413,
+      "binding" : "normalizedInterpretation",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -414,
+      "binding" : "description",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -415,
+      "binding" : "comments",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "common.header.chronology",
+    "fields" : [ {
+      "fieldId" : -416,
+      "binding" : "chronologicalAttribution",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -417,
+      "binding" : "taq",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -418,
+      "binding" : "tpq",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -422,
+      "binding" : "phases",
+      "width" : "QUARTER"
+    } ]
+  }, {
+    "label" : "common.header.measurement",
+    "fields" : [ {
+      "fieldId" : -420,
+      "binding" : "weight",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -419,
+      "binding" : "numberOfElements",
+      "width" : "QUARTER"
+    } ]
+  }, {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -407,
+      "binding" : "authors",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -408,
+      "binding" : "collectors",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -410,
+      "binding" : "collectionDate",
+      "width" : "QUARTER"
+    } ]
+  } ]
+}

@@ -4,6 +4,9 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,6 +31,7 @@ import java.util.List;
  */
 @Data
 @Entity
+@Audited
 @Table(name = "form_config", uniqueConstraints = @UniqueConstraint(
         name = "uk_form_config_scope",
         columnNames = {"fk_action_unit_id", "fk_field_concept_id", "fk_value_concept_id"}
@@ -43,24 +47,29 @@ public class FormConfig {
 
     @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @JoinColumn(name = "fk_value_concept_id")
     private Concept valueConcept;
 
     @NonNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @JoinColumn(name = "fk_field_concept_id", nullable = false)
     private Concept fieldConcept;
 
     @NonNull
     @ManyToOne(fetch = FetchType.LAZY)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @JoinColumn(name = "fk_institution_id")
     private Institution institution;
 
     @Nullable
     @ManyToOne(fetch = FetchType.LAZY)
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @JoinColumn(name = "fk_action_unit_id")
     private ActionUnit actionUnit;
 
+    @NotAudited
     @OneToMany(mappedBy = "formConfig", fetch = FetchType.LAZY)
     private List<FieldFormConfig> fieldConfigs;
 

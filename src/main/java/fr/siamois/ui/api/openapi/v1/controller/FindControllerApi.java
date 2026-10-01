@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
+
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.find.FindCreateRequest;
@@ -12,6 +14,7 @@ import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,6 +40,23 @@ public class FindControllerApi {
     private final FindOpenApiService findOpenApiService;
 
 
+    @GetMapping("/{id}/siblings")
+    @Operation(summary = "Mobilier précédent et suivant",
+            description = "Voisins dans le même projet, par ordre de création. Boucle en fin de liste (le suivant du "
+                    + "dernier est le premier) ; null seulement s'il n'y a aucun autre élément.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<SiblingsResponse> getSiblings(@PathVariable("id") long id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return ResponseEntity.ok(new SiblingsResponse(
+                findOpenApiService.findSiblings(id, caller.accessibleInstitutionIds())));
+    }
+
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Un mobilier avec ces valeurs",
@@ -67,6 +87,7 @@ public class FindControllerApi {
                         caller.person(), caller.accessibleInstitutionIds(), lang)));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un mobilier",
@@ -93,6 +114,7 @@ public class FindControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new FindResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement un mobilier",
@@ -119,6 +141,32 @@ public class FindControllerApi {
         FindResource resource = findOpenApiService.patchFind(
                 id, body, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new FindResponse(resource));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer un mobilier",
+            description = "Copie des données descriptives du mobilier (type, catégorie, UE, matériaux, description, "
+                    + "commentaires, datation, poids…) sur la même UE, avec un identifiant régénéré. Ne sont pas "
+                    + "copiés : les identifiants propres au mobilier (autre identifiant, n° d'isolat), les liens "
+                    + "parent/enfant, les contenants et les phases. Même droit que la création d'un mobilier sur l'UE."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créé"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "Mobilier introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<FindResponse> duplicateFind(
+            @Parameter(description = "Identifiant numérique du spécimen (specimen_id).", example = "42")
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        FindResource resource = findOpenApiService.duplicateFind(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new FindResponse(resource));
     }
 
     @DeleteMapping("/{id}")

@@ -1,6 +1,14 @@
-# Siamois
-SIAMOIS est une base de données dédiée à la gestion de la documentation associée aux données archéologiques tout au long de la chaîne opératoire allant de son enregistrement sur le terrain à sa publication et à son archivage. SIAMOIS contrôle en temps réel la cohérence logique des relations stratigraphiques lors de l’opération de terrain et les représente sous forme de graphes. SIAMOIS gère également le cycle de vie complet des mobiliers archéologiques et vestiges anthropobiologiques pour en assurer le suivi depuis leur découverte (études, analyses, restaurations, etc.).
+# Qualité de code
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
 
+# Siamois
+SIAMOIS est une plateforme open source de gestion et de structuration des données et de la documentation archéologiques, conçue pour accompagner l’ensemble de la chaîne opératoire, de l’enregistrement sur le terrain à la publication.
+
+Son principal objectif est de proposer un environnement configurable et adaptable aux différents contextes de production des données archéologiques. La structure des bases, les entités, les champs, les vocabulaires, les relations et les droits peuvent être configurés en fonction des besoins d’un projet, d’une opération ou d’une organisation, sans imposer un modèle de données unique. SIAMOIS est ainsi conçu pour prendre en compte la diversité des pratiques de l’archéologie préventive et programmée, en France comme à l’international.
+
+La plateforme permet notamment de structurer et de mettre en relation les données relatives aux unités stratigraphiques, phases, mobiliers, contenants, documents et autres objets de l’étude archéologique. Les relations stratigraphiques peuvent être contrôlées afin de détecter les incohérences logiques et représentées sous forme de graphes, facilitant ainsi l’analyse et la compréhension des séquences stratigraphiques.
+
+SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésaurus, notamment au moyen d’une connexion à des référentiels externes tels qu’OpenTheso. Cette approche permet d’associer les données produites dans les projets à des référentiels partagés et de favoriser leur normalisation, leur interopérabilité et leur réutilisation.
 > Vous pouvez retrouver plus d'informations sur le site [siamois.eu](https://siamois.eu)
 
 # Environnement utilisé
@@ -52,13 +60,21 @@ Pour spécifier les profils lors de l'exécution du JAR, il faut utiliser le par
 java -jar -Dspring.profiles.active=log-email siamois.jar
 ```
 
-# Qualité de code
-[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=MOM-CNRS_Siamois)](https://sonarcloud.io/summary/new_code?id=MOM-CNRS_Siamois)
+
 
 # Auteurs
-* [Miled ROUSSET](https://github.com/miledrousset)
 * [Grégory BLIAULT](https://github.com/gregblt)
 * [Julien LINGET](https://github.com/DvLogys)
+* [Miled ROUSSET](https://github.com/miledrousset)
+* [Firas GABSI](https://github.com/Firas8)
+
+## Crédits
+
+**Conceptualisation et conception:** Consortium SIAMOIS
+
+**Développement :** Grégory Bliault, Julien Linget, Miled Rousset, Firas Gabsi
+
+**Design :** Éric Lacombe et César Lacombe
 
 
 # License

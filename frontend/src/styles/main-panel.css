@@ -1,0 +1,1614 @@
+/*
+ * Styles owned by the React main panel: only what has no JSF counterpart (entity-list-panel-*,
+ * cell-edit-overlay, the fiche grid's container queries, ...). Everything with one — every
+ * PrimeReact component, and every app class shared with the .xhtml (siamois-panel,
+ * <entity>-panel, sia-form-panel, panel-bc, ...) — is painted by the host page's own theme, which
+ * aliases its .ui-* rules to PrimeReact's .p-* classes (primefaces-themes/theme-base/
+ * _primereact.scss). Prefer a JSF class name + the theme over a new rule here.
+ *
+ * Variables (--main-color, --context-main-color, --siamois-green-light-100) come from the host
+ * page's theme (target/generated-resources/css/theme.css) — each is used with a fallback so the
+ * bundle also renders standalone (vite dev server, tests).
+ */
+
+/* ---------------------------------------------------------------- list toolbar */
+
+.entity-list-panel-toolbar .p-toolbar-group-start {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* The toolbar's start group (gear, search, filters) takes the room and wraps; "Créer" stays put on
+   the right. */
+.entity-list-panel-toolbar.p-toolbar {
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+}
+
+.entity-list-panel-toolbar .p-toolbar-group-end {
+  flex: none;
+}
+
+.entity-list-panel-toolbar .entity-list-panel-filter-chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The gear acts on the table's whole shape, so it reads larger than the search box next to it. */
+.entity-list-panel-gear-button.p-button.p-button-icon-only {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.entity-list-panel-gear-button .p-button-icon {
+  font-size: 1.35rem;
+}
+
+/* ---------------------------------------------------------- column header lines */
+
+/* One line, always: a wrapped header raises every row in the table. */
+.entity-list-panel-column-header {
+  display: block;
+  max-width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- filter chip bar */
+
+.entity-list-panel-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 999px;
+  background: var(--surface-0, #fff);
+  font-size: 0.85rem;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.filter-chip-body,
+.filter-chip-remove,
+.filter-chip-add {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+}
+
+.filter-chip-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-right: 0.25rem;
+}
+
+.filter-chip-label {
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.filter-chip-value {
+  max-width: 16em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* A chip added but not yet given a value — visibly provisional, not an applied filter. */
+.filter-chip-empty {
+  border-style: dashed;
+}
+
+.filter-chip-remove {
+  padding-left: 0.15rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.filter-chip-body:hover,
+.filter-chip-remove:hover,
+.filter-chip-add:hover {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.filter-chip-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-style: dashed;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.entity-list-panel-filter-picker .filter-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 14rem;
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.filter-picker-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
+
+.filter-picker-item:hover {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.entity-list-panel-range-filter {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+/* ------------------------------------------------------------- one-line cells */
+
+/*
+ * No cell is ever more than one line: a wrapped value makes that whole row taller, and in a dense
+ * table one long free-text answer would set the height for every column on the row. The value
+ * truncates with an ellipsis instead, with the full text on the native tooltip.
+ */
+.entity-list-panel-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.entity-list-panel-cell-value,
+.entity-list-panel-editable-cell {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * A multi-valued answer: first label + "+N". The counter must survive the truncation — it is the
+ * only thing telling the user there is more — so it is flex: none and only the first label
+ * shrinks.
+ */
+.cell-multi {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.cell-multi-first {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-multi-more {
+  flex: none;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--surface-200, #eeeeee);
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  cursor: default;
+}
+
+
+/* --------------------------------------------- merged status + identifier cell */
+
+
+/* Same icon/colour vocabulary as /panel/header/validationButton.xhtml, minus the button: the list
+   renders that control read-only, so it is a badge here. The colours are the theme's --status-*
+   tokens (_variables.scss), which the status button reads too (_styles.scss .status-button.*); the
+   fallbacks only matter where the host theme is absent (the standalone dev server, vitest). */
+.validation-status-badge {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.validation-status-badge.validated {
+  color: var(--status-validated, #5e6ad2);
+}
+
+.validation-status-badge.complete {
+  color: var(--status-complete, #d9b036);
+}
+
+.validation-status-badge.incomplete {
+  color: var(--status-incomplete, #9f9fa2);
+}
+
+.validation-status-badge.cancelled {
+  color: var(--status-cancelled, #b8665a);
+}
+
+/* A list row's identifier/link chip: outlined in its entity's colour on a transparent background
+   (text and icon in that colour too) — the colour of the entity it shows (--entity-chip-color, set
+   per chip by fields/display.tsx's entityChipStyle), never the colour of the panel it sits in. Not the fiche header's identifier Chip: that one is
+   JSF's editableIdentifierChip — `<entity>-chip-alt entity-nav-chip`, filled in the entity colour —
+   and is painted by the shared theme. */
+.entity-nav-chip:not(.p-chip) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  background: transparent;
+  color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  cursor: pointer;
+}
+
+.p-chip.entity-nav-chip .p-chip-text {
+  margin: 0;
+  color: inherit;
+}
+
+.entity-nav-chip:not(.p-chip):hover {
+  background: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 10%, transparent);
+}
+
+.entity-nav-chip-label {
+  max-width: 18em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- density */
+
+/*
+ * On top of the table's own size="small" (0.5rem padding): the rows only ever hold one line of
+ * text, so most of that vertical padding is dead space. Horizontal padding is left alone — it is
+ * what keeps adjacent columns readable as separate columns.
+ *
+ * These two are the single source of truth for cell padding: the click-to-edit hit area below
+ * mirrors them so it lines up with the cell exactly.
+ */
+.entity-list-panel {
+  --cell-pad-y: 0.3rem;
+  --cell-pad-x: 0.5rem;
+  /* Every row is one line (see .entity-list-panel-cell) at this same height, whatever its cells
+     hold — a row of buttons or an empty row doesn't change the table's rhythm. */
+  --entity-list-row-height: 38px;
+}
+
+
+/* ----------------------------------------- the root <Panel> is a bare frame
+
+   focus.xhtml has no p:panel at the root of a list or detail view: the `siamois-panel <entity>-panel
+   single-panel|list-panel` div (App.tsx's pane, same classes) holds .sideview-titlebar and the
+   content directly. EntityListPanel/EntityDetailPanel keep a PrimeReact <Panel> there for its
+   header slot, so its own chrome (the host theme's panel padding, border, grey header and radius)
+   is removed — otherwise every tab body was padded twice and the title bar sat in a grey box. */
+.entity-list-panel.p-panel > .p-panel-header,
+.entity-detail-panel.p-panel > .p-panel-header,
+.entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
+.entity-detail-panel.p-panel > .p-toggleable-content > .p-panel-content {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* The header slot (.p-panel-title) shrinks to its content by default; the .sideview-titlebar
+   inside it must span the full width, as it does in focus.xhtml. */
+.entity-list-panel.p-panel > .p-panel-header > .p-panel-title,
+.entity-detail-panel.p-panel > .p-panel-header > .p-panel-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ----------------------------------------- the table scrolls, the panel does not
+
+   The shell is a fixed 100vh frame with no document scroll, so the table's own body has to be the
+   scrolling box. PrimeReact's scrollHeight="flex" means "fill the height my parent gives me",
+   which only works if every ancestor between the panel and the table body passes a height down —
+   hence one unbroken flex chain, each link with min-height:0 so it may shrink below its content
+   (without it, a flex item's automatic minimum size is its content, the chain never shrinks, and
+   the table grows the panel instead of scrolling inside it).
+
+   The payoff is the sticky header and the frozen columns below: both are position:sticky against
+   this scroll container, and neither does anything while the page is what scrolls. */
+.entity-list-panel.p-panel,
+.entity-list-panel.p-panel > .p-toggleable-content,
+.entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
+.entity-list-panel .p-datatable {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The detail panel's own chain, down to the TabView. EntityDetailPanel's root <Panel> was never
+   given this treatment before an embedded list needed it — its one tab (the fiche) is a plain
+   block that just grows with its content, so nothing here was missing height before; a DataTable
+   needs a real bounded height to scroll internally instead of stretching the whole page. Without
+   this, .p-panel-content sizes to its content's natural height (a flex item defaults to flex: 0 1
+   auto, i.e. "shrink-to-fit", not "fill available space") and every link below it inherits that
+   same auto height no matter what flex/min-height rules THEY declare — which is exactly the bug:
+   the table renders at full (100-row) height, the real scrollbars end up on whatever ancestor
+   further up the page actually has overflow (or the browser window itself), the horizontal one
+   only reachable after scrolling all the way down, and the sticky header has no scrolling
+   ancestor to stick against.
+   The breadcrumb (a sibling of the TabView inside .p-panel-content) is deliberately left out: it
+   keeps its natural height, only the TabView below it grows. */
+.entity-detail-panel.p-panel,
+.entity-detail-panel.p-panel > .p-toggleable-content,
+.entity-detail-panel.p-panel > .p-toggleable-content > .p-panel-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Same chain, continued into the TabView itself: nav header stays put (it's not targeted here),
+   the panels container and the active panel grow to fill what .p-panel-content now actually has
+   to give. An embedded list (EntityListPanel's `embedded` prop, rendered inside a DetailTabDef's
+   own TabPanel — e.g. a project's "Unités d'enregistrement" tab) has no <Panel>/.p-toggleable-
+   content of its own, so it picks the chain up from here. Scoped with :has() to the one active
+   TabPanel that actually holds an embedded list, so a tab with ordinary (non-list) content — the
+   fiche — keeps its own natural height/overflow:auto box rather than being forced into this flex
+   chain too. */
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.entity-detail-panel .p-tabview-panels,
+.entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
+   are siblings of it, so they stay put. */
+.entity-list-panel .p-datatable-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Columns keep a usable width instead of being squeezed to fit, so a wide catalog overflows
+   sideways — which is the situation frozen columns exist for. Excludes the selection box, which
+   is pinned at 3rem, and the frozen identifier, sized just below. */
+.entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
+  min-width: 9rem;
+}
+
+/* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
+   table's scroll box, at the `left` offset their inline style takes from the CSS variables that
+   file keeps on the table root. Below: the stacking order between the frozen columns and the
+   sticky header, an opaque background, and a width floor. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+  position: sticky;
+}
+
+/* Frozen cells must sit above the columns sliding underneath them, and the header above both —
+   otherwise the frozen identifier paints over the header it is supposed to pass beneath. */
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+  z-index: 1;
+}
+
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen {
+  z-index: 2;
+}
+
+/* The columns sliding underneath must not show through. A body cell takes its row's background,
+   so a row this app paints itself (the overview-open highlight, a search hit) stays painted; a
+   header cell keeps the theme's own header background — its row has none to inherit. */
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+  background: inherit;
+}
+
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+  background-clip: padding-box;
+}
+
+/* The identifier column is what the frozen area exists to keep on screen, so it gets a width floor
+   wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
+   here a cell's max-width is advisory and would silently do nothing — long values are already
+   ellipsised by .entity-list-panel-cell-value instead. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+  min-width: 11rem;
+}
+
+
+.entity-list-panel .p-datatable-thead > tr > th,
+.entity-list-panel .p-datatable-tbody > tr > td {
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+}
+
+/* EntityListPanel's trailing filler column: absorbs the table's spare width (a percentage column
+   is served first in the auto table layout, the others then get their content width), and has no
+   padding of its own so it's truly empty once the columns overflow. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-filler-cell,
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell {
+  width: 100%;
+  padding: 0;
+}
+
+.entity-list-panel .p-datatable-tbody > tr {
+  height: var(--entity-list-row-height);
+}
+
+.entity-list-panel .p-datatable-tbody > tr > td {
+  box-sizing: border-box;
+  height: var(--entity-list-row-height);
+  max-height: var(--entity-list-row-height);
+}
+
+/* Mirrors the JSF panels' .panel-progressbar (primefaces-siamois-theme styles.scss): a thin,
+   always-present track, whose moving value only shows while a page or a column is loading. */
+.entity-list-panel-progressbar.p-progressbar {
+  flex: 0 0 3px;
+  height: 3px;
+  border-radius: 0;
+  background-color: var(--siamois-green-light-100, #e6f0e6);
+}
+
+.entity-list-panel-progressbar.p-progressbar .p-progressbar-value {
+  background-color: var(--main-color, #80b480);
+  visibility: hidden;
+}
+
+.entity-list-panel-progressbar.p-progressbar.is-active .p-progressbar-value {
+  visibility: visible;
+}
+
+
+
+/* ------------------------------------------------------------ click-to-edit cell */
+
+/*
+ * The hit area is the WHOLE cell, not just the text: a click anywhere in the column's width opens
+ * the editor, and the hover highlight covers the cell so it is obvious what is about to be edited.
+ *
+ * It gets there by eating the cell's own padding — negative margins out to the <td>'s padding
+ * edge, the same padding added back inside — so the highlight is this element's own background,
+ * painted underneath its own text. (The earlier version used an inset, absolutely positioned
+ * ::before; a positioned pseudo-element paints with the positioned descendants, i.e. AFTER the
+ * element's inline content, so it covered the value instead of sitting behind it.)
+ */
+.entity-list-panel-editable-cell {
+  /* The 1px border is part of the box, so the margin pulls back one extra pixel to keep the value
+     on exactly the same baseline and x-position as a non-editable cell's. */
+  margin: calc(-1 * var(--cell-pad-y) - 1px) calc(-1 * var(--cell-pad-x) - 1px);
+  padding: var(--cell-pad-y) var(--cell-pad-x);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.entity-list-panel-editable-cell:hover,
+.entity-list-panel-editable-cell:focus-visible {
+  background: var(--surface-100, #f5f5f5);
+  border-color: var(--surface-300, #e0e0e0);
+  outline: none;
+}
+
+.entity-list-panel-editable-cell-empty {
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* In-place editor: sits on top of the cell it edits, showing only the field's widget. */
+.cell-edit-overlay {
+  z-index: 1200;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 4px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.cell-edit-overlay-saving {
+  opacity: 0.7;
+}
+
+.cell-edit-overlay-error {
+  margin-top: 0.25rem;
+  color: var(--red-500, #d32f2f);
+  font-size: 0.8rem;
+}
+
+/* A value that no longer fits the form's rules (rules/evaluate.ts): why, and « Vider ». */
+.cell-edit-overlay-incoherent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  background: var(--yellow-50, #fffbeb);
+  color: var(--yellow-900, #78350f);
+  font-size: 0.8rem;
+}
+
+.cell-edit-overlay-incoherent > .bi {
+  color: var(--yellow-600, #d97706);
+  margin-top: 0.1rem;
+}
+
+.cell-edit-overlay-incoherent-text {
+  flex: 1;
+}
+
+.cell-edit-overlay-clear {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0.1rem 0.5rem;
+  cursor: pointer;
+}
+
+/* A read-only overlay: the whole value, wrapping, its chips linking to their fiches. */
+.cell-edit-overlay-readonly {
+  padding: 0.4rem 0.5rem;
+  white-space: normal;
+}
+
+.cell-edit-overlay-empty {
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
+.cell-edit-overlay-loading {
+  padding: 0.5rem;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Fiche field grid (entities/project/FicheTab.tsx, entities/recordingUnit/FicheTab.tsx)
+
+   .sia-fiche-tab is the one class both fiches' own root div carries (alongside their own
+   project-fiche-tab / recording-unit-fiche-tab, kept for anything entity-specific) — every rule
+   below is written against it, not against project-fiche-tab alone, so the RU fiche gets the same
+   label/field look as Project's rather than a second, silently-drifting copy of these rules.
+
+   The SIAMOIS theme styles most of this, keyed on PrimeFaces class names
+   (primefaces-themes/.../panels.scss, others/styles.scss): `.ui-panel.sia-form-panel`,
+   `.ellipsis-btn .ui-button-text`, `.siamois-panel .field-value-group`. Those rules now reach
+   PrimeReact's markup directly — theme-base/_primereact.scss aliases every .ui-* class PrimeReact
+   has an equivalent for (e.g. `.ui-panel.sia-form-panel .ui-panel-titlebar` also emits
+   `.p-panel.sia-form-panel .p-panel-header`) — as long as this side uses the same class names
+   (sia-form-panel, field-value-group, ellipsis-btn, required-btn, header-toggle-container,
+   panel-bc, panel-footer). What stays below is only what the two DOMs genuinely need differently.
+   --------------------------------------------------------------------------- */
+
+.p-panel.sia-form-panel .p-panel-content {
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  padding: 0.5rem 0;
+}
+
+/* customFormPanelContent.xhtml is a p:panelGrid layout="grid" of p:row/p:column, each column
+   carrying a "ui-g-12 ui-md-6 ui-lg-3"-style className computed server-side from the column's own
+   ColumnWidth (span/md/lg — see CustomColUiDto#getClassName()) — PrimeFaces' OWN 12-column grid,
+   not Bootstrap. The React side reads that SAME ColumnWidth object (entities/project/form.ts's
+   FormLayoutCol.width, over the wire as {span, md, lg}) and converts it via toGridClass:
+   `.project-fiche-tab-row` adds `sia-grid`, `.project-fiche-tab-col` adds `sia-col-N` (no
+   breakpoint, always applies) plus `sia-md-col-N`/`sia-lg-col-N`. All four are ours, below, with
+   PrimeFlex's own grid values (0.5rem gutter, same percentages). PrimeFlex itself is no longer
+   shipped: its global `.grid`/`.col-N`/`.hidden`/spacing utilities collided with Bootstrap's on
+   the host page, and this grid was the only part of it the panel used.
+
+   The md/lg classes are not viewport breakpoints (`@media`, i.e. keyed to the BROWSER WINDOW's
+   width). That is correct for the main panel (which roughly IS the window) but wrong for the same
+   fiche opened in the overview pane — dragging the overview's own splitter narrower doesn't
+   change the window at all, so a window-width breakpoint never reacts, and the fiche stayed stuck
+   at its widest column count no matter how far the pane narrowed (found live: resize the window
+   and it's fine, resize the overview's splitter and columns overlap). The fix is a CSS Container
+   Query instead: `.sia-fiche-tab` establishes a container-query context on ITS OWN rendered width
+   (which does shrink with the pane, main or overview alike), and `@container` below reacts to
+   THAT, not the window.
+
+   The thresholds are NOT PrimeFaces' ui-md/ui-lg ones (641/1025px): those are window widths, and
+   the fiche is always narrower than the window (sidebar, splitter, overview), so reusing them
+   against the fiche's own width wrapped far earlier than JSF does — an 830px main panel in a
+   1600px window is "lg" (4 per row for ColumnWidth.STANDARD 12/6/3) in JSF but was stuck at 2
+   here. Instead they're sized on what a field needs: md from 400px (2 × ≥200px), lg from 720px
+   (4 × ≥180px). */
+.sia-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -0.5rem -0.5rem 0;
+}
+
+.sia-col-1 { flex: 0 0 auto; padding: 0.5rem; width: 8.3333%; }
+.sia-col-2 { flex: 0 0 auto; padding: 0.5rem; width: 16.6667%; }
+.sia-col-3 { flex: 0 0 auto; padding: 0.5rem; width: 25%; }
+.sia-col-4 { flex: 0 0 auto; padding: 0.5rem; width: 33.3333%; }
+.sia-col-5 { flex: 0 0 auto; padding: 0.5rem; width: 41.6667%; }
+.sia-col-6 { flex: 0 0 auto; padding: 0.5rem; width: 50%; }
+.sia-col-7 { flex: 0 0 auto; padding: 0.5rem; width: 58.3333%; }
+.sia-col-8 { flex: 0 0 auto; padding: 0.5rem; width: 66.6667%; }
+.sia-col-9 { flex: 0 0 auto; padding: 0.5rem; width: 75%; }
+.sia-col-10 { flex: 0 0 auto; padding: 0.5rem; width: 83.3333%; }
+.sia-col-11 { flex: 0 0 auto; padding: 0.5rem; width: 91.6667%; }
+.sia-col-12 { flex: 0 0 auto; padding: 0.5rem; width: 100%; }
+
+/* No extra row margin: JSF's p:row adds none, the columns' own 0.5rem padding is the only gap. */
+
+.project-fiche-tab-col {
+  min-width: 0;
+}
+
+.sia-fiche-tab {
+  /* Matches JSF's own .sia-form { max-width: 1200px } (primefaces-themes/.../others/styles.scss)
+     so the fiche doesn't stretch full-width on a large screen, same as before the React port. */
+  max-width: 1200px;
+  container-type: inline-size;
+}
+
+@container (min-width: 400px) {
+  .sia-fiche-tab .sia-md-col-1 { width: 8.3333%; }
+  .sia-fiche-tab .sia-md-col-2 { width: 16.6667%; }
+  .sia-fiche-tab .sia-md-col-3 { width: 25%; }
+  .sia-fiche-tab .sia-md-col-4 { width: 33.3333%; }
+  .sia-fiche-tab .sia-md-col-5 { width: 41.6667%; }
+  .sia-fiche-tab .sia-md-col-6 { width: 50%; }
+  .sia-fiche-tab .sia-md-col-7 { width: 58.3333%; }
+  .sia-fiche-tab .sia-md-col-8 { width: 66.6667%; }
+  .sia-fiche-tab .sia-md-col-9 { width: 75%; }
+  .sia-fiche-tab .sia-md-col-10 { width: 83.3333%; }
+  .sia-fiche-tab .sia-md-col-11 { width: 91.6667%; }
+  .sia-fiche-tab .sia-md-col-12 { width: 100%; }
+}
+
+@container (min-width: 720px) {
+  .sia-fiche-tab .sia-lg-col-1 { width: 8.3333%; }
+  .sia-fiche-tab .sia-lg-col-2 { width: 16.6667%; }
+  .sia-fiche-tab .sia-lg-col-3 { width: 25%; }
+  .sia-fiche-tab .sia-lg-col-4 { width: 33.3333%; }
+  .sia-fiche-tab .sia-lg-col-5 { width: 41.6667%; }
+  .sia-fiche-tab .sia-lg-col-6 { width: 50%; }
+  .sia-fiche-tab .sia-lg-col-7 { width: 58.3333%; }
+  .sia-fiche-tab .sia-lg-col-8 { width: 66.6667%; }
+  .sia-fiche-tab .sia-lg-col-9 { width: 75%; }
+  .sia-fiche-tab .sia-lg-col-10 { width: 83.3333%; }
+  .sia-fiche-tab .sia-lg-col-11 { width: 91.6667%; }
+  .sia-fiche-tab .sia-lg-col-12 { width: 100%; }
+}
+
+/* panelField.xhtml's own wrapper: the label above the value. No ui-fluid width rule here any
+   more — the field's own widget now lives inside CellEditOverlay, portalled to document.body, not
+   nested under this div, so it is the overlay's own p-fluid (CellEditOverlay.tsx) that fills it. */
+.sia-fiche-tab .field-value-group {
+  display: block;
+  width: auto;
+  margin-top: 0;
+}
+
+.sia-fiche-tab .header-toggle-container {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+/* The label button: panelField.xhtml's flat .ellipsis-btn (transparent ground, 3px radius, grey
+   #6B7280 label at .875rem, faint green wash on hover). Written when the bundle still shipped the
+   Lara theme, whose solid blue .p-button had to be undone; the shared theme now gives a PrimeReact
+   button the JSF look by itself, so what matters here is the label-specific part (ellipsis, max
+   width, cursor, the * of required fields). */
+.sia-fiche-tab .ellipsis-btn.p-button {
+  position: relative;
+  display: flex;
+  /* JSF caps this at 180px inline (panelField.xhtml), which truncated labels long before the
+     column's edge; here the label may use the whole column. */
+  max-width: 100%;
+  width: fit-content;
+  /* var() fallbacks throughout: the SIAMOIS custom properties come from the JSF page's theme.css,
+     which is absent in the standalone Vite dev server and under vitest. */
+  color: var(--text-light, #6b7280);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  /* JSF puts .5rem 1rem on the inner .ui-button-text span; PrimeReact has no equivalent inner
+     padding, so the same box is produced on the button itself. */
+  padding: 0.5rem 1rem;
+  /* Lines the label's icon up with the value below it. The value's own box reaches 0.4rem into the
+     gutter (.field-value-cell-editable's margin), so its text starts that much further left than a
+     padded button's; pulling the label the same distance puts both on one left edge, and both hover
+     backgrounds in the same gutter. */
+  margin-left: -0.4rem;
+  font-size: 0.875rem;
+  /* A label is only a button when there is a thesaurus entry behind it — see FieldLabel. */
+  cursor: default;
+}
+
+.sia-fiche-tab .ellipsis-btn.has-thesaurus-entry.p-button {
+  cursor: pointer;
+}
+
+/* .ui-button-flat.ui-state-hover: a 4%-alpha wash of the theme green, label colour unchanged. */
+.sia-fiche-tab .ellipsis-btn.p-button:enabled:hover,
+.sia-fiche-tab .ellipsis-btn.p-button:hover {
+  background: color-mix(in srgb, var(--primary-color, #669966) 4%, transparent);
+  border-color: transparent;
+  color: var(--text-light, #6b7280);
+}
+
+.sia-fiche-tab .ellipsis-btn.p-button:focus,
+.sia-fiche-tab .ellipsis-btn.p-button:focus-visible {
+  box-shadow: none;
+  outline: 1px solid var(--siamois-green-light-350, #a6cba6);
+  outline-offset: -1px;
+}
+
+.sia-fiche-tab .ellipsis-btn .p-button-label {
+  display: inline-block;
+  max-width: 100%;
+  padding-right: 10px; /* room for the * below */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: normal;
+}
+
+/* The field's own type icon (CustomField.getIcon(), served as FieldResource.icon). Two kinds
+   arrive here and they behave differently: the "bi bi-*" ones are Bootstrap Icons font glyphs,
+   which inherit colour and font-size; "sia-icon-opentheso" (every vocabulary-backed field) is a
+   fixed 16x16 background-image with its grey baked into the SVG, so it ignores both. Sizing the
+   icon box explicitly keeps the two visually aligned in the same label row. */
+.sia-fiche-tab .ellipsis-btn .p-button-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.sia-fiche-tab .ellipsis-btn .p-button-icon.sia-icon-opentheso {
+  width: 16px;
+  height: 16px;
+}
+
+.sia-fiche-tab .required-btn::after {
+  content: " *";
+  position: absolute;
+  right: 6px;
+}
+
+.sia-fiche-tab .field-hint {
+  color: var(--text-light, #6b7280);
+}
+
+/* The value below a field's label — a plain display until clicked, then CellEditOverlay opens on
+   top of it. Deliberately the same hit-area trick as the table's own .entity-list-panel-editable-
+   cell (eating this element's own padding so the highlight sits behind the text, not the inset
+   ::before the earlier, always-open AutosavingField never needed): a fiche field is block-level
+   and can wrap to more than one line, so the padding here is only horizontal — a vertical one
+   would misalign the highlight with the text on a wrapped value. */
+.sia-fiche-tab .field-value-cell {
+  display: block;
+  min-height: 1.5em;
+}
+
+/* A read-only field with a value opens its (read-only) overlay too: same click target. */
+.sia-fiche-tab .field-value-cell-editable,
+.sia-fiche-tab .field-value-cell-readonly[role="button"] {
+  margin: 0 -0.4rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.sia-fiche-tab .field-value-cell-editable:hover,
+.sia-fiche-tab .field-value-cell-editable:focus-visible,
+.sia-fiche-tab .field-value-cell-readonly[role="button"]:hover,
+.sia-fiche-tab .field-value-cell-readonly[role="button"]:focus-visible {
+  background: var(--surface-100, #f5f5f5);
+  border-color: var(--surface-300, #e0e0e0);
+  outline: none;
+}
+
+.sia-fiche-tab .field-value-cell-empty {
+  color: var(--text-light, #6b7280);
+}
+
+/* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
+.project-fiche-tab-footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1em;
+  align-items: center;
+}
+
+.sia-fiche-tab .p-toolbar.panel-footer {
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--siamois-green-light-200);
+}
+
+/* p:breadCrumb's nav.panel-bc, above the tabs (EntityDetailPanel). */
+.entity-detail-panel .p-breadcrumb.panel-bc {
+  background: transparent;
+  border: none;
+  padding: 0.2em 0.5em;
+}
+
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-text,
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-icon {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+/* ---------------------------------------------------------------------------
+   Create forms (components/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
+   lighter — the entity's icon and title in its colour, the fields labelled like a fiche's, a light
+   footer with « Annuler » / « Créer ». --entity-chip-color is the entity's, set on the form. */
+/* Beats the theme's `body .p-overlaypanel .p-overlaypanel-content` padding: header and footer
+   run edge to edge. */
+.p-overlaypanel.entity-list-panel-create-overlay .p-overlaypanel-content {
+  padding: 0;
+}
+
+.sia-create-form {
+  display: flex;
+  flex-direction: column;
+  min-width: 22rem;
+  max-width: 30rem;
+  border-top: 3px solid var(--entity-chip-color, var(--main-color, #669966));
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.sia-create-form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 0.25rem;
+  color: var(--entity-chip-color, var(--main-color, #669966));
+}
+
+.sia-create-form-header > i {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.sia-create-form-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.sia-create-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem 1rem;
+}
+
+/* Every widget fills its field, as in the cell editor (p-fluid). */
+.sia-create-form-body .p-inputtext,
+.sia-create-form-body .p-autocomplete,
+.sia-create-form-body .p-autocomplete-input,
+.sia-create-form-body .p-autocomplete-multiple-container {
+  width: 100%;
+}
+
+/* One field: its label above it, the fiche's label look (FieldLabel: grey, .875rem). */
+.sia-create-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sia-create-form-label {
+  color: var(--text-light, #6b7280);
+  font-size: 0.875rem;
+}
+
+.sia-create-form-label-required::after {
+  content: " *";
+}
+
+.sia-create-form-hint {
+  color: var(--text-light, #6b7280);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.sia-create-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--entity-chip-color, #669966) 7%, var(--surface-0, #ffffff));
+  border-top: 1px solid color-mix(in srgb, var(--entity-chip-color, #669966) 18%, transparent);
+}
+
+.sia-create-form-footer .p-button.p-button-text {
+  color: var(--text-light, #6b7280);
+}
+
+.sia-create-form-footer .p-button:not(.p-button-text) {
+  background: var(--entity-chip-color, var(--primary-color, #669966));
+  border-color: var(--entity-chip-color, var(--primary-color, #669966));
+}
+
+.sia-create-form-footer .p-button:not(.p-button-text):enabled:hover {
+  filter: brightness(1.1);
+}
+
+
+/* Home cards: the whole card is the link (components/home/ClickableCard.tsx), no inner button. */
+.sia-clickable-card {
+  cursor: pointer;
+  border-radius: var(--border-radius, 6px);
+  height: 100%;
+}
+
+.sia-clickable-card > .p-card {
+  height: 100%;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sia-clickable-card:hover > .p-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.sia-clickable-card:focus-visible {
+  outline: 2px solid var(--primary-color, #669966);
+  outline-offset: 2px;
+}
+
+/* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
+   compact so the row stays at --entity-list-row-height, and dimmed until the row is hovered so a
+   long list doesn't read as a wall of icons. */
+.entity-list-panel .entity-list-panel-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-actions,
+.entity-list-panel .entity-list-panel-row-actions:focus-within {
+  opacity: 1;
+}
+
+/* Always Siamois green, whatever the panel: --main-color would turn them the panel's colour (blue
+   in a project's tabs). */
+.entity-list-panel .entity-list-panel-row-actions .p-button.p-button-sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+
+.entity-list-panel td.entity-list-panel-row-actions-cell {
+  width: 1%;
+}
+
+/* JSF's rotated "node-plus" icons (new parent / new child). */
+.bi.rotate-90::before {
+  transform: rotate(90deg);
+}
+
+.bi.rotate-minus90::before {
+  transform: rotate(-90deg);
+}
+
+/* A create form's pre-set link (components/CreateLinkField.tsx). */
+.create-link-field .create-link-field-value {
+  align-self: flex-start;
+  color: var(--text-color);
+}
+
+/* The toolbar's selected / filtered-total count, before "Créer" (EntityListPanel). */
+.entity-list-panel-toolbar .p-toolbar-group-end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.entity-list-panel-selection-count.p-chip {
+  font-size: 0.85rem;
+}
+
+/* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
+   in the entity's color (inverted). Only that chip — a linked entity's chip in another column
+   (the row's project…) keeps its outline. */
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
+.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
+  background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  color: var(--primary-color-text, #ffffff);
+}
+
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
+  filter: brightness(1.1);
+}
+
+/* The gear's settings overlays (components/table/VisibilityChooser.tsx): a search box, then the
+   shown items (draggable) and the put-away ones. Scrolls inside itself — the app never scrolls the
+   page. */
+.entity-list-panel-settings-overlay .p-overlaypanel-content {
+  padding: 0.75rem;
+}
+
+.visibility-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+}
+
+.visibility-chooser-search,
+.visibility-chooser-search .p-inputtext {
+  width: 100%;
+}
+
+.visibility-chooser-body {
+  max-height: min(60vh, 28rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.visibility-chooser-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.visibility-chooser-count {
+  display: inline-block;
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  margin-left: 0.25rem;
+  border-radius: 1rem;
+  background: var(--surface-200, #eeeeee);
+  text-align: center;
+  font-weight: 500;
+}
+
+.visibility-chooser-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.visibility-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.25rem;
+  border-radius: 4px;
+  border-top: 2px solid transparent;
+}
+
+.visibility-chooser-item:hover {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.visibility-chooser-item.is-dragging {
+  opacity: 0.4;
+}
+
+.visibility-chooser-item.is-drop-target {
+  border-top-color: var(--main-color);
+}
+
+.visibility-chooser-handle {
+  flex: none;
+  width: 1rem;
+  color: var(--text-color-secondary, #6b7280);
+  cursor: grab;
+  text-align: center;
+}
+
+.visibility-chooser-handle.is-disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.visibility-chooser-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.visibility-chooser-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visibility-chooser-label > i {
+  color: var(--main-color);
+}
+
+.visibility-chooser-item .p-inputswitch {
+  flex: none;
+  transform: scale(0.8);
+}
+
+.visibility-chooser-empty {
+  margin: 0;
+  padding: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* A picked entity in a multi-reference picker (fields/renderers.tsx): its chip's label opens the
+   entity's fiche. */
+.resource-ref-token-link {
+  cursor: pointer;
+}
+
+.resource-ref-token-link:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------ panel titlebar toolbar */
+
+/* Between the toolbar's groups (navigation | create/duplicate | the rest). */
+.panel-toolbar-separator {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.35rem 0.25rem;
+  background: var(--surface-border, #dee2e6);
+}
+
+/* A fiche tab: the tab panels box is what scrolls. A tab holding an embedded list is left alone —
+   the list scrolls itself, and gets its gap from the rule below. */
+.entity-detail-panel .p-tabview-panels:not(:has(.entity-list-panel.embedded)) {
+  padding-bottom: var(--panel-scroll-end-gap);
+}
+
+/* A list (standalone or embedded): the paginator is its last element, below the scrolling table
+   wrapper — the room goes under the paginator, not between the rows and it. */
+.entity-list-panel .p-paginator-bottom {
+  margin-bottom: var(--panel-scroll-end-gap);
+}
+
+/* Home scrolls in its pane. */
+.home-panel {
+  padding-bottom: var(--panel-scroll-end-gap);
+}
+
+/* The status picker in a list row: smaller than the fiche's, so the row keeps its fixed height. */
+body button.p-button.status-button.status-button-compact {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------ always-visible scrollbars
+
+   macOS overlay scrollbars only appear while scrolling, so nothing tells the user a panel holds
+   more than what's on screen. Styling ::-webkit-scrollbar (Chrome, Edge, Safari) switches these
+   boxes to classic scrollbars, which stay drawn whenever the box overflows. No scrollbar-width /
+   scrollbar-color here: Chrome ignores ::-webkit-scrollbar as soon as either is set. */
+.panel-splitter-panel-l ::-webkit-scrollbar,
+.panel-splitter-panel-r ::-webkit-scrollbar,
+.panel-splitter-panel-l::-webkit-scrollbar,
+.panel-splitter-panel-r::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-track,
+.panel-splitter-panel-r ::-webkit-scrollbar-track,
+.panel-splitter-panel-l::-webkit-scrollbar-track,
+.panel-splitter-panel-r::-webkit-scrollbar-track {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-thumb,
+.panel-splitter-panel-r ::-webkit-scrollbar-thumb,
+.panel-splitter-panel-l::-webkit-scrollbar-thumb,
+.panel-splitter-panel-r::-webkit-scrollbar-thumb {
+  background: var(--surface-400, #bdbdbd);
+  border-radius: 5px;
+  border: 2px solid var(--surface-100, #f5f5f5);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-r ::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-l::-webkit-scrollbar-thumb:hover,
+.panel-splitter-panel-r::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-500, #9e9e9e);
+}
+
+.panel-splitter-panel-l ::-webkit-scrollbar-corner,
+.panel-splitter-panel-r ::-webkit-scrollbar-corner {
+  background: var(--surface-100, #f5f5f5);
+}
+
+/* A date picker opened from the cell editor lives inside the editor's own fixed box
+   (DateRenderer's appendTo="self"): it overflows that box downward rather than being clipped. */
+.cell-edit-overlay .p-datepicker:not(.p-datepicker-inline) {
+  position: absolute;
+  z-index: 1;
+  min-width: 18rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Loading skeletons (components/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
+   in only after a short delay: a fast response never shows them, so nothing flashes; a slow one
+   shows the page's shape instead of an empty box. */
+@keyframes loading-skeleton-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-skeleton,
+.entity-list-panel-skeleton-row .p-skeleton {
+  animation: loading-skeleton-appear 150ms ease-out 150ms both;
+}
+
+/* A placeholder row is not selectable and has no hover state. */
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
+  visibility: hidden;
+}
+
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover {
+  background: inherit;
+}
+
+/* The fiche header drawn from what the opener already knew (EntityPreview) while it loads. */
+.entity-detail-panel-preview-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sia-detail-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.sia-detail-skeleton-tabs {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+}
+
+.form-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-skeleton-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-skeleton .project-fiche-tab-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   PaneSplit (panels/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
+   no text selection while dragging it. */
+.pane-split.p-splitter-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* reactPanelMount.xhtml's static placeholder, shown until React's first render replaces it. */
+.react-main-panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  animation: loading-skeleton-appear 150ms ease-out 150ms both;
+}
+
+.react-main-panel-placeholder-bar {
+  height: 1.25rem;
+  border-radius: 6px;
+  background: var(--surface-200, #e9ecef);
+}
+
+/* ---------------------------------------------------------------------------
+   A reference shown read-only (fields/display.tsx RefChip): a light outlined chip in its type's
+   colour (--ref-chip-color, set inline per chip) — the reference picker's edit-mode token, minus
+   the remove button. */
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  /* The multi-select picker's own token (theme: .p-autocomplete-token): a small-radius rectangle,
+     label padded 0.5rem, same text size as the field — minus its remove icon. */
+  padding: 1px 0.5rem;
+  /* Read-only: the palette's -100 variant (RefChip sets it); the label keeps the full colour. */
+  border: 1px solid var(--ref-chip-border, var(--ref-chip-color));
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ref-chip-color);
+  font-size: 1em;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* A chip that opens its fiche (the overlay's): the edit-mode token's look — full-colour border,
+   label underlined on hover — rather than the plain chip's light one. */
+.ref-chip-link {
+  display: inline-block;
+  border-color: var(--ref-chip-color);
+  cursor: pointer;
+}
+
+.ref-chip-link:hover,
+.ref-chip-link:focus-visible {
+  text-decoration: underline;
+}
+
+/* A fiche field shows every value: the chips wrap. */
+.cell-multi-all {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Edit mode: the picker's own tokens take the same per-type colour (ResourceRefRenderer sets
+   --ref-chip-color on the AutoComplete). */
+.resource-ref-picker .p-autocomplete-token {
+  background: transparent;
+  border: 1px solid var(--ref-chip-color);
+  color: var(--ref-chip-color);
+}
+
+/* "Dupliquer la structure" (components/DuplicateStructureOverlay.tsx), in the create overlay's
+   frame: how many exemplars, then what to include. */
+.duplicate-structure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 24rem;
+}
+
+/* The number of copies: its label and a small box on one line. */
+.duplicate-structure-copies {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.duplicate-structure-copies .p-inputnumber {
+  width: auto;
+}
+
+.duplicate-structure-copies .duplicate-structure-count-input {
+  width: 4rem;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+}
+
+.duplicate-structure-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.duplicate-structure-toggle-all {
+  align-self: flex-end;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--entity-chip-color, var(--primary-color));
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.duplicate-structure-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.duplicate-structure-node {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+/* What the form is about to create, at the footer's left. */
+.sia-create-form-footer-note {
+  margin-right: auto;
+  font-size: 0.9rem;
+  color: var(--text-color, inherit);
+}
+
+/* A field the form's rules disable with the current answers: greyed, read-only. */
+.sia-fiche-tab .sia-field--disabled .field-value-group {
+  opacity: 0.55;
+}
+
+.field-value-cell-warning {
+  color: var(--yellow-600, #d97706);
+  margin-right: 0.3rem;
+}
+
+/* A list cell the form's rules disable with the row's answers: greyed; a value they made incoherent is flagged. */
+.entity-list-panel-cell-disabled {
+  opacity: 0.55;
+}
+
+.entity-list-panel-cell-warning {
+  color: var(--yellow-600, #d97706);
+  margin-right: 0.3rem;
+}
+
+/* A pane (or tab) whose render failed: PaneErrorBoundary's message and retry. */
+.pane-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+/* ---- Layout helpers the components used to inline (style={{}}) -------------------------------- */
+.sia-hstack {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+}
+.sia-flex-center {
+  display: flex;
+  align-items: center;
+}
+.sia-inline-center {
+  display: inline-flex;
+  align-items: center;
+}
+.sia-inline-flex {
+  display: inline-flex;
+}
+.sia-contents {
+  display: contents;
+}
+.sia-min-w-0 {
+  min-width: 0;
+}
+.sia-grow {
+  flex: 1;
+}
+.sia-filled-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+}
+.sia-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5em;
+  width: 100%;
+}
+.sia-titlebar-split {
+  justify-content: space-between;
+}
+.sia-tab-title {
+  display: flex;
+  gap: 0.2em;
+  align-items: center;
+  font-weight: bold;
+}
+.sia-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.sia-count-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sia-row-gap {
+  display: flex;
+  gap: 1em;
+}
+.sia-icon-context {
+  color: var(--context-main-color);
+}
+.sia-icon-ground {
+  color: var(--ground-main-color);
+}
+.sia-list-title-icon {
+  font-size: 2rem;
+  color: var(--main-color);
+}
+.sia-list-title-text {
+  padding-right: 0.5em;
+}
+.entity-list-panel.embedded {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.home-panel-content {
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+.panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.validation-status-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

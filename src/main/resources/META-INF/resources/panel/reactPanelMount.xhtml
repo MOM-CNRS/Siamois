@@ -1,0 +1,58 @@
+<!-- reactPanelMount.xhtml -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+    <!--@elvariable id="panelModel" type="fr.siamois.ui.bean.panel.models.panel.AbstractPanel"-->
+
+    <!--
+    The mount div React attaches to (plan §7.2/§8 phase 8), included by focus.xhtml.
+    Everything here is HTML-attribute-escaped by Facelets, never interpolated into a JS string —
+    resources/js/reactPanelBootstrap.js (a plain static file, no EL) reads it all back off
+    container.dataset. data-contract-version must equal MOUNT_CONTRACT_VERSION
+    (frontend/src/mountOptions.ts): bump both when an attribute changes meaning.
+    -->
+    <div id="react-main-panel-mount-${panelModel.panelIndex}"
+         class="react-main-panel-mount"
+         style="flex: 1; min-height: 0; display: flex; flex-direction: column;"
+         data-contract-version="1"
+         data-panel-index="#{panelModel.panelIndex}"
+         data-panel-kind="#{panelModel.reactPanelKind()}"
+         data-entity-type="#{panelModel.reactEntityType()}"
+         data-entity-id="#{panelModel.reactEntityId()}"
+         data-organization-id="#{panelModel.reactOrganizationId()}"
+         data-overview-entity-type="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityType() : ''}"
+         data-overview-entity-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactEntityId() : ''}"
+         data-overview-organization-id="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.reactOrganizationId() : ''}"
+         data-write-mode="#{flowBean.isWriteMode}"
+         data-go-back-url="#{panelModel.goBackUrl}"
+         data-base-path="#{request.contextPath}"
+         data-locale="#{langBean.languageCode}"
+         data-csrf-header="${_csrf.headerName}"
+         data-csrf-token="${_csrf.token}"
+         data-main-resource-uri="#{panelModel.ressourceUri()}"
+         data-main-title="#{panelModel.resolveTitleOrTitleCode()}"
+         data-main-bookmarked="#{panelModel.isBookmarked()}"
+         data-overview-resource-uri="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.ressourceUri() : ''}"
+         data-overview-title="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.resolveTitleOrTitleCode() : ''}"
+         data-overview-bookmarked="#{panelModel.parentOrOverview != null ? panelModel.parentOrOverview.isBookmarked() : false}"
+         data-action-open-project-settings="reactAction_openProjectSettings_${panelModel.jsPanelIndex}"
+         data-action-set-overview="reactAction_setOverview_${panelModel.jsPanelIndex}"
+         data-overview-action-close-overview="reactAction_overview_closeOverview_${panelModel.jsPanelIndex}"
+         data-action-set-main="reactAction_setMain_${panelModel.jsPanelIndex}"
+         data-action-refresh-bookmarks="reactAction_refreshBookmarks_${panelModel.jsPanelIndex}"
+    >
+        <!--
+        Static placeholder for the moment between the page render and React's first render, so the
+        panel isn't a blank box meanwhile. React's first render replaces the mount div's content;
+        its look (and the delay before it shows) is in main-panel.css.
+        -->
+        <div class="react-main-panel-placeholder" aria-busy="true">
+            <div class="react-main-panel-placeholder-bar" style="width: 30%; height: 2rem;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 20%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 90%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 75%;"></div>
+            <div class="react-main-panel-placeholder-bar" style="width: 85%;"></div>
+        </div>
+    </div>
+
+</ui:composition>

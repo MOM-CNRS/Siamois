@@ -1,0 +1,67 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core">
+    <!-- One condition being edited: comparisons combined with all / any. Params: draft, title. -->
+    <div class="ptc-drawer-field ptc-rule-block">
+        <span class="ptc-drawer-label">#{title}</span>
+
+        <h:panelGroup rendered="#{draft.advanced}">
+            <div class="ptc-hint">#{langBean.msg('rules.advancedKept')}</div>
+            <p:commandButton value="#{langBean.msg('rules.removeAdvanced')}" styleClass="ui-button-outlined ui-button-sm"
+                             actionListener="#{fieldRulesEditorBean.clearAdvanced(draft)}" process="@this"
+                             update=":rulesForm:rulesContent"/>
+        </h:panelGroup>
+
+        <h:panelGroup rendered="#{not draft.advanced}">
+            <h:panelGroup rendered="#{draft.leaves.size() gt 1}">
+                <p:selectOneMenu value="#{draft.any}" style="width:100%;margin-bottom:6px;">
+                    <f:selectItem itemLabel="#{langBean.msg('rules.combinator.all')}" itemValue="#{false}"/>
+                    <f:selectItem itemLabel="#{langBean.msg('rules.combinator.any')}" itemValue="#{true}"/>
+                </p:selectOneMenu>
+            </h:panelGroup>
+
+            <ui:repeat value="#{draft.leaves}" var="leaf">
+                <div class="ptc-rule-leaf">
+                    <p:selectOneMenu value="#{leaf.fieldId}" style="width:100%;" filter="true">
+                        <f:selectItem itemLabel="#{langBean.msg('rules.chooseField')}" itemValue="#{null}" noSelectionOption="true"/>
+                        <f:selectItems value="#{fieldRulesEditorBean.otherFields}" var="of"
+                                       itemLabel="#{fieldRulesEditorBean.labelOf(of)}" itemValue="#{of.id}"/>
+                        <p:ajax event="change" listener="#{fieldRulesEditorBean.onLeafFieldChanged(leaf)}" update=":rulesForm:rulesContent"/>
+                    </p:selectOneMenu>
+                    <h:panelGroup rendered="#{leaf.fieldId ne null}">
+                        <div class="ptc-rule-leaf-row">
+                            <p:selectOneMenu value="#{leaf.op}" style="width:170px;">
+                                <f:selectItems value="#{fieldRulesEditorBean.operatorsFor(leaf.fieldId)}" var="o"
+                                               itemLabel="#{fieldRulesEditorBean.opLabel(o)}" itemValue="#{o}"/>
+                                <p:ajax event="change" update=":rulesForm:rulesContent"/>
+                            </p:selectOneMenu>
+                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm"
+                                             actionListener="#{fieldRulesEditorBean.removeLeaf(draft, leaf)}" process="@this"
+                                             update=":rulesForm:rulesContent"/>
+                        </div>
+                        <h:panelGroup rendered="#{fieldRulesEditorBean.needsValue(leaf)}">
+                            <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() eq 'CONCEPT'}">
+                                <p:selectCheckboxMenu value="#{leaf.values}" multiple="true" filter="true" filterMatchMode="contains"
+                                                      style="width:100%;" panelStyle="max-width:420px;"
+                                                      label="#{langBean.msg('rules.chooseValues')}">
+                                    <f:selectItems value="#{fieldRulesEditorBean.choicesFor(leaf.fieldId)}" var="c"
+                                                   itemLabel="#{c.label}" itemValue="#{c.value}"/>
+                                </p:selectCheckboxMenu>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() ne 'CONCEPT'}">
+                                <p:inputText value="#{leaf.value}" style="width:100%;"
+                                             placeholder="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() eq 'DATE' ? 'AAAA-MM-JJ' : ''}"/>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </h:panelGroup>
+                </div>
+            </ui:repeat>
+
+            <p:commandButton value="#{langBean.msg('rules.addCondition')}" styleClass="ui-button-outlined ui-button-sm"
+                             actionListener="#{fieldRulesEditorBean.addLeaf(draft)}" process="@form"
+                             update=":rulesForm:rulesContent"/>
+        </h:panelGroup>
+    </div>
+</ui:fragment>

@@ -1,12 +1,6 @@
 package fr.siamois.utils;
 
-import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.ui.bean.dialog.document.DocumentCreationBean;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.primefaces.model.file.UploadedFile;
 import org.springframework.util.MimeType;
 
 import java.io.BufferedInputStream;
@@ -111,40 +105,6 @@ public class DocumentUtils {
             extensions.add("." + type.getSubtype());
         }
         return String.join(",", extensions);
-    }
-
-    /**
-     * Prepares a Document object from an UploadedFile and DocumentCreationBean.
-     *
-     * @param conceptService the ConceptService to use for resolving concepts.
-     * @param uploadedFile   the UploadedFile containing the document data, may be {@code null} if no file was uploaded.
-     * @param bean           the DocumentCreationBean containing document metadata.
-     * @return a Document object populated with the data from the uploaded file and bean.
-     */
-    public static Document prepareDocumentFrom(ConceptService conceptService, UploadedFile uploadedFile, DocumentCreationBean bean) {
-        Document document = new Document();
-        document.setTitle(bean.getDocTitle());
-        document.setDescription(bean.getDocDescription());
-
-        if (uploadedFile != null) {
-            document.setMimeType(uploadedFile.getContentType());
-            document.setFileName(uploadedFile.getFileName());
-            document.setSize(uploadedFile.getSize());
-        }
-
-        document.setNature(resolveConcept(conceptService, bean.getDocNature()));
-        document.setScale(resolveConcept(conceptService, bean.getDocScale()));
-        document.setFormat(resolveConcept(conceptService, bean.getDocType()));
-
-        return document;
-    }
-
-    private static Concept resolveConcept(ConceptService conceptService, ConceptAutocompleteDTO dto) {
-        if (dto == null || dto.concept() == null) {
-            return null;
-        }
-        return conceptService.findById(dto.concept().getId())
-                .orElseThrow(() -> new IllegalArgumentException("No concept found for id " + dto.concept().getId()));
     }
 
 }

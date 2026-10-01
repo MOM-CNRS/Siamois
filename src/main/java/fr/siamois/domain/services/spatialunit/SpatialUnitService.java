@@ -333,25 +333,19 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A list of root SpatialUnit that have no parents
      */
     public List<SpatialUnitDTO> findRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitMapper::convert)
                 .toList();
     }
 
+    private List<SpatialUnit> rootsOf(Long institutionId) {
+        return spatialUnitRepository.findAllOfInstitution(institutionId).stream()
+                .filter(spatialUnit -> spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0)
+                .toList();
+    }
+
     public List<SpatialUnitSummaryDTO> findSummaryRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitSummaryMapper::convert)
                 .toList();
     }
@@ -508,20 +502,7 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit unit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(ValidationStatus.COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(ValidationStatus.VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(ValidationStatus.INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }
@@ -663,7 +644,8 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     private Specification<SpatialUnit> userFilterSpecs(FilterDTO filterDTO) {
-        Specification<SpatialUnit> specs = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<SpatialUnit> specs = filterDTO.getFieldQuery().specificationFor();
 
         if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));

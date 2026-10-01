@@ -64,6 +64,20 @@ public class AuthService {
         return buildAuthUserResponse(person);
     }
 
+    /**
+     * Bridges the current JSF session authentication into a JWT access token, so a React app
+     * mounted inside an already-authenticated JSF page can call {@code /api/v1/**} without asking
+     * for credentials again. Not entity/panel-specific — any session-authenticated caller can use it.
+     */
+    @Transactional(readOnly = true)
+    public LoginResponse sessionToken() {
+        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        String access = jwtService.createAccessToken(person);
+        AuthUserResponse user = buildAuthUserResponse(person);
+        return new LoginResponse(access, jwtService.accessTokenExpiresInSeconds(), AuthConstants.TOKEN_TYPE_BEARER, user);
+    }
+
     private AuthUserResponse buildAuthUserResponse(Person person) {
         PersonDTO dto = personMapper.convert(person);
         Set<InstitutionDTO> institutions = institutionService.findInstitutionsOfPerson(dto);

@@ -11,10 +11,10 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity;
+import fr.siamois.ui.form.FormLayoutConstants;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 public abstract class ActionUnitForm {
 
@@ -109,7 +109,7 @@ public abstract class ActionUnitForm {
             .label("common.label.identifier")
             .id(-103L)
             .isSystemField(true)
-            .autoGenerationFunction(AbstractSingleEntity::generateRandomActionUnitIdentifier)
+            .autoGenerationFunction(FormLayoutConstants::generateRandomActionUnitIdentifier)
             .valueBinding("identifier")
             .concept(IDENTIFIER_CONCEPT)
             .build();

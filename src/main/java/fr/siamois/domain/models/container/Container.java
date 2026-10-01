@@ -5,16 +5,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.container.form.ContainerDetailsForm;
-import fr.siamois.domain.models.container.form.ContainerNewUnitForm;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.domain.models.specimen.Specimen;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -23,7 +23,7 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "container")
+@Table(name = "container", indexes = @Index(name = "idx_container_action_unit", columnList = "fk_action_unit_id"))
 @Audited
 @NoArgsConstructor
 public class Container extends TraceableEntity {
@@ -34,6 +34,15 @@ public class Container extends TraceableEntity {
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Container> children = new HashSet<>();
+
+    // The inverse of Specimen.containers, mapped only so a container list can sort and filter on its
+    // finds (FieldQueryService reads the metamodel); never loaded otherwise.
+    @ManyToMany(mappedBy = "containers", fetch = FetchType.LAZY)
+    @NotAudited
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<Specimen> specimens = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_type")
@@ -85,12 +94,6 @@ public class Container extends TraceableEntity {
     @NotAudited
     private MeasurementAnswer weight;
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto DETAILS_FORM = ContainerDetailsForm.build();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto NEW_UNIT_FORM = ContainerNewUnitForm.build();
 
 }

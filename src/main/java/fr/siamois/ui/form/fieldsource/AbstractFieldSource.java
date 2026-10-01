@@ -1,8 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.DependsOnJson;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
@@ -14,14 +13,13 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
- * Base commune aux implémentations de {@link FieldSource} : index champ/spec (par id, par
- * EnabledWhenJson, par DependsOnJson) et parcours panels -> rows -> cols d'un {@link FormUiDto}.
+ * Base commune aux implémentations de {@link FieldSource} : index des champs (par id) et de leurs
+ * règles conditionnelles, et parcours panels -> rows -> cols d'un {@link FormUiDto}.
  */
 abstract class AbstractFieldSource implements FieldSource {
 
     protected final Map<Long, CustomField> byId = new HashMap<>();
-    private final Map<CustomField, EnabledWhenJson> enabledByField = new HashMap<>();
-    private final Map<CustomField, DependsOnJson> dependsOnByField = new HashMap<>();
+    private final Map<CustomField, FieldRules> rulesByField = new HashMap<>();
 
     /**
      * Parcourt panels -> rows -> cols d'un formulaire et appelle {@code onColumn} pour chaque
@@ -53,13 +51,10 @@ abstract class AbstractFieldSource implements FieldSource {
         }
     }
 
-    /** Enregistre l'EnabledWhenJson/DependsOnJson de la colonne pour ce champ, si présents. */
-    protected final void registerSpecs(CustomField field, CustomColUiDto column) {
-        if (column.getEnabledWhenSpec() != null) {
-            enabledByField.put(field, column.getEnabledWhenSpec());
-        }
-        if (column.getDependsOnSpec() != null) {
-            dependsOnByField.put(field, column.getDependsOnSpec());
+    /** Enregistre les règles de la colonne pour ce champ, si elle en déclare. */
+    protected final void registerRules(CustomField field, CustomColUiDto column) {
+        if (column.getRules() != null && !column.getRules().isEmpty()) {
+            rulesByField.put(field, column.getRules());
         }
     }
 
@@ -74,12 +69,7 @@ abstract class AbstractFieldSource implements FieldSource {
     }
 
     @Override
-    public EnabledWhenJson getEnabledSpec(CustomField field) {
-        return enabledByField.get(field);
-    }
-
-    @Override
-    public DependsOnJson getDependsOnSpec(CustomField field) {
-        return dependsOnByField.get(field);
+    public FieldRules getRules(CustomField field) {
+        return rulesByField.getOrDefault(field, FieldRules.NONE);
     }
 }
