@@ -21,25 +21,29 @@ a{color:inherit}
 h1,h2,h3{font-family:var(--serif);font-weight:500;margin:0;line-height:1.1}
 .mono{font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
 
-header.top{border-bottom:1px solid var(--ink)}
-header.top .wrap{display:flex;justify-content:space-between;align-items:center;height:52px;font-family:var(--mono);font-size:.78rem}
+header.top{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--ink)}
+header.top .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;height:56px;font-family:var(--mono);font-size:.78rem}
 header.top a{text-decoration:none}
-header.top .brand{font-family:var(--serif);font-weight:500;font-size:1.3rem;letter-spacing:-.01em}
+header.top .id{display:flex;align-items:baseline;gap:14px;min-width:0}
+header.top .brand{font-family:var(--serif);font-weight:500;font-size:1.3rem;letter-spacing:-.01em;white-space:nowrap}
 header.top .brand em{font-style:italic;color:var(--violet)}
-header.top nav a{margin-left:24px}
+header.top .role-top{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.top nav{display:flex;align-items:center;gap:22px;flex:none}
+header.top .ic{display:inline-flex;padding:4px;margin:0 -4px}
+header.top .ic+.ic{margin-left:0}
 header.top nav a:hover,.link:hover{color:var(--violet)}
+header.top a:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+section,#top{scroll-margin-top:64px}
 
-.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:56px;padding:88px 0 72px;align-items:end;border-bottom:1px solid var(--line)}
-.hero h1{font-size:clamp(2.4rem,5.6vw,4.4rem);letter-spacing:-.02em;font-weight:500}
-.hero h1 em{font-style:italic;color:var(--violet)}
-.hero .role{margin-top:24px;font-family:var(--mono);font-size:.82rem;color:var(--ink-2);max-width:46ch}
-.hero p{margin:0 0 24px;font-family:var(--serif);font-size:1.2rem;line-height:1.6}
+.hero{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:20px 56px;padding:40px 0 40px;border-bottom:1px solid var(--line)}
+.hero p{margin:0;max-width:62ch;font-family:var(--serif);font-size:1.2rem;line-height:1.6}
+.hero .mail{flex:0 1 340px;border-top:1px solid var(--ink)}
 .links{display:flex;flex-direction:column;border-top:1px solid var(--ink)}
 .link{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);text-decoration:none;font-family:var(--mono);font-size:.85rem}
 .link span:last-child{transition:transform .15s}
 .link:hover span:last-child{transform:translateX(4px)}
 
-section{padding:72px 0 0}
+section{padding:56px 0 0}
 .sec-head{display:flex;align-items:baseline;gap:18px;margin-bottom:28px}
 .sec-head .n{font-family:var(--mono);font-size:.8rem;color:var(--violet)}
 .sec-head h2{font-size:2.1rem}
@@ -162,8 +166,9 @@ footer .row a:hover{color:#fff}
   .tiles{max-width:340px}
 }
 @media (max-width:820px){
-  .hero{grid-template-columns:1fr;gap:36px;padding:56px 0 48px}
-  header.top nav a:not(:last-child){display:none}
+  .hero{padding:28px 0 32px}
+  header.top .role-top,header.top .nl{display:none}
+  header.top nav{gap:18px}
   .workspace{display:block;height:auto}
   .cards{overflow:visible}
   .handle{display:none}
@@ -178,26 +183,20 @@ footer .row a:hover{color:#fff}
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top">Grégory <em>Bliault</em></a>
-    <nav><a href="#parcours">parcours</a><a href="#projets">projets</a><a href="#competences">cv</a><a href="#contact">contact</a></nav>
+    <div class="id"><a class="brand" href="#top">Grégory <em>Bliault</em></a><span class="role-top">Ingénieur logiciel &amp; Product Owner</span></div>
+    <nav>
+      <a class="nl" href="#parcours">parcours</a><a class="nl" href="#projets">projets</a><a class="nl" href="#competences">cv</a><a class="nl" href="#contact">contact</a>
+      <a class="ic" href="https://www.linkedin.com/in/gr%C3%A9gory-bliault-bb796a61/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+      <a class="ic" href="https://github.com/gregblt" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></a>
+    </nav>
   </div>
 </header>
 
 <main id="top">
   <div class="wrap">
     <div class="hero">
-      <div>
-        <h1>Product Manager &amp; ingénieur <em>logiciel</em></h1>
-        <div class="role">Fullstack et traitement d'image. Lyon.</div>
-      </div>
-      <div>
-        <p>Je construis des applications web pour la recherche scientifique, de la spécification à la mise en production. Ingénieur en traitement du signal et de l'image, passé par Harvard Medical School, aujourd'hui sur Siamois au CNRS.</p>
-        <div class="links">
-          <a class="link" href="mailto:gregorybliault@gmail.com"><span>gregorybliault@gmail.com</span><span>→</span></a>
-          <a class="link" href="https://www.linkedin.com/in/gr%C3%A9gory-bliault-bb796a61/" target="_blank" rel="noopener"><span>LinkedIn</span><span>→</span></a>
-          <a class="link" href="https://github.com/gregblt" target="_blank" rel="noopener"><span>GitHub</span><span>→</span></a>
-        </div>
-      </div>
+      <p>Je construis des applications web pour la recherche scientifique, de la spécification à la mise en production. Ingénieur en traitement du signal et de l'image, passé par Harvard Medical School, aujourd'hui sur Siamois au CNRS.</p>
+      <a class="link mail" href="mailto:gregorybliault@gmail.com"><span>gregorybliault@gmail.com</span><span>→</span></a>
     </div>
   </div>
 
