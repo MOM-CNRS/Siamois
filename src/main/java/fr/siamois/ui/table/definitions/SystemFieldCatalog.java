@@ -1,16 +1,18 @@
 package fr.siamois.ui.table.definitions;
 
-import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.container.form.ContainerForm;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
+import fr.siamois.domain.models.phase.form.PhaseForm;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitForm;
+import fr.siamois.domain.models.specimen.form.SpecimenForm;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.specimen.Specimen;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -29,41 +31,6 @@ public final class SystemFieldCatalog {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * The system field columns of a table's details form, in the order the form lays them out.
-     * Columns backed by no field, and the few carrying a non-system field, are left out: this
-     * catalog only answers for the fields the application defines itself.
-     * <p>
-     * Hands out a fresh copy of each field rather than the details form's own instance: the form
-     * (e.g. {@link RecordingUnit#DETAILS_FORM}) is a shared, static singleton, so returning its
-     * fields directly would let any caller that edits one (tests routinely stamp an id on a field
-     * to simulate a persisted row) corrupt that singleton for the rest of the JVM's lifetime.
-     *
-     * @param table the table whose system fields are read
-     * @return the table's system field columns, in form order, each a fresh, independent copy
-     */
-    public static List<CustomColUiDto> systemColumnsOf(ConfigurableTable table) {
-        Objects.requireNonNull(table, "A table is needed to read its system fields");
-        return detailsFormOf(table).getLayout().stream()
-                .flatMap(panel -> panel.getRows().stream())
-                .flatMap(row -> row.getColumns().stream())
-                .filter(column -> column.getField() != null
-                        && Boolean.TRUE.equals(column.getField().getIsSystemField()))
-                .map(SystemFieldCatalog::copyOf)
-                .toList();
-    }
-
-    private static CustomColUiDto copyOf(CustomColUiDto column) {
-        return new CustomColUiDto.Builder()
-                .field(copyOf(column.getField()))
-                .className(column.getClassName())
-                .readOnly(column.isReadOnly())
-                .isRequired(column.isRequired())
-                .enabledWhenSpec(column.getEnabledWhenSpec())
-                .dependsOnSpec(column.getDependsOnSpec())
-                .build();
-    }
-
     private static CustomField copyOf(CustomField field) {
         try {
             CustomField copy = field.getClass().getDeclaredConstructor().newInstance();
@@ -75,13 +42,88 @@ public final class SystemFieldCatalog {
     }
 
     /**
-     * The system fields of a table, in the order its details form lays them out.
+     * The declared system fields of a table, in their default order, with what is intrinsic to each
+     * ({@code hidden}, {@code readOnly}). The field set is declared by the table's {@code *Form}
+     * base class ({@code systemFields()}), not derived from a layout: layouts (groups, order, widths)
+     * are configuration. The fields are the shared definitions; callers must not mutate them.
      *
      * @param table the table whose system fields are read
-     * @return the table's system fields, in form order
+     * @return the table's system field specs, in default order
+     */
+    public static List<SystemFieldSpec> specsOf(ConfigurableTable table) {
+        Objects.requireNonNull(table, "A table is needed to read its system fields");
+        return switch (table) {
+            case UE -> RecordingUnitForm.systemFields();
+            case MOBILIER -> SpecimenForm.systemFields();
+            case PHASE -> PhaseForm.systemFields();
+            case CONTENANT -> ContainerForm.systemFields();
+        };
+    }
+
+    /**
+     * The spec of a system field of a table, if it is one.
+     *
+     * @param table   the table
+     * @param fieldId the field's id (system fields carry a stable negative id)
+     * @return the field's spec, or empty when the field is not a system field of that table
+     */
+    public static java.util.Optional<SystemFieldSpec> specOf(ConfigurableTable table, Long fieldId) {
+        return specsOf(table).stream()
+                .filter(spec -> Objects.equals(spec.field().getId(), fieldId))
+                .findFirst();
+    }
+
+    /**
+     * The system fields of a table, in default order, each a fresh, independent copy: callers
+     * routinely edit them (tests stamp an id on a field to simulate a persisted row), which must
+     * never reach the shared definitions.
+     *
+     * @param table the table whose system fields are read
+     * @return the table's system fields, in default order
      */
     public static List<CustomField> fieldsOf(ConfigurableTable table) {
-        return systemColumnsOf(table).stream().map(CustomColUiDto::getField).toList();
+        return specsOf(table).stream().map(spec -> copyOf(spec.field())).toList();
+    }
+
+    /**
+     * The table's system fields without copying, for read-only use on hot paths (answer projection
+     * per row). Never mutate the result.
+     *
+     * @param table the table whose system fields are read
+     * @return the shared field definitions, in default order
+     */
+    public static List<CustomField> sharedFieldsOf(ConfigurableTable table) {
+        return specsOf(table).stream().map(SystemFieldSpec::field).toList();
+    }
+
+    /**
+     * The field a table's details form declares for a given binding — the same instance every other
+     * caller of this catalog gets, so column defaults describe exactly the fields the
+     * field-configuration screen and the details form agree exist.
+     *
+     * @param table        the table the field belongs to
+     * @param valueBinding the entity property the field binds to
+     * @return the table's system field bound to that property
+     */
+    public static CustomField fieldBoundTo(ConfigurableTable table, String valueBinding) {
+        return fieldsOf(table).stream()
+                .filter(field -> valueBinding.equals(field.getValueBinding()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "No system field bound to '" + valueBinding + "' on the details form of " + table));
+    }
+
+    /**
+     * Whether a field is the project the entity belongs to (a recording unit's, find's, phase's or
+     * container's {@code actionUnit}). It is an attribute set once at creation, not a configurable
+     * field: it is never offered in a project's field configuration, never editable afterwards, and
+     * lists show it through their own "Projet" column rather than as a field column.
+     *
+     * @param field the field to test
+     * @return true for the owning-project field
+     */
+    public static boolean isOwningProject(CustomField field) {
+        return field instanceof CustomFieldSelectOneActionUnit && "actionUnit".equals(field.getValueBinding());
     }
 
     /**
@@ -97,15 +139,5 @@ public final class SystemFieldCatalog {
      */
     public static String identityOf(CustomField field) {
         return field.getLabel() + " " + field.getValueBinding();
-    }
-
-    private static FormUiDto detailsFormOf(ConfigurableTable table) {
-        Objects.requireNonNull(table, "A table is needed to read its system fields");
-        return switch (table) {
-            case UE -> RecordingUnit.DETAILS_FORM;
-            case MOBILIER -> Specimen.DETAILS_FORM;
-            case PHASE -> Phase.DETAILS_FORM;
-            case CONTENANT -> Container.DETAILS_FORM;
-        };
     }
 }

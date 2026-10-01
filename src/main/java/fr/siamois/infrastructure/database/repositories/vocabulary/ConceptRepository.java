@@ -108,4 +108,15 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
             "JOIN c.relatedConcepts r " +
             "WHERE c.id = :conceptId AND r.isLoaded = FALSE AND r.uri IS NOT NULL")
     List<Concept> findUnloadedRelatedConceptsOf(@Param("conceptId") Long conceptId);
+
+    /**
+     * Whether {@code relatedConceptId} is among the concepts related to {@code conceptId} — the same
+     * direction the dependent-list autocomplete reads ({@code concept_autocomplete_related}).
+     */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT EXISTS (SELECT 1 FROM concept_related " +
+                    "WHERE fk_concept_id = :conceptId AND fk_related_concept_id = :relatedConceptId)"
+    )
+    boolean isRelated(@Param("conceptId") Long conceptId, @Param("relatedConceptId") Long relatedConceptId);
 }

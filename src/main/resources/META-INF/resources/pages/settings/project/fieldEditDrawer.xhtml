@@ -61,7 +61,7 @@
                    position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
                    styleClass="ptc-drawer-sidebar" style="width:460px;max-width:92vw;">
             <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closeDrawer()}"
-                    update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:systemFieldsTable :projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
+                    update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
 
             <h:panelGroup id="drawerContent" layout="block" styleClass="ptc-drawer">
                 <div class="ptc-drawer-header">
@@ -241,14 +241,14 @@
                 <div class="ptc-drawer-footer">
                     <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
                                       actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
-                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:systemFieldsTable :projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"/>
+                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
                     <!-- Only the two field tables are re-rendered, not the whole outer form: the tab
                          panel is what scrolls, so replacing the full form would put the user back at
                          the top of it after every save/cancel. Both tables are targeted because the
                          saved draft can be either a system or an additional field. -->
                     <p:commandButton value="#{langBean.msg('common.action.save')}"
                                       actionListener="#{projectTableFieldSettingsBean.saveDrawer()}"
-                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:systemFieldsTable :projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable"
+                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"
                                       onstart="startFieldDrawerProgressBar()" oncomplete="endFieldDrawerProgressBar()"/>
                 </div>
             </h:panelGroup>

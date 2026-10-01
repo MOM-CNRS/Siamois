@@ -5,14 +5,14 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.phase.form.PhaseDetailsForm;
-import fr.siamois.domain.models.phase.form.PhaseNewUnitForm;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
@@ -21,7 +21,7 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "phase")
+@Table(name = "phase", indexes = @Index(name = "idx_phase_action_unit", columnList = "fk_action_unit_id"))
 @Audited
 @NoArgsConstructor
 public class Phase extends TraceableEntity {
@@ -94,11 +94,14 @@ public class Phase extends TraceableEntity {
     @NotAudited
     private Set<Concept> keywords = new HashSet<>();
 
-    @Transient
+    // The inverse of RecordingUnit.phases, mapped only so a phase list can sort and filter on its
+    // recording units (FieldQueryService reads the metamodel); never loaded otherwise.
+    @ManyToMany(mappedBy = "phases", fetch = FetchType.LAZY)
+    @NotAudited
     @JsonIgnore
-    public static final FormUiDto DETAILS_FORM = PhaseDetailsForm.build();
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<RecordingUnit> recordingUnits = new HashSet<>();
 
-    @Transient
-    @JsonIgnore
-    public static final FormUiDto NEW_UNIT_FORM = PhaseNewUnitForm.build();
+
 }

@@ -31,6 +31,8 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryDtoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -73,6 +75,7 @@ public class SpatialUnitService implements ArkEntityService {
     private final RecordingUnitRepository recordingUnitRepository;
     private final DocumentRepository documentRepository;
     private final ConceptMapper conceptMapper;
+    private final GeometryDtoMapper geometryDtoMapper;
 
     /**
      * Find a spatial unit by its ID
@@ -189,6 +192,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
+        spatialUnit.setGeom(su.getGeom() != null ? geometryDtoMapper.toMultiPolygon(su.getGeom()) : null);
 
         InstitutionSettings settings = institutionService.createOrGetSettingsOf(info.getInstitution());
         if (settings.hasEnabledArkConfig()) {
@@ -329,25 +333,19 @@ public class SpatialUnitService implements ArkEntityService {
      * @return A list of root SpatialUnit that have no parents
      */
     public List<SpatialUnitDTO> findRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitMapper::convert)
                 .toList();
     }
 
+    private List<SpatialUnit> rootsOf(Long institutionId) {
+        return spatialUnitRepository.findAllOfInstitution(institutionId).stream()
+                .filter(spatialUnit -> spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0)
+                .toList();
+    }
+
     public List<SpatialUnitSummaryDTO> findSummaryRootsOf(Long id) {
-        List<SpatialUnit> result = new ArrayList<>();
-        for (SpatialUnit spatialUnit : spatialUnitRepository.findAllOfInstitution(id)) {
-            if (spatialUnitRepository.countParentsByChildId(spatialUnit.getId()) == 0) {
-                result.add(spatialUnit);
-            }
-        }
-        return result.stream()
+        return rootsOf(id).stream()
                 .map(spatialUnitSummaryMapper::convert)
                 .toList();
     }
@@ -504,20 +502,7 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit unit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
 
-        // Cycle through the enum values
-        switch (unit.getValidated()) {
-            case INCOMPLETE:
-                unit.setValidated(ValidationStatus.COMPLETE);
-                break;
-            case COMPLETE:
-                unit.setValidated(ValidationStatus.VALIDATED);
-                break;
-            case VALIDATED:
-                unit.setValidated(ValidationStatus.INCOMPLETE);
-                break;
-            default:
-                throw new IllegalStateException("Unknown status: " + unit.getValidated());
-        }
+        unit.setValidated(unit.getValidated().nextInCycle());
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }
@@ -659,7 +644,8 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     private Specification<SpatialUnit> userFilterSpecs(FilterDTO filterDTO) {
-        Specification<SpatialUnit> specs = Specification.where(null);
+        // The list's per-field sort/filters (FieldQuery), then the named ones.
+        Specification<SpatialUnit> specs = filterDTO.getFieldQuery().specificationFor();
 
         if (filterDTO.containsColumn(SpatialUnitSpec.NAME_FILTER)) {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
@@ -732,7 +718,7 @@ public class SpatialUnitService implements ArkEntityService {
                                       String newName,
                                       ConceptDTO newCategory,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
-        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false);
+        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false, null, false);
     }
 
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
@@ -743,6 +729,19 @@ public class SpatialUnitService implements ArkEntityService {
                                       FullAddress newAddress,
                                       Integer newPlaceNumber,
                                       boolean updatePlaceNumber) throws SpatialUnitAlreadyExistsException {
+        return updatePlace(info, placeId, newName, newCategory, newAddress, newPlaceNumber, updatePlaceNumber, null, false);
+    }
+
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newCategory,
+                                      FullAddress newAddress,
+                                      Integer newPlaceNumber,
+                                      boolean updatePlaceNumber,
+                                      GeometryDTO newGeom,
+                                      boolean updateGeom) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -765,6 +764,9 @@ public class SpatialUnitService implements ArkEntityService {
         }
         if (updatePlaceNumber) {
             dto.setPlaceNumber(newPlaceNumber);
+        }
+        if (updateGeom) {
+            dto.setGeom(newGeom);
         }
         return persistSpatialUnitDto(dto);
     }

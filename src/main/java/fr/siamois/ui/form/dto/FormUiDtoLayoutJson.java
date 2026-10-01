@@ -3,6 +3,7 @@ package fr.siamois.ui.form.dto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.exceptions.form.CantSerializeFormPanelException;
+import fr.siamois.domain.models.form.rules.FieldRulesJson;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ public final class FormUiDtoLayoutJson {
         }
         try {
             List<Map<String, Object>> serializedLayout = layout.stream()
-                    .map(FormUiDtoLayoutJson::serializePanel)
+                    .map(panel -> serializePanel(panel))
                     .toList();
             return objectMapper.writeValueAsString(serializedLayout);
         } catch (JsonProcessingException e) {
@@ -45,7 +46,7 @@ public final class FormUiDtoLayoutJson {
         panelMap.put("isSystemPanel", panel.getIsSystemPanel());
 
         List<Map<String, Object>> rows = Optional.ofNullable(panel.getRows()).orElse(List.of()).stream()
-                .map(FormUiDtoLayoutJson::serializeRow)
+                .map(row -> serializeRow(row))
                 .toList();
 
         panelMap.put("rows", rows);
@@ -55,7 +56,7 @@ public final class FormUiDtoLayoutJson {
     private static Map<String, Object> serializeRow(CustomRowUiDto row) {
         Map<String, Object> rowMap = new HashMap<>();
         List<Map<String, Object>> columns = Optional.ofNullable(row.getColumns()).orElse(List.of()).stream()
-                .map(FormUiDtoLayoutJson::serializeCol)
+                .map(col -> serializeCol(col))
                 .toList();
         rowMap.put("columns", columns);
         return rowMap;
@@ -63,19 +64,34 @@ public final class FormUiDtoLayoutJson {
 
     private static Map<String, Object> serializeCol(CustomColUiDto col) {
         Map<String, Object> colMap = new HashMap<>();
-        colMap.put(CLASS_NAME_KEY, col.getClassName());
+        if (col.getWidth() != null) {
+            // The structured shape (React converts this to PrimeFlex's own col-N/md:col-N/lg:col-N
+            // itself — see entities/project/form.ts's toPrimeFlexClass) rather than the PrimeFaces
+            // class string CustomColUiDto#getClassName() computes from the same ColumnWidth for
+            // the JSF side.
+            Map<String, Object> width = new HashMap<>();
+            width.put("span", col.getWidth().span());
+            if (col.getWidth().md() != null) {
+                width.put("md", col.getWidth().md());
+            }
+            if (col.getWidth().lg() != null) {
+                width.put("lg", col.getWidth().lg());
+            }
+            colMap.put("width", width);
+            colMap.put("hidden", col.isHidden());
+        } else {
+            // Fallback for a column still built the old way (not exercised by
+            // ActionUnitDetailsForm/RecordingUnitDetailsForm today, but FormUiDtoLayoutJson makes
+            // no assumption that every caller has migrated).
+            colMap.put(CLASS_NAME_KEY, col.getClassName());
+        }
         colMap.put("isRequired", col.isRequired());
         colMap.put("isReadOnly", col.isReadOnly());
         if (col.getField() != null) {
             colMap.put("fieldId", col.getField().getId());
         }
-        if (col.getEnabledWhenSpec() != null) {
-            Map<String, Object> ew = objectMapper.convertValue(col.getEnabledWhenSpec(), Map.class);
-            colMap.put("enabledWhen", ew);
-        }
-        if (col.getDependsOnSpec() != null) {
-            Map<String, Object> dep = objectMapper.convertValue(col.getDependsOnSpec(), Map.class);
-            colMap.put("dependsOn", dep);
+        if (col.getRules() != null && !col.getRules().isEmpty()) {
+            colMap.put("rules", FieldRulesJson.toWire(col.getRules()));
         }
         return colMap;
     }

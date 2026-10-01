@@ -1,0 +1,172 @@
+{
+  "groups" : [ {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -304,
+      "binding" : "spatialUnit",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -319,
+      "binding" : "parents",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -320,
+      "binding" : "children",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -327,
+      "binding" : "stratigraphicRelationships",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -326,
+      "binding" : "specimenList",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -302,
+      "binding" : "type",
+      "width" : "QUARTER",
+      "required" : true
+    }, {
+      "fieldId" : -307,
+      "binding" : "geomorphologicalCycle",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -310,
+      "binding" : "geomorphologicalAgent",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -308,
+      "binding" : "normalizedInterpretation",
+      "width" : "QUARTER",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_CONCEPTS",
+          "fieldId" : -307
+        }
+      }
+    }, {
+      "fieldId" : -325,
+      "binding" : "matrixColor",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -311,
+      "binding" : "erosionShape",
+      "width" : "QUARTER",
+      "rules" : {
+        "enabledWhen" : {
+          "fieldId" : -307,
+          "op" : "EQ",
+          "values" : [ {
+            "vocabularyExtId" : "th252",
+            "conceptExtId" : "4287639"
+          } ]
+        }
+      }
+    }, {
+      "fieldId" : -312,
+      "binding" : "erosionProfile",
+      "width" : "QUARTER",
+      "rules" : {
+        "enabledWhen" : {
+          "fieldId" : -307,
+          "op" : "EQ",
+          "values" : [ {
+            "vocabularyExtId" : "th252",
+            "conceptExtId" : "4287639"
+          } ]
+        }
+      }
+    }, {
+      "fieldId" : -313,
+      "binding" : "erosionOrientation",
+      "width" : "QUARTER",
+      "rules" : {
+        "enabledWhen" : {
+          "fieldId" : -307,
+          "op" : "EQ",
+          "values" : [ {
+            "vocabularyExtId" : "th252",
+            "conceptExtId" : "4287639"
+          } ]
+        }
+      }
+    }, {
+      "fieldId" : -317,
+      "binding" : "description",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -321,
+      "binding" : "comments",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "recordingunit.panel.chronology",
+    "fields" : [ {
+      "fieldId" : -314,
+      "binding" : "chronologicalPhase",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -316,
+      "binding" : "tpq",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -315,
+      "binding" : "taq",
+      "width" : "QUARTER",
+      "rules" : {
+        "constraints" : [ {
+          "op" : "GTE",
+          "fieldId" : -316
+        } ]
+      }
+    }, {
+      "fieldId" : -324,
+      "binding" : "phases",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "recordingunit.panel.measurements",
+    "fields" : [ {
+      "fieldId" : -322,
+      "binding" : "zInf",
+      "width" : "HALF"
+    }, {
+      "fieldId" : -323,
+      "binding" : "zSup",
+      "width" : "HALF",
+      "rules" : {
+        "constraints" : [ {
+          "op" : "GTE",
+          "fieldId" : -322
+        } ]
+      }
+    } ]
+  }, {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -303,
+      "binding" : "openingDate",
+      "width" : "QUARTER",
+      "required" : true
+    }, {
+      "fieldId" : -318,
+      "binding" : "closingDate",
+      "width" : "QUARTER",
+      "rules" : {
+        "constraints" : [ {
+          "op" : "GTE",
+          "fieldId" : -303
+        } ]
+      }
+    }, {
+      "fieldId" : -301,
+      "binding" : "author",
+      "width" : "QUARTER",
+      "required" : true
+    }, {
+      "fieldId" : -309,
+      "binding" : "contributors",
+      "width" : "QUARTER"
+    } ]
+  } ]
+}

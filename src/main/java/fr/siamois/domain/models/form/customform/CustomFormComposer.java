@@ -10,6 +10,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -159,6 +160,49 @@ public final class CustomFormComposer {
     }
 
     /**
+     * @param baseForm      the form to start from, left untouched
+     * @param shouldRequire the fields to mark required (the columns already required stay so)
+     * @return a new {@link FormUiDto} whose matching columns are fresh copies with
+     * {@code isRequired = true}; untouched columns are shared, as {@link #withoutFields} does
+     */
+    public static FormUiDto withRequiredFields(FormUiDto baseForm, Predicate<CustomField> shouldRequire) {
+        List<CustomFormPanelUiDto> panels = baseForm.getLayout().stream()
+                .map(panel -> {
+                    CustomFormPanelUiDto copy = new CustomFormPanelUiDto();
+                    copy.setName(panel.getName());
+                    copy.setClassName(panel.getClassName());
+                    copy.setIsSystemPanel(panel.getIsSystemPanel());
+                    copy.setCanUserAddFields(panel.getCanUserAddFields());
+                    copy.setRows(panel.getRows().stream().map(row -> {
+                        CustomRowUiDto rowCopy = new CustomRowUiDto();
+                        rowCopy.setColumns(row.getColumns().stream()
+                                .map(col -> !col.isRequired() && col.getField() != null && shouldRequire.test(col.getField())
+                                        ? requiredCopyOf(col) : col)
+                                .collect(Collectors.toCollection(ArrayList::new)));
+                        return rowCopy;
+                    }).collect(Collectors.toCollection(ArrayList::new)));
+                    return copy;
+                })
+                .toList();
+        return new FormUiDto.Builder()
+                .addPanels(panels)
+                .build();
+    }
+
+    private static CustomColUiDto requiredCopyOf(CustomColUiDto col) {
+        CustomColUiDto copy = new CustomColUiDto();
+        copy.setReadOnly(col.isReadOnly());
+        copy.setRequired(true);
+        copy.setCanBeRemoved(col.isCanBeRemoved());
+        copy.setField(col.getField());
+        copy.setClassName(col.getClassName());
+        copy.setWidth(col.getWidth());
+        copy.setHidden(col.isHidden());
+        copy.setRules(col.getRules());
+        return copy;
+    }
+
+    /**
      * @param form the form to copy, left untouched; {@code null} is returned as {@code null}
      * @return an independent deep copy of {@code form} (panels, rows and cols are all fresh
      * objects) safe to mutate at runtime — e.g. to apply a per-view constraint to a date field —
@@ -204,8 +248,7 @@ public final class CustomFormComposer {
         copy.setCanBeRemoved(col.isCanBeRemoved());
         copy.setField(deepCopyField(col.getField()));
         copy.setClassName(col.getClassName());
-        copy.setEnabledWhenSpec(col.getEnabledWhenSpec());
-        copy.setDependsOnSpec(col.getDependsOnSpec());
+        copy.setRules(col.getRules());
         return copy;
     }
 

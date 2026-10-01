@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -64,15 +65,28 @@ class PlaceSearchControllerApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // What a picker shows as soon as it opens, before anything is typed.
     @Test
-    void autocomplete_emptyQuery_returns400() throws Exception {
+    void autocomplete_emptyQuery_returnsFirstPageByName() throws Exception {
         when(projectApiService.requireCaller()).thenReturn(
                 new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
+        SpatialUnitDTO su = new SpatialUnitDTO();
+        su.setId(5L);
+        su.setName("Abbaye");
+        PageRequest firstPage = PageRequest.of(0, 20, Sort.by("name"));
+        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                eq(10L), eq(""), isNull(), isNull(), isNull(), eq("fr"), eq(firstPage)))
+                .thenReturn(new PageImpl<>(List.of(su), firstPage, 1));
 
         mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
                         .param("q", "   "))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
+        mockMvc.perform(get("/api/v1/places/autocomplete")
+                        .param("organizationId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
     }
 
     @Test
@@ -104,7 +118,7 @@ class PlaceSearchControllerApiTest {
                 isNull(),
                 isNull(),
                 eq("fr"),
-                eq(PageRequest.of(0, 20))))
+                eq(PageRequest.of(0, 20, Sort.by("name")))))
                 .thenReturn(new PageImpl<>(List.of(su), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/v1/places/autocomplete")

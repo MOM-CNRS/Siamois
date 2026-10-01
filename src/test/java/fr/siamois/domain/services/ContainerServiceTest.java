@@ -85,7 +85,7 @@ class ContainerServiceTest {
         containerDTO.setId(100L);
 
         ExecutionContextHolder.set(new UserInfo(institutionDTO, new PersonDTO(), "fr"));
-        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString(), anyString(), anyString())).thenReturn(true);
     }
 
     @AfterEach
@@ -274,7 +274,7 @@ class ContainerServiceTest {
     @Test
     void save_throwsForbidden_whenPermissionDenied() {
         when(containerMapper.invertConvert(containerDTO)).thenReturn(container);
-        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), any(), anyString(), anyString(), anyString())).thenReturn(false);
 
         assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
                 () -> containerService.save(containerDTO));
@@ -295,7 +295,8 @@ class ContainerServiceTest {
 
         containerService.save(newContainerDTO);
 
-        verify(profilePermissionService).hasProjectPermission(any(), eq(7L), eq(PermissionConstants.PROJECT_EDIT_CONTAINERS));
+        verify(profilePermissionService).hasProjectPermission(any(), eq(7L), eq(PermissionConstants.INSTANCE_EDIT_CONTAINERS),
+                eq(PermissionConstants.ORGANIZATION_EDIT_CONTAINERS), eq(PermissionConstants.PROJECT_EDIT_CONTAINERS));
     }
 
     @Test

@@ -31,8 +31,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.COLUMN_CLASS_NAME;
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.COLUMN_CLASS_NAME;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 @Data
 @Entity

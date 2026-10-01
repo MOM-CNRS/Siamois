@@ -84,7 +84,7 @@ class DocumentsControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
 
-        mockMvc.perform(get("/api/v1/documents/1"))
+        mockMvc.perform(get("/api/v1/documents/1/file"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -101,7 +101,7 @@ class DocumentsControllerApiTest {
                         MediaType.APPLICATION_PDF,
                         "doc.pdf"));
 
-        mockMvc.perform(get("/api/v1/documents/42"))
+        mockMvc.perform(get("/api/v1/documents/42/file"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(header().string("Content-Disposition", containsString("doc.pdf")))
@@ -118,7 +118,7 @@ class DocumentsControllerApiTest {
         when(documentContentOpenApiService.requireDownloadableContent(100L, Set.of(10L)))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
-        mockMvc.perform(get("/api/v1/documents/100"))
+        mockMvc.perform(get("/api/v1/documents/100/file"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }

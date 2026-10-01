@@ -1,0 +1,37 @@
+{
+  "groups" : [ {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -602,
+      "binding" : "type",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -603,
+      "binding" : "spatialUnit",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -609,
+      "binding" : "specimens",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "common.header.dimensions",
+    "fields" : [ {
+      "fieldId" : -605,
+      "binding" : "length",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -606,
+      "binding" : "width",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -607,
+      "binding" : "height",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -608,
+      "binding" : "weight",
+      "width" : "QUARTER"
+    } ]
+  } ]
+}

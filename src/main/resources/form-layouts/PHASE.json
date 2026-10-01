@@ -1,0 +1,45 @@
+{
+  "groups" : [ {
+    "label" : "common.header.general",
+    "fields" : [ {
+      "fieldId" : -502,
+      "binding" : "type",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -503,
+      "binding" : "title",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -505,
+      "binding" : "orderNumber",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -509,
+      "binding" : "keywords",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -504,
+      "binding" : "description",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -511,
+      "binding" : "recordingUnits",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "common.header.chronologie",
+    "fields" : [ {
+      "fieldId" : -508,
+      "binding" : "periods",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -506,
+      "binding" : "lowerBound",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -507,
+      "binding" : "upperBound",
+      "width" : "QUARTER"
+    } ]
+  } ]
+}

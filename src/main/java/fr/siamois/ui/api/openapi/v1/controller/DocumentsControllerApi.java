@@ -66,7 +66,7 @@ public class DocumentsControllerApi {
         return ResponseEntity.ok(new DocumentFormResponse(data));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/file")
     @Operation(
             summary = "Télécharger le fichier d'un document",
             description = "Flux binaire du fichier associé au document (`document_id`). "

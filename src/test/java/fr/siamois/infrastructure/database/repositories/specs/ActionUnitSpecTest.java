@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -107,5 +108,116 @@ class ActionUnitSpecTest {
         verify(cb).equal(scopePath, PermissionScopeType.PROJECT);
         verify(cb).equal(actionUnitPath, root);
         verify(cb).exists(subquery);
+    }
+
+    // ------------------------------------------------------------------
+    // cursor — the prev/next sibling navigation predicate
+    // ------------------------------------------------------------------
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    void cursor_missingValueOrId_returnsConjunction() {
+        when(cb.conjunction()).thenReturn(null);
+
+        Specification<ActionUnit> spec = ActionUnitSpec.cursor("name", Sort.Direction.ASC, null, 1L, true);
+        spec.toPredicate(root, query, cb);
+
+        verify(cb).conjunction();
+        verifyNoMoreInteractions(root);
+    }
+
+    /**
+     * Forward on an ASC sort: the field must be strictly greater, OR equal with a greater id —
+     * exactly what walking "next" in {@code name:asc} order means.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    void cursor_forwardAscending_comparesFieldGreaterThanOrEqualWithGreaterId() {
+        Path fieldPath = mock(Path.class);
+        Path idPath = mock(Path.class);
+        Predicate fieldGt = mock(Predicate.class);
+        Predicate fieldEq = mock(Predicate.class);
+        Predicate idGt = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+        Predicate orPredicate = mock(Predicate.class);
+
+        when(root.get("name")).thenReturn(fieldPath);
+        when(root.get("id")).thenReturn(idPath);
+        when(cb.greaterThan(fieldPath, "Foss")).thenReturn(fieldGt);
+        when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
+        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
+        when(cb.or(fieldGt, andPredicate)).thenReturn(orPredicate);
+
+        Specification<ActionUnit> spec = ActionUnitSpec.cursor("name", Sort.Direction.ASC, "Foss", 10L, true);
+        Predicate result = spec.toPredicate(root, query, cb);
+
+        assertSame(orPredicate, result);
+        verify(cb).greaterThan(fieldPath, "Foss");
+        verify(cb).greaterThan(idPath, 10L);
+    }
+
+    /**
+     * Walking "previous" on the same {@code name:asc} order reverses BOTH comparisons: the field
+     * must be strictly less, and the id tie-break also flips to less-than — otherwise "previous"
+     * would land on the far end of the set instead of the adjacent row.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    void cursor_backwardOnAscendingSort_comparesFieldAndIdLessThan() {
+        Path fieldPath = mock(Path.class);
+        Path idPath = mock(Path.class);
+        Predicate fieldLt = mock(Predicate.class);
+        Predicate fieldEq = mock(Predicate.class);
+        Predicate idLt = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+        Predicate orPredicate = mock(Predicate.class);
+
+        when(root.get("name")).thenReturn(fieldPath);
+        when(root.get("id")).thenReturn(idPath);
+        when(cb.lessThan(fieldPath, "Foss")).thenReturn(fieldLt);
+        when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
+        when(cb.lessThan(idPath, 10L)).thenReturn(idLt);
+        when(cb.and(fieldEq, idLt)).thenReturn(andPredicate);
+        when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
+
+        Specification<ActionUnit> spec = ActionUnitSpec.cursor("name", Sort.Direction.ASC, "Foss", 10L, false);
+        Predicate result = spec.toPredicate(root, query, cb);
+
+        assertSame(orPredicate, result);
+        verify(cb).lessThan(fieldPath, "Foss");
+        verify(cb).lessThan(idPath, 10L);
+    }
+
+    /**
+     * A DESC sort field flips the field comparison back to greaterThan for "forward" — the id
+     * tie-break stays greaterThan too, since it only flips with the walk direction, not with the
+     * sort's own direction (id is always the ASC second criterion of the effective order).
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    void cursor_forwardOnDescendingSort_comparesFieldLessThanButIdGreaterThan() {
+        Path fieldPath = mock(Path.class);
+        Path idPath = mock(Path.class);
+        Predicate fieldLt = mock(Predicate.class);
+        Predicate fieldEq = mock(Predicate.class);
+        Predicate idGt = mock(Predicate.class);
+        Predicate andPredicate = mock(Predicate.class);
+        Predicate orPredicate = mock(Predicate.class);
+
+        when(root.get("creationTime")).thenReturn(fieldPath);
+        when(root.get("id")).thenReturn(idPath);
+        when(cb.lessThan(fieldPath, "T")).thenReturn(fieldLt);
+        when(cb.equal(fieldPath, "T")).thenReturn(fieldEq);
+        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
+        when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
+
+        Specification<ActionUnit> spec = ActionUnitSpec.cursor("creationTime", Sort.Direction.DESC, "T", 10L, true);
+        Predicate result = spec.toPredicate(root, query, cb);
+
+        assertSame(orPredicate, result);
+        verify(cb).lessThan(fieldPath, "T");
+        verify(cb).greaterThan(idPath, 10L);
     }
 }

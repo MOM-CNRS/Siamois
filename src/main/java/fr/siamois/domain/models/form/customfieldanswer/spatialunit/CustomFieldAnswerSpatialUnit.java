@@ -10,11 +10,15 @@ import java.util.Objects;
 @Entity
 public abstract class CustomFieldAnswerSpatialUnit extends CustomFieldAnswer {
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "custom_field_answer_spatial_unit_answers",
             joinColumns = {@JoinColumn(name = "fk_custom_field_id", referencedColumnName = "fk_custom_field_id"),
                           @JoinColumn(name = "fk_form_config_answer_id", referencedColumnName = "fk_form_config_answer_id")},
-            inverseJoinColumns = {@JoinColumn(name = "fk_spatial_unit_id")})
+            inverseJoinColumns = {@JoinColumn(name = "fk_spatial_unit_id")},
+            indexes = {
+                    @Index(name = "idx_cfa_spatial_unit_answer", columnList = "fk_form_config_answer_id, fk_custom_field_id"),
+                    @Index(name = "idx_cfa_spatial_unit_target", columnList = "fk_spatial_unit_id")
+            })
     protected List<SpatialUnit> spatialUnits;
 
     @Override

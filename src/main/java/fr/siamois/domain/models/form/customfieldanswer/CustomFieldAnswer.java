@@ -10,7 +10,15 @@ import lombok.NonNull;
 
 @Data
 @Entity
-@Table(name = "custom_field_answer")
+// Per-field value indexes for the list sort/filter on additional fields (the PK leads with the
+// answer set, not the field). value_as_text is indexed by an expression in IndexGistInitializer:
+// a plain btree on unbounded text fails inserts past ~2.7 kB.
+@Table(name = "custom_field_answer", indexes = {
+        @Index(name = "idx_custom_field_answer_integer", columnList = "fk_custom_field_id, value_as_integer"),
+        @Index(name = "idx_custom_field_answer_decimal", columnList = "fk_custom_field_id, value_as_decimal"),
+        @Index(name = "idx_custom_field_answer_datetime", columnList = "fk_custom_field_id, value_as_datetime"),
+        @Index(name = "idx_custom_field_answer_double", columnList = "fk_custom_field_id, value_as_double")
+})
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "answer_type", discriminatorType = DiscriminatorType.STRING)
 @NoArgsConstructor

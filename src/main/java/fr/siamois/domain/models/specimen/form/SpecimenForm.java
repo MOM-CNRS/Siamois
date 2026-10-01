@@ -1,5 +1,8 @@
 package fr.siamois.domain.models.specimen.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -18,7 +21,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 public abstract class SpecimenForm {
 
@@ -453,6 +456,34 @@ public abstract class SpecimenForm {
             .concept(actionUnitConcept)
             .build();
 
-
-
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.readOnly(recordingUnitField),
+            SystemFieldSpec.of(isPartOfField),
+            SystemFieldSpec.of(containsField),
+            SystemFieldSpec.hiddenReadOnly(specimenIdField),
+            SystemFieldSpec.readOnly(actionUnitField),
+            SystemFieldSpec.of(specimenOtherIdField),
+            SystemFieldSpec.of(specimenCategoryField),
+            SystemFieldSpec.of(isolationNumberField),
+            SystemFieldSpec.of(containerField),
+            SystemFieldSpec.of(materialField),
+            SystemFieldSpec.of(materialClassField),
+            SystemFieldSpec.of(normalizedInterpretationField),
+            SystemFieldSpec.of(descriptionField),
+            SystemFieldSpec.of(commentsField),
+            SystemFieldSpec.of(chronologicalAttributionField),
+            SystemFieldSpec.of(taqField),
+            SystemFieldSpec.of(tpqField),
+            SystemFieldSpec.of(phasesField),
+            SystemFieldSpec.of(weightField),
+            SystemFieldSpec.of(numberOfElementField),
+            SystemFieldSpec.of(authorsField),
+            SystemFieldSpec.of(collectorsField),
+            SystemFieldSpec.of(collectionDateField));
+    }
 }

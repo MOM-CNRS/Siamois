@@ -17,7 +17,16 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "form_config_answer")
+// One answer set per (entity, form config): answers belong to the entity, not to whoever typed them
+// (fk_person_id is only the last author). Each constraint leads with the entity column so it also
+// serves the list sort/filter subqueries that correlate on it; NULLs are distinct in Postgres, so
+// the rows of the other three entity kinds never collide.
+@Table(name = "form_config_answer", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_form_config_answer_recording_unit", columnNames = {"fk_recording_unit_id", "fk_form_config_id"}),
+        @UniqueConstraint(name = "uk_form_config_answer_specimen", columnNames = {"fk_specimen_id", "fk_form_config_id"}),
+        @UniqueConstraint(name = "uk_form_config_answer_phase", columnNames = {"fk_phase_id", "fk_form_config_id"}),
+        @UniqueConstraint(name = "uk_form_config_answer_container", columnNames = {"fk_container_id", "fk_form_config_id"})
+})
 @NoArgsConstructor
 @AllArgsConstructor
 public class FormConfigAnswer {

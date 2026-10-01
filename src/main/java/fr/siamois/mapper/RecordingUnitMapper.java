@@ -2,6 +2,7 @@ package fr.siamois.mapper;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryDtoMapper;
 import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.jspecify.annotations.Nullable;
 import org.mapstruct.*;
@@ -10,7 +11,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
 
 
-@Mapper(uses = ConversionServiceAdapter.class,
+@Mapper(uses = {ConversionServiceAdapter.class, GeometryDtoMapper.class},
         componentModel = MappingConstants.ComponentModel.SPRING,
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface RecordingUnitMapper extends Converter<RecordingUnit, RecordingUnitDTO> {

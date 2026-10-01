@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
+
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
@@ -10,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -76,6 +79,23 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
     }
 
+    @GetMapping("/{id}/siblings")
+    @Operation(summary = "Unité d'enregistrement précédente et suivante",
+            description = "Voisins dans le même projet, par ordre de création. Boucle en fin de liste (le suivant du "
+                    + "dernier est le premier) ; null seulement s'il n'y a aucun autre élément.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<SiblingsResponse> getSiblings(@PathVariable("id") String id) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return ResponseEntity.ok(new SiblingsResponse(
+                recordingUnitOpenApiService.findSiblings(id, caller.person(), caller.accessibleInstitutionIds())));
+    }
+
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")
     @Operation(
             summary = "Détail d'une unité d'enregistrement",
@@ -144,6 +164,7 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.noContent().build();
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer une unité d'enregistrement",
@@ -170,6 +191,38 @@ public class RecordingUnitsControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitResponse(resource));
     }
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer une unité d'enregistrement",
+            description = "Copie de l'UE (type, projet, lieu, description, couleur de matrice, géométrie), "
+                    + "sans parents, avec un identifiant régénéré — même copie que le bouton Dupliquer de la fiche. "
+                    + "Même droit que la modification de l'UE source."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "409", description = "Identifiant généré déjà utilisé"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<RecordingUnitResponse> duplicateRecordingUnit(
+            @Parameter(
+                    description = "Clé d'UE : identifiant numérique (recording_unit_id)",
+                    schema = @Schema(type = "string", example = "2")
+            )
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        RecordingUnitResource resource = recordingUnitOpenApiService.duplicateRecordingUnit(
+                id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RecordingUnitResponse(resource));
+    }
+
+    @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier partiellement une unité d'enregistrement",

@@ -12,6 +12,6 @@ public class PanelFieldSource extends AbstractFieldSource {
 
     private void indexField(CustomField field, CustomColUiDto column) {
         byId.put(field.getId(), field);
-        registerSpecs(field, column);
+        registerRules(field, column);
     }
 }

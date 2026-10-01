@@ -2,6 +2,7 @@ package fr.siamois.domain.services.settings.tableconfig;
 
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 
@@ -349,4 +350,14 @@ public interface TableFieldConfigService {
      * @return a copy of the updated field
      */
     TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description);
+
+    /**
+     * The layout a configuration without a stored layout effectively has: the table's initial layout
+     * with the type's flags, plus the additional fields in a group of their own. Used to lay a
+     * configuration out the first time it is edited, so nothing changes on screen.
+     */
+    FormLayout legacyLayout(Long projectId, ConfigurableTable table, String typeName);
+
+    /** The display model of a field in a given state, as the configuration screen lists it. */
+    TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked);
 }

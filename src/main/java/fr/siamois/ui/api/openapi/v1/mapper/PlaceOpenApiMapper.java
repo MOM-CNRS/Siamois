@@ -22,11 +22,13 @@ public class PlaceOpenApiMapper {
         }
         PlaceResource resource = new PlaceResource();
         resource.setResourceType("places");
+        resource.setValidated(dto.getValidated());
         if (dto.getId() != null) {
             resource.setId(String.valueOf(dto.getId()));
         }
         resource.setName(dto.getName());
         resource.setPlaceNumber(dto.getPlaceNumber());
+        resource.setGeom(dto.getGeom());
 
         ConceptDTO category = dto.getCategory();
         if (category != null) {

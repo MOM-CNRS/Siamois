@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Theme parity harness</title>
+    <!--
+      Dev-only (npm run dev → /dev/theme/harness.html). Stylesheets in the same order as the real
+      JSF page: PrimeFaces structural CSS + the Siamois theme (what PrimeFaces injects in <head>),
+      then template.xhtml's own links, then — injected by Vite at the end of <head> — the React
+      bundle's CSS, exactly like main-panel.css loaded in focus.xhtml's body.
+      Run dev/build-theme.sh (or `--watch`) first.
+    -->
+    <link rel="stylesheet" href="../.generated/components.css" />
+    <link rel="stylesheet" href="../.generated/primeicons/primeicons.css" />
+    <link rel="stylesheet" href="../.generated/theme.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../.generated/settings.css" />
+    <style>
+      body { background: #fff; padding: 8px; }
+      .h-row { display: grid; grid-template-columns: 84px 1fr 1fr; gap: 10px; align-items: start;
+               padding: 12px 0; border-bottom: 1px dashed #ddd; }
+      .h-row > .h-name { font-weight: 600; font-family: monospace; font-size: 12px; }
+      .h-head { position: sticky; top: 0; background: #fff; z-index: 5; font-weight: 700; }
+      .h-cell { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; min-width: 0; }
+      .h-cell > .h-block { width: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="harness"></div>
+    <script type="module" src="./harness.tsx"></script>
+  </body>
+</html>

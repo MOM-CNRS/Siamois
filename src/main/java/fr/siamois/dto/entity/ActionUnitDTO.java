@@ -2,6 +2,7 @@ package fr.siamois.dto.entity;
 
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -55,6 +56,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Integer pageCount;
     private Integer figureCount;
     private Integer appendixCount;
+    private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
         return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation",

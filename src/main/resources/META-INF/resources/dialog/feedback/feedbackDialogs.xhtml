@@ -1,0 +1,147 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core"
+>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+            integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+            crossorigin="anonymous"></script>
+    <h:outputScript library="js" name="feedback.js"/>
+    <h:outputScript>
+        var SIA_FEEDBACK_ISSUES_URL = '#{feedbackBean.issuesUrl}';
+    </h:outputScript>
+
+    <style>
+        .sia-feedback-label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-700, #444);
+        }
+        .sia-feedback-optional, .sia-feedback-required {
+            font-weight: 400;
+            font-size: 0.78rem;
+        }
+        .sia-feedback-optional {
+            color: var(--gray-500, #888);
+        }
+        .sia-feedback-required {
+            color: #c0392b;
+        }
+        .sia-feedback-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.5rem 0.6rem;
+        }
+        .sia-feedback-dialog .ui-dialog-content {
+            padding-top: 0.5rem;
+        }
+        @keyframes sia-feedback-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .sia-feedback-spin {
+            display: inline-block;
+            animation: sia-feedback-spin 0.8s linear infinite;
+        }
+    </style>
+
+    <!-- Floating feedback launcher, fixed to the bottom-right corner of every page -->
+    <div id="siaFeedbackButtonGroup" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:1500;
+            display:flex;flex-direction:column;gap:0.6rem;align-items:flex-end;">
+        <button type="button" class="ui-button ui-widget ui-state-default ui-corner-all"
+                title="Ouvre la liste des retours (issues GitHub) dans un nouvel onglet"
+                style="padding:0.5rem 1rem;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2);
+                        display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;white-space:nowrap;"
+                onclick="siaFeedbackOpenList();">
+            Voir les retours
+        </button>
+        <button type="button" id="siaFeedbackButton" class="ui-button ui-widget ui-state-default ui-corner-all"
+                title="Laisser un retour"
+                style="padding:0.6rem 1.2rem;border-radius:22px;background:var(--main-color, #2e7d32);color:#fff;
+                        box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;gap:0.5rem;
+                        font-size:0.95rem;font-weight:600;white-space:nowrap;"
+                onclick="siaFeedbackStartCapture();">
+            <i class="bi bi-camera" style="font-size:1.1rem;"></i>
+            Commenter
+        </button>
+    </div>
+
+    <h:form id="feedbackCreateForm">
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+
+        <!-- Dedicated growl, scoped to the "feedbackToast" client id set by FeedbackBean, with HTML
+             escaping disabled so the GitHub issue link renders as a real link — the app-wide growl in
+             the template keeps escaping everything else, this one only ever renders our own messages. -->
+        <p:growl id="feedbackGrowl" for="feedbackToast" showDetail="true" showSummary="true"
+                 escape="false" closable="true"/>
+
+        <p:dialog widgetVar="feedbackCreateDiag" id="feedbackCreateDiag" showEffect="fade"
+                  closeOnEscape="true" appendToBody="true" modal="true" width="460" resizable="false"
+                  styleClass="ui-panel siamois-panel sia-feedback-dialog">
+
+            <f:facet name="header">
+                <span style="display:flex;align-items:center;gap:0.5rem;">
+                    <i class="bi bi-camera" style="color:var(--main-color, #2e7d32);"></i>
+                    Nouveau retour
+                </span>
+            </f:facet>
+
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+
+                <div id="siaFeedbackCaptureStatus"
+                     style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;
+                             background:var(--siamois-green-light-100, #eaf5ec);border-radius:6px;
+                             font-size:0.85rem;color:var(--gray-700, #444);">
+                    <i class="bi bi-check-circle-fill" style="color:var(--main-color, #2e7d32);"></i>
+                    <span style="flex:1;">Capture d'écran jointe</span>
+                    <a href="#" onclick="PF('feedbackCreateDiag').hide();siaFeedbackStartCapture();return false;"
+                       style="font-size:0.8rem;white-space:nowrap;">
+                        Refaire
+                    </a>
+                </div>
+
+                <div>
+                    <label for="feedbackCreateForm:feedbackNameInput" class="sia-feedback-label">
+                        Votre nom <span class="sia-feedback-optional">(optionnel)</span>
+                    </label>
+                    <input type="text" id="feedbackCreateForm:feedbackNameInput"
+                           name="feedbackCreateForm:feedbackNameInput"
+                           class="ui-inputfield ui-widget ui-state-default ui-corner-all sia-feedback-input"
+                           maxlength="128"/>
+                </div>
+
+                <div>
+                    <label for="feedbackCreateForm:feedbackDescriptionInput" class="sia-feedback-label">
+                        Description <span class="sia-feedback-required">*</span>
+                    </label>
+                    <textarea id="feedbackCreateForm:feedbackDescriptionInput"
+                              name="feedbackCreateForm:feedbackDescriptionInput" rows="5"
+                              placeholder="Décrivez ce que vous avez constaté..."
+                              class="ui-inputfield ui-widget ui-state-default ui-corner-all sia-feedback-input"
+                              style="resize:vertical;"/>
+                </div>
+
+            </div>
+
+            <f:facet name="footer">
+                <button type="button" id="feedbackCancelBtn" class="ui-button ui-widget ui-state-default ui-corner-all"
+                        style="padding:0.4em 1.2em;" onclick="PF('feedbackCreateDiag').hide();">
+                    Annuler
+                </button>
+                <button type="button" id="feedbackSendBtn" class="ui-button ui-widget ui-state-default ui-corner-all"
+                        style="padding:0.4em 1.2em;background:var(--main-color, #2e7d32);color:#fff;border-color:var(--main-color, #2e7d32);"
+                        onclick="siaFeedbackSubmit();">
+                    <i class="bi bi-send" style="margin-right:0.4em;"></i>Envoyer
+                </button>
+            </f:facet>
+        </p:dialog>
+
+        <p:remoteCommand name="siaSubmitFeedbackRemote"
+                          action="#{feedbackBean.saveFeedbackFromRequest}"
+                          process="@this" update="feedbackCreateForm:feedbackGrowl"
+                          oncomplete="siaFeedbackOnSendComplete();"/>
+    </h:form>
+</ui:fragment>

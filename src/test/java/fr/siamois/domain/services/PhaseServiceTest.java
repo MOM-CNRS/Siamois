@@ -76,7 +76,7 @@ class PhaseServiceTest {
         phaseDTO.setIdentifier("P-01");
 
         ExecutionContextHolder.set(new UserInfo(institution, new PersonDTO(), "fr"));
-        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString(), anyString(), anyString())).thenReturn(true);
     }
 
     @AfterEach
@@ -339,7 +339,7 @@ class PhaseServiceTest {
         newEntity.setActionUnit(actionUnit);
         when(phaseMapper.invertConvert(inputDTO)).thenReturn(newEntity);
         when(phaseRepository.findById(-1L)).thenReturn(Optional.empty());
-        when(profilePermissionService.hasProjectPermission(any(), eq(7L), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L), anyString(), anyString(), anyString())).thenReturn(false);
 
         assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
                 () -> phaseService.save(inputDTO));

@@ -1,9 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -45,6 +48,9 @@ class ProjectApiServiceOrganizationPageTest {
     @Mock private ConceptMapper conceptMapper;
     @Mock private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock private PhaseService phaseService;
+    @Mock private ContainerService containerService;
+    @Mock private BookmarkService bookmarkService;
+    @Mock private HistoryAuditService historyAuditService;
 
     private ProjectApiService projectApiService;
 
@@ -66,7 +72,8 @@ class ProjectApiServiceOrganizationPageTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService);
+                recordingUnitOpenApiService, phaseService, containerService,
+                bookmarkService, historyAuditService, org.mockito.Mockito.mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 
     private ProjectApiCaller caller(List<InstitutionDTO> institutions) {

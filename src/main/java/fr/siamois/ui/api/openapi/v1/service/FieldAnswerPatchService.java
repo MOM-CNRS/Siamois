@@ -1,0 +1,599 @@
+package fr.siamois.ui.api.openapi.v1.service;
+
+import fr.siamois.domain.models.actionunit.ActionCode;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
+import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
+import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.rules.FieldConstraint;
+import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
+import fr.siamois.domain.services.form.rules.RuleValues;
+import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.infrastructure.database.repositories.ContainerRepository;
+import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.mapper.*;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.fieldsource.FieldSource;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.stream.Collectors;
+
+/**
+ * Applies a PATCH's {@code answers} (field id → {@code AnswerInput}) to an entity DTO, for every
+ * entity whose form goes through {@link FormService} (recording unit, find, phase, container).
+ * <p>
+ * One implementation of the "raw JSON value → typed form value" coercion for every field kind, so
+ * the four PATCH endpoints accept the same set of fields: each used to carry its own partial copy.
+ * System fields are written onto the DTO (including clearing one with {@code value: null}, which
+ * {@link FormService#updateJpaEntityFromResponse} alone skips); answers to additional fields are
+ * returned for the caller to persist with its service's {@code save(dto, additionalAnswers)}.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class FieldAnswerPatchService {
+
+    private static final String RECORDING_UNIT_LABEL = "Unité d'enregistrement";
+
+    private final FormService formService;
+    private final ConceptRepository conceptRepository;
+    private final ConceptMapper conceptMapper;
+    private final PersonRepository personRepository;
+    private final PersonMapper personMapper;
+    private final ActionUnitRepository actionUnitRepository;
+    private final ActionUnitSummaryMapper actionUnitSummaryMapper;
+    private final ActionCodeRepository actionCodeRepository;
+    private final ActionCodeMapper actionCodeMapper;
+    private final SpatialUnitRepository spatialUnitRepository;
+    private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
+    private final RecordingUnitRepository recordingUnitRepository;
+    private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+    private final PhaseRepository phaseRepository;
+    private final PhaseMapper phaseMapper;
+    private final ContainerRepository containerRepository;
+    private final ContainerMapper containerMapper;
+    private final SpecimenRepository specimenRepository;
+    private final SpecimenSummaryMapper specimenSummaryMapper;
+    private final UnitDefinitionMapper unitDefinitionMapper;
+
+    /**
+     * @param dto           the entity DTO to write system fields onto
+     * @param effectiveForm the entity's effective form (system fields + the type's active additional
+     *                      fields) — only fields it contains can be written
+     * @param answers       field id → {@code AnswerInput} / legacy raw value, as the request carries them
+     * @param projectId     the entity's project: references to phases, containers, finds and
+     *                      recording units must belong to it
+     * @return the answers to the additional fields this patch touched, to be persisted by the caller
+     */
+    public Map<CustomField, CustomFieldAnswerViewModel> apply(Object dto,
+                                                              FormUiDto effectiveForm,
+                                                              Map<String, ?> answers,
+                                                              Long projectId) {
+        return apply(dto, effectiveForm, answers, projectId, true);
+    }
+
+    /**
+     * Same as {@link #apply(Object, FormUiDto, Map, Long)}, but a field absent from the form, of a
+     * kind the API cannot write, or whose value does not parse is skipped (and logged) instead of
+     * failing the request with a 400 — kept for the mobile client's legacy payloads. A reference to
+     * an entity that does not exist still fails.
+     */
+    public Map<CustomField, CustomFieldAnswerViewModel> applyLenient(Object dto,
+                                                                     FormUiDto effectiveForm,
+                                                                     Map<String, ?> answers,
+                                                                     Long projectId) {
+        return apply(dto, effectiveForm, answers, projectId, false);
+    }
+
+    private Map<CustomField, CustomFieldAnswerViewModel> apply(Object dto,
+                                                               FormUiDto effectiveForm,
+                                                               Map<String, ?> answers,
+                                                               Long projectId,
+                                                               boolean strict) {
+        if (answers == null || answers.isEmpty()) return Map.of();
+
+        FieldSource fieldSource = new PanelFieldSource(effectiveForm);
+        CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
+
+        // Every field's value once the patch is applied — what the form's rules are checked against.
+        Map<Long, Object> values = new HashMap<>();
+        for (CustomField field : fieldSource.getAllFields()) {
+            values.put(field.getId(), formService.readAnswerValueForApi(viewModelOf(response, field)));
+        }
+        Patch patch = new Patch(fieldSource, effectiveForm, response, projectId, strict, values);
+        for (Map.Entry<String, ?> entry : answers.entrySet()) {
+            applyEntry(entry, patch);
+        }
+
+        checkRules(effectiveForm, values, patch.written, strict);
+
+        formService.updateJpaEntityFromResponse(response, dto);
+        patch.clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
+        return patch.touchedAdditional;
+    }
+
+    /** What one {@code apply} call carries from answer to answer. */
+    private static final class Patch {
+        final FieldSource fieldSource;
+        final FormUiDto effectiveForm;
+        final CustomFormResponseViewModel response;
+        final Long projectId;
+        final boolean strict;
+        final Map<Long, Object> values;
+        final List<CustomField> written = new ArrayList<>();
+        final Map<CustomField, CustomFieldAnswerViewModel> touchedAdditional = new HashMap<>();
+        final List<CustomField> clearedSystemFields = new ArrayList<>();
+
+        Patch(FieldSource fieldSource, FormUiDto effectiveForm, CustomFormResponseViewModel response, Long projectId,
+              boolean strict, Map<Long, Object> values) {
+            this.fieldSource = fieldSource;
+            this.effectiveForm = effectiveForm;
+            this.response = response;
+            this.projectId = projectId;
+            this.strict = strict;
+            this.values = values;
+        }
+    }
+
+    /** One {@code fieldId: value} of the patch: skipped (lenient), refused (strict) or written onto the response. */
+    private void applyEntry(Map.Entry<String, ?> entry, Patch patch) {
+        CustomField field;
+        CustomFieldAnswerViewModel viewModel;
+        FieldAnswerMaps.Delta delta;
+        try {
+            field = requireField(patch.fieldSource, entry.getKey());
+            // A column the form marks readOnly — the project the entity belongs to, a generated
+            // identifier — is never written: moving a recording unit to another project is not
+            // an edit.
+            if (isReadOnlyIn(patch.effectiveForm, field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+            }
+            viewModel = viewModelOf(patch.response, field);
+            if (viewModel == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+            }
+            delta = FieldAnswerMaps.delta(entry.getValue());
+            if (delta != null && !isMultiple(field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "add/remove ne s'appliquent qu'à un champ multivalué : " + field.getId());
+            }
+        } catch (ResponseStatusException e) {
+            if (patch.strict) throw e;
+            log.debug("Réponse ignorée pour le champ {} : {}", entry.getKey(), e.getReason());
+            return;
+        }
+        Object raw = delta != null ? null : FieldAnswerMaps.unwrap(entry.getValue());
+        if (delta == null && raw == null && isMultiple(field)) {
+            return; // "values: null" = leave the multi-value field untouched ("values: []" clears it)
+        }
+        TypedValue typed = typedValue(field, viewModel, delta, raw, patch);
+        if (typed == null) return;
+        formService.applyTypedValueToAnswer(viewModel, typed.value());
+        patch.values.put(field.getId(), typed.value());
+        patch.written.add(field);
+
+        if (Boolean.TRUE.equals(field.getIsSystemField())) {
+            if (raw == null) patch.clearedSystemFields.add(field);
+        } else {
+            patch.touchedAdditional.put(field, viewModel);
+        }
+    }
+
+    /** A value ready for the view model (possibly null: a cleared field). */
+    private record TypedValue(Object value) {
+    }
+
+    /** The typed value of an answer, or null when the (lenient) patch leaves that answer out. */
+    private TypedValue typedValue(CustomField field, CustomFieldAnswerViewModel viewModel, FieldAnswerMaps.Delta delta,
+                                  Object raw, Patch patch) {
+        if (delta != null) {
+            return new TypedValue(applyDelta(field, viewModel, delta, patch.projectId));
+        }
+        if (raw == null) {
+            return new TypedValue(emptyValueOf(field));
+        }
+        if (!patch.strict && !isWritable(field)) {
+            log.debug("Type de champ non pris en charge pour l'API v1, réponse ignorée : {}", field.getClass().getSimpleName());
+            return null;
+        }
+        try {
+            return new TypedValue(coerce(field, raw, patch.projectId));
+        } catch (InvalidAnswerValueException e) {
+            if (patch.strict) throw e;
+            log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
+            return null;
+        }
+    }
+
+    /**
+     * The form's conditional rules, for the fields this patch wrote — never for the others: a value
+     * a change elsewhere made incoherent is kept (and flagged by the client), not refused. Refused
+     * with a 400: a value in a field the rules disable (clearing it is always accepted), a required
+     * field left empty, a value breaking an ordering constraint with another field (either side), a
+     * concept outside the ones related to the answer a dependent list follows. The lenient (mobile
+     * legacy) path logs instead: an offline record is kept, its client flags it.
+     */
+    private void checkRules(FormUiDto form, Map<Long, Object> values, List<CustomField> written, boolean strict) {
+        if (written.isEmpty()) return;
+        List<FieldRulesEvaluator.RuledColumn> columns = ruledColumns(form);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
+        for (CustomField field : written) {
+            FieldRulesEvaluator.FieldState state = states.get(field.getId());
+            String violation = state == null ? null : violationOf(field.getId(), values.get(field.getId()), state);
+            if (violation == null) continue;
+            if (strict) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, violation);
+            log.warn("Règle de formulaire non respectée, réponse conservée : {}", violation);
+        }
+    }
+
+    private String violationOf(long fieldId, Object value, FieldRulesEvaluator.FieldState state) {
+        boolean empty = RuleValues.isEmpty(value);
+        if (!state.enabled() && !empty) {
+            return "Champ inactif avec les réponses actuelles : " + fieldId;
+        }
+        if (state.required() && empty) {
+            return "Champ obligatoire : " + fieldId;
+        }
+        for (FieldRulesEvaluator.Incoherence incoherence : state.incoherent()) {
+            if (incoherence.kind() == FieldRulesEvaluator.IncoherenceKind.CONSTRAINT) {
+                return "Valeur incompatible avec le champ " + incoherence.otherFieldId() + " (" + describe(incoherence.op()) + ") : " + fieldId;
+            }
+        }
+        FieldRulesEvaluator.OptionsContext options = state.optionsContext();
+        if (!empty && options != null && "RELATED_CONCEPTS".equals(options.kind())) {
+            return relatedConceptsViolation(fieldId, value, options);
+        }
+        // REF_MATCH is only applied client side for now (the picker's own filter).
+        return null;
+    }
+
+    private String relatedConceptsViolation(long fieldId, Object value, FieldRulesEvaluator.OptionsContext options) {
+        if (options.value() == null) {
+            return "Renseignez d'abord le champ " + options.parentFieldId() + " : " + fieldId;
+        }
+        long parent = Long.parseLong(options.value());
+        for (Object id : RuleValues.scalarsOf(value)) {
+            if (!conceptRepository.isRelated(parent, Long.parseLong(String.valueOf(id)))) {
+                return "Concept " + id + " hors de la liste liée au champ " + options.parentFieldId() + " : " + fieldId;
+            }
+        }
+        return null;
+    }
+
+    private static String describe(FieldConstraint.Op op) {
+        return switch (op) {
+            case GT -> "doit être supérieure";
+            case GTE -> "doit être supérieure ou égale";
+            case LT -> "doit être inférieure";
+            case LTE -> "doit être inférieure ou égale";
+        };
+    }
+
+    private static List<FieldRulesEvaluator.RuledColumn> ruledColumns(FormUiDto form) {
+        if (form == null || form.getLayout() == null) return List.of();
+        return form.getLayout().stream()
+                .filter(Objects::nonNull)
+                .flatMap(panel -> panel.getRows() == null ? java.util.stream.Stream.empty() : panel.getRows().stream())
+                .flatMap(row -> row.getColumns() == null ? java.util.stream.Stream.empty() : row.getColumns().stream())
+                .filter(column -> column.getField() != null && column.getField().getId() != null)
+                .map(column -> new FieldRulesEvaluator.RuledColumn(column.getField().getId(), column.isRequired(), column.getRules()))
+                .toList();
+    }
+
+    private static CustomField requireField(FieldSource fieldSource, String key) {
+        long fieldId;
+        try {
+            fieldId = Long.parseLong(key);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant de champ invalide : " + key);
+        }
+        CustomField field = fieldSource.findFieldById(fieldId);
+        if (field == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ absent du formulaire de l'entité : " + key);
+        }
+        return field;
+    }
+
+    /** Whether {@code form} lays {@code field} out in a readOnly column. */
+    static boolean isReadOnlyIn(FormUiDto form, CustomField field) {
+        if (form == null || form.getLayout() == null || field == null || field.getId() == null) return false;
+        return form.getLayout().stream()
+                .filter(Objects::nonNull)
+                .flatMap(panel -> panel.getRows() == null ? java.util.stream.Stream.empty() : panel.getRows().stream())
+                .flatMap(row -> row.getColumns() == null ? java.util.stream.Stream.empty() : row.getColumns().stream())
+                .anyMatch(column -> column.isReadOnly() && column.getField() != null
+                        && Objects.equals(column.getField().getId(), field.getId()));
+    }
+
+    private static CustomFieldAnswerViewModel viewModelOf(CustomFormResponseViewModel response, CustomField field) {
+        if (response.getAnswers() == null) return null;
+        CustomFieldAnswerViewModel direct = response.getAnswers().get(field);
+        if (direct != null) return direct;
+        return response.getAnswers().entrySet().stream()
+                .filter(e -> e.getKey() != null && Objects.equals(e.getKey().getId(), field.getId()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean isWritable(CustomField field) {
+        Object f = Hibernate.unproxy(field);
+        return isMultiple(field)
+                || f instanceof CustomFieldText || f instanceof CustomFieldInteger || f instanceof CustomFieldDecimal
+                || f instanceof CustomFieldDateTime || f instanceof CustomFieldMeasurement
+                || f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne
+                || f instanceof CustomFieldSelectOnePerson || f instanceof CustomFieldSelectOneActionUnit
+                || f instanceof CustomFieldSelectOneActionCode || f instanceof CustomFieldSelectOneSpatialUnit
+                || f instanceof CustomFieldSelectOneRecordingUnit;
+    }
+
+    private static boolean isMultiple(CustomField field) {
+        Object f = Hibernate.unproxy(field);
+        return f instanceof CustomFieldSelectMultipleFromFieldCode
+                || f instanceof CustomFieldSelectMultiple
+                || f instanceof CustomFieldSelectMultiplePerson
+                || f instanceof CustomFieldSelectMultipleSpatialUnitTree
+                || f instanceof CustomFieldSelectMultipleRecordingUnit
+                || f instanceof CustomFieldSelectMultiplePhase
+                || f instanceof CustomFieldSelectMultipleContainer
+                || f instanceof CustomFieldSelectMultipleSpecimen;
+    }
+
+    /**
+     * The field's current values with {@code delta} applied: its removed ids taken out, its added
+     * ones (each checked like any written value) appended. What the field holds is only ever read
+     * from the entity here, never from the client — which may have seen a truncated list of it.
+     */
+    private Object applyDelta(CustomField field, CustomFieldAnswerViewModel viewModel, FieldAnswerMaps.Delta delta,
+                              Long projectId) {
+        Object current = formService.readAnswerValueForApi(viewModel);
+        // A value already there is ignored, not checked again.
+        Set<Long> held = new HashSet<>();
+        if (current instanceof Collection<?> c) c.forEach(item -> held.add(idOf(item)));
+        List<Object> toAdd = delta.add().stream().filter(id -> !held.contains(idOf(id))).toList();
+        Collection<?> added = toAdd.isEmpty() ? List.of() : (Collection<?>) coerce(field, toAdd, projectId);
+        @SuppressWarnings("unchecked")
+        Collection<Object> empty = (Collection<Object>) emptyValueOf(field);
+        return delta.applyTo(current instanceof Collection<?> c ? c : null, added,
+                FieldAnswerPatchService::idOf, empty);
+    }
+
+    /** The id a value of a multi-valued field — a DTO, or a raw id from the request — is referenced by. */
+    private static Long idOf(Object item) {
+        Long id;
+        try {
+            id = extractLongId(item);
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + item);
+        }
+        if (id != null) return id;
+        try {
+            Object value = item.getClass().getMethod("getId").invoke(item);
+            return value instanceof Number n ? n.longValue() : null;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Valeur sans identifiant : " + item.getClass().getName(), e);
+        }
+    }
+
+    /** What the view model takes for "cleared": an empty collection for multi-value fields (their handlers skip null). */
+    private Object emptyValueOf(CustomField field) {
+        Object f = Hibernate.unproxy(field);
+        if (f instanceof CustomFieldSelectMultipleSpatialUnitTree
+                || f instanceof CustomFieldSelectMultipleRecordingUnit
+                || f instanceof CustomFieldSelectMultiplePhase
+                || f instanceof CustomFieldSelectMultipleContainer) {
+            return new LinkedHashSet<>();
+        }
+        if (isMultiple(field)) return new ArrayList<>();
+        return null;
+    }
+
+    // ========== Coercion: raw JSON value → the typed value FormService's view-model handlers take ==========
+
+    /** Marks a field kind a coercion step does not handle. */
+    private static final Object UNHANDLED = new Object();
+
+    private Object coerce(CustomField field, Object raw, Long projectId) {
+        Object f = Hibernate.unproxy(field);
+        try {
+            Object value = coerceScalar(f, raw);
+            if (value == UNHANDLED) value = coerceReference(f, raw, projectId);
+            if (value != UNHANDLED) return value;
+        } catch (NumberFormatException | DateTimeParseException e) {
+            // Only a value that does not parse; any other failure is a bug and must surface.
+            throw new InvalidAnswerValueException("Valeur invalide pour le champ " + field.getId() + " : " + e.getMessage(), e);
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Ce type de champ n'est pas modifiable via l'API : " + f.getClass().getSimpleName());
+    }
+
+
+    private Object coerceScalar(Object f, Object raw) {
+        if (f instanceof CustomFieldText) return String.valueOf(raw);
+        if (f instanceof CustomFieldInteger) return raw instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(raw).trim());
+        if (f instanceof CustomFieldDecimal) return toDouble(raw);
+        if (f instanceof CustomFieldDateTime) return toOffsetDateTime(raw);
+        if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement);
+        return UNHANDLED;
+    }
+
+    private Object coerceReference(Object f, Object raw, Long projectId) {
+        if (f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne) {
+            return one(raw, "Concept", conceptRepository::findById, conceptMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleFromFieldCode || f instanceof CustomFieldSelectMultiple) {
+            return new ArrayList<>(many(raw, "Concept", conceptRepository::findById, conceptMapper::convert));
+        }
+        if (f instanceof CustomFieldSelectOnePerson) return one(raw, "Personne", personRepository::findById, personMapper::convert);
+        if (f instanceof CustomFieldSelectMultiplePerson) {
+            return new ArrayList<>(many(raw, "Personne", personRepository::findById, personMapper::convert));
+        }
+        if (f instanceof CustomFieldSelectOneActionUnit) {
+            return one(raw, "Projet", actionUnitRepository::findById, actionUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectOneActionCode) return actionCode(raw);
+        if (f instanceof CustomFieldSelectOneSpatialUnit) {
+            return one(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleSpatialUnitTree) {
+            return many(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectOneRecordingUnit) {
+            return one(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                    .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleRecordingUnit) {
+            return many(raw, RECORDING_UNIT_LABEL, id -> recordingUnitRepository.findById(id)
+                    .map(ru -> inProject(ru.getActionUnit(), projectId, RECORDING_UNIT_LABEL, id, ru)), recordingUnitSummaryMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultiplePhase) {
+            return many(raw, "Phase", id -> phaseRepository.findById(id)
+                    .map(p -> inProject(p.getActionUnit(), projectId, "Phase", id, p)), phaseMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleContainer) {
+            return many(raw, "Contenant", id -> containerRepository.findById(id)
+                    .map(c -> inProject(c.getActionUnit(), projectId, "Contenant", id, c)), containerMapper::convert);
+        }
+        if (f instanceof CustomFieldSelectMultipleSpecimen) {
+            return new ArrayList<>(many(raw, "Mobilier", id -> specimenRepository.findById(id)
+                    .map(s -> inProject(s.getActionUnit(), projectId, "Mobilier", id, s)), specimenSummaryMapper::convert));
+        }
+        return UNHANDLED;
+    }
+
+    private static <E> E inProject(ActionUnit actionUnit, Long projectId, String label, long id, E entity) {
+        if (projectId != null && actionUnit != null && !Objects.equals(actionUnit.getId(), projectId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " hors projet : " + id);
+        }
+        return entity;
+    }
+
+    private static <E, D> D one(Object raw, String label, LongFunction<Optional<E>> find, Function<E, D> convert) {
+        long id = requireLongId(raw, label);
+        return find.apply(id).map(convert)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " introuvable : " + id));
+    }
+
+    /** A LinkedHashSet, keeping the picked order: the Set-based view-model handlers require a Set. */
+    private static <E, D> Set<D> many(Object raw, String label, LongFunction<Optional<E>> find, Function<E, D> convert) {
+        Collection<?> items = raw instanceof Collection<?> c ? c : List.of(raw);
+        return items.stream()
+                .map(item -> one(item, label, find, convert))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Object actionCode(Object raw) {
+        String code = String.valueOf(raw instanceof Map<?, ?> m && m.get("id") != null ? m.get("id") : raw);
+        ActionCode actionCode = actionCodeRepository.findById(code)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code d'action introuvable : " + code));
+        return actionCodeMapper.convert(actionCode);
+    }
+
+    private static Double toDouble(Object raw) {
+        if (raw instanceof Number n) return n.doubleValue();
+        return Double.parseDouble(String.valueOf(raw).trim().replace(',', '.'));
+    }
+
+    /** ISO date-time, or a bare ISO date (what the React date picker sends) taken at midnight UTC. */
+    private static OffsetDateTime toOffsetDateTime(Object raw) {
+        if (raw instanceof OffsetDateTime odt) return odt;
+        String s = String.valueOf(raw).trim();
+        if (s.length() == 10) return LocalDate.parse(s).atStartOfDay().atOffset(ZoneOffset.UTC);
+        return OffsetDateTime.parse(s);
+    }
+
+    private MeasurementAnswerDTO toMeasurement(Object raw, CustomFieldMeasurement field) {
+        if (!(raw instanceof Map<?, ?>) && !(raw instanceof Number)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Mesure invalide : objet { numericValue, comment? } ou nombre attendu");
+        }
+        MeasurementAnswerDTO dto = new MeasurementAnswerDTO();
+        if (raw instanceof Map<?, ?> map) {
+            Object numeric = map.get("numericValue");
+            if (hasText(numeric)) dto.setNumericValue(toDouble(numeric));
+            Object comment = map.get("comment");
+            if (hasText(comment)) dto.setComment(String.valueOf(comment).trim());
+        } else {
+            dto.setNumericValue(toDouble(raw));
+        }
+        // The unit is the field's own (zInf, zSup, …), never the client's.
+        if (field.getUnit() != null) {
+            dto.setUnit(unitDefinitionMapper.convert(field.getUnit()));
+        }
+        return dto;
+    }
+
+    private static boolean hasText(Object value) {
+        return value != null && !String.valueOf(value).isBlank();
+    }
+
+    private static long requireLongId(Object raw, String label) {
+        Long id = extractLongId(raw);
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu pour " + label.toLowerCase(Locale.ROOT));
+        }
+        return id;
+    }
+
+    private static Long extractLongId(Object raw) {
+        if (raw instanceof Number n) return n.longValue();
+        if (raw instanceof Map<?, ?> m) {
+            Object id = m.get("id");
+            if (id == null) id = m.get("resourceId");
+            if (id == null) id = m.get("conceptId");
+            return extractLongId(id);
+        }
+        if (raw instanceof String s && !s.isBlank()) return Long.parseLong(s.trim());
+        return null;
+    }
+
+    /** A value that does not parse for its field — a 400, or skipped by {@link #applyLenient}. */
+    private static final class InvalidAnswerValueException extends ResponseStatusException {
+        InvalidAnswerValueException(String reason, Throwable cause) {
+            super(HttpStatus.BAD_REQUEST, reason, cause);
+        }
+    }
+}

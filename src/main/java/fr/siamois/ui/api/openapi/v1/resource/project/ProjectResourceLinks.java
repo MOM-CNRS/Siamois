@@ -17,13 +17,25 @@ public class ProjectResourceLinks {
     @Schema(description = "URL des sous-projets")
     private String children;
 
+    @Schema(description = "URL des mobiliers du projet")
+    private String finds;
+
+    @Schema(description = "URL des phases du projet")
+    private String phases;
+
+    @Schema(description = "URL des contenants du projet")
+    private String containers;
+
 
     public static ProjectResourceLinks of(String projectId) {
         String base = "/projects/" + projectId;
         return new ProjectResourceLinks(
                 base,
                 base + "/recording-units",
-                base + "/children"
+                base + "/children",
+                base + "/mobiliers",
+                base + "/phases",
+                base + "/containers"
         );
     }
 }

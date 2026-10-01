@@ -1,8 +1,7 @@
 package fr.siamois.ui.form.fieldsource;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customform.DependsOnJson;
-import fr.siamois.domain.models.form.customform.EnabledWhenJson;
+import fr.siamois.domain.models.form.rules.FieldRules;
 
 import java.util.Collection;
 
@@ -21,18 +20,12 @@ public interface FieldSource {
     Collection<CustomField> getAllFields();
 
     /**
-     * Find a field by its ID (used for EnabledWhenJson.fieldId).
+     * Find a field by its ID (used for the fieldIds rules reference).
      */
     CustomField findFieldById(Long id);
 
     /**
-     * @return the EnabledWhenJson spec for this field, or null if none.
+     * @return the conditional rules the field's column declares, {@link FieldRules#NONE} if none.
      */
-    EnabledWhenJson getEnabledSpec(CustomField field);
-
-    /**
-     * @return the DependsOnJson spec for this field (the field whose current answer acts as the
-     * "base value" for this field's related-concept autocomplete), or null if none.
-     */
-    DependsOnJson getDependsOnSpec(CustomField field);
+    FieldRules getRules(CustomField field);
 }

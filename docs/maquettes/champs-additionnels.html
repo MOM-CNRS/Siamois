@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIAMOIS — Tables & champs</title>
+<!--
+  Maquette HTML/JS pure (sans dépendance) des écrans :
+    - pages/settings/project/projectTablesSettings.xhtml (arbre tables/types, onglets Champs / Identifiants)
+    - pages/settings/project/addFieldDialog.xhtml       (picker : nouveau champ ou réutiliser un existant)
+    - pages/settings/project/fieldEditDrawer.xhtml      (création / édition, paramètres vocabulaire contrôlé)
+    - pages/settings/project/newConfigDialog.xhtml      (nouvelle configuration de type)
+  Toutes les données sont en mémoire ; la connexion au thésaurus est simulée.
+-->
+<style>
+  :root {
+    --accent: #5e8c61; --accent-soft: #eaf3ea; --accent-ink: #3a5a3c;
+    --ink: #2b2b2b; --muted: #777; --faint: #a3a3a0; --grey: #8c8c8c;
+    --line: #e7e7e3; --line-2: #ececec; --bg: #f6f6f4; --panel: #fff;
+    --danger: #b3261e; --danger-soft: #fdecea;
+    --warn: #8a7d4a; --warn-soft: #faf6e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 14.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+  .topbar { flex: none; display: flex; align-items: center; gap: 18px; padding: 0 20px; height: 54px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; letter-spacing: .04em; color: var(--accent-ink); }
+  .content { flex: 1; min-height: 0; overflow: auto; padding: 16px 28px 28px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  .breadcrumb { display: flex; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 10px; flex-wrap: wrap; }
+  .breadcrumb a { color: var(--accent-ink); text-decoration: none; cursor: pointer; }
+  .breadcrumb .sep { color: var(--faint); }
+
+  .ptc-title { font-size: 34px; font-weight: 600; margin: 14px 0 4px; letter-spacing: -0.02em; }
+  .ptc-description { font-size: 15px; color: var(--muted); margin: 0 0 24px; max-width: 760px; }
+  .ptc-layout { display: flex; gap: 24px; align-items: flex-start; }
+
+  /* ── boutons / inputs ── */
+  .btn { border: 1px solid transparent; border-radius: 8px; padding: 8px 14px; cursor: pointer; background: var(--accent); color: #fff; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { filter: brightness(.95); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .btn-secondary { background: #fff; color: var(--ink); border-color: #d8d8d2; }
+  .btn-outline { background: #fff; color: var(--accent-ink); border-color: var(--accent); }
+  .btn-flat { background: transparent; color: var(--muted); padding: 5px 8px; }
+  .btn-flat:hover { background: var(--bg); filter: none; }
+  .btn-sm { padding: 5px 10px; font-size: 13px; }
+  a.btn { text-decoration: none; }
+  a.btn.disabled { opacity: .45; pointer-events: none; }
+  .input, .ptc-native-select { width: 100%; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; }
+  .input:focus, .ptc-native-select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  textarea.input { resize: vertical; }
+
+  /* toggle switch (p:toggleSwitch) */
+  .switch { position: relative; display: inline-block; width: 38px; height: 22px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span { position: absolute; inset: 0; border-radius: 22px; background: #d6d6d1; transition: .15s; cursor: pointer; }
+  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: #fff; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::before { transform: translateX(16px); }
+  .switch input:disabled + span { opacity: .5; cursor: not-allowed; }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── mobile bar ── */
+  .ptc-mobile-bar { display: none; gap: 8px; margin-bottom: 16px; }
+  .ptc-mobile-bar select { flex: 1; min-width: 0; }
+
+  /* ── arbre ── */
+  .ptc-tree { width: 258px; flex: none; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 250px); min-height: 420px; overflow: auto; }
+  .ptc-tree-title { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-bottom: 4px; }
+  .ptc-tree-table-row, .ptc-tree-type-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; width: 100%; text-align: left; cursor: pointer; color: var(--ink); }
+  .ptc-tree-table-row { padding: 8px 10px; border-radius: 8px; font-size: 14.5px; }
+  .ptc-tree-table-row:hover, .ptc-tree-type-row:hover { background: #f8f8f6; }
+  .ptc-tree-table-row.ptc-selected, .ptc-tree-type-row.ptc-selected { background: var(--accent-soft); font-weight: 600; }
+  .ptc-count-badge { font-size: 11.5px; color: #999; border: 1px solid var(--line); border-radius: 20px; padding: 0 8px; background: #fafafa; }
+  .ptc-tree-types { margin: 1px 0 6px 7px; border-left: 1px solid var(--line-2); padding-left: 11px; display: flex; flex-direction: column; gap: 3px; }
+  .ptc-tree-type-row { padding: 7px 10px; border-radius: 7px; font-size: 14px; justify-content: flex-start; }
+  .ptc-tree-type-row.ptc-default-row:not(.ptc-selected) { background: #faf8ee; }
+  .ptc-badge-default { font-size: 10.5px; color: var(--warn); border: 1px solid #d8cfa6; border-radius: 5px; padding: 0 5px; background: var(--warn-soft); margin-left: auto; font-weight: 400; }
+  .ptc-new-type-btn { border: 1px dashed #cfcfca; background: transparent; border-radius: 7px; color: #999; font-size: 13px; width: 100%; padding: 7px; cursor: pointer; }
+  .ptc-new-type-btn:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ── éditeur ── */
+  .ptc-editor { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; background: #fff; max-height: calc(100vh - 250px); min-height: 420px; display: flex; flex-direction: column; overflow: auto; }
+  .ptc-summary { display: flex; gap: 24px; padding: 22px 24px; border-bottom: 1px solid var(--line-2); flex-wrap: wrap; }
+  .ptc-summary-col { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 5px; }
+  .ptc-summary-col-wide { flex: 2; min-width: 260px; }
+  .ptc-summary-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
+  .ptc-summary-value { font-size: 15px; }
+  .ptc-summary-muted { color: #555; }
+  .ptc-summary-placeholder { color: var(--faint); font-style: italic; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 16px; }
+  .tabs button { border: 0; background: none; padding: 12px 16px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+  .tab-panel { padding: 2em; }
+
+  .ptc-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ptc-section-title { font-size: 17px; font-weight: 600; }
+  .ptc-section-meta { font-size: 13px; color: var(--grey); margin-left: 10px; }
+  .ptc-table-scroll { border: 1px solid var(--line); border-radius: 9px; overflow-x: auto; margin-bottom: 28px; }
+  .ptc-table-scroll:last-child { margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--line-2); background: #fafaf8; white-space: nowrap; }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .empty-row td { text-align: center; color: var(--muted); padding: 26px; }
+  .ptc-chip { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; background: var(--bg); white-space: nowrap; }
+  .ptc-hidden-name { text-decoration: line-through; color: var(--faint); }
+  .ptc-lock-icon { font-size: 12px; color: #6b6b66; margin-left: 6px; cursor: help; }
+  .row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+
+  /* drag & drop des champs additionnels */
+  .ptc-drag-cell { text-align: center; width: 38px; }
+  .ptc-drag-handle { color: #c4c4c0; font-size: 16px; cursor: grab; user-select: none; letter-spacing: -2px; }
+  tr:hover .ptc-drag-handle { color: var(--grey); }
+  tr.dragging { opacity: .4; }
+  tr.drop-before td { box-shadow: inset 0 2px 0 var(--accent); }
+  tr.drop-after td { box-shadow: inset 0 -2px 0 var(--accent); }
+
+  /* identifiants */
+  .ident-wrap { display: flex; flex-direction: column; gap: 20px; max-width: 720px; }
+  .ident-numbers { display: flex; gap: 16px; }
+  .ident-numbers > div { flex: 1; }
+  .ptc-field { display: flex; flex-direction: column; gap: 7px; }
+  .ptc-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); }
+  .ident-format-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 9px; background: #fff; padding: 10px 12px; min-height: 46px; }
+  .seg-text { display: flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #d8d8d2; border-radius: 20px; padding: 3px 4px 3px 8px; }
+  .seg-text input { width: 90px; font-size: 14.5px; border: none; background: transparent; padding: 3px 2px; outline: none; }
+  .seg-token { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent); border-radius: 20px; padding: 5px 6px 5px 10px; white-space: nowrap; }
+  .seg-digits { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.22); border-radius: 11px; padding: 1px 6px; }
+  .seg-digits span { font-size: 10.5px; opacity: .85; }
+  .seg-digits input { width: 18px; border: none; background: transparent; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; padding: 0; }
+  .seg-btn { background: transparent; border: none; color: #909088; font-size: 17px; line-height: 1; padding: 0 4px; cursor: pointer; font-weight: 700; }
+  .seg-btn.rm { font-size: 12px; font-weight: 400; }
+  .seg-token .seg-btn { color: rgba(255,255,255,.85); }
+  .seg-add { font-size: 13px; color: var(--muted); border: 1px dashed #cfcfca; background: transparent; border-radius: 20px; padding: 5px 12px; cursor: pointer; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .token-option { font-size: 13px; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid transparent; border-radius: 20px; padding: 6px 13px; cursor: pointer; }
+  .token-option:hover { border-color: var(--accent); }
+  .ident-preview { font-size: 15px; font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid var(--line); border-radius: 8px; padding: 10px 13px; background: var(--bg); letter-spacing: .02em; }
+  .ptc-field-hint { font-size: 12.5px; color: var(--faint); margin-top: 4px; }
+  .ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: var(--warn); font-size: 15px; }
+  .field-error { color: var(--danger); font-size: 12.5px; }
+
+  /* ── overlay / dialogs / drawer ── */
+  .overlay { position: fixed; inset: 0; background: rgba(20,20,20,.35); z-index: 40; display: none; }
+  .overlay.open { display: block; }
+  .dialog { position: fixed; z-index: 50; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 520px; max-width: calc(100vw - 32px); max-height: calc(100vh - 40px); display: none; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .dialog.open { display: flex; }
+  .dialog-header { display: flex; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--line-2); }
+  .dialog-header h3 { margin: 0; font-size: 17px; }
+  .dialog-close { margin-left: auto; border: 0; background: none; font-size: 17px; cursor: pointer; color: var(--faint); }
+  .dialog-body { overflow: auto; }
+  .picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 14.5px; cursor: pointer; background: none; width: calc(100% - 44px); }
+  .picker-newfield:hover { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .picker-section-title { padding: 0 22px 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--faint); }
+  .picker-search { padding: 0 22px 10px; }
+  .picker-list { max-height: 340px; overflow: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .picker-item { display: block; text-align: left; border: 0; background: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; width: 100%; }
+  .picker-item:hover { background: var(--bg); }
+  .picker-item-head { display: flex; align-items: center; gap: 8px; }
+  .picker-item-name { font-weight: 600; }
+  .picker-item-desc { font-size: 12.5px; color: var(--grey); margin-top: 2px; }
+  .picker-empty { padding: 14px; color: var(--faint); text-align: center; }
+  .dialog-hint { font-size: 13px; color: var(--grey); background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; margin: 0 0 14px; }
+  .dialog-pad { padding: 18px 22px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+  .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 460px; max-width: 92vw; background: #fff; z-index: 50; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .2s ease; box-shadow: -8px 0 30px rgba(0,0,0,.12); }
+  .drawer.open { transform: none; }
+  .drawer-header { padding: 18px 22px; border-bottom: 1px solid var(--line-2); display: flex; gap: 10px; align-items: flex-start; }
+  .drawer-title { font-size: 18px; font-weight: 600; }
+  .drawer-system-note { font-size: 12px; color: var(--warn); margin-top: 2px; }
+  .drawer-error { display: flex; align-items: flex-start; gap: 9px; margin: 14px 22px 0; padding: 11px 13px; border: 1px solid #f5c2bd; border-left-width: 4px; border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: 13.5px; line-height: 1.4; }
+  .drawer-body { flex: 1; overflow: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+  .drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 22px; border-top: 1px solid var(--line-2); }
+  .readonly-value { font-size: 15px; border: 1px solid #d8d8d2; border-radius: 8px; padding: 9px 11px; background: #fff; color: var(--muted); }
+  .params { border-top: 1px solid var(--line-2); padding-top: 16px; display: flex; flex-direction: column; gap: 13px; }
+  .params-title { font-size: 14px; font-weight: 600; }
+  .chip-option { font-size: 12.5px; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--line); background: #fff; color: #555; cursor: pointer; }
+  .chip-option.selected { border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .connection-ok { font-size: 12.5px; color: var(--accent-ink); }
+  .params-row { display: flex; gap: 7px; align-items: center; margin-top: 7px; }
+  .params-row .ac { flex: 1; min-width: 0; }
+  .ac { position: relative; }
+  .ac-panel { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.12); z-index: 5; max-height: 220px; overflow: auto; display: none; }
+  .ac-panel.open { display: block; }
+  .ac-item { padding: 8px 12px; cursor: pointer; }
+  .ac-item:hover { background: var(--bg); }
+  .ac-item small { color: var(--grey); margin-left: 6px; }
+  .progress { margin: 0 22px .5rem; }
+  .progress-msg { font-style: italic; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .progress-bar { height: 8px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
+  .progress-bar div { height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toasts { position: fixed; top: 64px; right: 18px; z-index: 80; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 14px; box-shadow: 0 6px 20px rgba(0,0,0,.1); font-size: 13.5px; max-width: 360px; }
+  .toast.error { border-left-color: var(--danger); }
+
+  @media (max-width: 760px) {
+    .content { padding: 12px 16px 20px; }
+    .ptc-title { font-size: 26px; }
+    .ptc-mobile-bar { display: flex; }
+    .ptc-tree { display: none; }
+    .tab-panel { padding: 1.2em; }
+    .ident-numbers { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar"><span class="brand">SIAMOIS</span><span style="color:var(--muted);font-size:13px">Paramètres du projet</span></header>
+  <main class="content"><div class="container">
+    <nav class="breadcrumb"><a>Projets</a><span class="sep">›</span><a>Fouille de Saint-Martin</a><span class="sep">›</span><span>Tables &amp; champs</span></nav>
+    <button class="btn btn-outline">🗄 Ouvrir le projet dans l'application</button>
+    <h1 class="ptc-title">Tables &amp; champs</h1>
+    <p class="ptc-description">Configurez les champs et identifiants par type, pour chacune de vos tables. Le type _default s'applique à tous les types non configurés.</p>
+
+    <div class="ptc-mobile-bar">
+      <select class="ptc-native-select" id="mTable" aria-label="Table"></select>
+      <select class="ptc-native-select" id="mType" aria-label="Type"></select>
+    </div>
+
+    <div class="ptc-layout">
+      <nav class="ptc-tree" id="tree" aria-label="Tables et types"></nav>
+      <section class="ptc-editor" id="editor"></section>
+    </div>
+  </div></main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Picker « Ajouter un champ » -->
+<section class="dialog" id="pickerDialog" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+  <div class="dialog-header"><h3 id="pickerTitle">Ajouter un champ</h3><button class="dialog-close" data-close aria-label="Fermer">✕</button></div>
+  <div class="dialog-body">
+    <button class="picker-newfield" id="pickerNew">+ Nouveau champ (nom, type, description à définir)</button>
+    <div class="picker-section-title">Ou réutiliser un champ existant</div>
+    <div class="picker-search"><input class="input" id="pickerQuery" placeholder="Rechercher un champ…" aria-label="Rechercher un champ"></div>
+    <div class="picker-list" id="pickerList"></div>
+  </div>
+</section>
+
+<!-- Nouvelle configuration -->
+<section class="dialog" id="configDialog" role="dialog" aria-modal="true" aria-labelledby="configTitle" style="width:460px">
+  <div class="dialog-header"><h3 id="configTitle">+ Ajouter une configuration</h3><button class="dialog-close" data-close aria-label="Fermer">✕</button></div>
+  <div class="dialog-pad">
+    <p class="dialog-hint">Par défaut, chaque type utilise la configuration par défaut. N'en créez une que pour les types qui doivent s'en écarter.</p>
+    <label class="ptc-label" for="configValue">Valeur à configurer</label>
+    <div class="ac" style="margin-top:6px">
+      <input class="input" id="configValue" placeholder="Choisir une valeur du champ type…" autocomplete="off">
+      <div class="ac-panel" id="configPanel"></div>
+    </div>
+    <div class="field-error" id="configError" style="margin-top:6px"></div>
+    <div class="dialog-actions">
+      <button class="btn btn-flat" data-close>Annuler</button>
+      <button class="btn" id="configCreate">Créer</button>
+    </div>
+  </div>
+</section>
+
+<!-- Drawer création / édition de champ -->
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawerTitle"></aside>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   Référentiels
+   ===================================================================== */
+const FIELD_TYPES = {
+  TEXT: 'Texte',
+  INTEGER: 'Numérique',
+  MEASUREMENT: 'Mesure',
+  SELECT_ONE: 'Vocabulaire contrôlé',
+  SELECT_MULTIPLE: 'Vocabulaire contrôlé (plusieurs valeurs)',
+  SELECT_ONE_RECORDING_UNIT: "Unité d'enregistrement",
+  SELECT_ONE_SPATIAL_UNIT: 'Lieu',
+  PROJET: 'Projet',
+};
+const USER_TYPES = ['TEXT', 'INTEGER', 'MEASUREMENT', 'SELECT_ONE', 'SELECT_MULTIPLE', 'SELECT_ONE_RECORDING_UNIT', 'SELECT_ONE_SPATIAL_UNIT'];
+const isConfigurable = t => t === 'SELECT_ONE' || t === 'SELECT_MULTIPLE';
+
+const RESOLVERS = [
+  { code: 'NUM_UE', label: 'Numéro UE', numeric: true, sample: 42 },
+  { code: 'ID_PROJET', label: 'Code projet', numeric: false, sample: 'SMA24' },
+  { code: 'TYPE_UE', label: 'Type', numeric: false, sample: 'FS' },
+  { code: 'ANNEE', label: 'Année', numeric: false, sample: '2026' },
+  { code: 'NUM_PARENT', label: 'Numéro parent', numeric: true, sample: 7 },
+];
+
+// thésaurus simulé
+const THESAURUS = {
+  concepts: ['Structures en creux', 'Fosse', 'Trou de poteau', 'Silo', 'Fossé', 'Structures bâties', 'Mur', 'Sol', 'Foyer', 'Céramique', 'Métal', 'Faune', 'Lithique', 'Couleur', 'Texture', 'Inclusions', 'Conservation', 'Datation'],
+  collections: ['Interprétation UE', 'Nature du sédiment', 'Matériaux', 'Couleurs Munsell', 'État de conservation', 'Périodes chronologiques'],
+};
+
+/* =====================================================================
+   Données de démonstration
+   ===================================================================== */
+const sys = (name, type, extra = {}) => ({ name, type, active: true, mandatory: false, institutionLocked: false, configurable: isConfigurable(type), ...extra });
+
+const TABLES = [
+  {
+    id: 'ue', label: "Unité d'enregistrement", identAvailable: true,
+    typeValues: ['Fosse', 'Mur', 'Couche', 'Trou de poteau', 'Sépulture', 'Fossé', 'Sol'],
+    system: [
+      sys('Identifiant', 'TEXT', { mandatory: true, institutionLocked: true }),
+      sys('Type', 'SELECT_ONE', { mandatory: true, source: 'principal', fieldCode: 'SIARU.TYPE' }),
+      sys('Projet', 'PROJET', { mandatory: true, institutionLocked: true }),
+      sys('Lieu', 'SELECT_ONE_SPATIAL_UNIT'),
+      sys('Interprétation', 'SELECT_ONE', { source: 'principal', fieldCode: 'SIARU.INTERP' }),
+      sys('Description', 'TEXT'),
+      sys('Altitude sup.', 'MEASUREMENT', { active: false }),
+      sys('Altitude inf.', 'MEASUREMENT', { active: false }),
+    ],
+    configs: {
+      _default: {
+        definition: "Configuration appliquée à tous les types d'UE qui n'ont pas de configuration propre.",
+        additional: [
+          { name: 'Couleur du sédiment', type: 'SELECT_ONE', mandatory: false, description: 'Couleur Munsell du remplissage', source: 'collection', thesaurusUrl: 'https://opentheso.huma-num.fr/?idt=th21', collection: 'Couleurs Munsell' },
+          { name: 'Compacité', type: 'TEXT', mandatory: false, description: 'Degré de compacité observé' },
+        ],
+      },
+      Fosse: {
+        definition: 'Creusement anthropique de plan circulaire à ovale, de profondeur variable.',
+        additional: [
+          { name: 'Profondeur conservée', type: 'MEASUREMENT', mandatory: true, description: 'Profondeur mesurée depuis le niveau de décapage' },
+          { name: 'Forme du profil', type: 'SELECT_ONE', mandatory: false, description: 'Profil en U, en V, cylindrique…', source: 'branche', thesaurusUrl: 'https://opentheso.huma-num.fr/?idt=th21', branche: 'Structures en creux' },
+          { name: 'Fonction supposée', type: 'SELECT_MULTIPLE', mandatory: false, description: 'Silo, dépotoir, extraction…', source: 'branche', thesaurusUrl: 'https://opentheso.huma-num.fr/?idt=th21', branche: 'Structures en creux' },
+        ],
+      },
+      Mur: { definition: '', additional: [{ name: 'Nombre d\'assises', type: 'INTEGER', mandatory: false, description: '' }] },
+    },
+  },
+  {
+    id: 'find', label: 'Mobilier', identAvailable: false,
+    typeValues: ['Céramique', 'Métal', 'Faune', 'Lithique', 'Verre'],
+    system: [
+      sys('Identifiant', 'TEXT', { mandatory: true, institutionLocked: true }),
+      sys('Catégorie', 'SELECT_ONE', { mandatory: true, source: 'principal', fieldCode: 'SIAS.CAT' }),
+      sys('UE', 'SELECT_ONE_RECORDING_UNIT', { mandatory: true }),
+      sys('Nombre de restes', 'INTEGER'),
+      sys('Poids', 'MEASUREMENT'),
+    ],
+    configs: {
+      _default: { definition: '', additional: [] },
+      Céramique: { definition: 'Objets en terre cuite.', additional: [{ name: 'Type de pâte', type: 'SELECT_ONE', mandatory: false, description: 'Classification technologique', source: 'collection', thesaurusUrl: 'https://opentheso.huma-num.fr/?idt=th21', collection: 'Matériaux' }] },
+    },
+  },
+  {
+    id: 'container', label: 'Contenant', identAvailable: false, typeValues: ['Caisse', 'Sachet', 'Boîte'],
+    system: [sys('Identifiant', 'TEXT', { mandatory: true, institutionLocked: true }), sys('Type', 'SELECT_ONE', { source: 'principal', fieldCode: 'SIAC.TYPE' }), sys('Localisation', 'TEXT')],
+    configs: { _default: { definition: '', additional: [] } },
+  },
+  {
+    id: 'phase', label: 'Phase', identAvailable: false, typeValues: ['Occupation', 'Abandon', 'Construction'],
+    system: [sys('Nom', 'TEXT', { mandatory: true }), sys('Datation', 'SELECT_ONE', { source: 'principal', fieldCode: 'SIAP.DATE' }), sys('Description', 'TEXT')],
+    configs: { _default: { definition: '', additional: [] } },
+  },
+];
+
+/** Catalogue des champs additionnels existants, réutilisables d'une configuration à l'autre. */
+function fieldCatalog() {
+  const map = new Map();
+  TABLES.forEach(t => Object.values(t.configs).forEach(c => c.additional.forEach(a => { if (!map.has(a.name)) map.set(a.name, a); })));
+  [
+    { name: 'Observations', type: 'TEXT', description: 'Remarques libres de terrain' },
+    { name: 'Largeur', type: 'MEASUREMENT', description: 'Largeur maximale observée' },
+    { name: 'Longueur', type: 'MEASUREMENT', description: 'Longueur maximale observée' },
+    { name: 'État de conservation', type: 'SELECT_ONE', description: 'Bon, moyen, mauvais…', source: 'collection', thesaurusUrl: 'https://opentheso.huma-num.fr/?idt=th21', collection: 'État de conservation' },
+  ].forEach(a => { if (!map.has(a.name)) map.set(a.name, a); });
+  return [...map.values()];
+}
+
+/* =====================================================================
+   État UI
+   ===================================================================== */
+const state = {
+  tableId: 'ue',
+  type: '_default',
+  tab: 'champs',
+  ident: {
+    first: 1, last: 9999,
+    segments: [
+      { token: true, code: 'ID_PROJET' }, { token: false, text: '-' },
+      { token: true, code: 'TYPE_UE' }, { token: false, text: '-' },
+      { token: true, code: 'NUM_UE', digits: 4 },
+    ],
+  },
+};
+let draft = null; // brouillon du drawer
+
+/* =====================================================================
+   Utilitaires
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const table = () => TABLES.find(t => t.id === state.tableId);
+const config = () => table().configs[state.type];
+const types = t => ['_default', ...Object.keys(t.configs).filter(k => k !== '_default')];
+const sourceLabel = a => !isConfigurable(a.type) ? '—'
+  : a.source === 'branche' ? `Branche : ${a.branche ?? '—'}`
+  : a.source === 'collection' ? `Collection : ${a.collection ?? '—'}`
+  : a.source === 'principal' ? 'Thésaurus principal' : 'Non configuré';
+
+function toast(msg, kind) {
+  const el = Object.assign(document.createElement('div'), { className: 'toast' + (kind === 'error' ? ' error' : ''), textContent: msg });
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+function openLayer(el) { el.classList.add('open'); $('#overlay').classList.add('open'); }
+function closeLayers() {
+  document.querySelectorAll('.dialog.open, .drawer.open').forEach(el => el.classList.remove('open'));
+  $('#overlay').classList.remove('open');
+  draft = null;
+}
+$('#overlay').addEventListener('click', closeLayers);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLayers(); });
+document.querySelectorAll('.dialog [data-close]').forEach(b => b.addEventListener('click', closeLayers));
+
+/* =====================================================================
+   Arbre + barre mobile
+   ===================================================================== */
+function renderTree() {
+  $('#tree').innerHTML = `<div class="ptc-tree-title">Tables &amp; types</div>` + TABLES.map(t => {
+    const sel = t.id === state.tableId;
+    return `<button class="ptc-tree-table-row ${sel ? 'ptc-selected' : ''}" data-table="${t.id}" aria-expanded="${sel}">
+        <span>${esc(t.label)}</span><span class="ptc-count-badge">${types(t).length}</span></button>
+      ${sel ? `<div class="ptc-tree-types">
+        ${types(t).map(ty => `<button class="ptc-tree-type-row ${ty === state.type ? 'ptc-selected' : ''} ${ty === '_default' ? 'ptc-default-row' : ''}" data-type="${esc(ty)}">
+          <span>${esc(ty)}</span>${ty === '_default' ? '<span class="ptc-badge-default">défaut</span>' : ''}</button>`).join('')}
+        <button class="ptc-new-type-btn" data-new-config>+ Ajouter une configuration</button>
+      </div>` : ''}`;
+  }).join('');
+
+  $('#mTable').innerHTML = TABLES.map(t => `<option value="${t.id}" ${t.id === state.tableId ? 'selected' : ''}>${esc(t.label)}</option>`).join('');
+  $('#mType').innerHTML = types(table()).map(ty => `<option ${ty === state.type ? 'selected' : ''}>${esc(ty)}</option>`).join('') + '<option value="__new">+ Ajouter une configuration</option>';
+}
+
+$('#tree').addEventListener('click', e => {
+  const t = e.target.closest('[data-table]');
+  if (t) { state.tableId = t.dataset.table; state.type = '_default'; renderAll(); return; }
+  const ty = e.target.closest('[data-type]');
+  if (ty) { state.type = ty.dataset.type; renderAll(); return; }
+  if (e.target.closest('[data-new-config]')) openConfigDialog();
+});
+$('#mTable').addEventListener('change', e => { state.tableId = e.target.value; state.type = '_default'; renderAll(); });
+$('#mType').addEventListener('change', e => {
+  if (e.target.value === '__new') { e.target.value = state.type; openConfigDialog(); return; }
+  state.type = e.target.value; renderAll();
+});
+
+/* =====================================================================
+   Éditeur
+   ===================================================================== */
+function renderEditor() {
+  const t = table(), c = config();
+  const hidden = t.system.filter(f => !f.active).length;
+  const identOk = t.identAvailable && state.type === '_default';
+
+  $('#editor').innerHTML = `
+    <div class="ptc-summary">
+      <div class="ptc-summary-col"><span class="ptc-summary-label">Libellé</span><div class="ptc-summary-value">${esc(state.type)}</div></div>
+      <div class="ptc-summary-col ptc-summary-col-wide"><span class="ptc-summary-label">Définition</span>
+        <div class="ptc-summary-value ptc-summary-muted ${c.definition ? '' : 'ptc-summary-placeholder'}">${esc(c.definition || 'Aucune définition renseignée pour ce concept.')}</div></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="champs" class="${state.tab === 'champs' ? 'active' : ''}">Champs</button>
+      <button role="tab" data-tab="ident" class="${state.tab === 'ident' ? 'active' : ''}">Identifiants</button>
+    </div>
+    <div class="tab-panel">${state.tab === 'champs' ? renderChamps(t, c, hidden) : identOk ? renderIdent() : '<div class="ident-placeholder">Disponible uniquement pour la table UE et le type _default pour le moment.</div>'}</div>`;
+  if (state.tab === 'champs') wireDrag();
+}
+
+function switchCell(checked, disabled, attrs, label) {
+  return `<label class="switch"><input type="checkbox" ${attrs} ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${esc(label)}"><span></span></label>`;
+}
+
+function renderChamps(t, c, hidden) {
+  return `
+    <div class="ptc-section-head">
+      <span><span class="ptc-section-title">Champs système</span><span class="ptc-section-meta">${t.system.length} champs · ${hidden} masqué(s)</span></span>
+    </div>
+    <div class="ptc-table-scroll"><table style="min-width:600px">
+      <thead><tr><th style="width:80px">Actif</th><th>Champ</th><th style="width:190px">Type</th><th style="width:130px">Obligatoire</th><th style="width:80px"></th></tr></thead>
+      <tbody>${t.system.map((f, i) => `<tr>
+        <td>${switchCell(f.active, f.institutionLocked, `data-sys-active="${i}"`, `Activer ${f.name}`)}</td>
+        <td><span class="${f.active ? '' : 'ptc-hidden-name'}">${esc(f.name)}</span>${f.institutionLocked ? '<span class="ptc-lock-icon" title="Verrouillé par l\'organisation — non modifiable au niveau du projet">🔒</span>' : ''}</td>
+        <td><span class="ptc-chip">${esc(FIELD_TYPES[f.type])}</span></td>
+        <td>${switchCell(f.mandatory, f.institutionLocked, `data-sys-mandatory="${i}"`, `${f.name} obligatoire`)}</td>
+        <td>${f.configurable ? `<button class="btn btn-flat" data-edit-sys="${i}" title="Configurer la source du champ" aria-label="Configurer ${esc(f.name)}">✎</button>` : ''}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+
+    <div class="ptc-section-head">
+      <span><span class="ptc-section-title">Champs additionnels</span><span class="ptc-section-meta">éditables — cliquez le crayon pour configurer, glissez la poignée pour réordonner</span></span>
+      <button class="btn" data-add-field>+ Ajouter un champ</button>
+    </div>
+    <div class="ptc-table-scroll"><table style="min-width:680px">
+      <thead><tr><th class="ptc-drag-cell"></th><th>Champ</th><th style="width:190px">Type</th><th style="width:130px">Obligatoire</th><th>Source / valeurs</th><th style="width:90px"></th></tr></thead>
+      <tbody id="additionalBody">${c.additional.length ? c.additional.map((a, i) => `<tr data-row="${i}">
+        <td class="ptc-drag-cell"><span class="ptc-drag-handle" draggable="true" title="Glisser pour changer l'ordre du champ" tabindex="0" data-handle="${i}" aria-label="Réordonner ${esc(a.name)} (flèches haut/bas)">⋮⋮</span></td>
+        <td>${esc(a.name)}</td>
+        <td><span class="ptc-chip">${esc(FIELD_TYPES[a.type])}</span></td>
+        <td>${switchCell(a.mandatory, false, `data-add-mandatory="${i}"`, `${a.name} obligatoire`)}</td>
+        <td>${esc(sourceLabel(a))}</td>
+        <td><div class="row-actions">
+          <button class="btn btn-flat" data-edit-add="${i}" aria-label="Modifier ${esc(a.name)}">✎</button>
+          <button class="btn btn-flat" data-del-add="${i}" aria-label="Supprimer ${esc(a.name)}">✕</button></div></td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="6">Aucun champ additionnel</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+$('#editor').addEventListener('click', e => {
+  const t = e.target;
+  const tab = t.closest('[data-tab]');
+  if (tab) { state.tab = tab.dataset.tab; renderEditor(); return; }
+  if (t.closest('[data-add-field]')) { openPicker(); return; }
+  const es = t.closest('[data-edit-sys]');
+  if (es) { openDrawer({ system: true, index: +es.dataset.editSys }); return; }
+  const ea = t.closest('[data-edit-add]');
+  if (ea) { openDrawer({ system: false, index: +ea.dataset.editAdd }); return; }
+  const del = t.closest('[data-del-add]');
+  if (del) {
+    const c = config(); const a = c.additional[+del.dataset.delAdd];
+    if (a.inUse) { toast(`Le champ additionnel « ${a.name} » est déjà utilisé en tant que réponse : il ne peut pas être supprimé.`, 'error'); return; }
+    c.additional.splice(+del.dataset.delAdd, 1);
+    toast(`Champ « ${a.name} » retiré de la configuration`);
+    renderEditor(); return;
+  }
+  identClick(e);
+});
+
+$('#editor').addEventListener('change', e => {
+  const d = e.target.dataset;
+  const t = table();
+  if (d.sysActive !== undefined) { t.system[+d.sysActive].active = e.target.checked; renderEditor(); renderTree(); }
+  else if (d.sysMandatory !== undefined) t.system[+d.sysMandatory].mandatory = e.target.checked;
+  else if (d.addMandatory !== undefined) config().additional[+d.addMandatory].mandatory = e.target.checked;
+  else identChange(e);
+});
+
+/* ---- réordonnancement (drag depuis la poignée seulement + clavier) ---- */
+function moveAdditional(from, to) {
+  const list = config().additional;
+  if (to < 0 || to >= list.length || from === to) return;
+  const [it] = list.splice(from, 1);
+  list.splice(to, 0, it);
+  renderEditor();
+  $(`[data-handle="${to}"]`)?.focus();
+}
+function wireDrag() {
+  const body = $('#additionalBody');
+  if (!body) return;
+  let from = null;
+  const clear = () => body.querySelectorAll('tr').forEach(r => r.classList.remove('drop-before', 'drop-after', 'dragging'));
+  body.addEventListener('dragstart', e => {
+    const h = e.target.closest('[data-handle]'); if (!h) return;
+    from = +h.dataset.handle;
+    const row = h.closest('tr'); row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(from));
+    e.dataTransfer.setDragImage(row, 20, 20);
+  });
+  body.addEventListener('dragover', e => {
+    if (from === null) return;
+    const row = e.target.closest('tr[data-row]'); if (!row) return;
+    e.preventDefault();
+    clear(); body.querySelector(`tr[data-row="${from}"]`)?.classList.add('dragging');
+    const r = row.getBoundingClientRect();
+    row.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  body.addEventListener('drop', e => {
+    const row = e.target.closest('tr[data-row]'); if (!row || from === null) return;
+    e.preventDefault();
+    let to = +row.dataset.row;
+    const after = row.classList.contains('drop-after');
+    if (after && to < from) to++;
+    if (!after && to > from) to--;
+    const f = from; from = null; clear();
+    moveAdditional(f, to);
+  });
+  body.addEventListener('dragend', () => { from = null; clear(); });
+  body.addEventListener('keydown', e => {
+    const h = e.target.closest('[data-handle]'); if (!h) return;
+    const i = +h.dataset.handle;
+    if (e.key === 'ArrowUp') { e.preventDefault(); moveAdditional(i, i - 1); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveAdditional(i, i + 1); }
+  });
+}
+
+/* =====================================================================
+   Onglet Identifiants
+   ===================================================================== */
+const resolver = code => RESOLVERS.find(r => r.code === code);
+function identExample() {
+  return state.ident.segments.map(s => {
+    if (!s.token) return s.text ?? '';
+    const r = resolver(s.code);
+    return r.numeric ? String(r.sample).padStart(+s.digits || 1, '0') : r.sample;
+  }).join('');
+}
+function renderIdent() {
+  const id = state.ident;
+  const invalid = !(id.first >= 0 && id.last >= id.first);
+  return `<div class="ident-wrap">
+    <div class="ident-numbers">
+      <div class="ptc-field"><label class="ptc-label" for="identFirst">Premier numéro</label><input class="input" type="number" min="0" max="99999" id="identFirst" value="${id.first}"></div>
+      <div class="ptc-field"><label class="ptc-label" for="identLast">Dernier numéro</label><input class="input" type="number" min="0" max="99999" id="identLast" value="${id.last}"></div>
+    </div>
+    ${invalid ? '<div class="field-error">Le minimum doit être positif ou nul et le maximum doit lui être supérieur ou égal.</div>' : ''}
+    <div class="ptc-field">
+      <div class="ptc-label" id="identFormatLabel">Format</div>
+      <div class="ident-format-box" role="group" aria-labelledby="identFormatLabel">
+        ${id.segments.map((s, i) => s.token ? `<div class="seg-token">
+            <button class="seg-btn" data-seg-left="${i}" aria-label="Déplacer à gauche">‹</button>
+            <span>${esc(resolver(s.code).label)}</span>
+            ${resolver(s.code).numeric ? `<span class="seg-digits"><span>chiffres</span><input data-seg-digits="${i}" value="${s.digits ?? 1}" inputmode="numeric" aria-label="Nombre de chiffres"></span>` : ''}
+            <button class="seg-btn" data-seg-right="${i}" aria-label="Déplacer à droite">›</button>
+            <button class="seg-btn rm" data-seg-rm="${i}" aria-label="Retirer">✕</button>
+          </div>` : `<div class="seg-text">
+            <button class="seg-btn" data-seg-left="${i}" aria-label="Déplacer à gauche">‹</button>
+            <input data-seg-text="${i}" value="${esc(s.text)}" placeholder="texte" aria-label="Texte fixe">
+            <button class="seg-btn" data-seg-right="${i}" aria-label="Déplacer à droite">›</button>
+            <button class="seg-btn rm" data-seg-rm="${i}" aria-label="Retirer">✕</button>
+          </div>`).join('')}
+        <button class="seg-add" data-seg-add-text>+ texte</button>
+      </div>
+      <div class="chip-row">${RESOLVERS.map(r => `<button class="token-option" data-seg-add-token="${r.code}">{ } ${esc(r.label)}</button>`).join('')}</div>
+    </div>
+    <div class="ptc-field">
+      <div class="ptc-label">Aperçu</div>
+      <div class="ident-preview" id="identPreview">${esc(identExample())}</div>
+      <div class="ptc-field-hint">Exemple généré avec des valeurs types.</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn" data-ident-save ${invalid ? 'disabled' : ''}>Sauvegarder</button></div>
+  </div>`;
+}
+function identClick(e) {
+  const d = e.target.closest('button')?.dataset; if (!d) return;
+  const segs = state.ident.segments;
+  const swap = (i, j) => { if (j < 0 || j >= segs.length) return; [segs[i], segs[j]] = [segs[j], segs[i]]; };
+  if (d.segLeft !== undefined) swap(+d.segLeft, +d.segLeft - 1);
+  else if (d.segRight !== undefined) swap(+d.segRight, +d.segRight + 1);
+  else if (d.segRm !== undefined) segs.splice(+d.segRm, 1);
+  else if (d.segAddText !== undefined) segs.push({ token: false, text: '' });
+  else if (d.segAddToken !== undefined) segs.push({ token: true, code: d.segAddToken, digits: resolver(d.segAddToken).numeric ? 3 : undefined });
+  else if (d.identSave !== undefined) { toast('Configuration des identifiants enregistrée'); return; }
+  else return;
+  renderEditor();
+}
+function identChange(e) {
+  const d = e.target.dataset;
+  if (e.target.id === 'identFirst') state.ident.first = +e.target.value;
+  else if (e.target.id === 'identLast') state.ident.last = +e.target.value;
+  else if (d.segText !== undefined) state.ident.segments[+d.segText].text = e.target.value;
+  else if (d.segDigits !== undefined) state.ident.segments[+d.segDigits].digits = Math.max(1, Math.min(9, parseInt(e.target.value, 10) || 1));
+  else return;
+  renderEditor();
+}
+// aperçu en direct pendant la frappe, sans re-rendu complet (le focus reste dans le champ)
+$('#editor').addEventListener('input', e => {
+  const d = e.target.dataset;
+  if (d.segText !== undefined) state.ident.segments[+d.segText].text = e.target.value;
+  else if (d.segDigits !== undefined) state.ident.segments[+d.segDigits].digits = parseInt(e.target.value, 10) || 1;
+  else return;
+  const p = $('#identPreview'); if (p) p.textContent = identExample();
+});
+
+/* =====================================================================
+   Nouvelle configuration
+   ===================================================================== */
+function configCandidates() {
+  const used = new Set(Object.keys(table().configs));
+  return table().typeValues.filter(v => !used.has(v));
+}
+function openConfigDialog() {
+  $('#configValue').value = ''; $('#configError').textContent = '';
+  openLayer($('#configDialog'));
+  drawConfigPanel(true);
+  $('#configValue').focus();
+}
+function drawConfigPanel(show) {
+  const q = norm($('#configValue').value);
+  const opts = configCandidates().filter(v => norm(v).includes(q));
+  $('#configPanel').innerHTML = opts.length ? opts.map(v => `<div class="ac-item" data-val="${esc(v)}">${esc(v)}</div>`).join('') : '<div class="ac-item" style="color:var(--faint);cursor:default">Aucune valeur disponible</div>';
+  $('#configPanel').classList.toggle('open', show);
+}
+$('#configValue').addEventListener('input', () => { $('#configError').textContent = ''; drawConfigPanel(true); });
+$('#configValue').addEventListener('focus', () => drawConfigPanel(true));
+$('#configValue').addEventListener('blur', () => setTimeout(() => $('#configPanel').classList.remove('open'), 150));
+$('#configPanel').addEventListener('mousedown', e => {
+  const it = e.target.closest('[data-val]'); if (!it) return;
+  e.preventDefault(); $('#configValue').value = it.dataset.val; $('#configPanel').classList.remove('open');
+});
+$('#configCreate').addEventListener('click', () => {
+  const v = $('#configValue').value.trim();
+  if (!configCandidates().includes(v)) { $('#configError').textContent = "Choisissez d'abord la valeur à configurer."; return; }
+  // la nouvelle configuration part d'une copie du _default
+  const base = table().configs._default;
+  table().configs[v] = { definition: '', additional: base.additional.map(a => ({ ...a })) };
+  state.type = v;
+  closeLayers(); renderAll();
+  toast(`La configuration du type ${v} a été créée.`);
+});
+
+/* =====================================================================
+   Picker « Ajouter un champ »
+   ===================================================================== */
+function openPicker() {
+  $('#pickerQuery').value = '';
+  drawPicker();
+  openLayer($('#pickerDialog'));
+  $('#pickerQuery').focus();
+}
+function drawPicker() {
+  const q = norm($('#pickerQuery').value);
+  const present = new Set(config().additional.map(a => a.name));
+  const list = fieldCatalog().filter(f => !present.has(f.name) && norm(`${f.name} ${f.description}`).includes(q));
+  $('#pickerList').innerHTML = list.length ? list.map(f => `<button class="picker-item" data-pick="${esc(f.name)}">
+      <div class="picker-item-head"><span class="picker-item-name">${esc(f.name)}</span><span class="ptc-chip">${esc(FIELD_TYPES[f.type])}</span></div>
+      <div class="picker-item-desc">${esc(f.description || '—')}</div></button>`).join('') : '<div class="picker-empty">Aucun champ trouvé</div>';
+}
+let pickerTimer;
+$('#pickerQuery').addEventListener('input', () => { clearTimeout(pickerTimer); pickerTimer = setTimeout(drawPicker, 250); });
+$('#pickerList').addEventListener('click', e => {
+  const it = e.target.closest('[data-pick]'); if (!it) return;
+  const f = fieldCatalog().find(x => x.name === it.dataset.pick);
+  config().additional.push({ ...f, mandatory: false });
+  closeLayers(); renderEditor();
+  toast(`Champ « ${f.name} » ajouté`);
+});
+$('#pickerNew').addEventListener('click', () => { $('#pickerDialog').classList.remove('open'); openDrawer(null); });
+
+/* =====================================================================
+   Drawer création / édition
+   ===================================================================== */
+const FUNNY = [
+  'On range les tessons par taille…', 'On interroge le thésaurus poliment…', 'On brosse délicatement les données…',
+  'On tamise les concepts…', 'On relève les cotes altimétriques…', 'On étiquette les sachets…',
+  'On consulte le responsable de secteur…', 'On vérifie la stratigraphie…',
+];
+
+/** target = null (création) | {system, index} */
+function openDrawer(target) {
+  const src = target ? (target.system ? table().system[target.index] : config().additional[target.index]) : null;
+  draft = {
+    target,
+    createMode: !target,
+    isSystem: !!target?.system,
+    name: src?.name ?? '',
+    type: src?.type ?? 'TEXT',
+    description: src?.description ?? '',
+    source: src?.source ?? '',
+    fieldCode: src?.fieldCode ?? '',
+    thesaurusUrl: src?.thesaurusUrl ?? '',
+    connectionTested: !!src?.thesaurusUrl,
+    branche: src?.branche ?? '',
+    collection: src?.collection ?? '',
+    error: '',
+    saving: false,
+    progress: 0,
+    funny: '',
+    testing: false,
+  };
+  renderDrawer();
+  openLayer($('#drawer'));
+  $('#drawer').setAttribute('aria-hidden', 'false');
+  setTimeout(() => $('#draftName')?.focus(), 220);
+}
+
+function renderDrawer() {
+  const d = draft; if (!d) return;
+  const ro = d.isSystem;
+  const configurable = isConfigurable(d.type);
+  const vocab = d.source === 'branche' || d.source === 'collection';
+  $('#drawer').innerHTML = `
+    <div class="drawer-header"><div>
+      <div class="drawer-title" id="drawerTitle">${d.createMode ? 'Créer un champ' : 'Modifier le champ'}</div>
+      ${ro ? '<div class="drawer-system-note">Champ système · nom, description et type verrouillés</div>' : ''}
+    </div><button class="dialog-close" data-drawer-cancel aria-label="Fermer le panneau">✕</button></div>
+
+    ${d.error ? `<div class="drawer-error" role="alert"><span>⚠</span><span>${esc(d.error)}</span></div>` : ''}
+
+    <div class="drawer-body">
+      <div class="ptc-field"><label class="ptc-label" for="draftName">Nom du champ</label>
+        ${ro ? `<div class="readonly-value">${esc(d.name)}</div>` : `<input class="input" id="draftName" data-draft="name" value="${esc(d.name)}">`}</div>
+
+      <div class="ptc-field"><label class="ptc-label" for="draftType">Type de champ</label>
+        ${ro ? `<div class="readonly-value">${esc(FIELD_TYPES[d.type])}</div>`
+             : `<select class="ptc-native-select" id="draftType" data-draft-type>${USER_TYPES.map(t => `<option value="${t}" ${t === d.type ? 'selected' : ''}>${esc(FIELD_TYPES[t])}</option>`).join('')}</select>`}</div>
+
+      <div class="ptc-field"><label class="ptc-label" for="draftDescription">Description du concept (optionnel)</label>
+        ${ro ? `<div class="readonly-value">${esc(d.description || 'Aucune description renseignée.')}</div>`
+             : `<textarea class="input" id="draftDescription" data-draft="description" rows="3" placeholder="Décrire ce champ…">${esc(d.description)}</textarea>
+                <div class="ptc-field-hint">Nom + description définissent le champ ; ses réglages pour ce type se configurent séparément.</div>`}</div>
+
+      ${configurable ? `<div class="params">
+        <div class="params-title">Paramètres du type « ${esc(FIELD_TYPES[d.type])} »</div>
+        <div class="chip-row">
+          ${ro ? `<button class="chip-option ${d.source === 'principal' ? 'selected' : ''}" data-source="principal">Thésaurus principal</button>` : ''}
+          <button class="chip-option ${d.source === 'branche' ? 'selected' : ''}" data-source="branche">Branche de thésaurus</button>
+          <button class="chip-option ${d.source === 'collection' ? 'selected' : ''}" data-source="collection">Collection de thésaurus</button>
+        </div>
+        ${!d.source ? '<div class="ptc-field-hint">Choisissez une source ci-dessus pour configurer le vocabulaire.</div>' : ''}
+        ${d.source === 'principal' ? `<div class="ptc-field"><div class="ptc-label">Code de champ</div>
+            <div class="readonly-value">${esc(d.fieldCode)}</div><div class="ptc-field-hint">Fixé par la configuration de ce champ système, non modifiable.</div></div>` : ''}
+        ${vocab ? `<div class="ptc-field"><label class="ptc-label" for="draftUrl">URL du thésaurus</label>
+            <input class="input" id="draftUrl" data-draft="thesaurusUrl" placeholder="https://…" value="${esc(d.thesaurusUrl)}">
+            <div class="params-row">
+              <button class="btn btn-sm" data-test-connection title="Tester la connexion et recharger les concepts/collections">${d.testing ? '<span class="spinner"></span>' : '↻'} ${d.connectionTested ? 'Rafraîchir' : 'Charger'}</button>
+              <a class="btn btn-secondary btn-sm ${d.connectionTested ? '' : 'disabled'}" href="${esc(d.thesaurusUrl || '#')}" target="_blank" rel="noopener">Voir</a>
+            </div>
+            ${d.connectionTested ? '<div class="connection-ok">✓ Connexion au thésaurus réussie</div>' : ''}
+          </div>` : ''}
+        ${vocab && d.connectionTested ? `<div class="ptc-field">
+            <label class="ptc-label" for="draftVocab">${d.source === 'branche' ? 'Branche (concept racine)' : 'Collection'}</label>
+            <div class="params-row" style="margin-top:0">
+              <div class="ac"><input class="input" id="draftVocab" autocomplete="off" data-vocab value="${esc(d.source === 'branche' ? d.branche : d.collection)}"
+                placeholder="${d.source === 'branche' ? 'Rechercher un concept…' : 'Rechercher une collection…'}"><div class="ac-panel" id="vocabPanel"></div></div>
+              <a class="btn btn-secondary btn-sm ${(d.source === 'branche' ? d.branche : d.collection) ? '' : 'disabled'}" id="vocabView" href="${esc(d.thesaurusUrl)}" target="_blank" rel="noopener">Voir</a>
+            </div></div>` : ''}
+      </div>` : ''}
+    </div>
+
+    ${d.saving ? `<div class="progress" role="status"><div class="progress-msg">${esc(d.funny)}</div>
+      <div class="progress-bar"><div style="width:${d.progress}%"></div></div></div>` : ''}
+
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" data-drawer-cancel ${d.saving ? 'disabled' : ''}>Annuler</button>
+      <button class="btn" data-drawer-save ${d.saving ? 'disabled' : ''}>Sauvegarder</button>
+    </div>`;
+  wireVocab();
+}
+
+function wireVocab() {
+  const input = $('#draftVocab'); if (!input) return;
+  const panel = $('#vocabPanel');
+  const draw = () => {
+    const q = norm(input.value);
+    const src = draft.source === 'branche' ? THESAURUS.concepts : THESAURUS.collections;
+    const opts = src.filter(v => norm(v).includes(q));
+    panel.innerHTML = opts.length ? opts.map(v => `<div class="ac-item" data-v="${esc(v)}">${esc(v)}</div>`).join('') : '<div class="ac-item" style="color:var(--faint)">Aucun résultat</div>';
+    panel.classList.add('open');
+  };
+  input.addEventListener('focus', draw);
+  input.addEventListener('input', () => { draft[draft.source] = ''; $('#vocabView').classList.add('disabled'); draw(); });
+  input.addEventListener('blur', () => setTimeout(() => panel.classList.remove('open'), 150));
+  panel.addEventListener('mousedown', e => {
+    const it = e.target.closest('[data-v]'); if (!it) return;
+    e.preventDefault();
+    draft[draft.source] = it.dataset.v; input.value = it.dataset.v;
+    panel.classList.remove('open'); $('#vocabView').classList.remove('disabled');
+  });
+}
+
+$('#drawer').addEventListener('input', e => {
+  const k = e.target.dataset.draft;
+  if (k && draft) {
+    draft[k] = e.target.value;
+    if (k === 'thesaurusUrl' && draft.connectionTested) { draft.connectionTested = false; renderDrawer(); const u = $('#draftUrl'); u.focus(); u.setSelectionRange(u.value.length, u.value.length); }
+  }
+});
+$('#drawer').addEventListener('change', e => {
+  if (e.target.matches('[data-draft-type]')) {
+    draft.type = e.target.value;
+    if (!isConfigurable(draft.type)) draft.source = '';
+    draft.error = ''; renderDrawer();
+  }
+});
+$('#drawer').addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-drawer-cancel]')) { closeLayers(); return; }
+  const s = t.closest('[data-source]');
+  if (s) { draft.source = s.dataset.source; draft.error = ''; renderDrawer(); return; }
+  if (t.closest('[data-test-connection]')) { testConnection(); return; }
+  if (t.closest('[data-drawer-save]')) saveDrawer();
+});
+
+function testConnection() {
+  if (!draft.thesaurusUrl.trim()) { draft.error = 'Renseignez une URL avant de tester la connexion'; renderDrawer(); return; }
+  draft.testing = true; draft.error = ''; renderDrawer();
+  setTimeout(() => {
+    if (!draft) return;
+    draft.testing = false;
+    if (/^https?:\/\/[^\s]+\.[^\s]+/.test(draft.thesaurusUrl.trim())) draft.connectionTested = true;
+    else { draft.connectionTested = false; draft.error = "Impossible de se connecter à ce thésaurus. Vérifiez l'URL et que l'instance Opentheso est en ligne."; }
+    renderDrawer();
+  }, 700);
+}
+
+function saveDrawer() {
+  const d = draft;
+  if (!d.isSystem) {
+    const name = d.name.trim();
+    if (!name) { d.error = 'Le nom du champ est obligatoire.'; renderDrawer(); return; }
+    const clash = config().additional.some((a, i) => a.name.toLowerCase() === name.toLowerCase() && !(d.target && i === d.target.index));
+    if (clash) { d.error = `Un champ « ${name} » existe déjà dans cette configuration.`; renderDrawer(); return; }
+  }
+  d.error = ''; d.saving = true; d.progress = 0; d.funny = FUNNY[Math.floor(Math.random() * FUNNY.length)];
+  renderDrawer();
+  let ticks = 0;
+  const timer = setInterval(() => {
+    if (!draft) return clearInterval(timer);
+    ticks++;
+    draft.progress = Math.min(100, draft.progress + 20 + Math.random() * 15);
+    if (ticks % 3 === 0) draft.funny = FUNNY[Math.floor(Math.random() * FUNNY.length)];
+    if (draft.progress >= 100) { clearInterval(timer); commitDrawer(); } else renderDrawer();
+  }, 350);
+}
+
+function commitDrawer() {
+  const d = draft;
+  const configurable = isConfigurable(d.type);
+  const vocab = configurable ? {
+    source: d.source, fieldCode: d.fieldCode,
+    thesaurusUrl: d.source === 'principal' ? undefined : d.thesaurusUrl,
+    branche: d.source === 'branche' ? d.branche : undefined,
+    collection: d.source === 'collection' ? d.collection : undefined,
+  } : { source: undefined };
+
+  if (d.isSystem) Object.assign(table().system[d.target.index], vocab);
+  else {
+    const data = { name: d.name.trim(), type: d.type, description: d.description.trim(), ...vocab };
+    if (d.createMode) config().additional.push({ mandatory: false, ...data });
+    else Object.assign(config().additional[d.target.index], data);
+  }
+
+  const warn = configurable && d.source === 'branche' && !d.branche ? "Le champ a été enregistré, mais aucune branche n'a été sélectionnée : son vocabulaire n'est pas configuré."
+    : configurable && d.source === 'collection' && !d.collection ? "Le champ a été enregistré, mais aucune collection du thésaurus ne correspond à la sélection : son vocabulaire n'est pas configuré."
+    : null;
+  closeLayers(); renderEditor();
+  warn ? toast(warn, 'error') : toast('La configuration du champ a été enregistrée.');
+}
+
+/* =====================================================================
+   Init
+   ===================================================================== */
+function renderAll() { renderTree(); renderEditor(); }
+renderAll();
+</script>
+</body>
+</html>

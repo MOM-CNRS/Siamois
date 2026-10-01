@@ -2,6 +2,11 @@ package fr.siamois.domain.models.form.config;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+import org.hibernate.envers.RelationTargetAuditMode;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,6 +27,7 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
+@Audited
 public class FieldFormConfig {
 
     @EmbeddedId
@@ -29,12 +35,14 @@ public class FieldFormConfig {
 
     @NonNull
     @MapsId("customFieldId")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_custom_field_id", nullable = false)
     protected CustomField field;
 
     @NonNull
     @MapsId("formsConfigId")
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "fk_form_config_id", nullable = false)
     protected FormConfig formConfig;
@@ -54,6 +62,27 @@ public class FieldFormConfig {
     @Column(name = "position", columnDefinition = "INT DEFAULT 0")
     protected int position = 0;
 
+    /**
+     * The group the field is displayed in. Null only for a configuration that has not been given a
+     * layout yet (see {@code FormLayoutMigration}).
+     */
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_group_id")
+    protected FormConfigGroup group;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "width")
+    protected FieldWidth width = FieldWidth.QUARTER;
+
+    /**
+     * The field's conditional rules, in the {@code FieldRulesJson} format, or null for none. They
+     * replace, as a whole, any rule the field would otherwise have.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rules", columnDefinition = "jsonb")
+    protected String rules;
+
     public FieldFormConfig(FieldFormConfig fieldFormConfig) {
         this.id = fieldFormConfig.getId();
         this.field = fieldFormConfig.getField();
@@ -62,6 +91,9 @@ public class FieldFormConfig {
         this.isMandatory = fieldFormConfig.isMandatory();
         this.isInstitutionLocked = fieldFormConfig.isInstitutionLocked();
         this.position = fieldFormConfig.getPosition();
+        this.group = fieldFormConfig.getGroup();
+        this.width = fieldFormConfig.getWidth();
+        this.rules = fieldFormConfig.getRules();
     }
 
     public void setField(@NonNull CustomField field) {

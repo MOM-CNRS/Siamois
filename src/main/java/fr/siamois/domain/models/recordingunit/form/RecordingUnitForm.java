@@ -1,5 +1,8 @@
 package fr.siamois.domain.models.recordingunit.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -10,6 +13,8 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePers
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphicRelationships;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
@@ -17,7 +22,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 /**
  * Shared field/concept constants for {@link RecordingUnitNewForm} and {@link RecordingUnitDetailsForm},
@@ -226,6 +231,20 @@ public abstract class RecordingUnitForm {
     protected static final Concept CHILDREN_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("4289278")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept FINDS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.finds")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept STRATIGRAPHIC_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.stratigraphicRelationships")
             .build();
 
     @Transient
@@ -484,4 +503,63 @@ public abstract class RecordingUnitForm {
             .concept(MATRIX_COLOR_CONCEPT)
             .build();
 
+
+    // The unit's finds (specimen.fk_recording_unit_id): read-only here — a find is attached to its
+    // unit from the find's side.
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldSelectMultipleSpecimen FINDS_FIELD = CustomFieldSelectMultipleSpecimen.builder()
+            .label("recordingunit.field.finds")
+            .isSystemField(true)
+            .id(-326L)
+            .valueBinding("specimenList")
+            .concept(FINDS_CONCEPT)
+            .build();
+
+    // Not a JPA property: the unit's relationships are split between relationshipsAsUnit1 and
+    // relationshipsAsUnit2, and read as one by RelationField.RECORDING_UNIT_STRATIGRAPHY.
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldStratigraphicRelationships STRATIGRAPHIC_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
+            .label("recordingunit.field.stratigraphicRelationships")
+            .isSystemField(true)
+            .id(-327L)
+            .valueBinding("stratigraphicRelationships")
+            .concept(STRATIGRAPHIC_RELATIONSHIPS_CONCEPT)
+            .build();
+
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.of(SPATIAL_UNIT_FIELD),
+            SystemFieldSpec.of(PARENTS_FIELD),
+            SystemFieldSpec.of(CHILDREN_FIELD),
+            SystemFieldSpec.readOnly(STRATIGRAPHIC_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(FINDS_FIELD),
+            SystemFieldSpec.of(RECORDING_UNIT_TYPE_FIELD),
+            SystemFieldSpec.of(NATURE_FIELD),
+            SystemFieldSpec.of(GEOMORPHO_AGENT_FIELD),
+            SystemFieldSpec.of(INTERPRETATION_FIELD),
+            SystemFieldSpec.of(MATRIX_COLOR_FIELD),
+            SystemFieldSpec.hiddenReadOnly(ACTION_UNIT_FIELD),
+            SystemFieldSpec.hiddenReadOnly(FULL_IDENTIFIER_FIELD),
+            SystemFieldSpec.of(EROSION_SHAPE_FIELD),
+            SystemFieldSpec.of(EROSION_PROFILE_FIELD),
+            SystemFieldSpec.of(EROSION_ORIENTATION_FIELD),
+            SystemFieldSpec.of(DESCRIPTION_FIELD),
+            SystemFieldSpec.of(COMMENTS_FIELD),
+            SystemFieldSpec.of(CHRONOLOGICAL_PHASE_FIELD),
+            SystemFieldSpec.of(TPQ_FIELD),
+            SystemFieldSpec.of(TAQ_FIELD),
+            SystemFieldSpec.of(PHASES_FIELD),
+            SystemFieldSpec.of(Z_INF_FIELD),
+            SystemFieldSpec.of(Z_SUP_FIELD),
+            SystemFieldSpec.of(OPENING_DATE_FIELD),
+            SystemFieldSpec.of(CLOSING_DATE_FIELD),
+            SystemFieldSpec.of(AUTHOR_FIELD),
+            SystemFieldSpec.of(CONTRIBUTORS_FIELD));
+    }
 }

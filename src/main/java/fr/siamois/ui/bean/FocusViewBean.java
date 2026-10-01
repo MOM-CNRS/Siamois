@@ -9,8 +9,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.panel.PanelFactory;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
-import fr.siamois.ui.bean.panel.models.panel.list.AbstractListPanel;
-import fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntityPanel;
+import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 import lombok.Data;
@@ -21,8 +20,6 @@ import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -56,54 +53,20 @@ public class FocusViewBean implements Serializable {
     private String secondaryToken;
     private String backToken;
 
-    private record ParsedPath(String type, Long id, Integer tab, Long viewId) {
-        boolean isListPanel() { return id == null; }
+    /** A resource URI: its type, and its entity id when it names one entity rather than a list. */
+    private record ParsedPath(String type, Long id) {
     }
 
-    private Map<String, String> parseQueryParams(String query) {
-        Map<String, String> params = new HashMap<>();
-        if (query.isBlank()) return params;
-        for (String param : query.split("&")) {
-            String[] kv = param.split("=", 2);
-            if (kv.length == 2) params.put(kv[0], kv[1]);
-        }
-        return params;
-    }
-
+    // The query string (the former ?tab= and ?viewId=, still in old bookmarks) is ignored: React
+    // keeps its own tab and list state.
     private ParsedPath parsePath(String path) {
         if (path.startsWith("/")) path = path.substring(1);
-        String[] pathAndQuery = path.split("\\?", 2);
-        String[] parts = pathAndQuery[0].split("/");
-        Map<String, String> q = parseQueryParams(pathAndQuery.length > 1 ? pathAndQuery[1] : "");
-        return new ParsedPath(
-                parts[0],
-                parts.length > 1 ? Long.parseLong(parts[1]) : null,
-                q.containsKey("tab")    ? Integer.parseInt(q.get("tab"))    : null,
-                q.containsKey("viewId") ? Long.parseLong(q.get("viewId"))   : null
-        );
+        int query = path.indexOf('?');
+        String[] parts = (query >= 0 ? path.substring(0, query) : path).split("/");
+        String type = parts.length > 0 ? parts[0] : "";
+        Long id = parts.length > 1 ? Long.valueOf(parts[1]) : null;
+        return new ParsedPath(type, id);
     }
-
-    private AbstractPanel createPanel(ParsedPath p) {
-        return switch (p.type()) {
-            case "recording-unit" -> p.isListPanel() ? panelFactory.createRecordingUnitListPanel(p.viewId()) : panelFactory.createRecordingUnitPanel(p.id());
-            case "action-unit"    -> p.isListPanel() ? panelFactory.createActionUnitListPanel(p.viewId())    : panelFactory.createActionUnitPanel(p.id());
-            case "spatial-unit"   -> p.isListPanel() ? panelFactory.createSpatialUnitListPanel(p.viewId())   : panelFactory.createSpatialUnitPanel(p.id());
-            case "specimen"       -> p.isListPanel() ? panelFactory.createSpecimenListPanel(p.viewId())      : panelFactory.createSpecimenPanel(p.id());
-            case "container"      -> p.isListPanel() ? panelFactory.createContainerListPanel()               : panelFactory.createContainerPanel(p.id());
-            case "phase"          -> p.isListPanel() ? panelFactory.createPhaseListPanel()                   : panelFactory.createPhasePanel(p.id());
-            case "welcome"        -> panelFactory.createWelcomePanel();
-            default               -> throw new IllegalArgumentException("Unknown panel type: " + p.type());
-        };
-    }
-
-    private AbstractPanel resolvePanel(ParsedPath parsed) {
-        AbstractPanel panel = createPanel(parsed);
-        if (!parsed.isListPanel() && parsed.tab() != null && panel instanceof AbstractSingleEntityPanel<?> sp) {
-            sp.setActiveTabIndex(parsed.tab());
-        }
-        return panel;
-    }
-
 
     public void beforeInit() {
         HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
@@ -116,7 +79,7 @@ public class FocusViewBean implements Serializable {
             }
 
             HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
-            mainPanel = resolvePanel(parsedMain);
+            mainPanel = panelFactory.create(parsedMain.type(), parsedMain.id());
             mainPanel.setRoot(true);
             if (backToken != null) {
                 mainPanel.setGoBackUrl(decodeToken(backToken));
@@ -131,17 +94,13 @@ public class FocusViewBean implements Serializable {
         if (secondaryToken != null && !secondaryToken.isEmpty()) {
             HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
 
-            AbstractPanel overviewPanel = resolvePanel(parsePath(decodeToken(secondaryToken)));
+            ParsedPath parsedSide = parsePath(decodeToken(secondaryToken));
+            AbstractPanel overviewPanel = panelFactory.create(parsedSide.type(), parsedSide.id());
             overviewPanel.setRoot(false);
             mainPanel.setParentOrOverview(overviewPanel);
             overviewPanel.setParentOrOverview(mainPanel);
             side.setIcon(overviewPanel.getIcon());
-            if(overviewPanel instanceof AbstractListPanel<?>) {
-                side.setTitle(langBean.msg(overviewPanel.resolveTitleOrTitleCode()));
-            }
-            else {
-                side.setTitle(overviewPanel.resolveTitleOrTitleCode());
-            }
+            side.setTitle(overviewPanel.resolveTitleOrTitleCode());
 
             side.setUri(overviewPanel.ressourceUri());
             side.setStyleClass(overviewPanel.getPanelClass());
@@ -150,6 +109,56 @@ public class FocusViewBean implements Serializable {
 
         historyBean.addItem(newEntry);
 
+    }
+
+    /**
+     * Keeps the view's main panel in step with a client-side navigation of the React main pane
+     * (reactAction_setMain_N({path: "/action-unit/12"})), which otherwise never reaches the server:
+     * the history sidebar records it like a page load would, and a later overview opened through
+     * the bridge is paired with the main pane actually on screen, not the one the page loaded with.
+     * The overview still open, if any, stays attached to the new main panel.
+     */
+    public void setMainFromRequest() {
+        String path = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("path");
+        if (path == null || path.isBlank() || mainPanel == null) {
+            return;
+        }
+        ParsedPath parsed;
+        AbstractPanel next;
+        try {
+            parsed = parsePath(path);
+            next = panelFactory.create(parsed.type(), parsed.id());
+        } catch (IllegalArgumentException e) {
+            log.warn("setMain : chemin React non reconnu côté serveur : {}", path);
+            return;
+        }
+        if (!activateInstitutionOf(parsed)) {
+            return;
+        }
+
+        AbstractPanel overview = mainPanel.getParentOrOverview();
+        next.setRoot(true);
+        if (overview != null) {
+            next.setParentOrOverview(overview);
+            overview.setParentOrOverview(next);
+        }
+        mainPanel = next;
+
+        HistoryBean.HistoryItem entry = new HistoryBean.HistoryItem();
+        entry.setMain(historyComponentOf(next));
+        if (overview != null) {
+            entry.setSecondary(historyComponentOf(overview));
+        }
+        historyBean.addItem(entry);
+    }
+
+    private static HistoryBean.HistoryItemComponent historyComponentOf(AbstractPanel panel) {
+        HistoryBean.HistoryItemComponent component = new HistoryBean.HistoryItemComponent();
+        component.setTitle(panel.resolveTitleOrTitleCode());
+        component.setIcon(panel.getIcon());
+        component.setUri(panel.ressourceUri());
+        component.setStyleClass(panel.getPanelClass());
+        return component;
     }
 
     private boolean activateInstitutionOf(ParsedPath parsed) {

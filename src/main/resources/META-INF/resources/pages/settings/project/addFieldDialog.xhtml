@@ -26,7 +26,7 @@
 
             <h:panelGroup id="catalogList" layout="block" styleClass="ptc-picker-list">
                 <ui:repeat value="#{projectTableFieldSettingsBean.fieldCatalog}" var="fc">
-                    <p:commandLink actionListener="#{projectTableFieldSettingsBean.pickExistingField(fc)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:additionalFieldsTable @form" styleClass="ptc-picker-item">
+                    <p:commandLink actionListener="#{projectTableFieldSettingsBean.pickExistingField(fc)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable @form" styleClass="ptc-picker-item">
                         <div class="ptc-picker-item-head">
                             <span class="ptc-picker-item-name">#{fc.name}</span>
                             <span class="ptc-chip">#{fc.type.label}</span>

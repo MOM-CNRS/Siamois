@@ -3,6 +3,7 @@ package fr.siamois.dto.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -52,6 +53,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected ConceptDTO erosionProfile;
     protected MeasurementAnswerDTO zInf;
     protected MeasurementAnswerDTO zSup;
+    protected GeometryDTO geom;
 
     // Write dto
     private Set<RecordingUnitSummaryDTO> parents;
@@ -67,6 +69,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         spatialUnit = original.getSpatialUnit();
         matrixColor = original.getMatrixColor();
         relationshipCount = original.getRelationshipCount();
+        geom = original.getGeom();
     }
 
     public boolean hierarchyIsInitialized() {

@@ -6,6 +6,7 @@ import fr.siamois.ui.mapper.adapter.ConversionServiceAdapter;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
@@ -20,5 +21,6 @@ public interface PhaseMapper extends Converter<Phase, PhaseDTO> {
 
     @InheritInverseConfiguration
     @DelegatingConverter
+    @Mapping(target = "recordingUnits", ignore = true)
     Phase invertConvert(PhaseDTO phaseDTO);
 }

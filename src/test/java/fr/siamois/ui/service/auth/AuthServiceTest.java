@@ -242,4 +242,44 @@ class AuthServiceTest {
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+
+    @Test
+    void sessionToken_withSessionAuthentication_returnsTokenAndUser() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(person, null, person.getAuthorities()));
+
+        PersonDTO dto = new PersonDTO();
+        dto.setId(99L);
+        when(personMapper.convert(person)).thenReturn(dto);
+        when(institutionService.findInstitutionsOfPerson(dto)).thenReturn(Set.of());
+        when(jwtService.createAccessToken(person)).thenReturn("jwt-from-session");
+        when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
+
+        LoginResponse response = authService.sessionToken();
+
+        assertThat(response.accessToken()).isEqualTo("jwt-from-session");
+        assertThat(response.tokenType()).isEqualTo("Bearer");
+        assertThat(response.expiresIn()).isEqualTo(900L);
+        assertThat(response.user().id()).isEqualTo(99L);
+    }
+
+    @Test
+    void sessionToken_withoutSecurityContext_throws401() {
+        assertThatThrownBy(() -> authService.sessionToken())
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void sessionToken_anonymousAuthentication_throws401() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken(
+                        "key", "anon", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        assertThatThrownBy(() -> authService.sessionToken())
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

@@ -5,6 +5,8 @@
 /src/main/resources/hibernate.cfg.xml
 /src/main/resources/hikari.properties
 /src/main/resources/application-dev.yaml
+/src/main/resources/application-dev-debug.yaml
+/src/main/resources/application-dev2.yaml
 .DS_Store
 /storage
 siamois.iml
@@ -21,5 +23,14 @@ siamois-e2e/playwright/.cache/
 siamois-e2e/playwright/.auth/
 siamois-e2e/siamois-e2e.iml
 siamois-e2e/.idea
+
+# React main-panel frontend (frontend/) — built by Maven via frontend-maven-plugin,
+# output copied into the classpath at process-resources; none of this is source.
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+frontend/*.local
+frontend/npm-debug.log*
 /.claude/*
 /.claude/
+frontend/dev/.generated/

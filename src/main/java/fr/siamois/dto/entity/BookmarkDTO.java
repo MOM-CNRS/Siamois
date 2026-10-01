@@ -12,6 +12,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class BookmarkDTO {
 
+    private static final String GROUND_COLOR = "var(--ground-main-color)";
+
     private Long id;
     private String title;
     private String resourceUri;
@@ -20,13 +22,17 @@ public class BookmarkDTO {
 
     // Static mapping configurations moved cleanly into presentation layer constants
     private static final Map<String, String> COLOR_MAP = Map.of(
+            "/phase", GROUND_COLOR,
+            "/container", "var(--third-main-color)",
             "/spatial-unit", "var(--context-main-color)",
             "/action-unit", "var(--context-main-color)",
-            "/recording-unit", "var(--ground-main-color)",
-            "/specimen", "var(--ground-main-color)"
+            "/recording-unit", GROUND_COLOR,
+            "/specimen", GROUND_COLOR
     );
 
     private static final Map<String, String> ICON_MAP = Map.of(
+            "/phase", "bi bi-layers",
+            "/container", "bi bi-box-seam",
             "/spatial-unit", "bi bi-geo-alt",
             "/action-unit", "bi bi-arrow-down-square",
             "/recording-unit", "bi bi-pencil-square",

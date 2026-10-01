@@ -1,16 +1,20 @@
 package fr.siamois.domain.models.container.form;
 
+
+import java.util.List;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
+import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
-import static fr.siamois.ui.bean.panel.models.panel.single.AbstractSingleEntity.SYSTEM_THESO;
+import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 public abstract class ContainerForm {
 
@@ -56,6 +60,11 @@ public abstract class ContainerForm {
     protected static final Concept weightConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("container.weight")
+            .build();
+
+    protected static final Concept findsConcept = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("container.finds")
             .build();
 
     // --- Fields ---
@@ -139,4 +148,32 @@ public abstract class ContainerForm {
             .unit(new UnitDefinition(null, null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false))
             .concept(weightConcept)
             .build();
+
+    // The inverse of a find's containers (specimen_container): read-only here, written from the
+    // find's side.
+    @Transient
+    protected static final CustomFieldSelectMultipleSpecimen findsField = CustomFieldSelectMultipleSpecimen.builder()
+            .label("container.field.finds")
+            .isSystemField(true)
+            .id(-609L)
+            .valueBinding("specimens")
+            .concept(findsConcept)
+            .build();
+
+    /**
+     * The table's system fields, in their default order, with the properties intrinsic to each.
+     * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
+     */
+    public static List<SystemFieldSpec> systemFields() {
+        return List.of(
+            SystemFieldSpec.hiddenReadOnly(identifierField),
+            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.of(spatialUnitField),
+            SystemFieldSpec.hiddenReadOnly(actionUnitField),
+            SystemFieldSpec.readOnly(findsField),
+            SystemFieldSpec.of(lengthField),
+            SystemFieldSpec.of(widthField),
+            SystemFieldSpec.of(heightField),
+            SystemFieldSpec.of(weightField));
+    }
 }

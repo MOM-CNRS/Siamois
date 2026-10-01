@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.find;
 
+import fr.siamois.domain.models.ValidationStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
@@ -16,6 +17,11 @@ import java.util.Map;
 @Data
 @Schema(description = "Mise à jour partielle d'un mobilier (réponses formulaire)")
 public class FindPatchRequest {
+
+    @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
+            + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
+            + "avec le droit validateur (_permissions.canValidate).")
+    private ValidationStatus validated;
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();
