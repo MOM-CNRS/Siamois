@@ -30,6 +30,18 @@ import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 public abstract class DocumentForm {
 
     private static final String LABEL_PREFIX = "document.field.";
+    private static final String B_ACTION_UNIT = "actionUnit";
+    private static final String B_CATEGORY = "category";
+    private static final String B_AUTHORS = "authors";
+    private static final String B_CONTRIBUTORS = "contributors";
+    private static final String B_PRODUCTION_DATE = "productionDate";
+    private static final String B_ITEM_COUNT = "itemCount";
+    private static final String B_SIZE_MB = "sizeMb";
+    private static final String B_RECORDING_UNITS = "recordingUnits";
+    private static final String B_FINDS = "finds";
+    private static final String B_PLACES = "places";
+    private static final String B_PHASES = "phases";
+    private static final String B_CONTAINERS = "containers";
 
     protected DocumentForm() {}
 
@@ -78,23 +90,23 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectOneActionUnit actionUnitField = CustomFieldSelectOneActionUnit.builder()
-            .label(LABEL_PREFIX + "actionUnit")
+            .label(LABEL_PREFIX + B_ACTION_UNIT)
             .isSystemField(true)
             .id(-703L)
-            .valueBinding("actionUnit")
-            .concept(concept("actionUnit"))
+            .valueBinding(B_ACTION_UNIT)
+            .concept(concept(B_ACTION_UNIT))
             .build();
 
     /** The category: the table's type, hence the field that selects the form configuration. */
     @Transient
     protected static final CustomFieldSelectOneFromFieldCode categoryField = CustomFieldSelectOneFromFieldCode.builder()
-            .label(LABEL_PREFIX + "category")
+            .label(LABEL_PREFIX + B_CATEGORY)
             .isSystemField(true)
             .id(-704L)
-            .valueBinding("category")
+            .valueBinding(B_CATEGORY)
             .fieldCode(Document.TYPE_FIELD)
             .styleClass("mr-2 document-category-chip")
-            .concept(concept("category"))
+            .concept(concept(B_CATEGORY))
             .build();
 
     @Transient
@@ -113,20 +125,20 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultiplePerson authorsField = CustomFieldSelectMultiplePerson.builder()
-            .label(LABEL_PREFIX + "authors")
+            .label(LABEL_PREFIX + B_AUTHORS)
             .isSystemField(true)
             .id(-709L)
-            .valueBinding("authors")
-            .concept(concept("authors"))
+            .valueBinding(B_AUTHORS)
+            .concept(concept(B_AUTHORS))
             .build();
 
     @Transient
     protected static final CustomFieldSelectMultiplePerson contributorsField = CustomFieldSelectMultiplePerson.builder()
-            .label(LABEL_PREFIX + "contributors")
+            .label(LABEL_PREFIX + B_CONTRIBUTORS)
             .isSystemField(true)
             .id(-710L)
-            .valueBinding("contributors")
-            .concept(concept("contributors"))
+            .valueBinding(B_CONTRIBUTORS)
+            .concept(concept(B_CONTRIBUTORS))
             .build();
 
     @Transient
@@ -134,12 +146,12 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldDateTime productionDateField = CustomFieldDateTime.builder()
-            .label(LABEL_PREFIX + "productionDate")
+            .label(LABEL_PREFIX + B_PRODUCTION_DATE)
             .isSystemField(true)
             .id(-712L)
-            .valueBinding("productionDate")
+            .valueBinding(B_PRODUCTION_DATE)
             .showTime(false)
-            .concept(concept("productionDate"))
+            .concept(concept(B_PRODUCTION_DATE))
             .build();
 
     @Transient
@@ -158,24 +170,24 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldInteger itemCountField = CustomFieldInteger.builder()
-            .label(LABEL_PREFIX + "itemCount")
+            .label(LABEL_PREFIX + B_ITEM_COUNT)
             .isSystemField(true)
             .id(-717L)
             .minValue(0)
             .maxValue(Integer.MAX_VALUE)
-            .valueBinding("itemCount")
-            .concept(concept("itemCount"))
+            .valueBinding(B_ITEM_COUNT)
+            .concept(concept(B_ITEM_COUNT))
             .build();
 
     @Transient
     protected static final CustomFieldDecimal sizeMbField = CustomFieldDecimal.builder()
-            .label(LABEL_PREFIX + "sizeMb")
+            .label(LABEL_PREFIX + B_SIZE_MB)
             .isSystemField(true)
             .id(-718L)
             .minValue(0.0)
             .maxValue(Double.MAX_VALUE)
-            .valueBinding("sizeMb")
-            .concept(concept("sizeMb"))
+            .valueBinding(B_SIZE_MB)
+            .concept(concept(B_SIZE_MB))
             .build();
 
     @Transient
@@ -195,47 +207,47 @@ public abstract class DocumentForm {
 
     @Transient
     protected static final CustomFieldSelectMultipleRecordingUnit recordingUnitsField = CustomFieldSelectMultipleRecordingUnit.builder()
-            .label(LABEL_PREFIX + "recordingUnits")
+            .label(LABEL_PREFIX + B_RECORDING_UNITS)
             .isSystemField(true)
             .id(-723L)
-            .valueBinding("recordingUnits")
-            .concept(concept("recordingUnits"))
+            .valueBinding(B_RECORDING_UNITS)
+            .concept(concept(B_RECORDING_UNITS))
             .build();
 
     @Transient
     protected static final CustomFieldSelectMultipleSpecimen findsField = CustomFieldSelectMultipleSpecimen.builder()
-            .label(LABEL_PREFIX + "finds")
+            .label(LABEL_PREFIX + B_FINDS)
             .isSystemField(true)
             .id(-724L)
-            .valueBinding("finds")
-            .concept(concept("finds"))
+            .valueBinding(B_FINDS)
+            .concept(concept(B_FINDS))
             .build();
 
     @Transient
     protected static final CustomFieldSelectMultipleSpatialUnit placesField = CustomFieldSelectMultipleSpatialUnit.builder()
-            .label(LABEL_PREFIX + "places")
+            .label(LABEL_PREFIX + B_PLACES)
             .isSystemField(true)
             .id(-725L)
-            .valueBinding("places")
-            .concept(concept("places"))
+            .valueBinding(B_PLACES)
+            .concept(concept(B_PLACES))
             .build();
 
     @Transient
     protected static final CustomFieldSelectMultiplePhase phasesField = CustomFieldSelectMultiplePhase.builder()
-            .label(LABEL_PREFIX + "phases")
+            .label(LABEL_PREFIX + B_PHASES)
             .isSystemField(true)
             .id(-726L)
-            .valueBinding("phases")
-            .concept(concept("phases"))
+            .valueBinding(B_PHASES)
+            .concept(concept(B_PHASES))
             .build();
 
     @Transient
     protected static final CustomFieldSelectMultipleContainer containersField = CustomFieldSelectMultipleContainer.builder()
-            .label(LABEL_PREFIX + "containers")
+            .label(LABEL_PREFIX + B_CONTAINERS)
             .isSystemField(true)
             .id(-727L)
-            .valueBinding("containers")
-            .concept(concept("containers"))
+            .valueBinding(B_CONTAINERS)
+            .concept(concept(B_CONTAINERS))
             .build();
 
     /**

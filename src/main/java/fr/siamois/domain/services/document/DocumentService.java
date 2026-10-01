@@ -103,9 +103,10 @@ public class DocumentService implements ArkEntityService {
     }
 
     @Override
+    @Transactional
     public AbstractEntityDTO save(AbstractEntityDTO toSave) {
         if (toSave instanceof DocumentDTO dto) {
-            return save(dto);
+            return doSave(dto);
         }
         throw new UnsupportedOperationException("DocumentService only saves documents");
     }

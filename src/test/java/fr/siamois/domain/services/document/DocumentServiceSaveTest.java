@@ -260,11 +260,11 @@ class DocumentServiceSaveTest {
         when(documentRepository.countByActionUnitId(PROJECT_ID)).thenReturn(3);
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);
-        fr.siamois.dto.entity.ActionUnitDTO project = new fr.siamois.dto.entity.ActionUnitDTO();
-        project.setId(PROJECT_ID);
+        fr.siamois.dto.entity.ActionUnitDTO projectDto = new fr.siamois.dto.entity.ActionUnitDTO();
+        projectDto.setId(PROJECT_ID);
 
         assertThat(service.countSearchResults(institution, new fr.siamois.dto.FilterDTO(false))).isEqualTo(4);
-        assertThat(service.countByActionContext(project)).isEqualTo(3);
+        assertThat(service.countByActionContext(projectDto)).isEqualTo(3);
     }
 
     @Test
