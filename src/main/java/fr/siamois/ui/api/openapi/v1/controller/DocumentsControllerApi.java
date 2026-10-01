@@ -129,11 +129,13 @@ public class DocumentsControllerApi {
     @Operation(
             summary = "Supprimer un document",
             description = "Supprime la ligne document, les liaisons (projet, UE spatiale, mobilier, études, etc.) et le fichier "
-                    + "sur le stockage. Même règle d'accès que le téléchargement (institution de création dans le périmètre JWT)."
+                    + "sur le stockage. L'institution de création doit être dans le périmètre JWT et l'appelant doit pouvoir éditer "
+                    + "les documents du projet du document."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Suppression effectuée"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Pas le droit d'éditer les documents du projet"),
             @ApiResponse(responseCode = "404", description = "Document introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
@@ -142,7 +144,7 @@ public class DocumentsControllerApi {
             @PathVariable("id") long id) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
-        documentContentOpenApiService.deleteAccessibleDocument(id, caller.accessibleInstitutionIds());
+        documentContentOpenApiService.deleteAccessibleDocument(id, caller);
         return ResponseEntity.noContent().build();
     }
 }

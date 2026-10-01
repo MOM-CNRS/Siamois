@@ -7,7 +7,6 @@ import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.ReferencableEntity;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -131,15 +130,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     )
     @NotAudited
     private Set<Phase> phases = new HashSet<>();
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "recording_unit_document",
-            joinColumns = {@JoinColumn(name = "fk_recording_unit_id")},
-            inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
-    )
-    @JsonIgnore
-    private Set<Document> documents = new HashSet<>();
 
     @NotAudited
     @JsonIgnore

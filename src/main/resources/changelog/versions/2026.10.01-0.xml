@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Documents become a full entity type: an identifier, one mandatory project, the national
+    common-base fields, and links to the other entities. What Hibernate's ddl-auto: update cannot do
+    on its own is done here, in this order (Liquibase runs BEFORE Hibernate, so on an existing database
+    the columns the data migration reads and writes are added here first; Hibernate then finds them):
+
+    1. The new columns, and the longer title / description.
+    2. The three link tables recording_unit_document, specimen_document and spatial_unit_document were
+       mapped @OneToMany, for which Hibernate generates UNIQUE(fk_document_id): a document could be
+       linked to ONE entity only. They are @ManyToMany now; update never drops the old constraint. Its
+       name is a Hibernate hash, so it is looked up in pg_constraint.
+    3. The project (fk_action_unit_id): from action_unit_document, else from the project of a linked
+       recording unit, else of a linked find's recording unit, else the only project whose spatial context
+       holds a linked place. A document none of these attaches stays NULL: the application requires a
+       project at creation, but cannot invent one here. They are listed in the NOTICE below and are
+       filtered "without project" in the lists, for a manual repair.
+    4. The identifier ("DOC-<id>"), then NOT NULL, unique per project.
+    5. The nature (one concept) moves to the multi-valued document_support_nature; the format concept's
+       label fills the free-text format (the concept column stays, the mobile API still reads it).
+    6. action_unit_document is dropped: the project is a column of the document now.
+
+    On a fresh database none of this exists yet: the precondition marks the changes as ran and Hibernate
+    creates everything from the mapping.
+    -->
+
+    <changeSet id="2026.10.01-0-document-columns" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            ALTER TABLE siamois_document
+                ADD COLUMN IF NOT EXISTS identifier varchar(255),
+                ADD COLUMN IF NOT EXISTS generated_number integer,
+                ADD COLUMN IF NOT EXISTS other_identifiers varchar(1024),
+                ADD COLUMN IF NOT EXISTS fk_action_unit_id bigint,
+                ADD COLUMN IF NOT EXISTS fk_category bigint,
+                ADD COLUMN IF NOT EXISTS fk_document_type bigint,
+                ADD COLUMN IF NOT EXISTS fk_language bigint,
+                ADD COLUMN IF NOT EXISTS production_date timestamp with time zone,
+                ADD COLUMN IF NOT EXISTS publisher varchar(255),
+                ADD COLUMN IF NOT EXISTS rights varchar(5000),
+                ADD COLUMN IF NOT EXISTS comments varchar(5000),
+                ADD COLUMN IF NOT EXISTS format_text varchar(255),
+                ADD COLUMN IF NOT EXISTS item_count integer,
+                ADD COLUMN IF NOT EXISTS size_mb numeric(14, 3),
+                ADD COLUMN IF NOT EXISTS crs varchar(255),
+                ADD COLUMN IF NOT EXISTS original_path varchar(5000),
+                ADD COLUMN IF NOT EXISTS external_url varchar(2048);
+
+            ALTER TABLE siamois_document ALTER COLUMN title TYPE varchar(1024);
+            ALTER TABLE siamois_document ALTER COLUMN doc_description TYPE varchar(5000);
+
+            DO $$
+            BEGIN
+                IF to_regclass('siamois_document_aud') IS NOT NULL THEN
+                    ALTER TABLE siamois_document_aud ALTER COLUMN title TYPE varchar(1024);
+                    ALTER TABLE siamois_document_aud ALTER COLUMN doc_description TYPE varchar(5000);
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.10.01-1-drop-document-link-unique" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                r record;
+            BEGIN
+                FOR r IN
+                    SELECT c.conrelid::regclass AS tbl, c.conname
+                    FROM pg_constraint c
+                    WHERE c.contype = 'u'
+                      AND c.conrelid::regclass::text IN (
+                          'recording_unit_document',
+                          'specimen_document',
+                          'spatial_unit_document')
+                      -- only the single-column constraint on the document, never a composite one
+                      AND array_length(c.conkey, 1) = 1
+                LOOP
+                    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
+                END LOOP;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.10.01-2-document-project" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                orphans integer;
+                orphan_ids text;
+            BEGIN
+                -- 1. the project the document was linked to
+                IF to_regclass('action_unit_document') IS NOT NULL THEN
+                    UPDATE siamois_document d
+                    SET fk_action_unit_id = l.fk_action_unit_id
+                    FROM (SELECT fk_document_id, min(fk_action_unit_id) AS fk_action_unit_id
+                          FROM action_unit_document GROUP BY fk_document_id) l
+                    WHERE d.document_id = l.fk_document_id AND d.fk_action_unit_id IS NULL;
+                END IF;
+
+                -- 2. the project of a linked recording unit
+                IF to_regclass('recording_unit_document') IS NOT NULL THEN
+                    UPDATE siamois_document d
+                    SET fk_action_unit_id = l.fk_action_unit_id
+                    FROM (SELECT rud.fk_document_id, min(ru.fk_action_unit_id) AS fk_action_unit_id
+                          FROM recording_unit_document rud
+                          JOIN recording_unit ru ON ru.recording_unit_id = rud.fk_recording_unit_id
+                          WHERE ru.fk_action_unit_id IS NOT NULL
+                          GROUP BY rud.fk_document_id) l
+                    WHERE d.document_id = l.fk_document_id AND d.fk_action_unit_id IS NULL;
+                END IF;
+
+                -- 3. the project of the recording unit of a linked find
+                IF to_regclass('specimen_document') IS NOT NULL THEN
+                    UPDATE siamois_document d
+                    SET fk_action_unit_id = l.fk_action_unit_id
+                    FROM (SELECT sd.fk_document_id, min(coalesce(s.fk_action_unit_id, ru.fk_action_unit_id)) AS fk_action_unit_id
+                          FROM specimen_document sd
+                          JOIN specimen s ON s.specimen_id = sd.fk_specimen_id
+                          LEFT JOIN recording_unit ru ON ru.recording_unit_id = s.fk_recording_unit_id
+                          WHERE coalesce(s.fk_action_unit_id, ru.fk_action_unit_id) IS NOT NULL
+                          GROUP BY sd.fk_document_id) l
+                    WHERE d.document_id = l.fk_document_id AND d.fk_action_unit_id IS NULL;
+                END IF;
+
+                -- 4. the only project whose spatial context holds a linked place
+                IF to_regclass('spatial_unit_document') IS NOT NULL THEN
+                    UPDATE siamois_document d
+                    SET fk_action_unit_id = l.fk_action_unit_id
+                    FROM (SELECT p.fk_document_id, min(p.fk_action_unit_id) AS fk_action_unit_id
+                          FROM (SELECT DISTINCT sud.fk_document_id, ausc.fk_action_unit_id
+                                FROM spatial_unit_document sud
+                                JOIN action_unit_spatial_context ausc ON ausc.fk_spatial_unit_id = sud.fk_spatial_unit_id) p
+                          GROUP BY p.fk_document_id
+                          HAVING count(*) = 1) l
+                    WHERE d.document_id = l.fk_document_id AND d.fk_action_unit_id IS NULL;
+                END IF;
+
+                SELECT count(*), string_agg(document_id::text, ', ' ORDER BY document_id)
+                INTO orphans, orphan_ids
+                FROM siamois_document WHERE fk_action_unit_id IS NULL;
+                IF orphans > 0 THEN
+                    RAISE NOTICE 'Documents migration: % document(s) could not be attached to a project and need a manual repair (document_id: %)',
+                        orphans, orphan_ids;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.10.01-3-document-identifier" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            UPDATE siamois_document SET identifier = 'DOC-' || document_id WHERE identifier IS NULL;
+            ALTER TABLE siamois_document ALTER COLUMN identifier SET NOT NULL;
+            -- unique per project; documents still without a project do not collide (NULLs are distinct)
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_document_project_identifier
+                ON siamois_document (fk_action_unit_id, identifier);
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.10.01-4-document-nature-and-format" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="siamois_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS document_support_nature (
+                fk_document_id bigint NOT NULL,
+                fk_concept_id bigint NOT NULL,
+                PRIMARY KEY (fk_document_id, fk_concept_id)
+            );
+
+            DO $$
+            BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.columns
+                           WHERE table_name = 'siamois_document' AND column_name = 'fk_nature') THEN
+                    INSERT INTO document_support_nature (fk_document_id, fk_concept_id)
+                    SELECT document_id, fk_nature FROM siamois_document WHERE fk_nature IS NOT NULL
+                    ON CONFLICT DO NOTHING;
+                END IF;
+
+                IF EXISTS (SELECT 1 FROM information_schema.columns
+                           WHERE table_name = 'siamois_document' AND column_name = 'fk_format') THEN
+                    UPDATE siamois_document d
+                    SET format_text = (SELECT cl.label::text
+                                       FROM concept_label cl
+                                       WHERE cl.fk_concept_id = d.fk_format AND cl.label_type = 0
+                                       ORDER BY cl.concept_label_id LIMIT 1)
+                    WHERE d.fk_format IS NOT NULL AND d.format_text IS NULL;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026.10.01-5-drop-action-unit-document" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="action_unit_document"/>
+        </preConditions>
+        <sql splitStatements="false">
+            DROP TABLE IF EXISTS action_unit_document_aud;
+            DROP TABLE action_unit_document;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

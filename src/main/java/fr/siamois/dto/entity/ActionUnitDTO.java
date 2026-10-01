@@ -1,6 +1,5 @@
 package fr.siamois.dto.entity;
 
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import lombok.Data;
@@ -24,7 +23,6 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<ActionUnitSummaryDTO> children;
     private Set<ActionUnitSummaryDTO> parents;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
-    private Set<Document> documents;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
     private ActionCodeDTO primaryActionCode;

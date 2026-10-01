@@ -49,10 +49,11 @@ import java.util.function.Predicate;
  *       <td>{@code PARENT_CONTAINER}</td></tr>
  *   <tr><td>{@code PHASE}</td><td>{@code NUM_PARENT}, {@code ID_PARENT}, {@code PHASE_ORDER}, {@code ID_UA}</td>
  *       <td>{@code PARENT_PHASE}, {@code PHASE_ORDER}</td></tr>
+ *   <tr><td>{@code DOCUMENT}</td><td>{@code ID_UA}</td><td>none</td></tr>
  * </table>
  *
  * <p>The table's own numerical token ({@code NUM_UE}, {@code NUM_MOBILIER}, {@code NUM_CONTAINER}, or
- * {@code NUM_PHASE}) must not be declared in {@code displayValues}; the generator inserts the allocated counter
+ * {@code NUM_PHASE}, or {@code NUM_DOCUMENT}) must not be declared in {@code displayValues}; the generator inserts the allocated counter
  * value automatically. Display tokens that describe the same relationship must use the same partition dimension
  * (for example, mobilier {@code NUM_UE}/{@code ID_UE} both use {@code PARENT_RU}).</p>
  *

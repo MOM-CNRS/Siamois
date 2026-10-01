@@ -67,4 +67,15 @@ public interface CustomFieldAnswerRepository extends CrudRepository<CustomFieldA
             """)
     List<CustomFieldAnswer> findAnswersOfContainers(@Param("ownerIds") Collection<Long> ownerIds,
                                                @Param("fieldIds") Collection<Long> fieldIds);
+
+    /** The answers of a page of documents to some of their additional fields, with their answer set (for the owner id). */
+    @Query("""
+            select a
+            from CustomFieldAnswer a
+            join fetch a.formConfigAnswer s
+            where s.document.id in :ownerIds
+              and a.customField.id in :fieldIds
+            """)
+    List<CustomFieldAnswer> findAnswersOfDocuments(@Param("ownerIds") Collection<Long> ownerIds,
+                                               @Param("fieldIds") Collection<Long> fieldIds);
 }

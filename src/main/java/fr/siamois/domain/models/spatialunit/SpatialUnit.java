@@ -7,7 +7,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
@@ -59,15 +58,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
     @FieldCode
     public static final String CATEGORY_FIELD_CODE = "SIASU.TYPE";
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "spatial_unit_document",
-            joinColumns = { @JoinColumn(name = "fk_spatial_unit_id")},
-            inverseJoinColumns = { @JoinColumn(name = "fk_document_id") }
-    )
-    @JsonIgnore
-    private Set<Document> documents = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore

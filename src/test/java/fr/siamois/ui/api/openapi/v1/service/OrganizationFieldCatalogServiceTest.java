@@ -78,5 +78,7 @@ class OrganizationFieldCatalogServiceTest {
 
         assertThat(service.build(7L, ConfigurableTable.CONTENANT, "fr").getDefaultType().tableColumns()).isNull();
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.UE)).isEqualTo(RecordingUnit.class);
+        assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.DOCUMENT))
+                .isEqualTo(fr.siamois.domain.models.document.Document.class);
     }
 }

@@ -71,6 +71,11 @@ public final class PermissionConstants {
      * Organisation-wide counterpart of {@link #PROJECT_EDIT_CONTAINERS}.
      */
     public static final String ORGANIZATION_EDIT_CONTAINERS = "ORGANIZATION_EDIT_CONTAINERS";
+
+    /**
+     * Organisation-wide counterpart of {@link #PROJECT_EDIT_DOCUMENTS}.
+     */
+    public static final String ORGANIZATION_EDIT_DOCUMENTS = "ORGANIZATION_EDIT_DOCUMENTS";
     /**
      * Organisation-wide counterpart of {@link #PROJECT_VALIDATE} — also the right to validate the
      * organisation's places, which belong to no project.
@@ -88,6 +93,7 @@ public final class PermissionConstants {
     public static final String PROJECT_EDIT_PHASES = "PROJECT_EDIT_PHASES";
     public static final String PROJECT_EDIT_FINDS = "PROJECT_EDIT_FINDS";
     public static final String PROJECT_EDIT_CONTAINERS = "PROJECT_EDIT_CONTAINERS";
+    public static final String PROJECT_EDIT_DOCUMENTS = "PROJECT_EDIT_DOCUMENTS";
     /**
      * "Validateur": allows setting an entity of the project to VALIDATED, or moving it out of
      * VALIDATED. Every other status change only needs the entity's edit right.
@@ -140,6 +146,11 @@ public final class PermissionConstants {
      * Instance-wide counterpart of {@link #PROJECT_EDIT_CONTAINERS}.
      */
     public static final String INSTANCE_EDIT_CONTAINERS = "INSTANCE_EDIT_CONTAINERS";
+
+    /**
+     * Instance-wide counterpart of {@link #PROJECT_EDIT_DOCUMENTS}.
+     */
+    public static final String INSTANCE_EDIT_DOCUMENTS = "INSTANCE_EDIT_DOCUMENTS";
 
     /**
      * Instance-wide counterpart of {@link #PROJECT_VALIDATE}.

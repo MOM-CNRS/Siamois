@@ -7,9 +7,14 @@ import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.files.DocumentStorage;
+import fr.siamois.mapper.DocumentMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.utils.DocumentUtils;
@@ -20,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.MimeType;
 
 import java.io.ByteArrayInputStream;
@@ -31,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +58,21 @@ class DocumentServiceTest {
     @Mock
     private InstitutionMapper institutionMapper;
 
+    @Mock
+    private DocumentMapper documentMapper;
+
+    @Mock
+    private EntityIdentifierGenerator identifierGenerator;
+
+    @Mock
+    private ProfilePermissionService profilePermissionService;
+
+    @Mock
+    private CustomFieldAnswerService customFieldAnswerService;
+
+    @Mock
+    private TableFieldConfigService tableFieldConfigService;
+
     @InjectMocks
     private DocumentService documentService;
 
@@ -58,7 +80,9 @@ class DocumentServiceTest {
 
     @BeforeEach
     void setUp() {
-        documentService = new DocumentService(documentRepository, personMapper, institutionMapper, documentStorage, List.of(fileCompressor));
+        documentService = new DocumentService(documentRepository, personMapper, institutionMapper, documentMapper,
+                identifierGenerator, profilePermissionService, customFieldAnswerService, tableFieldConfigService,
+                documentStorage, List.of(fileCompressor));
     }
 
     @Test
@@ -182,15 +206,14 @@ class DocumentServiceTest {
         spatialUnit.setId(1L);
         Document document = new Document();
 
-        when(documentRepository.findDocumentsBySpatialUnit(spatialUnit.getId()))
+        when(documentRepository.findAll(any(Specification.class)))
                 .thenReturn(Collections.singletonList(document));
 
         List<Document> result = documentService.findForSpatialUnit(spatialUnit);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(documentRepository, times(1))
-                .findDocumentsBySpatialUnit(spatialUnit.getId());
+        verify(documentRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
@@ -470,7 +493,7 @@ class DocumentServiceTest {
 
         documentService.addToActionUnit(document, actionUnit);
 
-        verify(documentRepository).addDocumentToActionUnit(docId, actionUnitId);
+        verify(documentRepository).attachToActionUnit(docId, actionUnitId);
 
     }
 
@@ -485,12 +508,13 @@ class DocumentServiceTest {
 
         documentService.deleteDocument(document);
 
-        verify(documentRepository).deleteActionUnitDocumentLinks(id);
         verify(documentRepository).deleteSpatialUnitDocumentLinks(id);
         verify(documentRepository).deleteRecordingUnitDocumentLinks(id);
         verify(documentRepository).deleteSpecimenDocumentLinks(id);
+        verify(documentRepository).deletePhaseDocumentLinks(id);
+        verify(documentRepository).deleteContainerDocumentLinks(id);
         verify(documentRepository).deleteSpecimenStudyDocumentLinks(id);
-        verify(documentRepository).deleteRuStudyDocumentLinks(id);
+        verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(DocumentDTO.class));
         verify(documentStorage).deleteStoredFile(document);
         verify(documentRepository).delete(document);
     }
@@ -527,12 +551,12 @@ class DocumentServiceTest {
         ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(11L);
         Document doc = new Document();
-        when(documentRepository.findDocumentsByActionUnit(11L)).thenReturn(List.of(doc));
+        when(documentRepository.findAll(any(Specification.class))).thenReturn(List.of(doc));
 
         List<Document> result = documentService.findForActionUnit(actionUnit);
 
         assertEquals(1, result.size());
-        verify(documentRepository).findDocumentsByActionUnit(11L);
+        verify(documentRepository).findAll(any(Specification.class));
     }
 
     @Test
@@ -540,12 +564,12 @@ class DocumentServiceTest {
         RecordingUnitDTO ru = new RecordingUnitDTO();
         ru.setId(22L);
         Document doc = new Document();
-        when(documentRepository.findDocumentsByRecordingUnit(22L)).thenReturn(List.of(doc));
+        when(documentRepository.findAll(any(Specification.class))).thenReturn(List.of(doc));
 
         List<Document> result = documentService.findForRecordingUnit(ru);
 
         assertEquals(1, result.size());
-        verify(documentRepository).findDocumentsByRecordingUnit(22L);
+        verify(documentRepository).findAll(any(Specification.class));
     }
 
     @Test
@@ -553,12 +577,12 @@ class DocumentServiceTest {
         SpecimenDTO specimen = new SpecimenDTO();
         specimen.setId(33L);
         Document doc = new Document();
-        when(documentRepository.findDocumentsBySpecimen(33L)).thenReturn(List.of(doc));
+        when(documentRepository.findAll(any(Specification.class))).thenReturn(List.of(doc));
 
         List<Document> result = documentService.findForSpecimen(specimen);
 
         assertEquals(1, result.size());
-        verify(documentRepository).findDocumentsBySpecimen(33L);
+        verify(documentRepository).findAll(any(Specification.class));
     }
 
     @Test

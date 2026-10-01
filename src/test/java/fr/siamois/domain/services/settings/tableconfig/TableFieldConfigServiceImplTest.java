@@ -150,9 +150,10 @@ class TableFieldConfigServiceImplTest {
     // ========== Existing Tests ==========
 
     @Test
-    void listTables_shouldExposeTheFourTablesWithTheirTypeFieldCode() {
+    void listTables_shouldExposeTheFiveTablesWithTheirTypeFieldCode() {
         assertThat(service.listTables()).containsExactly(
-                ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT);
+                ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT,
+                ConfigurableTable.DOCUMENT);
         assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CAT");
     }
 
@@ -806,6 +807,14 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(result).isEmpty();
         verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void isTypeFieldConfigured_isFalseWhenTheProjectHasNoVocabularyForTheTypeField() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.DOCUMENT)).isFalse();
     }
 
     @Test

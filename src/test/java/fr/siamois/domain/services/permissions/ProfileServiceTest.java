@@ -135,7 +135,8 @@ class ProfileServiceTest {
             PermissionConstants.INSTANCE_EDIT_RECORDING_UNITS,
             PermissionConstants.INSTANCE_EDIT_PHASES,
             PermissionConstants.INSTANCE_EDIT_FINDS,
-            PermissionConstants.INSTANCE_EDIT_CONTAINERS);
+            PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+            PermissionConstants.INSTANCE_EDIT_DOCUMENTS);
 
     private void stubPermissionLookupByCode() {
         when(permissionRepository.findByCode(anyString()))
@@ -223,7 +224,8 @@ class ProfileServiceTest {
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS),
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_FINDS),
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_PHASES),
-                permissionWithCode(PermissionConstants.PROJECT_EDIT_CONTAINERS)));
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_CONTAINERS),
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_DOCUMENTS)));
         stubPermissionLookupByCode();
         when(profileRepository.findByCodeAndInstitutionIdAndActionUnitId(
                 ProfileConstants.PROJECT_MEMBER, institutionDTO.getId(), actionUnitDTO.getId()))

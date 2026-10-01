@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.institution.Institution;
 import jakarta.transaction.Transactional;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -14,7 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface DocumentRepository extends CrudRepository<Document, Long>, RevisionRepository<Document, Long, Long> {
+public interface DocumentRepository extends CrudRepository<Document, Long>, RevisionRepository<Document, Long, Long>,
+        JpaSpecificationExecutor<Document> {
     List<Document> findAllByArkIsNullAndCreatedByInstitution(Institution institution);
 
     boolean existsByFileCode(String fileCode);
@@ -28,14 +30,6 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
                     "WHERE sud.fk_spatial_unit_id = :spatialUnitId"
     )
     List<Document> findDocumentsBySpatialUnit(Long spatialUnitId);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT d.* FROM siamois_document d " +
-                    "JOIN action_unit_document sud ON d.document_id = sud.fk_document_id " +
-                    "WHERE sud.fk_action_unit_id = :actionUnitId"
-    )
-    List<Document> findDocumentsByActionUnit(Long actionUnitId);
 
     @Query(
             nativeQuery = true,
@@ -61,15 +55,6 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
                     "VALUES (:documentId, :spatialUnitId)"
     )
     void addDocumentToSpatialUnit(Long documentId, Long spatialUnitId);
-
-    @Transactional
-    @Modifying
-    @Query(
-            nativeQuery = true,
-            value = "INSERT INTO action_unit_document(fk_document_id, fk_action_unit_id) " +
-                    "VALUES (:documentId, :actionUnitId)"
-    )
-    void addDocumentToActionUnit(Long documentId, Long actionUnitId);
 
     @Query(
             nativeQuery = true,
@@ -110,30 +95,11 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
     @Query(
             nativeQuery = true,
             value = "SELECT COUNT(*) > 0 " +
-                    "FROM action_unit_document sud " +
-                    "JOIN siamois_document sd ON sud.fk_document_id = sd.document_id " +
-                    "WHERE sud.fk_action_unit_id = :actionUnitId AND sd.md5_sum = :hash"
-    )
-    boolean existsByHashInActionUnit(Long actionUnitId, String hash);
-
-    @Query(
-            nativeQuery = true,
-            value = "SELECT COUNT(*) > 0 " +
                     "FROM specimen_document sud " +
                     "JOIN siamois_document sd ON sud.fk_document_id = sd.document_id " +
                     "WHERE sud.fk_specimen_id = :specimenId AND sd.md5_sum = :hash"
     )
     boolean existsByHashInSpecimen(Long specimenId, String hash);
-
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM action_unit_document WHERE fk_document_id = :documentId")
-    void deleteActionUnitDocumentLinks(@Param("documentId") Long documentId);
-
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM action_unit_document WHERE fk_action_unit_id = :actionUnitId")
-    void deleteAllActionUnitDocumentLinksByActionUnitId(@Param("actionUnitId") Long actionUnitId);
 
     @Modifying
     @Transactional
@@ -170,8 +136,48 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
     @Query(nativeQuery = true, value = "DELETE FROM specimen_study_document WHERE fk_document_id = :documentId")
     void deleteSpecimenStudyDocumentLinks(@Param("documentId") Long documentId);
 
+    /** Attaches the document to its project: the project is a column of the document, not a link table. */
+    @Transactional
+    @Modifying
+    @Query(nativeQuery = true,
+            value = "UPDATE siamois_document SET fk_action_unit_id = :actionUnitId WHERE document_id = :documentId")
+    void attachToActionUnit(@Param("documentId") Long documentId, @Param("actionUnitId") Long actionUnitId);
+
+    @Query(nativeQuery = true,
+            value = "SELECT COUNT(*) > 0 FROM siamois_document WHERE fk_action_unit_id = :actionUnitId AND md5_sum = :hash")
+    boolean existsByHashInActionUnit(@Param("actionUnitId") Long actionUnitId, @Param("hash") String hash);
+
     @Modifying
     @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM ru_study_document WHERE fk_document_id = :documentId")
-    void deleteRuStudyDocumentLinks(@Param("documentId") Long documentId);
+    @Query(nativeQuery = true, value = "DELETE FROM phase_document WHERE fk_document_id = :documentId")
+    void deletePhaseDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM container_document WHERE fk_document_id = :documentId")
+    void deleteContainerDocumentLinks(@Param("documentId") Long documentId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM phase_document WHERE fk_phase_id = :phaseId")
+    void deleteAllPhaseDocumentLinksByPhaseId(@Param("phaseId") long phaseId);
+
+    @Modifying
+    @Transactional
+    @Query(nativeQuery = true, value = "DELETE FROM container_document WHERE fk_container_id = :containerId")
+    void deleteAllContainerDocumentLinksByContainerId(@Param("containerId") long containerId);
+
+    boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
+
+    Optional<Document> findByIdentifierAndActionUnitId(String identifier, Long actionUnitId);
+
+    int countByActionUnitId(Long actionUnitId);
+
+    Optional<Document> findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(Long actionUnitId, java.time.OffsetDateTime createdAt);
+
+    Optional<Document> findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(Long actionUnitId, java.time.OffsetDateTime createdAt);
+
+    Optional<Document> findFirstByActionUnitIdOrderByCreationTimeAsc(Long actionUnitId);
+
+    Optional<Document> findFirstByActionUnitIdOrderByCreationTimeDesc(Long actionUnitId);
 }

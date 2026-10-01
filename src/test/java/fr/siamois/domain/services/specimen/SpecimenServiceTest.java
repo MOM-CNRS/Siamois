@@ -1151,7 +1151,6 @@ class SpecimenServiceTest {
         specimen.setId(5L);
         specimen.setAuthors(new java.util.ArrayList<>());
         specimen.setCollectors(new java.util.ArrayList<>());
-        specimen.setDocuments(new java.util.HashSet<>());
         Ark ark = new Ark();
         ark.setInternalId(88L);
         specimen.setArk(ark);

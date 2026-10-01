@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
@@ -141,7 +142,7 @@ class DocumentsControllerApiTest {
         mockMvc.perform(delete("/api/v1/documents/5"))
                 .andExpect(status().isNoContent());
 
-        verify(documentContentOpenApiService).deleteAccessibleDocument(5L, Set.of(10L));
+        verify(documentContentOpenApiService).deleteAccessibleDocument(eq(5L), any(ProjectApiCaller.class));
     }
 
     @Test
@@ -150,7 +151,7 @@ class DocumentsControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"))
-                .when(documentContentOpenApiService).deleteAccessibleDocument(99L, Set.of(10L));
+                .when(documentContentOpenApiService).deleteAccessibleDocument(eq(99L), any(ProjectApiCaller.class));
 
         mockMvc.perform(delete("/api/v1/documents/99"))
                 .andExpect(status().isNotFound())
@@ -166,7 +167,8 @@ class DocumentsControllerApiTest {
         mockMvc.perform(delete("/api/v1/documents/3"))
                 .andExpect(status().isNoContent());
 
-        verify(documentContentOpenApiService).deleteAccessibleDocument(3L, Set.of(10L, 20L));
+        verify(documentContentOpenApiService).deleteAccessibleDocument(
+                eq(3L), argThat(c -> c.accessibleInstitutionIds().equals(Set.of(10L, 20L))));
     }
 
     @Test

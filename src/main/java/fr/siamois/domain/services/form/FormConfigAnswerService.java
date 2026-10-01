@@ -3,12 +3,14 @@ package fr.siamois.domain.services.form;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -39,6 +41,7 @@ public class FormConfigAnswerService {
     private final SpecimenMapper specimenMapper;
     private final PhaseMapper phaseMapper;
     private final ContainerMapper containerMapper;
+    private final DocumentMapper documentMapper;
 
     /**
      * Read-only lookup of the pivot row for a recording unit, unlike
@@ -61,6 +64,10 @@ public class FormConfigAnswerService {
         return formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, containerMapper.invertConvert(containerDTO));
     }
 
+    public Optional<FormConfigAnswer> findFormConfigAnswer(FormConfig formConfig, DocumentDTO documentDTO) {
+        return formConfigAnswerRepository.findByFormConfigAndDocument(formConfig, documentMapper.invertConvert(documentDTO));
+    }
+
     /** Every answer set of the recording unit, whichever type's form config each was saved under. */
     public List<FormConfigAnswer> findAllFormConfigAnswers(RecordingUnitDTO recordingUnitDTO) {
         return formConfigAnswerRepository.findByRecordingUnit(recordingUnitMapper.invertConvert(recordingUnitDTO));
@@ -76,6 +83,10 @@ public class FormConfigAnswerService {
 
     public List<FormConfigAnswer> findAllFormConfigAnswers(ContainerDTO containerDTO) {
         return formConfigAnswerRepository.findByContainer(containerMapper.invertConvert(containerDTO));
+    }
+
+    public List<FormConfigAnswer> findAllFormConfigAnswers(DocumentDTO documentDTO) {
+        return formConfigAnswerRepository.findByDocument(documentMapper.invertConvert(documentDTO));
     }
 
     /** Removes an answer set; its answers must already be deleted. */
@@ -109,6 +120,13 @@ public class FormConfigAnswerService {
         return createOrGet(formConfig,
                 () -> formConfigAnswerRepository.findByFormConfigAndContainer(formConfig, container),
                 row -> row.setContainer(container));
+    }
+
+    public FormConfigAnswer createOrGetFormConfigAnswer(FormConfig formConfig, DocumentDTO documentDTO) {
+        Document document = documentMapper.invertConvert(documentDTO);
+        return createOrGet(formConfig,
+                () -> formConfigAnswerRepository.findByFormConfigAndDocument(formConfig, document),
+                row -> row.setDocument(document));
     }
 
     private FormConfigAnswer createOrGet(FormConfig formConfig,

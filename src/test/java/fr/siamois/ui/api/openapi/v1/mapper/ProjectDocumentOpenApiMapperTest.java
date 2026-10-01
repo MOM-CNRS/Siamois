@@ -80,9 +80,9 @@ class ProjectDocumentOpenApiMapperTest {
     scale.setId(2L);
     Concept format = new Concept();
     format.setId(3L);
-    document.setNature(nature);
+    document.replaceNatureBy(nature);
     document.setScale(scale);
-    document.setFormat(format);
+    document.setFormatConcept(format);
 
     when(conceptMapper.convert(any(Concept.class))).thenAnswer(invocation -> {
       Concept concept = invocation.getArgument(0);

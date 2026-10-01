@@ -1,0 +1,160 @@
+{
+  "groups" : [
+    {
+      "label" : "document.header.identification",
+      "fields" : [
+        {
+          "fieldId" : -704,
+          "binding" : "category",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -705,
+          "binding" : "documentType",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -708,
+          "binding" : "title",
+          "width" : "HALF",
+          "required" : true
+        },
+        {
+          "fieldId" : -702,
+          "binding" : "otherIdentifiers",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -706,
+          "binding" : "supportNatures",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -707,
+          "binding" : "format",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -716,
+          "binding" : "keywords",
+          "width" : "HALF"
+        }
+      ]
+    },
+    {
+      "label" : "document.header.description",
+      "fields" : [
+        {
+          "fieldId" : -713,
+          "binding" : "description",
+          "width" : "FULL"
+        },
+        {
+          "fieldId" : -712,
+          "binding" : "productionDate",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -714,
+          "binding" : "language",
+          "width" : "QUARTER"
+        }
+      ]
+    },
+    {
+      "label" : "document.header.authorsRights",
+      "fields" : [
+        {
+          "fieldId" : -709,
+          "binding" : "authors",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -710,
+          "binding" : "contributors",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -711,
+          "binding" : "publisher",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -715,
+          "binding" : "rights",
+          "width" : "HALF"
+        }
+      ]
+    },
+    {
+      "label" : "document.header.file",
+      "fields" : [
+        {
+          "fieldId" : -722,
+          "binding" : "externalUrl",
+          "width" : "FULL"
+        }
+      ]
+    },
+    {
+      "label" : "document.header.links",
+      "fields" : [
+        {
+          "fieldId" : -723,
+          "binding" : "recordingUnits",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -724,
+          "binding" : "finds",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -725,
+          "binding" : "places",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -726,
+          "binding" : "phases",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -727,
+          "binding" : "containers",
+          "width" : "HALF"
+        }
+      ]
+    },
+    {
+      "label" : "document.header.technical",
+      "fields" : [
+        {
+          "fieldId" : -717,
+          "binding" : "itemCount",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -718,
+          "binding" : "sizeMb",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -719,
+          "binding" : "crs",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -720,
+          "binding" : "originalPath",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -721,
+          "binding" : "comments",
+          "width" : "FULL"
+        }
+      ]
+    }
+  ]
+}

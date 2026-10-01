@@ -16,8 +16,11 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,8 @@ public class DocumentWriteOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final ArkService arkService;
     private final ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    private final ActionUnitMapper actionUnitMapper;
+    private final ActionUnitSummaryMapper actionUnitSummaryMapper;
 
     @Transactional
     public DocumentResource createForProject(
@@ -69,10 +74,10 @@ public class DocumentWriteOpenApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         Document document = buildDocumentShell(
                 title, description, natureConceptId, scaleConceptId, formatConceptId, institution, file);
+        document.setActionUnit(actionUnitMapper.invertConvert(row.actionUnit()));
 
         try (InputStream inputStream = file.getInputStream()) {
-            Document saved = documentService.saveFile(userInfo, document, inputStream, API_CONTEXT_PATH);
-            documentService.addToActionUnit(saved, row.actionUnit());
+            Document saved = saveFileInContext(userInfo, document, inputStream);
             return projectDocumentOpenApiMapper.toResource(saved);
         } catch (InvalidFileTypeException | InvalidFileSizeException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
@@ -107,9 +112,11 @@ public class DocumentWriteOpenApiService {
 
         Document document = buildDocumentShell(
                 title, description, natureConceptId, scaleConceptId, formatConceptId, institution, file);
+        // the document belongs to the unit's project, and is linked to the unit
+        document.setActionUnit(actionUnitSummaryMapper.invertConvert(ru.getActionUnit()));
 
         try (InputStream inputStream = file.getInputStream()) {
-            Document saved = documentService.saveFile(userInfo, document, inputStream, API_CONTEXT_PATH);
+            Document saved = saveFileInContext(userInfo, document, inputStream);
             documentService.addToRecordingUnit(saved, ru);
             return projectDocumentOpenApiMapper.toResource(saved);
         } catch (InvalidFileTypeException | InvalidFileSizeException e) {
@@ -129,8 +136,7 @@ public class DocumentWriteOpenApiService {
             Long scaleConceptId,
             Long formatConceptId) {
 
-        Document doc = documentContentOpenApiService.requireAccessibleDocument(
-                documentId, caller.accessibleInstitutionIds());
+        Document doc = documentContentOpenApiService.requireWritableDocument(documentId, caller);
 
         if (StringUtils.hasText(title)) {
             doc.setTitle(title.trim());
@@ -139,13 +145,13 @@ public class DocumentWriteOpenApiService {
             doc.setDescription(description.trim());
         }
         if (natureConceptId != null) {
-            doc.setNature(resolveConcept(natureConceptId));
+            doc.replaceNatureBy(resolveConcept(natureConceptId));
         }
         if (scaleConceptId != null) {
             doc.setScale(resolveConcept(scaleConceptId));
         }
         if (formatConceptId != null) {
-            doc.setFormat(resolveConcept(formatConceptId));
+            applyFormat(doc, resolveConcept(formatConceptId));
         }
 
         Document saved = (Document) documentService.save(doc);
@@ -172,9 +178,9 @@ public class DocumentWriteOpenApiService {
         Document document = new Document();
         document.setTitle(trimmedTitle);
         document.setDescription(description == null ? null : description.trim());
-        document.setNature(resolveConcept(natureConceptId));
+        document.replaceNatureBy(resolveConcept(natureConceptId));
         document.setScale(resolveConcept(scaleConceptId));
-        document.setFormat(resolveConcept(formatConceptId));
+        applyFormat(document, resolveConcept(formatConceptId));
         document.setFileName(file.getOriginalFilename());
         document.setMimeType(file.getContentType());
         document.setSize(file.getSize());
@@ -186,6 +192,25 @@ public class DocumentWriteOpenApiService {
         }
 
         return document;
+    }
+
+    /**
+     * Saves the file in the caller's context: the identifier of a new document is generated from the project's
+     * configuration, which is read for the user's institution and language.
+     */
+    private Document saveFileInContext(UserInfo userInfo, Document document, InputStream inputStream)
+            throws InvalidFileTypeException, InvalidFileSizeException, IOException {
+        ExecutionContextHolder.set(userInfo);
+        try {
+            return documentService.saveFile(userInfo, document, inputStream, API_CONTEXT_PATH);
+        } finally {
+            ExecutionContextHolder.clear();
+        }
+    }
+
+    /** The mobile API sends the format as a concept: it goes to the concept column, not to the form's free-text format. */
+    private static void applyFormat(Document document, Concept format) {
+        document.setFormatConcept(format);
     }
 
     private Concept resolveConcept(Long id) {

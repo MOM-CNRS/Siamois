@@ -47,9 +47,9 @@ public class DocumentFormOpenApiService {
             current = new DocumentFormCurrentValuesApi(
                     doc.getTitle(),
                     doc.getDescription(),
-                    toAutocomplete(doc.getNature(), lang),
+                    toAutocomplete(doc.primaryNature(), lang),
                     toAutocomplete(doc.getScale(), lang),
-                    toAutocomplete(doc.getFormat(), lang),
+                    toAutocomplete(doc.getFormatConcept(), lang),
                     doc.getFileName(),
                     doc.getMimeType());
         }

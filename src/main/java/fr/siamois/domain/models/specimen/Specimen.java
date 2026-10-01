@@ -9,7 +9,6 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.phase.Phase;
@@ -56,14 +55,6 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "specimen_id", nullable = false)
     private Long id;
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "specimen_document",
-            joinColumns = {@JoinColumn(name = "fk_specimen_id")},
-            inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
-    )
-    private Set<Document> documents = new HashSet<>();
 
     @ManyToMany
     @JoinTable(

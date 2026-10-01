@@ -270,6 +270,22 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Checks if the user can write the given document, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_DOCUMENTS} on the document's project.
+     *
+     * @param user     the user information
+     * @param document the document to write
+     * @return true if the user can write the document
+     */
+    public boolean hasDocumentWritePermission(UserInfo user, DocumentDTO document) {
+        Long actionUnitId = document.getActionUnit() != null ? document.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+    }
+
+    /**
      * Checks if the user can write the given action unit's own fields, i.e. holds
      * {@link PermissionConstants#PROJECT_MANAGE_SETTINGS} on the action unit itself, or
      * {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} on the user's institution.

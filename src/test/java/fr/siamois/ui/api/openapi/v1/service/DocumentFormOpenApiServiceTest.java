@@ -78,9 +78,9 @@ class DocumentFormOpenApiServiceTest {
         when(doc.getFileName()).thenReturn("f.pdf");
         when(doc.getMimeType()).thenReturn("application/pdf");
         Concept nature = mock(Concept.class);
-        when(doc.getNature()).thenReturn(nature);
+        when(doc.primaryNature()).thenReturn(nature);
         when(doc.getScale()).thenReturn(null);
-        when(doc.getFormat()).thenReturn(null);
+        when(doc.getFormatConcept()).thenReturn(null);
         ConceptDTO dto = ConceptDTO.builder().id(99L).externalId("EXT").build();
         when(conceptMapper.convert(nature)).thenReturn(dto);
 

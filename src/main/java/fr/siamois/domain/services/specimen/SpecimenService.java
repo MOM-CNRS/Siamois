@@ -735,9 +735,6 @@ public class SpecimenService implements ArkEntityService {
         if (specimen.getCollectors() != null) {
             specimen.getCollectors().clear();
         }
-        if (specimen.getDocuments() != null) {
-            specimen.getDocuments().clear();
-        }
 
         Long arkId = specimen.getArk() != null ? specimen.getArk().getInternalId() : null;
         specimenRepository.delete(specimen);

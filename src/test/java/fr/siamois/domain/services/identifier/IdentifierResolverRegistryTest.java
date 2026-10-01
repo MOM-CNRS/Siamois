@@ -22,6 +22,15 @@ class IdentifierResolverRegistryTest {
                 .containsExactly("NUM_CONTAINER", "NUM_PARENT", "ID_PARENT", "ID_UA");
         assertThat(codes(ConfigurableTable.PHASE))
                 .containsExactly("NUM_PHASE", "NUM_PARENT", "ID_PARENT", "PHASE_ORDER", "ID_UA");
+        assertThat(codes(ConfigurableTable.DOCUMENT))
+                .containsExactly("NUM_DOCUMENT", "ID_UA");
+    }
+
+    @Test
+    void ownNumericalToken_ofADocument_isItsNumber() {
+        assertThat(registry.ownNumericalToken(ConfigurableTable.DOCUMENT)).isEqualTo("NUM_DOCUMENT");
+        assertThatCode(() -> registry.validate(ConfigurableTable.DOCUMENT, "DOC{NUM_DOCUMENT:0000}"))
+                .doesNotThrowAnyException();
     }
 
     @Test

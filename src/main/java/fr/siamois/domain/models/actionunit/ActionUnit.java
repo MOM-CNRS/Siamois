@@ -7,7 +7,6 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.form.ActionUnitDetailsForm;
 import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
 import fr.siamois.domain.models.ark.Ark;
-import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -55,14 +54,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "action_unit_id", nullable = false)
     private Long id;
-
-    @OneToMany
-    @JoinTable(
-            name = "action_unit_document",
-            joinColumns = {@JoinColumn(name = "fk_action_unit_id")},
-            inverseJoinColumns = {@JoinColumn(name = "fk_document_id")}
-    )
-    private Set<Document> documents = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

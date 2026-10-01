@@ -639,9 +639,6 @@ public class RecordingUnitService implements ArkEntityService {
         if (ru.getContributors() != null) {
             ru.getContributors().clear();
         }
-        if (ru.getDocuments() != null) {
-            ru.getDocuments().clear();
-        }
     }
 
     /**

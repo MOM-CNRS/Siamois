@@ -997,7 +997,7 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun enfant dans la hiérarchie.
+     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun document, aucun enfant dans la hiérarchie.
      * Nettoie les lignes dépendantes pour respecter les contraintes de clés étrangères.
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
@@ -1021,6 +1021,9 @@ public class ActionUnitService implements ArkEntityService {
         if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
         }
+        if (documentRepository.countByActionUnitId(actionUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le projet contient des documents");
+        }
         Map<Long, Long> childrenByProject = countingMap(
                 actionUnitRepository.countChildActionUnitsByParentIds(List.of(actionUnitId)));
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
@@ -1032,7 +1035,6 @@ public class ActionUnitService implements ArkEntityService {
         actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
-        documentRepository.deleteAllActionUnitDocumentLinksByActionUnitId(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);
     }
 

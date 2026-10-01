@@ -17,6 +17,8 @@ import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.mapper.ActionUnitMapper;
+import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +63,10 @@ class DocumentWriteOpenApiServiceTest {
     private ArkService arkService;
     @Mock
     private ProjectDocumentOpenApiMapper projectDocumentOpenApiMapper;
+    @Mock
+    private ActionUnitMapper actionUnitMapper;
+    @Mock
+    private ActionUnitSummaryMapper actionUnitSummaryMapper;
 
     private DocumentWriteOpenApiService service;
     private ProjectApiCaller caller;
@@ -77,7 +83,9 @@ class DocumentWriteOpenApiServiceTest {
                 institutionService,
                 profilePermissionService,
                 arkService,
-                projectDocumentOpenApiMapper);
+                projectDocumentOpenApiMapper,
+                actionUnitMapper,
+                actionUnitSummaryMapper);
 
         PersonDTO person = new PersonDTO();
         person.setId(1L);
@@ -110,7 +118,7 @@ class DocumentWriteOpenApiServiceTest {
                 caller, "5", "Title", "Desc", null, null, null, file, "fr");
 
         assertThat(result).isSameAs(resource);
-        verify(documentService).addToActionUnit(saved, project);
+        verify(documentService).saveFile(any(UserInfo.class), any(Document.class), any(InputStream.class), eq("/siamois"));
     }
 
     @Test
@@ -218,7 +226,7 @@ class DocumentWriteOpenApiServiceTest {
     void updateDocument_updatesProvidedFields() {
         Document doc = new Document();
         doc.setTitle("Old");
-        when(documentContentOpenApiService.requireAccessibleDocument(8L, SCOPE)).thenReturn(doc);
+        when(documentContentOpenApiService.requireWritableDocument(8L, caller)).thenReturn(doc);
 
         Concept nature = mock(Concept.class);
         when(conceptService.findById(3L)).thenReturn(Optional.of(nature));
@@ -234,13 +242,13 @@ class DocumentWriteOpenApiServiceTest {
         assertThat(result).isSameAs(resource);
         assertThat(doc.getTitle()).isEqualTo("New title");
         assertThat(doc.getDescription()).isEqualTo("New desc");
-        assertThat(doc.getNature()).isSameAs(nature);
+        assertThat(doc.primaryNature()).isSameAs(nature);
     }
 
     @Test
     void updateDocument_unknownConcept_throws404() {
         Document doc = new Document();
-        when(documentContentOpenApiService.requireAccessibleDocument(8L, SCOPE)).thenReturn(doc);
+        when(documentContentOpenApiService.requireWritableDocument(8L, caller)).thenReturn(doc);
         when(conceptService.findById(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateDocument(caller, 8L, null, null, 404L, null, null))

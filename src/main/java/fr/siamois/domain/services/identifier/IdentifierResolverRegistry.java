@@ -44,6 +44,9 @@ public class IdentifierResolverRegistry {
                         numerical(NUM_PARENT, "PARENT_PHASE"),
                         text(ID_PARENT, "PARENT_PHASE"),
                         numerical("PHASE_ORDER", "PHASE_ORDER"),
+                        text(ID_UA, null)),
+                ConfigurableTable.DOCUMENT, catalog(
+                        numerical("NUM_DOCUMENT", null),
                         text(ID_UA, null))
         );
     }
@@ -105,6 +108,7 @@ public class IdentifierResolverRegistry {
             case MOBILIER -> "NUM_MOBILIER";
             case CONTENANT -> "NUM_CONTAINER";
             case PHASE -> "NUM_PHASE";
+            case DOCUMENT -> "NUM_DOCUMENT";
         };
     }
 

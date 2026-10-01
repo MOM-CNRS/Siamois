@@ -26,17 +26,17 @@ public class ProjectDocumentOpenApiMapper {
         r.setFileCode(doc.getFileCode());
         r.setSize(doc.getSize());
         r.setMd5Sum(doc.getMd5Sum());
-        if (doc.getNature() != null) {
+        if (doc.primaryNature() != null) {
             r.setNature(
-                    conceptResourceIdentifierMapper.convert(conceptMapper.convert(doc.getNature())));
+                    conceptResourceIdentifierMapper.convert(conceptMapper.convert(doc.primaryNature())));
         }
         if (doc.getScale() != null) {
             r.setScale(
                     conceptResourceIdentifierMapper.convert(conceptMapper.convert(doc.getScale())));
         }
-        if (doc.getFormat() != null) {
+        if (doc.getFormatConcept() != null) {
             r.setFormat(
-                    conceptResourceIdentifierMapper.convert(conceptMapper.convert(doc.getFormat())));
+                    conceptResourceIdentifierMapper.convert(conceptMapper.convert(doc.getFormatConcept())));
         }
         return r;
     }
