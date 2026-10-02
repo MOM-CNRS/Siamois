@@ -22,6 +22,9 @@ export interface TypeOnlyCreateFormProps extends CreateFormContext {
   title: string;
   // The project catalog whose untyped form carries the type field (valueBinding "type").
   typesSegment: string;
+  // The valueBinding of that type field: "type" unless the entity names its type differently
+  // (a document's is its "category").
+  typeBinding?: string;
   create: (projectId: string, typeId: string) => Promise<{ id: string | number }>;
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
@@ -37,6 +40,7 @@ export function TypeOnlyCreateForm({
   entityType,
   title,
   typesSegment,
+  typeBinding = "type",
   create,
   children,
   organizationId,
@@ -58,8 +62,8 @@ export function TypeOnlyCreateForm({
     enabled: projectId != null,
   });
   const typeField = useMemo<FieldResource | undefined>(
-    () => Object.values(formQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
-    [formQuery.data],
+    () => Object.values(formQuery.data?.fields ?? {}).find((f) => f.valueBinding === typeBinding),
+    [formQuery.data, typeBinding],
   );
 
   const mutation = useMutation({

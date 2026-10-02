@@ -70,6 +70,7 @@ These are also breaking for clients that sent sloppy parameters:
 | `GET /api/v1/finds` | `fullIdentifier:asc` | `FindListResponse` |
 | `GET /api/v1/phases` | `orderNumber:asc` | `PhaseListResponse` |
 | `GET /api/v1/containers` | `identifier:asc` | `ContainerListResponse` |
+| `GET /api/v1/documents` | `identifier:asc` | `DocumentListResponse` |
 
 Items in these organisation lists carry a `project: ResourceRef` (owning project), which is omitted on project-scoped lists.
 
@@ -162,6 +163,8 @@ The `fields` ids returned here are the ones accepted by `fields=`, `sort=<fieldI
 
 **Siblings contract** (every `…/siblings` endpoint): `{ data: { previous: { id, label, resourceUri } | null, next: … | null } }`. The list wraps around, so the next of the last item is the first. A value is `null` only when there is no other item.
 
+**Documents.** A document is now a full entity (identifier, mandatory project, national common-base fields, links to UE / finds / places / phases / containers). New: `GET /api/v1/documents/{id}`, `GET /api/v1/documents/{id}/siblings`, `POST /api/v1/documents` (JSON: `projectId`, `categoryId`, `title`), `GET /api/v1/{projects|organizations}/{id}/document-types`. `PATCH /api/v1/documents/{id}` keeps its flat mobile body (`title`, `description`, `natureConceptId`, `scaleConceptId`, `formatConceptId`) and also takes `answers` / `validated` like the other entities; as soon as either is present the flat fields are ignored. `DELETE` and `PATCH` now require the document edit right on the document's project (`403` otherwise, it used to be any member of the organisation). `GET /api/v1/projects/{id}/documents` is unchanged without `limit` (every document, unpaged); with `limit` it is a paged list (`offset`, `sort`, `search`, `f.*`, `fields`). `DocumentResource` gains `identifier`, `label`, `projectId`, `type` (the category), `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validated`, all omitted when empty.
+
 ### 3.2 New query parameters on existing endpoints
 
 | Endpoint | New params |
@@ -208,7 +211,7 @@ All of these are additive. Nullable fields are omitted when `null` wherever mark
 | Resource | New fields |
 |---|---|
 | `ProjectResource` | `validated`, `_permissions`, `bookmarked`, `resourceUri` (e.g. `/action-unit/42`), `answers` (only with `fields=`) |
-| `ProjectResourceCounts` | `finds`, `phases`, `containers` |
+| `ProjectResourceCounts` | `finds`, `phases`, `containers`, `documents` |
 | `ProjectResourceLinks` | `finds`, `phases`, `containers` (URLs) |
 | `RecordingUnitResource` | `organization { resourceType, id }`, `project` (org lists only), `_permissions`, `resourceUri`, `bookmarked`, `validated` |
 | `RecordingUnitResourceCounts` | `relationships` |

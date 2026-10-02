@@ -14,6 +14,7 @@ import { findEntityConfig } from "./entities/find/config";
 import { phaseEntityConfig } from "./entities/phase/config";
 import { containerEntityConfig } from "./entities/container/config";
 import { placeEntityConfig } from "./entities/place/config";
+import { documentEntityConfig } from "./entities/document/config";
 import { MountContractError, parseMountOptions, type ActionResolver, type MountOptions } from "./mountOptions";
 import { App } from "./App";
 
@@ -26,6 +27,7 @@ registerEntityType(findEntityConfig);
 registerEntityType(phaseEntityConfig);
 registerEntityType(containerEntityConfig);
 registerEntityType(placeEntityConfig);
+registerEntityType(documentEntityConfig);
 
 // One generic mount function parameterized by panel kind + entity type (plan §3) — never one
 // mount function per entity. focus.xhtml's bootstrap (reactPanelBootstrap.js) calls it once per

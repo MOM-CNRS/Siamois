@@ -23,12 +23,14 @@ public class PanelFactory {
     private final ObjectProvider<RecordingUnitListPanel> recordingUnitListPanelProvider;
     private final ObjectProvider<SpecimenListPanel> specimenListPanelProvider;
     private final ObjectProvider<PhaseListPanel> phaseListPanelProvider;
+    private final ObjectProvider<DocumentListPanel> documentListPanelProvider;
     private final ObjectProvider<SpatialUnitPanel> spatialUnitPanelProvider;
     private final ObjectProvider<ActionUnitPanel> actionUnitPanelProvider;
     private final ObjectProvider<RecordingUnitPanel> recordingUnitPanelProvider;
     private final ObjectProvider<SpecimenPanel> specimenPanelProvider;
     private final ObjectProvider<ContainerPanel> containerPanelProvider;
     private final ObjectProvider<PhasePanel> phasePanelProvider;
+    private final ObjectProvider<DocumentPanel> documentPanelProvider;
     private final ObjectProvider<WelcomePanel> welcomePanelProvider;
 
     /**
@@ -44,6 +46,7 @@ public class PanelFactory {
             case "specimen" -> id == null ? specimenListPanelProvider.getObject() : entity(specimenPanelProvider, id);
             case "container" -> id == null ? containerListPanelProvider.getObject() : entity(containerPanelProvider, id);
             case "phase" -> id == null ? phaseListPanelProvider.getObject() : entity(phasePanelProvider, id);
+            case "document" -> id == null ? documentListPanelProvider.getObject() : entity(documentPanelProvider, id);
             case "welcome" -> welcomePanelProvider.getObject();
             default -> throw new IllegalArgumentException("Unknown panel type: " + type);
         };
@@ -59,6 +62,7 @@ public class PanelFactory {
             case "recordingUnit" -> entity(recordingUnitPanelProvider, id);
             case "find" -> entity(specimenPanelProvider, id);
             case "phase" -> entity(phasePanelProvider, id);
+            case "document" -> entity(documentPanelProvider, id);
             case "container" -> entity(containerPanelProvider, id);
             case "place" -> entity(spatialUnitPanelProvider, id);
             default -> null;

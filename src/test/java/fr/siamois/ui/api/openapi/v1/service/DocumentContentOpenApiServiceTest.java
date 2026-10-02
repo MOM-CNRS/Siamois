@@ -95,6 +95,7 @@ class DocumentContentOpenApiServiceTest {
         when(documentService.findById(8L)).thenReturn(Optional.of(doc));
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
+        when(doc.hasFile()).thenReturn(true);
         when(documentService.findInputStreamOfDocument(doc)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.requireDownloadableContent(8L, SCOPE))
@@ -110,6 +111,7 @@ class DocumentContentOpenApiServiceTest {
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
         when(doc.getMimeType()).thenReturn("application/pdf");
+        when(doc.hasFile()).thenReturn(true);
         byte[] bytes = new byte[]{0x25, 0x50};
         when(documentService.findInputStreamOfDocument(doc)).thenReturn(Optional.of(new ByteArrayInputStream(bytes)));
         when(documentService.findCompressorOf(doc)).thenReturn(new BrowserDisplayableCompressor());

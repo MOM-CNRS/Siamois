@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldFile;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -15,6 +16,7 @@ import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasur
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphicRelationships;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
@@ -60,6 +62,8 @@ public final class CustomFieldAnswerFactory {
         return Map.ofEntries(
                 // Constructeurs vides : on ignore l'argument 'f'
                 Map.entry(CustomFieldText.class, f -> new CustomFieldAnswerTextViewModel()),
+                // Never bound by an answer (the file is uploaded apart): a placeholder that keeps it in the form.
+                Map.entry(CustomFieldFile.class, f -> new CustomFieldAnswerTextViewModel()),
                 Map.entry(CustomFieldSelectOneAddress.class, f -> new CustomFieldAnswerSelectOneAddressViewModel()),
                 Map.entry(CustomFieldSelectOneFromFieldCode.class, f -> new CustomFieldAnswerSelectOneFromFieldCodeViewModel()),
                 Map.entry(CustomFieldSelectMultiplePerson.class, f -> new CustomFieldAnswerSelectMultiplePersonViewModel()),
@@ -69,6 +73,8 @@ public final class CustomFieldAnswerFactory {
                         ((CustomFieldSelectOneSpatialUnit) f).getSource())),
                 Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, f ->
                         new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel(((CustomFieldSelectMultipleSpatialUnitTree) f).getSource())),
+                Map.entry(CustomFieldSelectMultipleSpatialUnit.class, f ->
+                        new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel(((CustomFieldSelectMultipleSpatialUnit) f).getSource())),
                 Map.entry(CustomFieldSelectOneActionCode.class, f -> new CustomFieldAnswerSelectOneActionCodeViewModel()),
                 Map.entry(CustomFieldInteger.class, f -> new CustomFieldAnswerIntegerViewModel()),
                 Map.entry(CustomFieldDecimal.class, f -> new CustomFieldAnswerDecimalViewModel()),
@@ -95,6 +101,7 @@ public final class CustomFieldAnswerFactory {
     private static Map<Class<? extends CustomField>, Function<Void,? extends CustomFieldAnswer>> initAnswerEntityCreators() {
         return Map.ofEntries(
                 Map.entry(CustomFieldText.class, v -> new CustomFieldAnswerText()),
+                Map.entry(CustomFieldFile.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldInteger.class, v -> new CustomFieldAnswerInteger()),
                 Map.entry(CustomFieldDecimal.class, v -> new CustomFieldAnswerDecimal()),
                 Map.entry(CustomFieldDateTime.class, v -> new CustomFieldAnswerDateTime()),
@@ -104,6 +111,7 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldSelectMultiplePerson.class, v -> new CustomFieldAnswerSelectMultiplePerson()),
                 Map.entry(CustomFieldSelectOneSpatialUnit.class, v -> new CustomFieldAnswerSelectOneSpatialUnit()),
                 Map.entry(CustomFieldSelectMultipleSpatialUnitTree.class, v -> new CustomFieldAnswerSelectMultipleSpatialUnitTree()),
+                Map.entry(CustomFieldSelectMultipleSpatialUnit.class, v -> new CustomFieldAnswerSelectMultipleSpatialUnitTree()),
                 Map.entry(CustomFieldSelectOneActionCode.class, v -> new CustomFieldAnswerSelectOneActionCode()),
                 Map.entry(CustomFieldSelectOneActionUnit.class, v -> new CustomFieldAnswerSelectOneActionUnit()),
                 Map.entry(CustomFieldMeasurement.class, v -> new CustomFieldAnswerMeasurement()),

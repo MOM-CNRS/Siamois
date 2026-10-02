@@ -2630,6 +2630,84 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildProjectDocumentTypeSettings_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildProjectDocumentTypeSettings_returnsTheDefaultTypeAndEachCategoryWithItsForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(tableFieldConfigService.isTypeFieldConfigured(5L, ConfigurableTable.DOCUMENT)).thenReturn(true);
+
+        CustomFieldText defaultField = new CustomFieldText();
+        defaultField.setId(44L);
+        defaultField.setLabel("Champ par défaut");
+        defaultField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.DOCUMENT), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.DOCUMENT)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        CustomFieldText typeField = new CustomFieldText();
+        typeField.setId(46L);
+        typeField.setLabel("Champ de la catégorie");
+        typeField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.DOCUMENT, 42L))
+                .thenReturn(formUiDtoWithOneField(typeField));
+
+        var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getFields()).containsKey("46");
+    }
+
+    // Documents come before an institution's thesaurus declares the category field: no category, no stored
+    // identifier format, the seed layout as the form — and no failure.
+    @Test
+    void buildProjectDocumentTypeSettings_withoutTheCategoryField_fallsBackToTheSeedLayout() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(tableFieldConfigService.isTypeFieldConfigured(5L, ConfigurableTable.DOCUMENT)).thenReturn(false);
+        CustomFieldText seedField = new CustomFieldText();
+        seedField.setId(48L);
+        seedField.setLabel("Champ du modèle");
+        seedField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(isNull(), eq(ConfigurableTable.DOCUMENT), isNull()))
+                .thenReturn(formUiDtoWithOneField(seedField));
+
+        var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getData()).isEmpty();
+        assertThat(response.getDefaultType().getIdentifierConfig()).isNull();
+        assertThat(response.getDefaultType().getFields()).containsKey("48");
+        verify(tableFieldConfigService, never()).listConfiguredTypeConcepts(any(), eq(ConfigurableTable.DOCUMENT));
+    }
+
+    @Test
     void buildProjectContainerTypeSettings_projectWithoutOrganization_throws400() {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);

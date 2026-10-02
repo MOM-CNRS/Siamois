@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -28,6 +29,7 @@ public class OrganizationCountsService {
     private final SpecimenService specimenService;
     private final PhaseService phaseService;
     private final ContainerService containerService;
+    private final DocumentService documentService;
 
     @Transactional(readOnly = true)
     public OrganizationCountsResource countsForOrganization(ProjectApiCaller caller, Long organizationId) {
@@ -39,6 +41,7 @@ public class OrganizationCountsService {
                 recordingUnitService.countByInstitutionId(id),
                 specimenService.countByInstitution(institution),
                 phaseService.countSearchResults(institution, new FilterDTO()),
-                containerService.countSearchResults(institution, new FilterDTO()));
+                containerService.countSearchResults(institution, new FilterDTO()),
+                documentService.countSearchResults(institution, new FilterDTO()));
     }
 }

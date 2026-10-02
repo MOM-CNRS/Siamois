@@ -53,6 +53,7 @@ class OrganizationListServiceTest {
     @Mock private SpecimenService specimenService;
     @Mock private PhaseService phaseService;
     @Mock private ContainerService containerService;
+    @Mock private fr.siamois.domain.services.document.DocumentService documentService;
 
     private OrganizationListService service;
     private ProjectApiCaller caller;
@@ -61,7 +62,7 @@ class OrganizationListServiceTest {
     @BeforeEach
     void setUp() {
         service = new OrganizationListService(projectApiService, profilePermissionService, actionUnitService,
-                recordingUnitService, specimenService, phaseService, containerService);
+                recordingUnitService, specimenService, phaseService, documentService, containerService);
         institution = new InstitutionDTO();
         institution.setId(10L);
         PersonDTO person = new PersonDTO();
@@ -156,6 +157,38 @@ class OrganizationListServiceTest {
         ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
         verify(phaseService).searchPhases(eq(institution), filter.capture(), any());
         assertThat(filter.getValue().valueOfAsString(PhaseSpec.IDENTIFIER_FILTER)).isEqualTo("PH");
+    }
+
+    @Test
+    void pageDocuments_memberOfNoProject_getsAnEmptyPageWithoutQuerying() {
+        when(profilePermissionService.canViewInstitutionData(caller.person(), institution)).thenReturn(false);
+        when(actionUnitService.findMemberProjectIds(1L, 10L)).thenReturn(List.of());
+
+        Page<?> page = service.pageDocuments(caller, institution, 0, 10, null, null, fr.siamois.dto.FieldQuery.NONE);
+
+        assertThat(page.getContent()).isEmpty();
+        verifyNoInteractions(documentService);
+    }
+
+    @Test
+    void pageDocuments_searchesOnIdentifier_andRestrictsToTheMembersProjects() {
+        when(profilePermissionService.canViewInstitutionData(caller.person(), institution)).thenReturn(false);
+        when(actionUnitService.findMemberProjectIds(1L, 10L)).thenReturn(List.of(7L));
+        when(documentService.searchDocuments(eq(institution), any(), any())).thenReturn(Page.empty());
+
+        service.pageDocuments(caller, institution, 0, 10, "title:asc", "DOC", fr.siamois.dto.FieldQuery.NONE);
+
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(documentService).searchDocuments(eq(institution), filter.capture(), any());
+        assertThat(filter.getValue().valueOfAsString("identifier")).isEqualTo("DOC");
+        assertThat(filter.getValue().valueAsIdListOf("actionUnit")).containsExactly(7L);
+    }
+
+    @Test
+    void pageDocuments_unknownSortProperty_throws400() {
+        assertThatThrownBy(() -> service.pageDocuments(caller, institution, 0, 10, "nope:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .isInstanceOf(ResponseStatusException.class);
+        verifyNoInteractions(documentService);
     }
 
     @Test

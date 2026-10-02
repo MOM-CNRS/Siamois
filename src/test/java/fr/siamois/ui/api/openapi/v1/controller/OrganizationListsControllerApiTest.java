@@ -15,6 +15,7 @@ import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.PhaseOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
@@ -25,6 +26,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
+import fr.siamois.ui.api.openapi.v1.service.DocumentListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.PhaseListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -71,6 +73,8 @@ class OrganizationListsControllerApiTest {
     @Mock private FindOpenApiMapper findOpenApiMapper;
     @Mock private PhaseOpenApiMapper phaseOpenApiMapper;
     @Mock private PhaseListProjectionService phaseListProjectionService;
+    @Mock private DocumentOpenApiMapper documentOpenApiMapper;
+    @Mock private DocumentListProjectionService documentListProjectionService;
     @Mock private ContainerOpenApiMapper containerOpenApiMapper;
     @Mock private ContainerListProjectionService containerListProjectionService;
 
@@ -85,7 +89,7 @@ class OrganizationListsControllerApiTest {
         OrganizationListsControllerApi controller = new OrganizationListsControllerApi(
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
-                phaseOpenApiMapper, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
+                phaseOpenApiMapper, documentOpenApiMapper, documentListProjectionService, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
                 mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
@@ -172,6 +176,45 @@ class OrganizationListsControllerApiTest {
         when(phaseOpenApiMapper.toResource(eq(phase), any(), any())).thenReturn(new PhaseResource());
 
         mockMvc.perform(get("/api/v1/phases").param("organizationId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(false))
+                .andExpect(jsonPath("$.data[0].project").doesNotExist());
+    }
+
+    @Test
+    void listDocuments_returnsThePageWithItsProjectAndPermissions() throws Exception {
+        authenticated();
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        document.setId(6L);
+        document.setActionUnit(editableProject);
+        when(organizationListService.pageDocuments(caller, institution, 0, 10, "identifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .thenReturn(new PageImpl<>(List.of(document), PageRequest.of(0, 10), 1));
+        permissions(OrganizationListService.EditPermissions.DOCUMENTS);
+        when(documentListProjectionService.build(any(), isNull(), any()))
+                .thenReturn(DocumentListProjectionService.DocumentListProjection.empty());
+        when(documentOpenApiMapper.toResource(eq(document), any(), any()))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource());
+
+        mockMvc.perform(get("/api/v1/documents").param("organizationId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].project.resourceId").value("7"))
+                .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(true));
+    }
+
+    @Test
+    void listDocuments_rowWithoutProject_isReadOnly() throws Exception {
+        authenticated();
+        fr.siamois.dto.entity.DocumentDTO orphan = new fr.siamois.dto.entity.DocumentDTO();
+        orphan.setId(8L);
+        when(organizationListService.pageDocuments(caller, institution, 0, 10, "identifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .thenReturn(new PageImpl<>(List.of(orphan), PageRequest.of(0, 10), 1));
+        permissions(OrganizationListService.EditPermissions.DOCUMENTS);
+        when(documentListProjectionService.build(any(), isNull(), any()))
+                .thenReturn(DocumentListProjectionService.DocumentListProjection.empty());
+        when(documentOpenApiMapper.toResource(eq(orphan), any(), any()))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource());
+
+        mockMvc.perform(get("/api/v1/documents").param("organizationId", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(false))
                 .andExpect(jsonPath("$.data[0].project").doesNotExist());

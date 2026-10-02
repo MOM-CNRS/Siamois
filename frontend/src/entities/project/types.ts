@@ -20,6 +20,7 @@ export interface ProjectCounts {
   // it, see ProjectResponseMapper's own javadoc on the equivalent server-side field.
   finds?: number | null;
   phases?: number | null;
+  documents?: number | null;
   containers?: number | null;
 }
 

@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldFile;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -199,7 +200,17 @@ public abstract class DocumentForm {
     @Transient
     protected static final CustomFieldText commentsField = text(-721L, "comments", true);
 
-    /** The external URL; the stored file's own field comes with the upload (it has its own answer type). */
+    /** The stored file: shown and replaced through the upload endpoints. */
+    @Transient
+    protected static final CustomFieldFile fileField = CustomFieldFile.builder()
+            .label(LABEL_PREFIX + "file")
+            .isSystemField(true)
+            .id(-728L)
+            .valueBinding("file")
+            .concept(concept("file"))
+            .build();
+
+    /** The external URL, to which a document can point instead of (or besides) a stored file. */
     @Transient
     protected static final CustomFieldText externalUrlField = text(-722L, "externalUrl", false);
 
@@ -278,6 +289,7 @@ public abstract class DocumentForm {
                 SystemFieldSpec.of(crsField),
                 SystemFieldSpec.of(originalPathField),
                 SystemFieldSpec.of(commentsField),
+                SystemFieldSpec.of(fileField),
                 SystemFieldSpec.of(externalUrlField),
                 SystemFieldSpec.of(recordingUnitsField),
                 SystemFieldSpec.of(findsField),

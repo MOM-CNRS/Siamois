@@ -87,7 +87,7 @@ public class ProjectResponseMapper {
 
         // finds/phases/containers are left null here (list rows never show them) — set explicitly
         // by the detail endpoint, which is the only caller that needs the extra queries.
-        r.setCount(new ProjectResourceCounts(row.childActionUnitCount(), row.recordingUnitCount(), null, null, null));
+        r.setCount(new ProjectResourceCounts(row.childActionUnitCount(), row.recordingUnitCount(), null, null, null, null));
         if (r.getId() != null) {
             r.setLinks(ProjectResourceLinks.of(r.getId()));
         }

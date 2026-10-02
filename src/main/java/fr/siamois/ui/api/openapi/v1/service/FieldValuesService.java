@@ -3,12 +3,14 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -51,11 +53,13 @@ public class FieldValuesService {
     private final ProjectApiService projectApiService;
     private final SpecimenService specimenService;
     private final PhaseOpenApiService phaseOpenApiService;
+    private final DocumentOpenApiService documentOpenApiService;
     private final ContainerOpenApiService containerOpenApiService;
     private final RelationFieldService relationFieldService;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final FindListProjectionService findListProjectionService;
     private final PhaseListProjectionService phaseListProjectionService;
+    private final DocumentListProjectionService documentListProjectionService;
     private final ContainerListProjectionService containerListProjectionService;
     private final ProjectListProjectionService projectListProjectionService;
     private final CustomFieldRepository customFieldRepository;
@@ -66,6 +70,7 @@ public class FieldValuesService {
             "finds", Specimen.class,
             "phases", Phase.class,
             "containers", Container.class,
+            "documents", Document.class,
             "projects", ActionUnit.class);
 
     @Transactional(readOnly = true)
@@ -143,6 +148,11 @@ public class FieldValuesService {
             PhaseDTO phase = phaseOpenApiService.requireAccessible(parseId(key), caller.person(), caller.accessibleInstitutionIds());
             return new ProjectedOwner(phase.getId(), fieldId ->
                     phaseListProjectionService.build(List.of(phase), fieldId, lang, all).answersFor(phase.getId()));
+        }
+        if (ownerType == Document.class) {
+            DocumentDTO document = documentOpenApiService.requireAccessible(parseId(key), caller.person(), caller.accessibleInstitutionIds());
+            return new ProjectedOwner(document.getId(), fieldId ->
+                    documentListProjectionService.build(List.of(document), fieldId, lang, all).answersFor(document.getId()));
         }
         if (ownerType == Container.class) {
             ContainerDTO container = containerOpenApiService.requireAccessible(parseId(key), caller.person(), caller.accessibleInstitutionIds());

@@ -8,6 +8,10 @@ import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.multipart.MultipartFile;
+import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
+import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,9 @@ public class DocumentContentOpenApiService {
 
     private final DocumentService documentService;
     private final ProfilePermissionService profilePermissionService;
+
+    @Value("${server.servlet.context-path:}")
+    private String contextPath;
 
     public record DocumentFilePayload(InputStream inputStream, MediaType mediaType, String fileName) {
     }
@@ -56,6 +63,9 @@ public class DocumentContentOpenApiService {
     @Transactional(readOnly = true)
     public DocumentFilePayload requireDownloadableContent(long documentId, Set<Long> accessibleInstitutionIds) {
         Document doc = resolveAccessibleDocument(documentId, accessibleInstitutionIds);
+        if (!doc.hasFile()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+        }
         InputStream stream = documentService.findInputStreamOfDocument(doc)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found"));
         // Files are stored compressed on disk (see FileCompressor); a REST client expects the
@@ -106,6 +116,36 @@ public class DocumentContentOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification de document non autorisée");
         }
         return doc;
+    }
+
+    /**
+     * Remplace (ou pose) le fichier du document : même contrôle de périmètre et de droit d'édition que la
+     * suppression ; type et taille sont vérifiés comme à la création.
+     */
+    @Transactional
+    public Document replaceFile(long documentId, MultipartFile file, ProjectApiCaller caller) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "file est obligatoire");
+        }
+        Document doc = resolveWritableDocument(documentId, caller);
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(doc.getCreatedByInstitution().getId());
+        UserInfo info = new UserInfo(institution, caller.person(), null);
+        String mimeType = StringUtils.hasText(file.getContentType()) ? file.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        String name = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "document";
+        try {
+            return documentService.replaceFile(info, doc, name, mimeType, file.getSize(), file.getInputStream(), contextPath);
+        } catch (InvalidFileTypeException | InvalidFileSizeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lecture fichier", e);
+        }
+    }
+
+    /** Retire le fichier du document (le document et son URL externe demeurent). */
+    @Transactional
+    public Document removeFile(long documentId, ProjectApiCaller caller) {
+        return documentService.removeFile(resolveWritableDocument(documentId, caller));
     }
 
     /**

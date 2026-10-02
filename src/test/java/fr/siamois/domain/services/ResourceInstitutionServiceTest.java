@@ -46,6 +46,9 @@ class ResourceInstitutionServiceTest {
     @Mock
     private PhaseService phaseService;
 
+    @Mock
+    private fr.siamois.domain.services.document.DocumentService documentService;
+
     @InjectMocks
     private ResourceInstitutionService resourceInstitutionService;
 
@@ -56,6 +59,15 @@ class ResourceInstitutionServiceTest {
         institution = new InstitutionDTO();
         institution.setId(12L);
         institution.setName("Org");
+    }
+
+    @Test
+    void findInstitutionOf_shouldReturnInstitutionOfDocument() {
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        document.setCreatedByInstitution(institution);
+        when(documentService.findDtoById(13L)).thenReturn(document);
+
+        assertEquals(Optional.of(institution), resourceInstitutionService.findInstitutionOf("document", 13L));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -9,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
@@ -16,16 +18,19 @@ import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.PhaseOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.container.ContainerListResponse;
 import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
 import fr.siamois.ui.api.openapi.v1.response.phase.PhaseListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
@@ -34,6 +39,7 @@ import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService.EditPermissions;
+import fr.siamois.ui.api.openapi.v1.service.DocumentListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.PhaseListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -82,6 +88,8 @@ public class OrganizationListsControllerApi {
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final FindOpenApiMapper findOpenApiMapper;
     private final PhaseOpenApiMapper phaseOpenApiMapper;
+    private final DocumentOpenApiMapper documentOpenApiMapper;
+    private final DocumentListProjectionService documentListProjectionService;
     private final PhaseListProjectionService phaseListProjectionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
@@ -229,6 +237,51 @@ public class OrganizationListsControllerApi {
                 .toList();
         resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new PhaseListResponse(resources, meta(page, limit, offset)), page);
+    }
+
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @GetMapping("/api/v1/documents")
+    @Tag(name = "Document")
+    @Operation(summary = "Documents d'une organisation",
+            description = "Tri : identifier, title, creationTime, id (400 sur propriété inconnue). Recherche : identifier. "
+                    + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
+    public ResponseEntity<DocumentListResponse> listDocuments(
+            @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "identifier:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+
+        Page<DocumentDTO> page = organizationListService.pageDocuments(caller, institution, offset, limit, sort, search,
+                fieldQueryService.parse(Document.class, queryParams, sort, acceptLanguage));
+        Map<Long, Boolean> canEdit = canEdit(caller, institution, page, DocumentDTO::getActionUnit, lang, EditPermissions.DOCUMENTS);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(DocumentDTO::getActionUnit).toList(), lang);
+        DocumentListProjectionService.DocumentListProjection projection = documentListProjectionService.build(page.getContent(), fields, lang);
+
+        List<DocumentResource> resources = page.getContent().stream()
+                .map(dto -> {
+                    DocumentResource resource = documentOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
+                    return resource;
+                })
+                .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
+        return ok(new DocumentListResponse(resources, meta(page, limit, offset)), page);
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)

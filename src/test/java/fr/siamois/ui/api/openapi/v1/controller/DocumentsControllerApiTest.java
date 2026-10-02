@@ -33,6 +33,8 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +48,8 @@ class DocumentsControllerApiTest {
     private DocumentFormOpenApiService documentFormOpenApiService;
     @Mock
     private DocumentWriteOpenApiService documentWriteOpenApiService;
+    @Mock
+    private DocumentOpenApiService documentOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -58,7 +62,8 @@ class DocumentsControllerApiTest {
                 projectApiService,
                 documentContentOpenApiService,
                 documentFormOpenApiService,
-                documentWriteOpenApiService);
+                documentWriteOpenApiService,
+                documentOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .build();
@@ -210,5 +215,93 @@ class DocumentsControllerApiTest {
                 .andExpect(jsonPath("$.data.fields[0].fieldKey").value("title"));
 
         verify(documentFormOpenApiService).buildForm(personDto, 10L, Set.of(10L), "fr", null);
+    }
+
+    // --- the web client's endpoints (answers-based detail, creation, PATCH, siblings)
+
+    @Test
+    void getById_returnsTheResource() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource payload =
+                new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource();
+        payload.setId("5");
+        when(documentOpenApiService.getDocumentById(5L, personDto, Set.of(10L), "fr")).thenReturn(payload);
+
+        mockMvc.perform(get("/api/v1/documents/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("5"));
+    }
+
+    @Test
+    void createDocument_returns201() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource created =
+                new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource();
+        created.setId("55");
+        when(documentOpenApiService.createDocument(any(), eq(personDto), eq(Set.of(10L)), eq("fr"))).thenReturn(created);
+
+        mockMvc.perform(post("/api/v1/documents")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value("55"));
+    }
+
+    @Test
+    void createDocument_withoutPermission_returns403() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentOpenApiService.createDocument(any(), any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur ce projet"));
+
+        mockMvc.perform(post("/api/v1/documents")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void patchDocument_withAnswers_goesThroughTheFormPatch() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource patched =
+                new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource();
+        patched.setId("3");
+        when(documentOpenApiService.patchDocument(eq(3L), any(), eq(personDto), eq(Set.of(10L)), eq("fr"))).thenReturn(patched);
+
+        mockMvc.perform(patch("/api/v1/documents/3")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answers\":{\"-708\":{\"value\":\"Titre\"}}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("3"));
+
+        verifyNoInteractions(documentWriteOpenApiService);
+    }
+
+    @Test
+    void patchDocument_withFlatFields_staysOnTheMobilePath() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentWriteOpenApiService.updateDocument(any(), eq(3L), eq("Titre"), any(), any(), any(), any()))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource());
+
+        mockMvc.perform(patch("/api/v1/documents/3")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Titre\"}"))
+                .andExpect(status().isOk());
+
+        verifyNoInteractions(documentOpenApiService);
+    }
+
+    @Test
+    void getSiblings_returnsThem() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentOpenApiService.findSiblings(3L, personDto, Set.of(10L)))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource(null, null));
+
+        mockMvc.perform(get("/api/v1/documents/3/siblings")).andExpect(status().isOk());
     }
 }

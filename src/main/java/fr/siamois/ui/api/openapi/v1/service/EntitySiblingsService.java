@@ -36,6 +36,7 @@ public class EntitySiblingsService {
         FIND("Specimen", "e.fullIdentifier", ACTION_UNIT_SCOPE, "/specimen/"),
         CONTAINER("Container", "e.identifier", ACTION_UNIT_SCOPE, "/container/"),
         PHASE("Phase", "coalesce(e.identifier, e.title)", ACTION_UNIT_SCOPE, "/phase/"),
+        DOCUMENT("Document", "coalesce(e.identifier, e.title)", ACTION_UNIT_SCOPE, "/document/"),
         PLACE("SpatialUnit", "e.name", "e.createdByInstitution.id", "/spatial-unit/");
 
         private final String entity;

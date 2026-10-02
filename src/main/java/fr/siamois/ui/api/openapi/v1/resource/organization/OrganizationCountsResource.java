@@ -9,6 +9,7 @@ public record OrganizationCountsResource(
         long recordingUnits,
         long finds,
         long phases,
-        long containers
+        long containers,
+        long documents
 ) {
 }

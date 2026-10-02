@@ -10,6 +10,7 @@ export interface OrganizationCounts {
   finds: number;
   phases: number;
   containers: number;
+  documents: number;
 }
 
 export async function getOrganizationCounts(organizationId: number): Promise<OrganizationCounts> {
