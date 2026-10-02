@@ -158,6 +158,18 @@ main .wrap{container-type:inline-size}
   .feat-body h3{font-size:1.5rem}
 }
 
+/* publications */
+.pubs{list-style:none;margin:0 0 24px;padding:0;border-top:1px solid var(--ink)}
+.pubs li{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px 28px;padding:24px 0;border-bottom:1px solid var(--line)}
+.pubs .yr{font-family:var(--mono);font-size:.82rem;color:var(--violet);padding-top:6px}
+.pubs h3{font-size:1.35rem;line-height:1.3;max-width:62ch}
+.pubs .by{margin:8px 0 6px;color:var(--ink-2);font-size:.95rem}
+.pubs .ref{margin:0;display:flex;flex-wrap:wrap;gap:4px 18px;font-family:var(--mono);font-size:.78rem;color:var(--ink-2)}
+.pubs .ref a{color:var(--violet);text-decoration:underline;text-underline-offset:3px}
+.pubs .ref a:hover{color:var(--ink)}
+.link.all{max-width:420px;border-top:0;border-bottom:1px solid var(--ink)}
+@container (max-width:520px){ .pubs li{grid-template-columns:1fr} .pubs .yr{padding-top:0} }
+
 /* parcours graphique */
 .path{list-style:none;margin:0 0 24px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 20px}
 .step{position:relative;padding-top:26px}
@@ -206,7 +218,7 @@ main .wrap{container-type:inline-size}
   <div class="wrap">
     <div class="id"><a class="brand" href="#top">Grégory <em>Bliault</em></a><span class="role-top">Ingénieur logiciel &amp; Product Owner</span></div>
     <nav>
-      <a class="nl" href="#une">à la une</a><a class="nl" href="#parcours">parcours</a><a class="nl" href="#contact">contact</a>
+      <a class="nl" href="#une">à la une</a><a class="nl" href="#parcours">parcours</a><a class="nl" href="#publications">publications</a><a class="nl" href="#contact">contact</a>
       <a class="ic" href="https://www.linkedin.com/in/gr%C3%A9gory-bliault-bb796a61/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
       <a class="ic" href="https://github.com/gregblt" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></a>
     </nav>
@@ -254,6 +266,30 @@ main .wrap{container-type:inline-size}
     <div class="wrap">
       <div class="sec-head"><h2>Parcours</h2></div>
       <ol class="path" aria-label="Parcours en images"><li class="step now"><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="siamois"><div class="when">Oct. 2024 – aujourd'hui<br><span>CDD · Lyon</span></div><div class="tiles"><span class="logo "><img src="logos/cnrs.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>CNRS</b></span><span class="logo "><img src="logos/mom.svg" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>MOM</b></span><span class="logo wide"><img src="logos/siamois.png" alt="Siamois" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Siamois</b></span></div><h3>Siamois</h3><p>Développement et pilotage produit d'une application d'enregistrement de terrain archéologique.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="spine"><div class="when">Mars 2021 – 2025<br><span>Freelance</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE</h3><p>Plateforme collaborative d'analyse d'imagerie, publiée dans Radiology et J. Neuroimaging.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="tablet"><div class="when">Sept. 2018 – Mars 2021<br><span>Lyon · à distance</span></div><div class="tiles"><span class="logo "><img src="logos/bordeaux.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>U. Bordeaux</b></span><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>SPINE Tablet Game</h3><p>Fullstack et consulting avec des équipes internationales, jeu éducatif de crowdsourcing.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="stage"><div class="when">Avr. 2017 – Fév. 2018<br><span>Stage · Boston</span></div><div class="tiles"><span class="logo wide"><img src="logos/harvard-bwh.png" alt="Harvard Medical School, Brigham and Women's Hospital" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Harvard / Brigham</b></span></div><h3>Traitement d'IRM</h3><p>Algorithmes C++/Python sur IRM cérébrales, premier backend web.</p></div></li><li class="step "><div class="hit" role="button" tabindex="0" aria-pressed="false" data-job="formation"><div class="when">2014 – 2017<br><span>Formation</span></div><div class="tiles"><span class="logo "><img src="logos/insa.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>INSA Lyon</b></span><span class="logo "><img src="logos/ul1.png" alt="" onload="this.parentNode.classList.add('ok')" onerror="this.remove()"><b>Lyon 1</b></span></div><h3>Ingénieur &amp; Master</h3><p>Génie électrique, traitement du signal et de l'image. Master imagerie médicale.</p></div></li></ol>
+    </div>
+  </section>
+  <section id="publications">
+    <div class="wrap">
+      <div class="sec-head"><h2>Publications</h2></div>
+      <ol class="pubs">
+        <li>
+          <span class="yr">2023</span>
+          <div>
+            <h3>Multicenter Evaluation of AI-generated DIR and PSIR for Cortical and Juxtacortical Multiple Sclerosis Lesion Detection</h3>
+            <p class="by">Bouman P. M., Noteboom S., Santos F. A. N., et al.</p>
+            <p class="ref"><span>Radiology, 307(10)</span><a href="https://doi.org/10.1148/radiol.221425" target="_blank" rel="noopener">DOI 10.1148/radiol.221425</a></p>
+          </div>
+        </li>
+        <li>
+          <span class="yr">2020</span>
+          <div>
+            <h3>Identification and Characterization of Leptomeningeal Metastases Using SPINE, A Web-Based Collaborative Platform</h3>
+            <p class="by">Deol M., Palotai M., Pinzón A. M., et al.</p>
+            <p class="ref"><span>Journal of Neuroimaging, 31(2)</span><a href="https://doi.org/10.1111/jon.12820" target="_blank" rel="noopener">DOI 10.1111/jon.12820</a></p>
+          </div>
+        </li>
+      </ol>
+      <a class="link all" href="https://www.researchgate.net/profile/Gregory-Bliault" target="_blank" rel="noopener"><span>Toutes mes publications sur ResearchGate</span><span>→</span></a>
     </div>
   </section>
 </main>
