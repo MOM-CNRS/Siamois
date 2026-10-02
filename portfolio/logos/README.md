@@ -8,7 +8,7 @@
 | `bordeaux.png` | Université de Bordeaux | fourni |
 | `cnrs.png` | CNRS | fourni |
 | `siamois.png` | Siamois | fourni (dépôt) |
-| `mom.svg` | Maison de l'Orient et de la Méditerranée | **manquant** |
+| `mom.png` | Maison de l'Orient et de la Méditerranée | fourni |
 
 Tant qu'un fichier est absent, le nom de l'organisme s'affiche à la place.
 Pour un autre format (ex. `mom.png`), changez l'extension dans `index.html`.
