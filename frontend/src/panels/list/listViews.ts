@@ -7,7 +7,7 @@ import {type MessageKey, t} from "../../i18n";
  * LIST_VIEWS and its own availability rule in `availableViews`. Chosen in the gear menu, remembered
  * per pane.
  */
-export type ListViewMode = "list" | "tree" | "cards";
+export type ListViewMode = "list" | "tree" | "cards" | "map";
 
 export const DEFAULT_LIST_VIEW: ListViewMode = "list";
 
@@ -20,7 +20,13 @@ export const LIST_VIEWS: Record<ListViewMode, ListViewDefinition> = {
   list: { label: "list.viewModeList", icon: "bi bi-list-ul" },
   tree: { label: "list.viewModeTree", icon: "bi bi-list-nested" },
   cards: { label: "list.viewModeCards", icon: "bi bi-grid-3x3-gap" },
+  map: { label: "list.viewModeMap", icon: "bi bi-geo-alt" },
 };
+
+/** Whether a remembered or saved value is still a view mode (an unknown one is dropped). */
+export function isListViewMode(value: unknown): value is ListViewMode {
+  return typeof value === "string" && Object.keys(LIST_VIEWS).includes(value);
+}
 
 export interface ListViewOption {
   mode: ListViewMode;
@@ -54,6 +60,9 @@ export function availableViews(
   }
   // A grid of cards, for a type that says how its rows look as one.
   if (config.list.card != null) views.push("cards");
+  // A map, served by the collection's /map endpoint: the organization-wide one and a project's own
+  // sub-collection have it, another parent's (a phase's, a unit's children) does not.
+  if (config.list.mappable === true && (scope == null || scope.entityType === "project")) views.push("map");
   return views;
 }
 

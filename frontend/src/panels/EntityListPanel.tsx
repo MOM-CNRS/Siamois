@@ -24,6 +24,7 @@ import {entityColor} from "../fields/display";
 import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
+import {EntityMapView} from "./list/EntityMapView";
 import {EntityTable} from "./list/EntityTable";
 import {useTreeRows} from "./list/useTreeRows";
 import {EntityTableSettings} from "./list/EntityTableSettings";
@@ -195,6 +196,7 @@ function EntityListPanelBody({
   });
   const showTree = viewMode === "tree";
   const showCards = viewMode === "cards";
+  const showMap = viewMode === "map";
   // How a row opens a page: in the side overview, or in the main pane (focus) by leaving the overview out.
   // Remembered for the kind of list; project lists start in focus, the others in the overview.
   const [, setOpenModeTick] = useState(0);
@@ -494,7 +496,15 @@ function EntityListPanelBody({
           rowRules={rowRules}
         />
       )}
-      {showCards ? (
+      {showMap ? (
+        <EntityMapView
+          entityType={entityType}
+          config={config}
+          params={params}
+          onNavigate={onNavigate}
+          onOpenOverview={rowOpenOverview}
+        />
+      ) : showCards ? (
         <EntityCardGrid
           entityType={entityType}
           config={config}

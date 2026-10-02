@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {EntityTypeConfig} from "../../entities/shared/types";
-import {availableViews, DEFAULT_LIST_VIEW, resolveViewMode, viewOptions,} from "./listViews";
+import {availableViews, DEFAULT_LIST_VIEW, isListViewMode, resolveViewMode, viewOptions,} from "./listViews";
 
 const config = (list: Record<string, unknown>) =>
   ({ list }) as unknown as EntityTypeConfig<unknown, unknown>;
@@ -14,6 +14,14 @@ describe("availableViews", () => {
   it("adds the cards to a type that describes its cards", () => {
     expect(availableViews(config({ card: {} }), undefined)).toEqual(["list", "cards"]);
     expect(availableViews(config({ tree: true, card: {} }), undefined)).toEqual(["list", "tree", "cards"]);
+  });
+
+  it("adds the map to a mappable type, on the organization-wide list and a project's own", () => {
+    const mappable = config({ card: {}, mappable: true });
+    expect(availableViews(mappable, undefined)).toEqual(["list", "cards", "map"]);
+    expect(availableViews(mappable, { entityType: "project", id: 1 })).toEqual(["list", "cards", "map"]);
+    // Another parent's sub-collection has no /map endpoint.
+    expect(availableViews(mappable, { entityType: "recordingUnit", id: 1, path: "children" })).toEqual(["list", "cards"]);
   });
 
   it("adds the tree to the organization-wide list of a hierarchical type", () => {
@@ -107,5 +115,14 @@ describe("viewOptions", () => {
         ["tree", "Arbre"],
       ],
     );
+  });
+});
+
+describe("isListViewMode", () => {
+  it("knows every view mode, and only those", () => {
+    expect(["list", "tree", "cards", "map"].every(isListViewMode)).toBe(true);
+    expect(isListViewMode("timeline")).toBe(false);
+    expect(isListViewMode("toString")).toBe(false);
+    expect(isListViewMode(undefined)).toBe(false);
   });
 });

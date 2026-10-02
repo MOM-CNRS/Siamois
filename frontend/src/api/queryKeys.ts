@@ -1,4 +1,5 @@
 import type {ListParams, ListScope} from "../entities/shared/types";
+import type {ResultSetParams} from "../entities/shared/listApi";
 
 /**
  * Every query key of the app, so that a key and the invalidations that target it are written in
@@ -16,6 +17,9 @@ export const queryKeys = {
     scope: ListScope | undefined,
     filters?: Record<string, unknown>,
   ) => ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id, filters ?? null] as const,
+  // A list's map (listApi's fetchMap): under the list's own prefix, so anything that refreshes the list
+  // refreshes its map too.
+  entityListMap: (entityType: string, params: ResultSetParams) => ["entity-list", entityType, "map", params] as const,
   entityListSchema: (entityType: string, organizationId: number | undefined, scope: ListScope | undefined) =>
     ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id] as const,
 

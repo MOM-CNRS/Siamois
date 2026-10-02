@@ -4293,3 +4293,39 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .task-toast-count {
   color: var(--text-color-secondary, #6c757d);
 }
+
+
+/* ------------------------------------------------ list on a map (list view « Carte »)
+
+   The map fills what the toolbar leaves of the panel: .entity-map-frame is the flex child with a
+   bounded height, and Leaflet's own box is absolutely positioned inside it (a Leaflet container
+   needs a definite height of its own, which a flex item without one does not give it). */
+.entity-map-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.entity-map-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 16rem;
+}
+
+.entity-map-canvas,
+.entity-map-loading {
+  position: absolute;
+  inset: 0;
+}
+
+.entity-map-loading {
+  z-index: 1000;
+  opacity: 0.6;
+}
+
+.entity-map-notice.p-message {
+  margin: 0;
+}

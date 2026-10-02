@@ -104,8 +104,8 @@ export function EntityTableSettings({
     { mode: "overview", label: t("list.openOverview"), icon: "bi bi-layout-sidebar-inset-reverse" },
     { mode: "focus", label: t("list.openFocus"), icon: "bi bi-arrows-fullscreen" },
   ];
-  // The columns and the action bar arrange a table: they are offered on the list and the tree, not on cards.
-  const tableLayout = views == null || views.value !== "cards";
+  // The columns and the action bar arrange a table: they are offered on the list and the tree, not on cards or a map.
+  const tableLayout = views == null || views.value === "list" || views.value === "tree";
   const entries = [
     ...(columns && tableLayout
       ? [{ key: "columns", label: t("list.menuColumns"), icon: "bi bi-layout-three-columns", ref: columnTogglerRef }]

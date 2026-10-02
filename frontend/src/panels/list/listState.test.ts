@@ -57,7 +57,7 @@ describe("parsePersisted", () => {
         v: 1,
         limit: 500,
         sort: "",
-        viewMode: "map",
+        viewMode: "timeline",
         visibleColumns: ["a", 4],
         filters: { ok: { op: "contains", v: "x" }, bad: { op: "like", v: "x" }, worse: "text" },
       }),
