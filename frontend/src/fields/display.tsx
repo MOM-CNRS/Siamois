@@ -184,6 +184,9 @@ function formatOne(field: FieldResource, value: unknown): string {
     const measure = m.numericValue != null ? [m.numericValue, m.symbol].filter((p) => p != null && p !== "").join(" ") : "";
     return [measure, m.comment].filter(Boolean).join(" — ");
   }
+  if (field.answerType === "FILE" && typeof value === "object") {
+    return (value as { fileName?: string | null }).fileName ?? "";
+  }
   if (field.answerType === "DATETIME" && typeof value === "string") {
     return value.slice(0, 10);
   }
@@ -228,6 +231,14 @@ export function renderAnswerCell(
 ): ReactNode {
   const value = unwrapAnswer(rawValue);
   if (value == null) return "";
+  // A document's external URL opens in a new tab; the click must not also open the cell's editor.
+  if (field.valueBinding === "externalUrl" && typeof value === "string" && /^https?:\/\//i.test(value)) {
+    return (
+      <a href={value} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+        {value}
+      </a>
+    );
+  }
   const items = (Array.isArray(value) ? value : [value]).filter((item) => formatOne(field, item).length > 0);
   // A multi-valued answer may be a preview: its total, not its preview's length, is how many
   // values there are.

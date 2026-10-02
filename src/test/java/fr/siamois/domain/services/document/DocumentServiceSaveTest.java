@@ -376,4 +376,99 @@ class DocumentServiceSaveTest {
 
         assertThat(service.saveWithoutFile(uploader(), document).getIdentifier()).isEqualTo("DOC-78");
     }
+
+    // --- replacing and removing the stored file
+
+    private Document documentWithAFile() {
+        Document document = new Document();
+        document.setId(5L);
+        document.setActionUnit(project);
+        document.setIdentifier("DOC0005");
+        document.setFileName("old.pdf");
+        document.setMimeType("application/pdf");
+        document.setFileCode("OLDCODE");
+        document.setStoredFileName("OLDCODE.pdf");
+        return document;
+    }
+
+    @Test
+    void replaceFile_swapsTheStoredFileAndFillsInSizeAndFormat() throws Exception {
+        storageAccepts();
+        Document document = documentWithAFile();
+
+        Document saved = service.replaceFile(uploader(), document, "plan.pdf", "application/pdf", 2_097_152L,
+                new java.io.ByteArrayInputStream("abc".getBytes()), "/ctx");
+
+        verify(documentStorage).deleteStoredFile(document);
+        verify(documentStorage).save(any(UserInfo.class), eq(document), any());
+        assertThat(saved.getFileName()).isEqualTo("plan.pdf");
+        assertThat(saved.getFileCode()).isNotEqualTo("OLDCODE");
+        assertThat(saved.getUrl()).startsWith("/ctx/content/");
+        assertThat(saved.getSizeMb()).isEqualByComparingTo("2");
+        assertThat(saved.getFormat()).isEqualTo("pdf");
+        assertThat(saved.getMd5Sum()).isNotBlank();
+    }
+
+    @Test
+    void replaceFile_keepsAFormatThatWasTyped() throws Exception {
+        storageAccepts();
+        Document document = documentWithAFile();
+        document.setFormat("PDF/A");
+
+        service.replaceFile(uploader(), document, "plan.pdf", "application/pdf", 10L,
+                new java.io.ByteArrayInputStream("abc".getBytes()), "/ctx");
+
+        assertThat(document.getFormat()).isEqualTo("PDF/A");
+    }
+
+    @Test
+    void replaceFile_ofADocumentWithoutFile_hasNothingToDeleteFirst() throws Exception {
+        storageAccepts();
+        Document document = documentWithAFile();
+        document.clearFile();
+
+        service.replaceFile(uploader(), document, "plan.pdf", "application/pdf", 10L,
+                new java.io.ByteArrayInputStream("abc".getBytes()), "/ctx");
+
+        verify(documentStorage, never()).deleteStoredFile(any());
+        assertThat(document.hasFile()).isTrue();
+    }
+
+    @Test
+    void replaceFile_aRefusedFileLeavesTheCurrentOneAlone() {
+        storageAccepts();
+        Document document = documentWithAFile();
+        var user = uploader();
+        var content = new java.io.ByteArrayInputStream("abc".getBytes());
+
+        assertThatThrownBy(() -> service.replaceFile(user, document, "big.pdf", "application/pdf", 50_000_000L, content, "/ctx"))
+                .isInstanceOf(fr.siamois.domain.models.exceptions.InvalidFileSizeException.class);
+
+        verify(documentStorage, never()).deleteStoredFile(any());
+        assertThat(document.getFileCode()).isEqualTo("OLDCODE");
+    }
+
+    @Test
+    void removeFile_deletesTheBytesAndForgetsTheMetadata_butKeepsTheExternalUrl() {
+        Document document = documentWithAFile();
+        document.setExternalUrl("https://exemple.org");
+
+        Document saved = service.removeFile(document);
+
+        verify(documentStorage).deleteStoredFile(document);
+        assertThat(saved.hasFile()).isFalse();
+        assertThat(saved.getFileName()).isNull();
+        assertThat(saved.getExternalUrl()).isEqualTo("https://exemple.org");
+    }
+
+    @Test
+    void removeFile_ofADocumentWithoutFile_justSaves() {
+        Document document = documentWithAFile();
+        document.clearFile();
+
+        service.removeFile(document);
+
+        verify(documentStorage, never()).deleteStoredFile(any());
+        verify(documentRepository).save(document);
+    }
 }

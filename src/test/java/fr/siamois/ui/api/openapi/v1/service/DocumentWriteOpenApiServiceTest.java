@@ -86,6 +86,7 @@ class DocumentWriteOpenApiServiceTest {
                 projectDocumentOpenApiMapper,
                 actionUnitMapper,
                 actionUnitSummaryMapper);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "contextPath", "/siamois");
 
         PersonDTO person = new PersonDTO();
         person.setId(1L);

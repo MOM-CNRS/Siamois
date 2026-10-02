@@ -1640,3 +1640,14 @@ body button.p-button.status-button.status-button-compact {
   font-style: italic;
   color: var(--siamois-green-active, #4f8a4f);
 }
+
+/* A document's file on its fiche (fields/FileCell.tsx) */
+.file-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.file-cell-name { overflow-wrap: anywhere; }
+.file-cell-size { color: var(--text-color-secondary, #6c757d); }
+.file-cell-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+.file-cell-error { flex-basis: 100%; }
+.file-cell-inline { flex-basis: 100%; }
+.file-cell-inline-image { padding: 0; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; background: var(--surface-b, #f8f9fa); cursor: zoom-in; max-width: 100%; }
+.file-cell-inline-image img { display: block; max-width: 100%; max-height: 20rem; margin: 0 auto; }
+.file-cell-inline-pdf { width: 100%; height: 24rem; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; }

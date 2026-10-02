@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
@@ -114,6 +116,69 @@ class DocumentsControllerApiTest {
                 .andExpect(content().bytes(data));
 
         verify(documentContentOpenApiService).requireDownloadableContent(42L, Set.of(10L));
+    }
+
+    @Test
+    void downloadContent_withDownloadFlag_isAnAttachment() throws Exception {
+        login();
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
+                .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
+                        new ByteArrayInputStream(new byte[]{1}), MediaType.APPLICATION_PDF, "doc.pdf"));
+
+        mockMvc.perform(get("/api/v1/documents/42/file").param("download", "true"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("attachment")));
+    }
+
+    @Test
+    void putFile_storesTheUploadAndReturnsTheDocument() throws Exception {
+        login();
+        ProjectApiCaller caller = new ProjectApiCaller(personDto, Set.of(10L), List.of());
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource payload =
+                new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource();
+        payload.setId("5");
+        when(documentOpenApiService.getDocumentById(5L, personDto, Set.of(10L), "fr")).thenReturn(payload);
+        org.springframework.mock.web.MockMultipartFile file =
+                new org.springframework.mock.web.MockMultipartFile("file", "plan.pdf", "application/pdf", new byte[]{1, 2});
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(HttpMethod.PUT, "/api/v1/documents/5/file").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("5"));
+
+        verify(documentContentOpenApiService).replaceFile(5L, file, caller);
+    }
+
+    @Test
+    void putFile_withoutEditRight_returns403() throws Exception {
+        login();
+        when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentContentOpenApiService.replaceFile(anyLong(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "non"));
+        org.springframework.mock.web.MockMultipartFile file =
+                new org.springframework.mock.web.MockMultipartFile("file", "plan.pdf", "application/pdf", new byte[]{1});
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(HttpMethod.PUT, "/api/v1/documents/5/file").file(file))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteFile_removesItAndReturnsTheDocument() throws Exception {
+        login();
+        ProjectApiCaller caller = new ProjectApiCaller(personDto, Set.of(10L), List.of());
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource payload =
+                new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource();
+        payload.setId("5");
+        when(documentOpenApiService.getDocumentById(5L, personDto, Set.of(10L), "fr")).thenReturn(payload);
+
+        mockMvc.perform(delete("/api/v1/documents/5/file"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value("5"));
+
+        verify(documentContentOpenApiService).removeFile(5L, caller);
     }
 
     @Test

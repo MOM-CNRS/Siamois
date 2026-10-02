@@ -104,5 +104,9 @@ public class SystemPermissionsInitializer implements DatabaseInitializer{
                 .orElseThrow(() -> new DatabaseDataInitException("Default Institution not found"));
 
         assignSuperAdminsToExistingInstitutions();
+        int updated = profileService.addMissingDefaultPermissionsToProjectProfiles();
+        if (updated > 0) {
+            log.info("{} project profile(s) gained a default permission", updated);
+        }
     }
 }

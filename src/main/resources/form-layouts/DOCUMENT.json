@@ -1,6 +1,21 @@
 {
   "groups" : [
     {
+      "label" : "document.header.file",
+      "fields" : [
+        {
+          "fieldId" : -728,
+          "binding" : "file",
+          "width" : "FULL"
+        },
+        {
+          "fieldId" : -722,
+          "binding" : "externalUrl",
+          "width" : "FULL"
+        }
+      ]
+    },
+    {
       "label" : "document.header.identification",
       "fields" : [
         {
@@ -83,21 +98,6 @@
           "fieldId" : -715,
           "binding" : "rights",
           "width" : "HALF"
-        }
-      ]
-    },
-    {
-      "label" : "document.header.file",
-      "fields" : [
-        {
-          "fieldId" : -728,
-          "binding" : "file",
-          "width" : "FULL"
-        },
-        {
-          "fieldId" : -722,
-          "binding" : "externalUrl",
-          "width" : "FULL"
         }
       ]
     },

@@ -14,6 +14,7 @@ import fr.siamois.mapper.ProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -193,27 +194,59 @@ public class ProfileService {
         return profileRepository.save(projectProfile);
     }
 
+    private static final List<String> PROJECT_MANAGER_PERMISSIONS = List.of(
+            PermissionConstants.PROJECT_MANAGE_SETTINGS,
+            PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
+            PermissionConstants.PROJECT_EDIT_FINDS,
+            PermissionConstants.PROJECT_EDIT_PHASES,
+            PermissionConstants.PROJECT_EDIT_CONTAINERS,
+            PermissionConstants.PROJECT_EDIT_DOCUMENTS
+    );
+
+    private static final List<String> PROJECT_MEMBER_PERMISSIONS = List.of(
+            PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
+            PermissionConstants.PROJECT_EDIT_FINDS,
+            PermissionConstants.PROJECT_EDIT_PHASES,
+            PermissionConstants.PROJECT_EDIT_CONTAINERS,
+            PermissionConstants.PROJECT_EDIT_DOCUMENTS
+    );
+
     @NonNull
     public Profile createOrGetProjectManagerProfile(@NonNull ActionUnitDTO actionUnitDTO) {
-        return createOrGetProjectProfile("Gestionnaire du projet", ProfileConstants.PROJECT_MANAGER, List.of(
-                PermissionConstants.PROJECT_MANAGE_SETTINGS,
-                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
-                PermissionConstants.PROJECT_EDIT_FINDS,
-                PermissionConstants.PROJECT_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_DOCUMENTS
-        ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
+        return createOrGetProjectProfile("Gestionnaire du projet", ProfileConstants.PROJECT_MANAGER,
+                PROJECT_MANAGER_PERMISSIONS, actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
     }
 
     @NonNull
     public Profile createOrGetProjectMemberProfile(@NonNull ActionUnitDTO actionUnitDTO) {
-        return createOrGetProjectProfile("Membre du projet", ProfileConstants.PROJECT_MEMBER, List.of(
-                PermissionConstants.PROJECT_EDIT_RECORDING_UNITS,
-                PermissionConstants.PROJECT_EDIT_FINDS,
-                PermissionConstants.PROJECT_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_DOCUMENTS
-        ), actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
+        return createOrGetProjectProfile("Membre du projet", ProfileConstants.PROJECT_MEMBER,
+                PROJECT_MEMBER_PERMISSIONS, actionUnitDTO.getCreatedByInstitution(), actionUnitDTO);
+    }
+
+    /**
+     * Gives the project profiles that already exist the permissions their default list has gained since
+     * they were created (the document edit right, say): a project profile is otherwise only brought up to
+     * date when a project or a member is created. Only adds, so a permission an administrator took away
+     * from a profile for another reason stays what they made it, and nothing they added is removed.
+     *
+     * @return how many profiles gained a permission
+     */
+    @Transactional
+    public int addMissingDefaultPermissionsToProjectProfiles() {
+        return addMissingDefaults(ProfileConstants.PROJECT_MANAGER, PROJECT_MANAGER_PERMISSIONS)
+                + addMissingDefaults(ProfileConstants.PROJECT_MEMBER, PROJECT_MEMBER_PERMISSIONS);
+    }
+
+    private int addMissingDefaults(String code, List<String> defaults) {
+        Set<Permission> wanted = defaults.stream().map(this::findOrThrowPermission).collect(Collectors.toSet());
+        int updated = 0;
+        for (Profile profile : profileRepository.findAllOfProjectScopeByCode(code)) {
+            if (profile.getPermissions().addAll(wanted)) {
+                profileRepository.save(profile);
+                updated++;
+            }
+        }
+        return updated;
     }
 
     public List<ProfileDTO> findAllProfilesByActionUnit(ActionUnitDTO project) {

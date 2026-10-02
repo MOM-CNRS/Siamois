@@ -173,3 +173,21 @@ describe("chips as links", () => {
     expect(markup(renderAnswerCell(field(), value))).not.toContain("ref-chip-link");
   });
 });
+
+describe("a document's file and external URL", () => {
+  it("shows the file by its name, as text and as a cell", () => {
+    const f = field({ answerType: "FILE", valueBinding: "file" });
+    const value = { fileName: "plan.pdf", mimeType: "application/pdf", size: 10 };
+    expect(renderAnswerValue(f, value)).toBe("plan.pdf");
+    expect(markup(renderAnswerCell(f, value))).toBe("plan.pdf");
+  });
+
+  it("opens an http(s) external URL in a new tab, and leaves any other text as text", () => {
+    const f = field({ answerType: "TEXT", valueBinding: "externalUrl" });
+    const html = markup(renderAnswerCell(f, "https://exemple.org/doc"));
+    expect(html).toContain('href="https://exemple.org/doc"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(markup(renderAnswerCell(f, "javascript:alert(1)"))).not.toContain("<a ");
+  });
+});

@@ -269,4 +269,46 @@ class ProfileServiceTest {
         assertEquals(1, result.size());
         assertEquals(dto, result.get(0));
     }
+
+    // --- catching the existing project profiles up with the default permissions
+
+    private Permission permission(String code) {
+        return new Permission(null, code);
+    }
+
+    @Test
+    void addMissingDefaultPermissionsToProjectProfiles_addsWhatTheDefaultsGainedAndKeepsTheRest() {
+        when(permissionRepository.findByCode(anyString())).thenAnswer(i -> Optional.of(permission(i.getArgument(0))));
+        Permission custom = permission("PROJECT_CUSTOM");
+        Profile member = Profile.builder().code(ProfileConstants.PROJECT_MEMBER).name("Membre")
+                .permissions(new java.util.HashSet<>(Set.of(permission(PermissionConstants.PROJECT_EDIT_PHASES), custom)))
+                .build();
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of());
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of(member));
+
+        int updated = profileService.addMissingDefaultPermissionsToProjectProfiles();
+
+        assertEquals(1, updated);
+        Set<String> codes = member.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet());
+        assertTrue(codes.contains(PermissionConstants.PROJECT_EDIT_DOCUMENTS));
+        assertTrue(codes.contains("PROJECT_CUSTOM"));
+        verify(profileRepository).save(member);
+    }
+
+    @Test
+    void addMissingDefaultPermissionsToProjectProfiles_leavesAnUpToDateProfileAlone() {
+        when(permissionRepository.findByCode(anyString())).thenAnswer(i -> Optional.of(permission(i.getArgument(0))));
+        Profile manager = Profile.builder().code(ProfileConstants.PROJECT_MANAGER).name("Gestionnaire").permissions(new java.util.HashSet<>(List.of(
+                permission(PermissionConstants.PROJECT_MANAGE_SETTINGS),
+                permission(PermissionConstants.PROJECT_EDIT_RECORDING_UNITS),
+                permission(PermissionConstants.PROJECT_EDIT_FINDS),
+                permission(PermissionConstants.PROJECT_EDIT_PHASES),
+                permission(PermissionConstants.PROJECT_EDIT_CONTAINERS),
+                permission(PermissionConstants.PROJECT_EDIT_DOCUMENTS)))).build();
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of(manager));
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of());
+
+        assertEquals(0, profileService.addMissingDefaultPermissionsToProjectProfiles());
+        verify(profileRepository, never()).save(any());
+    }
 }

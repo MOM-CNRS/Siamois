@@ -2,6 +2,7 @@ import { useState, type SyntheticEvent } from "react";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import type { FieldState } from "../rules";
 import { renderAnswerCell, renderAnswerValue } from "./display";
+import { FileCell, type StoredFile } from "./FileCell";
 import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
@@ -66,6 +67,11 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
     // Clearing stays possible on a field the user could edit if it weren't for the rules: that is
     // how an incoherent value is resolved (never cleared automatically).
     setEditTarget({ row, field, anchor, required, readOnly, fieldState, incoherences, canClear: editable, fieldLabelOf });
+  }
+
+  // A file is sent, downloaded and removed in place, by its own endpoints (FileCell).
+  if (field.answerType === "FILE" && row.id != null) {
+    return <FileCell documentId={row.id} file={(stored ?? null) as StoredFile | null} editable={!readOnlyProp && field.readOnly !== true} onChanged={onSaved} />;
   }
 
   const content = renderAnswerCell(field, stored, { all: true });

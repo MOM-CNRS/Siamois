@@ -141,6 +141,7 @@ public class DocumentOpenApiService {
                         ConfigurableTable.DOCUMENT, document.getCategory() != null ? document.getCategory().getId() : null);
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(document, form, request.getAnswers(), projectId);
+                requireWebUrl(document.getExternalUrl());
                 return documentService.save(document, additionalAnswers);
             });
         }
@@ -193,6 +194,15 @@ public class DocumentOpenApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document introuvable ou hors périmètre");
         }
         return document;
+    }
+
+    private static final java.util.regex.Pattern WEB_URL = java.util.regex.Pattern.compile("^https?://\\S+$", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+    /** The external URL is opened in the browser: nothing but a web address (no {@code javascript:}…). */
+    private static void requireWebUrl(String url) {
+        if (url != null && !url.isBlank() && !WEB_URL.matcher(url.trim()).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'URL externe doit commencer par http:// ou https://");
+        }
     }
 
     private static String requireNonBlank(String value, String name) {
