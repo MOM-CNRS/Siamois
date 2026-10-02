@@ -803,7 +803,7 @@ class ProjectApiServiceMutationTest {
     @Test
     void parseDocumentSort_defaultsToIdentifierAscending_andKeepsIdAsTheOnlyKey() {
         assertThat(ProjectApiService.parseDocumentSort(null).toString()).startsWith("identifier: ASC");
-        assertThat(ProjectApiService.parseDocumentSort("id:desc").toString()).isEqualTo("id: DESC");
+        assertThat(ProjectApiService.parseDocumentSort("id:desc")).hasToString("id: DESC");
         assertThat(ProjectApiService.parseDocumentSort("title:desc").toString()).contains("title: DESC").contains("id: ASC");
     }
 

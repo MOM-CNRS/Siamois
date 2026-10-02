@@ -388,7 +388,7 @@ public class DocumentService implements ArkEntityService {
      * ones stored, and the size (in Mo) and format are filled in — the format only when the document has none.
      * Whoever created the document stays its creator.
      */
-    @Transactional
+    @Transactional(rollbackFor = {InvalidFileTypeException.class, InvalidFileSizeException.class, IOException.class})
     public Document replaceFile(UserInfo userInfo, Document document, String fileName, String mimeType, long size,
                                 InputStream fileInputStream, String contextPath)
             throws InvalidFileTypeException, InvalidFileSizeException, IOException {
@@ -408,7 +408,7 @@ public class DocumentService implements ArkEntityService {
             document.setSize(size);
             document.setMd5Sum(md5);
             document.setFileCode(generateFileInternalCode());
-            document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
+            document.setUrl(contextPath + "/content/" + document.contentFileName());
             document.setSizeMb(BigDecimal.valueOf(size).divide(BYTES_PER_MB, 3, RoundingMode.HALF_UP));
             if (document.getFormat() == null || document.getFormat().isBlank()) {
                 document.setFormat(document.fileExtension().toLowerCase(Locale.ROOT));

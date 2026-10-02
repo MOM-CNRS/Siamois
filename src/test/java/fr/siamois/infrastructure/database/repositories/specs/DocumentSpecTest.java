@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -105,7 +106,7 @@ class DocumentSpecTest {
         verify(root).join("places", JoinType.INNER);
         verify(root).join("phases", JoinType.INNER);
         verify(root).join("containers", JoinType.INNER);
-        verify(query, org.mockito.Mockito.times(5)).distinct(true);
+        verify(query, times(5)).distinct(true);
     }
 
     @Test

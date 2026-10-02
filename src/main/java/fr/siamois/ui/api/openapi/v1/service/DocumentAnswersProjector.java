@@ -76,6 +76,8 @@ public class DocumentAnswersProjector {
      * @param fieldsParam {@code null}/vide → pas de projection ; {@code all} → tout le catalogue ;
      *                    sinon une liste d'ids séparés par des virgules (ids inconnus ignorés).
      */
+    // A null selection means "no projection requested", which the list projection tells apart from an empty one.
+    @SuppressWarnings("java:S1168")
     public Set<String> resolveRequestedFieldIds(String fieldsParam) {
         if (fieldsParam == null || fieldsParam.isBlank()) {
             return null;
@@ -194,10 +196,13 @@ public class DocumentAnswersProjector {
         return out;
     }
 
-    private static Object toWireValue(CustomField field, Object raw, Map<Long, String> labels) {
-        if (raw == null) {
-            return null;
-        }
+    private static boolean isScalar(CustomField field) {
+        return field instanceof CustomFieldFile || field instanceof CustomFieldText || field instanceof CustomFieldInteger
+                || field instanceof CustomFieldDecimal || field instanceof CustomFieldDateTime;
+    }
+
+    /** A value that is not a reference: text, number, date, or the stored file. */
+    private static Object scalarValue(CustomField field, Object raw) {
         if (field instanceof CustomFieldFile) {
             return raw instanceof DocumentFileDTO file ? fileValue(file) : null;
         }
@@ -210,8 +215,15 @@ public class DocumentAnswersProjector {
         if (field instanceof CustomFieldDecimal) {
             return raw instanceof Number n ? n.doubleValue() : null;
         }
-        if (field instanceof CustomFieldDateTime) {
-            return raw;
+        return raw;
+    }
+
+    private static Object toWireValue(CustomField field, Object raw, Map<Long, String> labels) {
+        if (raw == null) {
+            return null;
+        }
+        if (isScalar(field)) {
+            return scalarValue(field, raw);
         }
         if (raw instanceof Collection<?> items) {
             List<ResourceRef> refs = new ArrayList<>(items.size());
