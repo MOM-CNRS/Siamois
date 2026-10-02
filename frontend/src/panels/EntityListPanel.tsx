@@ -15,13 +15,16 @@ import { FilterChipBar } from "../components/table/FilterChipBar";
 import type { FilterOption } from "../fields/optionSources";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { queryKeys } from "../api/queryKeys";
+import { EntityCardGrid } from "./list/EntityCardGrid";
+import { EntityMapView } from "./list/EntityMapView";
 import { EntityTable } from "./list/EntityTable";
 import { EntityTableSettings } from "./list/EntityTableSettings";
 import { ListSearchBox } from "./list/ListSearchBox";
 import { ListToolbar } from "./list/ListToolbar";
+import { ViewModeSwitch } from "./list/ViewModeSwitch";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
 import { useListColumns } from "./list/useListColumns";
-import { listPrefsKey } from "./listPreferences";
+import { listPrefsKey, loadListPrefs, saveListPrefs, type ListViewMode } from "./listPreferences";
 import { useRowActions } from "./useRowActions";
 import { useWriteMode } from "./writeMode";
 
@@ -133,6 +136,19 @@ export function EntityListPanel({
     scope,
   });
 
+  // The table or, for an entity that supplies `list.card`, a grid of cards — remembered per list.
+  // The map comes from the collection's /map endpoint, which a project's own sub-collection has but
+  // another parent's (a phase's, a unit's children) does not.
+  const canShowMap = config?.list.mappable === true && (scope == null || scope.entityType === "project");
+  const viewModes: ListViewMode[] = [...(config?.list.card ? ["cards" as const] : []), ...(canShowMap ? ["map" as const] : [])];
+  const [viewMode, setViewModeState] = useState<ListViewMode>(() => loadListPrefs(prefsKey).viewMode ?? "table");
+  const effectiveView: ListViewMode = viewModes.includes(viewMode) ? viewMode : "table";
+  function setViewMode(mode: ListViewMode) {
+    setViewModeState(mode);
+    saveListPrefs(prefsKey, { viewMode: mode });
+    setSelectedRows([]);
+  }
+
   const [selectedRows, setSelectedRows] = useState<RowRecord[]>([]);
   const clearSelection = useCallback(() => setSelectedRows([]), []);
 
@@ -210,6 +226,7 @@ export function EntityListPanel({
           // filters do not.
           start={
             <>
+              {viewModes.length > 0 && <ViewModeSwitch value={effectiveView} modes={viewModes} onChange={setViewMode} />}
               <EntityTableSettings
                 columns={
                   hasSchema ? { options: togglerOptions, visible: state.visibleColumns, onChange: setVisibleColumns } : null
@@ -243,6 +260,31 @@ export function EntityListPanel({
         className={`panel-progressbar entity-list-panel-progressbar${isFetching && !isLoading ? " is-active" : ""}`}
         aria-hidden={!(isFetching && !isLoading)}
       />
+      {effectiveView === "map" ? (
+        <EntityMapView
+          entityType={entityType}
+          config={config}
+          params={params}
+          onNavigate={onNavigate}
+          onOpenOverview={onOpenOverview}
+        />
+      ) : effectiveView === "cards" ? (
+        <EntityCardGrid
+          entityType={entityType}
+          config={config}
+          rows={rows}
+          isLoading={isLoading}
+          totalCount={totalCount}
+          params={params}
+          offset={state.offset}
+          limit={state.limit}
+          onPage={setPage}
+          renderRowActions={rowActions.render}
+          onNavigate={onNavigate}
+          onOpenOverview={onOpenOverview}
+          overviewEntityId={overviewEntityId}
+        />
+      ) : (
       <EntityTable
         entityType={entityType}
         config={config}
@@ -270,6 +312,7 @@ export function EntityListPanel({
         overviewEntityId={overviewEntityId}
         onCellSaved={onCellSaved}
       />
+      )}
       {rowActions.dialog}
     </>
   );

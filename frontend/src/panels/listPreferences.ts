@@ -18,8 +18,11 @@ export interface ActionBarPrefs {
   inline: string[];
 }
 
+export type ListViewMode = "table" | "cards" | "map";
+
 export interface ListPrefs {
   v: 1;
+  viewMode?: ListViewMode;
   visibleColumns?: string[];
   actionBar?: ActionBarPrefs;
 }
@@ -41,6 +44,7 @@ export function loadListPrefs(key: string): ListPrefs {
     if (parsed?.v !== 1) return { v: 1 };
     const prefs: ListPrefs = { v: 1 };
     if (isStringArray(parsed.visibleColumns)) prefs.visibleColumns = parsed.visibleColumns;
+    if (parsed.viewMode === "table" || parsed.viewMode === "cards" || parsed.viewMode === "map") prefs.viewMode = parsed.viewMode;
     const bar = parsed.actionBar;
     if (bar && isStringArray(bar.order) && isStringArray(bar.inline)) prefs.actionBar = { order: bar.order, inline: bar.inline };
     return prefs;

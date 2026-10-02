@@ -35,6 +35,21 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT r.spatialUnit.id as id, COUNT(r) as cnt FROM RecordingUnit r WHERE r.spatialUnit.id IN :ids GROUP BY r.spatialUnit.id")
     List<Object[]> countBySpatialUnitIds(@Param("ids") List<Long> ids);
 
+    /**
+     * The geometry of each given unit as GeoJSON in WGS84 (for the map view), whatever SRID it was
+     * stored in — PostGIS reprojects from the geometry's own SRID, which is never rewritten. Units
+     * with no geometry, no SRID (0) or an SRID absent from spatial_ref_sys are left out: their
+     * coordinates can't be placed on a map without guessing the system.
+     */
+    @Query(value = """
+        SELECT ru.recording_unit_id, ST_AsGeoJSON(ST_Transform(ru.geom, 4326))
+        FROM recording_unit ru
+        WHERE ru.recording_unit_id IN (:ids)
+          AND ru.geom IS NOT NULL
+          AND ST_SRID(ru.geom) IN (SELECT srid FROM spatial_ref_sys)
+        """, nativeQuery = true)
+    List<Object[]> findGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids);
+
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
             SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)

@@ -92,6 +92,14 @@ export interface EntitySiblings {
   next?: EntitySibling;
 }
 
+// What a list row shows as a card (list view « Cartes »): the title is the identifier column's own
+// value, the type and the validation status come from the row itself; these add the rest.
+export interface CardDef<TSummary> {
+  subtitle?: (row: TSummary) => string | null | undefined;
+  // Small icon + text lines under the title (dates, counters…); empty ones are skipped.
+  details?: (row: TSummary) => { icon: string; label: string | null | undefined }[];
+}
+
 export interface ColumnDef<TSummary> {
   key: string;
   header: string;
@@ -358,6 +366,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     createPrefillFrom?: (edited: { entityType?: string; entityId?: string | number; entityLabel?: string }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
+    // Present: the list can also be shown as a grid of cards (a « Cartes » choice in the toolbar).
+    card?: CardDef<TSummary>;
+    // Present: the list can also be shown on a map (a « Carte » choice in the toolbar) — the entity's
+    // API serves GET .../{collection}/map with each row's geometry in WGS84 (see listApi's fetchMap).
+    mappable?: boolean;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

@@ -25,21 +25,10 @@ interface ListResponseBody<T> {
  * (routes, icon, labels) elsewhere in this codebase.
  */
 export async function fetchList<T>(collectionPath: string, params: ListParams): Promise<PagedResult<T>> {
-  const query = new URLSearchParams();
+  const query = resultSetQuery(params);
   query.set("offset", String(params.offset));
   query.set("limit", String(params.limit));
-  if (params.search) query.set("search", params.search);
-  if (params.sort) query.set("sort", params.sort);
-  if (params.organizationId != null) query.set("organizationId", String(params.organizationId));
   if (params.fields) query.set("fields", params.fields);
-  if (params.filters) {
-    // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;
-    // filtersToQueryParams is the one place that owns the encoding, shared with the base64url
-    // ?s= state (panels/tableState.ts).
-    for (const [key, value] of filtersToQueryParams(params.filters).entries()) {
-      query.append(key, value);
-    }
-  }
 
   const path = `${basePath(collectionPath, params)}?${query.toString()}`;
   const body = await apiFetch<ListResponseBody<T>>(path);
@@ -51,7 +40,44 @@ export async function fetchList<T>(collectionPath: string, params: ListParams): 
   };
 }
 
-function basePath(collectionPath: string, params: ListParams): string {
+// What the list's map view shows — GET .../{collection}/map, the same result set as the list
+// (search, sort, filters, scope) answered with each row's geometry in WGS84 instead of a page.
+export interface MapFeature {
+  id: string;
+  fullIdentifier: string;
+  type?: { resolvedLabel?: string | null } | null;
+  validated?: string | null;
+  geometry: GeoJSON.Geometry;
+}
+
+export interface MapData {
+  features: MapFeature[];
+  meta: { total: number; shown: number; withoutGeometry: number; truncated: boolean };
+}
+
+export function fetchMap(collectionPath: string, params: Omit<ListParams, "offset" | "limit" | "fields">): Promise<MapData> {
+  const query = resultSetQuery(params);
+  return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${query.toString()}`);
+}
+
+// The query parameters that define a result set — shared by the list and its map.
+function resultSetQuery(params: Omit<ListParams, "offset" | "limit" | "fields">): URLSearchParams {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.sort) query.set("sort", params.sort);
+  if (params.organizationId != null) query.set("organizationId", String(params.organizationId));
+  if (params.filters) {
+    // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;
+    // filtersToQueryParams is the one place that owns the encoding, shared with the base64url
+    // ?s= state (panels/tableState.ts).
+    for (const [key, value] of filtersToQueryParams(params.filters).entries()) {
+      query.append(key, value);
+    }
+  }
+  return query;
+}
+
+function basePath(collectionPath: string, params: Pick<ListParams, "scope">): string {
   const { scope } = params;
   if (!scope) return `/api/v1/${collectionPath}`;
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
-import { fetchList } from "./listApi";
+import { fetchList, fetchMap } from "./listApi";
 import { registerEntityType } from "./registry";
 import type { EntityTypeConfig } from "./types";
 
@@ -116,5 +116,30 @@ describe("fetchList", () => {
 
     const [path] = mockedApiFetch.mock.calls[0];
     expect(path).toContain("/api/v1/unregistered-thing/1/things?");
+  });
+});
+
+describe("fetchMap", () => {
+  it("asks the collection's /map for the same result set, without paging", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, shown: 0, withoutGeometry: 0, truncated: false } });
+
+    await fetchMap("recording-units", { organizationId: 7, search: "UE", sort: "fullIdentifier:asc" });
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("/api/v1/recording-units/map?");
+    expect(path).toContain("organizationId=7");
+    expect(path).toContain("search=UE");
+    expect(path).toContain("sort=fullIdentifier%3Aasc");
+    expect(path).not.toContain("offset");
+    expect(path).not.toContain("limit");
+  });
+
+  it("goes through the project's own sub-collection when scoped to a project", async () => {
+    registerEntityType(stubConfig("project", "projects"));
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, shown: 0, withoutGeometry: 0, truncated: false } });
+
+    await fetchMap("recording-units", { scope: { entityType: "project", id: 5 } });
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("/api/v1/projects/5/recording-units/map?");
   });
 });

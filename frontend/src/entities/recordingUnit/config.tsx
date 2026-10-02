@@ -75,6 +75,15 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "recordingUnit",
+    mappable: true,
+    card: {
+      subtitle: (ru) => ru.project?.label,
+      details: (ru) => [
+        { icon: "bi bi-bucket", label: ru._counts?.finds ? `${ru._counts.finds} ${t("entity.find.plural").toLowerCase()}` : null },
+        { icon: "bi bi-diagram-3", label: ru._counts?.children ? `${ru._counts.children} ${t("entity.recordingUnit.plural").toLowerCase()}` : null },
+        { icon: "bi bi-file-earmark", label: ru._counts?.documents ? String(ru._counts.documents) : null },
+      ],
+    },
     // JSF's RecordingUnitTableViewModel row actions, after the generic bookmark/duplicate.
     rowActions: [
       {
