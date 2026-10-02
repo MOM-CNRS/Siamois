@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
+import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
 import { Menu } from "primereact/menu";
 import type { MenuItem } from "primereact/menuitem";
 import { createBookmark, deleteBookmark } from "../api/bookmarks";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import { DuplicateStructureOverlay } from "../components/DuplicateStructureOverlay";
-import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext } from "../entities/types";
+import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext, RowActionDef } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
 import { queryKeys } from "../api/queryKeys";
@@ -40,6 +41,9 @@ export interface UseRowActionsOptions {
   // listPreferences key: the action bar layout (which actions are inline, in which order) is
   // restored from and saved to this browser's storage.
   prefsKey?: string;
+  // Actions of the place the list is embedded in, after the entity's own (a Documents tab's
+  // « Retirer le lien »).
+  extraRowActions?: RowActionDef<unknown>[];
 }
 
 // One configurable row action — everything but the bookmark, which is always inline and first.
@@ -70,7 +74,7 @@ const DUPLICATE_KEY = "duplicate";
  * Returns the cell renderer and what the row actions share, rendered once by the list rather
  * than per row: the create overlay and the "…" menu.
  */
-export function useRowActions({ entityType, config, organizationId, writeMode, onOpen, prefsKey }: UseRowActionsOptions): {
+export function useRowActions({ entityType, config, organizationId, writeMode, onOpen, prefsKey, extraRowActions }: UseRowActionsOptions): {
   render: (row: Row) => ReactNode;
   dialog: ReactNode;
   // What the last action did, when it has something to say (a duplication).
@@ -131,6 +135,17 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const ctx: RowActionContext = {
     openCreate: (targetType, options) =>
       setPendingCreate({ entityType: targetType, ...options, anchor: actionAnchorRef.current }),
+    refresh: refreshAfterChange,
+    fail: (error, fallback) => notify.error(messageForError(error, fallback)),
+    confirm: (message, onAccept) =>
+      confirmPopup({
+        target: actionAnchorRef.current ?? undefined,
+        message,
+        icon: "bi bi-exclamation-triangle",
+        acceptLabel: t("common.confirm"),
+        rejectLabel: t("common.cancel"),
+        accept: onAccept,
+      }),
   };
 
   function isPending(mutation: { isPending: boolean; variables?: Row }, row: Row): boolean {
@@ -153,7 +168,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
           },
         ]
       : []),
-    ...(config?.list.rowActions ?? []).map((action) => ({
+    ...[...(config?.list.rowActions ?? []), ...(extraRowActions ?? [])].map((action) => ({
       key: action.key,
       icon: action.icon,
       label: action.tooltip,
@@ -306,6 +321,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     <>
       {dialog}
       {duplicateDialog}
+      <ConfirmPopup />
       <Menu ref={menuRef} popup model={menuModel} className="entity-list-panel-row-actions-menu" onHide={() => setMenuRow(null)} />
     </>
   );

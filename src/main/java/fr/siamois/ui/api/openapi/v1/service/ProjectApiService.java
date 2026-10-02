@@ -24,6 +24,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.history.HistoryAuditService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -1022,6 +1023,30 @@ public class ProjectApiService {
         }
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return documentService.searchDocuments(institution, filterDTO, pageable);
+    }
+
+    /**
+     * Page of the documents linked to one entity — the Documents tab of a recording unit, a find, a place, a
+     * phase or a container. Same search, sort whitelist and {@code f.<key>} contract as the project's.
+     * The caller's access to the entity is checked by the caller of this method.
+     */
+    public Page<DocumentDTO> pageDocumentsLinkedTo(
+            DocumentLinkKind kind,
+            long targetId,
+            InstitutionDTO institution,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseDocumentSort);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        return documentService.searchDocumentsLinkedTo(institution, kind, targetId, filterDTO, pageable);
     }
 
     /** Whether the caller can write documents on this project — one boolean for a whole page. */

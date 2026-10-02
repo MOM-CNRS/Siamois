@@ -24,6 +24,8 @@ export interface ListToolbarProps {
   // false: no "Créer" at all (a relation tab whose plain create wouldn't be linked to its parent).
   creatable?: boolean;
   createPrefill?: CreatePrefill;
+  // A control the embedding place adds before « Créer ».
+  endExtra?: ReactNode;
   // The create form needs a project picked, and none accepts this kind: the button is disabled.
   createBlocked: { loading: boolean } | null;
   onCreate?: () => void;
@@ -48,6 +50,7 @@ export function ListToolbar({
   onClearSelection,
   creatable,
   createPrefill,
+  endExtra,
   createBlocked,
   onCreate,
   onCreated,
@@ -125,6 +128,7 @@ export function ListToolbar({
               }}
             />
           )}
+          {endExtra}
           {createButton()}
         </>
       }

@@ -1,5 +1,6 @@
 import type { EntityRef, EntityTypeConfig } from "../types";
 import { relationTab } from "../../panels/relationTab";
+import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
@@ -95,6 +96,14 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         path: "projects",
         createPrefill: (entity) => ({ spatialContext: placeRef(entity) }),
         badge: (entity) => entity._counts?.projects ?? 0,
+      }),
+      // A place has no project: the documents of the organization that name it.
+      documentsTab<PlaceDetail>({
+        scopeEntityType: "place",
+        segment: "places",
+        linkField: "placeIds",
+        badge: (entity) => entity._counts?.documents ?? 0,
+        entityRef: placeRef,
       }),
     ],
     header: (entity) => (

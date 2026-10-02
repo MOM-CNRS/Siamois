@@ -164,7 +164,12 @@ export interface CreatePrefill {
   recordingUnit?: EntityRef;
   // Project: the place it is attached to (spatial context).
   spatialContext?: EntityRef;
+  // Document: what a Documents tab creates it linked to (the request's recordingUnitIds, findIds…).
+  document?: { field: DocumentLinkField; entityType: string; ref: EntityRef };
 }
+
+// The DocumentCreateRequest list a document is linked to its entity through.
+export type DocumentLinkField = "recordingUnitIds" | "findIds" | "placeIds" | "phaseIds" | "containerIds";
 
 export interface CreateFormContext {
   organizationId?: number;
@@ -230,6 +235,12 @@ export interface HomeWidgetDef {
 export interface RowActionContext {
   // Opens the create dialog for `entityType`, linked through `prefill`, in `scope`'s project.
   openCreate: (entityType: string, options: { scope?: ListScope; prefill?: CreatePrefill }) => void;
+  // Asks for a confirmation next to the button just clicked, then runs `onAccept` (no browser dialog).
+  confirm: (message: string, onAccept: () => void) => void;
+  // After an action that changed something: re-fetches this list and the open fiches (their tab badges).
+  refresh: () => void;
+  // Tells the user an action failed, with the server's message when it has one.
+  fail: (error: unknown, fallback: string) => void;
 }
 
 // One icon button in a list row's actions column — JSF's *TableViewModel.getRowActions(). The

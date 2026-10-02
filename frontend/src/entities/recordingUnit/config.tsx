@@ -1,5 +1,6 @@
 import type { EntityRef, EntityTypeConfig, ListScope } from "../types";
 import { relationTab } from "../../panels/relationTab";
+import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { scopeProjectId } from "../scope";
@@ -126,6 +127,14 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         projectId: (entity) => entity.projectId,
         createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.finds ?? 0,
+      }),
+      documentsTab<RecordingUnitDetail>({
+        scopeEntityType: "recordingUnit",
+        segment: "recording-units",
+        linkField: "recordingUnitIds",
+        badge: (entity) => entity._counts?.documents ?? 0,
+        projectId: (entity) => entity.projectId,
+        entityRef: recordingUnitRef,
       }),
     ],
     header: (entity, helpers) => <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />,

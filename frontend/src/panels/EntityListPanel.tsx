@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
@@ -9,7 +9,7 @@ import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/creatableProjects";
-import type { CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListScope } from "../entities/types";
+import type { CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListScope, RowActionDef } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
 import type { FilterOption } from "../fields/optionSources";
@@ -62,6 +62,10 @@ export interface EntityListPanelProps {
   // What the list's own "Créer" links the new entity to — a relation tab's parent (the recording
   // unit a new child or find belongs to, the place a new project is attached to).
   createPrefill?: CreatePrefill;
+  // What the place this list is embedded in adds to it: a control next to « Créer » (a Documents tab's
+  // « Associer »), and row actions after the entity's own.
+  toolbarExtra?: ReactNode;
+  extraRowActions?: RowActionDef<unknown>[];
 }
 
 
@@ -101,6 +105,8 @@ export function EntityListPanel({
   embedded,
   creatable,
   createPrefill,
+  toolbarExtra,
+  extraRowActions,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType) as EntityTypeConfig<unknown, unknown> | undefined;
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
@@ -138,6 +144,7 @@ export function EntityListPanel({
     writeMode,
     onOpen: onOpenOverview ?? onNavigate,
     prefsKey,
+    extraRowActions,
   });
 
   // An organization-wide list of a kind created inside a project: its create form picks the project,
@@ -190,6 +197,7 @@ export function EntityListPanel({
           onClearSelection={clearSelection}
           creatable={creatable}
           createPrefill={createPrefill}
+          endExtra={toolbarExtra}
           createBlocked={
             createNeedsPickedProject && !canCreateInSomeProject ? { loading: creatableProjects.isLoading } : null
           }

@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.ui.api.openapi.v1.resource.document.EntityDocumentCounts;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -66,6 +69,7 @@ public class PhaseOpenApiService {
     private final FieldAnswerWireService fieldAnswerWireService;
     private final CustomFieldAnswerService customFieldAnswerService;
     private final EffectiveFormResolver effectiveFormResolver;
+    private final DocumentService documentService;
 
     @Transactional(readOnly = true)
     public PhaseResource getPhaseById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -74,7 +78,9 @@ public class PhaseOpenApiService {
 
     private PhaseResource loadPhase(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
-        return toResourceWithPermissionsAndAnswers(phase, personDto, lang);
+        PhaseResource resource = toResourceWithPermissionsAndAnswers(phase, personDto, lang);
+        resource.setCount(new EntityDocumentCounts(documentService.countLinkedTo(DocumentLinkKind.PHASE, id)));
+        return resource;
     }
 
     @Transactional

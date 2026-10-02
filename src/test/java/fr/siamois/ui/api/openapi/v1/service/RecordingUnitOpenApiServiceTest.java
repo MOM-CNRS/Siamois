@@ -190,6 +190,9 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private SpatialUnitSummaryMapper spatialUnitSummaryMapper;
 
+    @Mock
+    private fr.siamois.domain.services.document.DocumentService documentService;
+
     @InjectMocks
     private RecordingUnitOpenApiService service;
 
@@ -749,6 +752,50 @@ class RecordingUnitOpenApiServiceTest {
 
         verify(formService).applyTypedValueToAnswer(same(answerVm), eq("projet"));
         verify(formService).updateJpaEntityFromResponse(responseVm, shell);
+    }
+
+    @Test
+    void buildMobileDetail_countsTheDocumentsWhenAsked() {
+        ruDto.setCreatedByInstitution(null);
+        List<String> counts = List.of("documents");
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, counts))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        ruResource.setCount(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts());
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+        when(documentService.countLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.RECORDING_UNIT, 1026L)).thenReturn(5L);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, counts, "fr");
+
+        assertThat(data.getCount().getDocuments()).isEqualTo(5L);
+    }
+
+    @Test
+    void buildMobileDetail_doesNotCountTheDocumentsUnlessAsked() {
+        ruDto.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        ruResource.setCount(new fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResourceCounts());
+        when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
+
+        RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
+
+        assertThat(data.getCount().getDocuments()).isNull();
+        verify(documentService, never()).countLinkedTo(any(), anyLong());
+    }
+
+    @Test
+    void buildFindMobilierForm_carriesTheFindsDocumentCount() {
+        SpecimenDTO spec = new SpecimenDTO();
+        spec.setId(1L);
+        spec.setType(new ConceptDTO());
+        FindResource expected = new FindResource();
+        when(specimenService.findAccessibleByKey("1", SCOPE)).thenReturn(Optional.of(spec));
+        when(findOpenApiMapper.toResource(spec)).thenReturn(expected);
+        when(documentService.countLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.FIND, 1L)).thenReturn(2L);
+
+        FindResource data = service.buildFindMobilierForm("1", personDto, SCOPE, "fr");
+
+        assertThat(data.getCount().getDocuments()).isEqualTo(2L);
     }
 
     @Test

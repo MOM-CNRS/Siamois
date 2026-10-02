@@ -70,8 +70,15 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         label: t("common.details"),
         render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
-      // actionUnitTabView.xhtml's own order is détails, documents, UE, contenants, phases; only
-      // the fiche and this one are migrated so far, so UE comes right after détails for now.
+      // actionUnitTabView.xhtml's order: détails, documents, UE, contenants, phases. The project is
+      // the document's own attachment, not a link: the tab lists, creates, and has nothing to link.
+      relationTab<ProjectDetail>({
+        key: "documents",
+        label: t("entity.document.plural"),
+        target: "document",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.documents ?? 0,
+      }),
       relationTab<ProjectDetail>({
         key: "recording-units",
         label: t("entity.recordingUnit.plural"),

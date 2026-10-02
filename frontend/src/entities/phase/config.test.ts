@@ -15,7 +15,7 @@ describe("phaseEntityConfig", () => {
   });
 
   it("registers the fiche and recording-units tabs, a header, and a patchAnswers write path", () => {
-    expect(phaseEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "recording-units"]);
+    expect(phaseEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "documents", "recording-units"]);
     expect(phaseEntityConfig.detail.header).toBeDefined();
     expect(phaseEntityConfig.api.patchAnswers).toBeDefined();
   });

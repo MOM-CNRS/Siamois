@@ -15,7 +15,7 @@ describe("placeEntityConfig", () => {
   });
 
   it("registers the fiche, contained-places and projects tabs, a header, and a patchAnswers write path", () => {
-    expect(placeEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "children", "projects"]);
+    expect(placeEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "children", "projects", "documents"]);
     expect(placeEntityConfig.detail.header).toBeDefined();
     expect(placeEntityConfig.api.patchAnswers).toBeDefined();
   });

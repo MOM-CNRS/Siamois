@@ -144,6 +144,20 @@ public class DocumentService implements ArkEntityService {
                 .map(documentMapper::convert);
     }
 
+    /** The documents linked to one entity (a recording unit, a find…), searched and paged like the project's. */
+    @Transactional(readOnly = true)
+    public Page<DocumentDTO> searchDocumentsLinkedTo(InstitutionDTO institutionDTO, DocumentLinkKind kind, long targetId,
+                                                     FilterDTO filters, Pageable pageable) {
+        return documentRepository.findAll(prepareSpecs(institutionDTO, filters).and(kind.documentsLinkedTo(targetId)), pageable)
+                .map(documentMapper::convert);
+    }
+
+    /** How many documents are linked to one entity — the badge of its Documents tab. */
+    @Transactional(readOnly = true)
+    public long countLinkedTo(DocumentLinkKind kind, long targetId) {
+        return documentRepository.count(kind.documentsLinkedTo(targetId));
+    }
+
     @Transactional(readOnly = true)
     public int countSearchResults(InstitutionDTO institutionDTO, FilterDTO filters) {
         return Math.toIntExact(documentRepository.count(prepareSpecs(institutionDTO, filters)));

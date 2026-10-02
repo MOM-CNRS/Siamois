@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.ui.api.openapi.v1.resource.document.EntityDocumentCounts;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -69,6 +72,7 @@ public class ContainerOpenApiService {
     private final FieldAnswerWireService fieldAnswerWireService;
     private final CustomFieldAnswerService customFieldAnswerService;
     private final EffectiveFormResolver effectiveFormResolver;
+    private final DocumentService documentService;
 
     @Transactional(readOnly = true)
     public ContainerResource getContainerById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -77,7 +81,9 @@ public class ContainerOpenApiService {
 
     private ContainerResource loadContainer(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
-        return toResourceWithPermissionsAndAnswers(container, personDto, lang);
+        ContainerResource resource = toResourceWithPermissionsAndAnswers(container, personDto, lang);
+        resource.setCount(new EntityDocumentCounts(documentService.countLinkedTo(DocumentLinkKind.CONTAINER, id)));
+        return resource;
     }
 
     @Transactional

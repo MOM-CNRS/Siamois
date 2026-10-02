@@ -157,7 +157,8 @@ class RecordingUnitsControllerApiTest {
                 projectApiService, mock(fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService.class), ListQueryStubs.none(),
                 mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class));
         RecordingUnitDocumentsControllerApi documentsController = new RecordingUnitDocumentsControllerApi(
-                projectApiService, documentWriteOpenApiService);
+                projectApiService, documentWriteOpenApiService,
+                mock(fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService.class), ListQueryStubs.none());
         RecordingUnitParentsControllerApi parentsController = new RecordingUnitParentsControllerApi(
                 projectApiService, recordingUnitOpenApiService);
 

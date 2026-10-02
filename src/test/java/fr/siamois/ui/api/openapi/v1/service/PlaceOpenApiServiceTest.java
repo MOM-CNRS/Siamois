@@ -52,6 +52,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PlaceOpenApiServiceTest {
 
+    private final fr.siamois.domain.services.document.DocumentService documentService = mock(fr.siamois.domain.services.document.DocumentService.class);
+
     private static final Set<Long> SCOPE = Set.of(10L);
 
     @Mock
@@ -89,7 +91,7 @@ class PlaceOpenApiServiceTest {
                 conceptMapper,
                 profilePermissionService,
                 placeOpenApiMapper,
-                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class), documentService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -701,10 +703,13 @@ class PlaceOpenApiServiceTest {
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of(),
                         org.springframework.data.domain.PageRequest.of(0, 1), 7L));
 
+        when(documentService.countLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.PLACE, 5L)).thenReturn(6L);
+
         PlaceResource result = service.getPlaceById(caller, 5L, "fr");
 
         assertThat(result.getCount().getChildren()).isEqualTo(4L);
         assertThat(result.getCount().getProjects()).isEqualTo(7L);
+        assertThat(result.getCount().getDocuments()).isEqualTo(6L);
     }
 
     @Test

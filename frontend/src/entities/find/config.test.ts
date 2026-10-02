@@ -15,8 +15,7 @@ describe("findEntityConfig", () => {
   });
 
   it("registers a single fiche tab and a header, and a patchAnswers write path for the list overlay", () => {
-    expect(findEntityConfig.detail.tabs).toHaveLength(1);
-    expect(findEntityConfig.detail.tabs[0].key).toBe("fiche");
+    expect(findEntityConfig.detail.tabs.map((t) => t.key)).toEqual(["fiche", "documents"]);
     expect(findEntityConfig.detail.header).toBeDefined();
     expect(findEntityConfig.api.patchAnswers).toBeDefined();
   });

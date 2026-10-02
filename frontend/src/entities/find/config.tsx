@@ -9,6 +9,7 @@ import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
+import { documentsTab } from "../document/documentsTab";
 import type { FindDetail, FindSummary } from "./types";
 import { t } from "../../i18n";
 
@@ -59,6 +60,14 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
           <SchemaFicheTab entity={entity} entityType="find" typesSegment="find-types" save={patchFindAnswers} onSaved={helpers.refetch} />
         ),
       },
+      documentsTab<FindDetail>({
+        scopeEntityType: "find",
+        segment: "finds",
+        linkField: "findIds",
+        badge: (entity) => entity._counts?.documents ?? 0,
+        projectId: (entity) => entity.projectId,
+        entityRef: (entity) => ({ id: entity.id, label: entity.fullIdentifier || String(entity.id) }),
+      }),
     ],
     header: (entity) => (
       <IdentifierTypeHeader entityType="find" chipPrefix="specimen" label={entity.fullIdentifier} typeLabel={entity.type?.resolvedLabel} />

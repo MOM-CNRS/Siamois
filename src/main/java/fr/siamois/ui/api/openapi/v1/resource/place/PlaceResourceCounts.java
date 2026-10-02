@@ -19,4 +19,7 @@ public class PlaceResourceCounts {
     @Schema(description = "Nombre d'UE")
     private Long recordingUnits;
 
+    @Schema(description = "Nombre de documents liés")
+    private Long documents;
+
 }

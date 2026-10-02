@@ -14,7 +14,7 @@ export interface RecordingUnitCreateBody {
 
 const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, RecordingUnitCreateBody>("recording-units", {
   // The fiche's tab badges (contained RUs, finds) — not computed unless asked.
-  getQuery: "counts=specimen,children",
+  getQuery: "counts=specimen,children,documents",
   toCreateBody: (body) => ({
     projectId: body.projectId,
     typeId: body.typeId,

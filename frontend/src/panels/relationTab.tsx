@@ -1,4 +1,5 @@
-import type { CreatePrefill, DetailTabDef, DetailTabHelpers } from "../entities/types";
+import type { ReactNode } from "react";
+import type { CreatePrefill, DetailTabDef, DetailTabHelpers, RowActionDef } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 
 // Builds a DetailTabDef whose content is another entity type's own list, scoped to this detail's
@@ -32,6 +33,10 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
   // Links the tab's own "Créer" to the parent (the new UE is its child, the new find is on it…),
   // so what gets created shows up in this tab.
   createPrefill?: (entity: TDetail) => CreatePrefill;
+  // What the tab adds to its list: a control next to « Créer » and row actions (the Documents tab's
+  // « Associer » and « Retirer le lien »).
+  toolbarExtra?: (entity: TDetail, helpers: DetailTabHelpers) => ReactNode;
+  extraRowActions?: (entity: TDetail) => RowActionDef<unknown>[];
 }): DetailTabDef<TDetail> {
   return {
     key: spec.key,
@@ -44,6 +49,8 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
         scope={{ entityType: spec.scopeEntityType, id: entity.id, path: spec.path, projectId: spec.projectId?.(entity) ?? undefined }}
         creatable={spec.creatable}
         createPrefill={spec.createPrefill?.(entity)}
+        toolbarExtra={spec.toolbarExtra?.(entity, helpers)}
+        extraRowActions={spec.extraRowActions?.(entity)}
         organizationId={helpers.organizationId}
         onNavigate={helpers.onNavigate}
         onOpenOverview={helpers.onOpenOverview}

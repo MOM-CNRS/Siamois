@@ -9,6 +9,7 @@ import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
+import { documentsTab } from "../document/documentsTab";
 import type { ContainerDetail, ContainerSummary } from "./types";
 import { t } from "../../i18n";
 
@@ -52,6 +53,14 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
           <SchemaFicheTab entity={entity} entityType="container" typesSegment="container-types" save={patchContainerAnswers} onSaved={helpers.refetch} />
         ),
       },
+      documentsTab<ContainerDetail>({
+        scopeEntityType: "container",
+        segment: "containers",
+        linkField: "containerIds",
+        badge: (entity) => entity._counts?.documents ?? 0,
+        projectId: (entity) => entity.projectId,
+        entityRef: (entity) => ({ id: entity.id, label: entity.identifier || String(entity.id) }),
+      }),
     ],
     header: (entity) => (
       <IdentifierTypeHeader entityType="container" chipPrefix="container" label={entity.identifier} typeLabel={entity.type?.resolvedLabel} />

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
 import { registerEntityType } from "../registry";
-import { getDocument, listDocuments, patchDocumentAnswers, createDocument } from "./api";
+import { getDocument, listDocuments, patchDocumentAnswers, createDocument, linkDocument, unlinkDocument } from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -89,5 +89,23 @@ describe("createDocument", () => {
       body: { projectId: "5", categoryId: "9" },
     });
     expect(result).toEqual({ resourceType: "documents", id: "55" });
+  });
+});
+
+describe("linking a document to an entity", () => {
+  it("PUTs the link under the entity's own segment", async () => {
+    mockedApiFetch.mockResolvedValue(undefined);
+
+    await linkDocument("recording-units", 5, 11);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/5/documents/11", { method: "PUT" });
+  });
+
+  it("DELETEs the link, not the document", async () => {
+    mockedApiFetch.mockResolvedValue(undefined);
+
+    await unlinkDocument("finds", 5, 11);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/finds/5/documents/11", { method: "DELETE" });
   });
 });

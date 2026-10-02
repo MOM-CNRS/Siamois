@@ -174,4 +174,42 @@ describe("relationTab project context and create", () => {
     await flush();
     expect(Array.from(container.querySelectorAll("button")).some((b) => b.textContent === "Créer")).toBe(true);
   });
+
+  it("adds the embedding place's toolbar control and row actions, run with a confirm/refresh/fail context", async () => {
+    childListMock.mockResolvedValue({
+      data: [{ id: "9", name: "Child A", _permissions: { canEdit: true } } as FakeChildRow],
+      totalCount: 1,
+      limit: 10,
+      offset: 0,
+    });
+    const run = vi.fn();
+    const extraTab = relationTab<FakeParent>({
+      key: "children",
+      label: "Children",
+      target: "fake-child-entity",
+      scopeEntityType: "fake-parent-entity",
+      toolbarExtra: (entity, helpers) => (
+        <button type="button" data-testid="extra">{`extra ${entity.id} ${helpers.organizationId}`}</button>
+      ),
+      extraRowActions: () => [{ key: "unlink", icon: "bi bi-x", tooltip: "Retirer", run }],
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>{extraTab.render({ id: 5 }, { refetch: () => {}, organizationId: 42 })}</WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.querySelector('[data-testid="extra"]')?.textContent).toBe("extra 5 42");
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-action="unlink"]')!.click();
+    });
+    expect(run).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "9" }),
+      expect.objectContaining({ confirm: expect.any(Function), refresh: expect.any(Function), fail: expect.any(Function) }),
+    );
+  });
 });

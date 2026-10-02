@@ -52,6 +52,8 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PhaseOpenApiServiceTest {
 
+    private final fr.siamois.domain.services.document.DocumentService documentService = mock(fr.siamois.domain.services.document.DocumentService.class);
+
     @Mock
     private PhaseService phaseService;
     @Mock
@@ -88,7 +90,7 @@ class PhaseOpenApiServiceTest {
     void setUp() {
         service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
                 profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
-                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
+                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());
         personDto = new PersonDTO();
@@ -166,9 +168,12 @@ class PhaseOpenApiServiceTest {
                 eq(PermissionConstants.PROJECT_EDIT_PHASES)))
                 .thenReturn(true);
 
+        when(documentService.countLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.PHASE, 5L)).thenReturn(3L);
+
         PhaseResource result = service.getPhaseById(5L, personDto, Set.of(10L), "fr");
 
         assertThat(result.getPermissions().canEdit()).isTrue();
+        assertThat(result.getCount().getDocuments()).isEqualTo(3L);
     }
 
     // --- createPhase ---

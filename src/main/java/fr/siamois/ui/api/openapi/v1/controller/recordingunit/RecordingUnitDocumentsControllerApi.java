@@ -1,6 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
+import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
+import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
+import org.springframework.util.MultiValueMap;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentResponse;
@@ -31,6 +37,8 @@ public class RecordingUnitDocumentsControllerApi {
 
     private final ProjectApiService projectApiService;
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
+    private final DocumentLinksOpenApiService documentLinksOpenApiService;
+    private final FieldQueryService fieldQueryService;
 
     @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
@@ -73,14 +81,19 @@ public class RecordingUnitDocumentsControllerApi {
 
 
 
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping("/{id}/documents")
     @Operation(
             summary = "Documents rattachés à une unité d'enregistrement",
             description = "Liste des documents liés à l'UE via recording_unit_document. "
-                    + "Même clé d'UE que GET /api/v1/recording-units/{id} (identifiant numérique ou full_identifier)."
+                    + "Même clé d'UE que GET /api/v1/recording-units/{id} (identifiant numérique ou full_identifier). "
+                    + "Sans `limit` : tous les documents, sans pagination (contrat historique du mobile). Avec `limit` : liste "
+                    + "paginée (offset, limit), tri (sort : identifier, title, creationTime, id ; défaut identifier:asc), recherche "
+                    + "sur identifier (search), filtres f.<clé> par colonne et projection `fields` dans answers."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Pagination invalide"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "404", description = "UE introuvable ou hors périmètre"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
@@ -90,17 +103,32 @@ public class RecordingUnitDocumentsControllerApi {
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
                     schema = @Schema(type = "string", example = "INST-PROJ-UE42")
             )
-            @PathVariable("id") String id) {
-        // todo : add pagination
+            @PathVariable("id") String id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) Integer limit,
+            @Parameter(description = "Recherche libre, sur identifier")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Tri, ex. identifier:asc ou title:desc")
+            @RequestParam(defaultValue = "identifier:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = "Projection des champs de formulaire dans answers : \"all\" ou une liste d'ids séparés "
+                    + "par des virgules. Absent : pas de clé answers.")
+            @RequestParam(required = false) String fields,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        List<DocumentResource> documents = projectApiService.listDocumentsForAccessibleRecordingUnit(caller, id);
-        // todo : add meta counts
-        return ResponseEntity.ok(new DocumentListResponse(documents, null));
+        if (limit == null) {
+            // The historical (mobile) contract: everything, unpaged.
+            List<DocumentResource> documents = projectApiService.listDocumentsForAccessibleRecordingUnit(caller, id);
+            return ResponseEntity.ok(new DocumentListResponse(documents, null));
+        }
+        projectApiService.validatePagedListRequest(offset, limit);
+        long recordingUnitId = projectApiService.requireViewableRecordingUnit(caller, id).getId();
+        DocumentListResponse body = documentLinksOpenApiService.page(DocumentLinkKind.RECORDING_UNIT, recordingUnitId, caller,
+                offset, limit, sort, search, fieldQueryService.parse(Document.class, queryParams, sort, acceptLanguage), fields,
+                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(body.getMeta().total()))
+                .body(body);
     }
-
-
-
-
-
 
 }

@@ -12,6 +12,8 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentLinkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -37,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -65,6 +68,7 @@ public class DocumentOpenApiService {
     private final FieldAnswerWireService fieldAnswerWireService;
     private final CustomFieldAnswerService customFieldAnswerService;
     private final EffectiveFormResolver effectiveFormResolver;
+    private final DocumentLinkService documentLinkService;
 
     @Transactional(readOnly = true)
     public DocumentResource getDocumentById(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
@@ -111,7 +115,29 @@ public class DocumentOpenApiService {
         }
 
         DocumentDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> documentService.save(shell));
+        linkPrefilledTargets(saved.getId(), request, au.getId(), institution.getId());
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+    }
+
+    /** A document created from an entity's Documents tab starts out linked to it (and to nothing outside its project). */
+    private void linkPrefilledTargets(Long documentId, DocumentCreateRequest request, Long projectId, Long institutionId) {
+        linkAll(documentId, DocumentLinkKind.RECORDING_UNIT, request.getRecordingUnitIds(), projectId, institutionId);
+        linkAll(documentId, DocumentLinkKind.FIND, request.getFindIds(), projectId, institutionId);
+        linkAll(documentId, DocumentLinkKind.PLACE, request.getPlaceIds(), projectId, institutionId);
+        linkAll(documentId, DocumentLinkKind.PHASE, request.getPhaseIds(), projectId, institutionId);
+        linkAll(documentId, DocumentLinkKind.CONTAINER, request.getContainerIds(), projectId, institutionId);
+    }
+
+    private void linkAll(Long documentId, DocumentLinkKind kind, java.util.List<Long> targetIds, Long projectId, Long institutionId) {
+        if (targetIds == null) return;
+        for (Long targetId : targetIds) {
+            documentLinkService.findTarget(kind, targetId)
+                    .filter(t -> Objects.equals(t.institutionId(), institutionId)
+                            && (t.projectId() == null || Objects.equals(t.projectId(), projectId)))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Élément à lier introuvable ou hors du projet : " + kind.pathSegment() + " " + targetId));
+            documentLinkService.link(documentId, kind, targetId);
+        }
     }
 
     @Transactional

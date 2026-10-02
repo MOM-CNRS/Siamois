@@ -12,6 +12,8 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -73,6 +75,7 @@ public class PlaceOpenApiService {
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
+    private final DocumentService documentService;
 
     /**
      * {@code GET /api/v1/places?organizationId=…} — the React counterpart of JSF's
@@ -245,7 +248,8 @@ public class PlaceOpenApiService {
         long children = spatialUnitService.countSearchResultsInSpatialUnit(institution, dto, new FilterDTO());
         long projects = projectApiService.pageAccessibleProjects(caller, institution.getId(), null, 0, 1, null,
                 ProjectListFilter.EMPTY.withSpatialContext(dto.getId())).getTotalElements();
-        resource.setCount(new PlaceResourceCounts(children, projects, null));
+        resource.setCount(new PlaceResourceCounts(children, projects, null,
+                documentService.countLinkedTo(DocumentLinkKind.PLACE, dto.getId())));
         return resource;
     }
 

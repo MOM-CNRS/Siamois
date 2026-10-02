@@ -790,6 +790,45 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void pageDocumentsLinkedTo_searchesTheDocumentsOfOneEntityInTheInstitution() {
+        Page<fr.siamois.dto.entity.DocumentDTO> expected = new PageImpl<>(List.of());
+        when(documentService.searchDocumentsLinkedTo(eq(institution),
+                eq(fr.siamois.domain.services.document.DocumentLinkKind.PHASE), eq(3L), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(expected);
+
+        Page<fr.siamois.dto.entity.DocumentDTO> result = service.pageDocumentsLinkedTo(
+                fr.siamois.domain.services.document.DocumentLinkKind.PHASE, 3L, institution, 0, 10, "title:desc", "plan",
+                fr.siamois.dto.FieldQuery.NONE);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(documentService).searchDocumentsLinkedTo(eq(institution),
+                eq(fr.siamois.domain.services.document.DocumentLinkKind.PHASE), eq(3L), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().valueOfAsString("identifier")).isEqualTo("plan");
+    }
+
+    @Test
+    void pageDocumentsLinkedTo_withoutSearch_addsNoIdentifierFilter() {
+        when(documentService.searchDocumentsLinkedTo(any(), any(), anyLong(), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageDocumentsLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.FIND, 3L, institution, 0, 10,
+                null, " ", fr.siamois.dto.FieldQuery.NONE);
+
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(documentService).searchDocumentsLinkedTo(any(), any(), anyLong(), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().containsColumn("identifier")).isFalse();
+    }
+
+    @Test
+    void pageDocumentsLinkedTo_unknownSortField_throws400() {
+        assertThatThrownBy(() -> service.pageDocumentsLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.PLACE, 3L,
+                institution, 0, 10, "nope:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+    }
+
+    @Test
     void pageDocumentsForProject_unknownSortField_throws400() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

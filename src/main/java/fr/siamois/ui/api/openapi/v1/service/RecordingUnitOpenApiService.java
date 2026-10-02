@@ -19,6 +19,8 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -124,6 +126,7 @@ public class RecordingUnitOpenApiService {
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
     private final MultiValueAnswers multiValueAnswers;
+    private final DocumentService documentService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -139,6 +142,9 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO dto = bundle.dto();
 
         RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
+        if (counts != null && counts.contains("documents") && resource.getCount() != null && dto.getId() != null) {
+            resource.getCount().setDocuments(documentService.countLinkedTo(DocumentLinkKind.RECORDING_UNIT, dto.getId()));
+        }
         if (resource.getType() != null && dto.getType() != null) {
             resource.getType().setResolvedLabel(labelService.findLabelOf(dto.getType(), lang).getLabel());
         }
@@ -697,6 +703,10 @@ public class RecordingUnitOpenApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
 
         FindResource resource = findOpenApiMapper.toResource(specimen);
+        if (specimen.getId() != null) {
+            resource.setCount(new fr.siamois.ui.api.openapi.v1.resource.document.EntityDocumentCounts(
+                    documentService.countLinkedTo(DocumentLinkKind.FIND, specimen.getId())));
+        }
 
         InstitutionDTO institution = specimen.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {

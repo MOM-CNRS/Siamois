@@ -37,6 +37,8 @@ export interface FindResource {
   _permissions?: FindPermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // Detail only: what the fiche's tab badges count.
+  _counts?: { documents?: number | null };
   // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
   validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
 }

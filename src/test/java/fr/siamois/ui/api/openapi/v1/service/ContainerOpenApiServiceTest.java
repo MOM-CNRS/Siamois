@@ -51,6 +51,8 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ContainerOpenApiServiceTest {
 
+    private final fr.siamois.domain.services.document.DocumentService documentService = mock(fr.siamois.domain.services.document.DocumentService.class);
+
     @Mock
     private ContainerService containerService;
     @Mock
@@ -85,7 +87,7 @@ class ContainerOpenApiServiceTest {
         service = new ContainerOpenApiService(containerService, actionUnitService, conceptService, conceptMapper,
                 profilePermissionService, containerOpenApiMapper,
                 containerListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
-                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
+                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());
         personDto = new PersonDTO();
@@ -163,9 +165,12 @@ class ContainerOpenApiServiceTest {
                 eq(PermissionConstants.PROJECT_EDIT_CONTAINERS)))
                 .thenReturn(true);
 
+        when(documentService.countLinkedTo(fr.siamois.domain.services.document.DocumentLinkKind.CONTAINER, 5L)).thenReturn(2L);
+
         ContainerResource result = service.getContainerById(5L, personDto, Set.of(10L), "fr");
 
         assertThat(result.getPermissions().canEdit()).isTrue();
+        assertThat(result.getCount().getDocuments()).isEqualTo(2L);
     }
 
     // --- createContainer ---

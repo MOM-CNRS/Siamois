@@ -7,6 +7,7 @@ import type { FieldRendererProps } from "../../fields/registry";
 import { DocumentCreateForm } from "./CreateForm";
 import { getEffectiveForm } from "../typeCatalog";
 import { createDocument, uploadDocumentFile } from "./api";
+import type { CreatePrefill } from "../types";
 
 
 vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
@@ -39,12 +40,17 @@ const typeField: FieldResource = {
 let container: HTMLDivElement;
 let root: Root;
 
-function render(onCreated = vi.fn(), onCancel = vi.fn(), scope: { entityType: string; id: string | number } | null = { entityType: "project", id: 5 }) {
+function render(
+  onCreated = vi.fn(),
+  onCancel = vi.fn(),
+  scope: { entityType: string; id: string | number; projectId?: string | number } | null = { entityType: "project", id: 5 },
+  prefill?: CreatePrefill,
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <DocumentCreateForm organizationId={7} scope={scope ?? undefined} onCreated={onCreated} onCancel={onCancel} />
+        <DocumentCreateForm organizationId={7} scope={scope ?? undefined} prefill={prefill} onCreated={onCreated} onCancel={onCancel} />
       </QueryClientProvider>,
     );
   });
@@ -138,6 +144,25 @@ describe("DocumentCreateForm", () => {
     await flush();
 
     expect(mockedUploadFile).toHaveBeenCalledWith("77", file);
+  });
+
+  it("created from an entity's Documents tab, is linked to it from the start", async () => {
+    mockedCreateDocument.mockResolvedValue({ resourceType: "documents", id: "77", identifier: "DOC1" } as never);
+    render(vi.fn(), vi.fn(), { entityType: "phase", id: 3, projectId: "7" }, {
+      document: { field: "phaseIds", entityType: "phase", ref: { id: 3, label: "Phase 3" } },
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Phase 3");
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "7", categoryId: "9", phaseIds: [3] });
   });
 
   it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {

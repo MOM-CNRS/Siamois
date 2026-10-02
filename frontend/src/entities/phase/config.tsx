@@ -1,6 +1,7 @@
 import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { relationTab } from "../../panels/relationTab";
+import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getPhase, listPhases, patchPhaseAnswers } from "./api";
@@ -53,6 +54,14 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
           <SchemaFicheTab entity={entity} entityType="phase" typesSegment="phase-types" save={patchPhaseAnswers} onSaved={helpers.refetch} />
         ),
       },
+      documentsTab<PhaseDetail>({
+        scopeEntityType: "phase",
+        segment: "phases",
+        linkField: "phaseIds",
+        badge: (entity) => entity._counts?.documents ?? 0,
+        projectId: (entity) => entity.projectId,
+        entityRef: (entity) => ({ id: entity.id, label: entity.label || entity.identifier || String(entity.id) }),
+      }),
       relationTab<PhaseDetail>({
         key: "recording-units",
         label: t("entity.recordingUnit.plural"),

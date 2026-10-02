@@ -55,6 +55,11 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
             + "entrée embarque sa définition (enveloppe FieldAnswer) ; sur la liste, valeurs brutes.")
     private Map<String, Object> answers;
 
+    @JsonProperty("_counts")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Comptages du détail (documents liés). Absent sur la liste.")
+    private fr.siamois.ui.api.openapi.v1.resource.document.EntityDocumentCounts count;
+
     @JsonProperty("_permissions")
     @Schema(description = "Droits du caller sur ce mobilier")
     private ProjectResourcePermissions permissions;

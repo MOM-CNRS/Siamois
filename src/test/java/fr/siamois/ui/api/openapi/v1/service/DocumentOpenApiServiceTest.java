@@ -83,12 +83,14 @@ class DocumentOpenApiServiceTest {
 
     @Mock
     private fr.siamois.domain.services.ValidationStatusService validationStatusService;
+    @Mock
+    private fr.siamois.domain.services.document.DocumentLinkService documentLinkService;
 
     @BeforeEach
     void setUp() {
         service = new DocumentOpenApiService(documentService, actionUnitService, conceptService, conceptMapper,
                 profilePermissionService, documentOpenApiMapper, documentListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
-                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
+                fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentLinkService);
 
         lenient().when(fieldAnswerWireService.additionalAnswers(any(), any())).thenReturn(Map.of());
         personDto = new PersonDTO();
@@ -224,6 +226,77 @@ class DocumentOpenApiServiceTest {
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    private DocumentCreateRequest prefilledRequest() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(2L);
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(new ConceptDTO());
+        when(documentService.save(any(DocumentDTO.class))).thenReturn(documentOn(au));
+        DocumentCreateRequest req = new DocumentCreateRequest();
+        req.setProjectId("7");
+        req.setCategoryId("2");
+        return req;
+    }
+
+    @Test
+    void createDocument_fromAnEntitysTab_startsOutLinkedToIt() {
+        DocumentCreateRequest req = prefilledRequest();
+        req.setRecordingUnitIds(java.util.List.of(11L));
+        req.setFindIds(java.util.List.of(12L));
+        req.setPlaceIds(java.util.List.of(13L));
+        req.setPhaseIds(java.util.List.of(14L));
+        req.setContainerIds(java.util.List.of(15L));
+        for (var entry : java.util.Map.of(
+                fr.siamois.domain.services.document.DocumentLinkKind.RECORDING_UNIT, 11L,
+                fr.siamois.domain.services.document.DocumentLinkKind.FIND, 12L,
+                fr.siamois.domain.services.document.DocumentLinkKind.PLACE, 13L,
+                fr.siamois.domain.services.document.DocumentLinkKind.PHASE, 14L,
+                fr.siamois.domain.services.document.DocumentLinkKind.CONTAINER, 15L).entrySet()) {
+            // a place belongs to no project; the others to this one
+            Long project = entry.getKey() == fr.siamois.domain.services.document.DocumentLinkKind.PLACE ? null : 7L;
+            when(documentLinkService.findTarget(entry.getKey(), entry.getValue()))
+                    .thenReturn(java.util.Optional.of(new fr.siamois.domain.services.document.DocumentLinkService.Target(10L, project)));
+        }
+
+        service.createDocument(req, personDto, Set.of(10L), "fr");
+
+        verify(documentLinkService).link(5L, fr.siamois.domain.services.document.DocumentLinkKind.RECORDING_UNIT, 11L);
+        verify(documentLinkService).link(5L, fr.siamois.domain.services.document.DocumentLinkKind.FIND, 12L);
+        verify(documentLinkService).link(5L, fr.siamois.domain.services.document.DocumentLinkKind.PLACE, 13L);
+        verify(documentLinkService).link(5L, fr.siamois.domain.services.document.DocumentLinkKind.PHASE, 14L);
+        verify(documentLinkService).link(5L, fr.siamois.domain.services.document.DocumentLinkKind.CONTAINER, 15L);
+    }
+
+    @Test
+    void createDocument_linkedToAnEntityOfAnotherProject_is400() {
+        DocumentCreateRequest req = prefilledRequest();
+        req.setPhaseIds(java.util.List.of(14L));
+        when(documentLinkService.findTarget(fr.siamois.domain.services.document.DocumentLinkKind.PHASE, 14L))
+                .thenReturn(java.util.Optional.of(new fr.siamois.domain.services.document.DocumentLinkService.Target(10L, 99L)));
+
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createDocument(req, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(documentLinkService, never()).link(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void createDocument_linkedToAnUnknownEntity_is400() {
+        DocumentCreateRequest req = prefilledRequest();
+        req.setContainerIds(java.util.List.of(15L));
+        when(documentLinkService.findTarget(fr.siamois.domain.services.document.DocumentLinkKind.CONTAINER, 15L))
+                .thenReturn(java.util.Optional.empty());
+
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createDocument(req, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
@@ -393,7 +466,7 @@ class DocumentOpenApiServiceTest {
                 conceptMapper, profilePermissionService, documentOpenApiMapper, documentListProjectionService,
                 ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), siblingsService,
                 new ValidationOpenApiService(validationStatusService), fieldAnswerPatchService, fieldAnswerWireService,
-                customFieldAnswerService, effectiveFormResolver);
+                customFieldAnswerService, effectiveFormResolver, documentLinkService);
 
         assertThat(withSiblings.findSiblings(5L, personDto, Set.of(10L))).isSameAs(siblings);
     }

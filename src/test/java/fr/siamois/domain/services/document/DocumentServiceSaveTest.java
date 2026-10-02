@@ -471,4 +471,28 @@ class DocumentServiceSaveTest {
         verify(documentStorage, never()).deleteStoredFile(any());
         verify(documentRepository).save(document);
     }
+
+    // --- the documents of one entity
+
+    @Test
+    void searchDocumentsLinkedTo_searchesTheInstitutionsDocumentsLinkedToTheEntity() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        Document linked = new Document();
+        when(documentRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(linked)));
+        when(documentMapper.convert(linked)).thenReturn(dto);
+
+        var page = service.searchDocumentsLinkedTo(institution, DocumentLinkKind.PHASE, 3L,
+                new fr.siamois.dto.FilterDTO(), org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).containsExactly(dto);
+    }
+
+    @Test
+    void countLinkedTo_countsTheDocumentsLinkedToTheEntity() {
+        when(documentRepository.count(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(4L);
+
+        assertThat(service.countLinkedTo(DocumentLinkKind.CONTAINER, 3L)).isEqualTo(4L);
+    }
 }
