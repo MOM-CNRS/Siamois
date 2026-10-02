@@ -215,12 +215,20 @@ public class FieldAnswerPatchService {
         patch.values.put(field.getId(), typed.value());
         patch.written.add(field);
 
-        if (Boolean.TRUE.equals(field.getIsSystemField())) {
-            // A delta has no `raw` (it names ids to add/remove): its result is already on the view
-            // model, and nulling the property afterwards would throw that result away.
-            if (delta == null && raw == null) patch.clearedSystemFields.add(field);
-        } else {
+        recordWrite(patch, field, viewModel, delta == null && raw == null);
+    }
+
+    /**
+     * What a written answer leaves for the caller: a system field is cleared on the entity when the
+     * answer was explicitly emptied, an additional one is persisted from its view model. A delta is
+     * never "emptied": its result is already on the view model, and nulling the property afterwards
+     * would throw that result away.
+     */
+    private static void recordWrite(Patch patch, CustomField field, CustomFieldAnswerViewModel viewModel, boolean emptied) {
+        if (!Boolean.TRUE.equals(field.getIsSystemField())) {
             patch.touchedAdditional.put(field, viewModel);
+        } else if (emptied) {
+            patch.clearedSystemFields.add(field);
         }
     }
 
