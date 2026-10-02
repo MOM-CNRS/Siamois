@@ -216,7 +216,9 @@ public class FieldAnswerPatchService {
         patch.written.add(field);
 
         if (Boolean.TRUE.equals(field.getIsSystemField())) {
-            if (raw == null) patch.clearedSystemFields.add(field);
+            // A delta has no `raw` (it names ids to add/remove): its result is already on the view
+            // model, and nulling the property afterwards would throw that result away.
+            if (delta == null && raw == null) patch.clearedSystemFields.add(field);
         } else {
             patch.touchedAdditional.put(field, viewModel);
         }
