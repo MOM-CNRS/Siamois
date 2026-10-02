@@ -71,11 +71,6 @@ public class Document extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String KEYWORD_FIELD_CODE = "SIAD.KEYWORD";
 
-    /** Whether a file is stored for this document (a document may only carry an external URL). */
-    public boolean hasFile() {
-        return fileCode != null && storedFileName != null;
-    }
-
     /** Forgets the stored file's metadata (the bytes are removed by the storage). */
     public void clearFile() {
         fileName = null;
