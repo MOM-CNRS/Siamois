@@ -20,7 +20,7 @@ target_type, target_id)` a été écarté :
 | Famille | Quand | Stockage |
 |---|---|---|
 | **A. Structurelle** | Relation voulue par le modèle de données, identique pour tous | Une table dédiée par relation, vraies FK |
-| **B. Document** | Lien N–N d'un document vers n'importe quelle entité principale | Une seule table `document_link`, une colonne FK par type d'entité |
+| **B. Document** | Lien N–N d'un document vers une entité principale ; un projet de rattachement obligatoire | Une table de liaison par type d'entité (le document la possède), vraies FK ; le projet est une colonne du document |
 | **C. Qualifiée** | Relation porteuse d'un type (concept), d'un sens, d'une incertitude | Une table par paire de types, vraies FK, concept de relation |
 | **D. Configurable** | Relation voulue par une institution (champ additionnel de type référence) | Tables de réponses `custom_field_answer_*_answers`, vraies FK |
 
@@ -89,41 +89,45 @@ jamais par un drapeau sur chaque ligne. Une relation hiérarchique implique :
 | `specimen_group_attribution` | mobilier ↔ groupes (lots) | existe |
 | `recording_unit_on_the_fly_fields` | UE ↔ champs ajoutés à la volée | existe |
 
-## 3. Famille B — documents : une seule table `document_link`
+## 3. Famille B — documents : une table de liaison par type d'entité
 
-Un document peut être lié à **plusieurs entités**, de **types différents** (N–N). Une seule table,
-avec une colonne FK nullable par type d'entité et une contrainte « exactement une renseignée »
-(*exclusive arc*) — même technique que `form_config_answer` :
+Un document appartient à **un seul projet** (colonne `siamois_document.fk_action_unit_id`, obligatoire pour
+l'application, unique avec l'identifiant : `uk_document_project_identifier`) et peut être lié à **plusieurs
+entités** du projet, de **types différents** (N–N, facultatif). Chaque type d'entité a sa propre table de
+liaison, avec deux vraies FK ; c'est le **document** qui porte la collection (`@ManyToMany`, `@NotAudited`).
 
-```sql
-document_link (
-  fk_document_id        bigint not null references siamois_document,
-  fk_action_unit_id     bigint references action_unit,
-  fk_spatial_unit_id    bigint references spatial_unit,
-  fk_recording_unit_id  bigint references recording_unit,
-  fk_specimen_id        bigint references specimen,
-  fk_study_id           bigint references study,
-  fk_movement_id        bigint references specimen_movement,
-  CHECK (num_nonnulls(fk_action_unit_id, fk_spatial_unit_id, fk_recording_unit_id,
-                      fk_specimen_id, fk_study_id, fk_movement_id) = 1),
-  -- une unicité par type de cible (les NULL ne se heurtent pas)
-  UNIQUE (fk_document_id, fk_action_unit_id), UNIQUE (fk_document_id, fk_spatial_unit_id), …
-)
-```
+| Table | Relie | Statut |
+|---|---|---|
+| `recording_unit_document` | document ↔ UE | existe (contrainte d'unicité sur le seul document retirée) |
+| `specimen_document` | document ↔ mobilier | existe (idem) |
+| `spatial_unit_document` | document ↔ lieu | existe (idem) |
+| `phase_document` | document ↔ phase | créée |
+| `container_document` | document ↔ contenant | créée |
+| `specimen_study_document` | document ↔ étude de mobilier | inchangée (hors périmètre) |
+| `action_unit_document` | document ↔ projet | **supprimée** : remplacée par la colonne de rattachement ; la migration a repris ses liens |
 
-Vraies FK, une seule table, un nouveau type d'entité = une colonne (pas une table).
+**Pourquoi pas une table unique `document_link`** (une colonne FK par type, une seule renseignée) — l'option
+d'abord retenue ici :
 
-| Remplace | Statut |
-|---|---|
-| `action_unit_document` (projet) | à supprimer — aujourd'hui `@OneToMany` : un document ↔ un seul projet |
-| `spatial_unit_document` (lieu) | à supprimer — idem |
-| `recording_unit_document` (UE) | à supprimer — idem |
-| `specimen_document` (mobilier) | à supprimer — idem |
-| `specimen_study_document` (étude) | à supprimer — déjà N–N |
-| document ↔ mouvement | jamais créée : directement dans `document_link` |
-| `ru_study_document` | référencée dans `DocumentRepository` mais **n'existe pas en base** : code mort à retirer |
+- avec une collection JPA par type sur une même table, Hibernate **supprime puis recrée** toutes les lignes du
+  document quand l'une des collections change : les liens des autres types seraient perdus ;
+- le tri et le filtre génériques des listes (`FieldQueryService`) lisent le métamodèle JPA : ils ont besoin
+  d'un `@ManyToMany` par type, donc d'une table par type ;
+- un nouveau type d'entité coûte une table et une collection, ce qui reste léger pour un modèle qui n'en a
+  que cinq.
 
-Pas de documents pour les phases ni les contenants aujourd'hui ; si le besoin vient, une colonne de plus.
+Le projet n'est pas un lien : c'est le rattachement du document, qui détermine l'organisation, les droits
+(`PROJECT_EDIT_DOCUMENTS`…) et la configuration de la table (catégorie = type de la table configurable
+`DOCUMENT`).
+
+**Migration** (`changelog/versions/2026.10.01-0.xml`) : le projet d'un document existant vient, dans cet ordre,
+de `action_unit_document`, de l'UE liée, de l'UE du mobilier lié, ou du seul projet dont le contexte spatial
+contient le lieu lié. Les documents restés sans projet gardent `NULL` : ils apparaissent dans les listes de
+l'organisation (lecture seule, fiche introuvable) et sont à rattacher à la main. L'identifiant des documents
+existants est `DOC-<id>`.
+
+Documents pour les mouvements : jamais créés. `ru_study_document`, que `DocumentRepository` citait mais qui
+n'existait pas en base, a été retiré du code.
 
 ## 4. Famille C — relations qualifiées
 
@@ -155,7 +159,7 @@ ses cibles par une table de liaison typée, avec vraies FK :
 | `custom_field_answer_specimen_answers` | mobilier | **à créer** |
 | `custom_field_answer_phase_answers` | phases | **à créer** |
 | `custom_field_answer_container_answers` | contenants | **à créer** |
-| `custom_field_answer_document_answers` | documents | à créer si besoin (sinon `document_link` suffit) |
+| `custom_field_answer_document_answers` | documents | à créer si besoin (les documents sont déjà liés par leurs tables de liaison) |
 
 Avec ces tables, le tri / filtre générique (`FieldQueryService`) et l'API (`MultiValue`, endpoint `values`)
 fonctionnent sans code spécifique.
@@ -194,14 +198,15 @@ Pour mémoire — vocabulaires, droits et configuration, non concernés par ce m
 
 ## 7. Chantiers qui en découlent
 
-1. **`document_link`** : créer la table, migrer les 5 tables de documents, retirer `ru_study_document` de
-   `DocumentRepository`. À faire avec la table d'études unique et la table des mouvements.
+1. ~~**Liens de documents**~~ **Fait (01–02/10/2026).** Voir §3 : table de liaison par type, projet obligatoire,
+   `ru_study_document` retiré de `DocumentRepository`. Reste à faire avec la table d'études unique et la
+   table des mouvements : leurs documents.
 2. **Table d'études unique** (`study`) regroupant `specimen_study` et les études d'UE — rattachée à son UE
-   ou son mobilier (colonnes FK exclusives, comme `document_link`, ou tables de liaison si une étude porte
+   ou son mobilier (colonnes FK exclusives, comme `form_config_answer`, ou tables de liaison si une étude porte
    sur plusieurs entités : à décider).
 3. **Mouvements** : décider si un mouvement concerne un seul mobilier (colonne actuelle) ou plusieurs
    (`movement_specimen`).
 4. **Champs additionnels** : tables de réponses vers UE, mobilier, phase, contenant ; propriétés
    « hiérarchique » et « libellé inverse » sur `custom_field` ; contrôle de cycle ; affichage inverse.
-5. **Thésaurus** : remplacer les concepts `TBL_*_Document` par un seul `TBL_Document_Lien` ; ajouter
+5. **Thésaurus** : les concepts `TBL_*_Document` restent (une table de liaison par type) ; ajouter
    `TBL_concept` et `TBL_vocabulaire`.
