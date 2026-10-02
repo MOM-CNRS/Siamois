@@ -1,11 +1,14 @@
+import { useState } from "react";
+import { CreateFormField } from "../../components/CreateFormShell";
 import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
 import type { CreateFormContext } from "../types";
-import { createDocument } from "./api";
+import { createDocument, uploadDocumentFile } from "./api";
 import { t } from "../../i18n";
 
-// A document is created in a project with its category; everything else (title, file, links…) is
-// edited afterwards on the fiche.
+// A document is created in a project with its category, and optionally its file (sent once the
+// document exists); everything else (title, links, URL…) is edited afterwards on the fiche.
 export function DocumentCreateForm(ctx: CreateFormContext) {
+  const [file, setFile] = useState<File | null>(null);
   return (
     <TypeOnlyCreateForm
       {...ctx}
@@ -13,7 +16,15 @@ export function DocumentCreateForm(ctx: CreateFormContext) {
       title={t("create.newDocument")}
       typesSegment="document-types"
       typeBinding="category"
-      create={(projectId, typeId) => createDocument({ projectId, categoryId: typeId })}
-    />
+      create={async (projectId, typeId) => {
+        const created = await createDocument({ projectId, categoryId: typeId });
+        if (file) await uploadDocumentFile(created.id, file);
+        return created;
+      }}
+    >
+      <CreateFormField label={t("file.upload")}>
+        <input type="file" data-testid="create-file-input" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+      </CreateFormField>
+    </TypeOnlyCreateForm>
   );
 }

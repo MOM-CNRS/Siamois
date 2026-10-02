@@ -6,11 +6,11 @@ import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { DocumentCreateForm } from "./CreateForm";
 import { getEffectiveForm } from "../typeCatalog";
-import { createDocument } from "./api";
+import { createDocument, uploadDocumentFile } from "./api";
 
 
 vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
-vi.mock("./api", () => ({ createDocument: vi.fn() }));
+vi.mock("./api", () => ({ createDocument: vi.fn(), uploadDocumentFile: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
 vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
@@ -24,6 +24,7 @@ vi.mock("../../fields/renderers", () => ({
 
 const mockedGetDocumentEffectiveForm = vi.mocked(getEffectiveForm);
 const mockedCreateDocument = vi.mocked(createDocument);
+const mockedUploadFile = vi.mocked(uploadDocumentFile);
 
 const typeField: FieldResource = {
   id: "-704",
@@ -66,6 +67,7 @@ beforeEach(() => {
   mockedGetDocumentEffectiveForm.mockReset();
   mockedGetDocumentEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-704": typeField } });
   mockedCreateDocument.mockReset();
+  mockedUploadFile.mockReset();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -113,6 +115,29 @@ describe("DocumentCreateForm", () => {
 
     expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "5", categoryId: "9" });
     expect(onCreated).toHaveBeenCalledWith("77");
+  });
+
+  it("sends the chosen file once the document exists", async () => {
+    mockedCreateDocument.mockResolvedValue({ resourceType: "documents", id: "77", identifier: "DOC1" } as never);
+    mockedUploadFile.mockResolvedValue(undefined);
+    render();
+    await flush();
+
+    const file = new File(["abc"], "plan.pdf", { type: "application/pdf" });
+    const input = container.querySelector<HTMLInputElement>('[data-testid="create-file-input"]')!;
+    await act(async () => {
+      Object.defineProperty(input, "files", { value: [file], configurable: true });
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedUploadFile).toHaveBeenCalledWith("77", file);
   });
 
   it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {

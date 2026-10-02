@@ -33,6 +33,9 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
     @Query("SELECT p FROM Profile p WHERE p.actionUnit.id = :actionUnitId")
     List<Profile> findAllOfActionUnitScope(Long actionUnitId);
 
+    @Query("SELECT p FROM Profile p WHERE p.actionUnit IS NOT NULL AND p.code = :code")
+    List<Profile> findAllOfProjectScopeByCode(String code);
+
     @Query("SELECT p FROM Profile p WHERE p.actionUnit IS NULL AND p.institution IS NULL")
     List<Profile> findAllOfInstanceScope();
 }

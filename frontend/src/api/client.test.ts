@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch, ApiError } from "./client";
+import { apiBlob, apiFetch, ApiError } from "./client";
 import { setLocale } from "../i18n";
 
 vi.mock("../auth/sessionAuth", () => ({
@@ -89,5 +89,58 @@ describe("apiFetch language", () => {
     }
     const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers["Accept-Language"]).toBe("en");
+  });
+});
+
+describe("apiFetch bodies", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  it("sends a FormData as is, without forcing a JSON content type", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const body = new FormData();
+    body.append("file", new File(["a"], "a.txt"));
+
+    await apiFetch("/api/v1/documents/1/file", { method: "PUT", body });
+
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    expect(init.body).toBe(body);
+    expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+  });
+
+  it("still sends a plain object as JSON", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await apiFetch("/api/v1/x", { method: "POST", body: { a: 1 } });
+
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    expect(init.body).toBe('{"a":1}');
+    expect((init.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
+  });
+});
+
+describe("apiBlob", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  it("fetches the bytes with the bearer token", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("abc", { status: 200 }));
+
+    const blob = await apiBlob("/api/v1/documents/1/file");
+
+    expect(blob.size).toBe(3);
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
+  });
+
+  it("retries once after a 401, then reports the server's error", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response("", { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Fichier introuvable" }), { status: 404 }));
+
+    await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject(new ApiError(404, "Fichier introuvable"));
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });

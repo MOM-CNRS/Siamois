@@ -170,4 +170,24 @@ class DocumentAnswersProjectorTest {
         assertThat(projector.collectConcepts(null, Set.of(idOf("category")))).isEmpty();
         assertThat(projector.collectConcepts(List.of(dto), Set.of())).isEmpty();
     }
+
+    @Test
+    void project_showsTheStoredFileAsNameTypeAndSize_andNothingWithoutOne() {
+        CustomField fileField = DocumentAnswersProjector.fieldById("-728");
+        assertThat(fileField).isNotNull();
+
+        fr.siamois.dto.entity.DocumentDTO withFile = new fr.siamois.dto.entity.DocumentDTO();
+        withFile.setId(1L);
+        withFile.setFileCode("abc");
+        withFile.setFileName("plan.pdf");
+        withFile.setMimeType("application/pdf");
+        withFile.setSize(12L);
+        fr.siamois.dto.entity.DocumentDTO withoutFile = new fr.siamois.dto.entity.DocumentDTO();
+        withoutFile.setId(2L);
+
+        var out = projector.project(java.util.List.of(withFile, withoutFile), java.util.Set.of("-728"), java.util.Map.of());
+
+        assertThat(out.get(1L).get("-728")).isEqualTo(java.util.Map.of("fileName", "plan.pdf", "mimeType", "application/pdf", "size", 12L));
+        assertThat(out.get(2L).get("-728")).isNull();
+    }
 }

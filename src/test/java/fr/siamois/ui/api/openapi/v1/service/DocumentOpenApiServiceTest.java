@@ -355,6 +355,29 @@ class DocumentOpenApiServiceTest {
         verify(documentService).save(document, additional);
     }
 
+    @Test
+    void patchDocument_refusesAnExternalUrlThatIsNotAWebAddress() {
+        DocumentDTO document = documentOn(projectWithInstitution());
+        document.setExternalUrl("javascript:alert(1)");
+        when(documentService.findDtoById(5L)).thenReturn(document);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
+                .thenReturn(true);
+        FormUiDto effectiveForm = new FormUiDto();
+        when(effectiveFormResolver.resolveEffectiveForm(eq(7L), eq(ConfigurableTable.DOCUMENT), any())).thenReturn(effectiveForm);
+        Map<String, AnswerInput> answers = Map.of("-722", new AnswerInput("javascript:alert(1)", null));
+        when(fieldAnswerPatchService.apply(document, effectiveForm, answers, 7L)).thenReturn(Map.of());
+
+        DocumentPatchRequest req = new DocumentPatchRequest();
+        req.setAnswers(answers);
+        var scope = Set.of(10L);
+
+        assertThatThrownBy(() -> service.patchDocument(5L, req, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(documentService, never()).save(any(DocumentDTO.class), any());
+    }
+
     // --- siblings, access check
 
     @Test

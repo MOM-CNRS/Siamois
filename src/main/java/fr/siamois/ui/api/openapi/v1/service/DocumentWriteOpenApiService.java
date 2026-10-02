@@ -39,7 +39,9 @@ import java.io.InputStream;
 @RequiredArgsConstructor
 public class DocumentWriteOpenApiService {
 
-    private static final String API_CONTEXT_PATH = "/siamois";
+    /** The application's context path: the stored file's {@code /content/...} URL is relative to it. */
+    @org.springframework.beans.factory.annotation.Value("${server.servlet.context-path:}")
+    private String contextPath;
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitService recordingUnitService;
@@ -202,7 +204,7 @@ public class DocumentWriteOpenApiService {
             throws InvalidFileTypeException, InvalidFileSizeException, IOException {
         ExecutionContextHolder.set(userInfo);
         try {
-            return documentService.saveFile(userInfo, document, inputStream, API_CONTEXT_PATH);
+            return documentService.saveFile(userInfo, document, inputStream, contextPath);
         } finally {
             ExecutionContextHolder.clear();
         }

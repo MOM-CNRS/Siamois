@@ -77,7 +77,9 @@ public class DocumentContentOpenApiService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to read file", e);
         }
         MediaType mediaType = resolveMediaType(doc.getMimeType());
-        return new DocumentFilePayload(stream, mediaType, doc.contentFileName());
+        // The user gets the file under its own name; the stored name (a generated code) is a storage detail.
+        String name = StringUtils.hasText(doc.getFileName()) ? doc.getFileName() : doc.contentFileName();
+        return new DocumentFilePayload(stream, mediaType, name);
     }
 
     private static MediaType resolveMediaType(String rawMime) {

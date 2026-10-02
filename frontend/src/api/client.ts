@@ -45,10 +45,11 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
       // The labels the API resolves itself (field names, concepts, types) follow the page language,
       // not the browser's: the user picks it in SIAMOIS (LangBean).
       "Accept-Language": getLocale(),
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      // A FormData body carries its own multipart Content-Type, boundary included.
+      ...(body !== undefined && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
   });
 
   if (response.status === 401 && allowRetry) {
@@ -83,4 +84,25 @@ async function readError(response: Response): Promise<{ message: string; body?: 
   } catch {
     return { message: text };
   }
+}
+
+/**
+ * A binary response (a stored file). The API accepts only the bearer token, so a plain link cannot
+ * download it: the bytes are fetched with the token and handed to the browser as an object URL.
+ */
+export async function apiBlob(path: string, allowRetry = true): Promise<Blob> {
+  const token = await getAccessToken();
+  const response = await fetch(apiUrl(path), {
+    credentials: "omit",
+    headers: { Authorization: `Bearer ${token}`, "Accept-Language": getLocale() },
+  });
+  if (response.status === 401 && allowRetry) {
+    resetSession();
+    return apiBlob(path, false);
+  }
+  if (!response.ok) {
+    const { message, body } = await readError(response);
+    throw new ApiError(response.status, message, body, path);
+  }
+  return response.blob();
 }
