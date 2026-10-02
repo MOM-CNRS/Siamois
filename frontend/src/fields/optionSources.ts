@@ -213,6 +213,7 @@ const ENTITY_SEGMENTS: Record<string, { projectPath: string; orgPath: string }> 
   finds: { projectPath: "mobiliers", orgPath: "finds" },
   phases: { projectPath: "phases", orgPath: "phases" },
   containers: { projectPath: "containers", orgPath: "containers" },
+  documents: { projectPath: "documents", orgPath: "documents" },
 };
 
 /**
@@ -262,6 +263,7 @@ export function optionSourceFor(
       return (q) => fetchFieldConceptOptions(organizationId, field.id, projectId, q, scope);
     case "SELECT_ONE_SPATIAL_UNIT":
     case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
+    case "SELECT_MULTIPLE_SPATIAL_UNIT":
       return (q) => fetchPlaceOptions(organizationId, q);
     case "SELECT_ONE_PERSON":
     case "SELECT_MULTIPLE_PERSON":

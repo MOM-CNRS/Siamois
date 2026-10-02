@@ -8,7 +8,7 @@ import type { PanelChrome } from "../mountOptions";
 import type { EntityKey } from "./keys";
 
 // The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
-export type CreatableKind = Extract<EntityKey, "recordingUnit" | "find" | "phase" | "container">;
+export type CreatableKind = Extract<EntityKey, "recordingUnit" | "find" | "phase" | "container" | "document">;
 
 export interface PagedResult<T> {
   data: T[];

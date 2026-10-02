@@ -771,6 +771,66 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void pageDocumentsForProject_scopesToTheProjectAndSearchesOnIdentifier() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        Page<fr.siamois.dto.entity.DocumentDTO> expected = new PageImpl<>(List.of());
+        when(documentService.searchDocuments(eq(institution), any(FilterDTO.class), any(Pageable.class))).thenReturn(expected);
+
+        Page<fr.siamois.dto.entity.DocumentDTO> result = service.pageDocumentsForProject(
+                caller, "7", 0, 10, "title:desc", "plan", fr.siamois.dto.FieldQuery.NONE);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filterCaptor = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(documentService).searchDocuments(eq(institution), filterCaptor.capture(), any(Pageable.class));
+        assertThat(filterCaptor.getValue().valueAsIdListOf("actionUnit")).containsExactly(7L);
+        assertThat(filterCaptor.getValue().valueOfAsString("identifier")).isEqualTo("plan");
+    }
+
+    @Test
+    void pageDocumentsForProject_unknownSortField_throws400() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+
+        assertThatThrownBy(() -> service.pageDocumentsForProject(caller, "7", 0, 10, "nope:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+    }
+
+    @Test
+    void parseDocumentSort_defaultsToIdentifierAscending_andKeepsIdAsTheOnlyKey() {
+        assertThat(ProjectApiService.parseDocumentSort(null).toString()).startsWith("identifier: ASC");
+        assertThat(ProjectApiService.parseDocumentSort("id:desc").toString()).isEqualTo("id: DESC");
+        assertThat(ProjectApiService.parseDocumentSort("title:desc").toString()).contains("title: DESC").contains("id: ASC");
+    }
+
+    @Test
+    void canEditDocumentsForProject_checksTheDocumentsTriple() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.INSTANCE_EDIT_DOCUMENTS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.PROJECT_EDIT_DOCUMENTS)))
+                .thenReturn(true);
+
+        assertThat(service.canEditDocumentsForProject(caller, "7", "fr")).isTrue();
+    }
+
+    @Test
+    void countDocumentsForProject_delegatesToTheDocumentService() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(documentService.countByActionContext(au)).thenReturn(5);
+
+        assertThat(service.countDocumentsForProject(new AccessibleProjectForApi(au, 0L, 0L))).isEqualTo(5L);
+    }
+
+    @Test
     void pageContainersForProject_delegatesWithDefaultSortAndScopesToTheProjectsActionUnit() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

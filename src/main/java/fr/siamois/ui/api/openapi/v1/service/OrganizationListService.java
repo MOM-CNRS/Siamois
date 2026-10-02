@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -13,10 +14,12 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
@@ -64,6 +67,7 @@ public class OrganizationListService {
     private final RecordingUnitService recordingUnitService;
     private final SpecimenService specimenService;
     private final PhaseService phaseService;
+    private final DocumentService documentService;
     private final ContainerService containerService;
 
     /** The permission triple checked for writing one entity type on a project. */
@@ -76,6 +80,10 @@ public class OrganizationListService {
                 PermissionConstants.INSTANCE_EDIT_FINDS,
                 PermissionConstants.ORGANIZATION_EDIT_FINDS,
                 PermissionConstants.PROJECT_EDIT_FINDS);
+        public static final EditPermissions DOCUMENTS = new EditPermissions(
+                PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS);
         public static final EditPermissions PHASES = new EditPermissions(
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
@@ -159,6 +167,21 @@ public class OrganizationListService {
         return specimenService.searchSpecimen(institution, filter, pageable);
         }
 
+
+    @Transactional(readOnly = true)
+    public Page<DocumentDTO> pageDocuments(ProjectApiCaller caller, InstitutionDTO institution,
+                                           int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseDocumentSort));
+        FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
+        if (search != null && !search.isBlank()) {
+            filter.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        if (!restrictToVisibleProjects(caller, institution, filter, DocumentSpec.ACTION_UNIT_FILTER)) {
+            return Page.empty(pageable);
+        }
+        return documentService.searchDocuments(institution, filter, pageable);
+    }
 
     @Transactional(readOnly = true)
     public Page<PhaseDTO> pagePhases(ProjectApiCaller caller, InstitutionDTO institution,

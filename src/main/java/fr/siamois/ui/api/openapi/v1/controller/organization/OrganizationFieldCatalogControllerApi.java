@@ -69,6 +69,17 @@ public class OrganizationFieldCatalogControllerApi {
         return catalog(id, ConfigurableTable.PHASE, acceptLanguage);
     }
 
+    @GetMapping("/document-types")
+    @Operation(summary = "Catalogue de colonnes des documents de l'organisation", description = DESCRIPTION)
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    public ResponseEntity<OrganizationFieldCatalogResponse> documentTypes(
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        return catalog(id, ConfigurableTable.DOCUMENT, acceptLanguage);
+    }
+
     @GetMapping("/container-types")
     @Operation(summary = "Catalogue de colonnes des contenants de l'organisation", description = DESCRIPTION)
     @ApiResponse(responseCode = "200", description = "Ok")

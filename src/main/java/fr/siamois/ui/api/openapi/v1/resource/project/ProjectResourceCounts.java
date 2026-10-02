@@ -25,4 +25,7 @@ public class ProjectResourceCounts {
     @Schema(description = "Nombre de contenants")
     private Long containers;
 
+    @Schema(description = "Nombre de documents")
+    private Long documents;
+
 }

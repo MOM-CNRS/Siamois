@@ -90,6 +90,11 @@
       "label" : "document.header.file",
       "fields" : [
         {
+          "fieldId" : -728,
+          "binding" : "file",
+          "width" : "FULL"
+        },
+        {
           "fieldId" : -722,
           "binding" : "externalUrl",
           "width" : "FULL"

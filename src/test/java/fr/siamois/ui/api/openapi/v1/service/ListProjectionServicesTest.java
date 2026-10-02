@@ -92,6 +92,50 @@ class ListProjectionServicesTest {
         verify(projector).project(eq(List.of(phase)), any(), any());
     }
 
+    // ---------- documents ----------
+
+    @Test
+    void documents_buildResolvesTheLabelsOfTheCategoriesAndProjectsTheRows() {
+        DocumentAnswersProjector projector = mock(DocumentAnswersProjector.class);
+        DocumentListProjectionService service = new DocumentListProjectionService(projector, labels, multiValue, additional);
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        document.setId(1L);
+        document.setCategory(concept(9));
+        List<fr.siamois.dto.entity.DocumentDTO> rows = Arrays.asList(document, null, new fr.siamois.dto.entity.DocumentDTO());
+        Set<String> fieldIds = Set.of("-1");
+        Map<Long, String> resolved = Map.of(9L, "Plan");
+        Map<Long, Map<String, Object>> projected = Map.of(1L, Map.of("-1", "x"));
+        when(projector.resolveRequestedFieldIds("all")).thenReturn(fieldIds);
+        when(projector.collectConcepts(rows, fieldIds)).thenReturn(List.of(concept(3)));
+        when(labels.resolveLabels(any(Collection.class), eq("fr"))).thenReturn(resolved);
+        when(projector.project(rows, fieldIds, resolved)).thenReturn(projected);
+        when(additional.merge(projected, CustomFieldAnswerService.ListOwner.DOCUMENT, List.of(1L), "all", fieldIds, "fr")).thenReturn(projected);
+        when(multiValue.shape(eq(fr.siamois.domain.models.document.Document.class), eq(projected), eq(fieldIds), anyInt(), eq("fr"))).thenReturn(projected);
+
+        DocumentListProjectionService.DocumentListProjection projection = service.build(rows, "all", "fr");
+
+        assertThat(projection.resolvedLabels()).isEqualTo(resolved);
+        assertThat(projection.answersFor(1L)).containsEntry("-1", "x");
+        assertThat(projection.answersFor(2L)).isNull();
+    }
+
+    @Test
+    void documents_buildOfNothingIsEmpty_andBuildOneDelegates() {
+        DocumentAnswersProjector projector = mock(DocumentAnswersProjector.class);
+        DocumentListProjectionService service = new DocumentListProjectionService(projector, labels, multiValue, additional);
+
+        assertThat(service.build(null, "all", "fr").resolvedLabels()).isEmpty();
+        assertThat(service.build(List.of(), "all", "fr").resolvedLabels()).isEmpty();
+        assertThat(service.buildOne(null, "fr").resolvedLabels()).isEmpty();
+        assertThat(DocumentListProjectionService.DocumentListProjection.empty().answersFor(1L)).isNull();
+        verify(projector, never()).project(any(), any(), any());
+
+        fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
+        document.setId(4L);
+        service.buildOne(document, "fr");
+        verify(projector).project(eq(List.of(document)), any(), any());
+    }
+
     // ---------- containers ----------
 
     @Test

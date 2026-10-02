@@ -36,6 +36,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.dto.entity.*;
@@ -271,7 +272,9 @@ public class ProjectApiService {
         PHASE("phase", PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES),
         CONTAINER("container", PermissionConstants.INSTANCE_EDIT_CONTAINERS,
-                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS);
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS),
+        DOCUMENT("document", PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS);
 
         private final String key;
         private final String instanceCode;
@@ -972,6 +975,65 @@ public class ProjectApiService {
         return containerService.countByActionContext(row.actionUnit());
     }
     // See countPhasesForProject just above for the same pattern.
+
+    /** Nombre de documents du projet — détail uniquement, même pattern que {@link #countPhasesForProject}. */
+    public long countDocumentsForProject(AccessibleProjectForApi row) {
+        return documentService.countByActionContext(row.actionUnit());
+    }
+
+    private static final Set<String> ALLOWED_DOCUMENT_SORT_FIELDS =
+            Set.of(DocumentSpec.IDENTIFIER_FILTER, "title", CREATION_TIME, "id");
+
+    /** Same contract as {@link #parsePhaseSort} — an unknown property is a 400. */
+    static Sort parseDocumentSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, DocumentSpec.IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_DOCUMENT_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page de documents d'un projet ({@code GET /api/v1/projects/{id}/documents}) — pendant de
+     * {@link #pagePhasesForProject} : recherche libre sur {@code identifier}, tri sur une liste blanche et
+     * le contrat {@code f.<clé>} par colonne.
+     */
+    public Page<DocumentDTO> pageDocumentsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseDocumentSort);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
+        filterDTO.add(DocumentSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return documentService.searchDocuments(institution, filterDTO, pageable);
+    }
+
+    /** Whether the caller can write documents on this project — one boolean for a whole page. */
+    public boolean canEditDocumentsForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+    }
 
     private static final Set<String> ALLOWED_CONTAINER_SORT_FIELDS =
             Set.of(ContainerSpec.IDENTIFIER_FILTER, CREATION_TIME, "id");

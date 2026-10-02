@@ -127,6 +127,12 @@ const PANEL_LABELS: Record<string, MessageKey> = {
   "actionunit.header.documentation": "panel.documentation",
   "recordingunit.panel.chronology": "panel.chronology",
   "recordingunit.panel.measurements": "panel.measurements",
+  "document.header.identification": "panel.document.identification",
+  "document.header.description": "panel.document.description",
+  "document.header.authorsRights": "panel.document.authorsRights",
+  "document.header.file": "panel.document.file",
+  "document.header.links": "panel.document.links",
+  "document.header.technical": "panel.document.technical",
 };
 
 export function panelLabel(nameCode: string): string {

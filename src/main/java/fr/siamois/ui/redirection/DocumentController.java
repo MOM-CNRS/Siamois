@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
@@ -25,11 +26,26 @@ public class DocumentController {
 
     private final SessionSettingsBean sessionSettingsBean;
     private final DocumentService documentService;
+    private final NavBean navBean;
 
     public DocumentController(SessionSettingsBean sessionSettingsBean,
-                              DocumentService documentService) {
+                              DocumentService documentService,
+                              NavBean navBean) {
         this.sessionSettingsBean = sessionSettingsBean;
         this.documentService = documentService;
+        this.navBean = navBean;
+    }
+
+    @GetMapping("/document")
+    public String toDocumentList() {
+        navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
+        return FocusForward.to("document");
+    }
+
+    @GetMapping("/document/{id}")
+    public String toDocument(@PathVariable Long id) {
+        navBean.setApplicationMode(NavBean.ApplicationMode.SIAMOIS);
+        return FocusForward.to("document/" + id);
     }
 
     @GetMapping("/content/{fileCodeName}")

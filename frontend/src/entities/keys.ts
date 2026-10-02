@@ -2,7 +2,7 @@
 // reference targets…) are typed with EntityKey so a missing or misspelled key fails to compile
 // instead of silently yielding nothing. The registry itself stays keyed by string: it also
 // resolves keys read from URLs and the JSF bridge, and tests register fake types.
-export const ENTITY_KEYS = ["project", "recordingUnit", "find", "phase", "container", "place"] as const;
+export const ENTITY_KEYS = ["project", "recordingUnit", "find", "phase", "container", "place", "document"] as const;
 
 export type EntityKey = (typeof ENTITY_KEYS)[number];
 

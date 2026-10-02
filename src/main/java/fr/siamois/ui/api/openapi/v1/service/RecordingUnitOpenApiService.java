@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -57,6 +58,8 @@ import fr.siamois.ui.api.openapi.v1.resource.type.FindDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
 import fr.siamois.ui.api.openapi.v1.resource.type.ContainerDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.ContainerType;
+import fr.siamois.ui.api.openapi.v1.resource.type.DocumentDefaultType;
+import fr.siamois.ui.api.openapi.v1.resource.type.DocumentType;
 import fr.siamois.ui.api.openapi.v1.resource.type.PhaseDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.PhaseType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
@@ -64,6 +67,7 @@ import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectDocumentTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
@@ -393,6 +397,78 @@ public class RecordingUnitOpenApiService {
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
+        });
+        type.setFields(fields);
+        return type;
+    }
+
+    /**
+     * {@code GET /api/v1/projects/{projectId}/document-types} — pendant, pour Document (catégories), de
+     * {@link #buildProjectFindTypeSettings}, même structure (types configurés de l'institution +
+     * {@code _default}).
+     */
+    @Transactional
+    public ProjectDocumentTypeListResponse buildProjectDocumentTypeSettings(
+            String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
+        ActionUnitDTO au = project.actionUnit();
+        InstitutionDTO institution = au.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
+        }
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        // Nothing can be configured on the table until the institution's thesaurus declares its category field:
+        // the project then has no category, no stored identifier format, and the seed layout as its form.
+        boolean configurable = Boolean.TRUE.equals(OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.isTypeFieldConfigured(au.getId(), ConfigurableTable.DOCUMENT)));
+        RecordingUnitIdentifierConfig identifierConfig = configurable
+                ? buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.DOCUMENT, null) : null;
+        DocumentDefaultType defaultType = buildDocumentDefaultType(
+                configurable ? au.getId() : null, institution, personDto, lang, identifierConfig);
+
+        List<Concept> configuredTypes = !configurable ? List.<Concept>of() : OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT));
+        Locale locale = langService.localeForApiLang(lang);
+        List<DocumentType> types = configuredTypes.stream()
+                .map(concept -> buildDocumentType(au.getId(), concept, userInfo, locale,
+                        buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.DOCUMENT, concept.getId())))
+                .toList();
+
+        return new ProjectDocumentTypeListResponse(types, defaultType);
+    }
+
+    private DocumentDefaultType buildDocumentDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
+                                                   RecordingUnitIdentifierConfig identifierConfig) {
+        DocumentDefaultType defaultType = new DocumentDefaultType();
+        defaultType.setIdentifierConfig(identifierConfig);
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.DOCUMENT, null);
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale, Document.class);
+        });
+        defaultType.setFields(fields);
+        return defaultType;
+    }
+
+    private DocumentType buildDocumentType(Long projectId, Concept concept,
+                                     UserInfo userInfo, Locale locale,
+                                     RecordingUnitIdentifierConfig identifierConfig) {
+        ConceptDTO typeDto = conceptMapper.convert(concept);
+        DocumentType type = new DocumentType();
+        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setId(String.valueOf(concept.getId()));
+        type.setIdentifierConfig(identifierConfig);
+
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.DOCUMENT, concept.getId());
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale, Document.class);
         });
         type.setFields(fields);
         return type;

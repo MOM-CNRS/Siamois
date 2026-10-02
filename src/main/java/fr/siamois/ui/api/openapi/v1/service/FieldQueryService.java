@@ -21,6 +21,7 @@ import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAn
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectPerson;
 import fr.siamois.domain.models.form.customfieldanswer.spatialunit.CustomFieldAnswerSpatialUnit;
 import fr.siamois.domain.models.form.customfieldanswer.vocabulary.CustomFieldAnswerSelectConcept;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -89,7 +90,8 @@ public class FieldQueryService {
             RecordingUnit.class, "recordingUnit",
             Specimen.class, "specimen",
             Phase.class, "phase",
-            Container.class, "container");
+            Container.class, "container",
+            Document.class, "document");
 
     /** Where an entity's human label is, in order of preference. */
     private static final List<String> LABEL_ATTRIBUTES =
@@ -121,6 +123,7 @@ public class FieldQueryService {
             Specimen.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.MOBILIER)),
             Phase.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.PHASE)),
             Container.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)),
+            Document.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.DOCUMENT)),
             SpatialUnit.class, systemFieldsOf(SpatialUnit.DETAILS_FORM));
 
     private static Map<Long, CustomField> systemFieldsOf(fr.siamois.ui.form.dto.FormUiDto form) {
@@ -240,7 +243,8 @@ public class FieldQueryService {
             RecordingUnit.class, ConfigurableTable.UE,
             Specimen.class, ConfigurableTable.MOBILIER,
             Phase.class, ConfigurableTable.PHASE,
-            Container.class, ConfigurableTable.CONTENANT);
+            Container.class, ConfigurableTable.CONTENANT,
+            Document.class, ConfigurableTable.DOCUMENT);
 
     private static final Map<Class<?>, FormUiDto> DETAILS_FORMS = Map.of(
             ActionUnit.class, ActionUnit.DETAILS_FORM,

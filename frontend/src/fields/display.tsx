@@ -72,6 +72,7 @@ const ENTITY_COLORS: Record<EntityKey, string> = {
   find: "var(--ground-main-color, #7e1717)",
   phase: "var(--ground-main-color, #7e1717)",
   container: "var(--third-main-color, #e55807)",
+  document: "var(--third-main-color, #e55807)",
 };
 
 /** An entity type's colour (registry key), or undefined for a type without one. */
@@ -106,6 +107,7 @@ const REF_KINDS: Record<string, { entityType?: EntityKey; color: string; border:
   finds: { entityType: "find", color: ENTITY_COLORS.find, border: GROUND_BORDER },
   phases: { entityType: "phase", color: ENTITY_COLORS.phase, border: GROUND_BORDER },
   containers: { entityType: "container", color: ENTITY_COLORS.container, border: THIRD_BORDER },
+  documents: { entityType: "document", color: ENTITY_COLORS.document, border: THIRD_BORDER },
   concepts: { color: "var(--siamois-green, #80b480)", border: GREEN_BORDER },
   persons: { color: "var(--text-color-secondary, #6b7280)", border: "var(--surface-300, #e0e0e0)" },
 };

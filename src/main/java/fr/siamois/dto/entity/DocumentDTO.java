@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +37,7 @@ public class DocumentDTO extends AbstractEntityDTO {
     private String rights;
     private Set<ConceptDTO> keywords;
     private Integer itemCount;
-    private BigDecimal sizeMb;
+    private Double sizeMb;
     private String crs;
     private String originalPath;
     private String comments;
@@ -57,6 +56,11 @@ public class DocumentDTO extends AbstractEntityDTO {
     private Set<SpatialUnitSummaryDTO> places;
     private Set<PhaseDTO> phases;
     private Set<ContainerDTO> containers;
+
+    /** The stored file as the form's file field shows it; {@code null} when the document has none. */
+    public DocumentFileDTO getFile() {
+        return fileCode == null ? null : new DocumentFileDTO(fileName, mimeType, size);
+    }
 
     public static List<String> getBindableFieldNames() {
         return List.of(
@@ -83,6 +87,7 @@ public class DocumentDTO extends AbstractEntityDTO {
                 "originalPath",
                 "comments",
                 "externalUrl",
+                "file",
                 "recordingUnits",
                 "finds",
                 "places",

@@ -169,7 +169,11 @@ class ProjectControllerApiTest {
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,
-                documentWriteOpenApiService);
+                documentWriteOpenApiService,
+                mock(fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper.class),
+                mock(fr.siamois.ui.api.openapi.v1.service.DocumentListProjectionService.class),
+                mock(ResourceBookmarkService.class),
+                ListQueryStubs.none());
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller, recordingUnitsController, documentsController)
                 .setControllerAdvice(new RestExceptionHandler())

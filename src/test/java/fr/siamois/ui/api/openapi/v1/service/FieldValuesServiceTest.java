@@ -47,8 +47,10 @@ class FieldValuesServiceTest {
     @BeforeEach
     void setUp() {
         service = new FieldValuesService(projectApiService, mock(SpecimenService.class), phaseOpenApiService,
+                mock(DocumentOpenApiService.class),
                 mock(ContainerOpenApiService.class), relationFieldService, mock(RecordingUnitListProjectionService.class),
-                mock(FindListProjectionService.class), phaseListProjectionService, mock(ContainerListProjectionService.class),
+                mock(FindListProjectionService.class), phaseListProjectionService, mock(DocumentListProjectionService.class),
+                mock(ContainerListProjectionService.class),
                 mock(ProjectListProjectionService.class), customFieldRepository);
         PhaseDTO phase = new PhaseDTO();
         phase.setId(7L);
@@ -94,7 +96,7 @@ class FieldValuesServiceTest {
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
         assertThatThrownBy(() -> service.values(caller, "phases", "7", "123456", 0, 50, null, "label:asc", "fr"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
-        assertThatThrownBy(() -> service.values(caller, "documents", "7", KEYWORDS, 0, 50, null, "label:asc", "fr"))
+        assertThatThrownBy(() -> service.values(caller, "elephants", "7", KEYWORDS, 0, 50, null, "label:asc", "fr"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
         assertThatThrownBy(() -> service.values(caller, "phases", "7", KEYWORDS, 0, 50, null, "id:asc", "fr"))
                 .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
