@@ -331,6 +331,15 @@
                                            value="#{langBean.msg('nav.projectsManagement.hint')}"/>
                             </h:commandLink>
                         </li>
+                        <li class="nav-item">
+                            <h:commandLink action="#{navBean.goToExportTemplatesSettings()}" styleClass="nav-link"
+                                           id="exportTemplatesLink">
+                                <i class="bi bi-file-earmark-spreadsheet"/>
+                                <span class="menu-text">#{langBean.msg('nav.exportTemplates')}</span>
+                                <p:tooltip for="exportTemplatesLink"
+                                           value="#{langBean.msg('nav.exportTemplates.hint')}"/>
+                            </h:commandLink>
+                        </li>
                         <ui:fragment rendered="#{navBean.administrationVisible}">
                             <li class="nav-item">
                                 <h:commandLink action="#{navBean.goToUserManagementSettings()}" styleClass="nav-link"

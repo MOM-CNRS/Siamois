@@ -23,6 +23,9 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
 
     List<Specimen> findByActionUnitIdAndFullIdentifier(Long actionUnitId, String fullIdentifier);
 
+    /** Tout le mobilier d'un projet — lecture pour l'export. */
+    List<Specimen> findAllByActionUnitId(Long actionUnitId);
+
     <T> Optional<T> findById(Long id, Class<T> type);
 
     long countByCreatedByInstitution(Institution institution);

@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{exportTemplateEditorBean.checkOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <link rel="stylesheet" href="#{redirectBean.redirectUrlToResource('settings.css', 'css')}"/>
+        <h:outputStylesheet library="css" name="export-templates.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main>
+            <div class="xt">
+                <form:csrfform formId="exportTemplateEditorForm">
+
+                    <!-- Barre du haut : fil d'Ariane et actions -->
+                    <div class="xt-topbar">
+                        <div class="xt-crumb">
+                            <span>#{langBean.msg('exportTemplates.crumb.settings')}</span>
+                            <i class="bi bi-chevron-right xt-sep"/>
+                            <p:commandLink action="#{exportTemplateEditorBean.backToList()}" immediate="true" process="@this">
+                                #{langBean.msg('nav.exportTemplates')}
+                            </p:commandLink>
+                            <i class="bi bi-chevron-right xt-sep"/>
+                            <span>#{exportTemplateEditorBean.model.name}</span>
+                            <i class="bi bi-chevron-right xt-sep"/>
+                            <span class="xt-current">#{exportTemplateEditorBean.selectedSheet.name}</span>
+                        </div>
+                        <div class="xt-actions">
+                            <p:commandButton value="#{langBean.msg('exportTemplates.editor.properties')}" icon="bi bi-sliders"
+                                             styleClass="xt-btn-flat"
+                                             action="#{exportTemplateEditorBean.openModel()}"
+                                             process="@form" update="@form"/>
+                            <p:commandButton value="#{langBean.msg('exportTemplates.editor.reload')}"
+                                             styleClass="xt-btn-flat"
+                                             action="#{exportTemplateEditorBean.reload()}"
+                                             immediate="true" process="@this" update="@form"/>
+                            <p:commandButton value="#{langBean.msg('common.action.save')}"
+                                             styleClass="xt-btn-primary"
+                                             action="#{exportTemplateEditorBean.save()}"
+                                             process="@form" update="@form"/>
+                        </div>
+                    </div>
+
+                    <!-- Fiches du modèle -->
+                    <div class="xt-strip">
+                        <span class="xt-overline">#{langBean.msg('exportTemplates.sheets')}</span>
+                        <ui:repeat value="#{exportTemplateEditorBean.model.sheets}" var="sheet">
+                            <p:commandLink styleClass="xt-tab #{exportTemplateEditorBean.isSelected(sheet) ? 'active' : ''}"
+                                           action="#{exportTemplateEditorBean.selectSheet(sheet)}"
+                                           process="@form" update="@form">
+                                #{sheet.name}
+                            </p:commandLink>
+                        </ui:repeat>
+                        <p:commandLink styleClass="xt-pill add"
+                                       title="#{langBean.msg('exportTemplates.editor.sheet.add')}"
+                                       action="#{exportTemplateEditorBean.addSheet()}"
+                                       process="@form" update="@form">
+                            <i class="bi bi-plus-lg"/>
+                        </p:commandLink>
+                        <p:commandLink styleClass="xt-pill add"
+                                       title="#{langBean.msg('exportTemplates.editor.sheetSettings')}"
+                                       action="#{exportTemplateEditorBean.openSheet()}"
+                                       process="@form" update="@form">
+                            <i class="bi bi-gear"/> #{langBean.msg('exportTemplates.editor.sheetSettings')}
+                        </p:commandLink>
+                    </div>
+
+                    <!-- Sources de la fiche -->
+                    <div class="xt-strip">
+                        <span class="xt-overline">#{langBean.msg('exportTemplates.editor.sourcesOfSheet')}</span>
+                        <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.sources}" var="src" varStatus="srcStatus">
+                            <p:commandLink styleClass="xt-pill"
+                                           action="#{exportTemplateEditorBean.openSource(src)}"
+                                           process="@form" update="@form">
+                                <span class="xt-dot #{exportTemplateEditorBean.sourceDot(srcStatus.index)}"/>
+                                <strong>#{exportTemplateEditorBean.sourceLabel(src)}</strong>
+                                <h:panelGroup rendered="#{not empty exportTemplateEditorBean.sourceTypes(src)}">
+                                    <span class="muted">· #{langBean.msg('exportTemplates.editor.source.typePrefix', exportTemplateEditorBean.sourceTypes(src))}</span>
+                                </h:panelGroup>
+                            </p:commandLink>
+                        </ui:repeat>
+                        <p:commandLink styleClass="xt-pill add"
+                                       action="#{exportTemplateEditorBean.addSourceAndEdit()}"
+                                       process="@form" update="@form">
+                            <i class="bi bi-plus-lg"/> #{langBean.msg('exportTemplates.editor.source.add')}
+                        </p:commandLink>
+                    </div>
+
+                    <!-- Matrice colonnes cibles x sources -->
+                    <div class="xt-body">
+                        <div class="xt-inner wide">
+                            <div class="xt-matrix-wrap">
+                                <table class="xt-matrix">
+                                    <thead>
+                                    <tr>
+                                        <th class="first">#{langBean.msg('exportTemplates.editor.matrix.column')}</th>
+                                        <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.sources}" var="src">
+                                            <th>
+                                                #{exportTemplateEditorBean.sourceLabel(src)}
+                                                <h:panelGroup rendered="#{not empty exportTemplateEditorBean.sourceTypes(src)}">
+                                                    <span class="muted">· #{exportTemplateEditorBean.sourceTypes(src)}</span>
+                                                </h:panelGroup>
+                                            </th>
+                                        </ui:repeat>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.columns}" var="col">
+                                        <tr>
+                                            <td class="name">
+                                                <p:commandLink action="#{exportTemplateEditorBean.openColumn(col)}"
+                                                               process="@form" update="@form">
+                                                    #{col.header}
+                                                </p:commandLink>
+                                                <span class="out">#{langBean.msg('exportTemplates.editor.output.'.concat(col.output))}</span>
+                                            </td>
+                                            <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.sources}" var="cellSrc" varStatus="cellStatus">
+                                                <td>
+                                                    <p:commandLink styleClass="xt-cell xt-kind-#{exportTemplateEditorBean.cellKind(col, cellStatus.index)}"
+                                                                   action="#{exportTemplateEditorBean.openCell(col, cellStatus.index)}"
+                                                                   process="@form" update="@form">
+                                                        <h:panelGroup rendered="#{empty exportTemplateEditorBean.cellKind(col, cellStatus.index)}">
+                                                            <span class="none">#{langBean.msg('exportTemplates.editor.cell.none')}</span>
+                                                        </h:panelGroup>
+                                                        <h:panelGroup rendered="#{not empty exportTemplateEditorBean.cellKind(col, cellStatus.index)}">
+                                                            <span class="mark"/>
+                                                            <span class="text">
+                                                                <span class="kind">#{langBean.msg('exportTemplates.editor.kind.'.concat(exportTemplateEditorBean.cellKind(col, cellStatus.index)))}</span>
+                                                                <span class="value">#{exportTemplateEditorBean.cellValue(col, cellStatus.index)}</span>
+                                                            </span>
+                                                        </h:panelGroup>
+                                                    </p:commandLink>
+                                                </td>
+                                            </ui:repeat>
+                                        </tr>
+                                    </ui:repeat>
+                                    </tbody>
+                                </table>
+                                <div class="xt-matrix-foot">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.column.add')}" icon="bi bi-plus-lg"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportTemplateEditorBean.addColumn()}"
+                                                     process="@form" update="@form"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tiroir latéral : édition de la cellule, de la colonne, de la source, de la fiche ou du modèle -->
+                    <h:panelGroup id="xtDrawer" layout="block" rendered="#{exportTemplateEditorBean.drawerOpen}">
+                        <p:commandLink styleClass="xt-backdrop"
+                                       action="#{exportTemplateEditorBean.closeDrawer()}"
+                                       process="@form" update="@form"/>
+                        <div class="xt-drawer">
+                            <div class="xt-drawer-head">
+                                <div>
+                                    <div class="xt-overline" style="margin-bottom: 3px">
+                                        <h:outputText value="#{langBean.msg('exportTemplates.editor.drawer.edit')}" rendered="#{exportTemplateEditorBean.drawerRuleMode}"/>
+                                        <h:outputText value="#{langBean.msg('exportTemplates.editor.drawer.column')}" rendered="#{exportTemplateEditorBean.drawerColumnMode}"/>
+                                        <h:outputText value="#{langBean.msg('exportTemplates.editor.drawer.source')}" rendered="#{exportTemplateEditorBean.drawerSourceMode}"/>
+                                        <h:outputText value="#{langBean.msg('exportTemplates.editor.drawer.sheet')}" rendered="#{exportTemplateEditorBean.drawerSheetMode}"/>
+                                        <h:outputText value="#{langBean.msg('exportTemplates.editor.drawer.model')}" rendered="#{exportTemplateEditorBean.drawerModelMode}"/>
+                                    </div>
+                                    <div class="xt-drawer-title">#{exportTemplateEditorBean.drawerTitle}</div>
+                                    <div class="xt-drawer-sub">#{exportTemplateEditorBean.drawerSubtitle}</div>
+                                </div>
+                                <p:commandLink styleClass="xt-icon-btn" style="display:flex;align-items:center;justify-content:center"
+                                               action="#{exportTemplateEditorBean.closeDrawer()}"
+                                               process="@form" update="@form">
+                                    <i class="bi bi-x-lg"/>
+                                </p:commandLink>
+                            </div>
+
+                            <!-- ===== Règle d'une cellule : onglets ===== -->
+                            <h:panelGroup rendered="#{exportTemplateEditorBean.drawerRuleMode}" layout="block" styleClass="xt-tabs">
+                                <p:commandLink styleClass="#{exportTemplateEditorBean.drawerTab eq 'DIRECT' ? 'active' : ''}"
+                                               action="#{exportTemplateEditorBean.selectDrawerTab('DIRECT')}" process="@form" update="@form">
+                                    #{langBean.msg('exportTemplates.editor.tab.DIRECT')}
+                                </p:commandLink>
+                                <p:commandLink styleClass="#{exportTemplateEditorBean.drawerTab eq 'PATH' ? 'active' : ''}"
+                                               action="#{exportTemplateEditorBean.selectDrawerTab('PATH')}" process="@form" update="@form">
+                                    #{langBean.msg('exportTemplates.editor.tab.PATH')}
+                                </p:commandLink>
+                                <p:commandLink styleClass="#{exportTemplateEditorBean.drawerTab eq 'CONSTANT' ? 'active' : ''}"
+                                               action="#{exportTemplateEditorBean.selectDrawerTab('CONSTANT')}" process="@form" update="@form">
+                                    #{langBean.msg('exportTemplates.editor.tab.CONSTANT')}
+                                </p:commandLink>
+                                <p:commandLink styleClass="#{exportTemplateEditorBean.drawerTab eq 'CONCAT' ? 'active' : ''}"
+                                               action="#{exportTemplateEditorBean.selectDrawerTab('CONCAT')}" process="@form" update="@form">
+                                    #{langBean.msg('exportTemplates.editor.tab.CONCAT')}
+                                </p:commandLink>
+                            </h:panelGroup>
+
+                            <div class="xt-drawer-body">
+                                <!-- ===== Règle d'une cellule ===== -->
+                                <h:panelGroup rendered="#{exportTemplateEditorBean.drawerRuleMode}" layout="block" styleClass="xt-stack">
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerRuleSourceCount gt 1}" layout="block" styleClass="xt-warn">
+                                        #{langBean.msg('exportTemplates.editor.drawer.shared', exportTemplateEditorBean.drawerRuleSourceCount)}
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerTab eq 'PATH'}" layout="block" styleClass="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.drawer.path')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.drawerRule.path}" styleClass="mono">
+                                            <p:ajax event="change" process="@this" update="@form"/>
+                                        </p:inputText>
+                                        <div class="xt-hint">
+                                            #{langBean.msg('exportTemplates.editor.drawer.path.hint', exportTemplateEditorBean.pathHint(exportTemplateEditorBean.drawerRule))}
+                                        </div>
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerTab eq 'DIRECT' or exportTemplateEditorBean.drawerTab eq 'PATH'}" layout="block" styleClass="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.drawer.field')}</span>
+                                        <div class="xt-opts">
+                                            <ui:repeat value="#{exportTemplateEditorBean.fieldItems(exportTemplateEditorBean.drawerRule)}" var="o">
+                                                <p:commandLink styleClass="xt-opt #{exportTemplateEditorBean.drawerRule.field.key eq o.value() ? 'active' : ''}"
+                                                               action="#{exportTemplateEditorBean.selectDrawerField(o.value())}"
+                                                               process="@form" update="@form">
+                                                    <span class="mono">#{o.label()}</span>
+                                                </p:commandLink>
+                                            </ui:repeat>
+                                        </div>
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerTab eq 'DIRECT' or exportTemplateEditorBean.drawerTab eq 'PATH'}" layout="block" styleClass="xt-field">
+                                        <p:selectBooleanCheckbox value="#{exportTemplateEditorBean.drawerRule.list}"
+                                                                 itemLabel="#{langBean.msg('exportTemplates.editor.rule.list')}">
+                                            <p:ajax event="change" process="@this" update="@form"/>
+                                        </p:selectBooleanCheckbox>
+                                        <h:panelGroup rendered="#{exportTemplateEditorBean.drawerRule.list}" layout="block" styleClass="xt-row">
+                                            <p:inputText value="#{exportTemplateEditorBean.drawerRule.listSeparator}"/>
+                                            <p:selectBooleanCheckbox value="#{exportTemplateEditorBean.drawerRule.listSorted}"
+                                                                     itemLabel="#{langBean.msg('exportTemplates.editor.rule.listSorted')}"/>
+                                        </h:panelGroup>
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerTab eq 'CONSTANT'}" layout="block" styleClass="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.drawer.constant')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.drawerRule.constantValue}" styleClass="mono"/>
+                                        <div class="xt-hint">#{langBean.msg('exportTemplates.editor.drawer.constant.hint')}</div>
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerTab eq 'CONCAT'}" layout="block" styleClass="xt-stack">
+                                        <div class="xt-row">
+                                            <div class="xt-field">
+                                                <span class="xt-label">#{langBean.msg('exportTemplates.editor.rule.separator')}</span>
+                                                <p:inputText value="#{exportTemplateEditorBean.drawerRule.separator}"/>
+                                            </div>
+                                            <div class="xt-field">
+                                                <span class="xt-label">#{langBean.msg('exportTemplates.editor.rule.labelSeparator')}</span>
+                                                <p:inputText value="#{exportTemplateEditorBean.drawerRule.labelSeparator}"/>
+                                            </div>
+                                        </div>
+                                        <div class="xt-parts">
+                                            <ui:repeat value="#{exportTemplateEditorBean.drawerRule.parts}" var="part">
+                                                <div class="xt-part">
+                                                    <p:inputText value="#{part.label}"
+                                                                 placeholder="#{langBean.msg('exportTemplates.editor.part.label')}"/>
+                                                    <h:panelGroup rendered="#{part.literalPart}" layout="block">
+                                                        <p:inputText value="#{part.literal}"
+                                                                     placeholder="#{langBean.msg('exportTemplates.editor.part.literal')}"/>
+                                                    </h:panelGroup>
+                                                    <h:panelGroup rendered="#{not part.literalPart}" layout="block" styleClass="xt-stack">
+                                                        <p:inputText value="#{part.path}" styleClass="mono"
+                                                                     placeholder="#{langBean.msg('exportTemplates.editor.rule.path')}">
+                                                            <p:ajax event="change" process="@this" update="@form"/>
+                                                        </p:inputText>
+                                                        <p:selectOneMenu value="#{part.field.key}" style="width: 100%">
+                                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.choose')}" itemValue="" noSelectionOption="true"/>
+                                                            <f:selectItems value="#{exportTemplateEditorBean.fieldItems(exportTemplateEditorBean.drawerRule, part)}" var="o"
+                                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                                        </p:selectOneMenu>
+                                                    </h:panelGroup>
+                                                    <div>
+                                                        <p:commandLink styleClass="xt-pill add"
+                                                                       action="#{exportTemplateEditorBean.removePart(exportTemplateEditorBean.drawerRule, part)}"
+                                                                       process="@form" update="@form">
+                                                            <i class="bi bi-x-lg"/> #{langBean.msg('exportTemplates.delete')}
+                                                        </p:commandLink>
+                                                    </div>
+                                                </div>
+                                            </ui:repeat>
+                                        </div>
+                                        <div class="xt-row">
+                                            <p:commandButton value="#{langBean.msg('exportTemplates.editor.part.addField')}" icon="bi bi-plus-lg"
+                                                             styleClass="xt-btn-flat"
+                                                             action="#{exportTemplateEditorBean.addPart(exportTemplateEditorBean.drawerRule)}"
+                                                             process="@form" update="@form"/>
+                                            <p:commandButton value="#{langBean.msg('exportTemplates.editor.part.addLiteral')}" icon="bi bi-plus-lg"
+                                                             styleClass="xt-btn-flat"
+                                                             action="#{exportTemplateEditorBean.addLiteralPart(exportTemplateEditorBean.drawerRule)}"
+                                                             process="@form" update="@form"/>
+                                        </div>
+                                    </h:panelGroup>
+                                </h:panelGroup>
+
+                                <!-- ===== Colonne ===== -->
+                                <h:panelGroup rendered="#{exportTemplateEditorBean.drawerColumnMode}" layout="block" styleClass="xt-stack">
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.column.header')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.drawerColumn.header}" maxlength="150"/>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.column.output')}</span>
+                                        <p:selectOneMenu value="#{exportTemplateEditorBean.drawerColumn.output}" style="width: 100%">
+                                            <f:selectItems value="#{exportTemplateEditorBean.outputItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                        </p:selectOneMenu>
+                                    </div>
+                                    <div class="xt-row">
+                                        <p:commandButton icon="bi bi-arrow-up" value="#{langBean.msg('exportTemplates.editor.moveUp')}"
+                                                         styleClass="xt-btn-flat"
+                                                         action="#{exportTemplateEditorBean.moveDrawerColumn(-1)}"
+                                                         process="@form" update="@form"/>
+                                        <p:commandButton icon="bi bi-arrow-down" value="#{langBean.msg('exportTemplates.editor.moveDown')}"
+                                                         styleClass="xt-btn-flat"
+                                                         action="#{exportTemplateEditorBean.moveDrawerColumn(1)}"
+                                                         process="@form" update="@form"/>
+                                    </div>
+                                </h:panelGroup>
+
+                                <!-- ===== Source ===== -->
+                                <h:panelGroup rendered="#{exportTemplateEditorBean.drawerSourceMode}" layout="block" styleClass="xt-stack">
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.source.kind')}</span>
+                                        <p:selectOneMenu value="#{exportTemplateEditorBean.drawerSource.kind}" style="width: 100%">
+                                            <f:selectItems value="#{exportTemplateEditorBean.sourceKindItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" process="@form" update="@form"/>
+                                        </p:selectOneMenu>
+                                    </div>
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerSource.kind eq 'ENTITY'}" layout="block" styleClass="xt-stack">
+                                        <p:selectOneMenu value="#{exportTemplateEditorBean.drawerSource.entity}" style="width: 100%">
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.choose')}" itemValue="" noSelectionOption="true"/>
+                                            <f:selectItems value="#{exportTemplateEditorBean.entityItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" process="@form" update="@form"/>
+                                        </p:selectOneMenu>
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.source.types')}</span>
+                                        <p:selectCheckboxMenu multiple="true" style="width: 100%"
+                                                              label="#{langBean.msg('exportTemplates.editor.source.untyped')}"
+                                                              value="#{exportTemplateEditorBean.drawerSource.typeKeys}">
+                                            <f:selectItems value="#{exportTemplateEditorBean.typeItems(exportTemplateEditorBean.drawerSource)}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                        </p:selectCheckboxMenu>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.drawerSource.kind eq 'TECHNICAL'}" layout="block" styleClass="xt-stack">
+                                        <p:selectOneMenu value="#{exportTemplateEditorBean.drawerSource.technicalKey}" style="width: 100%">
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.choose')}" itemValue="" noSelectionOption="true"/>
+                                            <f:selectItems value="#{exportTemplateEditorBean.technicalItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" process="@form" update="@form"/>
+                                        </p:selectOneMenu>
+                                    </h:panelGroup>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.source.remove')}" icon="bi bi-trash"
+                                                     styleClass="xt-btn-danger"
+                                                     disabled="#{exportTemplateEditorBean.selectedSheet.sources.size() le 1}"
+                                                     action="#{exportTemplateEditorBean.removeDrawerSource()}"
+                                                     process="@form" update="@form"/>
+                                </h:panelGroup>
+
+                                <!-- ===== Fiche ===== -->
+                                <h:panelGroup rendered="#{exportTemplateEditorBean.drawerSheetMode}" layout="block" styleClass="xt-stack">
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.sheet.name')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.selectedSheet.name}" maxlength="31"/>
+                                    </div>
+                                    <p:selectBooleanCheckbox value="#{exportTemplateEditorBean.selectedSheet.omitIfEmpty}"
+                                                             itemLabel="#{langBean.msg('exportTemplates.editor.sheet.omitIfEmpty')}"/>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.sheet.sortBy')}</span>
+                                        <p:selectCheckboxMenu multiple="true" style="width: 100%"
+                                                              value="#{exportTemplateEditorBean.selectedSheet.sortBy}">
+                                            <f:selectItems value="#{exportTemplateEditorBean.columnHeaderItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                        </p:selectCheckboxMenu>
+                                    </div>
+                                    <div class="xt-row">
+                                        <p:commandButton icon="bi bi-arrow-left" value="#{langBean.msg('exportTemplates.editor.moveUp')}"
+                                                         styleClass="xt-btn-flat"
+                                                         action="#{exportTemplateEditorBean.moveSheet(exportTemplateEditorBean.selectedSheet, -1)}"
+                                                         process="@form" update="@form"/>
+                                        <p:commandButton icon="bi bi-arrow-right" value="#{langBean.msg('exportTemplates.editor.moveDown')}"
+                                                         styleClass="xt-btn-flat"
+                                                         action="#{exportTemplateEditorBean.moveSheet(exportTemplateEditorBean.selectedSheet, 1)}"
+                                                         process="@form" update="@form"/>
+                                    </div>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.sheet.remove')}" icon="bi bi-trash"
+                                                     styleClass="xt-btn-danger"
+                                                     disabled="#{exportTemplateEditorBean.model.sheets.size() le 1}"
+                                                     action="#{exportTemplateEditorBean.removeSelectedSheet()}"
+                                                     process="@form" update="@form"/>
+                                </h:panelGroup>
+
+                                <!-- ===== Modèle ===== -->
+                                <h:panelGroup rendered="#{exportTemplateEditorBean.drawerModelMode}" layout="block" styleClass="xt-stack">
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('common.label.name')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.model.name}" maxlength="150"/>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.version')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.model.version}" maxlength="50"/>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.fileNamePattern')}</span>
+                                        <p:inputText value="#{exportTemplateEditorBean.model.fileNamePattern}" styleClass="mono"/>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.editor.referenceProject')}</span>
+                                        <p:selectOneMenu value="#{exportTemplateEditorBean.referenceProject}" style="width: 100%">
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.referenceProject.none')}" itemValue=""/>
+                                            <f:selectItems value="#{exportTemplateEditorBean.projectItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" listener="#{exportTemplateEditorBean.onReferenceProjectChange()}"
+                                                    process="@this" update="@form"/>
+                                        </p:selectOneMenu>
+                                        <div class="xt-hint">#{langBean.msg('exportTemplates.editor.referenceProject.hint')}</div>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.json')}</span>
+                                        <div class="xt-hint">#{langBean.msg('exportTemplates.editor.jsonHint')}</div>
+                                        <pre class="xt-json">#{exportTemplateEditorBean.savedJson}</pre>
+                                    </div>
+                                </h:panelGroup>
+                            </div>
+
+                            <div class="xt-drawer-foot">
+                                <div class="group">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.clearCell')}"
+                                                     styleClass="xt-btn-danger"
+                                                     rendered="#{exportTemplateEditorBean.drawerRuleMode and exportTemplateEditorBean.drawerOriginal != null}"
+                                                     action="#{exportTemplateEditorBean.clearCell()}"
+                                                     process="@form" update="@form"/>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.column.remove')}" icon="bi bi-trash"
+                                                     styleClass="xt-btn-danger"
+                                                     rendered="#{exportTemplateEditorBean.drawerColumnMode}"
+                                                     disabled="#{exportTemplateEditorBean.selectedSheet.columns.size() le 1}"
+                                                     action="#{exportTemplateEditorBean.removeDrawerColumn()}"
+                                                     process="@form" update="@form"/>
+                                </div>
+                                <div class="group">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.cancel')}"
+                                                     styleClass="xt-btn-flat"
+                                                     rendered="#{exportTemplateEditorBean.drawerRuleMode}"
+                                                     action="#{exportTemplateEditorBean.closeDrawer()}"
+                                                     process="@this" update="@form"/>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.apply')}"
+                                                     styleClass="xt-btn-primary"
+                                                     rendered="#{exportTemplateEditorBean.drawerRuleMode}"
+                                                     action="#{exportTemplateEditorBean.applyDrawer()}"
+                                                     process="@form" update="@form"/>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.close')}"
+                                                     styleClass="xt-btn-primary"
+                                                     rendered="#{not exportTemplateEditorBean.drawerRuleMode}"
+                                                     action="#{exportTemplateEditorBean.closeDrawer()}"
+                                                     process="@form" update="@form"/>
+                                </div>
+                            </div>
+                        </div>
+                    </h:panelGroup>
+                </form:csrfform>
+            </div>
+        </main>
+    </ui:define>
+
+</ui:composition>

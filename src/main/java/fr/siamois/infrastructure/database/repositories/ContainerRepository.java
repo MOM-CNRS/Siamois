@@ -12,6 +12,9 @@ import java.util.Optional;
 
 public interface ContainerRepository extends JpaRepository<Container, Long>, JpaSpecificationExecutor<Container> {
 
+    /** Tous les conteneurs d'un projet — lecture pour l'export. */
+    List<Container> findAllByActionUnitId(Long actionUnitId);
+
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
     int countByActionUnitId(Long actionUnitId);

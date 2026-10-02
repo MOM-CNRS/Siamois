@@ -10,6 +10,7 @@ import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.ui.bean.settings.administration.ApplicationMembersListBean;
+import fr.siamois.ui.bean.settings.exporttemplate.ExportTemplatesSettingsBean;
 import fr.siamois.ui.bean.settings.project.ProjectListBean;
 import jakarta.ws.rs.ForbiddenException;
 import org.springframework.context.annotation.Scope;
@@ -30,6 +31,7 @@ public class SettingsController {
     private final ProjectListBean projectListBean;
     private final PersonService personService;
     private final PersonMapper personMapper;
+    private final ExportTemplatesSettingsBean exportTemplatesSettingsBean;
 
 
 
@@ -39,7 +41,9 @@ public class SettingsController {
                                ProfilePermissionService profilePermissionService,
                                ProjectListBean projectListBean,
                                PersonService personService,
-                               PersonMapper personMapper) {
+                               PersonMapper personMapper,
+                               ExportTemplatesSettingsBean exportTemplatesSettingsBean) {
+        this.exportTemplatesSettingsBean = exportTemplatesSettingsBean;
         this.navBean = navBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
         this.applicationMembersListBean = applicationMembersListBean;
@@ -74,6 +78,16 @@ public class SettingsController {
     public String goToThesaurusProfile() {
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         return "forward:/pages/settings/thesaurusSettings.xhtml";
+    }
+
+    @GetMapping("/settings/export-templates")
+    public String goToExportTemplatesSettings() {
+        if (!profilePermissionService.canViewInstitutionData(sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {
+            throw new ForbiddenException();
+        }
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        exportTemplatesSettingsBean.init();
+        return "forward:/pages/settings/exportTemplates.xhtml";
     }
 
     @GetMapping("/settings/organisation")
