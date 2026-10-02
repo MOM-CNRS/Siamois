@@ -53,7 +53,7 @@ en plus du contrôle organisationnel.
 | `PROJECT_EDIT_FINDS` | Créer/modifier le mobilier (finds/specimens). |
 | `PROJECT_EDIT_PHASES` | Créer/modifier les phases. |
 | `PROJECT_EDIT_CONTAINERS` | Créer/modifier les contenants. |
-| `PROJECT_EDIT_DOCUMENTS` | Créer/modifier/supprimer les documents du projet (un document appartient à un seul projet). Contreparties `ORGANIZATION_EDIT_DOCUMENTS` et `INSTANCE_EDIT_DOCUMENTS`. |
+| `PROJECT_EDIT_DOCUMENTS` | Créer/modifier/supprimer les documents du projet (un document appartient à un seul projet). Contreparties `ORGANIZATION_EDIT_DOCUMENTS` et `INSTANCE_EDIT_DOCUMENTS`. Exigé pour modifier un document, envoyer, remplacer ou retirer son fichier (`PUT`/`DELETE /documents/{id}/file`), et lier ou délier un document d'une entité (`PUT`/`DELETE /{collection}/{id}/documents/{documentId}`, droit testé sur le projet **du document**). Voir une liste de documents, ou en télécharger un, demande seulement de voir l'entité ou le projet. Les profils de projet déjà créés reçoivent ce droit au démarrage (`ProfileService.addMissingDefaultPermissionsToProjectProfiles`, ajout seul). |
 
 > `ORGANIZATION_LIST_ACCESS` a été supprimée : elle n'était jamais assignée à un profil ni vérifiée nulle part.
 
