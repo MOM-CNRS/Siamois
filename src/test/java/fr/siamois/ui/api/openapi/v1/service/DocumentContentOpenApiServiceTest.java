@@ -203,7 +203,7 @@ class DocumentContentOpenApiServiceTest {
     }
 
     @Test
-    void requireDownloadableContent_servesTheFileUnderItsOwnName() throws Exception {
+    void requireDownloadableContent_servesTheFileUnderItsOwnName() {
         Document doc = mock(Document.class);
         Institution inst = mock(Institution.class);
         when(documentService.findById(11L)).thenReturn(Optional.of(doc));

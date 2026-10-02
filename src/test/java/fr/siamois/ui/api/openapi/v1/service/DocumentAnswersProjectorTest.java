@@ -187,7 +187,7 @@ class DocumentAnswersProjectorTest {
 
         var out = projector.project(java.util.List.of(withFile, withoutFile), java.util.Set.of("-728"), java.util.Map.of());
 
-        assertThat(out.get(1L).get("-728")).isEqualTo(java.util.Map.of("fileName", "plan.pdf", "mimeType", "application/pdf", "size", 12L));
+        assertThat(out.get(1L)).containsEntry("-728", java.util.Map.of("fileName", "plan.pdf", "mimeType", "application/pdf", "size", 12L));
         assertThat(out.get(2L).get("-728")).isNull();
     }
 }
