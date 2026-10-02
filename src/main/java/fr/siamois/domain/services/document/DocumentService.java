@@ -41,8 +41,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MimeType;
 
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -74,6 +77,7 @@ public class DocumentService implements ArkEntityService {
 
     /** Stands for the identifier of a document saved before its id is known (see {@link #allocateIdentifierIfNew}). */
     private static final String PENDING_IDENTIFIER_PREFIX = "DOC-pending-";
+    private static final BigDecimal BYTES_PER_MB = BigDecimal.valueOf(1024L * 1024L);
     private final DocumentStorage documentStorage;
     private final Collection<FileCompressor> fileCompressors;
 
@@ -376,6 +380,51 @@ public class DocumentService implements ArkEntityService {
 
         log.trace("Finished upload document {} to {}", document.getFileName(), userInfo.getInstitution().getId());
 
+        return persist(document);
+    }
+
+    /**
+     * Replaces the file of an existing document: the previous bytes are removed from the storage, the new
+     * ones stored, and the size (in Mo) and format are filled in — the format only when the document has none.
+     * Whoever created the document stays its creator.
+     */
+    @Transactional
+    public Document replaceFile(UserInfo userInfo, Document document, String fileName, String mimeType, long size,
+                                InputStream fileInputStream, String contextPath)
+            throws InvalidFileTypeException, InvalidFileSizeException, IOException {
+        Document candidate = new Document();
+        candidate.setFileName(fileName);
+        candidate.setMimeType(mimeType);
+        candidate.setSize(size);
+        checkFileData(candidate);
+
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream)) {
+            String md5 = DocumentUtils.md5(bufferedInputStream);
+            if (document.hasFile()) {
+                documentStorage.deleteStoredFile(document);
+            }
+            document.setFileName(fileName);
+            document.setMimeType(mimeType);
+            document.setSize(size);
+            document.setMd5Sum(md5);
+            document.setFileCode(generateFileInternalCode());
+            document.setUrl(String.format("%s/content/%s", contextPath, document.contentFileName()));
+            document.setSizeMb(BigDecimal.valueOf(size).divide(BYTES_PER_MB, 3, RoundingMode.HALF_UP));
+            if (document.getFormat() == null || document.getFormat().isBlank()) {
+                document.setFormat(document.fileExtension().toLowerCase(Locale.ROOT));
+            }
+            documentStorage.save(userInfo, document, bufferedInputStream);
+        }
+        return persist(document);
+    }
+
+    /** Removes the stored file (bytes and metadata); the document and its external URL stay. */
+    @Transactional
+    public Document removeFile(Document document) {
+        if (document.hasFile()) {
+            documentStorage.deleteStoredFile(document);
+        }
+        document.clearFile();
         return persist(document);
     }
 
