@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class ExportEngineTest {
@@ -66,7 +67,7 @@ class ExportEngineTest {
     private void stubFieldReads() {
         lenient().when(fieldResolver.resolve(any(), any(), eq(PROJECT_ID), any())).thenAnswer(i -> {
             ConceptRef ref = i.getArgument(1);
-            return "unknown".equals(ref.conceptId()) ? List.of() : List.of(org.mockito.Mockito.mock(CustomField.class));
+            return "unknown".equals(ref.conceptId()) ? List.of() : List.of(mock(CustomField.class));
         });
         lenient().when(valueReader.read(any(), any(), any(), any())).thenAnswer(i -> {
             ExportRow r = i.getArgument(0);
@@ -229,11 +230,11 @@ class ExportEngineTest {
     @Test
     void severalSources_areUnioned_eachWithItsOwnRule() throws IOException {
         stubFieldReads();
-        Source project = new ProjectSource();
+        Source projectSource = new ProjectSource();
         rows(UE, row(Map.of("1", List.of("UE-1"))));
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of("1", List.of("OA-X"))));
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of("1", List.of("OA-X"))));
 
-        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(UE, project),
+        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(UE, projectSource),
                 column("code", OutputType.TEXT,
                         new DirectRule(List.of(0), new ConceptField(CODE), List.of(), null),
                         new ConstantRule(List.of(1), "projet")))));
@@ -247,10 +248,10 @@ class ExportEngineTest {
 
     @Test
     void ruleWithoutAMatchingSource_leavesTheCellEmpty() throws IOException {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
 
-        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(project),
+        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(projectSource),
                 column("c", OutputType.TEXT, new ConstantRule(List.of(3), "x")))));
 
         try (Workbook wb = open(result)) {
@@ -260,10 +261,10 @@ class ExportEngineTest {
 
     @Test
     void emptySheet_isOmittedWhenAsked_andIfEverythingIsEmptyTheFirstIsKept() throws IOException {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
         rows(UE);
-        ExportTemplateDefinition.Sheet filled = sheet("OA", false, List.of(), List.of(project), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")));
+        ExportTemplateDefinition.Sheet filled = sheet("OA", false, List.of(), List.of(projectSource), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")));
         ExportTemplateDefinition.Sheet empty = sheet("UE", true, List.of(), List.of(UE), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")));
 
         try (Workbook wb = open(run(template(null, filled, empty)))) {
@@ -280,10 +281,10 @@ class ExportEngineTest {
 
     @Test
     void longCell_isTruncated_withAWarning() throws IOException {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
 
-        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(project),
+        ExportEngine.Result result = run(template(null, sheet("S", false, List.of(), List.of(projectSource),
                 column("c", OutputType.TEXT, new ConstantRule(List.of(), "x".repeat(ExportWorkbookWriter.MAX_CELL_LENGTH + 10))))));
 
         try (Workbook wb = open(result)) {
@@ -294,13 +295,13 @@ class ExportEngineTest {
 
     @Test
     void sheetNames_areMadeValidForExcel_andUnique() throws IOException {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
         Column c = column("c", OutputType.TEXT, new ConstantRule(List.of(), "x"));
         ExportTemplateDefinition d = template(null,
-                sheet("a/b", false, List.of(), List.of(project), c),
-                sheet("A_B", false, List.of(), List.of(project), c),
-                sheet("x".repeat(40), false, List.of(), List.of(project), c));
+                sheet("a/b", false, List.of(), List.of(projectSource), c),
+                sheet("A_B", false, List.of(), List.of(projectSource), c),
+                sheet("x".repeat(40), false, List.of(), List.of(projectSource), c));
 
         ExportEngine.Result result = run(d);
 
@@ -331,7 +332,7 @@ class ExportEngineTest {
     }
 
     @Test
-    void unsupportedValue_leavesTheCellEmpty_withAWarning() throws IOException {
+    void unsupportedValue_leavesTheCellEmpty_withAWarning() {
         stubFieldReads();
         rows(UE, row(Map.of("1", List.of(new Object()))));
 
@@ -343,9 +344,9 @@ class ExportEngineTest {
 
     @Test
     void fileName_followsThePattern_andIsMadeSafe() {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
-        ExportTemplateDefinition.Sheet s = sheet("S", false, List.of(), List.of(project), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        ExportTemplateDefinition.Sheet s = sheet("S", false, List.of(), List.of(projectSource), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")));
 
         ExportEngine.Result named = run(template("OA{oaCode}_{name}_{nope}", s));
         ExportEngine.Result defaulted = run(template(null, s));
@@ -374,12 +375,12 @@ class ExportEngineTest {
 
     @Test
     void preview_keepsEmptySheets_andCutsLongCells() {
-        Source project = new ProjectSource();
-        rows(project, ExportRow.of(ExportSubject.PROJECT, Map.of()));
+        Source projectSource = new ProjectSource();
+        rows(projectSource, ExportRow.of(ExportSubject.PROJECT, Map.of()));
         rows(UE);
 
         ExportEngine.Preview preview = engine.preview(template(null,
-                sheet("OA", false, List.of(), List.of(project), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x".repeat(400)))),
+                sheet("OA", false, List.of(), List.of(projectSource), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x".repeat(400)))),
                 sheet("UE", true, List.of(), List.of(UE), column("c", OutputType.TEXT, new ConstantRule(List.of(), "x")))), PROJECT_ID, "fr", 10);
 
         assertThat(preview.sheets()).extracting(ExportEngine.SheetPreview::name).containsExactly("OA", "UE");

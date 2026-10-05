@@ -134,7 +134,10 @@ public class ExportTemplateService {
     @Transactional
     public ExportTemplateDTO updateDefinition(UserInfo userInfo, Long id, ExportTemplateDefinition definition) {
         assertCanManage(userInfo);
-        ExportTemplate template = load(userInfo, id);
+        return replaceDefinition(load(userInfo, id), definition);
+    }
+
+    private ExportTemplateDTO replaceDefinition(ExportTemplate template, ExportTemplateDefinition definition) {
         if (!template.getTemplateUuid().equals(definition.id())) {
             throw new InvalidExportTemplateException("The template id cannot change");
         }
@@ -149,7 +152,7 @@ public class ExportTemplateService {
         assertCanManage(userInfo);
         ExportTemplate template = load(userInfo, id);
         ExportTemplateDefinition d = ExportTemplateJson.parse(template.getDefinition());
-        return updateDefinition(userInfo, id, new ExportTemplateDefinition(
+        return replaceDefinition(template, new ExportTemplateDefinition(
                 d.schemaVersion(), d.id(), d.version(), newName, d.fileNamePattern(), d.sheets()));
     }
 
@@ -211,12 +214,20 @@ public class ExportTemplateService {
     }
 
     private void assertCanView(UserInfo userInfo) {
+        requireUser(userInfo);
         if (!profilePermissionService.canViewInstitutionData(userInfo.getUser(), userInfo.getInstitution())) {
             throw new ForbiddenOperationException("Cannot view the export templates of this institution");
         }
     }
 
+    private static void requireUser(UserInfo userInfo) {
+        if (userInfo == null) {
+            throw new ForbiddenOperationException("No user in the session");
+        }
+    }
+
     private void assertCanManage(UserInfo userInfo) {
+        requireUser(userInfo);
         boolean allowed = profilePermissionService.hasInstancePermission(
                 userInfo.getUser(), PermissionConstants.INSTANCE_MANAGE_SETTINGS)
                 || profilePermissionService.hasOrganizationPermission(

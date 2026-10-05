@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptR
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntityKind;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntitySource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ProjectSource;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
@@ -100,7 +101,8 @@ class ExportSourceReaderTest {
     void read_unknownProject_isNotFound() {
         when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> reader.read(new ProjectSource(), PROJECT_ID)).isInstanceOf(NoSuchElementException.class);
+        Source projectSource = new ProjectSource();
+        assertThatThrownBy(() -> reader.read(projectSource, PROJECT_ID)).isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -162,7 +164,8 @@ class ExportSourceReaderTest {
 
     @Test
     void read_unknownTechnicalSource_isRejected() {
-        assertThatThrownBy(() -> reader.read(new TechnicalSource("users; DROP TABLE x"), PROJECT_ID))
+        Source injected = new TechnicalSource("users; DROP TABLE x");
+        assertThatThrownBy(() -> reader.read(injected, PROJECT_ID))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown technical source");
         verifyNoInteractions(recordingUnitRepository);

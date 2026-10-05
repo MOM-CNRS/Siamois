@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition;
 
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -31,8 +32,8 @@ final class ExportFileName {
         StringBuilder out = new StringBuilder();
         while (matcher.find()) {
             String value = switch (matcher.group(1)) {
-                case "date" -> LocalDate.now().toString();
-                case "dateCompact" -> LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+                case "date" -> LocalDate.now(ZoneOffset.UTC).toString();
+                case "dateCompact" -> LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.BASIC_ISO_DATE);
                 case "identifier" -> project.getFullIdentifier();
                 case "name" -> project.getName();
                 case "oaCode" -> project.getOaCode();
@@ -46,7 +47,20 @@ final class ExportFileName {
         }
         matcher.appendTail(out);
         String ascii = Normalizer.normalize(out.toString(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        String safe = ascii.replaceAll("[^A-Za-z0-9._-]+", "_").replaceAll("^[_.]+|_+$", "");
+        String safe = trimSeparators(ascii.replaceAll("[^A-Za-z0-9._-]+", "_"));
         return (safe.isEmpty() ? "export" : safe) + ".xlsx";
+    }
+
+    /** Retire les {@code _} et {@code .} de tête et les {@code _} de queue (sans regex : pas de backtracking). */
+    private static String trimSeparators(String name) {
+        int start = 0;
+        while (start < name.length() && (name.charAt(start) == '_' || name.charAt(start) == '.')) {
+            start++;
+        }
+        int end = name.length();
+        while (end > start && name.charAt(end - 1) == '_') {
+            end--;
+        }
+        return name.substring(start, end);
     }
 }

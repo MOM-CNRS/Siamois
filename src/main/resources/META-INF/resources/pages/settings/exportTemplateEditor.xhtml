@@ -104,22 +104,24 @@
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.modelMenuOpen}" layout="block" styleClass="xe-pop xe-pop-left" style="width: 400px">
                                     <div class="xe-pop-title">#{langBean.msg('exportTemplates.editor.modelSettings')}</div>
                                     <div class="xe-row2">
-                                        <label class="xe-field xe-grow">#{langBean.msg('common.label.name')}
+                                        <div class="xe-field xe-grow">
+                                            <p:outputLabel for="@next" value="#{langBean.msg('common.label.name')}"/>
                                             <p:inputText value="#{exportTemplateEditorBean.model.name}" maxlength="150"/>
-                                        </label>
-                                        <label class="xe-field" style="width: 90px">#{langBean.msg('exportTemplates.version')}
+                                        </div>
+                                        <div class="xe-field" style="width: 90px">
+                                            <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.version')}"/>
                                             <p:inputText value="#{exportTemplateEditorBean.model.version}" maxlength="50"/>
-                                        </label>
+                                        </div>
                                     </div>
                                     <div class="xe-field">#{langBean.msg('exportTemplates.editor.fileNamePattern')}
                                         <p:inputText widgetVar="xePattern" value="#{exportTemplateEditorBean.model.fileNamePattern}" styleClass="mono"/>
                                         <div class="xe-chips">
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{date}');return false;">{date}</a>
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{dateCompact}');return false;">{dateCompact}</a>
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{identifier}');return false;">{identifier}</a>
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{name}');return false;">{name}</a>
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{oaCode}');return false;">{oaCode}</a>
-                                            <a href="#" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{template}');return false;">{template}</a>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{date}');return false;">{date}</button>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{dateCompact}');return false;">{dateCompact}</button>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{identifier}');return false;">{identifier}</button>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{name}');return false;">{name}</button>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{oaCode}');return false;">{oaCode}</button>
+                                            <button type="button" class="xe-chip" onclick="var w=PF('xePattern');w.jq.val(w.jq.val()+'{template}');return false;">{template}</button>
                                         </div>
                                     </div>
                                     <div class="xe-pop-foot">
@@ -153,9 +155,10 @@
                                     <i class="bi bi-gear"/> #{langBean.msg('exportTemplates.editor.sheetButton')}
                                 </p:commandLink>
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.sheetMenuOpen}" layout="block" styleClass="xe-pop xe-pop-right" style="width: 300px">
-                                    <label class="xe-field">#{langBean.msg('exportTemplates.editor.sheet.name')}
+                                    <div class="xe-field">
+                                        <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.sheet.name')}"/>
                                         <p:inputText value="#{exportTemplateEditorBean.selectedSheet.name}" maxlength="31"/>
-                                    </label>
+                                    </div>
                                     <div class="xe-switch">
                                         #{langBean.msg('exportTemplates.editor.sheet.omitShort')}
                                         <p:toggleSwitch value="#{exportTemplateEditorBean.selectedSheet.omitIfEmpty}"/>
@@ -361,18 +364,18 @@
                                                     <f:selectItems value="#{exportTemplateEditorBean.fieldChoices(rule)}"/>
                                                     <p:ajax event="change" process="@form" update="@form"/>
                                                 </p:selectOneMenu>
-                                                <label class="xe-check">
+                                                <div class="xe-check">
                                                     <p:selectBooleanCheckbox value="#{rule.list}">
                                                         <p:ajax event="change" process="@form" update="@form"/>
                                                     </p:selectBooleanCheckbox>
-                                                    #{langBean.msg('exportTemplates.editor.rule.list')}
-                                                </label>
+                                                    <p:outputLabel for="@previous" value="#{langBean.msg('exportTemplates.editor.rule.list')}"/>
+                                                </div>
                                                 <h:panelGroup rendered="#{rule.list}" layout="block" styleClass="xe-row2">
                                                     <p:inputText value="#{rule.listSeparator}" style="width: 110px"/>
-                                                    <label class="xe-check">
+                                                    <div class="xe-check">
                                                         <p:selectBooleanCheckbox value="#{rule.listSorted}"/>
-                                                        #{langBean.msg('exportTemplates.editor.rule.listSorted')}
-                                                    </label>
+                                                        <p:outputLabel for="@previous" value="#{langBean.msg('exportTemplates.editor.rule.listSorted')}"/>
+                                                    </div>
                                                 </h:panelGroup>
                                             </h:panelGroup>
 
@@ -383,12 +386,14 @@
 
                                             <h:panelGroup rendered="#{rule.type eq 'CONCAT'}" layout="block" styleClass="xe-concat">
                                                 <div class="xe-row2">
-                                                    <label class="xe-field xe-grow">#{langBean.msg('exportTemplates.editor.rule.separator')}
+                                                    <div class="xe-field xe-grow">
+                                                        <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.rule.separator')}"/>
                                                         <p:inputText value="#{rule.separator}"/>
-                                                    </label>
-                                                    <label class="xe-field xe-grow">#{langBean.msg('exportTemplates.editor.rule.labelSeparator')}
+                                                    </div>
+                                                    <div class="xe-field xe-grow">
+                                                        <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.rule.labelSeparator')}"/>
                                                         <p:inputText value="#{rule.labelSeparator}"/>
-                                                    </label>
+                                                    </div>
                                                 </div>
                                                 <ui:repeat value="#{rule.parts}" var="part">
                                                     <div class="xe-part">
@@ -417,7 +422,7 @@
                                             </h:panelGroup>
 
                                             <div class="xe-previewlabel">#{langBean.msg('exportTemplates.editor.columns.preview')}</div>
-                                            <div class="xe-previewbox">#{exportTemplateEditorBean.rulePreview(rule)}</div>
+                                            <div class="xe-previewbox">#{exportTemplateEditorBean.rulePreview}</div>
                                         </div>
                                     </ui:repeat>
 

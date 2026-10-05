@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -78,7 +79,7 @@ class ExportServiceTest {
 
     @Test
     void export_ofAProjectOfAnotherInstitution_isForbidden() {
-        org.mockito.Mockito.when(actionUnitRepository.existsByIdAndCreatedByInstitutionId(9L, 1L)).thenReturn(false);
+        when(actionUnitRepository.existsByIdAndCreatedByInstitutionId(9L, 1L)).thenReturn(false);
 
         assertThatThrownBy(() -> service.export(userInfo, 4L, 9L)).isInstanceOf(ForbiddenOperationException.class);
         verifyNoInteractions(engine, templateService);
@@ -99,7 +100,7 @@ class ExportServiceTest {
         assertThatThrownBy(() -> service.export(userInfo, 4L, 9L))
                 .isInstanceOf(InvalidExportTemplateException.class)
                 .hasMessageContaining("Mobilier");
-        verify(engine, org.mockito.Mockito.never()).run(any(), eq(9L), any());
+        verify(engine, never()).run(any(), eq(9L), any());
     }
 
     @Test
@@ -115,13 +116,15 @@ class ExportServiceTest {
     @Test
     void preview_withoutRight_orWithAForeignTemplate_isRefused() {
         when(permissions.canViewProject(person, institutionDto, 9L)).thenReturn(false);
-        assertThatThrownBy(() -> service.preview(userInfo, definition(new ProjectSource(), new ConstantRule(List.of(), "x")), 9L, 20))
+        ExportTemplateDefinition projectTemplate = definition(new ProjectSource(), new ConstantRule(List.of(), "x"));
+        assertThatThrownBy(() -> service.preview(userInfo, projectTemplate, 9L, 20))
                 .isInstanceOf(ForbiddenOperationException.class);
 
         when(permissions.canViewProject(person, institutionDto, 9L)).thenReturn(true);
-        assertThatThrownBy(() -> service.preview(userInfo, definition(new TableSource("T"), new ConstantRule(List.of(), "x")), 9L, 20))
+        ExportTemplateDefinition tableTemplate = definition(new TableSource("T"), new ConstantRule(List.of(), "x"));
+        assertThatThrownBy(() -> service.preview(userInfo, tableTemplate, 9L, 20))
                 .isInstanceOf(InvalidExportTemplateException.class);
-        verify(engine, org.mockito.Mockito.never()).preview(any(), any(), any(), org.mockito.ArgumentMatchers.anyInt());
+        verify(engine, never()).preview(any(), any(), any(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     private static ActionUnitRepository.Summary summary(long id, String fullIdentifier, String name) {

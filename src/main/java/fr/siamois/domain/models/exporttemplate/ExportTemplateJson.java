@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 
 /**
  * Codec JSON des modèles d'export — la seule définition du format (« mapping v3 », voir
@@ -77,6 +78,23 @@ public final class ExportTemplateJson {
     private static final String SORT_BY = "sortBy";
     private static final String FOREIGN_KEY_ID = "id";
     private static final String DEFAULT_LABEL_SEPARATOR = ": ";
+    private static final String VERSION = "version";
+    private static final String TEMPLATE_VERSION = "templateVersion";
+    private static final String FILE_NAME_PATTERN = "fileNamePattern";
+    private static final String ROOT_CONNECTIONS = "root_connections";
+    private static final String SHEETS = "sheets";
+    private static final String SCHEMA_TARGET = "schema_target";
+    private static final String FIELDS = "fields";
+    private static final String TARGET_ROOT = "target_root";
+    private static final String SOURCE_TOPTERM = "source_topterm";
+    private static final String LOCAL_KEY = "local_key";
+    private static final String FOREIGN_KEY = "foreign_key";
+    private static final String TOPTERM = "topterm";
+    private static final String SORTED = "sorted";
+    private static final String CONSTANT = "constant";
+    private static final String PARTS = "parts";
+    private static final String CONCAT = "concat";
+    private static final String LIST = "list";
 
     private ExportTemplateJson() {
         throw new UnsupportedOperationException();
@@ -104,30 +122,29 @@ public final class ExportTemplateJson {
             SheetWriter writer = new SheetWriter(sheet, sources);
             writer.writeSources(roots);
             if (sheet.omitIfEmpty() || !sheet.sortBy().isEmpty()) {
-                Map<String, Object> options = new LinkedHashMap<>();
-                if (sheet.omitIfEmpty()) options.put(OMIT_IF_EMPTY, true);
-                if (!sheet.sortBy().isEmpty()) options.put(SORT_BY, sheet.sortBy());
-                sheetOptions.put(sheet.name(), options);
+                sheetOptions.put(sheet.name(), optionsToWire(sheet));
             }
-            for (Column column : sheet.columns()) {
-                schemaTarget.put(sheet.name() + "." + column.header(), Map.of("type", column.output().name().toLowerCase(Locale.ROOT)));
-                for (Rule rule : column.rules()) {
-                    writer.writeFields(sheet.name() + "." + column.header(), rule, fields);
-                }
-            }
+            writer.writeColumns(schemaTarget, fields);
         }
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("version", ExportTemplateDefinition.CURRENT_SCHEMA_VERSION);
+        out.put(VERSION, ExportTemplateDefinition.CURRENT_SCHEMA_VERSION);
         out.put("id", d.id());
-        out.put("templateVersion", d.version());
+        out.put(TEMPLATE_VERSION, d.version());
         out.put("name", d.name());
-        if (d.fileNamePattern() != null) out.put("fileNamePattern", d.fileNamePattern());
+        if (d.fileNamePattern() != null) out.put(FILE_NAME_PATTERN, d.fileNamePattern());
         out.put(SOURCES, sources);
-        out.put("root_connections", roots);
-        if (!sheetOptions.isEmpty()) out.put("sheets", sheetOptions);
-        out.put("schema_target", schemaTarget);
-        out.put("fields", fields);
+        out.put(ROOT_CONNECTIONS, roots);
+        if (!sheetOptions.isEmpty()) out.put(SHEETS, sheetOptions);
+        out.put(SCHEMA_TARGET, schemaTarget);
+        out.put(FIELDS, fields);
         return out;
+    }
+
+    private static Map<String, Object> optionsToWire(Sheet sheet) {
+        Map<String, Object> options = new LinkedHashMap<>();
+        if (sheet.omitIfEmpty()) options.put(OMIT_IF_EMPTY, true);
+        if (!sheet.sortBy().isEmpty()) options.put(SORT_BY, sheet.sortBy());
+        return options;
     }
 
     private static void requireSheetName(String name) {
@@ -154,9 +171,20 @@ public final class ExportTemplateJson {
                 sources.put(alias, sourceToWire(sheet.sources().get(i)));
                 primaryAliases.add(alias);
                 Map<String, Object> root = new LinkedHashMap<>();
-                root.put("target_root", sheet.name());
-                root.put("source_topterm", alias);
+                root.put(TARGET_ROOT, sheet.name());
+                root.put(SOURCE_TOPTERM, alias);
                 roots.add(root);
+            }
+        }
+
+        /** Écrit le schéma (type de chaque colonne) et les champs de toutes les colonnes de la feuille. */
+        void writeColumns(Map<String, Object> schemaTarget, List<Object> fields) {
+            for (Column column : sheet.columns()) {
+                String target = sheet.name() + "." + column.header();
+                schemaTarget.put(target, Map.of("type", column.output().name().toLowerCase(Locale.ROOT)));
+                for (Rule rule : column.rules()) {
+                    writeFields(target, rule, fields);
+                }
             }
         }
 
@@ -171,22 +199,22 @@ public final class ExportTemplateJson {
         private String aliasAt(String primary, List<String> path) {
             String current = primary;
             for (String navigation : path) {
-                String key = current + "\u0000" + navigation;
-                String existing = joinedAliases.get(key);
-                if (existing == null) {
-                    existing = unique(current + "_" + navigation);
-                    Map<String, Object> on = new LinkedHashMap<>();
-                    on.put("local_key", navigation);
-                    on.put("foreign_key", FOREIGN_KEY_ID);
-                    Map<String, Object> join = new LinkedHashMap<>();
-                    join.put("topterm", current);
-                    join.put("on", on);
-                    sources.put(existing, Map.of(JOIN, join));
-                    joinedAliases.put(key, existing);
-                }
-                current = existing;
+                String from = current;
+                current = joinedAliases.computeIfAbsent(from + "\u0000" + navigation, k -> addJoin(from, navigation));
             }
             return current;
+        }
+
+        private String addJoin(String from, String navigation) {
+            String alias = unique(from + "_" + navigation);
+            Map<String, Object> on = new LinkedHashMap<>();
+            on.put(LOCAL_KEY, navigation);
+            on.put(FOREIGN_KEY, FOREIGN_KEY_ID);
+            Map<String, Object> join = new LinkedHashMap<>();
+            join.put(TOPTERM, from);
+            join.put("on", on);
+            sources.put(alias, Map.of(JOIN, join));
+            return alias;
         }
 
         void writeFields(String target, Rule rule, List<Object> fields) {
@@ -199,18 +227,18 @@ public final class ExportTemplateJson {
                     entry.put(SOURCE, aliasAt(primary, r.path()));
                     entry.put(FIELD, fieldToWire(r.field()));
                     if (r.list() != null) {
-                        entry.put("list", Map.of(SEPARATOR, r.list().separator(), "sorted", r.list().sorted()));
+                        entry.put(LIST, Map.of(SEPARATOR, r.list().separator(), SORTED, r.list().sorted()));
                     }
                 } else if (rule instanceof ConstantRule r) {
                     entry.put(SOURCE, primary);
-                    entry.put("constant", r.value());
+                    entry.put(CONSTANT, r.value());
                 } else if (rule instanceof ConcatRule r) {
                     entry.put(SOURCE, primary);
                     Map<String, Object> concat = new LinkedHashMap<>();
                     concat.put(SEPARATOR, r.separator());
                     concat.put(LABEL_SEPARATOR, r.labelSeparator());
-                    concat.put("parts", r.parts().stream().map(p -> partToWire(p, primary)).toList());
-                    entry.put("concat", concat);
+                    concat.put(PARTS, r.parts().stream().map(p -> partToWire(p, primary)).toList());
+                    entry.put(CONCAT, concat);
                 }
                 fields.add(entry);
             }
@@ -226,43 +254,43 @@ public final class ExportTemplateJson {
             }
             return m;
         }
-    }
 
-    private static Map<String, Object> sourceToWire(Source source) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        if (source instanceof EntitySource e) {
-            m.put(KIND, "ENTITY");
-            m.put(ENTITY, e.entity().name());
-            if (!e.types().isEmpty()) m.put(TYPES, e.types().stream().map(ExportTemplateJson::conceptToWire).toList());
-        } else if (source instanceof TechnicalSource t) {
-            m.put(KIND, "TECHNICAL");
-            m.put("key", t.key());
-        } else if (source instanceof TableSource t) {
-            m.put(KIND, "TABLE");
-            m.put("name", t.name());
-        } else {
-            m.put(KIND, "PROJECT");
+        private static Map<String, Object> sourceToWire(Source source) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            if (source instanceof EntitySource e) {
+                m.put(KIND, "ENTITY");
+                m.put(ENTITY, e.entity().name());
+                if (!e.types().isEmpty()) m.put(TYPES, e.types().stream().map(SheetWriter::conceptToWire).toList());
+            } else if (source instanceof TechnicalSource t) {
+                m.put(KIND, "TECHNICAL");
+                m.put("key", t.key());
+            } else if (source instanceof TableSource t) {
+                m.put(KIND, "TABLE");
+                m.put("name", t.name());
+            } else {
+                m.put(KIND, "PROJECT");
+            }
+            return m;
         }
-        return m;
-    }
 
-    private static Map<String, Object> conceptToWire(ConceptRef c) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put(THESAURUS, c.thesaurusId());
-        m.put("id", c.conceptId());
-        if (c.uri() != null) m.put("uri", c.uri());
-        return m;
-    }
-
-    private static Object fieldToWire(FieldRef field) {
-        if (field instanceof ConceptField c) {
-            Map<String, Object> wire = new LinkedHashMap<>();
-            wire.put(CONCEPT, conceptToWire(c.concept()));
-            if (c.property() != null) wire.put(PROPERTY, c.property());
-            return wire;
+        private static Map<String, Object> conceptToWire(ConceptRef c) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put(THESAURUS, c.thesaurusId());
+            m.put("id", c.conceptId());
+            if (c.uri() != null) m.put("uri", c.uri());
+            return m;
         }
-        if (field instanceof NameField n) return n.name();
-        return Map.of(COLUMN, ((ColumnField) field).name());
+
+        private static Object fieldToWire(FieldRef field) {
+            if (field instanceof ConceptField c) {
+                Map<String, Object> wire = new LinkedHashMap<>();
+                wire.put(CONCEPT, conceptToWire(c.concept()));
+                if (c.property() != null) wire.put(PROPERTY, c.property());
+                return wire;
+            }
+            if (field instanceof NameField n) return n.name();
+            return Map.of(COLUMN, ((ColumnField) field).name());
+        }
     }
 
     private static List<Integer> allIndexes(int count) {
@@ -294,18 +322,18 @@ public final class ExportTemplateJson {
 
     public static ExportTemplateDefinition fromJson(@Nullable JsonNode root) {
         JsonNode node = requireObject(root, "template");
-        only(node, "template", "version", "id", "templateVersion", "name", "fileNamePattern", SOURCES,
-                "root_connections", "sheets", "schema_target", "fields");
-        int version = requireInt(node, "version");
+        only(node, "template", VERSION, "id", TEMPLATE_VERSION, "name", FILE_NAME_PATTERN, SOURCES,
+                ROOT_CONNECTIONS, SHEETS, SCHEMA_TARGET, FIELDS);
+        int version = requireInt(node, VERSION);
         if (version != ExportTemplateDefinition.CURRENT_SCHEMA_VERSION) {
             throw new InvalidExportTemplateException("Unsupported version: " + version);
         }
         Map<String, Declared> declared = readSources(required(node, SOURCES));
         Map<String, List<String>> sheetSources = readRootConnections(node, declared);
-        addSourcelessSheets(required(node, "schema_target"), sheetSources);
+        addSourcelessSheets(required(node, SCHEMA_TARGET), sheetSources);
         Map<String, JsonNode> sheetOptions = readSheetOptions(node, sheetSources);
-        Map<String, Map<String, OutputType>> columns = readSchemaTarget(required(node, "schema_target"), sheetSources);
-        Map<String, Map<String, List<Rule>>> rules = readFields(required(node, "fields"), declared, sheetSources, columns);
+        Map<String, Map<String, OutputType>> columns = readSchemaTarget(required(node, SCHEMA_TARGET), sheetSources);
+        Map<String, Map<String, List<Rule>>> rules = readFields(required(node, FIELDS), declared, sheetSources, columns);
 
         List<Sheet> sheets = new ArrayList<>();
         for (String sheetName : sheetSources.keySet()) {
@@ -334,9 +362,9 @@ public final class ExportTemplateJson {
         return new ExportTemplateDefinition(
                 version,
                 requireText(node, "id"),
-                requireText(node, "templateVersion"),
+                requireText(node, TEMPLATE_VERSION),
                 requireText(node, "name"),
-                optionalText(node, "fileNamePattern"),
+                optionalText(node, FILE_NAME_PATTERN),
                 sheets);
     }
 
@@ -351,20 +379,20 @@ public final class ExportTemplateJson {
     }
 
     private static Declared declaredFromJson(JsonNode node) {
-        requireObject(node, "source");
+        requireObject(node, SOURCE);
         if (!node.has(JOIN)) {
             return new Declared(sourceFromJson(node), null, null);
         }
-        only(node, "source", JOIN);
+        only(node, SOURCE, JOIN);
         JsonNode join = requireObject(node.get(JOIN), JOIN);
-        only(join, JOIN, "topterm", "on");
+        only(join, JOIN, TOPTERM, "on");
         JsonNode on = requireObject(required(join, "on"), "on");
-        only(on, "on", "local_key", "foreign_key");
-        String foreign = requireText(on, "foreign_key");
+        only(on, "on", LOCAL_KEY, FOREIGN_KEY);
+        String foreign = requireText(on, FOREIGN_KEY);
         if (!FOREIGN_KEY_ID.equals(foreign)) {
             throw new InvalidExportTemplateException("foreign_key must be 'id', got '" + foreign + "'");
         }
-        return new Declared(null, requireText(join, "topterm"), requireText(on, "local_key"));
+        return new Declared(null, requireText(join, TOPTERM), requireText(on, LOCAL_KEY));
     }
 
     private static void checkNoCycle(String alias, Map<String, Declared> declared) {
@@ -381,12 +409,12 @@ public final class ExportTemplateJson {
 
     private static Map<String, List<String>> readRootConnections(JsonNode node, Map<String, Declared> declared) {
         Map<String, List<String>> out = new LinkedHashMap<>();
-        for (JsonNode c : readListNodes(node, "root_connections")) {
+        for (JsonNode c : readListNodes(node, ROOT_CONNECTIONS)) {
             requireObject(c, "root connection");
-            only(c, "root connection", "target_root", "source_topterm");
-            String sheet = requireText(c, "target_root");
+            only(c, "root connection", TARGET_ROOT, SOURCE_TOPTERM);
+            String sheet = requireText(c, TARGET_ROOT);
             requireSheetName(sheet);
-            String alias = requireText(c, "source_topterm");
+            String alias = requireText(c, SOURCE_TOPTERM);
             Declared d = declared.get(alias);
             if (d == null) throw new InvalidExportTemplateException("Unknown source '" + alias + "'");
             if (d.joined()) throw new InvalidExportTemplateException("Source '" + alias + "' is joined: it cannot feed a sheet");
@@ -405,7 +433,7 @@ public final class ExportTemplateJson {
      * feuille sans ligne (ses en-têtes seulement) : le modèle la porte pour qu'on la branche plus tard.
      */
     private static void addSourcelessSheets(JsonNode schemaTarget, Map<String, List<String>> sheetSources) {
-        requireObject(schemaTarget, "schema_target").fieldNames().forEachRemaining(target -> {
+        requireObject(schemaTarget, SCHEMA_TARGET).fieldNames().forEachRemaining(target -> {
             int dot = target.indexOf('.');
             if (dot > 0) {
                 String sheet = target.substring(0, dot);
@@ -417,8 +445,8 @@ public final class ExportTemplateJson {
 
     private static Map<String, JsonNode> readSheetOptions(JsonNode node, Map<String, List<String>> sheetSources) {
         Map<String, JsonNode> out = new LinkedHashMap<>();
-        if (!node.has("sheets")) return out;
-        requireObject(node.get("sheets"), "sheets").fields().forEachRemaining(e -> {
+        if (!node.has(SHEETS)) return out;
+        requireObject(node.get(SHEETS), SHEETS).fields().forEachRemaining(e -> {
             if (!sheetSources.containsKey(e.getKey())) {
                 throw new InvalidExportTemplateException("Options for unknown sheet '" + e.getKey() + "'");
             }
@@ -431,7 +459,7 @@ public final class ExportTemplateJson {
 
     private static Map<String, Map<String, OutputType>> readSchemaTarget(JsonNode node, Map<String, List<String>> sheetSources) {
         Map<String, Map<String, OutputType>> out = new LinkedHashMap<>();
-        requireObject(node, "schema_target").fields().forEachRemaining(e -> {
+        requireObject(node, SCHEMA_TARGET).fields().forEachRemaining(e -> {
             String[] target = splitTarget(e.getKey(), sheetSources);
             JsonNode column = requireObject(e.getValue(), "schema_target entry");
             only(column, "schema_target entry", "type");
@@ -463,7 +491,7 @@ public final class ExportTemplateJson {
         if (!node.isArray()) throw new InvalidExportTemplateException("'fields' must be an array");
         for (JsonNode f : node) {
             requireObject(f, "field entry");
-            only(f, "field entry", TARGET, SOURCE, FIELD, "list", "constant", "concat", "status");
+            only(f, "field entry", TARGET, SOURCE, FIELD, LIST, CONSTANT, CONCAT, "status");
             String target = requireText(f, TARGET);
             String[] t = splitTarget(target, sheetSources);
             if (!columns.getOrDefault(t[0], Map.of()).containsKey(t[1])) {
@@ -485,31 +513,31 @@ public final class ExportTemplateJson {
 
     private static Rule ruleFromEntry(JsonNode f, Resolved resolved, Map<String, Declared> declared, List<Integer> sources) {
         boolean hasField = f.has(FIELD);
-        boolean hasConstant = f.has("constant");
-        boolean hasConcat = f.has("concat");
+        boolean hasConstant = f.has(CONSTANT);
+        boolean hasConcat = f.has(CONCAT);
         if ((hasField ? 1 : 0) + (hasConstant ? 1 : 0) + (hasConcat ? 1 : 0) != 1) {
             throw new InvalidExportTemplateException("A field entry needs exactly one of 'field', 'constant' or 'concat'");
         }
-        if (f.has("list") && !hasField) {
+        if (f.has(LIST) && !hasField) {
             throw new InvalidExportTemplateException("'list' only applies to a 'field' entry");
         }
         if (hasField) {
-            return new DirectRule(sources, fieldFromJson(f.get(FIELD)), resolved.path(), listOptions(f.get("list")));
+            return new DirectRule(sources, fieldFromJson(f.get(FIELD)), resolved.path(), listOptions(f.get(LIST)));
         }
         if (hasConstant) {
             if (!resolved.path().isEmpty()) {
                 throw new InvalidExportTemplateException("A constant must use a primary source");
             }
-            return new ConstantRule(sources, requireString(f.get("constant"), "constant"));
+            return new ConstantRule(sources, requireString(f.get(CONSTANT), CONSTANT));
         }
         if (!resolved.path().isEmpty()) {
             throw new InvalidExportTemplateException("A concat must use a primary source");
         }
-        JsonNode concat = requireObject(f.get("concat"), "concat");
-        only(concat, "concat", SEPARATOR, LABEL_SEPARATOR, "parts");
+        JsonNode concat = requireObject(f.get(CONCAT), CONCAT);
+        only(concat, CONCAT, SEPARATOR, LABEL_SEPARATOR, PARTS);
         return new ConcatRule(
                 sources,
-                readList(concat, "parts", true, p -> partFromJson(p, resolved.primary(), declared)),
+                readList(concat, PARTS, true, p -> partFromJson(p, resolved.primary(), declared)),
                 concat.has(SEPARATOR) ? requireString(concat.get(SEPARATOR), SEPARATOR) : "",
                 concat.has(LABEL_SEPARATOR) ? requireString(concat.get(LABEL_SEPARATOR), LABEL_SEPARATOR) : DEFAULT_LABEL_SEPARATOR);
     }
@@ -531,21 +559,21 @@ public final class ExportTemplateJson {
         String kind = requireText(node, KIND);
         return switch (kind) {
             case "ENTITY" -> {
-                only(node, "source", KIND, ENTITY, TYPES);
+                only(node, SOURCE, KIND, ENTITY, TYPES);
                 yield new EntitySource(
                         enumValue(EntityKind.class, requireText(node, ENTITY), ENTITY),
                         readList(node, TYPES, false, ExportTemplateJson::conceptFromJson));
             }
             case "PROJECT" -> {
-                only(node, "source", KIND);
+                only(node, SOURCE, KIND);
                 yield new ProjectSource();
             }
             case "TECHNICAL" -> {
-                only(node, "source", KIND, "key");
+                only(node, SOURCE, KIND, "key");
                 yield new TechnicalSource(requireText(node, "key"));
             }
             case "TABLE" -> {
-                only(node, "source", KIND, "name");
+                only(node, SOURCE, KIND, "name");
                 yield new TableSource(requireText(node, "name"));
             }
             default -> throw new InvalidExportTemplateException("Unknown source kind: " + kind);
@@ -561,11 +589,11 @@ public final class ExportTemplateJson {
     @Nullable
     private static ListOptions listOptions(@Nullable JsonNode node) {
         if (node == null || node.isNull()) return null;
-        requireObject(node, "list");
-        only(node, "list", SEPARATOR, "sorted");
+        requireObject(node, LIST);
+        only(node, LIST, SEPARATOR, SORTED);
         return new ListOptions(
                 requireString(required(node, SEPARATOR), SEPARATOR),
-                node.has("sorted") && requireBoolean(node, "sorted"));
+                node.has(SORTED) && requireBoolean(node, SORTED));
     }
 
     private static ConcatPart partFromJson(JsonNode node, String primary, Map<String, Declared> declared) {
@@ -655,9 +683,7 @@ public final class ExportTemplateJson {
         }
         if (!array.isArray()) throw new InvalidExportTemplateException("'" + key + "' must be an array");
         if (nonEmpty && array.isEmpty()) throw new InvalidExportTemplateException("'" + key + "' cannot be empty");
-        List<T> out = new ArrayList<>();
-        for (JsonNode n : array) out.add(reader.apply(n));
-        return out;
+        return StreamSupport.stream(array.spliterator(), false).map(reader).toList();
     }
 
     private static void only(JsonNode node, String what, String... allowed) {

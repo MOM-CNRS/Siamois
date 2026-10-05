@@ -103,7 +103,7 @@ public class ExportTemplateEditorBean implements Serializable {
     /** Ouvre l'éditeur sur un modèle de l'institution ; retourne la navigation vers la page. */
     public String open(Long id) {
         if (!canManage()) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return null;
         }
         try {
@@ -193,7 +193,7 @@ public class ExportTemplateEditorBean implements Serializable {
         try {
             exportTemplateService.setReferenceProject(userInfoUser(), templateId, referenceProjectId);
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         }
         clearCaches();
     }
@@ -211,6 +211,15 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         selectedSheetIndex = Math.max(0, Math.min(selectedSheetIndex, model.getSheets().size() - 1));
         return model.getSheets().get(selectedSheetIndex);
+    }
+
+    /** Feuille sélectionnée, pour les actions qui n'ont de sens que sur une feuille. */
+    private EditSheet requireSelectedSheet() {
+        EditSheet sheet = getSelectedSheet();
+        if (sheet == null) {
+            throw new IllegalStateException("No sheet is selected");
+        }
+        return sheet;
     }
 
     public void selectSheet(EditSheet sheet) {
@@ -247,12 +256,12 @@ public class ExportTemplateEditorBean implements Serializable {
     // ------------------------------------------------------------------ sources
 
     public void addSource() {
-        getSelectedSheet().getSources().add(new EditSource());
+        requireSelectedSheet().getSources().add(new EditSource());
     }
 
     /** Retire une source et recale les indices de source des règles ; une règle qui ne visait que elle disparaît. */
     public void removeSource(EditSource source) {
-        EditSheet sheet = getSelectedSheet();
+        EditSheet sheet = requireSelectedSheet();
         int removed = sheet.getSources().indexOf(source);
         if (removed < 0) {
             return;
@@ -282,7 +291,7 @@ public class ExportTemplateEditorBean implements Serializable {
     // ------------------------------------------------------------------ colonnes
 
     public void removeColumn(EditColumn column) {
-        EditSheet sheet = getSelectedSheet();
+        EditSheet sheet = requireSelectedSheet();
         sheet.getColumns().remove(column);
         sheet.getSortBy().remove(column.getHeader());
         if (selectedColumn == column) {
@@ -291,7 +300,7 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     public void moveColumn(EditColumn column, int delta) {
-        move(getSelectedSheet().getColumns(), column, delta);
+        move(requireSelectedSheet().getColumns(), column, delta);
     }
 
     public void selectColumn(EditColumn column) {
@@ -377,9 +386,9 @@ public class ExportTemplateEditorBean implements Serializable {
             previewWarnings = preview.warnings().stream().map(w -> ExportWarningMessages.of(langBean, w)).toList();
             previewOpen = true;
         } catch (IllegalArgumentException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.editor.error.invalid", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, ERROR_INVALID, e.getMessage());
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         } catch (NoSuchElementException e) {
             MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
         }
@@ -459,7 +468,7 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     public void setSortColumn(String header) {
-        EditSheet sheet = getSelectedSheet();
+        EditSheet sheet = requireSelectedSheet();
         sheet.getSortBy().clear();
         if (header != null && !header.isBlank()) {
             sheet.getSortBy().add(header);
@@ -467,7 +476,7 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     public void duplicateSheet() {
-        EditSheet copy = ExportTemplateEditModel.copyOf(getSelectedSheet());
+        EditSheet copy = ExportTemplateEditModel.copyOf(requireSelectedSheet());
         copy.setName(copy.getName() + langBean.msg("exportTemplates.editor.sheet.copySuffix"));
         model.getSheets().add(model.getSheets().indexOf(getSelectedSheet()) + 1, copy);
         selectedSheetIndex = model.getSheets().indexOf(copy);
@@ -479,7 +488,7 @@ public class ExportTemplateEditorBean implements Serializable {
         closeDrawer();
         drawerMode = DRAWER_SOURCE;
         drawerSource = source;
-        drawerSourceIndex = getSelectedSheet().getSources().indexOf(source);
+        drawerSourceIndex = requireSelectedSheet().getSources().indexOf(source);
     }
 
     /** Ajoute une source à la feuille et ouvre directement sa fenêtre pour la renseigner. */
@@ -509,6 +518,8 @@ public class ExportTemplateEditorBean implements Serializable {
     public static final String FILTER_ALL = "ALL";
     public static final String FILTER_MAPPED = "MAPPED";
     public static final String FILTER_CHECK = "CHECK";
+    private static final String ERROR_FORBIDDEN = "common.error.forbidden";
+    private static final String ERROR_INVALID = "exportTemplates.editor.error.invalid";
 
     private String columnFilter = FILTER_ALL;
     private String columnSearch = "";
@@ -570,7 +581,7 @@ public class ExportTemplateEditorBean implements Serializable {
         if (!isMapped(column)) {
             return "NONE";
         }
-        return needsCheck(column) ? "CHECK" : "OK";
+        return needsCheck(column) ? FILTER_CHECK : "OK";
     }
 
     /** Texte de mapping d'une ligne : le champ, ou le nombre de mappings s'il y en a plusieurs ; vide si non mappée. */
@@ -610,7 +621,7 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Ajoute une colonne sans mapping (nommée « colonne_n » si le nom est vide) et la sélectionne. */
     public void confirmAddColumn() {
-        EditSheet sheet = getSelectedSheet();
+        EditSheet sheet = requireSelectedSheet();
         EditColumn column = new EditColumn();
         String name = newColumnName == null ? "" : newColumnName.trim();
         column.setHeader(name.isEmpty() ? "colonne_" + (sheet.getColumns().size() + 1) : name);
@@ -638,7 +649,7 @@ public class ExportTemplateEditorBean implements Serializable {
     public void addRuleToSelected() {
         EditRule rule = new EditRule();
         List<String> open = unassignedIndexes(selectedColumn);
-        rule.setSources(open.size() == getSelectedSheet().getSources().size() ? new ArrayList<>() : new ArrayList<>(open));
+        rule.setSources(open.size() == requireSelectedSheet().getSources().size() ? new ArrayList<>() : new ArrayList<>(open));
         selectedColumn.getRules().add(rule);
     }
 
@@ -668,7 +679,7 @@ public class ExportTemplateEditorBean implements Serializable {
     public void toggleRuleSource(EditRule rule, int sourceIndex) {
         List<String> now = new ArrayList<>();
         if (rule.getSources().isEmpty()) {
-            for (int i = 0; i < getSelectedSheet().getSources().size(); i++) {
+            for (int i = 0; i < requireSelectedSheet().getSources().size(); i++) {
                 now.add(String.valueOf(i));
             }
         } else {
@@ -705,7 +716,7 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     /** Valeur d'exemple d'un mapping : celle de la première ligne de l'aperçu pour la colonne. */
-    public String rulePreview(EditRule rule) {
+    public String getRulePreview() {
         return selectedColumn == null ? "" : previewValue(selectedColumn);
     }
 
@@ -914,20 +925,25 @@ public class ExportTemplateEditorBean implements Serializable {
         if (choice == null || choice.isBlank()) {
             return "?";
         }
-        List<SelectItem> items = fieldChoices(sourceChoices, choice);
-        for (SelectItem item : items) {
-            if (item instanceof SelectItemGroup group) {
-                for (SelectItem inner : group.getSelectItems()) {
-                    if (choice.equals(inner.getValue())) {
-                        return group.getLabel().equals(langBean.msg("exportTemplates.editor.choices.own"))
-                                ? inner.getLabel() : group.getLabel() + " › " + inner.getLabel();
-                    }
-                }
-            } else if (choice.equals(item.getValue())) {
-                return item.getLabel();
+        for (SelectItem item : fieldChoices(sourceChoices, choice)) {
+            Optional<String> label = item instanceof SelectItemGroup group
+                    ? groupedChoiceLabel(group, choice)
+                    : Optional.ofNullable(choice.equals(item.getValue()) ? item.getLabel() : null);
+            if (label.isPresent()) {
+                return label.get();
             }
         }
         return choice;
+    }
+
+    private Optional<String> groupedChoiceLabel(SelectItemGroup group, String choice) {
+        for (SelectItem inner : group.getSelectItems()) {
+            if (choice.equals(inner.getValue())) {
+                boolean own = group.getLabel().equals(langBean.msg("exportTemplates.editor.choices.own"));
+                return Optional.of(own ? inner.getLabel() : group.getLabel() + " › " + inner.getLabel());
+            }
+        }
+        return Optional.empty();
     }
 
     // ------------------------------------------------------------------ résolution du sujet d'une règle
@@ -948,7 +964,7 @@ public class ExportTemplateEditorBean implements Serializable {
     private Optional<EditSource> firstSource(List<String> choices) {
         EditSheet sheet = getSelectedSheet();
         List<Integer> indexes = sourceIndexes(choices, sheet);
-        return indexes.isEmpty() ? Optional.empty() : Optional.of(sheet.getSources().get(indexes.get(0)));
+        return sheet == null || indexes.isEmpty() ? Optional.empty() : Optional.of(sheet.getSources().get(indexes.get(0)));
     }
 
     private Optional<ExportTechnicalSource> technicalSourceOf(List<String> choices) {
@@ -963,23 +979,6 @@ public class ExportTemplateEditorBean implements Serializable {
             case ExportTemplateEditModel.KIND_PROJECT -> Optional.of(ExportSubject.PROJECT);
             default -> Optional.empty();
         };
-    }
-
-    /** Entité que lit une règle après son chemin ; vide si le chemin est invalide ou la source incomplète. */
-    private Optional<ExportSubject> targetSubject(List<String> sourceChoices, List<String> steps) {
-        Optional<EditSource> source = firstSource(sourceChoices);
-        if (source.isEmpty()) {
-            return Optional.empty();
-        }
-        try {
-            if (ExportTemplateEditModel.KIND_TECHNICAL.equals(source.get().getKind())) {
-                return ExportTechnicalSource.ofKey(source.get().getTechnicalKey())
-                        .map(t -> ExportNavigations.targetOf(t, steps));
-            }
-            return subjectOf(source.get()).map(s -> ExportNavigations.targetOf(s, steps));
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
     }
 
     // ------------------------------------------------------------------ enregistrement
@@ -1002,7 +1001,7 @@ public class ExportTemplateEditorBean implements Serializable {
             return; // champ nommé du cœur commun : conservé tel quel
         }
         List<Integer> indexes = sourceIndexes(sourceChoices, sheet);
-        boolean technicalColumn = !indexes.isEmpty()
+        boolean technicalColumn = sheet != null && !indexes.isEmpty()
                 && ExportTemplateEditModel.KIND_TECHNICAL.equals(sheet.getSources().get(indexes.get(0)).getKind())
                 && ExportTemplateEditModel.pathOf(path).isEmpty();
         field.setKind(technicalColumn ? ExportTemplateEditModel.FIELD_COLUMN : ExportTemplateEditModel.FIELD_CONCEPT);
@@ -1017,7 +1016,7 @@ public class ExportTemplateEditorBean implements Serializable {
         try {
             definition = model.toDefinition();
         } catch (IllegalArgumentException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.editor.error.invalid", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, ERROR_INVALID, e.getMessage());
             return;
         }
         try {
@@ -1036,9 +1035,9 @@ public class ExportTemplateEditorBean implements Serializable {
             closeDrawer();
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.editor.saved");
         } catch (InvalidExportTemplateException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.editor.error.invalid", e.getMessage());
+            MessageUtils.displayErrorMessage(langBean, ERROR_INVALID, e.getMessage());
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         }
     }
 

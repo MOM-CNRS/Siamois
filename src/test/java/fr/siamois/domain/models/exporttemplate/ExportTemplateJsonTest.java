@@ -225,7 +225,8 @@ class ExportTemplateJsonTest {
         ExportTemplateDefinition.DirectRule rule = (ExportTemplateDefinition.DirectRule) parsed.sheets().get(0).columns().get(0).rules().get(0);
         assertThat(((ExportTemplateDefinition.ConceptField) rule.field()).property()).isEqualTo("unit");
         assertThat(ExportTemplateJson.parse(ExportTemplateJson.toJson(parsed))).isEqualTo(parsed);
-        assertThatThrownBy(() -> ExportTemplateJson.parse(ok.replace("\"unit\"", "\"zzz\"")))
+        String unknownProperty = ok.replace("\"unit\"", "\"zzz\"");
+        assertThatThrownBy(() -> ExportTemplateJson.parse(unknownProperty))
                 .isInstanceOf(InvalidExportTemplateException.class).hasMessageContaining("Unknown field property");
     }
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -67,7 +68,7 @@ class ExportValueFormatterTest {
 
     @Test
     void dates_areIso8601_andDateOutputKeepsOnlyTheDay() {
-        OffsetDateTime moment = OffsetDateTime.of(2026, 3, 4, 10, 30, 0, 0, ZoneOffset.UTC);
+        OffsetDateTime moment = OffsetDateTime.of(2026, Month.MARCH.getValue(), 4, 10, 30, 0, 0, ZoneOffset.UTC);
 
         assertThat(format(LocalDate.of(2026, 3, 4))).contains("2026-03-04");
         assertThat(format(moment)).contains("2026-03-04T10:30:00Z");

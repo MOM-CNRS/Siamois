@@ -66,7 +66,9 @@ class ExportNavigationsTest {
     void follow_unknownName_isRejected() {
         ExportRow row = ExportRow.of(ExportSubject.RECORDING_UNIT, new RecordingUnit());
 
-        assertThatThrownBy(() -> ExportNavigations.follow(row, List.of("nope")))
+        List<String> steps1 = List.of("nope");
+
+        assertThatThrownBy(() -> ExportNavigations.follow(row, steps1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("nope");
     }
@@ -86,9 +88,12 @@ class ExportNavigationsTest {
     void follow_onATechnicalRow_withoutAnEnd_isRejected() {
         ExportRow technical = ExportRow.technical(Map.of(), Map.of());
 
-        assertThatThrownBy(() -> ExportNavigations.follow(technical, List.of()))
+        List<String> steps2 = List.of();
+
+        assertThatThrownBy(() -> ExportNavigations.follow(technical, steps2))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ExportNavigations.follow(technical, List.of("unit1")))
+        List<String> steps3 = List.of("unit1");
+        assertThatThrownBy(() -> ExportNavigations.follow(technical, steps3))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -103,7 +108,8 @@ class ExportNavigationsTest {
 
     @Test
     void targetOf_unknownStep_isRejected() {
-        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportSubject.SPATIAL_UNIT, List.of("project")))
+        List<String> steps4 = List.of("project");
+        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportSubject.SPATIAL_UNIT, steps4))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -113,9 +119,11 @@ class ExportNavigationsTest {
                 .isEqualTo(ExportSubject.RECORDING_UNIT);
         assertThat(ExportNavigations.targetOf(ExportTechnicalSource.STRATIGRAPHIC_RELATIONSHIP, List.of("unit2", "project")))
                 .isEqualTo(ExportSubject.PROJECT);
-        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportTechnicalSource.RECORDING_UNIT_HIERARCHY, List.of()))
+        List<String> steps5 = List.of();
+        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportTechnicalSource.RECORDING_UNIT_HIERARCHY, steps5))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportTechnicalSource.RECORDING_UNIT_HIERARCHY, List.of("unit1")))
+        List<String> steps6 = List.of("unit1");
+        assertThatThrownBy(() -> ExportNavigations.targetOf(ExportTechnicalSource.RECORDING_UNIT_HIERARCHY, steps6))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

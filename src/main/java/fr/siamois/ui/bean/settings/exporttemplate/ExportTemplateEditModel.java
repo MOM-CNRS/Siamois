@@ -298,9 +298,15 @@ public class ExportTemplateEditModel implements Serializable {
             case RULE_CONCAT -> new ConcatRule(sources, r.parts.stream().map(ExportTemplateEditModel::partTo).toList(),
                     r.separator == null ? "" : r.separator,
                     r.labelSeparator == null ? DEFAULT_LABEL_SEPARATOR : r.labelSeparator);
-            default -> new DirectRule(sources, fieldTo(r.field), pathOf(r.path),
-                    r.list ? new ListOptions(r.listSeparator == null ? DEFAULT_LIST_SEPARATOR : r.listSeparator, r.listSorted) : null);
+            default -> new DirectRule(sources, fieldTo(r.field), pathOf(r.path), listOptionsOf(r));
         };
+    }
+
+    private static ListOptions listOptionsOf(EditRule r) {
+        if (!r.list) {
+            return null;
+        }
+        return new ListOptions(r.listSeparator == null ? DEFAULT_LIST_SEPARATOR : r.listSeparator, r.listSorted);
     }
 
     private static ConcatPart partTo(EditPart p) {

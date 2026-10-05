@@ -47,21 +47,29 @@ final class ExportValueFormatter {
         if (value instanceof String s) return Optional.of(s);
         if (value instanceof Boolean b) return Optional.of(b.toString());
         if (value instanceof Number n) return Optional.of(plain(n));
-        if (value instanceof MeasurementAnswer m) {
-            // valeur telle que saisie : elle va avec l'unité saisie (propriété « unit »)
-            Double v = m.getNumericValue() != null ? m.getNumericValue() : m.getNormalizedValue();
-            return Optional.of(v == null ? "" : plain(v));
-        }
+        if (value instanceof MeasurementAnswer m) return Optional.of(measurement(m));
         if (value instanceof Concept c) return Optional.of(conceptLabel(c));
         if (value instanceof Person p) return Optional.of(p.displayName());
+        if (value instanceof Geometry g) return Optional.of(g.toText());
+        Optional<String> entity = entityName(value);
+        return entity.isPresent() ? entity : temporal(value, output);
+    }
+
+    /** Valeur telle que saisie : elle va avec l'unité saisie (propriété « unit »). */
+    private static String measurement(MeasurementAnswer m) {
+        Double v = m.getNumericValue() != null ? m.getNumericValue() : m.getNormalizedValue();
+        return v == null ? "" : plain(v);
+    }
+
+    /** Entité liée : son identifiant complet, son nom ou son titre selon le type ; vide si le type est inconnu. */
+    private static Optional<String> entityName(Object value) {
         if (value instanceof ActionUnit a) return Optional.ofNullable(a.getFullIdentifier()).or(() -> Optional.ofNullable(a.getName()));
         if (value instanceof SpatialUnit s) return Optional.ofNullable(s.getName());
         if (value instanceof RecordingUnit r) return Optional.ofNullable(r.getFullIdentifier());
         if (value instanceof Specimen sp) return Optional.ofNullable(sp.getFullIdentifier());
         if (value instanceof Phase ph) return Optional.ofNullable(ph.getTitle());
         if (value instanceof Document d) return Optional.ofNullable(d.getTitle());
-        if (value instanceof Geometry g) return Optional.of(g.toText());
-        return temporal(value, output);
+        return Optional.empty();
     }
 
     private String conceptLabel(Concept concept) {

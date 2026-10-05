@@ -49,6 +49,8 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 public class ExportTemplatesSettingsBean implements Serializable {
 
+    private static final String ERROR_FORBIDDEN = "common.error.forbidden";
+
     private static final String CREATE_DIALOG = "exportTemplateCreateDialog";
     private static final String IMPORT_DIALOG = "exportTemplateImportDialog";
     private static final String DELETE_DIALOG = "exportTemplateDeleteDialog";
@@ -139,7 +141,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
             exportTemplateService.createBlank(userInfo(), newTemplateName.trim(),
                     langBean.msg("exportTemplates.blank.sheetName"), langBean.msg("exportTemplates.blank.columnHeader"));
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
         }
         hideDialog(CREATE_DIALOG);
@@ -164,7 +166,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
             MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.invalidJson", e.getMessage());
             return;
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
         }
         hideDialog(IMPORT_DIALOG);
@@ -178,7 +180,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
                     ExportTemplateService.BuiltInTemplate.NATIONAL_REPORT);
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.imported", added.name());
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
         }
         init();
@@ -192,7 +194,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
                     langBean.msg("exportTemplates.copyName", template.name()));
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.duplicated", template.name());
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
         } catch (NoSuchElementException e) {
             MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
@@ -213,7 +215,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
             exportTemplateService.delete(userInfo(), templateToDelete.id());
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.deleted", templateToDelete.name());
         } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         } catch (NoSuchElementException e) {
             MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
         }
@@ -233,7 +235,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
     }
 
     private static String fileName(String name) {
-        String ascii = normalize(name).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        String ascii = normalize(name).replaceAll("[^a-z0-9]+", "-").replaceAll("(?:^-)|(?:-$)", "");
         return ascii.isEmpty() ? "export-template" : ascii;
     }
 

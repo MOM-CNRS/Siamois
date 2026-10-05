@@ -32,10 +32,10 @@ final class ExportWorkbookWriter {
     }
 
     /**
-     * TODO(streaming) : le classeur entier est construit en mémoire ({@link XSSFWorkbook}) puis copié dans un
+     * Limite connue (streaming) : le classeur entier est construit en mémoire ({@link XSSFWorkbook}) puis copié dans un
      * {@code byte[]}, et l'appelant garde déjà toutes les lignes évaluées. Pour les très gros projets,
      * passer à {@code SXSSFWorkbook} et lire les sources par pages, en écrivant au fil de l'eau.
-     * Reporté : à faire quand les volumes réels l'exigent.
+     * Reporté jusqu'à ce que les volumes réels l'exigent.
      */
     static byte[] write(List<ExportSheetData> sheets, List<ExportWarning> warnings) {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {

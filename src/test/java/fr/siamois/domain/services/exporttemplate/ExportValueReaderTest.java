@@ -139,7 +139,7 @@ class ExportValueReaderTest {
         RecordingUnit u2 = new RecordingUnit();
         u2.setId(2L);
         Map<Long, Map<CustomField, CustomFieldAnswerViewModel>> loaded = Map.of(1L, Map.of());
-        when(answerService.loadAdditionalFieldAnswers(eq(ListOwner.RECORDING_UNIT), eq(List.of(1L, 2L)), eq(Set.of(100L))))
+        when(answerService.loadAdditionalFieldAnswers(ListOwner.RECORDING_UNIT, List.of(1L, 2L), Set.of(100L)))
                 .thenReturn(loaded);
 
         AnswerCache cache = reader.prefetch(ExportSubject.RECORDING_UNIT,

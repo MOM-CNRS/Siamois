@@ -32,11 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -60,6 +62,23 @@ public class ExportEngine {
 
     /** @param content le classeur ; {@code rowsBySheet} compte les lignes de données de chaque feuille écrite */
     public record Result(byte[] content, String fileName, List<ExportWarning> warnings, Map<String, Integer> rowsBySheet) {
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Result r && Arrays.equals(content, r.content) && fileName.equals(r.fileName)
+                    && warnings.equals(r.warnings) && rowsBySheet.equals(r.rowsBySheet);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(Arrays.hashCode(content), fileName, warnings, rowsBySheet);
+        }
+
+        @Override
+        public String toString() {
+            return "Result[fileName=" + fileName + ", bytes=" + content.length + ", warnings=" + warnings
+                    + ", rowsBySheet=" + rowsBySheet + "]";
+        }
     }
 
     private final ExportSourceReader sourceReader;
@@ -141,16 +160,11 @@ public class ExportEngine {
     /** Lit, évalue et met en forme toutes les feuilles ; {@code limit} borne les lignes lues par source. */
     private List<ExportSheetData> build(ExportTemplateDefinition definition, Long projectId, String lang, int limit,
                                        List<ExportWarning> warnings) {
-        List<RawSheet> collected = new ArrayList<>();
-        for (Sheet sheet : definition.sheets()) {
-            collected.add(collectRows(sheet, projectId, warnings, limit));
-        }
+        List<RawSheet> collected = definition.sheets().stream()
+                .map(sheet -> collectRows(sheet, projectId, warnings, limit))
+                .toList();
         ExportValueFormatter formatter = new ExportValueFormatter(resolveLabels(collected, lang));
-        List<ExportSheetData> sheets = new ArrayList<>();
-        for (RawSheet raw : collected) {
-            sheets.add(format(raw, formatter, warnings));
-        }
-        return sheets;
+        return collected.stream().map(raw -> format(raw, formatter, warnings)).toList();
     }
 
     // ------------------------------------------------------------------ lecture des lignes
@@ -163,16 +177,13 @@ public class ExportEngine {
             List<ExportRow> allRows = sourceReader.read(source, projectId);
             total += allRows.size();
             List<ExportRow> sourceRows = allRows.size() > limit ? allRows.subList(0, limit) : allRows;
-            List<List<Raw>> perColumn = new ArrayList<>();
-            for (Column column : sheet.columns()) {
-                perColumn.add(evaluate(sheet, column, ruleFor(column, index), source, sourceRows, projectId, warnings));
-            }
+            int sourceIndex = index;
+            List<List<Raw>> perColumn = sheet.columns().stream()
+                    .map(column -> evaluate(sheet, column, ruleFor(column, sourceIndex), source, sourceRows, projectId, warnings))
+                    .toList();
             for (int r = 0; r < sourceRows.size(); r++) {
-                List<Raw> row = new ArrayList<>();
-                for (List<Raw> columnValues : perColumn) {
-                    row.add(columnValues.get(r));
-                }
-                rows.add(row);
+                int rowIndex = r;
+                rows.add(perColumn.stream().map(columnValues -> columnValues.get(rowIndex)).toList());
             }
         }
         return new RawSheet(sheet, rows, total);
@@ -199,10 +210,9 @@ public class ExportEngine {
             return values.stream().map(v -> (Raw) new RawValues(v, direct.list())).toList();
         }
         ConcatRule concat = (ConcatRule) rule.get();
-        List<List<List<Object>>> partValues = new ArrayList<>();
-        for (ConcatPart part : concat.parts()) {
-            partValues.add(part.field() == null ? null : fieldValues(where, part.field(), part.path()));
-        }
+        List<List<List<Object>>> partValues = concat.parts().stream()
+                .map(part -> part.field() == null ? null : fieldValues(where, part.field(), part.path()))
+                .toList();
         List<Raw> out = new ArrayList<>();
         for (int r = 0; r < rows.size(); r++) {
             List<RawPart> parts = new ArrayList<>();
@@ -237,10 +247,11 @@ public class ExportEngine {
             }
             cache = valueReader.prefetch(subject, targets.stream().flatMap(Optional::stream).toList(), candidates);
         }
-        List<List<Object>> out = new ArrayList<>();
-        for (Optional<ExportRow> target : targets) {
-            out.add(target.isEmpty() ? List.of() : valueReader.read(target.get(), field, candidates, cache));
-        }
+        List<CustomField> resolved = candidates;
+        ExportValueReader.AnswerCache answers = cache;
+        List<List<Object>> out = targets.stream()
+                .map(target -> target.map(t -> valueReader.read(t, field, resolved, answers)).orElseGet(List::of))
+                .toList();
         if (field instanceof ConceptField conceptField && conceptField.property() != null) {
             return out.stream().map(values -> property(where, conceptField, values)).toList();
         }
@@ -252,13 +263,17 @@ public class ExportEngine {
         List<Object> out = new ArrayList<>();
         for (Object value : values) {
             if (value instanceof MeasurementAnswer m) {
-                Object picked = "unit".equals(field.property()) ? (m.getUnit() == null ? null : m.getUnit().getLabel()) : m.getComment();
+                Object picked = "unit".equals(field.property()) ? unitLabel(m) : m.getComment();
                 if (picked != null) out.add(picked);
             } else if (value != null) {
                 where.warnings().add(new ExportWarning(ExportWarning.Code.UNSUPPORTED_VALUE, where.sheet(), where.column(), field.property()));
             }
         }
         return out;
+    }
+
+    private static String unitLabel(MeasurementAnswer m) {
+        return m.getUnit() == null ? null : m.getUnit().getLabel();
     }
 
     private static ExportSubject subjectAfter(Source source, List<String> path) {
@@ -329,7 +344,7 @@ public class ExportEngine {
     }
 
     private static int significantDigits(String number) {
-        String digits = number.replaceAll("[^0-9]", "").replaceAll("^0+", "");
+        String digits = number.replaceAll("\\D", "").replaceAll("^0+", "");
         return digits.length();
     }
 

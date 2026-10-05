@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Lit la valeur brute d'un champ sur une ligne d'export : propriété de l'entité pour un champ système
@@ -52,10 +53,10 @@ public class ExportValueReader {
     @Transactional(readOnly = true)
     public AnswerCache prefetch(ExportSubject subject, Collection<ExportRow> rows, Collection<CustomField> fields) {
         ListOwner owner = ownerOf(subject);
-        Set<Long> fieldIds = new HashSet<>();
-        for (CustomField f : fields) {
-            if (!isSystem(f) && f.getId() != null) fieldIds.add(f.getId());
-        }
+        Set<Long> fieldIds = fields.stream()
+                .filter(f -> !isSystem(f) && f.getId() != null)
+                .map(CustomField::getId)
+                .collect(Collectors.toSet());
         if (owner == null || fieldIds.isEmpty() || rows.isEmpty()) {
             return AnswerCache.EMPTY;
         }
@@ -75,9 +76,9 @@ public class ExportValueReader {
             return List.of();
         }
         for (CustomField candidate : candidates) {
-            List<Object> values = isSystem(candidate)
-                    ? flatten(systemValue(row.entity(), candidate))
-                    : flatten(additionalValue(row, candidate, cache));
+            List<Object> values = flatten(isSystem(candidate)
+                    ? systemValue(row.entity(), candidate)
+                    : additionalValue(row, candidate, cache));
             if (!values.isEmpty()) {
                 return values;
             }
