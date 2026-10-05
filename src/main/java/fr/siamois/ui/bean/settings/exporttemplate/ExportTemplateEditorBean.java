@@ -494,7 +494,7 @@ public class ExportTemplateEditorBean implements Serializable {
     /** Ajoute une source à la feuille et ouvre directement sa fenêtre pour la renseigner. */
     public void addSourceAndEdit() {
         addSource();
-        List<EditSource> sources = getSelectedSheet().getSources();
+        List<EditSource> sources = requireSelectedSheet().getSources();
         openSource(sources.get(sources.size() - 1));
     }
 
@@ -926,14 +926,19 @@ public class ExportTemplateEditorBean implements Serializable {
             return "?";
         }
         for (SelectItem item : fieldChoices(sourceChoices, choice)) {
-            Optional<String> label = item instanceof SelectItemGroup group
-                    ? groupedChoiceLabel(group, choice)
-                    : Optional.ofNullable(choice.equals(item.getValue()) ? item.getLabel() : null);
+            Optional<String> label = labelOf(item, choice);
             if (label.isPresent()) {
                 return label.get();
             }
         }
         return choice;
+    }
+
+    private Optional<String> labelOf(SelectItem item, String choice) {
+        if (item instanceof SelectItemGroup group) {
+            return groupedChoiceLabel(group, choice);
+        }
+        return choice.equals(item.getValue()) ? Optional.of(item.getLabel()) : Optional.empty();
     }
 
     private Optional<String> groupedChoiceLabel(SelectItemGroup group, String choice) {

@@ -235,7 +235,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
     }
 
     private static String fileName(String name) {
-        String ascii = normalize(name).replaceAll("[^a-z0-9]+", "-").replaceAll("(?:^-)|(?:-$)", "");
+        String ascii = normalize(name).replaceAll("[^a-z0-9]+", "-").replaceAll("^-", "").replaceAll("-$", "");
         return ascii.isEmpty() ? "export-template" : ascii;
     }
 

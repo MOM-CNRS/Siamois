@@ -70,7 +70,7 @@ class ExportValueFormatterTest {
     void dates_areIso8601_andDateOutputKeepsOnlyTheDay() {
         OffsetDateTime moment = OffsetDateTime.of(2026, Month.MARCH.getValue(), 4, 10, 30, 0, 0, ZoneOffset.UTC);
 
-        assertThat(format(LocalDate.of(2026, 3, 4))).contains("2026-03-04");
+        assertThat(format(LocalDate.of(2026, Month.MARCH, 4))).contains("2026-03-04");
         assertThat(format(moment)).contains("2026-03-04T10:30:00Z");
         assertThat(formatter.format(moment, OutputType.DATE)).contains("2026-03-04");
     }

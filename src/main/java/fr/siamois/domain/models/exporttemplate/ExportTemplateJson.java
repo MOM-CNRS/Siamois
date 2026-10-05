@@ -244,6 +244,12 @@ public final class ExportTemplateJson {
             }
         }
 
+        private static List<Integer> allIndexes(int count) {
+            List<Integer> out = new ArrayList<>();
+            for (int i = 0; i < count; i++) out.add(i);
+            return out;
+        }
+
         private Map<String, Object> partToWire(ConcatPart p, String primary) {
             Map<String, Object> m = new LinkedHashMap<>();
             if (p.label() != null) m.put(LABEL, p.label());
@@ -291,12 +297,6 @@ public final class ExportTemplateJson {
             if (field instanceof NameField n) return n.name();
             return Map.of(COLUMN, ((ColumnField) field).name());
         }
-    }
-
-    private static List<Integer> allIndexes(int count) {
-        List<Integer> out = new ArrayList<>();
-        for (int i = 0; i < count; i++) out.add(i);
-        return out;
     }
 
     // ------------------------------------------------------------------ lecture
