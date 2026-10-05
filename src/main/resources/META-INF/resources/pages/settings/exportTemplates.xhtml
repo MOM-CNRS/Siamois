@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{exportTemplatesSettingsBean.checkAccessOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <link rel="stylesheet" href="#{redirectBean.redirectUrlToResource('settings.css', 'css')}"/>
+        <h:outputStylesheet library="css" name="export-templates.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main>
+            <div class="xt">
+                <div class="xt-topbar">
+                    <div class="xt-crumb">
+                        <span>#{langBean.msg('exportTemplates.crumb.settings')}</span>
+                        <i class="bi bi-chevron-right xt-sep"/>
+                        <span class="xt-current">#{langBean.msg('nav.exportTemplates')}</span>
+                    </div>
+                </div>
+
+                <div class="xt-body">
+                    <div class="xt-inner">
+                        <form:csrfform formId="exportTemplatesForm">
+                            <div class="xt-head">
+                                <div>
+                                    <h1 class="xt-title">#{langBean.msg('nav.exportTemplates')}</h1>
+                                    <p class="xt-desc">#{langBean.msg('exportTemplates.description')}</p>
+                                </div>
+                                <h:panelGroup layout="block" styleClass="xt-actions">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.run.title')}"
+                                                     icon="bi bi-play-fill"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportRunBean.open(null)}"
+                                                     process="@this"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{exportTemplatesSettingsBean.canManage()}" layout="block" styleClass="xt-actions">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.addNational')}"
+                                                     icon="bi bi-flag"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportTemplatesSettingsBean.addNationalTemplate()}"
+                                                     process="@this" update="@form"/>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.import')}"
+                                                     icon="bi bi-upload"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportTemplatesSettingsBean.displayImportDialog()}"
+                                                     process="@this"/>
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.new')}"
+                                                     icon="bi bi-plus-lg"
+                                                     styleClass="xt-btn-primary"
+                                                     action="#{exportTemplatesSettingsBean.displayCreateDialog()}"
+                                                     process="@this"/>
+                                </h:panelGroup>
+                            </div>
+
+                            <div class="xt-filter">
+                                <span class="xt-search">
+                                    <i class="bi bi-search"/>
+                                    <p:inputText value="#{exportTemplatesSettingsBean.filterText}"
+                                                 placeholder="#{langBean.msg('exportTemplates.search')}">
+                                        <p:ajax event="keyup" delay="300"
+                                                listener="#{exportTemplatesSettingsBean.onFilterType()}"
+                                                process="@this" update="exportTemplatesCards"/>
+                                    </p:inputText>
+                                </span>
+                            </div>
+
+                            <h:panelGroup id="exportTemplatesCards" layout="block" styleClass="xt-cards">
+                                <h:panelGroup layout="block" styleClass="xt-empty"
+                                              rendered="#{empty exportTemplatesSettingsBean.filteredTemplates}">
+                                    #{langBean.msg('exportTemplates.empty')}
+                                </h:panelGroup>
+                                <ui:repeat value="#{exportTemplatesSettingsBean.filteredTemplates}" var="template">
+                                    <div class="xt-card">
+                                        <p:commandLink styleClass="xt-card-link"
+                                                       action="#{exportTemplateEditorBean.open(template.id())}"
+                                                       process="@this">
+                                            <span class="xt-card-icon custom"><i class="bi bi-grid"/></span>
+                                            <span class="xt-card-main">
+                                                <span class="xt-card-name">
+                                                    #{template.name()}
+                                                    <span class="xt-badge custom">v#{template.version()}</span>
+                                                </span>
+                                            </span>
+                                            <span class="xt-card-stats">
+                                                #{langBean.msg('exportTemplates.card.updated', exportTemplatesSettingsBean.formatDate(template.updatedAt()))}
+                                            </span>
+                                            <i class="bi bi-chevron-right xt-card-chevron"/>
+                                        </p:commandLink>
+
+                                        <div class="xt-menu-wrap">
+                                            <button type="button" class="xt-icon-btn"
+                                                    onclick="this.parentNode.classList.toggle('open')">
+                                                <i class="bi bi-three-dots-vertical"/>
+                                            </button>
+                                            <div class="xt-menu">
+                                                <p:commandLink action="#{exportTemplateEditorBean.open(template.id())}"
+                                                               process="@this"
+                                                               rendered="#{exportTemplatesSettingsBean.canManage()}">
+                                                    <i class="bi bi-pencil"/> #{langBean.msg('exportTemplates.menu.edit')}
+                                                </p:commandLink>
+                                                <p:commandLink action="#{exportRunBean.open(template.id())}" process="@this">
+                                                    <i class="bi bi-play-fill"/> #{langBean.msg('exportTemplates.run.start')}
+                                                </p:commandLink>
+                                                <p:commandLink ajax="false">
+                                                    <p:fileDownload value="#{exportTemplatesSettingsBean.downloadJson(template)}"/>
+                                                    <i class="bi bi-download"/> #{langBean.msg('exportTemplates.downloadJson')}
+                                                </p:commandLink>
+                                                <h:panelGroup rendered="#{exportTemplatesSettingsBean.canManage()}">
+                                                    <p:commandLink action="#{exportTemplatesSettingsBean.duplicate(template)}"
+                                                                   process="@this" update="@form">
+                                                        <i class="bi bi-copy"/> #{langBean.msg('common.action.duplicate')}
+                                                    </p:commandLink>
+                                                    <hr/>
+                                                    <p:commandLink styleClass="danger"
+                                                                   action="#{exportTemplatesSettingsBean.askDelete(template)}"
+                                                                   process="@this">
+                                                        <i class="bi bi-trash"/> #{langBean.msg('exportTemplates.delete')}
+                                                    </p:commandLink>
+                                                </h:panelGroup>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ui:repeat>
+                            </h:panelGroup>
+                        </form:csrfform>
+                    </div>
+                </div>
+            </div>
+
+            <ui:include src="/dialog/exporttemplate/exportTemplateDialogs.xhtml"/>
+
+            <script>
+                if (!window.xtMenuCloser) {
+                    window.xtMenuCloser = true;
+                    document.addEventListener('click', function (e) {
+                        document.querySelectorAll('.xt-menu-wrap.open').forEach(function (w) {
+                            if (!w.contains(e.target) || e.target.closest('.xt-menu a')) { w.classList.remove('open'); }
+                        });
+                    });
+                }
+            </script>
+        </main>
+    </ui:define>
+
+</ui:composition>

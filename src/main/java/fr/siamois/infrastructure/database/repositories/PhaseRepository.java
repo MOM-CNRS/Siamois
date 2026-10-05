@@ -15,6 +15,9 @@ import java.util.Set;
 
 @Repository
 public interface PhaseRepository extends CrudRepository<Phase, Long>, JpaSpecificationExecutor<Phase> {
+    /** Toutes les phases d'un projet — lecture pour l'export. */
+    List<Phase> findAllByActionUnitId(Long actionUnitId);
+
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
     int countByActionUnitId(Long actionUnitId);

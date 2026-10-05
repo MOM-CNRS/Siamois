@@ -34,3 +34,6 @@ frontend/npm-debug.log*
 /.claude/*
 /.claude/
 frontend/dev/.generated/
+
+# scripts Python
+__pycache__/

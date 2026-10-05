@@ -1,0 +1,109 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!-- Création d'un modèle vide -->
+    <p:dialog widgetVar="exportTemplateCreateDialog"
+              id="exportTemplateCreateDialog"
+              width="40vw"
+              showEffect="fade"
+              modal="true"
+              closable="false">
+        <f:facet name="header">
+            <h3>#{langBean.msg('exportTemplates.dialog.create')}</h3>
+        </f:facet>
+        <h:form>
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <div class="sia-settings-dialog-form">
+                <div class="form-group row">
+                    <p:outputLabel class="col-lg-4 col-form-label" for="newTemplateName">
+                        #{langBean.msg('common.label.name')}
+                    </p:outputLabel>
+                    <div class="col-lg-8 ms-auto">
+                        <p:inputText id="newTemplateName"
+                                     style="width: 100%"
+                                     maxlength="150"
+                                     value="#{exportTemplatesSettingsBean.newTemplateName}"/>
+                    </div>
+                </div>
+            </div>
+            <hr/>
+            <p:toolbar class="dialog-buttons">
+                <p:toolbarGroup align="right">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     styleClass="ui-button-secondary"
+                                     type="button"
+                                     onclick="PF('exportTemplateCreateDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('common.action.create')}"
+                                     action="#{exportTemplatesSettingsBean.create()}"
+                                     update="@form exportTemplatesDatatable:formCC:exportTemplatesForm"/>
+                </p:toolbarGroup>
+            </p:toolbar>
+        </h:form>
+    </p:dialog>
+
+    <!-- Import d'un JSON de modèle -->
+    <p:dialog widgetVar="exportTemplateImportDialog"
+              id="exportTemplateImportDialog"
+              width="50vw"
+              showEffect="fade"
+              modal="true"
+              closable="false">
+        <f:facet name="header">
+            <h3>#{langBean.msg('exportTemplates.dialog.import')}</h3>
+        </f:facet>
+        <h:form>
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <div class="sia-settings-dialog-form">
+                <p class="text-muted">#{langBean.msg('exportTemplates.dialog.import.hint')}</p>
+                <p:inputTextarea id="importedJson"
+                                 rows="14"
+                                 style="width: 100%; font-family: monospace"
+                                 value="#{exportTemplatesSettingsBean.importedJson}"/>
+            </div>
+            <hr/>
+            <p:toolbar class="dialog-buttons">
+                <p:toolbarGroup align="right">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     styleClass="ui-button-secondary"
+                                     type="button"
+                                     onclick="PF('exportTemplateImportDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('exportTemplates.import')}"
+                                     action="#{exportTemplatesSettingsBean.importJson()}"
+                                     update="@form exportTemplatesDatatable:formCC:exportTemplatesForm"/>
+                </p:toolbarGroup>
+            </p:toolbar>
+        </h:form>
+    </p:dialog>
+
+    <!-- Confirmation de suppression -->
+    <p:dialog widgetVar="exportTemplateDeleteDialog"
+              id="exportTemplateDeleteDialog"
+              width="30vw"
+              showEffect="fade"
+              modal="true"
+              closable="false">
+        <f:facet name="header">
+            <h3>#{langBean.msg('exportTemplates.dialog.delete')}</h3>
+        </f:facet>
+        <h:form>
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <p>#{langBean.msg('exportTemplates.dialog.delete.message', exportTemplatesSettingsBean.templateToDeleteName)}</p>
+            <hr/>
+            <p:toolbar class="dialog-buttons">
+                <p:toolbarGroup align="right">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     styleClass="ui-button-secondary"
+                                     type="button"
+                                     onclick="PF('exportTemplateDeleteDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('exportTemplates.delete')}"
+                                     styleClass="ui-button-danger"
+                                     action="#{exportTemplatesSettingsBean.confirmDelete()}"
+                                     update="@form exportTemplatesDatatable:formCC:exportTemplatesForm"/>
+                </p:toolbarGroup>
+            </p:toolbar>
+        </h:form>
+    </p:dialog>
+
+</ui:fragment>

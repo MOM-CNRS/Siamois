@@ -126,6 +126,10 @@ public class NavBean implements Serializable {
         redirectBean.redirectTo("/settings/organisation?memberId=" + person.getId());
     }
 
+    public void goToExportTemplatesSettings() {
+        redirectBean.redirectTo("/settings/export-templates");
+    }
+
     public void goToUserManagementSettings() {
         applicationMembersListBean.init();
         redirectBean.redirectTo("/settings/administration");

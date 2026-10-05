@@ -19,6 +19,9 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
         JpaSpecificationExecutor<Document> {
     List<Document> findAllByArkIsNullAndCreatedByInstitution(Institution institution);
 
+    /** Tous les documents d'un projet — lecture pour l'export. */
+    List<Document> findAllByActionUnitId(Long actionUnitId);
+
     boolean existsByFileCode(String fileCode);
 
     Optional<Document> findByFileCode(String fileCode);

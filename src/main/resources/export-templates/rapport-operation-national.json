@@ -1,0 +1,1057 @@
+{
+  "version": 3,
+  "id": "rapport-operation-national",
+  "templateVersion": "2025-10",
+  "name": "Rapport d'opération — référentiel national",
+  "fileNamePattern": "OA{oaCode}_{dateCompact}_inventaire detaille",
+  "sources": {
+    "OA_1": {
+      "kind": "PROJECT"
+    },
+    "situation_1": {
+      "kind": "ENTITY",
+      "entity": "SPATIAL_UNIT"
+    },
+    "UE_1": {
+      "kind": "ENTITY",
+      "entity": "RECORDING_UNIT"
+    },
+    "UE_1_project": {
+      "join": {
+        "topterm": "UE_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "relation_1": {
+      "kind": "TECHNICAL",
+      "key": "STRATIGRAPHIC_RELATIONSHIP"
+    },
+    "relation_1_unit1": {
+      "join": {
+        "topterm": "relation_1",
+        "on": {
+          "local_key": "unit1",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "relation_1_unit1_project": {
+      "join": {
+        "topterm": "relation_1_unit1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "relation_1_unit2": {
+      "join": {
+        "topterm": "relation_1",
+        "on": {
+          "local_key": "unit2",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "mobilier_1": {
+      "kind": "ENTITY",
+      "entity": "SPECIMEN"
+    },
+    "mobilier_1_project": {
+      "join": {
+        "topterm": "mobilier_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "mobilier_1_recordingUnit": {
+      "join": {
+        "topterm": "mobilier_1",
+        "on": {
+          "local_key": "recordingUnit",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "documentation_1": {
+      "kind": "ENTITY",
+      "entity": "DOCUMENT"
+    },
+    "documentation_1_project": {
+      "join": {
+        "topterm": "documentation_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    }
+  },
+  "root_connections": [
+    {
+      "target_root": "OA",
+      "source_topterm": "OA_1"
+    },
+    {
+      "target_root": "situation",
+      "source_topterm": "situation_1"
+    },
+    {
+      "target_root": "UE",
+      "source_topterm": "UE_1"
+    },
+    {
+      "target_root": "relation",
+      "source_topterm": "relation_1"
+    },
+    {
+      "target_root": "mobilier",
+      "source_topterm": "mobilier_1"
+    },
+    {
+      "target_root": "documentation",
+      "source_topterm": "documentation_1"
+    }
+  ],
+  "sheets": {
+    "situation": {
+      "omitIfEmpty": true
+    },
+    "UE": {
+      "omitIfEmpty": true,
+      "sortBy": [
+        "type_UE"
+      ]
+    },
+    "relation": {
+      "omitIfEmpty": true
+    },
+    "mobilier": {
+      "omitIfEmpty": true
+    },
+    "VAB": {
+      "omitIfEmpty": true
+    },
+    "prelevement": {
+      "omitIfEmpty": true
+    },
+    "traitement": {
+      "omitIfEmpty": true
+    },
+    "documentation": {
+      "omitIfEmpty": true
+    }
+  },
+  "schema_target": {
+    "OA.code_OA_NAT": {
+      "type": "text"
+    },
+    "OA.region_facade_maritime_OA": {
+      "type": "text"
+    },
+    "OA.type_OA": {
+      "type": "text"
+    },
+    "OA.intitule_OA": {
+      "type": "text"
+    },
+    "OA.organisme_rattachement_OA": {
+      "type": "text"
+    },
+    "OA.responsable_scientifique_OA": {
+      "type": "text"
+    },
+    "OA.date_debut_terrain_OA": {
+      "type": "date"
+    },
+    "OA.date_fin_terrain_OA": {
+      "type": "date"
+    },
+    "OA.chronologie_OA": {
+      "type": "text"
+    },
+    "OA.interpretations_concernees_OA": {
+      "type": "text"
+    },
+    "OA.code_document_georeferencement": {
+      "type": "text"
+    },
+    "OA.informations_complementaires_OA": {
+      "type": "text"
+    },
+    "situation.code_OA_NAT": {
+      "type": "text"
+    },
+    "situation.identifiant_parcelle": {
+      "type": "text"
+    },
+    "situation.nom_commune_OA": {
+      "type": "text"
+    },
+    "situation.numero_INSEE_commune_OA": {
+      "type": "text"
+    },
+    "situation.lieu_dit_OA": {
+      "type": "text"
+    },
+    "situation.adresse_OA": {
+      "type": "text"
+    },
+    "situation.informations_complementaires_parcelle": {
+      "type": "text"
+    },
+    "UE.code_OA_NAT": {
+      "type": "text"
+    },
+    "UE.type_UE": {
+      "type": "text"
+    },
+    "UE.identifiant_UE": {
+      "type": "text"
+    },
+    "UE.nature_UE": {
+      "type": "text"
+    },
+    "UE.description_UE": {
+      "type": "text"
+    },
+    "UE.interpretation_UE": {
+      "type": "text"
+    },
+    "UE.Zsup_UE": {
+      "type": "number"
+    },
+    "UE.Zinf_UE": {
+      "type": "number"
+    },
+    "UE.chronologie_UE": {
+      "type": "text"
+    },
+    "UE.TPQ_UE": {
+      "type": "number"
+    },
+    "UE.TAQ_UE": {
+      "type": "number"
+    },
+    "UE.informations_complementaires_UE": {
+      "type": "text"
+    },
+    "relation.code_OA_NAT": {
+      "type": "text"
+    },
+    "relation.code_UE1": {
+      "type": "text"
+    },
+    "relation.type_relation_UE": {
+      "type": "text"
+    },
+    "relation.code_UE2": {
+      "type": "text"
+    },
+    "relation.informations_complementaires_relation": {
+      "type": "text"
+    },
+    "mobilier.code_OA_NAT": {
+      "type": "text"
+    },
+    "mobilier.identifiant_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.objet-lot": {
+      "type": "text"
+    },
+    "mobilier.matiere": {
+      "type": "text"
+    },
+    "mobilier.classe": {
+      "type": "text"
+    },
+    "mobilier.determination_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.chronologie_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.TPQ_objet-lot": {
+      "type": "number"
+    },
+    "mobilier.nombre_element_objet-lot": {
+      "type": "number"
+    },
+    "mobilier.poids_objet-lot": {
+      "type": "number"
+    },
+    "mobilier.unite_poids_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.etat_sanitaire_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.alerte_sanitaire_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.versement_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.proposition_conservation_selective": {
+      "type": "text"
+    },
+    "mobilier.commentaire_proposition": {
+      "type": "text"
+    },
+    "mobilier.code_UE": {
+      "type": "text"
+    },
+    "mobilier.interet_particulier_objet-lot": {
+      "type": "text"
+    },
+    "mobilier.date_decouverte_objet-lot": {
+      "type": "date"
+    },
+    "mobilier.identifiant_parcelle": {
+      "type": "text"
+    },
+    "mobilier.identifiant_contenant": {
+      "type": "text"
+    },
+    "mobilier.lieu_de_conservation": {
+      "type": "text"
+    },
+    "mobilier.informations_complementaires_objet-lot": {
+      "type": "text"
+    },
+    "VAB.code_OA_NAT": {
+      "type": "text"
+    },
+    "VAB.identifiant_VAB": {
+      "type": "text"
+    },
+    "VAB.code_UE": {
+      "type": "text"
+    },
+    "VAB.code_objet-lot": {
+      "type": "text"
+    },
+    "VAB.matiere": {
+      "type": "text"
+    },
+    "VAB.classe": {
+      "type": "text"
+    },
+    "VAB.determination_VAB": {
+      "type": "text"
+    },
+    "VAB.nombre_element_VAB": {
+      "type": "text"
+    },
+    "VAB.poids_VAB": {
+      "type": "number"
+    },
+    "VAB.unite_poids_VAB": {
+      "type": "text"
+    },
+    "VAB.prelevement_VAB": {
+      "type": "text"
+    },
+    "VAB.alerte_sanitaire_VAB": {
+      "type": "text"
+    },
+    "VAB.versement_VAB": {
+      "type": "text"
+    },
+    "VAB.potentiel_etude_VAB": {
+      "type": "text"
+    },
+    "VAB.commentaire_potentiel_etude_VAB": {
+      "type": "text"
+    },
+    "VAB.identifiant_contenant": {
+      "type": "text"
+    },
+    "VAB.lieu_de_conservation": {
+      "type": "text"
+    },
+    "VAB.informations_complementaires_VAB": {
+      "type": "text"
+    },
+    "prelevement.code_OA_NAT": {
+      "type": "text"
+    },
+    "prelevement.identifiant_prelevement": {
+      "type": "text"
+    },
+    "prelevement.nature_prelevement": {
+      "type": "text"
+    },
+    "prelevement.auteur_prelevement": {
+      "type": "text"
+    },
+    "prelevement.objectif_prelevement": {
+      "type": "text"
+    },
+    "prelevement.poids_volume_prelevement": {
+      "type": "number"
+    },
+    "prelevement.unite_poids_volume_prelevement": {
+      "type": "text"
+    },
+    "prelevement.code_element_provenance": {
+      "type": "text"
+    },
+    "prelevement.condition_preservation_prelevement": {
+      "type": "text"
+    },
+    "prelevement.date_validite_prelevement": {
+      "type": "date"
+    },
+    "prelevement.identifiant_contenant": {
+      "type": "text"
+    },
+    "prelevement.lieu_de_conservation": {
+      "type": "text"
+    },
+    "prelevement.informations_complementaires_prelevement": {
+      "type": "text"
+    },
+    "traitement.code_OA_NAT": {
+      "type": "text"
+    },
+    "traitement.code_element_traite": {
+      "type": "text"
+    },
+    "traitement.type_traitement": {
+      "type": "text"
+    },
+    "traitement.code_rapport": {
+      "type": "text"
+    },
+    "traitement.periode_traitement": {
+      "type": "date"
+    },
+    "traitement.lieu_traitement": {
+      "type": "text"
+    },
+    "traitement.nom_responsable_traitement": {
+      "type": "text"
+    },
+    "traitement.identifiant_lie_au_traitement": {
+      "type": "text"
+    },
+    "traitement.informations_complementaires_traitement": {
+      "type": "text"
+    },
+    "documentation.code_OA_NAT": {
+      "type": "text"
+    },
+    "documentation.identifiant_documentation": {
+      "type": "text"
+    },
+    "documentation.titre_documentation": {
+      "type": "text"
+    },
+    "documentation.categorie_documentation": {
+      "type": "text"
+    },
+    "documentation.type_documentation": {
+      "type": "text"
+    },
+    "documentation.nature_support_documentation": {
+      "type": "text"
+    },
+    "documentation.format_documentation": {
+      "type": "text"
+    },
+    "documentation.auteur_documentation": {
+      "type": "text"
+    },
+    "documentation.contributeur_documentation": {
+      "type": "text"
+    },
+    "documentation.editeur_documentation": {
+      "type": "text"
+    },
+    "documentation.date_realisation_documentation": {
+      "type": "date"
+    },
+    "documentation.description_legende_documentation": {
+      "type": "text"
+    },
+    "documentation.nombre_element_documentation": {
+      "type": "number"
+    },
+    "documentation.code_element_associe": {
+      "type": "text"
+    },
+    "documentation.identifiant_contenant": {
+      "type": "text"
+    },
+    "documentation.commentaire_moulage": {
+      "type": "text"
+    },
+    "documentation.lieu_de_conservation": {
+      "type": "text"
+    },
+    "documentation.informations_complementaires_documentation": {
+      "type": "text"
+    }
+  },
+  "fields": [
+    {
+      "target": "OA.code_OA_NAT",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "OA.type_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4282386"
+        }
+      }
+    },
+    {
+      "target": "OA.intitule_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4285848"
+        }
+      }
+    },
+    {
+      "target": "OA.organisme_rattachement_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290932"
+        }
+      }
+    },
+    {
+      "target": "OA.responsable_scientifique_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290931"
+        }
+      }
+    },
+    {
+      "target": "OA.date_debut_terrain_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287545"
+        }
+      }
+    },
+    {
+      "target": "OA.date_fin_terrain_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287546"
+        }
+      }
+    },
+    {
+      "target": "OA.chronologie_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290934"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "OA.informations_complementaires_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289279"
+        }
+      }
+    },
+    {
+      "target": "situation.identifiant_parcelle",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4285848"
+        }
+      }
+    },
+    {
+      "target": "UE.code_OA_NAT",
+      "source": "UE_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "UE.type_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287605"
+        }
+      }
+    },
+    {
+      "target": "UE.identifiant_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "UE.nature_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287606"
+        }
+      }
+    },
+    {
+      "target": "UE.description_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287611"
+        }
+      }
+    },
+    {
+      "target": "UE.interpretation_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286197"
+        }
+      }
+    },
+    {
+      "target": "UE.Zsup_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289321"
+        }
+      }
+    },
+    {
+      "target": "UE.Zinf_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289320"
+        }
+      }
+    },
+    {
+      "target": "UE.chronologie_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287612"
+        }
+      }
+    },
+    {
+      "target": "UE.TPQ_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287613"
+        }
+      }
+    },
+    {
+      "target": "UE.TAQ_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287614"
+        }
+      }
+    },
+    {
+      "target": "UE.informations_complementaires_UE",
+      "source": "UE_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289279"
+        }
+      }
+    },
+    {
+      "target": "relation.code_OA_NAT",
+      "source": "relation_1_unit1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "relation.code_UE1",
+      "source": "relation_1_unit1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "relation.type_relation_UE",
+      "source": "relation_1",
+      "field": {
+        "column": "relationType"
+      }
+    },
+    {
+      "target": "relation.code_UE2",
+      "source": "relation_1_unit2",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "mobilier.code_OA_NAT",
+      "source": "mobilier_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "mobilier.identifiant_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286250"
+        }
+      }
+    },
+    {
+      "target": "mobilier.matiere",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290157"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "mobilier.classe",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290155"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "mobilier.determination_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290156"
+        }
+      }
+    },
+    {
+      "target": "mobilier.chronologie_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290160"
+        }
+      }
+    },
+    {
+      "target": "mobilier.TPQ_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287613"
+        }
+      }
+    },
+    {
+      "target": "mobilier.nombre_element_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290161"
+        }
+      }
+    },
+    {
+      "target": "mobilier.poids_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        }
+      }
+    },
+    {
+      "target": "mobilier.unite_poids_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        },
+        "property": "unit"
+      }
+    },
+    {
+      "target": "mobilier.code_UE",
+      "source": "mobilier_1_recordingUnit",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "mobilier.date_decouverte_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286249"
+        }
+      }
+    },
+    {
+      "target": "mobilier.informations_complementaires_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290159"
+        }
+      }
+    },
+    {
+      "target": "documentation.code_OA_NAT",
+      "source": "documentation_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "documentation.identifiant_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.identifier"
+        }
+      }
+    },
+    {
+      "target": "documentation.titre_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.title"
+        }
+      }
+    },
+    {
+      "target": "documentation.categorie_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.category"
+        }
+      }
+    },
+    {
+      "target": "documentation.type_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.documentType"
+        }
+      }
+    },
+    {
+      "target": "documentation.nature_support_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.supportNatures"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "documentation.format_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.format"
+        }
+      }
+    },
+    {
+      "target": "documentation.auteur_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.authors"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "documentation.contributeur_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.contributors"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "documentation.editeur_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.publisher"
+        }
+      }
+    },
+    {
+      "target": "documentation.date_realisation_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.productionDate"
+        }
+      }
+    },
+    {
+      "target": "documentation.description_legende_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.description"
+        }
+      }
+    },
+    {
+      "target": "documentation.nombre_element_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.itemCount"
+        }
+      }
+    },
+    {
+      "target": "documentation.informations_complementaires_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.comments"
+        }
+      }
+    }
+  ]
+}
