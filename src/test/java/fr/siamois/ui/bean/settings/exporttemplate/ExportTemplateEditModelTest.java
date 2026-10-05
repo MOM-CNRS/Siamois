@@ -1,8 +1,7 @@
 package fr.siamois.ui.bean.settings.exporttemplate;
 
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptRef;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateJson;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
 import fr.siamois.ui.bean.settings.exporttemplate.ExportTemplateEditModel.EditRule;
 import org.junit.jupiter.api.Test;
 
@@ -13,22 +12,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExportTemplateEditModelTest {
 
-    private static final String CONCEPT = "{\"thesaurus\":\"th230\",\"id\":\"4290928\",\"uri\":\"https://thesaurus.mom.fr/?idt=th230&idc=4290928\"}";
+    private static final ConceptRef C = new ConceptRef("th230", "4290928", "https://thesaurus.mom.fr/?idt=th230&idc=4290928");
 
-    private static final String FULL = "{\"schemaVersion\":1,\"id\":\"u\",\"version\":\"1.0.0\",\"name\":\"Rapport\",\"fileNamePattern\":\"OA{oaCode}\","
-            + "\"sheets\":[{\"name\":\"UE\",\"omitIfEmpty\":true,\"sortBy\":[\"type\"],"
-            + "\"sources\":[{\"kind\":\"ENTITY\",\"entity\":\"RECORDING_UNIT\",\"types\":[" + CONCEPT + "]},{\"kind\":\"PROJECT\"}],"
-            + "\"columns\":["
-            + "{\"header\":\"code\",\"output\":\"NUMBER\",\"rules\":[{\"type\":\"DIRECT\",\"sources\":[0],\"field\":{\"concept\":" + CONCEPT + "},\"path\":[\"project\",\"mainLocation\"],\"list\":{\"separator\":\" & \",\"sorted\":true}},"
-            + "{\"type\":\"CONSTANT\",\"sources\":[1],\"value\":\"x\"}]},"
-            + "{\"header\":\"type\",\"output\":\"TEXT\",\"rules\":[{\"type\":\"CONCAT\",\"separator\":\"_\",\"labelSeparator\":\"=\","
-            + "\"parts\":[{\"literal\":\"US\"},{\"label\":\"n\",\"field\":{\"concept\":" + CONCEPT + "},\"path\":[\"project\"]}]}]},"
-            + "{\"header\":\"rel\",\"rules\":[{\"type\":\"DIRECT\",\"field\":{\"column\":\"relationType\"}}]}"
-            + "]}]}";
+    /** Feuille à deux sources ; la règle de « type » vaut pour toutes (liste de sources vide). */
+    private static final ExportTemplateDefinition FULL = new ExportTemplateDefinition(3, "u", "1.0.0", "Rapport", "OA{oaCode}", List.of(
+            new Sheet("UE", true,
+                    List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of(C)), new ProjectSource()),
+                    List.of("type"),
+                    List.of(
+                            new Column("code", OutputType.NUMBER, List.of(
+                                    new DirectRule(List.of(0), new ConceptField(C), List.of("project", "mainLocation"), new ListOptions(" & ", true)),
+                                    new ConstantRule(List.of(1), "x"))),
+                            new Column("type", OutputType.TEXT, List.of(
+                                    new ConcatRule(List.of(), List.of(
+                                            new ConcatPart(null, "US", null, List.of()),
+                                            new ConcatPart("n", null, new ConceptField(C), List.of("project"))), "_", "="))),
+                            new Column("rel", OutputType.TEXT, List.of(
+                                    new DirectRule(List.of(), new ColumnField("relationType"), List.of(), null)))))));
 
     @Test
     void roundTrip_isLossless() {
-        ExportTemplateDefinition original = ExportTemplateJson.parse(FULL);
+        ExportTemplateDefinition original = FULL;
 
         ExportTemplateDefinition back = ExportTemplateEditModel.from(original).toDefinition();
 
@@ -37,7 +41,7 @@ class ExportTemplateEditModelTest {
 
     @Test
     void from_exposesTextualFormValues() {
-        ExportTemplateEditModel model = ExportTemplateEditModel.from(ExportTemplateJson.parse(FULL));
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
 
         EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
         assertThat(direct.getPath()).isEqualTo("project,mainLocation");
@@ -49,7 +53,7 @@ class ExportTemplateEditModelTest {
 
     @Test
     void toDefinition_appliesFormEdits() {
-        ExportTemplateEditModel model = ExportTemplateEditModel.from(ExportTemplateJson.parse(FULL));
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
         model.setName("Renommé");
         model.setFileNamePattern("  ");
         EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
@@ -87,5 +91,15 @@ class ExportTemplateEditModelTest {
         assertThat(ExportTemplateEditModel.pathOf(null)).isEmpty();
         assertThat(ExportTemplateEditModel.pathOf("")).isEmpty();
         assertThat(ExportTemplateEditModel.pathOf("a, b ,,c")).isEqualTo(List.of("a", "b", "c"));
+    }
+
+    @Test
+    void commonCoreSourceAndNamedField_surviveTheFormRoundTrip() {
+        ExportTemplateDefinition d = new ExportTemplateDefinition(3, "u", "1", "T", null, List.of(
+                new Sheet("M", false, List.of(new TableSource("Mobilier")), List.of(),
+                        List.of(new Column("num", OutputType.TEXT, List.of(
+                                new DirectRule(List.of(0), new NameField("NumInventaire"), List.of(), null)))))));
+
+        assertThat(ExportTemplateEditModel.from(d).toDefinition()).isEqualTo(d);
     }
 }

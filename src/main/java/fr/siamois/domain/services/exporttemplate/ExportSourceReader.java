@@ -65,7 +65,9 @@ public class ExportSourceReader {
         if (source instanceof EntitySource entitySource) {
             return readEntities(entitySource, projectId);
         }
-        TechnicalSource technical = (TechnicalSource) source;
+        if (!(source instanceof TechnicalSource technical)) {
+            throw new IllegalArgumentException("Unsupported source: " + source);
+        }
         ExportTechnicalSource key = ExportTechnicalSource.ofKey(technical.key())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown technical source: " + technical.key()));
         return readTechnical(key, projectId);
@@ -171,7 +173,7 @@ public class ExportSourceReader {
                 values);
     }
 
-    private ActionUnit project(Long projectId) {
+    ActionUnit project(Long projectId) {
         return actionUnitRepository.findById(projectId)
                 .orElseThrow(() -> new NoSuchElementException("Project " + projectId + " not found"));
     }

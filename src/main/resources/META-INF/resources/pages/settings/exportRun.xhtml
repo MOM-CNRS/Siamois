@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+                xmlns:p="http://primefaces.org/ui" xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{exportRunBean.checkAccessOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <link rel="stylesheet" href="#{redirectBean.redirectUrlToResource('settings.css', 'css')}"/>
+        <h:outputStylesheet library="css" name="export-templates.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main>
+            <div class="xt">
+                <form:csrfform formId="exportRunForm">
+                    <div class="xt-topbar">
+                        <div class="xt-crumb">
+                            <span>#{langBean.msg('exportTemplates.crumb.settings')}</span>
+                            <i class="bi bi-chevron-right xt-sep"/>
+                            <p:commandLink action="#{exportRunBean.backToList()}" immediate="true" process="@this">
+                                #{langBean.msg('nav.exportTemplates')}
+                            </p:commandLink>
+                            <i class="bi bi-chevron-right xt-sep"/>
+                            <span class="xt-current">#{langBean.msg('exportTemplates.run.title')}</span>
+                        </div>
+                    </div>
+
+                    <div class="xt-body">
+                        <div class="xt-inner" style="max-width: 760px">
+                            <h1 class="xt-title" style="font-size: 18px">#{langBean.msg('exportTemplates.run.title')}</h1>
+                            <p class="xt-desc" style="margin-bottom: 22px">#{langBean.msg('exportTemplates.run.description')}</p>
+
+                            <div class="xt-panel" style="padding: 18px">
+                                <div class="xt-row" style="align-items: flex-start">
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.run.project')}</span>
+                                        <p:selectOneMenu value="#{exportRunBean.projectId}" style="width: 100%" filter="true" filterMatchMode="contains">
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.choose')}" itemValue="" noSelectionOption="true"/>
+                                            <f:selectItems value="#{exportRunBean.projectItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" listener="#{exportRunBean.onSelectionChange()}" process="@this" update="@form"/>
+                                        </p:selectOneMenu>
+                                    </div>
+                                    <div class="xt-field">
+                                        <span class="xt-label">#{langBean.msg('exportTemplates.run.template')}</span>
+                                        <p:selectOneMenu value="#{exportRunBean.templateId}" style="width: 100%">
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.choose')}" itemValue="" noSelectionOption="true"/>
+                                            <f:selectItems value="#{exportRunBean.templateItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                            <p:ajax event="change" listener="#{exportRunBean.onSelectionChange()}" process="@this" update="@form"/>
+                                        </p:selectOneMenu>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h:panelGroup rendered="#{exportRunBean.done}" layout="block" styleClass="xt-panel">
+                                <div class="xt-panel-head">
+                                    <span class="xt-panel-title">#{langBean.msg('exportTemplates.run.preview')}</span>
+                                    <span class="xt-panel-count">#{langBean.msg('exportTemplates.run.totalRows', exportRunBean.totalRows)}</span>
+                                </div>
+                                <ui:repeat value="#{exportRunBean.sheetLines}" var="line">
+                                    <div class="xt-sheet-row">
+                                        <i class="bi bi-check-lg" style="color: var(--primary)"/>
+                                        <span class="name">#{line.name()}</span>
+                                        <span class="num">#{langBean.msg('exportTemplates.run.rows', line.rows())}</span>
+                                    </div>
+                                </ui:repeat>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{not exportRunBean.done}" layout="block">
+                                <p:commandButton value="#{langBean.msg('exportTemplates.run.start')}" icon="bi bi-play-fill"
+                                                 styleClass="xt-btn-primary"
+                                                 disabled="#{not exportRunBean.ready}"
+                                                 action="#{exportRunBean.run()}"
+                                                 process="@form" update="@form"/>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{exportRunBean.done}" layout="block" styleClass="xt-done">
+                                <div class="xt-done-main">
+                                    <span class="xt-done-icon"><i class="bi bi-check-lg"/></span>
+                                    <div>
+                                        <div class="xt-done-title">#{langBean.msg('exportTemplates.run.done')}</div>
+                                        <div class="xt-desc">
+                                            #{langBean.msg('exportTemplates.run.summary', exportRunBean.totalRows, exportRunBean.sheetLines.size(), exportRunBean.warningMessages.size())}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p:commandButton value="#{langBean.msg('exportTemplates.run.download')}" icon="bi bi-download"
+                                                 styleClass="xt-btn-primary" ajax="false">
+                                    <p:fileDownload value="#{exportRunBean.file}"/>
+                                </p:commandButton>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{exportRunBean.done and not empty exportRunBean.warningMessages}" layout="block" styleClass="xt-warn" style="margin-top: 14px">
+                                <strong>#{langBean.msg('exportTemplates.run.warnings')}</strong>
+                                <ul style="margin: 6px 0 0 18px; padding: 0">
+                                    <ui:repeat value="#{exportRunBean.warningMessages}" var="w">
+                                        <li>#{w}</li>
+                                    </ui:repeat>
+                                </ul>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+                </form:csrfform>
+            </div>
+        </main>
+    </ui:define>
+
+</ui:composition>

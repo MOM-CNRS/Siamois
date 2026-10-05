@@ -24,11 +24,14 @@ public class ExportTemplateEditModel implements Serializable {
     public static final String KIND_ENTITY = "ENTITY";
     public static final String KIND_PROJECT = "PROJECT";
     public static final String KIND_TECHNICAL = "TECHNICAL";
+    /** Source du cœur commun, conservée telle quelle : l'éditeur ne la crée pas. */
+    public static final String KIND_TABLE = "TABLE";
     public static final String RULE_DIRECT = "DIRECT";
     public static final String RULE_CONSTANT = "CONSTANT";
     public static final String RULE_CONCAT = "CONCAT";
     public static final String FIELD_CONCEPT = "CONCEPT";
     public static final String FIELD_COLUMN = "COLUMN";
+    public static final String FIELD_NAME = "NAME";
 
     private static final String KEY_SEPARATOR = "|";
     private static final String DEFAULT_LIST_SEPARATOR = " & ";
@@ -57,6 +60,7 @@ public class ExportTemplateEditModel implements Serializable {
         private String kind = KIND_PROJECT;
         private String entity;
         private String technicalKey;
+        private String tableName;
         /** Types (concepts) sous forme de clés {@code "thesaurus|id|uri"}. */
         private List<String> typeKeys = new ArrayList<>();
     }
@@ -75,6 +79,30 @@ public class ExportTemplateEditModel implements Serializable {
     public static class EditField implements Serializable {
         private String kind = FIELD_CONCEPT;
         private String key;
+        /** Propriété imbriquée d'une mesure ({@code unit}, {@code comment}) ; vide = la valeur. */
+        private String property;
+    }
+
+
+    /** Séparateur des trois morceaux d'un choix de champ : chemin, clé du champ, propriété de mesure. */
+    public static final String CHOICE_SEPARATOR = "::";
+
+    /** Choix de champ d'une liste déroulante : {@code chemin::clé::propriété} (chemin = navigations séparées par des virgules). */
+    public static String choiceOf(String path, EditField field) {
+        if (field == null || field.getKey() == null || field.getKey().isBlank()) {
+            return "";
+        }
+        return (path == null ? "" : path) + CHOICE_SEPARATOR + field.getKey() + CHOICE_SEPARATOR
+                + (field.getProperty() == null ? "" : field.getProperty());
+    }
+
+    /** @return {chemin, clé, propriété} d'un choix ; trois chaînes vides pour un choix vide */
+    public static String[] splitChoice(String choice) {
+        if (choice == null || choice.isBlank()) {
+            return new String[]{"", "", ""};
+        }
+        String[] parts = choice.split(CHOICE_SEPARATOR, -1);
+        return parts.length == 3 ? parts : new String[]{"", "", ""};
     }
 
     @Getter
@@ -93,6 +121,17 @@ public class ExportTemplateEditModel implements Serializable {
         private List<EditPart> parts = new ArrayList<>();
         private String separator = "";
         private String labelSeparator = DEFAULT_LABEL_SEPARATOR;
+
+        public String getFieldChoice() {
+            return choiceOf(path, field);
+        }
+
+        public void setFieldChoice(String choice) {
+            String[] p = splitChoice(choice);
+            path = p[0];
+            field.setKey(p[1].isEmpty() ? null : p[1]);
+            field.setProperty(p[2].isEmpty() ? null : p[2]);
+        }
     }
 
     @Getter
@@ -105,6 +144,16 @@ public class ExportTemplateEditModel implements Serializable {
         private EditField field = new EditField();
         private String path = "";
 
+        public String getFieldChoice() {
+            return choiceOf(path, field);
+        }
+
+        public void setFieldChoice(String choice) {
+            String[] p = splitChoice(choice);
+            path = p[0];
+            field.setKey(p[1].isEmpty() ? null : p[1]);
+            field.setProperty(p[2].isEmpty() ? null : p[2]);
+        }
     }
 
     // ------------------------------------------------------------------ définition -> formulaire
@@ -139,6 +188,9 @@ public class ExportTemplateEditModel implements Serializable {
         } else if (source instanceof TechnicalSource s) {
             e.kind = KIND_TECHNICAL;
             e.technicalKey = s.key();
+        } else if (source instanceof TableSource s) {
+            e.kind = KIND_TABLE;
+            e.tableName = s.name();
         } else {
             e.kind = KIND_PROJECT;
         }
@@ -192,6 +244,10 @@ public class ExportTemplateEditModel implements Serializable {
         if (f instanceof ConceptField c) {
             e.kind = FIELD_CONCEPT;
             e.key = keyOf(c.concept());
+            e.property = c.property();
+        } else if (f instanceof NameField n) {
+            e.kind = FIELD_NAME;
+            e.key = n.name();
         } else {
             e.kind = FIELD_COLUMN;
             e.key = ((ColumnField) f).name();
@@ -204,6 +260,11 @@ public class ExportTemplateEditModel implements Serializable {
     public ExportTemplateDefinition toDefinition() {
         return new ExportTemplateDefinition(schemaVersion, id, version, name, blankToNull(fileNamePattern),
                 sheets.stream().map(ExportTemplateEditModel::sheetTo).toList());
+    }
+
+    /** Copie profonde d'une feuille (par un aller-retour par la définition). */
+    public static EditSheet copyOf(EditSheet sheet) {
+        return sheetFrom(sheetTo(sheet));
     }
 
     private static Sheet sheetTo(EditSheet s) {
@@ -221,6 +282,7 @@ public class ExportTemplateEditModel implements Serializable {
                         s.typeKeys.stream().map(ExportTemplateEditModel::refOf).toList());
             }
             case KIND_TECHNICAL -> new TechnicalSource(s.technicalKey);
+            case KIND_TABLE -> new TableSource(s.tableName);
             default -> new ProjectSource();
         };
     }
@@ -252,7 +314,10 @@ public class ExportTemplateEditModel implements Serializable {
         if (FIELD_COLUMN.equals(f.kind)) {
             return new ColumnField(f.key);
         }
-        return new ConceptField(refOf(f.key));
+        if (FIELD_NAME.equals(f.kind)) {
+            return new NameField(f.key);
+        }
+        return new ConceptField(refOf(f.key), f.property == null || f.property.isBlank() ? null : f.property);
     }
 
     // ------------------------------------------------------------------ copie
@@ -286,6 +351,7 @@ public class ExportTemplateEditModel implements Serializable {
         EditField c = new EditField();
         c.setKind(f.getKind());
         c.setKey(f.getKey());
+        c.setProperty(f.getProperty());
         return c;
     }
 

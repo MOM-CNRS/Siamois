@@ -10,10 +10,12 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Constant
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.DirectRule;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntitySource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.FieldRef;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.NameField;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ProjectSource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Rule;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Sheet;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TableSource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
 
 import java.util.ArrayList;
@@ -44,6 +46,9 @@ public final class ExportTemplateChecker {
     private static void checkSheet(Sheet sheet, List<String> problems) {
         for (int i = 0; i < sheet.sources().size(); i++) {
             Source source = sheet.sources().get(i);
+            if (source instanceof TableSource t) {
+                problems.add(sheet.name() + " / source " + (i + 1) + " : table source '" + t.name() + "' is not supported by Siamois");
+            }
             if (source instanceof TechnicalSource t && ExportTechnicalSource.ofKey(t.key()).isEmpty()) {
                 problems.add(sheet.name() + " / source " + (i + 1) + " : unknown technical source '" + t.key() + "'");
             }
@@ -84,8 +89,12 @@ public final class ExportTemplateChecker {
     private static void checkField(FieldRef field, List<String> path, Source source, String where, List<String> problems) {
         Optional<ExportTechnicalSource> technical = source instanceof TechnicalSource t
                 ? ExportTechnicalSource.ofKey(t.key()) : Optional.empty();
-        if (source instanceof TechnicalSource && technical.isEmpty()) {
+        if (source instanceof TableSource || (source instanceof TechnicalSource && technical.isEmpty())) {
             return; // déjà signalé au niveau de la source
+        }
+        if (field instanceof NameField named) {
+            problems.add(where + " : the named field '" + named.name() + "' is not supported by Siamois (use a concept)");
+            return;
         }
         if (field instanceof ColumnField column) {
             checkColumnField(column, path, technical, where, problems);

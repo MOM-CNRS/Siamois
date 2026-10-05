@@ -90,9 +90,11 @@ class ExportTemplateServiceTest {
     }
 
     private static String sampleJson(String uuid, String name) {
-        return "{\"schemaVersion\":1,\"id\":\"" + uuid + "\",\"version\":\"1.0.0\",\"name\":\"" + name + "\","
-                + "\"sheets\":[{\"name\":\"OA\",\"sources\":[{\"kind\":\"PROJECT\"}],"
-                + "\"columns\":[{\"header\":\"c\",\"rules\":[{\"type\":\"CONSTANT\",\"value\":\"x\"}]}]}]}";
+        return "{\"version\":3,\"id\":\"" + uuid + "\",\"templateVersion\":\"1.0.0\",\"name\":\"" + name + "\","
+                + "\"sources\":{\"OA_1\":{\"kind\":\"PROJECT\"}},"
+                + "\"root_connections\":[{\"target_root\":\"OA\",\"source_topterm\":\"OA_1\"}],"
+                + "\"schema_target\":{\"OA.c\":{\"type\":\"text\"}},"
+                + "\"fields\":[{\"target\":\"OA.c\",\"source\":\"OA_1\",\"constant\":\"x\"}]}";
     }
 
     @Test
@@ -147,7 +149,7 @@ class ExportTemplateServiceTest {
     void importJson_invalidJson_isRejectedBeforeAnyWrite() {
         allowManage();
 
-        assertThatThrownBy(() -> service.importJson(userInfo, "{\"schemaVersion\":1}"))
+        assertThatThrownBy(() -> service.importJson(userInfo, "{\"version\":3}"))
                 .isInstanceOf(InvalidExportTemplateException.class);
         verify(repository, never()).save(any());
     }

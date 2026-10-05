@@ -72,7 +72,11 @@ public class ExportFieldResolver {
     }
 
     /** Un champ qu'une colonne peut lire : son libellé (clé de message pour un champ système) et son concept. */
-    public record FieldOption(String label, boolean system, ConceptRef concept) {
+    public record FieldOption(String label, boolean system, ConceptRef concept, boolean measurement) {
+
+        public FieldOption(String label, boolean system, ConceptRef concept) {
+            this(label, system, concept, false);
+        }
     }
 
     /**
@@ -105,7 +109,8 @@ public class ExportFieldResolver {
         }
         ConceptRef ref = new ConceptRef(c.getVocabulary().getExternalVocabularyId(), c.getExternalId(), c.getUri());
         String key = (ref.thesaurusId() + "|" + ref.conceptId()).toLowerCase(java.util.Locale.ROOT);
-        options.putIfAbsent(key, new FieldOption(field.getLabel(), system, ref));
+        options.putIfAbsent(key, new FieldOption(field.getLabel(), system, ref,
+                field instanceof fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement));
     }
 
     /** Champs système lisibles pour une entité. */

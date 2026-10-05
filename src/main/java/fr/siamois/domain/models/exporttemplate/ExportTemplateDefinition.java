@@ -20,8 +20,8 @@ public record ExportTemplateDefinition(
         @Nullable String fileNamePattern,
         List<Sheet> sheets) {
 
-    /** Version courante de la grammaire JSON. */
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    /** Version courante de la grammaire JSON (mapping v3, partagée avec ShareQ3). */
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     /** Une feuille du classeur. {@code sortBy} liste des en-têtes de colonnes de la feuille. */
     public record Sheet(
@@ -46,7 +46,7 @@ public record ExportTemplateDefinition(
 
     // ------------------------------------------------------------------ sources
 
-    public sealed interface Source permits EntitySource, ProjectSource, TechnicalSource {
+    public sealed interface Source permits EntitySource, ProjectSource, TechnicalSource, TableSource {
     }
 
     /** Entités d'un type donné du projet, filtrées par types (concepts) ; liste vide = tous les types. */
@@ -61,17 +61,39 @@ public record ExportTemplateDefinition(
     public record TechnicalSource(String key) implements Source {
     }
 
-    // ------------------------------------------------------------------ champs
-
-    public sealed interface FieldRef permits ConceptField, ColumnField {
+    /**
+     * Table nommée d'un schéma de fichier : source du cœur commun du langage (ShareQ3). Siamois sait la
+     * lire et l'écrire sans l'exécuter : {@code ExportTemplateChecker} la signale comme non prise en charge.
+     */
+    public record TableSource(String name) implements Source {
     }
 
-    /** Champ désigné par son concept (champ système ou additionnel, résolu pour le projet). */
-    public record ConceptField(ConceptRef concept) implements FieldRef {
+    // ------------------------------------------------------------------ champs
+
+    public sealed interface FieldRef permits ConceptField, ColumnField, NameField {
+    }
+
+    /**
+     * Champ désigné par son concept (champ système ou additionnel, résolu pour le projet).
+     * {@code property} choisit une propriété imbriquée d'une mesure ({@code unit}, {@code comment}) ;
+     * vide = la valeur du champ.
+     */
+    public record ConceptField(ConceptRef concept, @Nullable String property) implements FieldRef {
+
+        /** Propriétés imbriquées d'une mesure, en plus de sa valeur. */
+        public static final List<String> MEASUREMENT_PROPERTIES = List.of("unit", "comment");
+
+        public ConceptField(ConceptRef concept) {
+            this(concept, null);
+        }
     }
 
     /** Colonne nommée d'une source technique (par exemple le type de relation). */
     public record ColumnField(String name) implements FieldRef {
+    }
+
+    /** Champ désigné par son nom dans un schéma (cœur commun, ShareQ3) ; non pris en charge par Siamois. */
+    public record NameField(String name) implements FieldRef {
     }
 
     // ------------------------------------------------------------------ règles

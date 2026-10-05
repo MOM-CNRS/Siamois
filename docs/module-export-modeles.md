@@ -85,7 +85,7 @@ Un modèle est enregistré en base en **deux parties** :
 
 - **Colonnes locales** (non partagées) : identifiant, institution, projet de référence, dates, auteur,
   statut. On les filtre et on les liste, elles ne vont pas dans le JSON.
-- **JSON partageable** : uniquement la structure du modèle : nom, `schemaVersion`, identifiant global et
+- **JSON partageable** : uniquement la structure du modèle : nom, version du langage (`version`, voir [mapping-description-langage.md](mapping-description-langage.md)), identifiant global et
   version du modèle, patron du nom de fichier, feuilles (nom, source, granularité, tri,
   « omettre si vide »), colonnes (en-tête, type de sortie, règles).
 
@@ -115,9 +115,13 @@ Un JSON qui vient d'une instance centrale est une donnée non fiable.
 - **Aucun SQL, aucun nom de table ou de colonne, aucune expression libre**. Les tables techniques sont
   une liste fermée de sources enregistrées dans le code (par exemple `recording_unit_hierarchy`), chacune
   exposant ses colonnes nommées (parent, enfant) et ses jointures vers les entités.
-- Le JSON est validé (schéma, `schemaVersion`) avant d'être enregistré.
+- Le JSON est validé (grammaire v3, `version`) avant d'être enregistré.
 
 ## 5. Grammaire du chemin de jointure (v1)
+
+> Dans le JSON (v3), un chemin n'est plus une liste de navigations : c'est une chaîne de sources jointes
+> (`join`), voir [mapping-description-langage.md](mapping-description-langage.md). En mémoire et dans
+> l'éditeur, il reste une liste de navigations.
 
 Un chemin part de la ligne de la feuille et suit des relations pour atteindre un champ
 (`projet.code_oa`, `ue.parent.numero`).
@@ -155,7 +159,17 @@ Les avertissements de résolution sont affichés avec le fichier produit.
   schéma, puis livré comme modèle amorcé.
 - **Application à un autre projet** : les types et champs sont configurés par projet. Un champ absent
   dans le projet cible produit une cellule vide et un avertissement.
-- **Feuilles 6 à 9 du référentiel** : à lire avant de figer le schéma de sources.
+- **Modèle national livré** (`src/main/resources/export-templates/rapport-operation-national.json`,
+  grammaire v3) : 6 feuilles sur 9 (`OA`, `situation`, `UE`, `relation`, `mobilier`, `documentation`),
+  en-têtes et ordre du référentiel. Les colonnes sans champ Siamois équivalent existent mais sans
+  mapping (à compléter dans l'éditeur). Les valeurs ne sont pas converties vers les vocabulaires
+  imposés par le référentiel (hors périmètre).
+  - `VAB`, `prelevement`, `traitement` ne sont pas livrées : Siamois n'a pas d'entité correspondante,
+    donc pas de source possible (une feuille existe par ses sources). À ajouter dans l'éditeur quand
+    ces entités existeront ; leurs colonnes sont dans le référentiel (chapitre IV, feuilles 6 à 8).
+  - `situation` : lignes = lieux (sans filtre de type) ; `code_OA_NAT`, commune, INSEE, lieu-dit et
+    adresse ne sont pas mappés (un lieu n'a pas de lien vers le projet).
+  - Le nom de fichier utilise `{dateCompact}` (aaaammjj) ; les espaces deviennent `_`.
 
 ## 8. Ordre de livraison envisagé
 

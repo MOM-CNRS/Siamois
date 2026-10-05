@@ -35,7 +35,19 @@
                                     <h1 class="xt-title">#{langBean.msg('nav.exportTemplates')}</h1>
                                     <p class="xt-desc">#{langBean.msg('exportTemplates.description')}</p>
                                 </div>
+                                <h:panelGroup layout="block" styleClass="xt-actions">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.run.title')}"
+                                                     icon="bi bi-play-fill"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportRunBean.open(null)}"
+                                                     process="@this"/>
+                                </h:panelGroup>
                                 <h:panelGroup rendered="#{exportTemplatesSettingsBean.canManage()}" layout="block" styleClass="xt-actions">
+                                    <p:commandButton value="#{langBean.msg('exportTemplates.addNational')}"
+                                                     icon="bi bi-flag"
+                                                     styleClass="xt-btn-flat"
+                                                     action="#{exportTemplatesSettingsBean.addNationalTemplate()}"
+                                                     process="@this" update="@form"/>
                                     <p:commandButton value="#{langBean.msg('exportTemplates.import')}"
                                                      icon="bi bi-upload"
                                                      styleClass="xt-btn-flat"
@@ -94,6 +106,9 @@
                                                                process="@this"
                                                                rendered="#{exportTemplatesSettingsBean.canManage()}">
                                                     <i class="bi bi-pencil"/> #{langBean.msg('exportTemplates.menu.edit')}
+                                                </p:commandLink>
+                                                <p:commandLink action="#{exportRunBean.open(template.id())}" process="@this">
+                                                    <i class="bi bi-play-fill"/> #{langBean.msg('exportTemplates.run.start')}
                                                 </p:commandLink>
                                                 <p:commandLink ajax="false">
                                                     <p:fileDownload value="#{exportTemplatesSettingsBean.downloadJson(template)}"/>

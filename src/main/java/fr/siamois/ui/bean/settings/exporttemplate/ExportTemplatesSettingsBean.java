@@ -171,6 +171,19 @@ public class ExportTemplatesSettingsBean implements Serializable {
         init();
     }
 
+    /** Ajoute à l'institution le modèle national livré avec l'application (référentiel du rapport d'opération). */
+    public void addNationalTemplate() {
+        try {
+            ExportTemplateDTO added = exportTemplateService.createFromBuiltIn(userInfo(),
+                    ExportTemplateService.BuiltInTemplate.NATIONAL_REPORT);
+            MessageUtils.displayInfoMessage(langBean, "exportTemplates.imported", added.name());
+        } catch (ForbiddenOperationException e) {
+            MessageUtils.displayErrorMessage(langBean, "common.error.forbidden");
+            return;
+        }
+        init();
+    }
+
     // ------------------------------------------------------------------ actions de ligne
 
     public void duplicate(ExportTemplateDTO template) {

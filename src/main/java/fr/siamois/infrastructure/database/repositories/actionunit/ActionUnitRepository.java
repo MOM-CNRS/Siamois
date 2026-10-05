@@ -65,6 +65,19 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
 
     Set<ActionUnit> findByCreatedByInstitutionId(Long id);
 
+    boolean existsByIdAndCreatedByInstitutionId(Long id, Long institutionId);
+
+    /** Identité d'un projet, sans charger l'entité ni ses relations (listes de choix). */
+    interface Summary {
+        Long getId();
+
+        String getFullIdentifier();
+
+        String getName();
+    }
+
+    List<Summary> findSummariesByCreatedByInstitutionId(Long institutionId);
+
     Optional<ActionUnit> findByNameAndCreatedByInstitutionId(String name, Long institutionId);
 
     Optional<ActionUnit> findByIdentifierAndCreatedByInstitutionId(String identifier, Long institutionId);
