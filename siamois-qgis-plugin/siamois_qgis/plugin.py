@@ -12,7 +12,7 @@ from qgis.PyQt.QtWidgets import QAction, QApplication, QFileDialog, QMessageBox,
 from ._sdk import siamois_sdk  # noqa: F401
 from siamois_sdk import SiamoisClient
 from siamois_sdk.flatten import ColumnSpec
-from .core import loader, qgis_layers as ql, syncplan
+from .core import loader, log, qgis_layers as ql, syncplan
 from .core.store import Store
 from .ui.dialogs import LoginDialog, OpenProjectDialog, ReportDialog
 
@@ -38,10 +38,13 @@ class SiamoisPlugin:
         self.actions: List[QAction] = []
         self._tasks: List[QgsTask] = []
         self.menu = TITLE
+        self._log_handler = None
 
     # ------------------------------------------------------------------ cycle de vie
 
     def initGui(self):
+        self._log_handler = log.attach_sdk_logger()
+        log.info("Plugin SIAMOIS chargé")
         def add(text, slot):
             a = QAction(text, self.iface.mainWindow())
             a.triggered.connect(slot)
@@ -55,6 +58,8 @@ class SiamoisPlugin:
         add("Synchroniser avec SIAMOIS", self.sync)
 
     def unload(self):
+        if self._log_handler is not None:
+            log.detach_sdk_logger(self._log_handler)
         for a in self.actions:
             self.iface.removePluginMenu(self.menu, a)
             self.iface.removeToolBarIcon(a)
@@ -117,8 +122,12 @@ class SiamoisPlugin:
         if not self._confirm_overwrite(db):
             return
 
+        log.info(f"Chargement du projet {project_id} (organisation {org_id}) vers {gpkg}")
+
         def work(task):
             def progress(label, done, total):
+                if total and done in (0, total):
+                    log.info(f"Chargement : {label} {done}/{total}")
                 if total:
                     task.setProgress(100.0 * done / total)
                 return not task.isCanceled()
@@ -148,6 +157,7 @@ class SiamoisPlugin:
                 self._msg("Chargement annulé.", Qgis.Warning)
             else:
                 text = getattr(err, "user_message", str(err))
+                log.error("Échec du chargement du projet", err)
                 self._msg(f"Échec du chargement : {text}", Qgis.Critical, 0)
             return
         try:
@@ -175,7 +185,9 @@ class SiamoisPlugin:
                 layer.afterCommitChanges.connect(self._on_commit)
             store.close()
         except Exception as exc:  # noqa: BLE001 - tout échec d'écriture doit être montré
-            self._msg(f"Échec de la création des couches : {exc}", Qgis.Critical, 0)
+            log.error(f"Échec de la création des couches ({gpkg})", exc)
+            self._msg(f"Échec de la création des couches : {exc} (détails : Messages du journal ▸ SIAMOIS)",
+                      Qgis.Critical, 0)
             return
         finally:
             QApplication.restoreOverrideCursor()
@@ -315,8 +327,10 @@ class SiamoisPlugin:
 
     def _synced(self, results, err):
         if err is not None or results is None:
+            log.error("Échec de la synchronisation", err)
             self._msg(f"Échec de la synchronisation : {getattr(err, 'user_message', err)}", Qgis.Critical, 0)
             return
+        log.info("Synchronisation : " + ", ".join(f"{r.change.label}={r.status}" for _, r in results))
         ok = errors = 0
         conflicts: List[Tuple[_Ctx, syncplan.PushResult]] = []
         report: List[Dict] = []

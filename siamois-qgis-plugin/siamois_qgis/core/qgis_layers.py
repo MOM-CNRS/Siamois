@@ -20,6 +20,7 @@ from . import _sdk_import  # noqa: F401
 from siamois_sdk.flatten import (
     CHOICE, DATETIME, DECIMAL, INTEGER, MEASUREMENT, ColumnSpec, Vocabularies,
 )
+from . import log
 from .geo import geojson_to_wkt, with_srid
 from .loader import LayerData, ProjectBundle, VOCAB_STATUS, status_vocabulary
 
@@ -95,7 +96,7 @@ def _memory_layer(ld: LayerData) -> QgsVectorLayer:
         f = QgsFeature(mem.fields())
         f.setAttributes([r.id, r.revision] + [_clean(r.cells.get(s.name)) for s in ld.specs])
         if g is not None and gtype != "None":
-                    if QgsWkbTypes.isMultiType(mem.wkbType()) and not g.isMultipart():
+            if QgsWkbTypes.isMultiType(mem.wkbType()) and not g.isMultipart():
                 g.convertToMultiType()
             f.setGeometry(g)
         feats.append(f)
@@ -117,6 +118,8 @@ def write_geopackage(bundle: ProjectBundle, gpkg_path: str) -> Dict[str, Dict[st
         opts.actionOnExistingFile = (QgsVectorFileWriter.CreateOrOverwriteFile if i == 0
                                      else QgsVectorFileWriter.CreateOrOverwriteLayer)
         res = QgsVectorFileWriter.writeAsVectorFormatV3(mem, gpkg_path, QgsCoordinateTransformContext(), opts)
+        log.info(f"GPKG {ld.name}: {len(ld.rows)} ligne(s), type {QgsWkbTypes.displayString(mem.wkbType())}, "
+                 f"srid {ld.srid}, résultat {res}")
         if res[0] != QgsVectorFileWriter.NoError:
             raise RuntimeError(f"Écriture GeoPackage impossible ({ld.name}, code {res[0]}, "
                                f"type {QgsWkbTypes.displayString(mem.wkbType())}) : {res[1] or 'aucun détail'}")

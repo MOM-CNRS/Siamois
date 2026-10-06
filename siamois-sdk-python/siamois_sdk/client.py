@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
@@ -25,6 +26,8 @@ from .models import (
     User,
     page_from_json,
 )
+
+log = logging.getLogger("siamois_sdk")
 
 API_PREFIX = "/api/v1"
 MAX_LIMIT = 200  # plafond serveur
@@ -70,7 +73,9 @@ class SiamoisClient:
             resp = self._session.request(method, self._url(path), params=params, json=json,
                                          headers=headers, timeout=self.timeout)
         except requests.RequestException as exc:  # timeout, DNS, connexion refusée…
+            log.warning("%s %s -> erreur réseau : %s", method, path, exc)
             raise NetworkError(str(exc)) from exc
+        log.debug("%s %s %s -> %s", method, path, params or "", resp.status_code)
         body: Any = None
         if resp.content:
             try:
@@ -79,6 +84,7 @@ class SiamoisClient:
                 if resp.status_code < 400:
                     raise InvalidResponseError("Réponse non JSON", resp.status_code)
         if resp.status_code >= 400:
+            log.warning("%s %s -> HTTP %s : %s", method, path, resp.status_code, str(body)[:500])
             raise error_from_response(resp.status_code, body)
         return body, resp.headers
 
