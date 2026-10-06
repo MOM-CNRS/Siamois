@@ -14,6 +14,7 @@ from .errors import (
     SiamoisError,
     error_from_response,
 )
+from .flatten import Vocabulary
 from .forms import FormDefinition, parse_form, parse_form_bundle
 from .models import (
     Find,
@@ -167,9 +168,11 @@ class SiamoisClient:
     # ------------------------------------------------------------------ unités d'enregistrement
 
     def recording_units(self, project_id: Any, *, search: Optional[str] = None, sort: Optional[str] = None,
-                        fields: Optional[str] = "all", offset: int = 0, limit: int = 100) -> Page[RecordingUnit]:
+                        fields: Optional[str] = "all", values_limit: int = 200, offset: int = 0,
+                        limit: int = 100) -> Page[RecordingUnit]:
         return self._get_page(f"/projects/{project_id}/recording-units", RecordingUnit.from_json,
-                              search=search, sort=sort, fields=fields, offset=offset, limit=limit)
+                              search=search, sort=sort, fields=fields, valuesLimit=values_limit,
+                              offset=offset, limit=limit)
 
     def recording_unit(self, ru_id: Any) -> RecordingUnit:
         return RecordingUnit.from_json(self._data(self._get(f"/recording-units/{ru_id}")))
@@ -201,9 +204,11 @@ class SiamoisClient:
     # ------------------------------------------------------------------ mobilier
 
     def finds(self, project_id: Any, *, search: Optional[str] = None, sort: Optional[str] = None,
-              fields: Optional[str] = "all", offset: int = 0, limit: int = 100) -> Page[Find]:
+              fields: Optional[str] = "all", values_limit: int = 200, offset: int = 0,
+              limit: int = 100) -> Page[Find]:
         return self._get_page(f"/projects/{project_id}/mobiliers", Find.from_json,
-                              search=search, sort=sort, fields=fields, offset=offset, limit=limit)
+                              search=search, sort=sort, fields=fields, valuesLimit=values_limit,
+                              offset=offset, limit=limit)
 
     def find(self, find_id: Any) -> Find:
         return Find.from_json(self._data(self._get(f"/finds/{find_id}")))
@@ -229,6 +234,18 @@ class SiamoisClient:
         """Valeurs possibles d'un champ à vocabulaire (``FieldDef.field_code``)."""
         body = self._get(f"/projects/{project_id}/concepts", fieldCode=field_code, q=q, offset=offset, limit=limit)
         return list((body or {}).get("data") or [])
+
+    def vocabulary(self, project_id: Any, field_code: str) -> Vocabulary:
+        """Vocabulaire complet (toutes les pages) d'un code, pour libellés <-> identifiants."""
+        concepts: List[Dict[str, Any]] = []
+        offset = 0
+        while True:
+            chunk = self.concepts(project_id, field_code, offset=offset, limit=MAX_LIMIT)
+            concepts.extend(chunk)
+            if len(chunk) < MAX_LIMIT:
+                break
+            offset += len(chunk)
+        return Vocabulary(concepts)
 
     # ------------------------------------------------------------------ interne
 
