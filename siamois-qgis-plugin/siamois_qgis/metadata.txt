@@ -1,0 +1,11 @@
+[general]
+name=SIAMOIS
+qgisMinimumVersion=3.22
+description=Charger et synchroniser les données d'un projet SIAMOIS (unités d'enregistrement, mobilier)
+version=0.1.0
+author=CNRS – MOM / SIAMOIS
+about=Se connecter à SIAMOIS, ouvrir un projet dans un GeoPackage local (une couche par table : projet, UE, mobilier), éditer avec QGIS ou la fiche, puis synchroniser.
+experimental=True
+repository=https://github.com/MOM-CNRS/Siamois
+tracker=https://github.com/MOM-CNRS/Siamois/issues
+tags=siamois,archéologie,api

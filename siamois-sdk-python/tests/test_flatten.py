@@ -88,6 +88,11 @@ class CellsTests(unittest.TestCase):
         self.assertEqual(d.answers, {})
         self.assertTrue(d.ok)
 
+    def test_numeric_equality_not_a_change(self):
+        base = row_to_cells(self.specs, self.answers, VOCABS)
+        d = cells_to_patch(self.specs, {**base, "Année": 2020}, {**base, "Année": 2020.0}, VOCABS)
+        self.assertEqual(d.answers, {})
+
     def test_label_resolution_to_ids(self):
         base = row_to_cells(self.specs, self.answers, VOCABS)
         cur = {**base, "Type": " fosse ", "Matériaux": "Verre; Os", "Poids": "13,5", "Année": "2020",

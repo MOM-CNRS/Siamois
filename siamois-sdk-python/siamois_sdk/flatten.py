@@ -134,6 +134,8 @@ class Vocabulary:
     """Concepts d'un code de vocabulaire : id <-> libellé, résolution normalisée."""
 
     def __init__(self, concepts: Iterable[Dict[str, Any]] = ()):
+        concepts = list(concepts)
+        self.concepts = concepts  # brut, pour persistance
         self.labels: Dict[str, str] = {}
         self._by_norm: Dict[str, List[str]] = {}
         for c in concepts:
@@ -238,7 +240,12 @@ def _blank(v: Any) -> bool:
 def _same(a: Any, b: Any) -> bool:
     if _blank(a) and _blank(b):
         return True
-    return str(a).strip() == str(b).strip()
+    if str(a).strip() == str(b).strip():
+        return True
+    try:  # 12 == 12.0 (un décimal relu d'une colonne Double)
+        return not isinstance(a, bool) and float(a) == float(b)
+    except (TypeError, ValueError):
+        return False
 
 
 def _parse_number(spec: ColumnSpec, v: Any) -> Any:
