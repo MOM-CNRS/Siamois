@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from qgis.core import (
     NULL, QgsAttributeEditorContainer, QgsAttributeEditorField, QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext, QgsEditFormConfig, QgsEditorWidgetSetup, QgsFeature, QgsField,
-    QgsFieldConstraints, QgsGeometry, QgsLayerTreeGroup, QgsProject, QgsVectorFileWriter, QgsVectorLayer,
+    QgsFieldConstraints, QgsGeometry, QgsLayerTreeGroup, QgsProject, QgsVectorFileWriter, QgsVectorLayer, QgsWkbTypes,
 )
 from qgis.PyQt.QtCore import QVariant
 
@@ -57,22 +57,47 @@ def _clean(v: Any) -> Any:
 # ------------------------------------------------------------------ écriture
 
 
+def _layer_geometry_type(geoms: List[QgsGeometry]) -> str:
+    """Type de géométrie de la couche : « None » (sans géométrie), un type unique, sa version Multi, ou « Geometry »."""
+    kinds = set()
+    for g in geoms:
+        t = g.wkbType()
+        flat = QgsWkbTypes.flatType(t)
+        kinds.add((QgsWkbTypes.singleType(flat), QgsWkbTypes.hasZ(t)))
+    if not kinds:
+        return "None"
+    if len(kinds) == 1:
+        (single, z) = next(iter(kinds))
+        multi = any(QgsWkbTypes.isMultiType(g.wkbType()) for g in geoms)
+        t = QgsWkbTypes.multiType(single) if multi else single
+        if z:
+            t = QgsWkbTypes.addZ(t)
+        return QgsWkbTypes.displayString(t)
+    return "Geometry"
+
+
 def _memory_layer(ld: LayerData) -> QgsVectorLayer:
-    mem = QgsVectorLayer(f"Geometry?crs=epsg:{ld.srid}", ld.name, "memory")
+    geoms = []
+    for r in ld.rows:
+        wkt = geojson_to_wkt(r.geom)
+        g = QgsGeometry.fromWkt(wkt) if wkt else None
+        geoms.append(g if g is not None and not g.isNull() else None)
+    gtype = _layer_geometry_type([g for g in geoms if g is not None])
+    uri = "None" if gtype == "None" else f"{gtype}?crs=epsg:{ld.srid}"
+    mem = QgsVectorLayer(uri, ld.name, "memory")
     pr = mem.dataProvider()
     fields = [QgsField(ID_FIELD, QVariant.String), QgsField(REV_FIELD, QVariant.Int)]
     fields += [QgsField(s.name, _qvariant(s)) for s in ld.specs]
     pr.addAttributes(fields)
     mem.updateFields()
     feats = []
-    for r in ld.rows:
+    for r, g in zip(ld.rows, geoms):
         f = QgsFeature(mem.fields())
         f.setAttributes([r.id, r.revision] + [_clean(r.cells.get(s.name)) for s in ld.specs])
-        wkt = geojson_to_wkt(r.geom)
-        if wkt:
-            g = QgsGeometry.fromWkt(wkt)
-            if g is not None and not g.isNull():
-                f.setGeometry(g)
+        if g is not None and gtype != "None":
+                    if QgsWkbTypes.isMultiType(mem.wkbType()) and not g.isMultipart():
+                g.convertToMultiType()
+            f.setGeometry(g)
         feats.append(f)
     pr.addFeatures(feats)
     return mem
@@ -88,11 +113,13 @@ def write_geopackage(bundle: ProjectBundle, gpkg_path: str) -> Dict[str, Dict[st
         opts = QgsVectorFileWriter.SaveVectorOptions()
         opts.driverName = "GPKG"
         opts.layerName = ld.name
+        opts.fileEncoding = "UTF-8"
         opts.actionOnExistingFile = (QgsVectorFileWriter.CreateOrOverwriteFile if i == 0
                                      else QgsVectorFileWriter.CreateOrOverwriteLayer)
         res = QgsVectorFileWriter.writeAsVectorFormatV3(mem, gpkg_path, QgsCoordinateTransformContext(), opts)
         if res[0] != QgsVectorFileWriter.NoError:
-            raise RuntimeError(f"Écriture GeoPackage impossible ({ld.name}) : {res[1]}")
+            raise RuntimeError(f"Écriture GeoPackage impossible ({ld.name}, code {res[0]}, "
+                               f"type {QgsWkbTypes.displayString(mem.wkbType())}) : {res[1] or 'aucun détail'}")
         wkts[ld.name] = {f[ID_FIELD]: norm_wkt(f.geometry().asWkt() if f.hasGeometry() else None)
                          for f in mem.getFeatures()}
     return wkts
