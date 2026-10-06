@@ -16,7 +16,7 @@ utilisateur/mot de passe, tables « à plat » façon tableur, synchronisation m
    ou via la **fiche** ; les deux modes valident de la même façon.
 4. **Synchroniser** à la demande vers SIAMOIS, avec rapport d'erreurs et gestion des conflits.
 
-Hors v1 : création/suppression d'éléments depuis QGIS, relations stratigraphiques, documents, styles par type,
+Hors v1 : suppression d'éléments depuis QGIS, création de projet, relations stratigraphiques, documents, styles par type,
 champs de référence éditables (personnes, UE liées, lieux), édition multi-valeurs via widget dédié, fusion champ par champ.
 
 ## 2. Couches
@@ -80,6 +80,16 @@ incomplète (`complete:false`) : écriture en `add`/`remove` uniquement.
 **Quand ?** Les modifications sont **locales** (GeoPackage) ; l'envoi est une **action manuelle** « Synchroniser » (ou
 « Vérifier mes modifications » pour le rapport seul). Un message propose de synchroniser après chaque enregistrement
 de couche. Raison : réseau faible sur le terrain, PATCH par modification fragile.
+
+**Création (UE et mobilier)** : une ligne ajoutée dans la couche (sans `siamois_id`) est envoyée par
+`POST /recording-units` ou `POST /finds` à la synchronisation. L'**identifiant complet est généré par le serveur** ;
+la ligne locale est ensuite réécrite avec l'identifiant, la révision et les valeurs serveur. Règles :
+- le **type** (colonne « type », liste déroulante) est obligatoire ; seuls les champs du formulaire **de ce type** sont envoyés ;
+- un **mobilier** exige une **UE** (liste déroulante des UE du projet) ; l'UE doit donc exister côté serveur : créer et
+  synchroniser l'UE d'abord, puis ses mobiliers (une UE neuve n'a pas d'identifiant avant sa création) ;
+- champs obligatoires du formulaire du type = erreurs bloquantes ; une ligne totalement vide est ignorée ;
+- la **géométrie** est envoyée pour une UE ; l'API ne l'accepte pas pour un mobilier (avertissement, ignorée) ;
+- **type** et **UE** ne sont plus modifiables après la création (modification ignorée avec avertissement).
 
 **Conflits** : UE `409` + `currentRevision` ⇒ tableau « Garder ma version / Garder la version serveur » par ligne.
 « Garder ma version » renvoie avec la révision serveur ; « serveur » réécrit la ligne locale. (Le `last_updated`/`source`

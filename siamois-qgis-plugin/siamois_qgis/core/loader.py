@@ -16,6 +16,10 @@ from .geo import dominant_srid, srid_of
 FID_FULL = "__fullIdentifier"
 FID_STATUS = "__validated"
 VOCAB_STATUS = "__validated"
+VOCAB_RU = "__ru"  # vocabulaire synthétique : UE du projet (id -> identifiant complet)
+BINDING_TYPE = "type"
+BINDING_RU = "recordingUnit"
+IMMUTABLE_BINDINGS = (BINDING_TYPE, BINDING_RU)  # non modifiables après création
 
 STATUS_LABELS = {"INCOMPLETE": "En cours", "COMPLETE": "Terminé", "CANCELLED": "Annulé", "VALIDATED": "Validé"}
 EDITABLE_STATUSES = ("INCOMPLETE", "COMPLETE", "CANCELLED")  # VALIDATED exige un droit validateur : lecture seule
@@ -51,6 +55,8 @@ class LayerData:
     rows: List[RowData]
     srid: int = 4326
     geom_editable: bool = True
+    type_allowed: Dict[str, Set[str]] = field(default_factory=dict)  # type_id -> field_id du formulaire du type
+    default_allowed: Set[str] = field(default_factory=set)
 
     @property
     def has_geometry(self) -> bool:
@@ -85,6 +91,20 @@ def with_fixed(answers: Dict[str, Any], full_identifier: Optional[str], validate
     return out
 
 
+def ru_vocabulary(concepts) -> Vocabulary:
+    return Vocabulary(concepts)
+
+
+def entity_answers(kind: str, entity: Any, specs: List[ColumnSpec]) -> Dict[str, Any]:
+    """Réponses « à plat » d'une entité API (colonnes techniques + champ UE du mobilier incluses)."""
+    answers = with_fixed(entity.answers, entity.full_identifier, entity.validated)
+    if kind == KIND_FIND and getattr(entity, "recording_unit_id", None):
+        for s in specs:
+            if s.binding == BINDING_RU:
+                answers[s.field_id] = {"resourceId": entity.recording_unit_id}
+    return answers
+
+
 def _step(progress: Optional[Progress], label: str, done: int = 0, total: int = 0) -> None:
     if progress is not None and progress(label, done, total) is False:
         raise Cancelled()
@@ -109,11 +129,15 @@ def load_project(client: SiamoisClient, org_id: Any, project_id: Any, progress: 
     find_specs = merge_schemas(fixed_specs(), flatten_schema(find_default), *(flatten_schema(f) for f in find_by_type.values()))
     project_specs = merge_schemas(fixed_specs(), flatten_schema(project_form))
 
+    for sp in find_specs:  # l'UE d'un mobilier : liste des UE du projet (utile à la création)
+        if sp.binding == BINDING_RU:
+            sp.kind, sp.vocab_code, sp.editable = CHOICE, VOCAB_RU, True
+
     # Vocabulaires de toutes les colonnes (un appel par code)
     codes = sorted({s.vocab_code for specs in (ru_specs, find_specs, project_specs) for s in specs
-                    if s.vocab_code and s.vocab_code != VOCAB_STATUS})
+                    if s.vocab_code and s.vocab_code not in (VOCAB_STATUS, VOCAB_RU)})
     vocab_concepts: Dict[str, List[Dict[str, Any]]] = {}
-    vocabs: Vocabularies = {VOCAB_STATUS: status_vocabulary()}
+    vocabs: Vocabularies = {VOCAB_STATUS: status_vocabulary(), VOCAB_RU: Vocabulary()}
     for i, code in enumerate(codes):
         _step(progress, f"Vocabulaire {code}", i, len(codes))
         v = client.vocabulary(pid, code)
@@ -138,12 +162,17 @@ def load_project(client: SiamoisClient, org_id: Any, project_id: Any, progress: 
         return progress("Unités d'enregistrement", done, total) is not False if progress else True
 
     for ru in client.iter_all(lambda **kw: client.recording_units(pid, **kw), on_progress=on_ru):
-        ans = with_fixed(ru.answers, ru.full_identifier, ru.validated)
+        ans = entity_answers(KIND_RU, ru, ru_specs)
         allowed = default_allowed | ru_allowed.get(ru.type_id or "", set())
         ru_rows.append(RowData(ru.id, row_to_cells(ru_specs, ans, vocabs), ru.geom, ru.sync_revision,
                                incomplete_columns(ru_specs, ru.answers), allowed))
     if progress and progress("Unités d'enregistrement", len(ru_rows), len(ru_rows)) is False:
         raise Cancelled()
+
+    ru_concepts = [{"id": r.id, "resolvedLabel": r.cells.get("Identifiant complet")}
+                   for r in ru_rows if r.cells.get("Identifiant complet")]
+    vocabs[VOCAB_RU] = ru_vocabulary(ru_concepts)
+    vocab_concepts[VOCAB_RU] = ru_concepts
 
     # Mobilier
     find_rows: List[RowData] = []
@@ -154,7 +183,7 @@ def load_project(client: SiamoisClient, org_id: Any, project_id: Any, progress: 
         return progress("Mobilier", done, total) is not False if progress else True
 
     for f in client.iter_all(lambda **kw: client.finds(pid, **kw), on_progress=on_find):
-        ans = with_fixed(f.answers, f.full_identifier, f.validated)
+        ans = entity_answers(KIND_FIND, f, find_specs)
         allowed = default_find | find_allowed.get(f.type_id or "", set())
         find_rows.append(RowData(f.id, row_to_cells(find_specs, ans, vocabs), f.geom, None,
                                  incomplete_columns(find_specs, f.answers), allowed))
@@ -163,9 +192,11 @@ def load_project(client: SiamoisClient, org_id: Any, project_id: Any, progress: 
         LayerData(KIND_PROJECT, LAYER_NAMES[KIND_PROJECT], LAYER_TITLES[KIND_PROJECT], project_specs, [p_row],
                   srid_of(project.geom)),
         LayerData(KIND_RU, LAYER_NAMES[KIND_RU], LAYER_TITLES[KIND_RU], ru_specs, ru_rows,
-                  dominant_srid(r.geom for r in ru_rows)),
+                  dominant_srid(r.geom for r in ru_rows), type_allowed=ru_allowed, default_allowed=default_allowed),
         # L'API ne permet pas de modifier la géométrie d'un mobilier : lecture seule
         LayerData(KIND_FIND, LAYER_NAMES[KIND_FIND], LAYER_TITLES[KIND_FIND], find_specs, find_rows,
-                  dominant_srid(r.geom for r in find_rows), geom_editable=False),
+                  dominant_srid(r.geom for r in find_rows), geom_editable=False,
+                  type_allowed={t: a | {FID_FULL, FID_STATUS} for t, a in find_allowed.items()},
+                  default_allowed=default_find),
     ]
     return ProjectBundle(str(org_id), pid, project.name, layers, vocab_concepts, client.base_url)

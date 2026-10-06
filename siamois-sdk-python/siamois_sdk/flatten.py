@@ -48,6 +48,7 @@ class ColumnSpec:
     show_time: bool = False
     hint: Optional[str] = None
     panel: str = ""  # panneau (onglet) du formulaire serveur
+    binding: Optional[str] = None  # propriété métier d'un champ système (ex. "type", "recordingUnit")
 
     @property
     def is_choice(self) -> bool:
@@ -104,7 +105,7 @@ def flatten_schema(form: FormDefinition, *, skip_hidden: bool = True) -> List[Co
             answer_type=fd.answer_type,
             vocab_code=fd.field_code if kind in (CHOICE, CHOICE_MANY) and fd.field_code else None,
             editable=editable, required=bool(required.get(fid)), min=fd.min, max=fd.max, unit=fd.unit,
-            show_time=fd.show_time, hint=fd.hint, panel=panel_of.get(fid, ""),
+            show_time=fd.show_time, hint=fd.hint, panel=panel_of.get(fid, ""), binding=fd.value_binding,
         ))
     return specs
 
@@ -344,3 +345,48 @@ def _cell_to_input(s: ColumnSpec, cur: Any, base: Any, vocabs: Optional[Vocabula
             return {"add": sorted(set(new) - set(old)), "remove": sorted(set(old) - set(new))}
         return {"values": list(dict.fromkeys(new))}
     raise ValueError("type de colonne non éditable")
+
+
+# ------------------------------------------------------------------ création
+
+
+def find_by_binding(specs: Iterable[ColumnSpec], binding: str) -> Optional[ColumnSpec]:
+    return next((s for s in specs if s.binding == binding), None)
+
+
+def resolve_label(spec: ColumnSpec, label: Any, vocabs: Optional[Vocabularies]) -> str:
+    """Libellé -> identifiant de concept (ValueError « libellé inconnu/ambigu » sinon)."""
+    return _resolve(spec, str(label), vocabs)
+
+
+def cells_to_create(specs: Iterable[ColumnSpec], cells: Dict[str, Any], vocabs: Optional[Vocabularies] = None, *,
+                    allowed: Optional[Iterable[str]] = None, skip: Iterable[str] = ()) -> RowDiff:
+    """``answers`` d'un POST à partir des cellules d'une ligne neuve (pas de copie de référence).
+
+    - ``allowed`` : field_id du formulaire du type choisi (None = tous) ; une cellule remplie hors formulaire
+      est ignorée avec avertissement ; un champ obligatoire du formulaire resté vide est une erreur bloquante.
+    - ``skip`` : champs traités à part (type, UE parente…) ; les colonnes techniques ``__*`` sont ignorées.
+    """
+    allowed_set = None if allowed is None else set(allowed)
+    skip = set(skip)
+    diff = RowDiff()
+    for s in specs:
+        if s.field_id in skip or s.field_id.startswith("__"):
+            continue
+        c = cells.get(s.name)
+        in_form = allowed_set is None or s.field_id in allowed_set
+        if _blank(c):
+            if s.required and in_form and s.editable:
+                diff.issues.append(Issue(s.name, "champ obligatoire"))
+            continue
+        if not in_form:
+            diff.issues.append(Issue(s.name, "champ absent du formulaire de ce type : ignoré", blocking=False))
+            continue
+        if not s.editable:
+            diff.issues.append(Issue(s.name, "colonne en lecture seule : ignorée", blocking=False))
+            continue
+        try:
+            diff.answers[s.field_id] = _cell_to_input(s, c, None, vocabs, False)
+        except ValueError as exc:
+            diff.issues.append(Issue(s.name, str(exc)))
+    return diff

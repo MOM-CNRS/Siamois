@@ -13,6 +13,7 @@ from ._sdk import siamois_sdk  # noqa: F401
 from siamois_sdk import SiamoisClient
 from siamois_sdk.flatten import ColumnSpec
 from .core import loader, log, qgis_layers as ql, syncplan
+from .core.geo import geojson_to_wkt
 from .core.store import Store
 from .ui.dialogs import LoginDialog, OpenProjectDialog, ReportDialog
 
@@ -23,12 +24,20 @@ SETTINGS = "siamois/"
 class _Ctx:
     """Une couche SIAMOIS ouverte, avec ce qu'il faut pour comparer et pousser."""
 
-    def __init__(self, layer, store: Store, name: str, info: Dict[str, Any], current: Dict[str, Any], new_rows: int):
+    def __init__(self, layer, store: Store, name: str, info: Dict[str, Any], current: Dict[str, Any],
+                 new_rows: List[Dict[str, Any]]):
         self.layer, self.store, self.name, self.info = layer, store, name, info
         self.current, self.new_rows = current, new_rows
         self.specs: List[ColumnSpec] = info["columns"]
         self.kind: str = info["kind"]
         self.changes: List[syncplan.RowChange] = []
+        self.creations: List[syncplan.RowCreation] = []
+        self.vocabs: Dict[str, Any] = {}
+
+    @property
+    def items(self):
+        """Modifications + créations à traiter pour cette couche."""
+        return [*self.changes, *self.creations]
 
 
 class SiamoisPlugin:
@@ -142,7 +151,7 @@ class SiamoisPlugin:
         if not layers:
             return True
         ctxs, _ = self._collect(layers, quiet=True)
-        pending = sum(1 for c in ctxs for ch in c.changes if ch.has_changes)
+        pending = sum(1 for c in ctxs for ch in c.items if ch.has_changes)
         if not pending:
             return True
         r = QMessageBox.question(
@@ -178,7 +187,7 @@ class SiamoisPlugin:
             vocabs.update({c: Vocabulary(v) for c, v in bundle.vocab_concepts.items()})
             layers = ql.add_to_project(bundle, gpkg, db, vocabs)
             for ld, layer in zip(bundle.layers, layers):
-                store.save_layer(ld.name, ld.kind, ld.srid, ld.specs)
+                store.save_layer(ld.name, ld.kind, ld.srid, ld.specs, ld.type_allowed, ld.default_allowed)
                 wkts = {r.id: ql.norm_wkt(self._wkt(r.geom)) for r in ld.rows}
                 store.save_base(ld.name, [{"id": r.id, "cells": r.cells, "geom_wkt": wkts[r.id], "revision": r.revision,
                                            "incomplete": r.incomplete, "allowed": r.allowed} for r in ld.rows])
@@ -232,13 +241,17 @@ class SiamoisPlugin:
             if info is None:
                 continue
             current, new = ql.read_current(layer, info["columns"])
-            new_rows += new
+            new_rows += len(new)
             c = _Ctx(layer, store, name, info, current, new)
             vocabs = store.vocabularies()
             vocabs[loader.VOCAB_STATUS] = loader.status_vocabulary()
             c.vocabs = vocabs
             c.changes = syncplan.collect_changes(name, c.kind, c.specs, store.base(name), current, vocabs,
                                                  geom_editable=c.kind != loader.KIND_FIND)
+            if c.kind in (loader.KIND_RU, loader.KIND_FIND):
+                c.creations = syncplan.collect_creations(
+                    name, c.kind, c.specs, new, vocabs, info["type_allowed"], info["default_allowed"],
+                    geom_editable=c.kind != loader.KIND_FIND)
             ctxs.append(c)
         return ctxs, new_rows
 
@@ -259,17 +272,18 @@ class SiamoisPlugin:
     def _report_rows(ctxs: List[_Ctx]) -> List[Dict]:
         rows = []
         for c in ctxs:
-            for ch in c.changes:
+            for ch in c.items:
                 if not ch.issues and ch.has_changes:
-                    rows.append({"layer": c.layer.name(), "label": ch.label, "column": "modifié",
-                                 "message": "prêt à être envoyé", "level": "ok"})
+                    new = isinstance(ch, syncplan.RowCreation)
+                    rows.append({"layer": c.layer.name(), "label": ch.label, "column": "création" if new else "modifié",
+                                 "message": "prêt à être créé" if new else "prêt à être envoyé", "level": "ok"})
                 for i in ch.issues:
                     rows.append({"layer": c.layer.name(), "label": ch.label, "column": i.column,
                                  "message": i.message, "level": "error" if i.blocking else "warn"})
-            if c.new_rows:
-                rows.append({"layer": c.layer.name(), "label": f"{c.new_rows} ligne(s) créée(s) dans QGIS",
+            if c.new_rows and c.kind == loader.KIND_PROJECT:
+                rows.append({"layer": c.layer.name(), "label": f"{len(c.new_rows)} ligne(s) créée(s) dans QGIS",
                              "column": "", "level": "warn",
-                             "message": "la création d'éléments n'est pas gérée en v1 : ignorée"})
+                             "message": "la création de projet n'est pas gérée : ignorée"})
         return rows
 
     def verify(self):
@@ -281,9 +295,9 @@ class SiamoisPlugin:
             return
         ctxs, _ = self._collect(layers)
         rows = self._report_rows(ctxs)
-        n = sum(1 for c in ctxs for ch in c.changes if ch.has_changes)
+        n = sum(1 for c in ctxs for ch in c.items if ch.has_changes)
         errors = sum(1 for r in rows if r["level"] == "error")
-        ReportDialog("SIAMOIS – Vérification", f"{n} élément(s) modifié(s), {errors} erreur(s) bloquante(s).",
+        ReportDialog("SIAMOIS – Vérification", f"{n} élément(s) modifié(s) ou à créer, {errors} erreur(s) bloquante(s).",
                      rows, self.iface.mainWindow()).exec_()
 
     def sync(self):
@@ -294,7 +308,7 @@ class SiamoisPlugin:
         if not self._commit_edits(layers):
             return
         ctxs, _ = self._collect(layers)
-        todo = [(c, ch) for c in ctxs for ch in c.changes if ch.has_changes]
+        todo = [(c, ch) for c in ctxs for ch in c.items if ch.has_changes]
         if not todo:
             self._msg("Rien à synchroniser : aucune modification locale.", Qgis.Info)
             return
@@ -310,6 +324,7 @@ class SiamoisPlugin:
                 return
             todo = [(c, ch) for c, ch in todo if not ch.blocking]
         base_url = ctxs[0].store.get_meta("base_url")
+        project_id = ctxs[0].store.get_meta("project_id")
         client = self._ensure_client(base_url)
         if client is None:
             return
@@ -319,7 +334,10 @@ class SiamoisPlugin:
             for i, (c, ch) in enumerate(todo):
                 if task.isCanceled():
                     break
-                out.append((c, syncplan.push(client, ch)))
+                if isinstance(ch, syncplan.RowCreation):
+                    out.append((c, syncplan.push_create(client, ch, project_id)))
+                else:
+                    out.append((c, syncplan.push(client, ch)))
                 task.setProgress(100.0 * (i + 1) / len(todo))
             return out
 
@@ -331,11 +349,14 @@ class SiamoisPlugin:
             self._msg(f"Échec de la synchronisation : {getattr(err, 'user_message', err)}", Qgis.Critical, 0)
             return
         log.info("Synchronisation : " + ", ".join(f"{r.change.label}={r.status}" for _, r in results))
-        ok = errors = 0
+        ok = errors = created = 0
         conflicts: List[Tuple[_Ctx, syncplan.PushResult]] = []
         report: List[Dict] = []
         for c, r in results:
-            if r.status == "ok":
+            if r.status == "ok" and isinstance(r, syncplan.CreateResult):
+                created += 1
+                self._mark_created(c, r)
+            elif r.status == "ok":
                 ok += 1
                 self._mark_synced(c, r.change, r.new_revision)
             elif r.status == "conflict":
@@ -352,14 +373,39 @@ class SiamoisPlugin:
         if conflicts or errors:
             dlg = ReportDialog(
                 "SIAMOIS – Synchronisation",
-                f"{ok} élément(s) envoyé(s), {len(conflicts)} conflit(s), {errors} erreur(s).",
+                f"{ok} modifié(s), {created} créé(s), {len(conflicts)} conflit(s), {errors} erreur(s).",
                 report, self.iface.mainWindow(), apply_label="Appliquer mes choix" if conflicts else None)
             if dlg.exec_() == ReportDialog.Accepted and conflicts:
                 resolved = self._resolve(conflicts, dlg.decisions())
-                self._msg(f"{ok} envoyé(s), {resolved} conflit(s) résolu(s), {errors} erreur(s).",
+                self._msg(f"{ok} modifié(s), {created} créé(s), {resolved} conflit(s) résolu(s), {errors} erreur(s).",
                           Qgis.Warning if errors else Qgis.Success, 10)
             return
-        self._msg(f"✅ Synchronisation terminée : {ok} élément(s) envoyé(s), 0 erreur.", Qgis.Success, 8)
+        self._msg(f"✅ Synchronisation terminée : {ok} modifié(s), {created} créé(s), 0 erreur.", Qgis.Success, 8)
+
+    def _mark_created(self, c: _Ctx, res: "syncplan.CreateResult") -> None:
+        """La ligne locale reçoit son identifiant/valeurs serveur ; copie de référence ajoutée."""
+        cr, e = res.change, res.entity
+        row = syncplan.entity_to_row(c.kind, e, c.specs, c.vocabs)
+        ql.apply_created_row(c.layer, cr.fid, c.specs, row["id"], row["cells"], row["revision"])
+        allowed = set(c.info["default_allowed"]) | set(c.info["type_allowed"].get(cr.type_id or "", ()))
+        c.store.add_base(c.name, {"id": row["id"], "cells": row["cells"], "geom_wkt": cr.current_wkt,
+                                  "revision": row["revision"], "incomplete": [], "allowed": allowed})
+        if c.kind == loader.KIND_RU and row["cells"].get("Identifiant complet"):
+            concepts = list(c.vocabs[loader.VOCAB_RU].concepts) + [
+                {"id": row["id"], "resolvedLabel": row["cells"]["Identifiant complet"]}]
+            c.store.save_vocab(loader.VOCAB_RU, concepts)
+            c.vocabs[loader.VOCAB_RU] = loader.ru_vocabulary(concepts)
+            self._refresh_ru_widgets(c.store, c.layer.customProperty(ql.PROP_DB), concepts)
+
+    def _refresh_ru_widgets(self, store: Store, db: str, concepts) -> None:
+        """Les UE créées deviennent proposées dans la liste « UE » de la couche mobilier."""
+        labels = sorted({k["resolvedLabel"] for k in concepts})
+        for layer in ql.siamois_layers():
+            if layer.customProperty(ql.PROP_DB) == db and layer.customProperty(ql.PROP_KIND) == loader.KIND_FIND:
+                info = store.layer(layer.customProperty(ql.PROP_NAME))
+                spec = next((s for s in info["columns"] if s.binding == loader.BINDING_RU), None) if info else None
+                if spec:
+                    ql.refresh_choice_widget(layer, spec, labels)
 
     def _mark_synced(self, c: _Ctx, ch: syncplan.RowChange, new_revision: Optional[int]) -> None:
         rev = new_revision if new_revision is not None else ch.expected_revision

@@ -187,6 +187,20 @@ class SiamoisClient:
         """(formulaire par défaut, {type_id: formulaire du type}) pour les UE d'un projet."""
         return self._types(f"/projects/{project_id}/recording-unit-types")
 
+    def create_recording_unit(self, project_id: Any, type_id: Any, *, answers: Optional[Dict[str, Any]] = None,
+                              geom: Optional[Dict[str, Any]] = None,
+                              parent_recording_unit_id: Optional[Any] = None) -> RecordingUnit:
+        """POST UE. ``type_id`` = concept de type (obligatoire). L'identifiant complet est généré par le serveur."""
+        payload: Dict[str, Any] = {"projectId": str(project_id), "typeId": str(type_id)}
+        if answers:
+            payload["answers"] = answers
+        if geom:
+            payload["geom"] = geom
+        if parent_recording_unit_id is not None:
+            payload["parentRecordingUnitId"] = int(parent_recording_unit_id)
+        body, _ = self._request("POST", "/recording-units", json=payload)
+        return RecordingUnit.from_json(self._data(body))
+
     def update_recording_unit(self, ru_id: Any, *, answers: Optional[Dict[str, Any]] = None,
                               geom: Any = ..., validated: Optional[str] = None,
                               expected_revision: Optional[int] = None) -> RecordingUnit:
@@ -221,6 +235,14 @@ class SiamoisClient:
 
     def find_forms(self, project_id: Any) -> Tuple[FormDefinition, Dict[str, FormDefinition]]:
         return self._types(f"/projects/{project_id}/find-types")
+
+    def create_find(self, recording_unit_id: Any, type_id: Any, *, answers: Optional[Dict[str, Any]] = None) -> Find:
+        """POST mobilier rattaché à une UE. L'API n'accepte pas de géométrie à la création."""
+        payload: Dict[str, Any] = {"recordingUnitId": str(recording_unit_id), "typeId": str(type_id)}
+        if answers:
+            payload["answers"] = answers
+        body, _ = self._request("POST", "/finds", json=payload)
+        return Find.from_json(self._data(body))
 
     def update_find(self, find_id: Any, *, answers: Optional[Dict[str, Any]] = None,
                     validated: Optional[str] = None) -> Find:

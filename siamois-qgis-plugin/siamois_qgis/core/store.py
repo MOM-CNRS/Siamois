@@ -16,7 +16,7 @@ from siamois_sdk.flatten import ColumnSpec, Vocabulary
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
-CREATE TABLE IF NOT EXISTS layers(name TEXT PRIMARY KEY, kind TEXT, srid INTEGER, columns TEXT);
+CREATE TABLE IF NOT EXISTS layers(name TEXT PRIMARY KEY, kind TEXT, srid INTEGER, columns TEXT, extra TEXT);
 CREATE TABLE IF NOT EXISTS vocab(code TEXT PRIMARY KEY, concepts TEXT);
 CREATE TABLE IF NOT EXISTS base(layer TEXT, id TEXT, cells TEXT, geom_wkt TEXT, revision INTEGER,
                                 incomplete TEXT, allowed TEXT, dirty_server INTEGER DEFAULT 0,
@@ -43,16 +43,22 @@ class Store:
         return json.loads(r[0]) if r else default
 
     # layers
-    def save_layer(self, name: str, kind: str, srid: int, columns: List[ColumnSpec]) -> None:
-        self.db.execute("INSERT OR REPLACE INTO layers VALUES(?,?,?,?)",
-                        (name, kind, srid, json.dumps([asdict(c) for c in columns])))
+    def save_layer(self, name: str, kind: str, srid: int, columns: List[ColumnSpec],
+                   type_allowed: Optional[Dict[str, Any]] = None, default_allowed: Optional[Any] = None) -> None:
+        extra = {"type_allowed": {t: sorted(a) for t, a in (type_allowed or {}).items()},
+                 "default_allowed": sorted(default_allowed or [])}
+        self.db.execute("INSERT OR REPLACE INTO layers VALUES(?,?,?,?,?)",
+                        (name, kind, srid, json.dumps([asdict(c) for c in columns]), json.dumps(extra)))
         self.db.commit()
 
     def layer(self, name: str) -> Optional[Dict[str, Any]]:
-        r = self.db.execute("SELECT kind, srid, columns FROM layers WHERE name=?", (name,)).fetchone()
+        r = self.db.execute("SELECT kind, srid, columns, extra FROM layers WHERE name=?", (name,)).fetchone()
         if not r:
             return None
-        return {"kind": r[0], "srid": r[1], "columns": [ColumnSpec(**c) for c in json.loads(r[2])]}
+        extra = json.loads(r[3]) if r[3] else {}
+        return {"kind": r[0], "srid": r[1], "columns": [ColumnSpec(**c) for c in json.loads(r[2])],
+                "type_allowed": {t: set(a) for t, a in (extra.get("type_allowed") or {}).items()},
+                "default_allowed": set(extra.get("default_allowed") or [])}
 
     # vocabularies
     def save_vocab(self, code: str, concepts: List[Dict[str, Any]]) -> None:
@@ -79,6 +85,14 @@ class Store:
             out[id_] = {"cells": json.loads(cells), "geom_wkt": wkt, "revision": rev,
                         "incomplete": json.loads(inc), "allowed": set(json.loads(allowed))}
         return out
+
+    def add_base(self, layer: str, row: Dict[str, Any]) -> None:
+        """Ajoute (ou remplace) la copie de référence d'une ligne venant d'être créée côté serveur."""
+        self.db.execute(
+            "INSERT OR REPLACE INTO base(layer, id, cells, geom_wkt, revision, incomplete, allowed) VALUES(?,?,?,?,?,?,?)",
+            (layer, str(row["id"]), json.dumps(row["cells"]), row.get("geom_wkt"), row.get("revision"),
+             json.dumps(row.get("incomplete") or []), json.dumps(sorted(row.get("allowed") or []))))
+        self.db.commit()
 
     def update_base(self, layer: str, id_: str, cells: Dict[str, Any], geom_wkt: Optional[str],
                     revision: Optional[int]) -> None:

@@ -237,25 +237,25 @@ def siamois_layers(project: Optional[QgsProject] = None) -> List[QgsVectorLayer]
 # ------------------------------------------------------------------ lecture des modifications
 
 
-def read_current(layer: QgsVectorLayer, specs: List[ColumnSpec]) -> Tuple[Dict[str, Dict[str, Any]], int]:
-    """(id -> {cells, wkt, geojson, fid}, nombre de lignes sans identifiant SIAMOIS)."""
+def read_current(layer: QgsVectorLayer, specs: List[ColumnSpec]) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+    """(id -> {cells, wkt, geojson, fid}, lignes neuves [{cells, wkt, geojson, fid}] sans identifiant SIAMOIS)."""
     srid = layer.crs().postgisSrid() or 4326
     out: Dict[str, Dict[str, Any]] = {}
-    new_rows = 0
+    new_rows: List[Dict[str, Any]] = []
     for f in layer.getFeatures():
         sid = _clean(f[ID_FIELD])
-        if sid is None:
-            new_rows += 1
-            continue
         g = f.geometry() if f.hasGeometry() else None
-        geojson = None
-        if g is not None and not g.isNull():
-            geojson = with_srid(json.loads(g.asJson(8)), srid)
-        out[str(sid)] = {
+        has_geom = g is not None and not g.isNull()
+        row = {
             "cells": {s.name: _clean(f[s.name]) for s in specs},
-            "wkt": norm_wkt(g.asWkt()) if g is not None and not g.isNull() else None,
-            "geojson": geojson, "fid": f.id(),
+            "wkt": norm_wkt(g.asWkt()) if has_geom else None,
+            "geojson": with_srid(json.loads(g.asJson(8)), srid) if has_geom else None,
+            "fid": f.id(),
         }
+        if sid is None:
+            new_rows.append(row)
+        else:
+            out[str(sid)] = row
     return out, new_rows
 
 
@@ -279,3 +279,24 @@ def apply_server_row(layer: QgsVectorLayer, fid: int, specs: List[ColumnSpec], c
         if g is not None and not g.isNull():
             layer.dataProvider().changeGeometryValues({fid: g})
     layer.reload()
+
+
+def apply_created_row(layer: QgsVectorLayer, fid: int, specs: List[ColumnSpec], siamois_id: str,
+                      cells: Dict[str, Any], revision: Optional[int]) -> None:
+    """Après création serveur : la ligne locale reçoit son identifiant, sa révision et les valeurs du serveur."""
+    attrs = {layer.fields().indexOf(ID_FIELD): siamois_id}
+    if revision is not None:
+        attrs[layer.fields().indexOf(REV_FIELD)] = revision
+    for s in specs:
+        idx = layer.fields().indexOf(s.name)
+        if idx >= 0:
+            attrs[idx] = _clean(cells.get(s.name))
+    layer.dataProvider().changeAttributeValues({fid: attrs})
+    layer.reload()
+
+
+def refresh_choice_widget(layer: QgsVectorLayer, spec: ColumnSpec, labels: List[str]) -> None:
+    """Met à jour la liste déroulante d'une colonne (ex. nouvelles UE proposées pour le mobilier)."""
+    idx = layer.fields().indexOf(spec.name)
+    if idx >= 0:
+        _setup(layer, idx, "ValueMap", _value_map(labels))

@@ -11,7 +11,7 @@ from .errors import (
     ValidationError,
 )
 from .forms import FormDefinition, FieldDef, build_patch_answers, display_value, parse_form
-from .flatten import ColumnSpec, Vocabulary, cells_to_patch, flatten_schema, merge_schemas, row_to_cells
+from .flatten import ColumnSpec, Vocabulary, cells_to_create, cells_to_patch, flatten_schema, merge_schemas, row_to_cells
 from .models import Find, Organization, Page, Project, RecordingUnit, User
 
 __version__ = "0.1.0"

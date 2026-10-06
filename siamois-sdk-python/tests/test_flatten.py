@@ -143,5 +143,30 @@ class CellsTests(unittest.TestCase):
         self.assertEqual(d.answers["3"], {"add": ["24"], "remove": ["21"]})
 
 
+class CreateTests(unittest.TestCase):
+    def setUp(self):
+        fields = {**FIELDS, "2": {**FIELDS["2"], "valueBinding": "type"}}
+        self.specs = flatten_schema(parse_form(LAYOUT, fields))
+
+    def test_binding_and_create_answers(self):
+        from siamois_sdk.flatten import cells_to_create, find_by_binding, resolve_label
+        t = find_by_binding(self.specs, "type")
+        self.assertEqual(t.field_id, "2")
+        self.assertEqual(resolve_label(t, "fossé", VOCABS), "11")
+        d = cells_to_create(self.specs, {"Identifiant": "UE-NEW", "Type": "Fossé", "Poids": "3,5", "Année": "2021"},
+                            VOCABS, allowed={"1", "2", "4"}, skip={"2"})
+        self.assertEqual(d.answers, {"1": {"value": "UE-NEW"}, "4": {"value": 3.5}})
+        self.assertTrue(d.ok)
+        self.assertTrue(any(i.column == "Année" and not i.blocking for i in d.issues))  # hors formulaire du type
+
+    def test_required_and_errors(self):
+        from siamois_sdk.flatten import cells_to_create
+        d = cells_to_create(self.specs, {"Poids": "x"}, VOCABS)
+        msgs = {i.column: i.message for i in d.issues}
+        self.assertIn("obligatoire", msgs["Identifiant"])
+        self.assertIn("nombre", msgs["Poids"])
+        self.assertFalse(d.ok)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,9 @@ permet l'édition classique QGIS ou via la fiche, puis **synchronise** vers l'AP
 Menu **SIAMOIS** : *Ouvrir un projet…* (connexion, organisation, projet) ▸ éditer ▸ *Ouvrir la fiche* ▸
 *Vérifier mes modifications* ▸ *Synchroniser avec SIAMOIS*.
 
+**Créer un élément** : ajouter une ligne dans la couche UE (type obligatoire, géométrie optionnelle) ou mobilier (type + UE),
+enregistrer la couche, puis synchroniser : l'identifiant est attribué par le serveur. Créer l'UE avant ses mobiliers.
+
 ## Tests (sans QGIS)
 `python -m unittest discover -s tests -t .` — couvre chargement, détection des changements, envoi, conflits, fichier annexe.
 Le code PyQGIS (`core/qgis_layers.py`, `ui/`, `plugin.py`) est compilé mais **n'a pas encore été exécuté dans QGIS**.

@@ -12,8 +12,13 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from . import _sdk_import  # noqa: F401
 from siamois_sdk import AuthenticationError, ConflictError, SiamoisClient, SiamoisError
-from siamois_sdk.flatten import ColumnSpec, Issue, Vocabularies, cells_to_patch, row_to_cells
-from .loader import FID_FULL, FID_STATUS, KIND_FIND, KIND_PROJECT, KIND_RU, with_fixed
+from siamois_sdk.flatten import (
+    ColumnSpec, Issue, Vocabularies, cells_to_create, cells_to_patch, find_by_binding, resolve_label, row_to_cells,
+)
+from .loader import (
+    BINDING_RU, BINDING_TYPE, FID_FULL, FID_STATUS, IMMUTABLE_BINDINGS, KIND_FIND, KIND_PROJECT, KIND_RU, VOCAB_RU,
+    entity_answers,
+)
 
 
 @dataclass
@@ -64,8 +69,11 @@ def collect_changes(layer: str, kind: str, specs: List[ColumnSpec], base: Dict[s
         ch = RowChange(layer, kind, id_, label, expected_revision=b.get("revision"),
                        current_cells=cur["cells"], current_wkt=cur.get("wkt"))
         allowed = b.get("allowed") or set()
-        row_specs = [s for s in specs if not allowed or s.field_id in allowed]
-        skipped = [s for s in specs if s not in row_specs]
+        row_specs = [s for s in specs if (not allowed or s.field_id in allowed) and s.binding not in IMMUTABLE_BINDINGS]
+        skipped = [s for s in specs if s not in row_specs and s.binding not in IMMUTABLE_BINDINGS]
+        for s in specs:
+            if s.binding in IMMUTABLE_BINDINGS and str(b["cells"].get(s.name) or "") != str(cur["cells"].get(s.name) or ""):
+                ch.issues.append(Issue(s.name, "non modifiable après la création : ignoré", False))
         diff = cells_to_patch(row_specs, b["cells"], cur["cells"], vocabs, incomplete=b.get("incomplete") or [])
         ch.issues.extend(diff.issues)
         for s in skipped:
@@ -128,10 +136,113 @@ def fetch_server_row(client: SiamoisClient, kind: str, id_: str, specs: List[Col
     """Cellules de la version serveur (résolution « garder le serveur »). Retourne {cells, geom, revision}."""
     if kind == KIND_RU:
         e = client.recording_unit(id_)
-        rev = e.sync_revision
     elif kind == KIND_FIND:
-        e, rev = client.find(id_), None
+        e = client.find(id_)
     else:
-        e, rev = client.project(id_, fields="all"), None
-    return {"cells": row_to_cells(specs, with_fixed(e.answers, e.full_identifier, e.validated), vocabs),
-            "geom": e.geom, "revision": rev}
+        e = client.project(id_, fields="all")
+    return entity_to_row(kind, e, specs, vocabs)
+
+
+def entity_to_row(kind: str, e: Any, specs: List[ColumnSpec], vocabs: Vocabularies) -> Dict[str, Any]:
+    return {"cells": row_to_cells(specs, entity_answers(kind, e, specs), vocabs), "geom": e.geom,
+            "revision": getattr(e, "sync_revision", None), "id": e.id}
+
+
+# ------------------------------------------------------------------ création
+
+
+@dataclass
+class RowCreation:
+    layer: str
+    kind: str
+    fid: int  # identifiant de l'entité dans la couche QGIS
+    label: str
+    type_id: Optional[str] = None
+    parent_id: Optional[str] = None  # mobilier : UE
+    answers: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    geom: Optional[Dict[str, Any]] = None
+    issues: List[Issue] = field(default_factory=list)
+    current_cells: Dict[str, Any] = field(default_factory=dict)
+    current_wkt: Optional[str] = None
+
+    @property
+    def has_changes(self) -> bool:
+        return True
+
+    @property
+    def blocking(self) -> bool:
+        return any(i.blocking for i in self.issues)
+
+
+@dataclass
+class CreateResult(PushResult):
+    entity: Any = None
+
+
+def collect_creations(layer: str, kind: str, specs: List[ColumnSpec], new_rows: List[Dict[str, Any]],
+                      vocabs: Vocabularies, type_allowed: Dict[str, Any], default_allowed: Any,
+                      geom_editable: bool) -> List[RowCreation]:
+    """Lignes sans identifiant SIAMOIS (créées dans QGIS) -> créations à envoyer.
+
+    `new_rows` : {fid, cells, wkt, geojson}. Une ligne entièrement vide (ni cellule ni géométrie) est ignorée.
+    """
+    out: List[RowCreation] = []
+    type_spec = find_by_binding(specs, BINDING_TYPE)
+    parent_spec = find_by_binding(specs, BINDING_RU) if kind == KIND_FIND else None
+    for r in new_rows:
+        cells = {k: v for k, v in r["cells"].items() if v not in (None, "")}
+        cells.pop("Statut", None)
+        cells.pop("Identifiant complet", None)  # généré par le serveur
+        if not cells and not r.get("geojson"):
+            continue
+        cr = RowCreation(layer, kind, r["fid"], f"nouvelle ligne #{r['fid']}", current_cells=r["cells"],
+                         current_wkt=r.get("wkt"))
+        # type (obligatoire)
+        if type_spec is None:
+            cr.issues.append(Issue("type", "le formulaire ne propose pas de champ « type »"))
+        elif not cells.get(type_spec.name):
+            cr.issues.append(Issue(type_spec.name, "type obligatoire pour créer un élément"))
+        else:
+            try:
+                cr.type_id = resolve_label(type_spec, cells[type_spec.name], vocabs)
+            except ValueError as exc:
+                cr.issues.append(Issue(type_spec.name, str(exc)))
+        # UE parente (mobilier)
+        if kind == KIND_FIND:
+            if parent_spec is None or not cells.get(parent_spec.name):
+                cr.issues.append(Issue(parent_spec.name if parent_spec else "UE", "UE obligatoire pour créer un mobilier"))
+            else:
+                try:
+                    cr.parent_id = resolve_label(parent_spec, cells[parent_spec.name], vocabs)
+                except ValueError as exc:
+                    cr.issues.append(Issue(parent_spec.name, str(exc)))
+        allowed = set(default_allowed or ()) | set(type_allowed.get(cr.type_id or "", ())) if cr.type_id else None
+        skip = {s.field_id for s in (type_spec, parent_spec) if s is not None}
+        diff = cells_to_create(specs, r["cells"], vocabs, allowed=allowed, skip=skip)
+        cr.answers = diff.answers
+        cr.issues.extend(diff.issues)
+        # géométrie
+        if r.get("geojson"):
+            if geom_editable:
+                cr.geom = r["geojson"]
+            else:
+                cr.issues.append(Issue("géométrie", "la géométrie d'un mobilier ne peut pas être envoyée : ignorée", False))
+        ident = next((str(v) for k, v in cells.items() if k not in (type_spec.name if type_spec else "",)), None)
+        cr.label = f"nouvelle ligne #{r['fid']}" + (f" ({ident})" if ident else "")
+        out.append(cr)
+    return out
+
+
+def push_create(client: SiamoisClient, cr: RowCreation, project_id: str) -> CreateResult:
+    try:
+        if cr.kind == KIND_RU:
+            e = client.create_recording_unit(project_id, cr.type_id, answers=cr.answers or None, geom=cr.geom)
+        elif cr.kind == KIND_FIND:
+            e = client.create_find(cr.parent_id, cr.type_id, answers=cr.answers or None)
+        else:
+            return CreateResult(cr, "error", f"création non gérée pour : {cr.kind}")
+        return CreateResult(cr, "ok", new_revision=getattr(e, "sync_revision", None), entity=e)
+    except AuthenticationError as exc:
+        return CreateResult(cr, "auth", exc.user_message)
+    except SiamoisError as exc:
+        return CreateResult(cr, "error", exc.user_message)

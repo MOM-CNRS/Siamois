@@ -179,5 +179,23 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(bodies, [{"validated": "COMPLETE"}, {"geom": None}])
 
 
+class CreateApiTests(unittest.TestCase):
+    def test_create_payloads(self):
+        bodies = []
+
+        def post(params, body):
+            bodies.append(body)
+            return FakeResponse(201, {"data": {"id": "77", "fullIdentifier": "UE-77", "syncRevision": 1}})
+
+        c = client({("POST", "/recording-units"): post, ("POST", "/finds"): post})
+        geom = {"type": "Point", "srid": 4326, "coordinates": [1, 2]}
+        ru = c.create_recording_unit(7, 42, answers={"1": {"value": "x"}}, geom=geom)
+        f = c.create_find(77, 5)
+        self.assertEqual(ru.full_identifier, "UE-77")
+        self.assertEqual(bodies[0], {"projectId": "7", "typeId": "42", "answers": {"1": {"value": "x"}}, "geom": geom})
+        self.assertEqual(bodies[1], {"recordingUnitId": "77", "typeId": "5"})
+        self.assertEqual(f.id, "77")
+
+
 if __name__ == "__main__":
     unittest.main()
