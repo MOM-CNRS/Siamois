@@ -1,8 +1,8 @@
 [general]
 name=Snake sur la carte
 qgisMinimumVersion=3.22
-description=Un Snake jouable par-dessus la carte actuelle (le serpent ramasse des amphores)
-version=0.1.0
+description=Un Snake jouable par-dessus la carte actuelle : mangez les points d'une couche, ou des amphores
+version=0.2.0
 author=CNRS – MOM / SIAMOIS
 about=Lance un Snake sur la vue actuelle de la carte, sans modifier le projet. Flèches ou ZQSD, Espace pour la pause, Échap pour quitter. Le record est mémorisé.
 experimental=True

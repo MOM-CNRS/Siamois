@@ -6,7 +6,7 @@ from qgis.PyQt.QtCore import QRectF, Qt
 from qgis.PyQt.QtGui import QColor, QFont, QPainter, QPen
 from qgis.PyQt.QtWidgets import QWidget
 
-from .game import SnakeGame
+from .game import ALL, CLASSIC, SINGLE, SnakeGame, grid_origin
 
 BODY = QColor(46, 160, 67, 215)
 BODY_ALT = QColor(34, 139, 52, 215)
@@ -18,9 +18,10 @@ HELP = "↑↓←→ / ZQSD : diriger · Espace : pause · Échap : quitter"
 class SnakeOverlay(QWidget):
     """Widget enfant de la vue de la carte : transparent aux clics (la carte reste utilisable à la souris)."""
 
-    def __init__(self, parent: QWidget, game: SnakeGame, cell: int, best: int = 0):
+    def __init__(self, parent: QWidget, game: SnakeGame, cell: int, best: int = 0, labels=None):
         super().__init__(parent)
         self.game, self.cell, self.best = game, cell, best
+        self.labels = labels or {}  # fid -> libellé (champ choisi)
         self.paused = False
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.setAttribute(Qt.WA_NoSystemBackground)
@@ -31,7 +32,7 @@ class SnakeOverlay(QWidget):
     # ------------------------------------------------------------------
 
     def _origin(self):
-        return ((self.width() - self.game.cols * self.cell) // 2, (self.height() - self.game.rows * self.cell) // 2)
+        return grid_origin(self.width(), self.height(), self.game.cols, self.game.rows, self.cell)
 
     def _rect(self, x: int, y: int, pad: float = 1.5) -> QRectF:
         ox, oy = self._origin()
@@ -47,8 +48,14 @@ class SnakeOverlay(QWidget):
         p.setPen(QPen(QColor(255, 255, 255, 190), 3))
         p.setBrush(QColor(0, 0, 0, 25))
         p.drawRect(ox - 2, oy - 2, g.cols * self.cell + 4, g.rows * self.cell + 4)
-        # amphore
-        if g.food is not None:
+        # cibles (entités de la couche)
+        if g.mode == ALL:
+            for cell in g.remaining:
+                self._ring(p, cell, QColor(255, 170, 0, 230), 2)
+        elif g.mode == SINGLE and g.food is not None:
+            self._ring(p, g.food, QColor(255, 60, 60, 240), 4)
+        # amphore (mode classique)
+        if g.mode == CLASSIC and g.food is not None:
             r = self._rect(*g.food, pad=2)
             p.setPen(Qt.NoPen)
             p.setBrush(FOOD)
@@ -71,10 +78,17 @@ class SnakeOverlay(QWidget):
             self._banner(p, "PAUSE", "Espace pour reprendre")
         elif not g.alive:
             if g.won:
-                self._banner(p, "BRAVO ! Carte complète", "Espace pour rejouer · Échap pour quitter")
+                done = "Tous les points mangés" if g.mode != CLASSIC else "Carte complète"
+                self._banner(p, f"BRAVO ! {done}", "Espace pour rejouer · Échap pour quitter")
             else:
-                self._banner(p, "GAME OVER", f"Score {g.score} · Espace pour rejouer · Échap pour quitter")
+                score = f"{len(g.eaten)}/{g.total} points" if g.mode != CLASSIC else f"Score {g.score}"
+                self._banner(p, "GAME OVER", f"{score} · Espace pour rejouer · Échap pour quitter")
         p.end()
+
+    def _ring(self, p: QPainter, cell, color: QColor, width: int) -> None:
+        p.setPen(QPen(color, width))
+        p.setBrush(Qt.NoBrush)
+        p.drawEllipse(self._rect(*cell, pad=1))
 
     def _eyes(self, p: QPainter) -> None:
         g = self.game
@@ -95,7 +109,13 @@ class SnakeOverlay(QWidget):
         f.setPixelSize(13)
         f.setBold(True)
         p.setFont(f)
-        text = f"🐍 Score {self.game.score}   Record {max(self.best, self.game.score)}   ·   {HELP}"
+        g = self.game
+        if g.mode == CLASSIC:
+            head = f"🐍 Score {g.score}   Record {max(self.best, g.score)}"
+        else:
+            last = next((self.labels.get(k) for k in reversed(g.last_eaten) if self.labels.get(k)), None)
+            head = f"🎯 {len(g.eaten)}/{g.total} points" + (f"   dernier : {last}" if last else "")
+        text = f"{head}   ·   {HELP}"
         w = p.fontMetrics().horizontalAdvance(text) + 20
         box = QRectF(10, 10, w, 26)
         p.setPen(Qt.NoPen)

@@ -4,7 +4,9 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from snake_game.game import DOWN, LEFT, RIGHT, UP, SnakeGame  # noqa: E402
+from snake_game.game import (  # noqa: E402
+    ALL, DOWN, LEFT, RIGHT, SINGLE, UP, SnakeGame, build_targets, grid_origin, point_to_cell,
+)
 
 
 class SnakeTests(unittest.TestCase):
@@ -114,6 +116,85 @@ class SnakeTests(unittest.TestCase):
     def test_small_grid_rejected(self):
         with self.assertRaises(ValueError):
             SnakeGame(3, 10)
+
+
+class TargetsTests(unittest.TestCase):
+    def game(self, targets, **kw):
+        return SnakeGame(12, 8, seed=1, targets=targets, **kw)
+
+    def test_all_mode_eats_cells_and_wins(self):
+        g = SnakeGame(12, 8, seed=1)
+        y = g.head[1]
+        t = {(g.head[0] + 2, y): [10, 11], (g.head[0] + 4, y): [12]}
+        g = self.game(t, mode=ALL)
+        self.assertEqual((g.total, g.mode, g.food), (3, ALL, None))
+        g.step()
+        g.step()
+        self.assertEqual((g.eaten, g.last_eaten, g.score), ([10, 11], [10, 11], 2))  # 2 entités dans la même case
+        self.assertTrue(g.alive)
+        g.step()
+        g.step()
+        self.assertEqual(g.eaten, [10, 11, 12])
+        self.assertTrue(g.won)
+        self.assertFalse(g.alive)
+
+    def test_single_mode_lights_one_target(self):
+        base = SnakeGame(12, 8, seed=1)
+        y = base.head[1]
+        t = {(base.head[0] + 1, y): ["a"], (0, 0): ["b"], (11, 7): ["c"]}
+        g = self.game(t, mode=SINGLE)
+        self.assertIn(g.food, t)
+        g.food = (g.head[0] + 1, y)
+        g.step()
+        self.assertEqual(g.eaten, ["a"])
+        self.assertIn(g.food, [(0, 0), (11, 7)])  # une nouvelle cible
+        self.assertEqual(g.total, 3)
+
+    def test_non_target_cell_in_single_mode_is_ignored(self):
+        base = SnakeGame(12, 8, seed=1)
+        y = base.head[1]
+        g = self.game({(0, 0): ["b"], (11, 7): ["c"]}, mode=SINGLE)
+        g.food = (0, 0)
+        g.step()
+        self.assertEqual((g.eaten, g.length), ([], 3))
+
+    def test_growth_modes(self):
+        base = SnakeGame(14, 8, seed=1)
+        y, x = base.head[1], base.head[0]
+        t = {(x + i, y): [i] for i in range(1, 7)}
+        never = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=0)
+        for _ in range(6):
+            never.step()
+        self.assertEqual((len(never.eaten), never.length), (6, 3))
+        third = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=3)
+        for _ in range(6):
+            third.step()
+        self.assertEqual((len(third.eaten), third.length), (6, 5))
+        each = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=1)
+        for _ in range(6):
+            each.step()
+        self.assertEqual(each.length, 9)
+
+    def test_target_under_initial_snake_is_already_eaten(self):
+        base = SnakeGame(12, 8, seed=1)
+        g = self.game({base.head: ["x"], (0, 0): ["y"]}, mode=ALL)
+        self.assertEqual(g.eaten, ["x"])
+        self.assertEqual(len(g.remaining), 1)
+
+    def test_out_of_grid_targets_ignored_and_classic_fallback(self):
+        g = self.game({(99, 99): ["z"]}, mode=ALL)
+        self.assertEqual(g.mode, "classic")
+        self.assertIsNotNone(g.food)
+
+    def test_pixel_mapping(self):
+        origin = grid_origin(500, 300, 10, 6, 40)
+        self.assertEqual(origin, (50, 30))
+        self.assertEqual(point_to_cell(50, 30, origin, 40, 10, 6), (0, 0))
+        self.assertEqual(point_to_cell(449, 269, origin, 40, 10, 6), (9, 5))
+        self.assertIsNone(point_to_cell(49, 100, origin, 40, 10, 6))
+        self.assertIsNone(point_to_cell(450, 100, origin, 40, 10, 6))
+        t = build_targets([("a", 60, 40), ("b", 70, 50), ("c", 0, 0)], origin, 40, 10, 6)
+        self.assertEqual(t, {(0, 0): ["a", "b"]})
 
 
 if __name__ == "__main__":

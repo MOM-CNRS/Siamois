@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from qgis.core import QgsSettings
+from qgis.core import Qgis, QgsSettings
 from qgis.PyQt.QtCore import QEvent, QObject, Qt, QTimer
 from qgis.PyQt.QtWidgets import QAction
 
-from .game import DOWN, LEFT, RIGHT, UP, SnakeGame
+from .game import ALL, CLASSIC, DOWN, LEFT, RIGHT, UP, SnakeGame, build_targets, grid_origin
+from .options_dialog import OptionsDialog
 from .overlay import SnakeOverlay
+from .targets import SnakeOptions, collect_points
 
 CELL = 26
 SETTING_BEST = "snake_game/best"
@@ -21,9 +23,11 @@ KEYS = {
 class SnakeController(QObject):
     """Une partie sur un canevas : grille calée sur la taille de la vue, clavier capté, minuterie."""
 
-    def __init__(self, iface, on_stop):
+    def __init__(self, iface, on_stop, options=None):
         super().__init__(iface.mainWindow())
         self.iface, self.canvas, self.on_stop = iface, iface.mapCanvas(), on_stop
+        self.options = options or SnakeOptions()
+        self._finished = False
         self.viewport = self.canvas.viewport()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._tick)
@@ -40,6 +44,7 @@ class SnakeController(QObject):
     def stop(self) -> None:
         self.timer.stop()
         self._save_best()
+        self._finish()
         for w in (self.canvas, self.viewport):
             w.removeEventFilter(self)
         if self.overlay is not None:
@@ -55,17 +60,44 @@ class SnakeController(QObject):
 
     def _new_game(self) -> None:
         cols, rows = self._grid()
-        self.game = SnakeGame(cols, rows)
+        self._finished = False
+        targets, labels = {}, {}
+        opt = self.options
+        if opt.layer is not None:
+            points, labels, truncated = collect_points(self.canvas, opt)
+            origin = grid_origin(self.viewport.width(), self.viewport.height(), cols, rows, CELL)
+            targets = build_targets(points, origin, CELL, cols, rows)
+            if truncated:
+                self._msg(f"Plus de {len(points)} points : seuls les premiers sont jouables. Zoomez pour en avoir moins.",
+                          Qgis.Warning)
+            if not targets:
+                self._msg("Aucun point de la couche dans la vue actuelle : partie classique (amphores).", Qgis.Warning)
+        self.game = SnakeGame(cols, rows, targets=targets, mode=opt.mode, grow_every=opt.grow_every)
         if self.overlay is None:
-            self.overlay = SnakeOverlay(self.viewport, self.game, CELL, self.best)
+            self.overlay = SnakeOverlay(self.viewport, self.game, CELL, self.best, labels)
         else:
-            self.overlay.game, self.overlay.paused = self.game, False
+            self.overlay.game, self.overlay.paused, self.overlay.labels = self.game, False, labels
         self.overlay.setGeometry(self.viewport.rect())
         self.timer.start(self.game.interval_ms())
         self.overlay.update()
 
+    def _msg(self, text, level=Qgis.Info, duration: int = 8) -> None:
+        self.iface.messageBar().pushMessage("Snake", text, level, duration)
+
+    def _finish(self) -> None:
+        """Fin de partie : sélectionne dans QGIS les entités mangées (si demandé)."""
+        g, opt = self.game, self.options
+        if self._finished or g is None or opt.layer is None or g.mode == CLASSIC or not g.eaten:
+            return
+        self._finished = True
+        ids = sorted(set(g.eaten))
+        if opt.select_at_end:
+            opt.layer.selectByIds(ids)
+        self._msg(f"{len(ids)} entité(s) mangée(s) sur {len({k for ks in g._targets_init.values() for k in ks})}"
+                  + (" — sélectionnées dans la couche." if opt.select_at_end else "."), Qgis.Success, 10)
+
     def _save_best(self) -> None:
-        if self.game is not None and self.game.score > self.best:
+        if self.game is not None and self.game.mode == CLASSIC and self.game.score > self.best:
             self.best = self.game.score
             QgsSettings().setValue(SETTING_BEST, self.best)
             if self.overlay is not None:
@@ -78,6 +110,7 @@ class SnakeController(QObject):
         if not alive:
             self.timer.stop()
             self._save_best()
+            self._finish()
         else:
             self.timer.setInterval(self.game.interval_ms())
         self.overlay.update()
@@ -93,6 +126,9 @@ class SnakeController(QObject):
 
     def eventFilter(self, obj, event):  # noqa: N802 - API Qt
         t = event.type()
+        if (self.options.layer is not None and obj is self.viewport and self.overlay is not None
+                and t in (QEvent.Wheel, QEvent.MouseButtonPress, QEvent.MouseButtonDblClick)):
+            return True  # carte verrouillée : la grille de jeu est calée sur l'emprise de départ
         if t == QEvent.KeyPress and not event.isAutoRepeat():
             key = event.key()
             if key == Qt.Key_Escape:
@@ -140,7 +176,11 @@ class SnakePlugin:
 
     def _toggle(self, on: bool) -> None:
         if on and self.controller is None:
-            self.controller = SnakeController(self.iface, self._stopped)
+            dlg = OptionsDialog(self.iface.mainWindow(), self.iface.activeLayer())
+            if dlg.exec_() != OptionsDialog.Accepted:
+                self._stopped()
+                return
+            self.controller = SnakeController(self.iface, self._stopped, dlg.options())
             self.controller.start()
         elif not on and self.controller is not None:
             self.controller.stop()
