@@ -28,13 +28,11 @@ class OptionsDialog(QDialog):
             if i >= 0:
                 self.layer_box.setCurrentIndex(i)
         self.field_box = QComboBox()
-        self.mode_box = QComboBox()
-        self.mode_box.addItem("Tout manger : tous les points sont des cibles", "all")
-        self.mode_box.addItem("Un point à la fois : une cible allumée au hasard", "single")
         self.grow_box = QComboBox()
-        self.grow_box.addItem("Grandit à chaque point mangé", 1)
-        self.grow_box.addItem("Grandit tous les 3 points", 3)
+        self.grow_box.addItem("Grandit du nombre de points mangés (max 10 par case)", 10)
         self.grow_box.addItem("Ne grandit jamais (mode zen)", 0)
+        self.hide_box = QCheckBox("Faire disparaître les points mangés de la carte (pendant la partie)")
+        self.hide_box.setChecked(True)
         self.select_box = QCheckBox("Sélectionner les points mangés à la fin")
         self.select_box.setChecked(True)
         self.hint = QLabel()
@@ -43,15 +41,16 @@ class OptionsDialog(QDialog):
         form = QFormLayout()
         form.addRow("Couche de points", self.layer_box)
         form.addRow("Afficher le champ", self.field_box)
-        form.addRow("Règle", self.mode_box)
         form.addRow("Croissance", self.grow_box)
+        form.addRow(self.hide_box)
         form.addRow(self.select_box)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("Jouer 🐍")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
-        lay.addWidget(QLabel("Le terrain est la vue actuelle de la carte (zoom et déplacement verrouillés pendant la partie)."))
+        lay.addWidget(QLabel("Le terrain est la vue actuelle de la carte (zoom et déplacement verrouillés pendant la partie). "
+                             "Promenez le serpent sur les points de la couche pour les « manger »."))
         lay.addLayout(form)
         lay.addWidget(self.hint)
         lay.addWidget(buttons)
@@ -66,7 +65,7 @@ class OptionsDialog(QDialog):
         layer = self._layer()
         self.field_box.clear()
         on = layer is not None
-        for w in (self.field_box, self.mode_box, self.grow_box, self.select_box):
+        for w in (self.field_box, self.grow_box, self.hide_box, self.select_box):
             w.setEnabled(on)
         self.hint.setText("" if on else "Sans couche : une amphore apparaît au hasard, comme au Snake classique.")
         if on:
@@ -81,5 +80,5 @@ class OptionsDialog(QDialog):
 
     def options(self) -> SnakeOptions:
         return SnakeOptions(
-            layer=self._layer(), label_field=self.field_box.currentData(), mode=self.mode_box.currentData(),
-            grow_every=self.grow_box.currentData(), select_at_end=self.select_box.isChecked())
+            layer=self._layer(), label_field=self.field_box.currentData(), growth_cap=self.grow_box.currentData(),
+            hide_eaten=self.hide_box.isChecked(), select_at_end=self.select_box.isChecked())

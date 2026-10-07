@@ -6,7 +6,7 @@ from qgis.PyQt.QtCore import QRectF, Qt
 from qgis.PyQt.QtGui import QColor, QFont, QPainter, QPen
 from qgis.PyQt.QtWidgets import QWidget
 
-from .game import ALL, CLASSIC, SINGLE, SnakeGame, grid_origin
+from .game import CLASSIC, SnakeGame, grid_origin
 
 BODY = QColor(46, 160, 67, 215)
 BODY_ALT = QColor(34, 139, 52, 215)
@@ -48,13 +48,8 @@ class SnakeOverlay(QWidget):
         p.setPen(QPen(QColor(255, 255, 255, 190), 3))
         p.setBrush(QColor(0, 0, 0, 25))
         p.drawRect(ox - 2, oy - 2, g.cols * self.cell + 4, g.rows * self.cell + 4)
-        # cibles (entités de la couche)
-        if g.mode == ALL:
-            for cell in g.remaining:
-                self._ring(p, cell, QColor(255, 170, 0, 230), 2)
-        elif g.mode == SINGLE and g.food is not None:
-            self._ring(p, g.food, QColor(255, 60, 60, 240), 4)
-        # amphore (mode classique)
+        # amphore : uniquement au Snake classique (sans couche). Avec une couche, les cibles sont les vrais
+        # points de la carte, que QGIS dessine déjà : aucun faux point n'est ajouté.
         if g.mode == CLASSIC and g.food is not None:
             r = self._rect(*g.food, pad=2)
             p.setPen(Qt.NoPen)
@@ -84,11 +79,6 @@ class SnakeOverlay(QWidget):
                 score = f"{len(g.eaten)}/{g.total} points" if g.mode != CLASSIC else f"Score {g.score}"
                 self._banner(p, "GAME OVER", f"{score} · Espace pour rejouer · Échap pour quitter")
         p.end()
-
-    def _ring(self, p: QPainter, cell, color: QColor, width: int) -> None:
-        p.setPen(QPen(color, width))
-        p.setBrush(Qt.NoBrush)
-        p.drawEllipse(self._rect(*cell, pad=1))
 
     def _eyes(self, p: QPainter) -> None:
         g = self.game

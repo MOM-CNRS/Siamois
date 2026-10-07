@@ -1,16 +1,18 @@
-# 🐍 Snake sur la carte (plugin QGIS, v0.1)
+# 🐍 Snake sur la carte (plugin QGIS, v0.2)
 
 Un Snake jouable **par-dessus la carte actuelle** : un calque transparent sur le canevas, rien n'est modifié dans le projet.
 
 ## Deux façons de jouer (dialogue au lancement)
-- **Sur une couche de points** : le terrain est la **vue actuelle** (zoom et déplacement verrouillés), les cibles sont les entités
-  de la couche visibles dans l'emprise (cercles orange).
-  - *Tout manger* : toutes les cibles sont allumées ; victoire quand elles sont toutes mangées.
-  - *Un point à la fois* : une cible rouge au hasard.
-  - *Croissance* : à chaque point / tous les 3 / jamais (mode zen).
-  - Un champ au choix (ex. identifiant) s'affiche pour le dernier point mangé ; à la fin les entités mangées peuvent être **sélectionnées**
-    dans la couche (aucune donnée n'est modifiée).
-  - Plusieurs points dans la même case sont mangés d'un coup ; au-delà de 3000 points, seuls les premiers sont jouables (zoomez).
+- **Sur une couche de points** : le terrain est la **vue actuelle** (zoom et déplacement verrouillés). **Aucun faux point** :
+  le serpent se promène librement et « mange » les **vrais points de la couche** qu'il croise.
+  - Les points mangés **disparaissent de la carte** pendant la partie (rendu de la couche temporairement filtré, données jamais
+    modifiées ; le rendu d'origine est restauré en quittant avec Échap). Désactivable.
+  - Plusieurs points dans la même case comptent tous ; le serpent **grandit du nombre de points mangés, au plus 10 par case**
+    (ou jamais, en mode zen).
+  - Un champ au choix (ex. identifiant) s'affiche pour le dernier point mangé ; à la fin les points mangés peuvent être
+    **sélectionnés** dans la couche.
+  - Victoire quand tous les points de la vue sont mangés ; au-delà de 3000 points, seuls les premiers sont jouables (zoomez).
+  - Si le rendu de la couche ne peut pas être filtré (ex. carte de chaleur), les points restent affichés (le jeu compte quand même).
 - **Sans couche** : une amphore 🏺 apparaît au hasard (Snake classique ; record mémorisé).
 
 ## Installer

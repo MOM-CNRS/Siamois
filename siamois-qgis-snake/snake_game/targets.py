@@ -14,10 +14,11 @@ MAX_TARGETS = 3000  # au-delà, la grille ne serait plus jouable
 
 @dataclass
 class SnakeOptions:
-    layer: Optional[QgsVectorLayer] = None  # None : amphores aléatoires
+    layer: Optional[QgsVectorLayer] = None  # None : amphores aléatoires (Snake classique)
     label_field: Optional[str] = None
-    mode: str = "all"  # "all" (tout manger) | "single" (une cible à la fois)
-    grow_every: int = 1  # 1 : chaque case mangée ; 3 : tous les 3 ; 0 : jamais
+    mode: str = "all"  # les vrais points de la carte sont les cibles, aucune cible dessinée
+    growth_cap: int = 10  # grandit du nombre de points mangés dans la case, au plus 10 ; 0 : ne grandit jamais
+    hide_eaten: bool = True  # les points mangés disparaissent de la carte pendant la partie
     select_at_end: bool = True
 
 

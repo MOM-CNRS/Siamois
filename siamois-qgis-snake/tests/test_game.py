@@ -158,22 +158,37 @@ class TargetsTests(unittest.TestCase):
         g.step()
         self.assertEqual((g.eaten, g.length), ([], 3))
 
-    def test_growth_modes(self):
+    def test_growth_equals_points_in_cell_with_cap(self):
+        base = SnakeGame(40, 8, seed=1)
+        y, x = base.head[1], base.head[0]
+        # case 1 : 2 points ; case 2 : 25 points (plafonnés à 10) ; case 3 : 1 point
+        t = {(x + 1, y): [1, 2], (x + 3, y): list(range(10, 35)), (x + 5, y): [99], (0, 0): ["loin"]}
+        g = SnakeGame(40, 8, seed=1, targets=t, mode=ALL)  # growth_cap = 10 par défaut
+        g.step()
+        self.assertEqual((g.length, g.score), (4, 2))  # +1 immédiat, +1 en attente
+        g.step()
+        self.assertEqual(g.length, 5)  # croissance échelonnée, une case par pas
+        g.step()
+        g.step()  # mange la case de 25 points
+        self.assertEqual(g.score, 27)
+        for _ in range(12):
+            g.step()
+        self.assertEqual(g.length, 3 + 2 + 10 + 1)  # 2 + min(25, 10) + 1, jamais plus
+
+    def test_never_grow(self):
         base = SnakeGame(14, 8, seed=1)
         y, x = base.head[1], base.head[0]
-        t = {(x + i, y): [i] for i in range(1, 7)}
-        never = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=0)
+        t = {(x + i, y): [i, i + 100] for i in range(1, 7)}
+        g = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, growth_cap=0)
         for _ in range(6):
-            never.step()
-        self.assertEqual((len(never.eaten), never.length), (6, 3))
-        third = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=3)
-        for _ in range(6):
-            third.step()
-        self.assertEqual((len(third.eaten), third.length), (6, 5))
-        each = SnakeGame(14, 8, seed=1, targets=t, mode=ALL, grow_every=1)
-        for _ in range(6):
-            each.step()
-        self.assertEqual(each.length, 9)
+            g.step()
+        self.assertEqual((len(g.eaten), g.length), (12, 3))
+
+    def test_classic_still_grows_one(self):
+        g = SnakeGame(10, 8, seed=1)
+        g.food = (g.head[0] + 1, g.head[1])
+        g.step()
+        self.assertEqual(g.length, 4)
 
     def test_target_under_initial_snake_is_already_eaten(self):
         base = SnakeGame(12, 8, seed=1)

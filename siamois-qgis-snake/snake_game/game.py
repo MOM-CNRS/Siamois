@@ -15,17 +15,18 @@ CLASSIC, ALL, SINGLE = "classic", "all", "single"
 
 class SnakeGame:
     """Modes : *classic* (nourriture aléatoire) ; avec `targets` (cellule -> clés d'entités) :
-    *all* (tout manger) ou *single* (une cible allumée à la fois). `grow_every` : 1 = grandit à chaque
-    cellule mangée, n = tous les n, 0 = jamais."""
+    *all* (tout manger, aucune cible dessinée : ce sont les vrais points de la carte) ou *single* (une cible
+    allumée à la fois). Le serpent grandit du nombre d'entités mangées dans la case, plafonné à `growth_cap`
+    (0 = ne grandit jamais)."""
 
     def __init__(self, cols: int, rows: int, *, wrap: bool = False, seed: Optional[int] = None, start_length: int = 3,
-                 targets: Optional[Dict[Cell, List[Any]]] = None, mode: str = ALL, grow_every: int = 1):
+                 targets: Optional[Dict[Cell, List[Any]]] = None, mode: str = ALL, growth_cap: int = 10):
         if cols < 4 or rows < 4:
             raise ValueError("grille trop petite (minimum 4×4)")
         self.cols, self.rows, self.wrap = cols, rows, wrap
         self._rnd = random.Random(seed)
         self.start_length = min(start_length, cols - 1)
-        self.grow_every = grow_every
+        self.growth_cap = growth_cap
         self._targets_init = {c: list(k) for c, k in (targets or {}).items()
                               if 0 <= c[0] < cols and 0 <= c[1] < rows and k}
         self.mode = mode if self._targets_init else CLASSIC
@@ -46,7 +47,7 @@ class SnakeGame:
         self.total = sum(len(k) for k in self.remaining.values())
         self.eaten: List[Any] = []  # clés des entités mangées, dans l'ordre
         self.last_eaten: List[Any] = []
-        self._foods = 0
+        self._pending = 0  # cases de croissance restant à appliquer (une par pas)
         for cell in list(self.body):  # cibles sous le serpent au départ : déjà mangées
             if self.mode != CLASSIC and cell in self.remaining:
                 self._consume(cell)
@@ -111,17 +112,20 @@ class SnakeGame:
             return False
         new = (nx, ny)
         eating = new in self.remaining if self.mode == ALL else new == self.food
-        grow = False
-        if eating:
-            self._foods += 1
-            grow = self.grow_every == 1 or (self.grow_every > 1 and self._foods % self.grow_every == 0)
+        gain = 0
+        if eating and self.growth_cap > 0:
+            gain = 1 if self.mode == CLASSIC else min(len(self.remaining[new]), self.growth_cap)
+        pending = self._pending + gain
+        grow = pending > 0
         # la queue libère sa case ce tour-ci, sauf si on grandit
         body_to_check = list(self.body) if grow else list(self.body)[1:]
         if new in body_to_check:
             self.alive = False
             return False
         self.body.append(new)
-        if not grow:
+        if grow:
+            self._pending = pending - 1  # croissance échelonnée : une case par pas
+        else:
             self.body.popleft()
         if eating:
             if self.mode == CLASSIC:
