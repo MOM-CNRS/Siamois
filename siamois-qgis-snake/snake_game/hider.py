@@ -27,10 +27,9 @@ class PointHider:
         converted = QgsRuleBasedRenderer.convertFromRenderer(self._original.clone())
         if converted is None:
             return False
-        children = converted.rootRule().takeChildren()
         wrapper = QgsRuleBasedRenderer.Rule(None, 0, 0, "", "")
-        for child in children:
-            wrapper.appendChild(child)
+        for child in converted.rootRule().children():  # pas de takeChildren() en PyQGIS : on clone chaque règle
+            wrapper.appendChild(child.clone())
         root = QgsRuleBasedRenderer.Rule(None)
         root.appendChild(wrapper)
         self._wrapper = wrapper
