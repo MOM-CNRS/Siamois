@@ -91,6 +91,35 @@ class FakeClient:
         self.patches.append(("project", id_, kw))
 
 
+class CompatibilityTests(unittest.TestCase):
+    """Détecte un SDK trop ancien pour le plugin (cause d'un ImportError à l'installation)."""
+
+    def test_sdk_version_and_imported_names(self):
+        import ast
+        import importlib
+        import siamois_sdk
+        from siamois_qgis import _sdk
+        self.assertGreaterEqual(_sdk._parse(siamois_sdk.__version__), _sdk.MIN_SDK)
+        core = os.path.join(os.path.dirname(__file__), "..", "siamois_qgis")
+        missing = []
+        for root, _, files in os.walk(core):
+            for f in files:
+                if not f.endswith(".py"):
+                    continue
+                tree = ast.parse(open(os.path.join(root, f), encoding="utf-8").read())
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("siamois_sdk"):
+                        mod = importlib.import_module(node.module)
+                        missing += [f"{node.module}.{a.name} ({f})" for a in node.names if not hasattr(mod, a.name)]
+        self.assertEqual(missing, [])
+
+    def test_parse(self):
+        from siamois_qgis._sdk import _parse
+        self.assertLess(_parse("0.1.0"), (0, 2, 0))
+        self.assertEqual(_parse("0.2"), (0, 2, 0))
+        self.assertGreater(_parse("1.0.0rc1"), (0, 2, 0))
+
+
 class LoaderTests(unittest.TestCase):
     def test_load_project(self):
         steps = []
