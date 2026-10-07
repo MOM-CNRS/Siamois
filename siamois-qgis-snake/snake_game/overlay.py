@@ -22,6 +22,7 @@ class SnakeOverlay(QWidget):
         super().__init__(parent)
         self.game, self.cell, self.best = game, cell, best
         self.labels = labels or {}  # fid -> libellé (champ choisi)
+        self.eraser = None  # PointEraser : efface les points mangés
         self.paused = False
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.setAttribute(Qt.WA_NoSystemBackground)
@@ -48,6 +49,9 @@ class SnakeOverlay(QWidget):
         p.setPen(QPen(QColor(255, 255, 255, 190), 3))
         p.setBrush(QColor(0, 0, 0, 25))
         p.drawRect(ox - 2, oy - 2, g.cols * self.cell + 4, g.rows * self.cell + 4)
+        # points « mangés » : recopie du fond sans la couche par-dessus les symboles
+        if self.eraser is not None:
+            self.eraser.paint(p, self.size())
         # amphore : uniquement au Snake classique (sans couche). Avec une couche, les cibles sont les vrais
         # points de la carte, que QGIS dessine déjà : aucun faux point n'est ajouté.
         if g.mode == CLASSIC and g.food is not None:

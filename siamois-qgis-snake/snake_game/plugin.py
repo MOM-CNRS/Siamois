@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from qgis.core import Qgis, QgsSettings
 from qgis.PyQt.QtCore import QEvent, QObject, Qt, QTimer
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QApplication
 
 from .game import CLASSIC, DOWN, LEFT, RIGHT, UP, SnakeGame, build_targets, grid_origin
-from .hider import PointHider
+from .eraser import PointEraser
 from .options_dialog import OptionsDialog
 from .overlay import SnakeOverlay
 from .targets import SnakeOptions, collect_points
@@ -35,17 +35,13 @@ class SnakeController(QObject):
         self.best = int(QgsSettings().value(SETTING_BEST, 0) or 0)
         self.overlay = None
         self.game = None
-        self.hider = None
-        self._seen = 0  # nombre d'entités mangées déjà masquées sur la carte
+        self.eraser = None
+        self._seen = 0  # nombre d'entités mangées déjà effacées de l'écran
 
     def start(self) -> None:
         opt = self.options
         if opt.layer is not None and opt.hide_eaten:
-            self.hider = PointHider(opt.layer)
-            if not self.hider.start():
-                self.hider = None
-                self._msg("Le rendu de cette couche ne permet pas de masquer les points : ils resteront visibles.",
-                          Qgis.Warning)
+            self.eraser = PointEraser(self.canvas, opt.layer)
         self._new_game()
         self.canvas.installEventFilter(self)
         self.viewport.installEventFilter(self)
@@ -55,9 +51,7 @@ class SnakeController(QObject):
         self.timer.stop()
         self._save_best()
         self._finish()
-        if self.hider is not None:
-            self.hider.restore()  # rendu d'origine de la couche, points mangés réaffichés
-            self.hider = None
+        self.eraser = None  # rien à restaurer : la couche n'a jamais été modifiée
         for w in (self.canvas, self.viewport):
             w.removeEventFilter(self)
         if self.overlay is not None:
@@ -87,12 +81,21 @@ class SnakeController(QObject):
                 self._msg("Aucun point de la couche dans la vue actuelle : partie classique (amphores).", Qgis.Warning)
         self.game = SnakeGame(cols, rows, targets=targets, mode=opt.mode, growth_cap=opt.growth_cap)
         self._seen = 0
-        if self.hider is not None:
-            self.hider.show_all()  # nouvelle partie : tous les points réapparaissent
+        if self.eraser is not None:
+            # fond = carte rendue une fois sans la couche ; nouvelle partie : tous les points réapparaissent
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            try:
+                ok = self.eraser.prepare(points)
+            finally:
+                QApplication.restoreOverrideCursor()
+            if not ok:
+                self.eraser = None
+                self._msg("Impossible de préparer l'effacement des points : ils resteront visibles.", Qgis.Warning)
         if self.overlay is None:
             self.overlay = SnakeOverlay(self.viewport, self.game, CELL, self.best, labels)
         else:
             self.overlay.game, self.overlay.paused, self.overlay.labels = self.game, False, labels
+        self.overlay.eraser = self.eraser
         self.overlay.setGeometry(self.viewport.rect())
         self.timer.start(self.game.interval_ms())
         self.overlay.update()
@@ -123,8 +126,8 @@ class SnakeController(QObject):
         if self.overlay is None or self.overlay.paused:
             return
         alive = self.game.step()
-        if self.hider is not None and len(self.game.eaten) > self._seen:
-            self.hider.hide(self.game.eaten[self._seen:])  # « mangés » : disparaissent de la carte
+        if self.eraser is not None and len(self.game.eaten) > self._seen:
+            self.eraser.erase(self.game.eaten[self._seen:])  # « mangés » : disparaissent aussitôt de l'écran
             self._seen = len(self.game.eaten)
         if not alive:
             self.timer.stop()
