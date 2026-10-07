@@ -5,7 +5,7 @@ permet l'édition classique QGIS ou via la fiche, puis **synchronise** vers l'AP
 [`docs/CONCEPTION_CHARGEMENT_COUCHES.md`](docs/CONCEPTION_CHARGEMENT_COUCHES.md).
 
 ## Installer
-- Dev : lier `siamois_qgis/` dans le dossier des plugins QGIS (le SDK est trouvé dans `../siamois-sdk-python`).
+- Dev / mise à jour : `./install_dev.sh` (remplace le dossier installé, SDK à jour inclus dans `vendor/`). **Ne copiez pas `siamois_qgis/` à la main par-dessus l'ancien** : un ancien `vendor/` resterait.
 - Zip : `./build.sh` → `dist/siamois_qgis.zip` (SDK embarqué) → *Extensions ▸ Installer depuis un ZIP*.
 
 ## Utiliser
