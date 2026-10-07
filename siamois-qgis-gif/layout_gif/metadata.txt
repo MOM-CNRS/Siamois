@@ -1,0 +1,11 @@
+[general]
+name=Mise en page → GIF animé
+qgisMinimumVersion=3.22
+description=Exporte une mise en page contenant un cadre image GIF animé en GIF animé
+version=0.1.0
+author=CNRS – MOM / SIAMOIS
+about=Rend la mise en page une fois par image du GIF placé dans un cadre image, puis assemble les rendus en un GIF animé. Sans dépendance externe (Pillow optionnel pour une meilleure palette).
+experimental=True
+repository=https://github.com/MOM-CNRS/Siamois
+tracker=https://github.com/MOM-CNRS/Siamois/issues
+tags=gif,animation,mise en page,layout,export
