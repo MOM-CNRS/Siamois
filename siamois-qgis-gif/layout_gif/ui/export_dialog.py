@@ -24,7 +24,7 @@ class ExportDialog(QDialog):
 
         self.layouts = QComboBox()
         for l in QgsProject.instance().layoutManager().printLayouts():
-            self.layouts.addItem(l.name(), l)
+            self.layouts.addItem(l.name())
         if layout is not None:
             i = self.layouts.findText(layout.name())
             if i >= 0:
@@ -85,7 +85,9 @@ class ExportDialog(QDialog):
     # ------------------------------------------------------------------
 
     def current_layout(self) -> Optional[QgsLayout]:
-        return self.layouts.currentData()
+        # On ne stocke pas l'objet dans le combo : currentData() le renverrait typé QGraphicsScene.
+        name = self.layouts.currentText()
+        return QgsProject.instance().layoutManager().layoutByName(name) if name else None
 
     def _reload(self) -> None:
         layout = self.current_layout()
