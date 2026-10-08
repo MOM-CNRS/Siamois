@@ -6,15 +6,8 @@ import fr.siamois.domain.models.form.rules.ConditionOp;
 import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnit;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.rules.OptionsFilter;
-import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.domain.models.form.rules.RuleFieldFamily;
-import fr.siamois.domain.services.placesource.PlaceSourceProvider;
-import fr.siamois.domain.services.placesource.PlaceSourceRegistry;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -31,10 +24,7 @@ import java.util.Set;
  * inactive for the type is fine — a rule reads it as empty.
  */
 @Component
-@RequiredArgsConstructor
 public class FieldRulesValidator {
-
-    private final PlaceSourceRegistry placeSources;
 
     public static final int MAX_LEAVES = 20;
 
@@ -74,7 +64,6 @@ public class FieldRulesValidator {
         } else if (options instanceof OptionsFilter.RefMatch match) {
             reference(match.fieldId(), ownFieldId, fields, issues);
         }
-        checkPlaceSources(rules.placeSources(), own, ownFieldId, fields, issues);
         for (FieldConstraint constraint : rules.constraints()) {
             CustomField other = reference(constraint.fieldId(), ownFieldId, fields, issues);
             if (other == null) continue;
@@ -83,40 +72,6 @@ public class FieldRulesValidator {
             }
         }
         return issues;
-    }
-
-    /**
-     * Place sources belong to a place field, name a registered source, and only bind parameters that
-     * source declares to another place field of the form.
-     */
-    private void checkPlaceSources(List<PlaceSourceSpec> specs, CustomField own, long ownFieldId,
-                                   Map<Long, CustomField> fields, List<Issue> issues) {
-        if (specs.isEmpty()) return;
-        if (!isPlaceField(own)) {
-            issues.add(new Issue("rules.error.placeSourcesOwnNotPlace"));
-        }
-        for (PlaceSourceSpec spec : specs) {
-            PlaceSourceProvider provider = placeSources.find(spec.source()).orElse(null);
-            if (provider == null) {
-                issues.add(new Issue("rules.error.placeSourceUnknown", spec.source()));
-                continue;
-            }
-            spec.params().forEach((name, binding) -> {
-                if (!provider.declaredParams().contains(name)) {
-                    issues.add(new Issue("rules.error.placeSourceParam", name, spec.source()));
-                }
-                CustomField from = reference(binding.fromField(), ownFieldId, fields, issues);
-                if (from != null && !isPlaceField(from)) {
-                    issues.add(new Issue("rules.error.placeSourceFromNotPlace", label(from)));
-                }
-            });
-        }
-    }
-
-    private static boolean isPlaceField(CustomField field) {
-        return field instanceof CustomFieldSelectOneSpatialUnit
-                || field instanceof CustomFieldSelectMultipleSpatialUnitTree
-                || field instanceof CustomFieldSelectMultipleSpatialUnit;
     }
 
     private void check(Condition condition, long ownFieldId, Map<Long, CustomField> fields, List<Issue> issues, int[] leaves) {

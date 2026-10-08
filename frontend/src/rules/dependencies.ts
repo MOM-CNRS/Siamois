@@ -16,9 +16,6 @@ export function ruleDependencies(rules: FieldRules | null | undefined): Set<stri
   collect(rules.requiredWhen, out);
   if (rules.options) out.add(String(rules.options.fieldId));
   rules.constraints?.forEach((c) => out.add(String(c.fieldId)));
-  rules.placeSources?.forEach((source) =>
-    Object.values(source.params ?? {}).forEach((binding) => out.add(String(binding.fromField))),
-  );
   return out;
 }
 

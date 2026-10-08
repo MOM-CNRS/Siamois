@@ -367,8 +367,6 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           context={editContextOf(target.row, entityType, organizationId)}
           bounds={target.fieldState?.bounds}
           optionsContext={target.fieldState?.optionsContext}
-          placeContext={target.fieldState?.placeContext}
-          fieldLabelOf={target.fieldLabelOf}
           onChange={onValueChange}
         />
       )}

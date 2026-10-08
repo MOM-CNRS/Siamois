@@ -16,31 +16,20 @@ import java.util.Set;
  *                     de la colonne reste « requis toujours »)
  * @param options      restriction des valeurs proposées selon un autre champ
  * @param constraints  contraintes d'ordre avec d'autres champs
- * @param placeSources sources de suggestions d'un champ lieu (INSEE, GéoPlateforme…) et leurs
- *                     paramètres, alimentés par la valeur d'autres champs lieu
  */
 public record FieldRules(@Nullable Condition enabledWhen,
                          @Nullable Condition requiredWhen,
                          @Nullable OptionsFilter options,
-                         List<FieldConstraint> constraints,
-                         List<PlaceSourceSpec> placeSources) implements Serializable {
+                         List<FieldConstraint> constraints) implements Serializable {
 
-    public static final FieldRules NONE = new FieldRules(null, null, null, List.of(), List.of());
+    public static final FieldRules NONE = new FieldRules(null, null, null, List.of());
 
     public FieldRules {
         constraints = constraints == null ? List.of() : List.copyOf(constraints);
-        placeSources = placeSources == null ? List.of() : List.copyOf(placeSources);
-    }
-
-    /** Rules with no place source. */
-    public FieldRules(@Nullable Condition enabledWhen, @Nullable Condition requiredWhen,
-                      @Nullable OptionsFilter options, List<FieldConstraint> constraints) {
-        this(enabledWhen, requiredWhen, options, constraints, List.of());
     }
 
     public boolean isEmpty() {
-        return enabledWhen == null && requiredWhen == null && options == null && constraints.isEmpty()
-                && placeSources.isEmpty();
+        return enabledWhen == null && requiredWhen == null && options == null && constraints.isEmpty();
     }
 
     /** Tous les champs dont dépend l'état de ce champ. */
@@ -50,31 +39,22 @@ public record FieldRules(@Nullable Condition enabledWhen,
         if (requiredWhen != null) out.addAll(requiredWhen.fieldIds());
         if (options != null) out.addAll(options.fieldIds());
         constraints.forEach(c -> out.add(c.fieldId()));
-        placeSources.forEach(source -> out.addAll(source.fieldIds()));
         return out;
     }
 
     public FieldRules withEnabledWhen(@Nullable Condition condition) {
-        return new FieldRules(condition, requiredWhen, options, constraints, placeSources);
+        return new FieldRules(condition, requiredWhen, options, constraints);
     }
 
     public FieldRules withRequiredWhen(@Nullable Condition condition) {
-        return new FieldRules(enabledWhen, condition, options, constraints, placeSources);
+        return new FieldRules(enabledWhen, condition, options, constraints);
     }
 
     public FieldRules withOptions(@Nullable OptionsFilter filter) {
-        return new FieldRules(enabledWhen, requiredWhen, filter, constraints, placeSources);
+        return new FieldRules(enabledWhen, requiredWhen, filter, constraints);
     }
 
     public FieldRules withConstraints(FieldConstraint... more) {
-        return new FieldRules(enabledWhen, requiredWhen, options, List.of(more), placeSources);
-    }
-
-    public FieldRules withPlaceSources(PlaceSourceSpec... more) {
-        return new FieldRules(enabledWhen, requiredWhen, options, constraints, List.of(more));
-    }
-
-    public FieldRules withPlaceSources(List<PlaceSourceSpec> sources) {
-        return new FieldRules(enabledWhen, requiredWhen, options, constraints, sources);
+        return new FieldRules(enabledWhen, requiredWhen, options, List.of(more));
     }
 }

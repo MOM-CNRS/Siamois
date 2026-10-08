@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FieldRulesValidatorTest {
 
-    private final FieldRulesValidator validator = new FieldRulesValidator(new fr.siamois.domain.services.placesource.PlaceSourceRegistry(List.of(geoplatSource())));
+    private final FieldRulesValidator validator = new FieldRulesValidator();
 
     private final CustomField concept = conceptField(1L, "nature");
     private final CustomField otherConcept = conceptField(2L, "interpretation");
@@ -98,50 +98,5 @@ class FieldRulesValidatorTest {
         Condition[] many = new Condition[FieldRulesValidator.MAX_LEAVES + 1];
         java.util.Arrays.fill(many, Condition.notEmpty(5L));
         assertThat(keys(FieldRules.NONE.withEnabledWhen(Condition.all(many)), 1L)).containsExactly("rules.error.tooBig");
-    }
-
-    private static fr.siamois.domain.services.placesource.PlaceSourceProvider geoplatSource() {
-        fr.siamois.domain.services.placesource.PlaceSourceProvider provider = org.mockito.Mockito.mock(fr.siamois.domain.services.placesource.PlaceSourceProvider.class);
-        org.mockito.Mockito.when(provider.id()).thenReturn("GEOPLAT");
-        org.mockito.Mockito.when(provider.declaredParams()).thenReturn(java.util.Set.of("citycode"));
-        return provider;
-    }
-
-    private static CustomField placeField(long id, String label) {
-        return fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit.builder().id(id).label(label).build();
-    }
-
-    private Map<Long, CustomField> withPlaces() {
-        Map<Long, CustomField> all = new java.util.HashMap<>(fields);
-        all.put(20L, placeField(20L, "commune"));
-        all.put(21L, placeField(21L, "précis"));
-        return all;
-    }
-
-    private List<String> placeKeys(fr.siamois.domain.models.form.rules.PlaceSourceSpec spec, long own) {
-        return validator.validate(FieldRules.NONE.withPlaceSources(spec), own, withPlaces()).stream()
-                .map(FieldRulesValidator.Issue::key).toList();
-    }
-
-    private static fr.siamois.domain.models.form.rules.PlaceSourceSpec bound(String source, String param, long from) {
-        return new fr.siamois.domain.models.form.rules.PlaceSourceSpec(source, Map.of(param,
-                new fr.siamois.domain.models.form.rules.PlaceSourceSpec.ParamBinding(from,
-                        fr.siamois.domain.models.form.rules.PlaceSourceSpec.PlaceAttribute.CODE)),
-                fr.siamois.domain.models.form.rules.PlaceSourceSpec.OnMissing.SKIP);
-    }
-
-    @Test
-    void aPlaceSourceBoundToAnotherPlaceFieldIsSound() {
-        assertThat(placeKeys(bound("GEOPLAT", "citycode", 20L), 21L)).isEmpty();
-    }
-
-    @Test
-    void placeSourcesNeedAPlaceFieldARegisteredSourceADeclaredParameterAndAPlaceToReadFrom() {
-        assertThat(placeKeys(bound("GEOPLAT", "citycode", 20L), 5L)).contains("rules.error.placeSourcesOwnNotPlace");
-        assertThat(placeKeys(bound("NOPE", "citycode", 20L), 21L)).containsExactly("rules.error.placeSourceUnknown");
-        assertThat(placeKeys(bound("GEOPLAT", "zip", 20L), 21L)).containsExactly("rules.error.placeSourceParam");
-        assertThat(placeKeys(bound("GEOPLAT", "citycode", 5L), 21L)).containsExactly("rules.error.placeSourceFromNotPlace");
-        assertThat(placeKeys(bound("GEOPLAT", "citycode", 21L), 21L)).containsExactly("rules.error.selfReference");
-        assertThat(placeKeys(bound("GEOPLAT", "citycode", 99L), 21L)).containsExactly("rules.error.unknownField");
     }
 }

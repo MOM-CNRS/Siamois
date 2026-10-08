@@ -17,8 +17,6 @@ import type {
   IncoherenceReason,
   LeafCondition,
   OptionsContext,
-  PlaceContext,
-  PlaceSourceSpec,
   RuledColumn,
 } from "./types";
 import { expectedScalar, idOf, isEmptyValue, numberOf, sameScalar, scalarsOf } from "./values";
@@ -37,26 +35,6 @@ export interface EvaluateOptions {
 }
 
 const key = (id: number | string) => String(id);
-
-/**
- * The places picked in the fields the sources' parameters read, or undefined when the field has no
- * place source. A field none of them reads (INSEE alone) still gets a context: it is what says the
- * suggestions come from the sources endpoint.
- */
-export function placeContextOf(
-  sources: PlaceSourceSpec[] | undefined | null,
-  valueOf: ValueOf,
-): PlaceContext | undefined {
-  if (!sources || sources.length === 0) return undefined;
-  const deps: Record<string, string | null> = {};
-  for (const source of sources) {
-    for (const binding of Object.values(source.params ?? {})) {
-      const from = key(binding.fromField);
-      deps[from] = idOf(valueOf(from));
-    }
-  }
-  return { deps };
-}
 
 export function evaluateCondition(condition: Condition, valueOf: ValueOf): boolean {
   if ("all" in condition) return condition.all.every((c) => evaluateCondition(c, valueOf));
@@ -153,8 +131,6 @@ export function evaluateForm(
     if (!enabled && !isEmptyValue(value)) incoherent.push({ kind: "DISABLED_WITH_VALUE" });
 
     const state: FieldState = { enabled, required, incoherent };
-    const placeContext = placeContextOf(rules.placeSources, valueOf);
-    if (placeContext) state.placeContext = placeContext;
     if (rules.options) {
       const parentFieldId = key(rules.options.fieldId);
       const parentValue = idOf(valueOf(parentFieldId));

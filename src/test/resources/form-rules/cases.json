@@ -235,15 +235,6 @@
       ],
       "values": { "151": 5 },
       "expected": { "151": { "incoherent": [] }, "150": { "incoherent": [] } }
-    },
-    {
-      "name": "place sources parse and leave the field an ordinary one (the server reads the parents itself)",
-      "columns": [
-        { "fieldId": 160 },
-        { "fieldId": 161, "rules": { "placeSources": [{ "source": "INSEE" }, { "source": "GEOPLAT", "params": { "citycode": { "fromField": 160, "attribute": "CODE" } }, "onMissing": "SKIP" }] } }
-      ],
-      "values": { "160": { "resourceId": "7", "resourceType": "spatial-units" }, "161": [{ "resourceId": "8", "resourceType": "spatial-units" }] },
-      "expected": { "161": { "enabled": true, "required": false, "incoherent": [] } }
     }
   ]
 }

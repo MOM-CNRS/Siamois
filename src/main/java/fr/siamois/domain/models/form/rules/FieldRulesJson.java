@@ -6,7 +6,6 @@ import org.springframework.lang.Nullable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Codec JSON du langage de règles — la seule définition du format, partagée par la sérialisation
@@ -16,8 +15,7 @@ import java.util.TreeMap;
  *   "enabledWhen":  Condition,
  *   "requiredWhen": Condition,
  *   "options":      {"kind":"RELATED_CONCEPTS","fieldId":1} | {"kind":"REF_MATCH","fieldId":1,"candidateFieldId":2},
- *   "constraints":  [{"op":"GTE","fieldId":3}],
- *   "placeSources": [{"source":"INSEE"}, {"source":"GEOPLAT","params":{"citycode":{"fromField":4,"attribute":"CODE"}}}]
+ *   "constraints":  [{"op":"GTE","fieldId":3}]
  * }
  * Condition  = {"all":[..]} | {"any":[..]} | {"not":c} | {"fieldId":1,"op":"EQ","values":[FieldValue]}
  * FieldValue = {CONCEPT_ID} | {"id"} | littéral
@@ -30,12 +28,6 @@ public final class FieldRulesJson {
     private static final String FIELD_ID = "fieldId";
     private static final String KIND_RELATED_CONCEPTS = "RELATED_CONCEPTS";
     private static final String KIND_REF_MATCH = "REF_MATCH";
-    private static final String PLACE_SOURCES = "placeSources";
-    private static final String SOURCE = "source";
-    private static final String PARAMS = "params";
-    private static final String FROM_FIELD = "fromField";
-    private static final String ATTRIBUTE = "attribute";
-    private static final String ON_MISSING = "onMissing";
 
     private FieldRulesJson() {
         throw new UnsupportedOperationException();
@@ -60,29 +52,7 @@ public final class FieldRulesJson {
                 return m;
             }).toList());
         }
-        if (!rules.placeSources().isEmpty()) {
-            out.put(PLACE_SOURCES, rules.placeSources().stream().map(FieldRulesJson::placeSourceToWire).toList());
-        }
         return out;
-    }
-
-    private static Map<String, Object> placeSourceToWire(PlaceSourceSpec spec) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put(SOURCE, spec.source());
-        if (!spec.params().isEmpty()) {
-            Map<String, Object> params = new LinkedHashMap<>();
-            new TreeMap<>(spec.params()).forEach((name, binding) -> {
-                Map<String, Object> b = new LinkedHashMap<>();
-                b.put(FROM_FIELD, binding.fromField());
-                b.put(ATTRIBUTE, binding.attribute().name());
-                params.put(name, b);
-            });
-            m.put(PARAMS, params);
-        }
-        if (spec.onMissing() != PlaceSourceSpec.OnMissing.UNFILTERED) {
-            m.put(ON_MISSING, spec.onMissing().name());
-        }
-        return m;
     }
 
     private static Map<String, Object> conditionToWire(Condition condition) {
@@ -138,30 +108,7 @@ public final class FieldRulesJson {
                 conditionOrNull(node.get("enabledWhen")),
                 conditionOrNull(node.get("requiredWhen")),
                 optionsOrNull(node.get("options")),
-                constraints,
-                elements(node.get(PLACE_SOURCES)).map(FieldRulesJson::placeSourceFromJson).toList());
-    }
-
-    private static PlaceSourceSpec placeSourceFromJson(JsonNode node) {
-        if (!node.hasNonNull(SOURCE)) {
-            throw new IllegalArgumentException("Invalid place source: " + node);
-        }
-        Map<String, PlaceSourceSpec.ParamBinding> params = new LinkedHashMap<>();
-        JsonNode paramsNode = node.get(PARAMS);
-        if (paramsNode != null && paramsNode.isObject()) {
-            paramsNode.fields().forEachRemaining(entry -> {
-                JsonNode b = entry.getValue();
-                if (!b.hasNonNull(FROM_FIELD) || !b.hasNonNull(ATTRIBUTE)) {
-                    throw new IllegalArgumentException("Invalid place source parameter: " + b);
-                }
-                params.put(entry.getKey(), new PlaceSourceSpec.ParamBinding(
-                        b.get(FROM_FIELD).asLong(), PlaceSourceSpec.PlaceAttribute.valueOf(b.get(ATTRIBUTE).asText())));
-            });
-        }
-        PlaceSourceSpec.OnMissing onMissing = node.hasNonNull(ON_MISSING)
-                ? PlaceSourceSpec.OnMissing.valueOf(node.get(ON_MISSING).asText())
-                : PlaceSourceSpec.OnMissing.UNFILTERED;
-        return new PlaceSourceSpec(node.get(SOURCE).asText(), params, onMissing);
+                constraints);
     }
 
     @Nullable

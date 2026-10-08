@@ -2,14 +2,11 @@ package fr.siamois.domain.models.actionunit.form;
 
 import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.ui.form.dto.ColumnWidth;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
-
-import java.util.Map;
 
 public class ActionUnitDetailsForm extends ActionUnitForm {
 
@@ -74,8 +71,6 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .readOnly(false)
                                                         .width(ColumnWidth.STANDARD)
                                                         .field(MAIN_LOCATION_FIELD)
-                                                        // The commune: suggested from the INSEE reference.
-                                                        .rules(FieldRules.NONE.withPlaceSources(PlaceSourceSpec.of("INSEE")))
                                                         .build())
                                                 .build()
                                 )
@@ -86,11 +81,6 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .readOnly(false)
                                                         .width(ColumnWidth.FULL)
                                                         .field(SPATIAL_CONTEXT_FIELD)
-                                                        // The precise places: addresses of the commune picked above (all of them until it is).
-                                                        .rules(FieldRules.NONE.withPlaceSources(new PlaceSourceSpec("GEOPLAT",
-                                                                Map.of("citycode", new PlaceSourceSpec.ParamBinding(
-                                                                        MAIN_LOCATION_FIELD.getId(), PlaceSourceSpec.PlaceAttribute.CODE)),
-                                                                PlaceSourceSpec.OnMissing.UNFILTERED)))
                                                         .build())
                                                 .build()
                                 ).build()

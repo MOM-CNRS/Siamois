@@ -188,7 +188,6 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
-        spatialUnit.setCode(su.getCode());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
@@ -522,21 +521,6 @@ public class SpatialUnitService implements ArkEntityService {
                 .stream()
                 .map(this::mapToSuggestion)
                 .toList();
-    }
-
-    /**
-     * The place of the institution a suggestion already stands for: the one with the same code and category,
-     * else the one with the same name (names are unique per institution).
-     */
-    public Optional<SpatialUnitDTO> findExistingForSuggestion(Long institutionId, String name, String code, Long categoryId) {
-        if (code != null && !code.isBlank() && categoryId != null) {
-            Optional<SpatialUnit> byCode = spatialUnitRepository
-                    .findFirstByCodeAndCategoryIdAndCreatedByInstitutionId(code, categoryId, institutionId);
-            if (byCode.isPresent()) {
-                return byCode.map(spatialUnitMapper::convert);
-            }
-        }
-        return spatialUnitRepository.findByNameAndInstitution(name, institutionId).map(spatialUnitMapper::convert);
     }
 
     private PlaceSuggestionDTO mapToSuggestion(SpatialUnit entity) {
