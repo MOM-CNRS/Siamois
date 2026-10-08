@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
 import {
   fetchConceptOptions,
+  createPlaceFromSuggestion,
   fetchPlaceOptions,
+  fetchPlaceSuggestions,
   optionSourceFor,
   referenceTargetOf,
 } from "./optionSources";
@@ -227,5 +229,65 @@ describe("optionSourceFor with an option scope", () => {
     const url = String(mockedApiFetch.mock.calls[0][0]);
     expect(url).toContain("/api/v1/projects/5/recording-units?");
     expect(url).toContain("f.-304=8");
+  });
+});
+
+describe("place suggestions", () => {
+  it("asks the suggestions endpoint, with the sources, when the field has some", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+    const placeField = field({ answerType: "SELECT_ONE_SPATIAL_UNIT", placeSources: ["INSEE", "GEOPLAT"] });
+
+    await optionSourceFor(placeField, 100)!("lyo");
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toMatch(/^\/api\/v1\/places\/suggestions\?/);
+    expect(path).toContain("organizationId=100");
+    expect(path).toContain("sources=INSEE%2CGEOPLAT");
+    expect(path).toContain("q=lyo");
+  });
+
+  it("keeps the plain autocomplete for a field with no external source", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+
+    await optionSourceFor(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), 100)!("lyo");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toMatch(/^\/api\/v1\/places\/autocomplete\?/);
+  });
+
+  it("maps a place of the organization to its id and a suggestion to a synthetic one", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      data: [
+        { id: 5, name: "Lyon", code: "69123", source: "SIAMOIS", concept: { resolvedLabel: "Commune" } },
+        { id: null, name: "Lyonnais", code: "42000", source: "INSEE", concept: null },
+      ],
+    });
+
+    const [own, external] = await fetchPlaceSuggestions(100, ["INSEE"], "lyo");
+
+    expect(own).toEqual({ id: "5", label: "Lyon", place: { source: "SIAMOIS", code: "69123", category: "Commune" } });
+    expect(external.id).toBe("external:INSEE:42000");
+    expect(external.place?.external).toEqual({ name: "Lyonnais", code: "42000", address: undefined });
+  });
+
+  it("creates the place of an external suggestion and returns its id", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: 77, name: "Lyon" } });
+
+    const created = await createPlaceFromSuggestion(
+      100,
+      { id: "external:INSEE:69123", label: "Lyon", place: { source: "INSEE", external: { name: "Lyon", code: "69123" } } },
+      "3",
+    );
+
+    expect(created).toEqual({ id: "77", label: "Lyon" });
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/places/from-suggestion", {
+      method: "POST",
+      body: { organizationId: 100, projectId: "3", source: "INSEE", name: "Lyon", code: "69123", address: undefined },
+    });
+  });
+
+  it("leaves a place that already exists alone", async () => {
+    const own = { id: "5", label: "Lyon" };
+    expect(await createPlaceFromSuggestion(100, own)).toBe(own);
+    expect(mockedApiFetch).not.toHaveBeenCalled();
   });
 });

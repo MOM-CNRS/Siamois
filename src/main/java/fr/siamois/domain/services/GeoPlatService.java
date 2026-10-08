@@ -3,6 +3,7 @@ package fr.siamois.domain.services;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.infrastructure.api.dto.GeoPlatResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -10,6 +11,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+@Slf4j
 @AllArgsConstructor
 @Service
 public class GeoPlatService {
@@ -51,6 +53,7 @@ public class GeoPlatService {
                     })
                     .toList();
         } catch (Exception e) {
+            log.warn("GéoPlateforme address search failed: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

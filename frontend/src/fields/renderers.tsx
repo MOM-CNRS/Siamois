@@ -1,4 +1,5 @@
 import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
+import { PlaceOptionItem } from "./PlaceOptionItem";
 import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -16,13 +17,17 @@ import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
 import { refColor } from "./display";
 import {
+  createPlaceFromSuggestion,
   entityRowLabel,
+  isExternalSuggestion,
   optionSourceFor,
   referenceTargetOf,
   type FilterOption,
   type ReferenceTarget,
 } from "./optionSources";
 import { t } from "../i18n";
+import { useNotify } from "../notify/NotifyProvider";
+import { messageForError } from "../api/errors";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
 // generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,
@@ -172,6 +177,7 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // whether a « Nouveau » footer can create the target — all derived from the field
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
+const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
 function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
@@ -229,6 +235,29 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     } else {
       const option = next as FilterOption | null;
       onChange(option ? toRef(option) : null);
+    }
+  }
+
+  // A suggestion from an external source (INSEE, GéoPlateforme) is not a place yet: it is created
+  // — once per organization, the server answers the existing one — before it can be picked.
+  const notify = useNotify();
+  const [creatingPlace, setCreatingPlace] = useState(false);
+  async function commitPicked(next: FilterOption[] | FilterOption | null) {
+    const picked = next == null ? [] : Array.isArray(next) ? next : [next];
+    if (orgId == null || !picked.some(isExternalSuggestion)) {
+      commit(next);
+      return;
+    }
+    setCreatingPlace(true);
+    try {
+      const resolved = await Promise.all(
+        picked.map((o) => (isExternalSuggestion(o) ? createPlaceFromSuggestion(orgId, o, context?.projectId) : o)),
+      );
+      commit(Array.isArray(next) ? resolved : resolved[0] ?? null);
+    } catch (error) {
+      notify.error(messageForError(error, t("field.placeCreateFailed")));
+    } finally {
+      setCreatingPlace(false);
     }
   }
 
@@ -308,7 +337,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         field="label"
         multiple={asTokens}
         dropdown={false}
-        disabled={readOnly}
+        disabled={readOnly || creatingPlace}
         required={required}
         onFocus={onFocus}
         // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
@@ -320,15 +349,15 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={target.resourceType === "concepts" ? conceptItem : undefined}
+        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "spatial-units" ? placeItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (asTokens && !multiple) {
             // The last pick is the value; none left means cleared.
             const picked = (e.value as FilterOption[] | null) ?? [];
-            commit(picked.length > 0 ? picked[picked.length - 1] : null);
+            void commitPicked(picked.length > 0 ? picked[picked.length - 1] : null);
           } else {
-            commit(e.value as FilterOption[] | FilterOption | null);
+            void commitPicked(e.value as FilterOption[] | FilterOption | null);
           }
         }}
       />

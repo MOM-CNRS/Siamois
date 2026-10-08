@@ -33,6 +33,9 @@ export interface FieldResource {
   // The conditional rules of the field's column in its entity's details form (FieldQueryService):
   // what a list, having no layout, evaluates to grey a cell out, bound it or flag its value.
   rules?: FieldRules | null;
+  // External sources a place field suggests from besides the organization's places (INSEE: communes,
+  // GEOPLAT: addresses); absent = the organization's places only.
+  placeSources?: string[] | null;
 }
 
 /** The field holding the project an entity belongs to: set at creation, never edited, and — as a

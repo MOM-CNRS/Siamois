@@ -14,6 +14,26 @@ export interface FilterOption {
   label: string;
   // Extra info a concept suggestion shows (the JSF concept item): absent for every other source.
   concept?: ConceptItemInfo;
+  // A place suggestion (GET /places/suggestions): what the picker shows, and — for one from an
+  // external source — what creating the place needs.
+  place?: PlaceItemInfo;
+}
+
+export interface PlaceItemInfo {
+  source: string;
+  code?: string;
+  category?: string;
+  /** Only for a suggestion that is not a place of the organization yet. */
+  external?: { name: string; code?: string; address?: PlaceAddress };
+}
+
+export interface PlaceAddress {
+  label?: string | null;
+  street?: string | null;
+  postcode?: string | null;
+  city?: string | null;
+  lon?: number | null;
+  lat?: number | null;
 }
 
 export interface ConceptItemInfo {
@@ -87,6 +107,71 @@ export async function fetchPlaceOptions(organizationId: number, q?: string): Pro
   if (q) query.set("q", q);
   const body = await apiFetch<PlaceAutocompleteResponseBody>(`/api/v1/places/autocomplete?${query.toString()}`);
   return body.data.map((p) => ({ id: String(p.id), label: p.name }));
+}
+
+interface PlaceSuggestionsResponseBody {
+  data: {
+    id: number | null;
+    name: string;
+    code?: string | null;
+    source: string;
+    concept?: { resolvedLabel?: string | null } | null;
+    address?: PlaceAddress | null;
+  }[];
+}
+
+const EXTERNAL_ID_PREFIX = "external:";
+
+/**
+ * GET /api/v1/places/suggestions — a place field configured with external sources (FieldResource
+ * .placeSources): the organization's places first, then the sources' suggestions. A suggestion
+ * that is not a place yet gets a synthetic id and is created when picked (createPlaceFromSuggestion).
+ */
+export async function fetchPlaceSuggestions(organizationId: number, sources: string[], q?: string): Promise<FilterOption[]> {
+  const query = new URLSearchParams({ organizationId: String(organizationId), sources: sources.join(",") });
+  if (q) query.set("q", q);
+  const body = await apiFetch<PlaceSuggestionsResponseBody>(`/api/v1/places/suggestions?${query.toString()}`);
+  return body.data.map((p) => {
+    const place: PlaceItemInfo = {
+      source: p.source,
+      code: p.code ?? undefined,
+      category: p.concept?.resolvedLabel ?? undefined,
+    };
+    if (p.id != null) return { id: String(p.id), label: p.name, place };
+    place.external = { name: p.name, code: p.code ?? undefined, address: p.address ?? undefined };
+    return { id: `${EXTERNAL_ID_PREFIX}${p.source}:${p.code ?? p.name}`, label: p.name, place };
+  });
+}
+
+/**
+ * POST /api/v1/places/from-suggestion — the place an external suggestion stands for, created once
+ * per organization (the server answers the existing one when there is one). `projectId` is the project
+ * being edited: its write right is what allows the creation.
+ */
+export async function createPlaceFromSuggestion(
+  organizationId: number,
+  option: FilterOption,
+  projectId?: string,
+): Promise<FilterOption> {
+  const place = option.place;
+  if (!place?.external) return option;
+  const body = await apiFetch<{ data: { id: number; name: string } }>("/api/v1/places/from-suggestion", {
+    method: "POST",
+    body: {
+      organizationId,
+      projectId,
+      source: place.source,
+      name: place.external.name,
+      code: place.external.code,
+      address: place.external.address,
+    },
+  });
+  return { id: String(body.data.id), label: body.data.name };
+}
+
+/** Whether an option is a suggestion still to be turned into a place. */
+export function isExternalSuggestion(option: FilterOption): boolean {
+  return option.place?.external != null;
 }
 
 /**
@@ -264,7 +349,9 @@ export function optionSourceFor(
     case "SELECT_ONE_SPATIAL_UNIT":
     case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
     case "SELECT_MULTIPLE_SPATIAL_UNIT":
-      return (q) => fetchPlaceOptions(organizationId, q);
+      return field.placeSources?.length
+        ? (q) => fetchPlaceSuggestions(organizationId, field.placeSources as string[], q)
+        : (q) => fetchPlaceOptions(organizationId, q);
     case "SELECT_ONE_PERSON":
     case "SELECT_MULTIPLE_PERSON":
       return (q) => fetchPersonOptions(organizationId, q);

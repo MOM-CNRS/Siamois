@@ -40,6 +40,8 @@ class PlaceSearchControllerApiTest {
     private SpatialUnitService spatialUnitService;
     @Mock
     private LabelService labelService;
+    @Mock
+    private fr.siamois.ui.api.openapi.v1.service.PlaceSuggestionApiService placeSuggestionApiService;
 
     private MockMvc mockMvc;
 
@@ -47,7 +49,7 @@ class PlaceSearchControllerApiTest {
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
-        PlaceSearchControllerApi controller = new PlaceSearchControllerApi(projectApiService, spatialUnitService, labelService);
+        PlaceSearchControllerApi controller = new PlaceSearchControllerApi(projectApiService, spatialUnitService, labelService, placeSuggestionApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(jsonConverter)

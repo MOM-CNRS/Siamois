@@ -6,6 +6,8 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.form.FormService;
@@ -74,7 +76,19 @@ public class FieldAnswerWireService {
                 f instanceof CustomFieldText text ? text.getIsTextArea() : null,
                 field.getIcon(),
                 field.getConceptUri(),
-                constraintsOf(f));
+                constraintsOf(f)).withPlaceSources(placeSourcesOf(f));
+    }
+
+    /** The external sources a place field suggests from, besides the organization's places. */
+    private static List<String> placeSourcesOf(Object f) {
+        String source = null;
+        if (f instanceof CustomFieldSelectOneSpatialUnit one) {
+            source = one.getSource();
+        } else if (f instanceof CustomFieldSelectMultipleSpatialUnitTree tree) {
+            source = tree.getSource();
+        }
+        List<String> sources = PlaceSuggestionApiService.parseSources(source);
+        return sources.isEmpty() ? null : sources;
     }
 
     /** A bound as a double, or null when it is absent or is the "unbounded" default. */

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.form;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 @Schema(description = "Définition d'un champ de formulaire")
@@ -58,7 +59,11 @@ public record FieldResource(
                 + "(enabledWhen, requiredWhen, options, constraints — même langage que les colonnes du layout). "
                 + "Là où une liste n'a pas de layout, c'est ce qui permet de griser une cellule ou d'en borner "
                 + "la valeur ; null si le champ n'a aucune règle")
-        @Nullable Map<String, Object> rules
+        @Nullable Map<String, Object> rules,
+
+        @Schema(description = "Sources externes de suggestions d'un champ de lieu (INSEE : communes, GEOPLAT : adresses), "
+                + "en plus des lieux de l'organisation ; null si le champ n'en a pas")
+        @Nullable List<String> placeSources
 ) {
 
     /** The pre-rules shape. */
@@ -66,7 +71,7 @@ public record FieldResource(
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri, Constraints constraints, Query query, Boolean readOnly) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, constraints, query, readOnly, null);
+                icon, conceptUri, constraints, query, readOnly, null, null);
     }
 
     /** The pre-read-only shape. */
@@ -74,7 +79,7 @@ public record FieldResource(
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri, Constraints constraints, Query query) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, constraints, query, null, null);
+                icon, conceptUri, constraints, query, null, null, null);
     }
 
     /** The pre-constraints shape, for callers that have none to give. */
@@ -82,7 +87,7 @@ public record FieldResource(
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, null, null, null, null);
+                icon, conceptUri, null, null, null, null, null);
     }
 
     /** The pre-query shape. */
@@ -90,22 +95,27 @@ public record FieldResource(
                          Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
                          String icon, String conceptUri, Constraints constraints) {
         this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
-                icon, conceptUri, constraints, null, null, null);
+                icon, conceptUri, constraints, null, null, null, null);
     }
 
     public FieldResource withQuery(@Nullable Query query) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, placeSources);
     }
 
     public FieldResource withReadOnly(@Nullable Boolean readOnly) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, placeSources);
+    }
+
+    public FieldResource withPlaceSources(@Nullable List<String> placeSources) {
+        return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, placeSources);
     }
 
     public FieldResource withRules(@Nullable Map<String, Object> rules) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, placeSources);
     }
 
     @Schema(description = "Contraintes de saisie d'un champ")
