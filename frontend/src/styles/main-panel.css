@@ -906,8 +906,8 @@
 
 .sia-create-form-header h4 {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
   color: inherit;
 }
 
@@ -1050,9 +1050,9 @@
   font-size: 0.85rem;
 }
 
-/* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
-   in the entity's color (inverted). Only that chip — a linked entity's chip in another column
-   (the row's project…) keeps its outline. */
+/* The row's own chip (the name when the list has one, else the identifier) opens the row in the
+   overview; while its row is hovered it fills in the entity's color (inverted). Only that chip —
+   a linked entity's chip in another column keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
   background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
@@ -1061,6 +1061,12 @@
 
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
+}
+
+/* Selection checkboxes aligned to the left of their cell. */
+.entity-list-panel .p-datatable-thead > tr > th.p-selection-column,
+.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column {
+  text-align: left;
 }
 
 /* The gear's settings overlays (components/table/VisibilityChooser.tsx): a search box, then the
@@ -1561,7 +1567,9 @@ body button.p-button.status-button.status-button-compact {
   display: flex;
   gap: 0.2em;
   align-items: center;
-  font-weight: bold;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
 }
 .sia-card-grid {
   display: grid;
@@ -1587,7 +1595,24 @@ body button.p-button.status-button.status-button-compact {
   font-size: 2rem;
   color: var(--main-color);
 }
+/* Count-card title: title-card level, same weight as the counter chip next to it */
+.sia-count-card-title {
+  flex: 1 1 auto;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
+}
+/* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
+.sia-welcome-card .sia-count-card-row + div small {
+  color: var(--text-light);
+}
+.sia-welcome-card .sia-row-gap span {
+  color: var(--text-main);
+}
 .sia-list-title-text {
+  font-size: var(--font-size-title-page);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
   padding-right: 0.5em;
 }
 .entity-list-panel.embedded {

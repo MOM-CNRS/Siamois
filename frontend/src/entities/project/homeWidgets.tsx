@@ -62,11 +62,11 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
               key={project.id}
               ariaLabel={project.name}
               onOpen={() => onNavigate?.("project", project.id)}
-              style={{ background: "var(--siamois-green-light-50)" }}
+              className="sia-welcome-card sia-action-unit"
             >
-              <div className="sia-row-gap">
+              <div className="sia-count-card-row">
                 <i className="bi bi-arrow-down-square sia-icon-context" />
-                <span>{project.name}</span>
+                <span className="sia-count-card-title">{project.name}</span>
               </div>
               <div className="sia-row-gap">
                 <i className="bi bi-geo-alt sia-icon-context" />

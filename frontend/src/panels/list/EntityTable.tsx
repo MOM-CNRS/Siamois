@@ -456,7 +456,7 @@ export function EntityTable({
                     {...(lastFrozenIndex >= 0 ? frozenProps(lastFrozenIndex + 2) : {})}
                     className={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
                     headerClassName={`entity-list-panel-row-actions-cell${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
-                    header={<span className="entity-list-panel-column-header" />}
+                    header={<span className="entity-list-panel-column-header">{t("list.actionsHeader")}</span>}
                     body={(row: RowRecord) => (isSkeletonRow(row) ? null : renderRowActions(row))}
                   />,
                 ]

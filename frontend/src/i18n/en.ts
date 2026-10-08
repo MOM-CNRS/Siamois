@@ -93,6 +93,7 @@ export const en: Record<MessageKey, string> = {
   "list.bookmark": "Bookmark",
   "list.create": "Create",
   "list.cannotCreate": "You are not allowed to create this type ({type}) in any project.",
+  "list.actionsHeader": "Actions",
   "list.openInOverview": "Open in the preview",
   "list.disabledByRules": "Does not apply with the current answers",
   "list.editCell": "Edit “{label}”",

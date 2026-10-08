@@ -93,6 +93,7 @@ export const fr = {
   "list.bookmark": "Favori",
   "list.create": "Créer",
   "list.cannotCreate": "Vous n'avez le droit de créer ce type ({type}) dans aucun projet.",
+  "list.actionsHeader": "Actions",
   "list.openInOverview": "Ouvrir dans l'aperçu",
   "list.disabledByRules": "Ne s'applique pas avec les réponses actuelles",
   "list.editCell": "Modifier « {label} »",
