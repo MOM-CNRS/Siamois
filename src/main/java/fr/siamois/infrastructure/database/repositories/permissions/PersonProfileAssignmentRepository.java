@@ -16,6 +16,17 @@ import java.util.Set;
 @Repository
 public interface PersonProfileAssignmentRepository extends CrudRepository<PersonProfileAssignment, PersonProfileAssignment.PersonProfileAssignmentId> {
 
+    /** Every profile the person holds, with what the "my rights" dashboard shows: scope target and permissions. */
+    @Query("""
+            SELECT DISTINCT prof
+            FROM Profile prof
+            LEFT JOIN FETCH prof.permissions
+            LEFT JOIN FETCH prof.institution
+            LEFT JOIN FETCH prof.actionUnit
+            WHERE prof.id IN (SELECT a.profile.id FROM PersonProfileAssignment a WHERE a.person.id = :personId)
+            """)
+    List<fr.siamois.domain.models.permissions.Profile> findProfilesOfPerson(@Param("personId") Long personId);
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a

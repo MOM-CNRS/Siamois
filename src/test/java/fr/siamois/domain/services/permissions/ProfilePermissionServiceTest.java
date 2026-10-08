@@ -271,4 +271,46 @@ class ProfilePermissionServiceTest {
         assertEquals(java.util.Set.of(4L, 5L), profilePermissionService.actionUnitIdsGranting(new UserInfo(institution, person, null),
                 PermissionConstants.INSTANCE_EDIT_PHASES, PermissionConstants.ORGANIZATION_EDIT_PHASES, PermissionConstants.PROJECT_EDIT_PHASES));
     }
+
+    @Test
+    void grantsOf_listsProjectsBeforeOrganisations_withTargetAndPermissions() {
+        fr.siamois.domain.models.permissions.Permission edit = new fr.siamois.domain.models.permissions.Permission();
+        edit.setCode(PermissionConstants.PROJECT_EDIT_FINDS);
+        fr.siamois.domain.models.permissions.Permission manage = new fr.siamois.domain.models.permissions.Permission();
+        manage.setCode(PermissionConstants.PROJECT_MANAGE_SETTINGS);
+
+        fr.siamois.domain.models.institution.Institution org = new fr.siamois.domain.models.institution.Institution();
+        org.setId(12L);
+        org.setName("Bibracte");
+        fr.siamois.domain.models.actionunit.ActionUnit project = new fr.siamois.domain.models.actionunit.ActionUnit();
+        project.setId(7L);
+        project.setName("Fouille du Mont Beuvray");
+
+        fr.siamois.domain.models.permissions.Profile orgProfile = new fr.siamois.domain.models.permissions.Profile();
+        orgProfile.setCode("ORGANIZATION_MEMBER");
+        orgProfile.setName("Membre");
+        orgProfile.setScope(fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION);
+        orgProfile.setInstitution(org);
+        fr.siamois.domain.models.permissions.Profile projectProfile = new fr.siamois.domain.models.permissions.Profile();
+        projectProfile.setCode("PROJECT_MANAGER");
+        projectProfile.setName("Gestionnaire");
+        projectProfile.setScope(fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT);
+        projectProfile.setInstitution(org);
+        projectProfile.setActionUnit(project);
+        projectProfile.getPermissions().add(manage);
+        projectProfile.getPermissions().add(edit);
+
+        when(assignmentRepository.findProfilesOfPerson(3L)).thenReturn(java.util.List.of(orgProfile, projectProfile));
+
+        var grants = profilePermissionService.grantsOf(person);
+
+        assertThat(grants).hasSize(2);
+        assertThat(grants.get(0).isProject()).isTrue();
+        assertThat(grants.get(0).getTargetName()).isEqualTo("Fouille du Mont Beuvray");
+        assertThat(grants.get(0).getProfileName()).isEqualTo("Gestionnaire");
+        assertThat(grants.get(0).getPermissionCodes())
+                .containsExactly(PermissionConstants.PROJECT_EDIT_FINDS, PermissionConstants.PROJECT_MANAGE_SETTINGS);
+        assertThat(grants.get(1).isOrganisation()).isTrue();
+        assertThat(grants.get(1).getTargetName()).isEqualTo("Bibracte");
+    }
 }

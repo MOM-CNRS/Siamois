@@ -14,6 +14,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.settings.components.SortState;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.InstitutionDialogBean;
@@ -33,6 +34,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
+import org.primefaces.event.SelectEvent;
+
+import java.io.IOException;
+import java.util.stream.Collectors;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -67,7 +74,19 @@ public class InstitutionListSettingsBean implements Serializable {
     private Map<Long, Long> memberCountsByInstitutionId = new HashMap<>();
     private Map<Long, Long> recordingUnitCountsByInstitutionId = new HashMap<>();
 
+    /** The column the list is sorted on. */
+    private final SortState sort = new SortState("name");
+
+    private static final java.util.Comparator<InstitutionDTO> BY_NAME =
+            java.util.Comparator.comparing(InstitutionDTO::getName, String.CASE_INSENSITIVE_ORDER);
+
     private String filterText;
+
+    /** A member filter chip added from "Ajouter un filtre" that has no value yet. */
+    private boolean pendingMember;
+
+    /** The row picked in the list (PrimeFaces single selection); picking a row opens its settings. */
+    private InstitutionDTO selectedInstitution;
 
     /** Set when the list is filtered down to one member's institutions (see {@link #initFilteredByPerson}). */
     private PersonDTO filterPerson;
@@ -80,7 +99,13 @@ public class InstitutionListSettingsBean implements Serializable {
         }
     }
 
+    /** Opens the list on "my organisations": the organisations the current user belongs to. */
     public void init() {
+        initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
+    }
+
+    /** Every organisation, no member filter. */
+    public void showAll() {
         filterPerson = null;
         loadInstitutions(institutionService.findAll());
     }
@@ -93,12 +118,32 @@ public class InstitutionListSettingsBean implements Serializable {
      */
     public void initFilteredByPerson(PersonDTO person) {
         filterPerson = person;
+        pendingMember = false;
         loadInstitutions(institutionService.findInstitutionsOfPerson(person));
+    }
+
+    public boolean isMemberFilterActive() {
+        return filterPerson != null || pendingMember;
+    }
+
+    /** "Ajouter un filtre": puts the member chip on screen, to be given a value. */
+    public void addFilter(String key) {
+        if ("member".equals(key)) {
+            pendingMember = true;
+        }
+    }
+
+    /** Drops the member filter (the ✕ of its chip), whether it has a value yet or not. */
+    public void clearMemberFilter() {
+        pendingMember = false;
+        if (filterPerson != null) {
+            clearPersonFilter();
+        }
     }
 
     /** Drops the person filter and reloads the full institution list. */
     public void clearPersonFilter() {
-        init();
+        showAll();
     }
 
     /** Backs the "my organisations" chip: toggles the member filter between the current user and cleared. */
@@ -152,13 +197,29 @@ public class InstitutionListSettingsBean implements Serializable {
     }
 
     public void onFilterType() {
-        if (filterText != null && !filterText.isEmpty() && filterText.length() > 2) {
-            filteredInstitutions = institutions.stream()
-                    .filter(institution -> institution.getName().toLowerCase().contains(filterText.toLowerCase()))
-                    .toList();
-        } else {
-            filteredInstitutions = new ArrayList<>(institutions);
-        }
+        boolean searching = filterText != null && filterText.length() > 2;
+        filteredInstitutions = institutions.stream()
+                .filter(institution -> !searching || institution.getName().toLowerCase().contains(filterText.toLowerCase()))
+                .sorted(comparator())
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /** Sorts the list on a column (a header's click), keeping the filters. */
+    public void sortBy(String column) {
+        sort.toggle(column);
+        onFilterType();
+    }
+
+    private java.util.Comparator<InstitutionDTO> comparator() {
+        java.util.Comparator<InstitutionDTO> byKey = switch (sort.getKey()) {
+            case "rights" -> java.util.Comparator.comparing(this::canAccessInstitutionSettings);
+            case "members" -> java.util.Comparator.comparingLong(this::numberOfMemberInInstitution);
+            case "recordings" -> java.util.Comparator.comparingLong(this::numberOfRecordingUnitInInstitution);
+            case "creationDate" -> java.util.Comparator.comparing(InstitutionDTO::getCreationDate,
+                    java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()));
+            default -> BY_NAME;
+        };
+        return sort.isAscending() ? byKey : byKey.reversed();
     }
 
     public void changeCurrentInstitution(InstitutionDTO institution) {
@@ -256,6 +317,17 @@ public class InstitutionListSettingsBean implements Serializable {
 
     public long numberOfRecordingUnitInInstitution(InstitutionDTO institution) {
         return recordingUnitCountsByInstitutionId.getOrDefault(institution.getId(), 0L);
+    }
+
+    /** A click on a row (only rows the user may open are selectable): opens the organisation's settings. */
+    public void onRowSelect(SelectEvent<InstitutionDTO> event) throws IOException {
+        selectedInstitution = null;
+        String path = redirectToInstitution(event.getObject());
+        if (path == null) {
+            return;
+        }
+        ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
+        externalContext.redirect(externalContext.getRequestContextPath() + path);
     }
 
     public String redirectToInstitution(InstitutionDTO institution) {

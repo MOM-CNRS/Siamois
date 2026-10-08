@@ -1,12 +1,17 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +44,59 @@ public class ProfilePermissionService {
 
     public ProfilePermissionService(PersonProfileAssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
+    }
+
+    /** One line of the "my rights" dashboard: a profile held, where it applies, and what it grants. */
+    @lombok.Value
+    public static class ProfileGrant {
+        String profileName;
+        PermissionScopeType scope;
+        Long institutionId;
+        String institutionName;
+        Long actionUnitId;
+        String actionUnitName;
+        List<String> permissionCodes;
+
+        /** The project, organisation or instance the profile applies to, as the dashboard names it. */
+        public String getTargetName() {
+            if (actionUnitName != null) {
+                return actionUnitName;
+            }
+            return institutionName;
+        }
+
+        public boolean isProject() {
+            return scope == PermissionScopeType.PROJECT;
+        }
+
+        public boolean isOrganisation() {
+            return scope == PermissionScopeType.ORGANISATION;
+        }
+
+        public boolean isInstance() {
+            return scope == PermissionScopeType.INSTANCE;
+        }
+    }
+
+    /**
+     * The profiles the person holds, each with its scope target (instance, organisation or project) and
+     * permission codes — what the profile page lists as "my rights", organisation and project first.
+     */
+    @Transactional(readOnly = true)
+    public List<ProfileGrant> grantsOf(PersonDTO person) {
+        return assignmentRepository.findProfilesOfPerson(person.getId()).stream()
+                .map(profile -> new ProfileGrant(
+                        profile.getName() != null ? profile.getName() : profile.getCode(),
+                        profile.getScope(),
+                        profile.getInstitution() != null ? profile.getInstitution().getId() : null,
+                        profile.getInstitution() != null ? profile.getInstitution().getName() : null,
+                        profile.getActionUnit() != null ? profile.getActionUnit().getId() : null,
+                        profile.getActionUnit() != null ? profile.getActionUnit().getName() : null,
+                        profile.getPermissions().stream().map(Permission::getCode).sorted().toList()))
+                .sorted(Comparator.comparing((ProfileGrant g) -> -g.getScope().ordinal())
+                        .thenComparing(g -> Objects.toString(g.getTargetName(), ""),
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
     }
 
     /**

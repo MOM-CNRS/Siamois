@@ -112,6 +112,42 @@
 
                 </div>
             </h:form>
+            <h:form id="rightsForm" styleClass="sia-settings-form">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <div class="field-value-group">
+                    <h2 class="field-value-title">#{langBean.msg('myProfile.rights')}</h2>
+                    <div class="field-value-content">
+                        <p class="rights-description">#{langBean.msg('myProfile.rights.description')}</p>
+                        <p:dataTable id="rightsTable"
+                                     value="#{profileSettingsBean.rights}"
+                                     var="grant"
+                                     emptyMessage="#{langBean.msg('myProfile.rights.empty')}">
+                            <p:column headerText="#{langBean.msg('myProfile.rights.target')}">
+                                <i class="bi #{grant.project ? 'bi-arrow-down-square' : (grant.organisation ? 'bi-buildings' : 'bi-globe')} row-rights-icon"/>
+                                <h:outputText value=" #{grant.instance ? langBean.msg('myProfile.rights.instance') : grant.targetName}"/>
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('common.label.profile')}">
+                                <h:outputText value="#{grant.profileName}"/>
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('myProfile.rights.permissions')}" styleClass="rights-permissions-cell">
+                                <div class="rights-permissions">
+                                    <ui:repeat var="code" value="#{grant.permissionCodes}">
+                                        <span class="chip chip-profile">#{profileSettingsBean.permissionLabel(code)}</span>
+                                    </ui:repeat>
+                                </div>
+                            </p:column>
+                            <p:column styleClass="rights-open-cell">
+                                <p:commandButton icon="bi bi-box-arrow-up-right"
+                                                 actionListener="#{profileSettingsBean.open(grant)}"
+                                                 rendered="#{profileSettingsBean.canOpen(grant)}"
+                                                 styleClass="ui-button-flat"
+                                                 title="#{langBean.msg('myProfile.rights.open')}"
+                                                 process="@this"/>
+                            </p:column>
+                        </p:dataTable>
+                    </div>
+                </div>
+            </h:form>
         </main>
     </ui:define>
 

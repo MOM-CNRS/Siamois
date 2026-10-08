@@ -13,6 +13,7 @@
 
     <ui:define name="metadata">
         <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{newProjectDialogBean.init()}"/>
     </ui:define>
 
     <ui:define name="content">
@@ -20,14 +21,14 @@
 
             <comp:datatable
                     id="projectListDatatable"
-                    createButtonLabel="NULL"
+                    createButtonLabel="#{langBean.msg('projectList.create')}"
                     formId="projectListForm"
                     title="#{langBean.msg('projectList.breadcrumb')}"
                     description="#{langBean.msg('projectList.description')}"
                     filterAction="#{projectListBean.filter()}"
                     searchInputTextValue="#{projectListBean.searchInput}"
-                    addAction="#{projectListBean.filter()}"
-                    renderCreateButton="false"
+                    addAction="#{newProjectDialogBean.open()}"
+                    renderCreateButton="#{newProjectDialogBean.canCreate}"
             >
                 <f:facet name="extraFilter">
                     <!-- Kept in its own form, sibling to (not nested inside) either of
@@ -35,62 +36,140 @@
                          never fires when its form is nested inside another <form> (invalid
                          HTML - the browser breaks the inner form on parse). -->
                     <form:csrfform formId="memberFilterForm" styleClass="member-filter-row">
-                        <p:autoComplete id="memberFilter"
-                                        value="#{projectListBean.filterPerson}"
-                                        completeMethod="#{projectListBean.completePerson}"
-                                        queryDelay="300"
-                                        var="u"
-                                        itemLabel="#{u.displayName()}"
-                                        itemValue="#{u}"
-                                        converter="#{personDTOConverter}"
-                                        placeholder="#{langBean.msg('projectList.filterByMember.placeholder')}"
-                                        forceSelection="true"
-                                        appendTo="@(body)"
-                                        dropdown="false">
-                            <p:ajax event="itemSelect" listener="#{projectListBean.initFilteredByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
-                        </p:autoComplete>
-                        <p:commandLink action="#{projectListBean.toggleFilterByMe()}"
-                                       process="@this"
-                                       update="@form :projectListDatatable:formCC:projectListForm"
-                                       styleClass="member-filter-chip member-filter-me#{projectListBean.isFilteredByMe() ? ' member-filter-me-active' : ''}">
-                            #{langBean.msg('projectList.filterByMember.me')}
-                        </p:commandLink>
-                        <h:panelGroup rendered="#{not empty projectListBean.filterPerson}">
-                            <span class="member-filter-chip">
-                                #{langBean.msg('projectList.filterByMember.active', projectListBean.filterPerson.displayName())}
-                                <p:commandLink action="#{projectListBean.clearPersonFilter()}" update="@form :projectListDatatable:formCC:projectListForm" styleClass="member-filter-clear">✕</p:commandLink>
+                        <!-- Member filter: one chip, click to change the person, ✕ to drop it. -->
+                        <h:panelGroup rendered="#{projectListBean.memberFilterActive}">
+                            <span class="member-filter-chip filter-chip-member">
+                                <p:commandButton id="memberChipLabel" type="button" text="true" styleClass="filter-chip-label"
+                                                 value="#{langBean.msg('common.members').concat(' : ').concat(not empty projectListBean.filterPerson ? projectListBean.filterPerson.displayName() : '…')}"/>
+                                <p:commandLink action="#{projectListBean.clearMemberFilter()}" process="@this"
+                                               update="@form :projectListDatatable:formCC:projectListForm" styleClass="member-filter-clear">✕</p:commandLink>
                             </span>
+                            <p:overlayPanel for="memberChipLabel" showCloseIcon="false" styleClass="filter-overlay">
+                                <p:autoComplete id="memberFilter"
+                                                value="#{projectListBean.filterPerson}"
+                                                completeMethod="#{projectListBean.completePerson}"
+                                                queryDelay="300"
+                                                var="u"
+                                                itemLabel="#{u.displayName()}"
+                                                itemValue="#{u}"
+                                                converter="#{personDTOConverter}"
+                                                placeholder="#{langBean.msg('projectList.filterByMember.placeholder')}"
+                                                forceSelection="true"
+                                                appendTo="@(body)"
+                                                dropdown="false">
+                                    <p:ajax event="itemSelect" listener="#{projectListBean.initFilteredByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
+                                </p:autoComplete>
+                            </p:overlayPanel>
+                        </h:panelGroup>
+
+                        <!-- Organisation filter: one chip, click to pick the organisation, ✕ to drop it. -->
+                        <h:panelGroup rendered="#{projectListBean.institutionFilterActive}">
+                            <span class="member-filter-chip filter-chip-org">
+                                <p:commandButton id="orgChipLabel" type="button" text="true" styleClass="filter-chip-label"
+                                                 value="#{langBean.msg('common.entity.institution')} : #{not empty projectListBean.filterInstitutionId ? projectListBean.filterInstitutionName : '…'}"/>
+                                <p:commandLink action="#{projectListBean.clearInstitutionFilter()}" process="@this"
+                                               update="@form :projectListDatatable:formCC:projectListForm" styleClass="member-filter-clear">✕</p:commandLink>
+                            </span>
+                            <p:overlayPanel for="orgChipLabel" showCloseIcon="false" styleClass="filter-overlay">
+                                <p:selectOneMenu id="organisationFilter" value="#{projectListBean.filterInstitutionId}" style="min-width: 14em">
+                                    <f:selectItem itemLabel="#{langBean.msg('projectList.filterByOrganisation.all')}"
+                                                  itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{projectListBean.institutionOptions}" var="org"
+                                                   itemValue="#{org.id}" itemLabel="#{org.name}"/>
+                                    <p:ajax event="change" listener="#{projectListBean.filter()}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
+                                </p:selectOneMenu>
+                            </p:overlayPanel>
+                        </h:panelGroup>
+
+                        <!-- The quick preset, as a ghost chip: one click makes it the member filter. -->
+                        <p:commandLink action="#{projectListBean.toggleFilterByMe()}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"
+                                       rendered="#{not projectListBean.filteredByMe}"
+                                       styleClass="member-filter-chip filter-chip-ghost">
+                            <i class="bi bi-person"/> #{langBean.msg('projectList.filterByMember.me')}
+                        </p:commandLink>
+
+                        <!-- "Ajouter un filtre": offers the filters not on screen yet. -->
+                        <h:panelGroup rendered="#{projectListBean.canAddFilter}">
+                            <p:commandButton id="addFilterChip" type="button" icon="bi bi-plus" text="true"
+                                             value="#{langBean.msg('common.filters.add')}"
+                                             styleClass="member-filter-chip filter-chip-add"/>
+                            <p:overlayPanel for="addFilterChip" showCloseIcon="false" styleClass="filter-overlay">
+                                <p:commandLink action="#{projectListBean.addFilter('organisation')}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"
+                                               rendered="#{not projectListBean.institutionFilterActive}" styleClass="filter-add-item"
+                                               oncomplete="document.querySelector('.filter-chip-org .filter-chip-label').click()">
+                                    #{langBean.msg('common.entity.institution')}
+                                </p:commandLink>
+                                <p:commandLink action="#{projectListBean.addFilter('member')}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"
+                                               rendered="#{not projectListBean.memberFilterActive}" styleClass="filter-add-item"
+                                               oncomplete="document.querySelector('.filter-chip-member .filter-chip-label').click()">
+                                    #{langBean.msg('common.members')}
+                                </p:commandLink>
+                            </p:overlayPanel>
                         </h:panelGroup>
                     </form:csrfform>
                 </f:facet>
-                <p:commandButton action="#{navBean.goToActionUnitList()}"
-                                 icon="bi bi-database"
-                                 value="Voir et créer des projets dans l'application"
-                                 process="@this"
-                                 styleClass="ui-button-outlined"
-                                 style="margin: 1em 3vw;">
-                </p:commandButton>
-
                 <p:dataTable
                         id="actionUnitTable"
                         value="#{projectListBean.filteredActionUnits}"
                         var="au"
-                        sortMode="single"
                         widgetVar="actionUnitDatatable"
                         rowKey="#{au.id}"
+                        selectionMode="single"
+                        selection="#{projectListBean.selectedActionUnit}"
+                        rowSelectable="#{projectListBean.canManageSettings(au)}"
+                        rowStyleClass="#{projectListBean.canManageSettings(au) ? 'row-clickable' : 'row-no-access'}"
                         emptyMessage="#{langBean.msg('projectList.empty')}"
                 >
-                    <p:column headerText="#{langBean.msg('actionManagers.header.name')}">
+                    <!-- The whole row opens the project's settings; a row without the right has
+                         neither hover nor click (rowSelectable). -->
+                    <p:ajax event="rowSelect" listener="#{projectListBean.onRowSelect}"/>
+
+                    <p:column styleClass="row-rights-cell">
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('rights')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('projectList.rights.header')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('rights')} sort-header-icon #{projectListBean.sort.isSorted('rights') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
+                        <i class="bi #{projectListBean.canManageSettings(au) ? 'bi-gear' : 'bi-lock'} row-rights-icon"
+                           title="#{projectListBean.canManageSettings(au) ? langBean.msg('projectList.rights.manage') : langBean.msg('projectList.rights.view')}"/>
+                    </p:column>
+
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('name')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('actionManagers.header.name')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('name')} sort-header-icon #{projectListBean.sort.isSorted('name') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{au.name}"/>
                     </p:column>
 
-                    <p:column headerText="Organisation">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('organisation')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('common.entity.institution')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('organisation')} sort-header-icon #{projectListBean.sort.isSorted('organisation') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{au.createdByInstitution.name}"/>
                     </p:column>
-                    <p:column headerText="Identifiant">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('identifier')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('common.label.identifier')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('identifier')} sort-header-icon #{projectListBean.sort.isSorted('identifier') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{au.fullIdentifier}"/>
                     </p:column>
-                    <p:column headerText="#{langBean.msg('actionManagers.header.numberOfMembers')}">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('members')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('actionManagers.header.numberOfMembers')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('members')} sort-header-icon #{projectListBean.sort.isSorted('members') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:commandLink action="#{projectListBean.redirectToProjectMembers(au)}" styleClass="chip-nav-link"
                                        rendered="#{projectListBean.canManageSettings(au)}"
                                        immediate="true" process="@this">
@@ -104,18 +183,18 @@
                             </span>
                         </h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{langBean.msg('organisationSettings.titles.actionManager')}">
-                        <p:outputLabel value="#{au.createdBy.displayName()}"/>
-                    </p:column>
                     <p:column>
-                        <p:commandButton
-                                icon="bi bi-three-dots"
-                                action="#{projectListBean.redirectToProject(au)}"
-                                rendered="#{projectListBean.canManageSettings(au)}"
-                        />
+                        <f:facet name="header">
+                            <p:commandLink action="#{projectListBean.sortBy('manager')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('organisationSettings.titles.actionManager')}</span>
+                                <i class="bi #{projectListBean.sort.iconOf('manager')} sort-header-icon #{projectListBean.sort.isSorted('manager') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
+                        <p:outputLabel value="#{au.createdBy.displayName()}"/>
                     </p:column>
                 </p:dataTable>
             </comp:datatable>
+            <ui:include src="/dialog/project/newProject.xhtml"/>
         </main>
     </ui:define>
 

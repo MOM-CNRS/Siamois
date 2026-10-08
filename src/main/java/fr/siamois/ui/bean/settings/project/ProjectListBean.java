@@ -8,27 +8,36 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.SettingsDatatableBean;
+import fr.siamois.ui.bean.settings.components.SortState;
 import fr.siamois.utils.MessageUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.primefaces.event.SelectEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter
@@ -54,6 +63,19 @@ public class ProjectListBean implements SettingsDatatableBean {
     private Map<Long, Integer> memberCountsByActionUnitId = Collections.emptyMap();
     private Set<Long> actionUnitIdsWithManageSettingsPermission = Collections.emptySet();
 
+    /** The column the list is sorted on. */
+    private final SortState sort = new SortState("name");
+
+    /** The organisation the list is narrowed to, or null for all of them. */
+    private Long filterInstitutionId;
+
+    /** A filter chip added from "Ajouter un filtre" that has no value yet — it stays on screen while it is filled in. */
+    private boolean pendingInstitution;
+    private boolean pendingMember;
+
+    /** The row picked in the list (PrimeFaces single selection); picking a row opens its settings. */
+    private ActionUnitDTO selectedActionUnit;
+
     /** Set when the list is filtered down to one member's projects (see {@link #initFilteredByPerson}). */
     private PersonDTO filterPerson;
 
@@ -64,16 +86,95 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     @Override
     public void filter() {
-        if (searchInput == null || searchInput.isEmpty()) {
-            filteredActionUnits = new ArrayList<>(actionUnits);
-        } else {
-            filteredActionUnits = new ArrayList<>();
-            for (ActionUnitDTO actionUnit : actionUnits) {
-                if (actionUnit.getName().toLowerCase().contains(searchInput.toLowerCase())) {
-                    filteredActionUnits.add(actionUnit);
-                }
-            }
+        String search = searchInput == null ? "" : searchInput.toLowerCase();
+        filteredActionUnits = actionUnits.stream()
+                .filter(actionUnit -> search.isEmpty() || actionUnit.getName().toLowerCase().contains(search))
+                .filter(actionUnit -> filterInstitutionId == null
+                        || (actionUnit.getCreatedByInstitution() != null
+                        && filterInstitutionId.equals(actionUnit.getCreatedByInstitution().getId())))
+                .sorted(comparator())
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /** Sorts the list on a column (a header's click), keeping the filters. */
+    public void sortBy(String column) {
+        sort.toggle(column);
+        filter();
+    }
+
+    private Comparator<ActionUnitDTO> comparator() {
+        Comparator<String> text = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
+        Comparator<ActionUnitDTO> byKey = switch (sort.getKey()) {
+            case "rights" -> Comparator.comparing(this::canManageSettings);
+            case "organisation" -> Comparator.comparing(
+                    au -> au.getCreatedByInstitution() == null ? null : au.getCreatedByInstitution().getName(), text);
+            case "identifier" -> Comparator.comparing(ActionUnitDTO::getFullIdentifier, text);
+            case "members" -> Comparator.comparingInt(this::numberOfMemberInActionUnit);
+            case "manager" -> Comparator.comparing(
+                    au -> au.getCreatedBy() == null ? null : au.getCreatedBy().displayName(), text);
+            default -> Comparator.comparing(ActionUnitDTO::getName, text);
+        };
+        return sort.isAscending() ? byKey : byKey.reversed();
+    }
+
+    /** The name of the organisation the list is narrowed to — the label of its filter chip. */
+    public String getFilterInstitutionName() {
+        return getInstitutionOptions().stream()
+                .filter(institution -> institution.getId().equals(filterInstitutionId))
+                .map(InstitutionDTO::getName)
+                .findFirst()
+                .orElse("");
+    }
+
+    /** Drops the organisation filter (the ✕ of its chip). */
+    public void clearInstitutionFilter() {
+        filterInstitutionId = null;
+        pendingInstitution = false;
+        filter();
+    }
+
+    /** Drops the member filter (the ✕ of its chip), whether it has a value yet or not. */
+    public void clearMemberFilter() {
+        pendingMember = false;
+        if (filterPerson != null) {
+            clearPersonFilter();
         }
+    }
+
+    /** "Ajouter un filtre": puts the chip of that filter on screen, to be given a value. */
+    public void addFilter(String key) {
+        if ("organisation".equals(key)) {
+            pendingInstitution = true;
+        } else if ("member".equals(key)) {
+            pendingMember = true;
+        }
+    }
+
+    public boolean isInstitutionFilterActive() {
+        return filterInstitutionId != null || pendingInstitution;
+    }
+
+    public boolean isMemberFilterActive() {
+        return filterPerson != null || pendingMember;
+    }
+
+    /** Whether "Ajouter un filtre" still has something to offer. */
+    public boolean isCanAddFilter() {
+        return !isInstitutionFilterActive() || !isMemberFilterActive();
+    }
+
+    /** The organisations of the loaded projects, for the organisation filter. */
+    public List<InstitutionDTO> getInstitutionOptions() {
+        if (actionUnits == null) {
+            return List.of();
+        }
+        return actionUnits.stream()
+                .map(ActionUnitDTO::getCreatedByInstitution)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(InstitutionDTO::getId, i -> i, (a, b) -> a))
+                .values().stream()
+                .sorted(Comparator.comparing(InstitutionDTO::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     public int numberOfMemberInActionUnit(ActionUnitDTO actionUnit) {
@@ -90,15 +191,24 @@ public class ProjectListBean implements SettingsDatatableBean {
         this.actionUnits = null;
         this.filteredActionUnits = null;
         this.filterPerson = null;
+        this.filterInstitutionId = null;
+        this.pendingInstitution = false;
+        this.pendingMember = false;
         this.memberCountsByActionUnitId = Collections.emptyMap();
         this.actionUnitIdsWithManageSettingsPermission = Collections.emptySet();
     }
 
+    /** Opens the list on "my projects": the projects the current user is a member of. */
     public void init() {
+        initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
+    }
+
+    /** The list of every project the current user can edit, no member filter. */
+    public void showAll() {
         reset();
         UserInfo info = ExecutionContextHolder.getNonNull();
         this.actionUnits = actionUnitService.findAllEditableByPerson(info.getUser());
-        this.filteredActionUnits = new ArrayList<>(actionUnits);
+        filter();
         loadDerivedData();
     }
 
@@ -112,7 +222,7 @@ public class ProjectListBean implements SettingsDatatableBean {
         reset();
         this.filterPerson = person;
         this.actionUnits = new HashSet<>(actionUnitService.findAllByTeamMember(person));
-        this.filteredActionUnits = new ArrayList<>(actionUnits);
+        filter();
         loadDerivedData();
     }
 
@@ -126,7 +236,7 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     /** Drops the person filter and reloads the current admin's own full editable project list. */
     public void clearPersonFilter() {
-        init();
+        showAll();
     }
 
     /** Backs the "my projects" chip: toggles the member filter between the current user and cleared. */
@@ -149,6 +259,17 @@ public class ProjectListBean implements SettingsDatatableBean {
         return personService.findClosestByUsernameOrEmail(query);
     }
 
+
+    /** A click on a row (only rows the user may open are selectable): opens the project's settings. */
+    public void onRowSelect(SelectEvent<ActionUnitDTO> event) throws IOException {
+        selectedActionUnit = null;
+        String path = redirectToProject(event.getObject());
+        if (path == null) {
+            return;
+        }
+        ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
+        externalContext.redirect(externalContext.getRequestContextPath() + path);
+    }
 
     public String redirectToProject(ActionUnitDTO actionUnit) {
         if (!profilePermissionService.hasProjectPermission(
