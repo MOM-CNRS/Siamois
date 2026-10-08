@@ -13,7 +13,7 @@
 
             <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closePicker()}" update="@form"/>
 
-            <p:commandLink actionListener="#{projectTableFieldSettingsBean.openNewFieldDrawer()}" update="@form :fieldEditForm" styleClass="ptc-picker-newfield">
+            <p:commandLink actionListener="#{projectTableFieldSettingsBean.openNewFieldDrawer()}" update="@form :ptcMain :treeFormCC:treeForm" styleClass="ptc-picker-newfield">
                 #{langBean.msg('projectTables.picker.newField')}
             </p:commandLink>
 

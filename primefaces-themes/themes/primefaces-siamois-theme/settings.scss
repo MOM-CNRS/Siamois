@@ -1016,3 +1016,59 @@ body .sia-create-dialog.ui-dialog .ui-dialog-content {
     color: var(--siamois-green-active);
     opacity: 1;
 }
+
+// The top of a settings page, down to its title: a white band. The box-shadow + clip-path pair paints the
+// white sideways to the edges of the screen even when the page content sits in a narrower container.
+.settings-header {
+    background: #ffffff;
+    box-shadow: 0 0 0 100vmax #ffffff;
+    clip-path: inset(0 -100vmax);
+    padding: 0.25rem 0 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.settings-header .breadCrumpForm {
+    margin-top: 0.75em;
+}
+
+// The list pages: the header rows (title, description, search / filters / add) get the same band.
+.datatable-settings {
+    margin-top: 0;
+}
+
+.datatable-settings::before {
+    content: "";
+    grid-row: 1 / 4;
+    grid-column: 1 / -1;
+    background: #ffffff;
+    box-shadow: 0 0 0 100vmax #ffffff;
+    clip-path: inset(0 -100vmax);
+    margin-bottom: -0.75em;
+}
+
+.datatable-settings .dt-title {
+    padding-top: 1.25em;
+}
+
+.datatable-settings > form.member-filter-row,
+.dt-searchInput {
+    margin-bottom: 0.9em;
+}
+
+.dt-content {
+    margin-top: 0.75em;
+}
+
+// The tables & fields page is one screen high: the header stays put and its two sections (the tree, the
+// details of the type or field) each scroll on their own.
+main.ptc-fixed {
+    height: 100vh;
+    overflow: hidden;
+}
+
+// On the tables & fields page the header, the tree and the details are three rectangles that fit together:
+// no space between them and square corners.
+main.ptc-fixed .settings-header {
+    margin-bottom: 0;
+    border-bottom: 1px solid #e7e7e3;
+}

@@ -190,6 +190,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerOpen = false;
         pickerQuery = null;
         closeDrawer();
+        expandedNodes.clear();
+        treeCache.clear();
         newTypeName = null;
         identSegments = new ArrayList<>();
         identFirst = null;
@@ -222,6 +224,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void selectTable(ConfigurableTable table) {
         selectedTable = table;
+        expandedNodes.add(tableNode(table));
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
         String firstNonDefault = typesForSelectedTable.stream()
                 .filter(t -> !t.isDefault())
@@ -232,7 +235,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void selectType(String typeName) {
+        // a field open in the main panel belongs to the type being left
+        closeDrawer();
         selectedTypeName = typeName;
+        if (typeName != null && selectedTable != null) {
+            expandedNodes.add(tableNode(selectedTable));
+            expandedNodes.add(typeNode(selectedTable, typeName));
+        }
         if (typeName == null) {
             formConfig = null;
             setFieldsConfig(null);
@@ -243,6 +252,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void loadConfigs() {
+        treeCache.clear();
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         setFieldsConfig(tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName));
         reloadLayoutRows();
@@ -411,6 +421,86 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         layoutRows.subList(start, end).clear();
         layoutRows.addAll(target, block);
         saveRows();
+    }
+
+    // ---- the tree: tables and types fold and unfold on their own, independently of what is selected ----
+
+    /** Open nodes of the tree: "T:&lt;table&gt;" for a table, "Y:&lt;table&gt;:&lt;type&gt;" for a type. */
+    private final Set<String> expandedNodes = new HashSet<>();
+    /** What the open nodes loaded (types of a table, fields of a type) — dropped whenever a config is reloaded. */
+    private final Map<String, Object> treeCache = new HashMap<>();
+
+    private static String tableNode(ConfigurableTable table) {
+        return "T:" + table.name();
+    }
+
+    private static String typeNode(ConfigurableTable table, String typeName) {
+        return "Y:" + table.name() + ":" + typeName;
+    }
+
+    public boolean isTableExpanded(ConfigurableTable table) {
+        return expandedNodes.contains(tableNode(table));
+    }
+
+    public boolean isTypeExpanded(ConfigurableTable table, String typeName) {
+        return expandedNodes.contains(typeNode(table, typeName));
+    }
+
+    public void toggleTable(ConfigurableTable table) {
+        toggleNode(tableNode(table));
+    }
+
+    public void toggleType(ConfigurableTable table, String typeName) {
+        toggleNode(typeNode(table, typeName));
+    }
+
+    private void toggleNode(String node) {
+        if (!expandedNodes.remove(node)) {
+            expandedNodes.add(node);
+        }
+    }
+
+    /** The types of a table, whether it is the selected one or only unfolded in the tree. */
+    @SuppressWarnings("unchecked")
+    public List<TypeSummary> typesOf(ConfigurableTable table) {
+        if (table == selectedTable && typesForSelectedTable != null) {
+            return typesForSelectedTable;
+        }
+        return (List<TypeSummary>) treeCache.computeIfAbsent("types:" + table.name(),
+                key -> tableFieldConfigService.listTypes(project.getId(), table));
+    }
+
+    /** The fields of a type, in the form's order for the selected type and as configured for the others. */
+    @SuppressWarnings("unchecked")
+    public List<TypeFieldFormConfig> fieldsOf(ConfigurableTable table, String typeName) {
+        if (table == selectedTable && typeName.equals(selectedTypeName)) {
+            return layoutRows.stream().filter(LayoutRow::isFieldRow).map(LayoutRow::getField).toList();
+        }
+        return (List<TypeFieldFormConfig>) treeCache.computeIfAbsent("fields:" + table.name() + ":" + typeName,
+                key -> tableFieldConfigService.getFieldsConfig(project.getId(), table, typeName).getFields());
+    }
+
+    /** Selects a type of any table of the tree (and the table with it). */
+    public void selectTypeOf(ConfigurableTable table, String typeName) {
+        if (table != selectedTable) {
+            selectedTable = table;
+            typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
+        }
+        selectType(typeName);
+    }
+
+    /** Opens a field of any type of the tree in the main panel, selecting its type first when needed. */
+    public void openFieldOf(ConfigurableTable table, String typeName, TypeFieldFormConfig field) {
+        if (table != selectedTable || !typeName.equals(selectedTypeName)) {
+            selectTypeOf(table, typeName);
+        }
+        if (fieldsConfig == null) {
+            return;
+        }
+        fieldsConfig.getFields().stream()
+                .filter(candidate -> candidate.getName().equals(field.getName()))
+                .findFirst()
+                .ifPresent(this::openDrawerForEdit);
     }
 
     public int getTypeCountFor(ConfigurableTable table) {

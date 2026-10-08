@@ -18,12 +18,14 @@
 
     <ui:define name="content">
         <main>
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="#{langBean.msg('nav.header.administration')}" action="#{navBean.goToUserManagementSettings()}"/>
                     <p:menuitem value="#{langBean.msg('nav.userManagement')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
             <div class="settings-page-header">
                 <h2 class="dt-title">#{langBean.msg('administrationSettings.membersProfiles.title')}</h2>
                 <p class="dt-desc">#{langBean.msg('administrationSettings.membersProfiles.description')}</p>

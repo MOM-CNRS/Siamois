@@ -19,6 +19,7 @@
 
     <ui:define name="content">
         <main>
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
@@ -26,6 +27,7 @@
                     <p:menuitem value="#{langBean.msg('organisationSettings.titles.members')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
             <div class="settings-page-header">
                 <h2 class="dt-title">#{langBean.msg('organisationSettings.membersProfiles.title')}</h2>
                 <p class="dt-desc">#{langBean.msg('organisationSettings.membersProfiles.description')}</p>

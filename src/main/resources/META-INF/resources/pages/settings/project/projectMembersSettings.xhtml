@@ -18,6 +18,7 @@
 
     <ui:define name="content">
         <main>
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="Projets" action="#{projectDetailsBean.goToProjectList()}"/>
@@ -25,6 +26,7 @@
                     <p:menuitem value="#{langBean.msg('projectSettings.titles.members')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
             <div class="settings-page-header">
                 <h2 class="dt-title">#{langBean.msg('projectSettings.membersProfiles.title')}</h2>
                 <p class="dt-desc">#{langBean.msg('projectSettings.membersProfiles.description')}</p>

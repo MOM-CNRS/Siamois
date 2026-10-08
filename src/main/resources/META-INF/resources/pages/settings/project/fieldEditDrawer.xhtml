@@ -5,7 +5,7 @@
              xmlns:f="http://java.sun.com/jsf/core">
 
     <script>
-        const fieldDrawerFunnyMessages = [
+        var fieldDrawerFunnyMessages = [
             "#{langBean.msg('organisationManagement.creating.funny.1')}",
             "#{langBean.msg('organisationManagement.creating.funny.2')}",
             "#{langBean.msg('organisationManagement.creating.funny.3')}",
@@ -23,7 +23,7 @@
             "#{langBean.msg('organisationManagement.creating.funny.15')}",
             "#{langBean.msg('organisationManagement.creating.funny.16')}"
         ];
-        let fieldDrawerFunnyMessageInterval = null;
+        var fieldDrawerFunnyMessageInterval = null;
 
         function nextFieldDrawerFunnyMessage() {
             const label = document.getElementById('fieldDrawerFunnyMessage');
@@ -57,14 +57,16 @@
     <h:form id="fieldEditForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <p:sidebar widgetVar="fieldEditSidebar" visible="#{projectTableFieldSettingsBean.drawerOpen}"
-                   position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
-                   styleClass="ptc-drawer-sidebar" style="width:460px;max-width:92vw;">
-            <p:ajax event="close" listener="#{projectTableFieldSettingsBean.closeDrawer()}"
-                    update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
-
+        <div class="ptc-editor ptc-field-view">
             <h:panelGroup id="drawerContent" layout="block" styleClass="ptc-drawer">
                 <div class="ptc-drawer-header">
+                    <p:commandButton value="#{langBean.msg('projectTables.drawer.back')}" icon="bi bi-arrow-left"
+                                     styleClass="ui-button-flat ptc-drawer-back"
+                                     actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
+                                     update=":ptcMain :treeFormCC:treeForm"/>
+                    <div class="ptc-drawer-path">
+                        #{projectTableFieldSettingsBean.selectedTable.label} › #{projectTableFieldSettingsBean.selectedTypeName eq '_default' ? langBean.msg('projectTables.badge.default') : projectTableFieldSettingsBean.selectedTypeName}
+                    </div>
                     <div class="ptc-drawer-title">
                         #{projectTableFieldSettingsBean.draftCreateMode ? langBean.msg('projectTables.drawer.titleCreate') : langBean.msg('projectTables.drawer.titleEdit')}
                     </div>
@@ -85,6 +87,10 @@
                 </h:panelGroup>
 
                 <div class="ptc-drawer-body">
+                  <!-- 1. The field itself: its definition (a thesaurus concept). -->
+                  <div class="ptc-drawer-section">
+                    <h3 class="ptc-drawer-section-title">#{langBean.msg('projectTables.drawer.section.definition')}</h3>
+                    <p class="ptc-drawer-section-hint">#{langBean.msg('projectTables.drawer.section.definitionHint')}</p>
                     <div class="ptc-drawer-field">
                         <label class="ptc-drawer-label" for="fieldEditForm:draftName">#{langBean.msg('projectTables.drawer.name')}</label>
                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
@@ -121,8 +127,13 @@
                         </h:panelGroup>
                     </div>
 
-                    <!-- ===== PARAMÈTRES (vocabulaire contrôlé only) ===== -->
-                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}">
+                  </div>
+
+                  <!-- 2. Its possible values: the vocabulary list (controlled vocabulary fields only). -->
+                  <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}" layout="block" styleClass="ptc-drawer-section">
+                    <h3 class="ptc-drawer-section-title">#{langBean.msg('projectTables.drawer.section.values')}</h3>
+                    <p class="ptc-drawer-section-hint">#{langBean.msg('projectTables.drawer.section.valuesHint')}</p>
+                    <h:panelGroup rendered="true">
                         <div class="ptc-params">
                             <div class="ptc-params-title">#{langBean.msg('projectTables.drawer.params.title', projectTableFieldSettingsBean.draftType.label)}</div>
 
@@ -220,6 +231,7 @@
                             </h:panelGroup>
                         </div>
                     </h:panelGroup>
+                  </h:panelGroup>
                 </div>
 
                 <p id="fieldDrawerFunnyMessage"
@@ -241,17 +253,18 @@
                 <div class="ptc-drawer-footer">
                     <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
                                       actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
-                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                      update=":ptcMain :treeFormCC:treeForm"/>
                     <!-- Only the two field tables are re-rendered, not the whole outer form: the tab
                          panel is what scrolls, so replacing the full form would put the user back at
                          the top of it after every save/cancel. Both tables are targeted because the
                          saved draft can be either a system or an additional field. -->
                     <p:commandButton value="#{langBean.msg('common.action.save')}"
+                                      rendered="#{not projectTableFieldSettingsBean.draftIsSystem or projectTableFieldSettingsBean.draftConfigurable}"
                                       actionListener="#{projectTableFieldSettingsBean.saveDrawer()}"
-                                      update=":fieldEditForm:drawerContent :projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"
+                                      update=":ptcMain :treeFormCC:treeForm"
                                       onstart="startFieldDrawerProgressBar()" oncomplete="endFieldDrawerProgressBar()"/>
                 </div>
             </h:panelGroup>
-        </p:sidebar>
+        </div>
     </h:form>
 </ui:fragment>

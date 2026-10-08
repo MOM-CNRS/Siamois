@@ -14,19 +14,22 @@ import lombok.Getter;
  */
 @Getter
 public enum FieldType {
-    TEXT("Texte"),
-    INTEGER("Numérique"),
-    MEASUREMENT("Mesure"),
-    SELECT_ONE("Vocabulaire contrôlé"),
-    SELECT_MULTIPLE("Vocabulaire contrôlé (plusieurs valeurs)"),
-    SELECT_ONE_RECORDING_UNIT("Unité d'enregistrement"),
-    SELECT_ONE_SPATIAL_UNIT("Lieu"),
-    PROJET("Projet");
+    TEXT("Texte", "bi-fonts"),
+    INTEGER("Numérique", "bi-123"),
+    MEASUREMENT("Mesure", "bi-rulers"),
+    SELECT_ONE("Vocabulaire contrôlé", "bi-ui-radios"),
+    SELECT_MULTIPLE("Vocabulaire contrôlé (plusieurs valeurs)", "bi-ui-checks"),
+    SELECT_ONE_RECORDING_UNIT("Unité d'enregistrement", "bi-pencil-square"),
+    SELECT_ONE_SPATIAL_UNIT("Lieu", "bi-geo-alt"),
+    PROJET("Projet", "bi-arrow-down-square");
 
     private final String label;
+    /** The Bootstrap icon that stands for this type of field, in front of the field's name. */
+    private final String icon;
 
-    FieldType(String label) {
+    FieldType(String label, String icon) {
         this.label = label;
+        this.icon = icon;
     }
 
     public boolean isConfigurable() {
