@@ -1676,3 +1676,40 @@ body button.p-button.status-button.status-button-compact {
 .file-cell-inline-image { padding: 0; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; background: var(--surface-b, #f8f9fa); cursor: zoom-in; max-width: 100%; }
 .file-cell-inline-image img { display: block; max-width: 100%; max-height: 20rem; margin: 0 auto; }
 .file-cell-inline-pdf { width: 100%; height: 24rem; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; }
+
+/* ----------------------------------------- project fiche header: one line
+
+   Primary chip (name), secondary chips (identifier, type, location), then ONE pencil pushed to the
+   far right of the header — before the toolbar buttons in the main layout, at the end in the
+   overview. It only shows while the header is hovered or holds focus, so a stray click can't start
+   an edit; in edit mode it is the one validate button and stays visible. */
+.sideview-titlebar > .sia-hstack {
+  flex: 1 1 auto;
+}
+
+.project-detail-header {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  align-items: center;
+}
+
+.project-detail-header-name-input {
+  min-width: 12rem;
+}
+
+.project-detail-header-identifier-input {
+  min-width: 8rem;
+}
+
+.project-detail-header .project-detail-header-edit.p-button {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.project-detail-header:hover .project-detail-header-edit.p-button,
+.project-detail-header:focus-within .project-detail-header-edit.p-button,
+.project-detail-header-edit.p-button:has(.pi-check) {
+  opacity: 1;
+}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
@@ -7,7 +7,7 @@ import { Message } from "primereact/message";
 import { useCanEdit } from "../../panels/writeMode";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
-import { patchProject } from "./api";
+import { patchProject, type ProjectPatch } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import type { ProjectDetail } from "./types";
 import { getEntityType } from "../registry";
@@ -39,30 +39,34 @@ export interface ProjectDetailHeaderProps {
   onSaved: () => void;
 }
 
+// One pencil, at the far right of the header, switches the whole header (name, identifier, type)
+// into edit mode — hidden until the header is hovered so a stray click can't start an edit. The
+// name is the primary chip, the identifier and the type are secondary chips. In edit mode the
+// pencil becomes the ONE validate button: it writes every changed field in a single patch (Enter
+// does the same from an input, Escape drops the draft).
 export function ProjectDetailHeader({ entity, onSaved }: ProjectDetailHeaderProps) {
   const canEdit = useCanEdit(entity);
-  return (
-    <div
-      className="project-detail-header sia-hstack"
-    >
-      <IdentifierChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
-      <CategoryChip entity={entity} onSaved={onSaved} canEdit={canEdit} />
-      <Chip label={entity.name} className="mr-2 action-unit-type-chip" />
-      {entity.mainLocation?.name && (
-        <Chip label={entity.mainLocation.name} icon="bi bi-geo-alt" className="mr-2 action-unit-type-chip" />
-      )}
-    </div>
-  );
-}
-
-/** pages/shared/chip/editableIdentifierChip.xhtml: a p:chip that swaps to an input on the pencil. */
-function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & { canEdit: boolean }) {
+  const { typeField, organizationId } = useProjectTypeField(entity);
+  const identifier = entity.fullIdentifier || entity.identifier;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(entity.fullIdentifier || entity.identifier);
+  const [nameDraft, setNameDraft] = useState(entity.name);
+  const [identifierDraft, setIdentifierDraft] = useState(identifier);
+  const [typeDraft, setTypeDraft] = useState<unknown>(entity.type);
   const [error, setError] = useState<string | null>(null);
+  const isEditing = editing && canEdit;
+
+  function resetDrafts() {
+    setNameDraft(entity.name);
+    setIdentifierDraft(identifier);
+    setTypeDraft(entity.type);
+    setError(null);
+  }
+
+  // A reloaded entity (after a save, or another fiche) drops whatever draft was in flight.
+  useEffect(resetDrafts, [entity.name, identifier, entity.type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mutation = useMutation({
-    mutationFn: (identifier: string) => patchProject(entity.id, { identifier }),
+    mutationFn: (patch: ProjectPatch) => patchProject(entity.id, patch),
     onSuccess: () => {
       setEditing(false);
       setError(null);
@@ -73,125 +77,112 @@ function IdentifierChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps &
     },
   });
 
-  function save() {
-    const trimmed = draft.trim();
-    if (!trimmed) {
-      setError(t("header.identifierRequired"));
+  function validate() {
+    const name = nameDraft.trim();
+    const ident = identifierDraft.trim();
+    if (!name) return setError(t("header.nameRequired"));
+    if (!ident) return setError(t("header.identifierRequired"));
+    const patch: ProjectPatch = {};
+    if (name !== entity.name) patch.name = name;
+    if (ident !== identifier) patch.identifier = ident;
+    if (conceptId(typeDraft) !== conceptId(entity.type)) patch.typeId = conceptId(typeDraft);
+    if (Object.keys(patch).length === 0) {
+      setEditing(false);
       return;
     }
-    mutation.mutate(trimmed);
+    mutation.mutate(patch);
   }
 
+  function cancel() {
+    setEditing(false);
+    resetDrafts();
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLElement>) {
+    if (!isEditing) return;
+    if (e.key === "Escape") cancel();
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") validate();
+  }
+
+  const typeLabel = entity.type?.resolvedLabel;
+  const typeEditable = isEditing && typeField != null;
+
   return (
-    <div className="project-fiche-tab-identifier sia-flex-center">
-      {editing ? (
-        <>
-          <InputText value={draft} onChange={(e) => setDraft(e.target.value)} />
-          <Button icon="pi pi-check" onClick={save} loading={mutation.isPending} aria-label="Enregistrer l'identifiant" />
-          <Button
-            icon="pi pi-times"
-            className="p-button-text"
-            aria-label={t("common.cancel")}
-            onClick={() => {
-              setEditing(false);
-              setError(null);
-              setDraft(entity.fullIdentifier || entity.identifier);
-            }}
-          />
-        </>
+    <div className="project-detail-header sia-hstack" onKeyDown={onKeyDown}>
+      {isEditing ? (
+        <InputText
+          className="project-detail-header-name-input"
+          value={nameDraft}
+          aria-label={t("common.name")}
+          onChange={(e) => setNameDraft(e.target.value)}
+        />
       ) : (
-        <>
-          <Chip label={entity.fullIdentifier || entity.identifier} className="action-unit-chip-alt entity-nav-chip" icon={getEntityType("project")?.icon} />
-          {canEdit && (
-            <Button
-              icon="pi pi-pencil"
-              className="p-button-text"
-              aria-label={t("header.editIdentifier")}
-              onClick={() => setEditing(true)}
-            />
-          )}
-        </>
+        <Chip label={entity.name} className="action-unit-chip-alt entity-nav-chip" icon={getEntityType("project")?.icon} />
+      )}
+      {isEditing ? (
+        <InputText
+          className="project-detail-header-identifier-input"
+          value={identifierDraft}
+          aria-label={t("common.identifier")}
+          onChange={(e) => setIdentifierDraft(e.target.value)}
+        />
+      ) : (
+        <Chip label={identifier} className="mr-2 action-unit-type-chip" />
+      )}
+      {typeEditable ? (
+        <span className="project-detail-header-category sia-inline-center">
+          <SelectOneConceptRenderer
+            field={typeField}
+            value={typeDraft as ProjectDetail["type"]}
+            readOnly={mutation.isPending}
+            required={false}
+            organizationId={organizationId}
+            onChange={setTypeDraft}
+          />
+        </span>
+      ) : (
+        (typeLabel || (canEdit && typeField != null)) && (
+          <span className="project-detail-header-category sia-inline-center">
+            <Chip label={typeLabel ?? "Sans type"} className="mr-2 action-unit-type-chip" />
+          </span>
+        )
+      )}
+      {!isEditing && entity.mainLocation?.name && (
+        <Chip label={entity.mainLocation.name} icon="bi bi-geo-alt" className="mr-2 action-unit-type-chip" />
       )}
       {error && <Message severity="error" text={error} />}
+      {canEdit && (
+        <Button
+          icon={isEditing ? "pi pi-check" : "pi pi-pencil"}
+          className="p-button-text project-detail-header-edit"
+          aria-label={isEditing ? t("header.validate") : t("header.editHeader")}
+          loading={mutation.isPending}
+          onClick={() => (isEditing ? validate() : setEditing(true))}
+        />
+      )}
     </div>
   );
 }
 
 /**
- * pages/shared/chip/editableCategoryChip.xhtml: the project's type, shown as a chip and edited
- * in place with the same concept autocomplete the fiche and the table's cell editor use
- * (SelectOneConceptRenderer). The write goes through ProjectPatchRequest's flat `typeId`, which
- * is the alias the server documents for this field.
- *
- * <p>The field's metadata (its fieldCode, which is what the autocomplete queries) comes from the
- * same org catalog the fiche loads — same query key, so React Query serves both from one fetch.</p>
+ * The project type's field metadata, from the same org catalog the fiche loads (same query key, so
+ * React Query serves both from one fetch). ActionUnitForm.ACTION_UNIT_TYPE_FIELD is located by its
+ * valueBinding rather than by its hardcoded id (-101), so a renumbering of the system-field catalog
+ * doesn't silently break the header. The write goes through ProjectPatchRequest's flat `typeId`.
  */
-function CategoryChip({ entity, onSaved, canEdit }: ProjectDetailHeaderProps & { canEdit: boolean }) {
+function useProjectTypeField(entity: ProjectDetail) {
   const organizationIdRaw = entity.organization?.id;
   const organizationId = organizationIdRaw != null ? Number(organizationIdRaw) : undefined;
-  const [editing, setEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const typesQuery = useQuery({
     queryKey: queryKeys.projectTypes(organizationIdRaw),
     queryFn: () => getProjectTypes(organizationIdRaw as string),
     enabled: organizationIdRaw != null,
   });
-
-  // ActionUnitForm.ACTION_UNIT_TYPE_FIELD — located by its valueBinding rather than by its
-  // hardcoded id (-101), so a renumbering of the system-field catalog doesn't silently break this.
   const typeField = useMemo<FieldResource | undefined>(
     () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
     [typesQuery.data],
   );
-
-  const mutation = useMutation({
-    mutationFn: (typeId: string | null) => patchProject(entity.id, { typeId }),
-    onSuccess: () => {
-      setEditing(false);
-      setError(null);
-      onSaved();
-    },
-    onError: (err: unknown) => {
-      setError(messageForError(err, t("header.saveFailed")));
-    },
-  });
-
-  const label = entity.type?.resolvedLabel;
-  const editable = canEdit && typeField != null;
-
-  if (editing && editable) {
-    return (
-      <span className="project-detail-header-category sia-inline-center">
-        <SelectOneConceptRenderer
-          field={typeField}
-          value={entity.type}
-          readOnly={mutation.isPending}
-          required={false}
-          organizationId={organizationId}
-          onChange={(v) => mutation.mutate(conceptId(v))}
-        />
-        <Button icon="pi pi-times" className="p-button-text" aria-label={t("common.cancel")} onClick={() => setEditing(false)} />
-        {error && <Message severity="error" text={error} />}
-      </span>
-    );
-  }
-
-  if (!label && !editable) return null;
-
-  return (
-    <span className="project-detail-header-category sia-inline-center">
-      <Chip label={label ?? "Sans type"} className="action-unit-type-chip" />
-      {editable && (
-        <Button
-          icon="pi pi-pencil"
-          className="p-button-text"
-          aria-label={t("header.editType")}
-          onClick={() => setEditing(true)}
-        />
-      )}
-    </span>
-  );
+  return { typeField, organizationId };
 }
 
 function conceptId(value: unknown): string | null {

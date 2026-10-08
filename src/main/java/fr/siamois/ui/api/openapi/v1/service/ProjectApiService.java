@@ -634,6 +634,10 @@ public class ProjectApiService {
             String identifier = patch.getIdentifier().trim();
             if (!identifier.isEmpty()) {
                 dto.setIdentifier(identifier);
+                // A project's full identifier is its identifier (set so at creation, see
+                // ActionUnitService#prepareActionUnitDtoForSave); the UI shows the full one, so
+                // leaving it stale made an identifier edit look unsaved.
+                dto.setFullIdentifier(identifier);
             }
         }
         if (patch.getBeginDate() != null) {
