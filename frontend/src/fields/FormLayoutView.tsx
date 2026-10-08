@@ -4,6 +4,7 @@ import { evaluateForm, type FieldState } from "../rules";
 import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";
 import { FieldEditCell } from "./FieldEditCell";
 import { FieldLabel } from "./FieldLabel";
+import { isTypeField } from "./typeField";
 import { resolveValueBinding, type AnswerInputBody, type FieldResource } from "./types";
 import { valueOfField } from "./values";
 import { t } from "../i18n";
@@ -112,6 +113,8 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
   const fieldId = String(col.fieldId);
   const field = fields[fieldId];
   if (!field) return null;
+  // The type is edited from the fiche's header, not as one of the form's fields.
+  if (isTypeField(field)) return null;
 
   const stored = resolveValueBinding(field).readRaw(entity);
   if (isFieldShown && !isFieldShown(field, stored)) return null;

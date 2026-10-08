@@ -1713,3 +1713,29 @@ body button.p-button.status-button.status-button-compact {
 .entity-detail-header-edit.p-button:has(.pi-check) {
   opacity: 1;
 }
+
+/* ----------------------------------------- panel frame: the panels define the border, not the top bar
+
+   The top bar of a panel (its title bar) draws no line of its own: the panel's own border — the entity
+   coloured edge on top and its hairline around — is the only one. The main panel is flat, with square
+   corners (the side panel keeps its rounded edge). */
+.siamois-panel .sideview-titlebar,
+.entity-list-panel.p-panel > .p-panel-header,
+.entity-detail-panel.p-panel > .p-panel-header {
+  border: none;
+  box-shadow: none;
+}
+
+.panel-splitter-panel-l.siamois-panel,
+.siamois-panel.panel-docked {
+  border-radius: 0;
+}
+
+/* The JSF frame that hosts the React main panel (`.panel-docked`) draws no border of its own: the pane inside
+   it already has the entity-coloured edge. Both drew one, stacked — a second line (green wherever the frame did
+   not carry the entity's colour) and a coloured edge a few pixels short on each side, inset by the frame's own
+   side borders. */
+.panel-docked.siamois-panel:has(> .react-main-panel-mount) {
+  border: none;
+  border-radius: 0;
+}

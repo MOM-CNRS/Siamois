@@ -11,6 +11,7 @@ import { getEntityType } from "../entities/registry";
 import { SelectOneConceptRenderer } from "../fields/renderers";
 import type { FieldResource } from "../fields/types";
 import type { FilterOption } from "../fields/optionSources";
+import { isTypeField } from "../fields/typeField";
 import { useCanEdit } from "../panels/writeMode";
 import { t } from "../i18n";
 
@@ -225,13 +226,6 @@ export function useFormFields(
   }, [formQuery.data]);
 }
 
-/**
- * An entity's type is bound to `type` (recording unit, phase, container, project) or to `category`
- * (find, place, document) — the same concept, named after the table it belongs to.
- */
-export function isTypeField(field: FieldResource): boolean {
-  return field.valueBinding === "type" || field.valueBinding === "category";
-}
 
 /** The concept id of a picker value or of an entity's `type` reference. */
 export function conceptId(value: unknown): string | null {

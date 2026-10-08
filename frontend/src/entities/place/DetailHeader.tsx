@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { EntityDetailHeader, isTypeField } from "../../components/EntityDetailHeader";
+import { EntityDetailHeader } from "../../components/EntityDetailHeader";
+import { isTypeField } from "../../fields/typeField";
 import type { FieldResource } from "../../fields/types";
 import { patchPlaceHeader } from "./api";
 import type { PlaceDetail } from "./types";
