@@ -5,6 +5,7 @@ import { Message } from "primereact/message";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
+import { useDeclaredTypes } from "../useDeclaredTypes";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { fetchList } from "../listApi";
@@ -67,6 +68,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
     queryFn: () => getEffectiveForm("find-types", projectId as string, null),
     enabled: projectId != null,
   });
+
+  const declaredCategories = useDeclaredTypes("find-types", projectId);
 
   const categoryField = useMemo<FieldResource | undefined>(
     () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "category"),
@@ -142,6 +145,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
             readOnly={false}
             required
             organizationId={organizationId}
+            declaredOptions={declaredCategories}
             onChange={(v) => setCategory(v as ConceptPick | null)}
           />
         ) : (

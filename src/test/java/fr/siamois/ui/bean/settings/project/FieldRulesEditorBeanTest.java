@@ -108,7 +108,8 @@ class FieldRulesEditorBeanTest {
         assertThat(rules.requiredWhen()).isEqualTo(new Condition.Leaf(3L, ConditionOp.GTE, List.of(FieldValueSpec.literal(2.5))));
         assertThat(rules.constraints()).containsExactly(new FieldConstraint(FieldConstraint.Op.LTE, 3L));
         assertThat(rules.enabledWhen()).isNull();
-        assertThat(bean.isOpen()).isFalse();
+        // the editor stays open on the field: it is a section of the field screen now
+        assertThat(bean.isOpen()).isTrue();
     }
 
     @Test

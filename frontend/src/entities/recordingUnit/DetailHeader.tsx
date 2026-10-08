@@ -4,6 +4,7 @@ import { EntityDetailHeader, type HeaderChanges } from "../../components/EntityD
 import { toAnswerInput } from "../../fields/types";
 import type { AnswerInputBody, FieldResource } from "../../fields/types";
 import { patchRecordingUnit } from "./api";
+import { useDeclaredTypes } from "../useDeclaredTypes";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { RecordingUnitDetail } from "./types";
 import { queryKeys } from "../../api/queryKeys";
@@ -29,6 +30,7 @@ export function RecordingUnitDetailHeader({ entity, onSaved }: RecordingUnitDeta
     () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
     [typesQuery.data],
   );
+  const declaredTypes = useDeclaredTypes("recording-unit-types", entity.projectId);
   const organizationIdRaw = entity.organization?.id;
   const organizationId = organizationIdRaw != null ? Number(organizationIdRaw) : undefined;
 
@@ -47,7 +49,7 @@ export function RecordingUnitDetailHeader({ entity, onSaved }: RecordingUnitDeta
       chipPrefix="recording-unit"
       entity={entity}
       primary={{ value: entity.fullIdentifier, label: t("common.identifier"), requiredMessage: t("header.identifierRequired") }}
-      type={{ value: entity.type, field: typeField, organizationId }}
+      type={{ value: entity.type, field: typeField, organizationId, declaredTypes }}
       save={save}
       onSaved={onSaved}
     />

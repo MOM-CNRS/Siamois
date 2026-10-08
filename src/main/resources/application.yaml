@@ -24,6 +24,15 @@ siamois:
   documents:
     folder-path: ${SIAMOIS_DOCUMENTS_PATH}
     allowed-types: "*/*"
+  # The standard type of each table of a new project, as a concept of the system thesaurus (its OpenTheso
+  # URI): "UE standard", "Mobilier standard"… Recording units also start with US and F. An empty URI means
+  # the table starts without a standard type and its types are added from the project settings.
+  default-types:
+    ue: ${SIAMOIS_DEFAULT_TYPE_UE:https://thesaurus.mom.fr/?idc=4291162&idt=th252}
+    mobilier: ${SIAMOIS_DEFAULT_TYPE_MOBILIER:https://thesaurus.mom.fr/?idc=4291163&idt=th252}
+    phase: ${SIAMOIS_DEFAULT_TYPE_PHASE:https://thesaurus.mom.fr/?idc=4291164&idt=th252}
+    contenant: ${SIAMOIS_DEFAULT_TYPE_CONTENANT:https://thesaurus.mom.fr/?idc=4291165&idt=th252}
+    document: ${SIAMOIS_DEFAULT_TYPE_DOCUMENT:https://thesaurus.mom.fr/?idc=4291166&idt=th252}
   jwt:
     # HS256 : au moins 256 bits — utiliser une valeur forte en prod (variable SIAMOIS_JWT_SECRET).
     secret: ${SIAMOIS_JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}

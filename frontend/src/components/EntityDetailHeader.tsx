@@ -10,6 +10,7 @@ import { getEffectiveForm } from "../entities/typeCatalog";
 import { getEntityType } from "../entities/registry";
 import { SelectOneConceptRenderer } from "../fields/renderers";
 import type { FieldResource } from "../fields/types";
+import type { FilterOption } from "../fields/optionSources";
 import { useCanEdit } from "../panels/writeMode";
 import { t } from "../i18n";
 
@@ -54,6 +55,8 @@ export interface EntityDetailHeaderProps {
     // The type's field, as the fiche's form serves it; none → the type is shown but not editable.
     field?: FieldResource;
     organizationId?: number;
+    // The types the project declared for the table: the picker offers exactly these.
+    declaredTypes?: readonly FilterOption[];
   };
   // Read-only chips after the type (the project's location).
   extra?: ReactNode;
@@ -174,6 +177,7 @@ export function EntityDetailHeader({
             readOnly={mutation.isPending}
             required={false}
             organizationId={type!.organizationId}
+            declaredOptions={type!.declaredTypes}
             onChange={setTypeDraft}
           />
         </span>

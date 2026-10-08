@@ -37,15 +37,13 @@ import java.util.Set;
  * fields each one holds, in order. A configuration without any group has no layout yet (see
  * {@code EffectiveFormResolver} for what applies then).
  * <p>
- * Nothing is merged: the layout found is the layout. While the {@code _default} configuration
- * exists, a type without a layout of its own uses the default's, as a whole.
+ * Nothing is merged: the layout found is the layout.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FormLayoutService {
 
-    private static final String DEFAULT_TYPE = TableFieldConfigService.DEFAULT_TYPE;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final TableFieldConfigService tableFieldConfigService;
@@ -165,11 +163,6 @@ public class FormLayoutService {
         Optional<FormConfig> own = tableFieldConfigService.findFormConfig(projectId, table, typeName);
         Optional<FormLayout> stored = own.flatMap(this::layoutOf);
         if (stored.isPresent()) return stored.get();
-        if (own.isEmpty() && !DEFAULT_TYPE.equals(typeName)) {
-            Optional<FormLayout> inherited = tableFieldConfigService.findFormConfig(projectId, table, DEFAULT_TYPE)
-                    .flatMap(this::layoutOf);
-            if (inherited.isPresent()) return inherited.get();
-        }
         return tableFieldConfigService.legacyLayout(projectId, table, typeName);
     }
 

@@ -1,4 +1,5 @@
 import { EntityDetailHeader, useFormFields, type HeaderChanges } from "./EntityDetailHeader";
+import { useDeclaredTypes } from "../entities/useDeclaredTypes";
 import { toAnswerInput, type AnswerInputBody } from "../fields/types";
 import { t } from "../i18n";
 
@@ -40,6 +41,7 @@ export function SchemaEntityHeader({
   onSaved,
 }: SchemaEntityHeaderProps) {
   const { typeField, titleField } = useFormFields(typesSegment, entity);
+  const declaredTypes = useDeclaredTypes(typesSegment, entity.projectId);
   const organizationIdRaw = entity.organization?.id;
   const organizationId = organizationIdRaw != null ? Number(organizationIdRaw) : undefined;
 
@@ -83,7 +85,7 @@ export function SchemaEntityHeader({
             }
           : undefined
       }
-      type={{ value: entity.type, field: typeField, organizationId }}
+      type={{ value: entity.type, field: typeField, organizationId, declaredTypes }}
       save={save}
       onSaved={onSaved}
     />

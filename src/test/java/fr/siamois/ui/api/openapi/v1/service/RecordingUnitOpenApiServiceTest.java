@@ -544,7 +544,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectTypes_returnsDefaultTypeWithFieldConfigsAndEmptyData() {
+    void buildProjectTypes_returnsTheFormWithFieldConfigsAndEmptyData() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
@@ -562,13 +562,13 @@ class RecordingUnitOpenApiServiceTest {
         ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
 
         assertThat(response.getData()).isEmpty();
-        assertThat(response.getDefaultType().getForm()).isNotNull();
+        assertThat(response.getForm()).isNotNull();
         assertThat(response.getFields()).containsKey("301");
         assertThat(response.getFields().get("301").label()).isEqualTo("Libellé projet");
-        assertThat(response.getDefaultType().getFieldConfigs()).hasSize(1);
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).field()).isEqualTo("301");
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).active()).isTrue();
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).institutionLocked()).isTrue();
+        assertThat(response.getFieldConfigs()).hasSize(1);
+        assertThat(response.getFieldConfigs().get(0).field()).isEqualTo("301");
+        assertThat(response.getFieldConfigs().get(0).active()).isTrue();
+        assertThat(response.getFieldConfigs().get(0).institutionLocked()).isTrue();
     }
 
     /**
@@ -591,7 +591,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
 
-        List<ProjectTableColumnResource> tableColumns = response.getDefaultType().getTableColumns();
+        List<ProjectTableColumnResource> tableColumns = response.getTableColumns();
         assertThat(tableColumns).hasSize(ActionUnitTableColumnDefaults.columns().size());
         assertThat(tableColumns)
                 .filteredOn(ProjectTableColumnResource::visible)
@@ -2399,7 +2399,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectRecordingUnitTypeSettings_returnsDefaultTypeAndConfiguredTypeWithForm() {
+    void buildProjectRecordingUnitTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2433,8 +2433,8 @@ class RecordingUnitOpenApiServiceTest {
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
+        // the catalog is the union of the types' fields
+        assertThat(response.getFields()).containsOnlyKeys("43");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
@@ -2443,7 +2443,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectRecordingUnitTypeSettings_defaultTypeWithForm_includesFields() {
+    void buildProjectRecordingUnitTypeSettings_baseFieldsAreInTheCatalog() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2464,8 +2464,7 @@ class RecordingUnitOpenApiServiceTest {
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFormBundle()).isNotNull();
-        assertThat(response.getDefaultType().getFields()).containsKey("45");
+        assertThat(response.getFields()).containsKey("45");
         assertThat(response.getData()).isEmpty();
     }
 
@@ -2486,7 +2485,7 @@ class RecordingUnitOpenApiServiceTest {
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
         List<fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource> tableColumns =
-                response.getDefaultType().getTableColumns();
+                response.getTableColumns();
         assertThat(tableColumns).hasSize(fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults.columns().size());
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
@@ -2559,7 +2558,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectFindTypeSettings_returnsFindDefaultTypeWithFields() {
+    void buildProjectFindTypeSettings_catalogHoldsTheBaseFields() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2579,12 +2578,12 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).isEmpty();
     }
 
     @Test
-    void buildProjectFindTypeSettings_returnsDefaultTypeAndConfiguredTypeWithForm() {
+    void buildProjectFindTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2617,8 +2616,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
+        assertThat(response.getFields()).containsOnlyKeys("46");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
@@ -2639,7 +2637,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectPhaseTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+    void buildProjectPhaseTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2670,7 +2668,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectPhaseTypeListResponse response = service.buildProjectPhaseTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
@@ -2689,7 +2687,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectDocumentTypeSettings_returnsTheDefaultTypeAndEachCategoryWithItsForm() {
+    void buildProjectDocumentTypeSettings_returnsEachCategoryWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2721,7 +2719,7 @@ class RecordingUnitOpenApiServiceTest {
 
         var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
@@ -2749,8 +2747,7 @@ class RecordingUnitOpenApiServiceTest {
         var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
 
         assertThat(response.getData()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig()).isNull();
-        assertThat(response.getDefaultType().getFields()).containsKey("48");
+        assertThat(response.getFields()).containsKey("48");
         verify(tableFieldConfigService, never()).listConfiguredTypeConcepts(any(), eq(ConfigurableTable.DOCUMENT));
     }
 
@@ -2767,7 +2764,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectContainerTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+    void buildProjectContainerTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2798,7 +2795,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectContainerTypeListResponse response = service.buildProjectContainerTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");

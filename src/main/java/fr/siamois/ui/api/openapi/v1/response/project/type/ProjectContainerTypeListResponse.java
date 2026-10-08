@@ -1,25 +1,25 @@
 package fr.siamois.ui.api.openapi.v1.response.project.type;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import fr.siamois.ui.api.openapi.v1.generic.response.Response;
-import fr.siamois.ui.api.openapi.v1.resource.type.ContainerDefaultType;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.type.ContainerType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 
+/** The project's types of contenant, each with its own form, plus the flat catalog of their fields. */
 @EqualsAndHashCode(callSuper = true)
 @Getter
 public class ProjectContainerTypeListResponse extends Response<List<ContainerType>> {
 
-    @JsonProperty("_default")
-    @Schema(name = "_default", description = "Configuration du type de contenant par défaut (formulaire et identifiant) sans concept associé.")
-    private final ContainerDefaultType defaultType;
+    @Schema(description = "Catalogue de champs, union des fields de chaque type, indexé par identifiant custom_field")
+    private final Map<String, FieldResource> fields;
 
-    public ProjectContainerTypeListResponse(List<ContainerType> data, ContainerDefaultType defaultType) {
+    public ProjectContainerTypeListResponse(List<ContainerType> data, Map<String, FieldResource> fields) {
         super(data);
-        this.defaultType = defaultType;
+        this.fields = fields;
     }
 }

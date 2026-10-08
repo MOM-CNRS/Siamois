@@ -173,15 +173,21 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
-  const loadOptions =
+  const sourceOptions =
     orgId != null
       ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
       : null;
+  const loadOptions = declaredOptions
+    ? async (q?: string) => {
+        const needle = (q ?? "").trim().toLowerCase();
+        return declaredOptions.filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
+      }
+    : sourceOptions;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const { capTo, panelStyle } = useFieldWidthCap();
   const target = referenceTargetOf(field);

@@ -5,6 +5,7 @@ import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../entities/types";
 import { SelectOneConceptRenderer } from "../fields/renderers";
+import { useDeclaredTypes } from "../entities/useDeclaredTypes";
 import type { FieldResource } from "../fields/types";
 import { CreateFormField, CreateFormShell } from "./CreateFormShell";
 import { useCreateProject } from "./useCreateProject";
@@ -66,6 +67,8 @@ export function TypeOnlyCreateForm({
     [formQuery.data, typeBinding],
   );
 
+  const declaredTypes = useDeclaredTypes(typesSegment, projectId);
+
   const mutation = useMutation({
     mutationFn: () => create(projectId as string, type!.resourceId),
     onSuccess: (created) => onCreated(created.id),
@@ -95,6 +98,7 @@ export function TypeOnlyCreateForm({
             readOnly={false}
             required
             organizationId={organizationId}
+            declaredOptions={declaredTypes}
             onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (

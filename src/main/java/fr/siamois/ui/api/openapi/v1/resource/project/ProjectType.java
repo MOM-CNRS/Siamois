@@ -9,9 +9,8 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * A real, per-type entry in {@code ProjectTypeListResponse.data} (plan §5/§6) — shaped like
- * {@link ProjectDefaultType} plus the type's own concept identity, mirroring how
- * {@code RecordingUnitType} relates to {@code RecordingUnitDefaultType}. Nothing constructs this
+ * A real, per-type entry in {@code ProjectTypeListResponse.data} (plan §5/§6) — the form and field
+ * configs plus the type's own concept identity, like {@code RecordingUnitType}. Nothing constructs this
  * yet: Project isn't plugged into the {@code ConfigurableTable}/{@code FieldFormConfig} machinery
  * this phase, so {@code data} always serializes as {@code []}. Declared now (rather than typing
  * {@code data} as raw {@code Object}) so the contract is explicit for whoever picks that up.

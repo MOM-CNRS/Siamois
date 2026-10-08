@@ -130,6 +130,18 @@ public class FieldRulesEditorBean implements Serializable {
         conceptChoices.clear();
     }
 
+    @EventListener(FieldOpenedEvent.class)
+    public void onFieldOpened(FieldOpenedEvent event) {
+        openFor(event.field());
+    }
+
+    /** The field's Save, after its definition: writes the rules when this field's are on screen. */
+    public void saveIfOpen() {
+        if (open) {
+            save();
+        }
+    }
+
     public void openFor(TypeFieldFormConfig target) {
         FieldRules rules = formLayoutService.rulesOf(settingsBean.getProject().getId(), settingsBean.getSelectedTable(),
                 settingsBean.getSelectedTypeName(), target.getId());
@@ -294,7 +306,8 @@ public class FieldRulesEditorBean implements Serializable {
                     .collect(Collectors.joining(" "));
             return;
         }
-        close();
+        // the editor stays on the field: it is a section of the field's own screen now
+        errorMessage = null;
         settingsBean.reloadLayoutRows();
     }
 

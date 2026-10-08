@@ -4,7 +4,7 @@ import type { ProjectTableColumnDefault } from "../common";
 
 // GET /api/v1/organizations/{id}/project-types (plan §5/§6/§8 phase 3+6) — replaces the removed
 // GET /api/v1/projects/form. `data` is always `[]` this phase (Project has no configurable types
-// yet); the fiche only ever consumes `_default`.
+// yet); the fiche reads the project's one form, at the root of the response.
 interface ProjectFieldConfigBody {
   field: string;
   active: boolean;
@@ -18,11 +18,9 @@ interface ProjectFieldConfigBody {
 // and aren't part of the field catalog.
 interface ProjectTypesResponseBody {
   data: unknown[];
-  _default: {
-    form: { resourceType: string; layoutJson: string };
-    fieldConfigs: ProjectFieldConfigBody[];
-    tableColumns: ProjectTableColumnDefault[];
-  };
+  form: { resourceType: string; layoutJson: string };
+  fieldConfigs: ProjectFieldConfigBody[];
+  tableColumns: ProjectTableColumnDefault[];
   fields: Record<string, FieldResource>;
 }
 
@@ -37,9 +35,9 @@ export async function getProjectTypes(organizationId: string | number): Promise<
   // The project catalog carries its field configs besides the common catalog body.
   const body = (await fetchTypesCatalog(`/api/v1/organizations/${organizationId}/project-types`)) as unknown as ProjectTypesResponseBody;
   return {
-    layoutJson: body._default.form.layoutJson,
-    fieldConfigs: body._default.fieldConfigs,
-    tableColumns: body._default.tableColumns ?? [],
+    layoutJson: body.form.layoutJson,
+    fieldConfigs: body.fieldConfigs,
+    tableColumns: body.tableColumns ?? [],
     fields: body.fields,
   };
 }

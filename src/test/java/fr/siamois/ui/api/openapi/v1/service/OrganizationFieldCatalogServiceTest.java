@@ -56,10 +56,9 @@ class OrganizationFieldCatalogServiceTest {
         List<String> systemIds = SystemFieldCatalog.fieldsOf(ConfigurableTable.UE).stream()
                 .map(f -> String.valueOf(f.getId())).toList();
         assertThat(response.getFields().keySet()).startsWith(systemIds.toArray(String[]::new)).endsWith("501", "502");
-        assertThat(response.getDefaultType().fields()).isSameAs(response.getFields());
         assertThat(response.getData()).isEmpty();
         // The recording-unit list keeps its server-driven default columns.
-        assertThat(response.getDefaultType().tableColumns()).isNotEmpty();
+        assertThat(response.getTableColumns()).isNotEmpty();
     }
 
     @Test
@@ -76,7 +75,7 @@ class OrganizationFieldCatalogServiceTest {
     void otherTablesHaveNoDefaultColumns() {
         when(customFieldRepository.findActiveAdditionalByInstitutionAndTable(eq(7L), any())).thenReturn(List.of());
 
-        assertThat(service.build(7L, ConfigurableTable.CONTENANT, "fr").getDefaultType().tableColumns()).isNull();
+        assertThat(service.build(7L, ConfigurableTable.CONTENANT, "fr").getTableColumns()).isNull();
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.UE)).isEqualTo(RecordingUnit.class);
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.DOCUMENT))
                 .isEqualTo(fr.siamois.domain.models.document.Document.class);
