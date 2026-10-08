@@ -47,18 +47,18 @@ class ProjectTableFieldSettingsBeanTest {
         FormLayoutService layout = mock(FormLayoutService.class);
         TypeFieldFormConfig pivot = TypeFieldFormConfig.builder().name("recordingunit.property.type").systemField(true)
                 .active(true).sourceLabel(ConfigurableTable.UE.getFieldCode()).build();
-        TypeFieldFormConfig hidden = field("recordingunit.field.description", false);
+        TypeFieldFormConfig removed = field("recordingunit.field.description", false);
         when(layout.rowsOf(42L, ConfigurableTable.UE, "Creusement")).thenReturn(List.of(
-                LayoutRow.header(1L, "A"), LayoutRow.of(pivot, FieldWidth.QUARTER), LayoutRow.of(hidden, FieldWidth.HALF)));
+                LayoutRow.header(1L, "A"), LayoutRow.of(pivot, FieldWidth.QUARTER), LayoutRow.of(removed, FieldWidth.HALF)));
 
         ProjectTableFieldSettingsBean bean = beanOn(layout);
         bean.selectType("Creusement");
 
-        assertThat(bean.getLayoutRows()).hasSize(3);
-        assertThat(bean.getFieldCount()).isEqualTo(2);
-        assertThat(bean.getHiddenFieldCount()).isEqualTo(1);
+        // a field taken out of the type (stored as inactive) is simply not listed
+        assertThat(bean.getLayoutRows()).hasSize(2);
+        assertThat(bean.getFieldCount()).isEqualTo(1);
         assertThat(bean.isPivotField(pivot)).isTrue();
-        assertThat(bean.isPivotField(hidden)).isFalse();
+        assertThat(bean.isPivotField(removed)).isFalse();
     }
 
     @Test
@@ -178,6 +178,89 @@ class ProjectTableFieldSettingsBeanTest {
         bean.selectType("_default");
 
         assertThat(bean.getIdentExample()).isEqualTo("142-00-XXX-0000");
+    }
+
+    @Test
+    void removeField_onASystemField_setsItAsideAndKeepsItInTheCatalog() {
+        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
+        FormLayoutService layout = mock(FormLayoutService.class);
+        ProjectTableFieldSettingsBean bean = bean(tableService, layout);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(42L);
+        bean.setProject(project);
+        bean.setSelectedTable(ConfigurableTable.UE);
+        bean.setSelectedTypeName("Creusement");
+        TypeFieldFormConfig description = field("recordingunit.field.description", true);
+
+        bean.removeField(description);
+
+        verify(tableService).setFieldActive(42L, ConfigurableTable.UE, "Creusement", "recordingunit.field.description", false);
+    }
+
+    @Test
+    void removeField_refusesThePivotTypeField() {
+        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
+        ProjectTableFieldSettingsBean bean = bean(tableService, mock(FormLayoutService.class));
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(42L);
+        bean.setProject(project);
+        bean.setSelectedTable(ConfigurableTable.UE);
+        bean.setSelectedTypeName("Creusement");
+        TypeFieldFormConfig pivot = TypeFieldFormConfig.builder().name("recordingunit.property.type").systemField(true)
+                .active(true).sourceLabel(ConfigurableTable.UE.getFieldCode()).build();
+
+        bean.removeField(pivot);
+
+        org.mockito.Mockito.verifyNoInteractions(tableService);
+    }
+
+    @Test
+    void foldingAGroup_hidesItsFieldsButKeepsTheirRowsInTheList() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        TypeFieldFormConfig a = field("a", true);
+        TypeFieldFormConfig b = field("b", true);
+        LayoutRow g1 = LayoutRow.header(1L, "G1");
+        LayoutRow ra = LayoutRow.of(a, FieldWidth.QUARTER);
+        LayoutRow g2 = LayoutRow.header(2L, "G2");
+        LayoutRow rb = LayoutRow.of(b, FieldWidth.QUARTER);
+        when(layout.rowsOf(42L, ConfigurableTable.UE, "Creusement")).thenReturn(List.of(g1, ra, g2, rb));
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.selectType("Creusement");
+        LayoutRow first = bean.getLayoutRows().get(0);
+        LayoutRow firstField = bean.getLayoutRows().get(1);
+        LayoutRow secondField = bean.getLayoutRows().get(3);
+
+        bean.toggleGroup(first);
+
+        assertThat(bean.isGroupCollapsed(first)).isTrue();
+        assertThat(bean.isRowHidden(firstField)).isTrue();
+        assertThat(bean.isRowHidden(secondField)).isFalse();
+        assertThat(bean.getLayoutRows()).hasSize(4);
+
+        bean.toggleGroup(first);
+        assertThat(bean.isRowHidden(firstField)).isFalse();
+    }
+
+    @Test
+    void searchingByName_showsOnlyMatchingFields_andTheirGroups() {
+        FormLayoutService layout = mock(FormLayoutService.class);
+        when(layout.rowsOf(42L, ConfigurableTable.UE, "Creusement")).thenReturn(List.of(
+                LayoutRow.header(1L, "G1"), LayoutRow.of(field("alpha", true), FieldWidth.QUARTER),
+                LayoutRow.header(2L, "G2"), LayoutRow.of(field("beta", true), FieldWidth.QUARTER)));
+        ProjectTableFieldSettingsBean bean = beanOn(layout);
+        bean.selectType("Creusement");
+        LayoutRow group1 = bean.getLayoutRows().get(0);
+        LayoutRow alpha = bean.getLayoutRows().get(1);
+        LayoutRow group2 = bean.getLayoutRows().get(2);
+        LayoutRow beta = bean.getLayoutRows().get(3);
+
+        bean.setFieldSearch("ALP");
+        bean.onFieldSearch();
+
+        assertThat(bean.isRowHidden(alpha)).isFalse();
+        assertThat(bean.isRowHidden(group1)).isFalse();
+        assertThat(bean.isRowHidden(beta)).isTrue();
+        assertThat(bean.isRowHidden(group2)).isTrue();
     }
 
     private ProjectTableFieldSettingsBean bean(TableFieldConfigService tableService) {

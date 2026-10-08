@@ -60,13 +60,6 @@
         <div class="ptc-editor ptc-field-view">
             <h:panelGroup id="drawerContent" layout="block" styleClass="ptc-drawer">
                 <div class="ptc-drawer-header">
-                    <p:commandButton value="#{langBean.msg('projectTables.drawer.back')}" icon="bi bi-arrow-left"
-                                     styleClass="ui-button-flat ptc-drawer-back"
-                                     actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
-                                     update=":ptcMain :treeFormCC:treeForm"/>
-                    <div class="ptc-drawer-path">
-                        #{projectTableFieldSettingsBean.selectedTable.label} › #{projectTableFieldSettingsBean.selectedTypeName eq '_default' ? langBean.msg('projectTables.badge.default') : projectTableFieldSettingsBean.selectedTypeName}
-                    </div>
                     <div class="ptc-drawer-title">
                         #{projectTableFieldSettingsBean.draftCreateMode ? langBean.msg('projectTables.drawer.titleCreate') : langBean.msg('projectTables.drawer.titleEdit')}
                     </div>
