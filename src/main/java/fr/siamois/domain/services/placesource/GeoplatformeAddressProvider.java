@@ -22,7 +22,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class GeoplatformeAddressProvider implements PlaceSourceProvider {
 
-    public static final String ID = "GEOPLAT";
+    public static final String SOURCE_ID = "GEOPLAT";
     private static final int MIN_QUERY = 3;
     private static final String THESAURUS = "th252";
     private static final String ADDRESS_CONCEPT = "4288314";
@@ -33,7 +33,7 @@ public class GeoplatformeAddressProvider implements PlaceSourceProvider {
 
     @Override
     public String id() {
-        return ID;
+        return SOURCE_ID;
     }
 
     @Override

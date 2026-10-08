@@ -138,8 +138,8 @@ class PlaceSearchControllerApiTest {
     @Test
     void suggestions_passesTheFieldAndTheDependenciesOfItsSources() throws Exception {
         when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
-        when(placeSuggestionApiService.suggest(any(), eq(10L), eq(-104L), eq("3"), isNull(), eq("rue"),
-                eq(java.util.Map.of(-108L, 7L)), eq(20), eq("fr")))
+        when(placeSuggestionApiService.suggest(any(), eq(new fr.siamois.ui.api.openapi.v1.service.PlaceSuggestionApiService.SuggestionRequest(
+                10L, -104L, "3", null, "rue", java.util.Map.of(-108L, 7L), 20, "fr"))))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.service.PlaceSuggestionApiService.Suggestions(
                         List.of(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceSuggestionItemApi(
                                 null, "1 rue X", null, "GEOPLAT", null, null)),

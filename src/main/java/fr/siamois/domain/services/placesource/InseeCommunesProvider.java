@@ -18,7 +18,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class InseeCommunesProvider implements PlaceSourceProvider {
 
-    public static final String ID = "INSEE";
+    public static final String SOURCE_ID = "INSEE";
     private static final String THESAURUS = "th252";
     private static final String COMMUNE_CONCEPT = "4287976";
 
@@ -28,7 +28,7 @@ public class InseeCommunesProvider implements PlaceSourceProvider {
 
     @Override
     public String id() {
-        return ID;
+        return SOURCE_ID;
     }
 
     @Override

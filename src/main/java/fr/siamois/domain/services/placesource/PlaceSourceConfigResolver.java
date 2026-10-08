@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.placesource;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -34,7 +35,7 @@ public class PlaceSourceConfigResolver {
                 .map(CustomColUiDto::getRules)
                 .filter(rules -> rules != null && !rules.placeSources().isEmpty())
                 .findFirst()
-                .map(rules -> rules.placeSources())
+                .map(FieldRules::placeSources)
                 .orElse(List.of());
     }
 }

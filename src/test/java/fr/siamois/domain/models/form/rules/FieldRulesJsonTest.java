@@ -106,7 +106,7 @@ class FieldRulesJsonTest {
 
         JsonNode json = wire(rules);
 
-        assertThat(json.get("placeSources").get(0).toString()).isEqualTo("{\"source\":\"INSEE\"}");
+        assertThat(json.get("placeSources").get(0)).hasToString("{\"source\":\"INSEE\"}");
         JsonNode second = json.get("placeSources").get(1);
         assertThat(second.get("params").get("citycode").get("fromField").asLong()).isEqualTo(-108L);
         assertThat(second.get("params").get("citycode").get("attribute").asText()).isEqualTo("CODE");

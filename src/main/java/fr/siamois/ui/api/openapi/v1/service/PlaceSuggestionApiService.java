@@ -33,13 +33,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Place suggestions for the spatial-unit fields: the places of the organization first, then the external sources the
@@ -75,48 +76,62 @@ public class PlaceSuggestionApiService {
     }
 
     /**
-     * The organization's places matching {@code query}, then the suggestions of the sources
-     * {@code fieldId} is configured with. {@code deps} are the places picked in the fields a source's
-     * parameters read (by field id).
+     * What a suggestion request asks for: the places of {@code organizationId} matching {@code query}, then the
+     * suggestions of the sources {@code fieldId} is configured with. {@code deps} are the places picked in the
+     * fields a source's parameters read (by field id).
      */
-    public Suggestions suggest(ProjectApiCaller caller, long organizationId, long fieldId, @Nullable String projectId,
-                               @Nullable String typeId, String query, Map<Long, Long> deps, int limit, String lang) {
-        projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+    public record SuggestionRequest(long organizationId, long fieldId, @Nullable String projectId, @Nullable String typeId,
+                                    String query, Map<Long, Long> deps, int limit, String lang) {
+    }
 
-        List<PlaceSuggestionItemApi> result = new ArrayList<>();
-        Set<String> knownCodes = new HashSet<>();
-        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-                organizationId, query, null, null, null, lang, PageRequest.of(0, limit, Sort.by("name")));
-        for (SpatialUnitDTO dto : page.getContent()) {
-            if (dto.getCode() != null) {
-                knownCodes.add(dto.getCode());
-            }
-            result.add(new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getCode(), SOURCE_INTERNAL,
-                    resolveConcept(dto.getCategory(), lang), null));
-        }
+    public Suggestions suggest(ProjectApiCaller caller, SuggestionRequest request) {
+        projectApiService.assertOrganizationInCallerScope(request.organizationId(), caller.accessibleInstitutionIds());
+
+        List<PlaceSuggestionItemApi> result = new ArrayList<>(ownPlaces(request));
+        Set<String> knownCodes = result.stream().map(PlaceSuggestionItemApi::code).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         List<String> unnarrowed = new ArrayList<>();
         Map<Long, SpatialUnitDTO> depPlaces = new LinkedHashMap<>();
-        for (PlaceSourceSpec spec : configResolver.forField(fieldId, projectId, typeId)) {
-            Optional<PlaceSourceProvider> provider = sourceRegistry.find(spec.source());
-            if (provider.isEmpty()) {
-                continue;
-            }
-            SourceParams params = paramsOf(spec, deps, depPlaces, organizationId);
-            if (!params.complete()) {
-                unnarrowed.add(spec.source());
-                if (spec.onMissing() == PlaceSourceSpec.OnMissing.SKIP) {
-                    continue;
-                }
-            }
-            for (PlaceSuggestionItemApi item : externalSuggestions(provider.get(), query, params.values(), lang)) {
-                // A commune already in the organization is offered once, as the place it is.
-                if (!provider.get().identifiedByCode() || item.code() == null || !knownCodes.contains(item.code())) {
-                    result.add(item);
-                }
-            }
+        for (PlaceSourceSpec spec : configResolver.forField(request.fieldId(), request.projectId(), request.typeId())) {
+            result.addAll(fromSource(spec, request, depPlaces, knownCodes, unnarrowed));
         }
         return new Suggestions(result, unnarrowed);
+    }
+
+    private List<PlaceSuggestionItemApi> ownPlaces(SuggestionRequest request) {
+        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+                request.organizationId(), request.query(), null, null, null, request.lang(),
+                PageRequest.of(0, request.limit(), Sort.by("name")));
+        return page.getContent().stream()
+                .map(dto -> new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getCode(), SOURCE_INTERNAL,
+                        resolveConcept(dto.getCategory(), request.lang()), null))
+                .toList();
+    }
+
+    /**
+     * What one configured source suggests. A source with a parameter left without value is reported in
+     * {@code unnarrowed}, and not queried at all when it is configured to skip.
+     */
+    private List<PlaceSuggestionItemApi> fromSource(PlaceSourceSpec spec, SuggestionRequest request,
+                                                    Map<Long, SpatialUnitDTO> depPlaces, Set<String> knownCodes,
+                                                    List<String> unnarrowed) {
+        Optional<PlaceSourceProvider> found = sourceRegistry.find(spec.source());
+        if (found.isEmpty()) {
+            return List.of();
+        }
+        PlaceSourceProvider provider = found.get();
+        SourceParams params = paramsOf(spec, request.deps(), depPlaces, request.organizationId());
+        if (!params.complete()) {
+            unnarrowed.add(spec.source());
+            if (spec.onMissing() == PlaceSourceSpec.OnMissing.SKIP) {
+                return List.of();
+            }
+        }
+        // A commune already in the organization is offered once, as the place it is.
+        return externalSuggestions(provider, request.query(), params.values(), request.lang()).stream()
+                .filter(item -> !provider.identifiedByCode() || item.code() == null || !knownCodes.contains(item.code()))
+                .toList();
     }
 
     /**

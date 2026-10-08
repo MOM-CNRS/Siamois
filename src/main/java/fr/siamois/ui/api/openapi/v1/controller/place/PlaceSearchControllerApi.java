@@ -11,7 +11,6 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteItemAp
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceFromSuggestionRequest;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteListResponse;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceSuggestionItemApi;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceSuggestionListResponse;
 import fr.siamois.ui.api.openapi.v1.service.PlaceSuggestionApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -151,8 +150,9 @@ public class PlaceSearchControllerApi {
         }
         int safeLimit = limit < 1 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceSuggestionApiService.Suggestions result = placeSuggestionApiService.suggest(
-                caller, organizationId, fieldId, projectId, typeId, query, dependenciesOf(allParams), safeLimit, lang);
+        PlaceSuggestionApiService.Suggestions result = placeSuggestionApiService.suggest(caller,
+                new PlaceSuggestionApiService.SuggestionRequest(organizationId, fieldId, projectId, typeId, query,
+                        dependenciesOf(allParams), safeLimit, lang));
         return ResponseEntity.ok(new PlaceSuggestionListResponse(
                 result.items(), new ListMeta((long) result.items().size(), safeLimit, 0L), result.unnarrowedSources()));
     }

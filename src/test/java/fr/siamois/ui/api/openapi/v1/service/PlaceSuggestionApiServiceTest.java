@@ -95,18 +95,18 @@ class PlaceSuggestionApiServiceTest {
     }
 
     private PlaceSuggestionApiService.Suggestions suggest(String query, Map<Long, Long> deps) {
-        return service.suggest(caller, 10L, SPATIAL_CONTEXT, null, null, query, deps, 20, "fr");
+        return service.suggest(caller, new PlaceSuggestionApiService.SuggestionRequest(10L, SPATIAL_CONTEXT, null, null, query, deps, 20, "fr"));
     }
 
     @Test
     void suggest_listsOwnPlacesThenCommunes_andDropsCommunesAlreadyKnown() {
         ownPlaces(place(5L, "Lyon", "69123", 10L));
         when(configResolver.forField(MAIN_LOCATION, null, null)).thenReturn(List.of(PlaceSourceSpec.of("INSEE")));
-        when(insee.search(eq("lyo"), eq(Map.of()))).thenReturn(List.of(
+        when(insee.search("lyo", Map.of())).thenReturn(List.of(
                 new ExternalPlace("Lyon", "69123", null), new ExternalPlace("Lyonnais", "42000", null)));
 
         List<PlaceSuggestionApiService.Suggestions> out = List.of(
-                service.suggest(caller, 10L, MAIN_LOCATION, null, null, "lyo", Map.of(), 20, "fr"));
+                service.suggest(caller, new PlaceSuggestionApiService.SuggestionRequest(10L, MAIN_LOCATION, null, null, "lyo", Map.of(), 20, "fr")));
 
         List<PlaceSuggestionItemApi> items = out.get(0).items();
         assertEquals(2, items.size());
@@ -134,7 +134,7 @@ class PlaceSuggestionApiServiceTest {
         ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
-        when(geoplat.search(eq("rue"), eq(Map.of("citycode", "69123")))).thenReturn(List.of(new ExternalPlace("1 rue X, Lyon", null, new FullAddress())));
+        when(geoplat.search("rue", Map.of("citycode", "69123"))).thenReturn(List.of(new ExternalPlace("1 rue X, Lyon", null, new FullAddress())));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Lyon", "69123", 10L));
 
         PlaceSuggestionApiService.Suggestions result = suggest("rue", Map.of(MAIN_LOCATION, 7L));
@@ -150,7 +150,7 @@ class PlaceSuggestionApiServiceTest {
         ownPlaces(place(5L, "Rue de la Paix", null, 10L));
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
-        when(geoplat.search(eq("rue"), eq(Map.of()))).thenReturn(List.of(new ExternalPlace("1 rue X", null, null)));
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of(new ExternalPlace("1 rue X", null, null)));
 
         PlaceSuggestionApiService.Suggestions result = suggest("rue", Map.of());
 
@@ -165,7 +165,7 @@ class PlaceSuggestionApiServiceTest {
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Un lieu sans code", null, 10L));
-        when(geoplat.search(eq("rue"), eq(Map.of()))).thenReturn(List.of());
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of());
 
         assertEquals(List.of("GEOPLAT"), suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources());
         verify(geoplat).search("rue", Map.of());
@@ -190,7 +190,7 @@ class PlaceSuggestionApiServiceTest {
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Lyon", "69123", 99L));
-        when(geoplat.search(eq("rue"), eq(Map.of()))).thenReturn(List.of());
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of());
 
         assertEquals(List.of("GEOPLAT"), suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources());
         verify(geoplat).search("rue", Map.of());
@@ -202,7 +202,7 @@ class PlaceSuggestionApiServiceTest {
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenThrow(new SpatialUnitNotFoundException("gone"));
-        when(geoplat.search(eq("rue"), eq(Map.of()))).thenReturn(List.of());
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of());
 
         assertEquals(List.of("GEOPLAT"), suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources());
     }
@@ -217,8 +217,8 @@ class PlaceSuggestionApiServiceTest {
         ownPlaces(many);
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(
                 PlaceSourceSpec.of("INSEE"), geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
-        when(insee.search(eq("lyo"), eq(Map.of()))).thenReturn(List.of(new ExternalPlace("Lyon", "69123", null)));
-        when(geoplat.search(eq("lyo"), eq(Map.of()))).thenReturn(List.of());
+        when(insee.search("lyo", Map.of())).thenReturn(List.of(new ExternalPlace("Lyon", "69123", null)));
+        when(geoplat.search("lyo", Map.of())).thenReturn(List.of());
 
         PlaceSuggestionApiService.Suggestions result = suggest("lyo", Map.of());
 
@@ -243,7 +243,8 @@ class PlaceSuggestionApiServiceTest {
         when(configResolver.forField(MAIN_LOCATION, null, null)).thenReturn(List.of(PlaceSourceSpec.of("INSEE")));
         when(insee.search(any(), any())).thenThrow(new IllegalStateException("down"));
 
-        assertEquals(1, service.suggest(caller, 10L, MAIN_LOCATION, null, null, "lyon", Map.of(), 20, "fr").items().size());
+        assertEquals(1, service.suggest(caller,
+                new PlaceSuggestionApiService.SuggestionRequest(10L, MAIN_LOCATION, null, null, "lyon", Map.of(), 20, "fr")).items().size());
     }
 
     @Test
@@ -259,8 +260,8 @@ class PlaceSuggestionApiServiceTest {
         when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
         when(profilePermissionService.hasActionUnitCreatePermission(any(UserInfo.class))).thenReturn(false);
 
-        ResponseStatusException e = assertThrows(ResponseStatusException.class,
-                () -> service.fromSuggestion(caller, request("INSEE", "Lyon"), "fr"));
+        PlaceFromSuggestionRequest request = request("INSEE", "Lyon");
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> service.fromSuggestion(caller, request, "fr"));
         assertEquals(403, e.getStatusCode().value());
     }
 
