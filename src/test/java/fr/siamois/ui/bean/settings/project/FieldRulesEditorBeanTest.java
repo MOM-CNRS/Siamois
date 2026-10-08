@@ -124,6 +124,22 @@ class FieldRulesEditorBeanTest {
     }
 
     @Test
+    void thePlaceSourcesOfAFieldSurviveAnEditOfItsOtherRules() {
+        fr.siamois.domain.models.form.rules.PlaceSourceSpec sources = new fr.siamois.domain.models.form.rules.PlaceSourceSpec(
+                "GEOPLAT",
+                java.util.Map.of("citycode", new fr.siamois.domain.models.form.rules.PlaceSourceSpec.ParamBinding(
+                        3L, fr.siamois.domain.models.form.rules.PlaceSourceSpec.PlaceAttribute.CODE)),
+                fr.siamois.domain.models.form.rules.PlaceSourceSpec.OnMissing.SKIP);
+        when(layout.rulesOf(42L, ConfigurableTable.UE, "Creusement", 1L))
+                .thenReturn(FieldRules.NONE.withPlaceSources(sources));
+        bean.openFor(own);
+
+        bean.save();
+
+        assertThat(saved().placeSources()).containsExactly(sources);
+    }
+
+    @Test
     void theOperatorsOfAConceptFieldExcludeOrdering() {
         when(layout.rulesOf(anyLong(), any(), any(), anyLong())).thenReturn(FieldRules.NONE);
         bean.openFor(own);

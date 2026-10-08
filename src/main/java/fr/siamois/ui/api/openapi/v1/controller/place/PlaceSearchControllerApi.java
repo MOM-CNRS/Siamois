@@ -8,7 +8,11 @@ import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteItemApi;
+import fr.siamois.ui.api.openapi.v1.request.place.PlaceFromSuggestionRequest;
+import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceAutocompleteListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceSuggestionListResponse;
+import fr.siamois.ui.api.openapi.v1.service.PlaceSuggestionApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,10 +25,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Recherche d'unités spatiales pour l'app mobile (autocomplétion), indépendamment du module « places » historique.
@@ -37,10 +45,12 @@ public class PlaceSearchControllerApi {
 
     private static final int DEFAULT_LIMIT = 20;
     private static final int MAX_LIMIT = 50;
+    private static final String DEP_PREFIX = "dep.";
 
     private final ProjectApiService projectApiService;
     private final SpatialUnitService spatialUnitService;
     private final LabelService labelService;
+    private final PlaceSuggestionApiService placeSuggestionApiService;
 
     @GetMapping("/autocomplete")
     @Operation(
@@ -98,6 +108,90 @@ public class PlaceSearchControllerApi {
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))
                 .body(new PlaceAutocompleteListResponse(items, meta));
+    }
+
+    @GetMapping("/suggestions")
+    @Operation(
+            summary = "Suggestions de lieux pour un champ : lieux de l'organisation et sources externes",
+            description = "Les lieux de l'organisation dont le nom contient `q`, puis les suggestions des sources dont la "
+                    + "configuration du champ `fieldId` dispose (INSEE : communes ; GEOPLAT : adresses de la GéoPlateforme). "
+                    + "Le client ne choisit jamais les sources. Une source dont un paramètre dépend d'un autre champ lieu est "
+                    + "alimentée par `dep.<idChamp>=<idLieu>` (le lieu choisi dans ce champ) ; sans valeur, elle est interrogée "
+                    + "sans ce filtre (recherche élargie, `unnarrowedSources` le signale) ou ignorée si sa configuration le dit. "
+                    + "Une suggestion externe (id null) se transforme en lieu par POST /api/v1/places/from-suggestion."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<PlaceSuggestionListResponse> suggestions(
+            @Parameter(description = "Institution propriétaire des lieux (doit être dans le périmètre JWT).", required = true)
+            @RequestParam("organizationId") long organizationId,
+            @Parameter(description = "Champ lieu pour lequel on suggère : sa configuration donne les sources.", required = true)
+            @RequestParam("fieldId") long fieldId,
+            @Parameter(description = "Projet en cours d'édition, s'il existe.")
+            @RequestParam(value = "projectId", required = false) String projectId,
+            @Parameter(description = "Type (concept) du projet, s'il en a un.")
+            @RequestParam(value = "typeId", required = false) String typeId,
+            @Parameter(description = "Texte recherché (3 caractères au moins pour les sources externes).")
+            @RequestParam(value = "q", required = false, defaultValue = "") String q,
+            @Parameter(description = "Nombre max de lieux de l'organisation (1 à 50, défaut 20).")
+            @RequestParam(defaultValue = "20") int limit,
+            @Parameter(description = "Lieux choisis dans les champs dont dépendent les sources : `dep.<idChamp>=<idLieu>`.")
+            @RequestParam Map<String, String> allParams,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String query = q == null ? "" : q.trim();
+        if (query.length() > 200) {
+            query = query.substring(0, 200);
+        }
+        int safeLimit = limit < 1 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        PlaceSuggestionApiService.Suggestions result = placeSuggestionApiService.suggest(caller,
+                new PlaceSuggestionApiService.SuggestionRequest(organizationId, fieldId, projectId, typeId, query,
+                        dependenciesOf(allParams), safeLimit, lang));
+        return ResponseEntity.ok(new PlaceSuggestionListResponse(
+                result.items(), new ListMeta((long) result.items().size(), safeLimit, 0L), result.unnarrowedSources()));
+    }
+
+    /** {@code dep.<idChamp>=<idLieu>} request parameters, by field id; malformed ones are ignored. */
+    private static Map<Long, Long> dependenciesOf(Map<String, String> params) {
+        Map<Long, Long> deps = new LinkedHashMap<>();
+        params.forEach((name, value) -> {
+            if (!name.startsWith(DEP_PREFIX)) return;
+            try {
+                deps.put(Long.parseLong(name.substring(DEP_PREFIX.length())), Long.parseLong(value.trim()));
+            } catch (NumberFormatException e) {
+                // Not a field id / place id: nothing to read from it.
+            }
+        });
+        return deps;
+    }
+
+    @PostMapping(value = "/from-suggestion", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Créer le lieu d'une suggestion externe",
+            description = "Crée dans l'organisation le lieu d'une suggestion INSEE ou GEOPLAT, ou renvoie celui qui existe déjà "
+                    + "(même code et même type, sinon même nom) : l'appel est idempotent. "
+                    + "Droit requis : édition du projet `projectId`, ou création de projets dans l'organisation si `projectId` est absent."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lieu déjà existant ou créé"),
+            @ApiResponse(responseCode = "400", description = "Requête invalide"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<PlaceCreatedResponse> fromSuggestion(
+            @RequestBody PlaceFromSuggestionRequest request,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new PlaceCreatedResponse(placeSuggestionApiService.fromSuggestion(caller, request, lang)));
     }
 
     private PlaceAutocompleteItemApi toItem(SpatialUnitDTO dto, String lang) {
