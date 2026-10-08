@@ -1688,3 +1688,10 @@ body button.p-button.status-button.status-button-compact {
 .place-item-source {
   margin-left: auto;
 }
+
+/* Footer line of a place picker whose sources wait for the field they depend on: a light red nudge. */
+.resource-ref-narrow-hint {
+  display: block;
+  padding: 0.25rem 0.75rem;
+  color: var(--red-500, #c0584d);
+}

@@ -118,6 +118,8 @@ export const fr = {
   "place.suggestion.internal": "Lieu de la base",
   "place.suggestion.external": "Lieu à créer depuis une source externe",
   "field.placeCreateFailed": "Échec de la création du lieu",
+  "field.fillToNarrow": "Remplir le champ {field} pour affiner la recherche",
+  "field.cannotNarrow": "Le lieu choisi dans {field} ne permet pas d'affiner la recherche",
   "field.noResult": "Aucun résultat",
   "concept.altLabelOf": "Correspond à « {label} », libellé alternatif",
   "concept.parents": "Parents : {parents}",

@@ -2,21 +2,21 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.services.GeoApiService;
-import fr.siamois.domain.services.GeoPlatService;
+import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.placesource.ExternalPlace;
+import fr.siamois.domain.services.placesource.PlaceSourceConfigResolver;
+import fr.siamois.domain.services.placesource.PlaceSourceProvider;
+import fr.siamois.domain.services.placesource.PlaceSourceRegistry;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceFromSuggestionRequest;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
@@ -27,14 +27,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -48,43 +52,35 @@ import java.util.Set;
 public class PlaceSuggestionApiService {
 
     public static final String SOURCE_INTERNAL = "SIAMOIS";
-    public static final String SOURCE_INSEE = "INSEE";
-    public static final String SOURCE_GEOPLAT = "GEOPLAT";
-    public static final Set<String> EXTERNAL_SOURCES = Set.of(SOURCE_INSEE, SOURCE_GEOPLAT);
 
-    static final int MAX_SUGGESTIONS = 12;
     private static final int MAX_NAME_LENGTH = 200;
-    private static final String CONCEPT_THESAURUS = "th252";
-    private static final String COMMUNE_CONCEPT = "4287976";
-    private static final String ADDRESS_CONCEPT = "4288314";
 
     private final ProjectApiService projectApiService;
     private final SpatialUnitService spatialUnitService;
     private final InstitutionService institutionService;
     private final ProfilePermissionService profilePermissionService;
-    private final GeoApiService geoApiService;
-    private final GeoPlatService geoPlatService;
-    private final ConceptRepository conceptRepository;
-    private final ConceptMapper conceptMapper;
+    private final PlaceSourceRegistry sourceRegistry;
+    private final PlaceSourceConfigResolver configResolver;
     private final LabelService labelService;
 
-    /** Keeps the known sources of a comma-separated list, in upper case; the rest is ignored. */
-    public static List<String> parseSources(String sources) {
-        if (sources == null || sources.isBlank()) {
-            return List.of();
-        }
-        List<String> parsed = new ArrayList<>();
-        for (String raw : sources.split(",")) {
-            String source = raw.trim().toUpperCase(Locale.ROOT);
-            if (EXTERNAL_SOURCES.contains(source) && !parsed.contains(source)) {
-                parsed.add(source);
-            }
-        }
-        return parsed;
+    /**
+     * The suggestions, and the sources a parameter of which has no value (the field it reads is empty): searched
+     * without that filter (the default) or left out when configured to skip — the client invites to fill that field.
+     */
+    public record Suggestions(List<PlaceSuggestionItemApi> items, List<String> unnarrowedSources) {
     }
 
-    public List<PlaceSuggestionItemApi> suggest(ProjectApiCaller caller, long organizationId, String query,
-                                                List<String> sources, int limit, String lang) {
+    /** The query parameters of a source, and whether every one it is bound to got a value. */
+    private record SourceParams(Map<String, String> values, boolean complete) {
+    }
+
+    /**
+     * The organization's places matching {@code query}, then the suggestions of the sources
+     * {@code fieldId} is configured with. {@code deps} are the places picked in the fields a source's
+     * parameters read (by field id).
+     */
+    public Suggestions suggest(ProjectApiCaller caller, long organizationId, long fieldId, @Nullable String projectId,
+                               @Nullable String typeId, String query, Map<Long, Long> deps, int limit, String lang) {
         projectApiService.assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
 
         List<PlaceSuggestionItemApi> result = new ArrayList<>();
@@ -99,43 +95,93 @@ public class PlaceSuggestionApiService {
                     resolveConcept(dto.getCategory(), lang), null));
         }
 
-        for (String source : sources) {
-            if (result.size() >= MAX_SUGGESTIONS) {
-                break;
+        List<String> unnarrowed = new ArrayList<>();
+        Map<Long, SpatialUnitDTO> depPlaces = new LinkedHashMap<>();
+        for (PlaceSourceSpec spec : configResolver.forField(fieldId, projectId, typeId)) {
+            Optional<PlaceSourceProvider> provider = sourceRegistry.find(spec.source());
+            if (provider.isEmpty()) {
+                continue;
             }
-            for (PlaceSuggestionItemApi item : externalSuggestions(source, query, lang)) {
-                if (result.size() >= MAX_SUGGESTIONS) {
-                    break;
+            SourceParams params = paramsOf(spec, deps, depPlaces, organizationId);
+            if (!params.complete()) {
+                unnarrowed.add(spec.source());
+                if (spec.onMissing() == PlaceSourceSpec.OnMissing.SKIP) {
+                    continue;
                 }
+            }
+            for (PlaceSuggestionItemApi item : externalSuggestions(provider.get(), query, params.values(), lang)) {
                 // A commune already in the organization is offered once, as the place it is.
-                if (item.code() == null || SOURCE_GEOPLAT.equals(source) || !knownCodes.contains(item.code())) {
+                if (!provider.get().identifiedByCode() || item.code() == null || !knownCodes.contains(item.code())) {
                     result.add(item);
                 }
             }
         }
-        return result;
+        return new Suggestions(result, unnarrowed);
     }
 
-    private List<PlaceSuggestionItemApi> externalSuggestions(String source, String query, String lang) {
+    /**
+     * The query parameters of {@code spec}, read from the places picked in the fields they are bound
+     * to; one with no value is left out, which broadens the search.
+     */
+    private SourceParams paramsOf(PlaceSourceSpec spec, Map<Long, Long> deps,
+                                                   Map<Long, SpatialUnitDTO> cache, long organizationId) {
+        Map<String, String> params = new LinkedHashMap<>();
+        boolean complete = true;
+        for (Map.Entry<String, PlaceSourceSpec.ParamBinding> entry : spec.params().entrySet()) {
+            PlaceSourceSpec.ParamBinding binding = entry.getValue();
+            String value = valueOf(binding, deps, cache, organizationId);
+            if (value != null) {
+                params.put(entry.getKey(), value);
+            } else {
+                complete = false;
+            }
+        }
+        return new SourceParams(params, complete);
+    }
+
+    private String valueOf(PlaceSourceSpec.ParamBinding binding, Map<Long, Long> deps,
+                           Map<Long, SpatialUnitDTO> cache, long organizationId) {
+        Long placeId = deps.get(binding.fromField());
+        if (placeId == null) return null;
+        SpatialUnitDTO place = cache.containsKey(placeId) ? cache.get(placeId) : loadPlace(placeId, cache);
+        // A place of another organization is not a dependency this caller can feed a query with.
+        if (place == null || place.getCreatedByInstitution() == null
+                || !Long.valueOf(organizationId).equals(place.getCreatedByInstitution().getId())) {
+            return null;
+        }
+        String value = switch (binding.attribute()) {
+            case CODE -> place.getCode();
+            case NAME -> place.getName();
+            case POSTCODE -> place.getAddress() == null ? null : place.getAddress().getPostcode();
+        };
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private SpatialUnitDTO loadPlace(long placeId, Map<Long, SpatialUnitDTO> cache) {
+        SpatialUnitDTO place = null;
         try {
-            if (SOURCE_INSEE.equals(source)) {
-                List<PlaceSuggestionDTO> communes = geoApiService.fetchCommunes(query);
-                return communes.stream()
-                        .map(c -> new PlaceSuggestionItemApi(null, c.getName(), c.getCode(), SOURCE_INSEE,
-                                resolveConcept(c.getCategory(), lang), null))
-                        .toList();
-            }
-            if (SOURCE_GEOPLAT.equals(source) && query != null && query.trim().length() >= 3) {
-                ResolvedConceptResource concept = resolveConcept(categoryOf(SOURCE_GEOPLAT), lang);
-                return geoPlatService.search(query).stream()
-                        .map(a -> new PlaceSuggestionItemApi(null, a.getLabel(), null, SOURCE_GEOPLAT, concept, a))
-                        .toList();
-            }
+            place = spatialUnitService.findById(placeId);
+        } catch (SpatialUnitNotFoundException e) {
+            // A place that is gone feeds nothing: the parameter has no value.
+            log.debug("Place {} a source parameter reads no longer exists", placeId);
+        }
+        cache.put(placeId, place);
+        return place;
+    }
+
+    private List<PlaceSuggestionItemApi> externalSuggestions(PlaceSourceProvider provider, String query,
+                                                             Map<String, String> params, String lang) {
+        try {
+            ConceptDTO category = provider.category();
+            ResolvedConceptResource concept = resolveConcept(category, lang);
+            return provider.search(query, params).stream()
+                    .map(place -> new PlaceSuggestionItemApi(null, place.name(), place.code(), provider.id(), concept, place.address()))
+                    .toList();
         } catch (RuntimeException e) {
             // An external service being down must not take the organization's own places with it.
-            log.warn("Place suggestions from {} unavailable: {}", source, e.getMessage());
+            log.warn("Place suggestions from {} unavailable: {}", provider.id(), e.getMessage());
+            return List.of();
         }
-        return List.of();
     }
 
     @Transactional
@@ -144,10 +190,9 @@ public class PlaceSuggestionApiService {
         if (request == null || request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
-        String source = request.getSource() == null ? "" : request.getSource().trim().toUpperCase(Locale.ROOT);
-        if (!EXTERNAL_SOURCES.contains(source)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "source inconnue : " + request.getSource());
-        }
+        String sourceId = request.getSource() == null ? "" : request.getSource().trim().toUpperCase(Locale.ROOT);
+        PlaceSourceProvider provider = sourceRegistry.find(sourceId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "source inconnue : " + request.getSource()));
         String name = request.getName() == null ? "" : request.getName().trim();
         if (name.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name est obligatoire");
@@ -163,29 +208,26 @@ public class PlaceSuggestionApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         requireMayCreate(caller, userInfo, request.getProjectId());
 
-        ConceptDTO category = categoryOf(source);
-        String code = SOURCE_INSEE.equals(source) && request.getCode() != null && !request.getCode().isBlank()
-                ? request.getCode().trim() : null;
+        ConceptDTO category = provider.category();
+        ExternalPlace picked = new ExternalPlace(name, blankToNull(request.getCode()), request.getAddress());
+        SpatialUnitDTO draft = provider.draftOf(picked);
+        String code = draft.getCode();
 
-        var existing = spatialUnitService.findExistingForSuggestion(institution.getId(), name, code, category.getId());
+        var existing = spatialUnitService.findExistingForSuggestion(institution.getId(), draft.getName(), code, category.getId());
         if (existing.isPresent()) {
             SpatialUnitDTO found = existing.get();
             return new PlaceCreatedResponse.PlaceCreatedItem(found.getId(), found.getName(), found.getCode(), found.getPlaceNumber());
         }
-
-        SpatialUnitDTO toSave = new SpatialUnitDTO();
-        toSave.setName(name);
-        toSave.setCategory(category);
-        toSave.setCode(code);
-        if (SOURCE_GEOPLAT.equals(source)) {
-            toSave.setAddress(request.getAddress() != null ? request.getAddress() : addressOnly(name));
-        }
         try {
-            SpatialUnitDTO saved = spatialUnitService.save(userInfo, toSave);
+            SpatialUnitDTO saved = spatialUnitService.save(userInfo, draft);
             return new PlaceCreatedResponse.PlaceCreatedItem(saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /** Editing the project the place is for, or creating projects in the organization; managing places also does. */
@@ -200,19 +242,6 @@ public class PlaceSuggestionApiService {
         if (!allowed) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de lieu non autorisée");
         }
-    }
-
-    private static FullAddress addressOnly(String label) {
-        FullAddress address = new FullAddress();
-        address.setLabel(label);
-        return address;
-    }
-
-    private ConceptDTO categoryOf(String source) {
-        String externalId = SOURCE_INSEE.equals(source) ? COMMUNE_CONCEPT : ADDRESS_CONCEPT;
-        return conceptMapper.convert(conceptRepository.findConceptByExternalIdIgnoreCase(CONCEPT_THESAURUS, externalId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Concept de lieu introuvable : " + externalId)));
     }
 
     private ResolvedConceptResource resolveConcept(ConceptDTO category, String lang) {

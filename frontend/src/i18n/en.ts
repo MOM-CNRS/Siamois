@@ -118,6 +118,8 @@ export const en: Record<MessageKey, string> = {
   "place.suggestion.internal": "Place in the database",
   "place.suggestion.external": "Place to create from an external source",
   "field.placeCreateFailed": "Failed to create the place",
+  "field.fillToNarrow": "Fill in {field} to narrow the search",
+  "field.cannotNarrow": "The place picked in {field} cannot narrow the search",
   "field.noResult": "No results",
   "concept.altLabelOf": "Matches « {label} », alternative label",
   "concept.parents": "Parents: {parents}",

@@ -21,15 +21,16 @@ vi.mock("../../fields/renderers", () => ({
       Choisir un type
     </button>
   ),
-  SelectOneSpatialUnitRenderer: ({ onChange }: FieldRendererProps) => (
-    <button type="button" data-testid="pick-main-location" onClick={() => onChange({ resourceId: "31", resourceType: "spatial-units", label: "Lyon" })}>
+  SelectOneSpatialUnitRenderer: ({ onChange, placeContext }: FieldRendererProps) => (
+    <button type="button" data-testid="pick-main-location" data-place-context={JSON.stringify(placeContext ?? null)} onClick={() => onChange({ resourceId: "31", resourceType: "spatial-units", label: "Lyon" })}>
       Choisir le lieu principal
     </button>
   ),
-  SelectManyRefRenderer: ({ onChange }: FieldRendererProps) => (
+  SelectManyRefRenderer: ({ onChange, placeContext }: FieldRendererProps) => (
     <button
       type="button"
       data-testid="pick-spatial-context"
+      data-place-context={JSON.stringify(placeContext ?? null)}
       onClick={() =>
         onChange([
           { resourceId: "32", resourceType: "spatial-units", label: "Rhône" },
@@ -161,8 +162,8 @@ describe("ProjectCreateForm", () => {
       tableColumns: [],
       fields: {
         "-101": typeField,
-        "-108": { id: "-108", resourceType: "fields", label: "Localisation principale", answerType: "SELECT_ONE_SPATIAL_UNIT", isSystemField: true, valueBinding: "mainLocation", placeSources: ["INSEE"] },
-        "-104": { id: "-104", resourceType: "fields", label: "Contexte spatial", answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", isSystemField: true, valueBinding: "spatialContext", placeSources: ["GEOPLAT"] },
+        "-108": { id: "-108", resourceType: "fields", label: "Localisation principale", answerType: "SELECT_ONE_SPATIAL_UNIT", isSystemField: true, valueBinding: "mainLocation", rules: { placeSources: [{ source: "INSEE" }] } },
+        "-104": { id: "-104", resourceType: "fields", label: "Contexte spatial", answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", isSystemField: true, valueBinding: "spatialContext", rules: { placeSources: [{ source: "GEOPLAT", params: { citycode: { fromField: -108, attribute: "CODE" } } }] } },
       },
     });
     mockedCreateProject.mockResolvedValue({ resourceType: "projects", id: "56", name: "Fouille" } as never);
@@ -174,6 +175,11 @@ describe("ProjectCreateForm", () => {
     const inputs = Array.from(container.querySelectorAll("input")) as HTMLInputElement[];
     await act(async () => setInputValue(inputs[0], "Fouille"));
     await act(async () => setInputValue(inputs[1], "F1"));
+    const contextOf = (testId: string) =>
+      JSON.parse(container.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)!.dataset.placeContext as string);
+    // Nothing picked yet: the precise places wait for the commune.
+    expect(contextOf("pick-main-location")).toEqual({ deps: {} });
+    expect(contextOf("pick-spatial-context")).toEqual({ deps: { "-108": null } });
     for (const id of ["pick-type", "pick-main-location", "pick-spatial-context"]) {
       await act(async () => {
         container.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)!.click();
@@ -184,6 +190,8 @@ describe("ProjectCreateForm", () => {
     });
     await flush();
 
+    // Once the commune is picked, the precise places search inside it.
+    expect(contextOf("pick-spatial-context")).toEqual({ deps: { "-108": "31" } });
     expect(mockedCreateProject).toHaveBeenCalledWith({
       organizationId: "7",
       name: "Fouille",

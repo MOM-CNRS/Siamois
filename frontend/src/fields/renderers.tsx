@@ -23,6 +23,7 @@ import {
   optionSourceFor,
   referenceTargetOf,
   type FilterOption,
+  type OptionList,
   type ReferenceTarget,
 } from "./optionSources";
 import { t } from "../i18n";
@@ -179,14 +180,16 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
 const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
+  // Sources of the last search that could not be narrowed because the field they depend on is empty.
+  const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
   const loadOptions =
     orgId != null
-      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
+      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext })
       : null;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const { capTo, panelStyle } = useFieldWidthCap();
@@ -199,7 +202,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
     capTo(e);
-    setSuggestions(await loadOptions(e.query));
+    const found = (await loadOptions(e.query)) as OptionList;
+    setUnnarrowedSources(found.unnarrowedSources ?? []);
+    setSuggestions(found);
   }
 
   // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
@@ -278,20 +283,32 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     else commit(created);
   }
 
-  const footer = createConfig
+  // Some sources searched without their filter: say which field to fill (or what is wrong with its place).
+  const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
+  const parents = Object.entries(placeContext?.deps ?? {});
+  const emptyParents = parents.filter(([, placeId]) => placeId == null).map(([fieldId]) => fieldId);
+  const narrowHint =
+    emptyParents.length > 0
+      ? t("field.fillToNarrow", { field: named(emptyParents) })
+      : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
+
+  const footer = createConfig || unnarrowedSources.length > 0
     ? (_: unknown, hide: () => void) => (
         <div className="resource-ref-create-footer">
-          <Button
-            type="button"
-            text
-            size="small"
-            icon="bi bi-plus-lg"
-            label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
-            onClick={() => {
-              hide();
-              setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
-            }}
-          />
+          {unnarrowedSources.length > 0 && <small className="resource-ref-narrow-hint">{narrowHint}</small>}
+          {createConfig && (
+            <Button
+              type="button"
+              text
+              size="small"
+              icon="bi bi-plus-lg"
+              label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
+              onClick={() => {
+                hide();
+                setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
+              }}
+            />
+          )}
         </div>
       )
     : undefined;

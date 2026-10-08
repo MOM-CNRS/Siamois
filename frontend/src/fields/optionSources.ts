@@ -1,5 +1,5 @@
 import { apiFetch } from "../api/client";
-import type { OptionsContext } from "../rules";
+import type { OptionsContext, PlaceContext } from "../rules";
 import type { FieldResource } from "./types";
 import type { EntityKey } from "../entities/keys";
 
@@ -18,6 +18,9 @@ export interface FilterOption {
   // external source — what creating the place needs.
   place?: PlaceItemInfo;
 }
+
+/** The options of a search, and the sources searched without a filter (the field their parameter reads is empty). */
+export type OptionList = FilterOption[] & { unnarrowedSources?: string[] };
 
 export interface PlaceItemInfo {
   source: string;
@@ -110,6 +113,7 @@ export async function fetchPlaceOptions(organizationId: number, q?: string): Pro
 }
 
 interface PlaceSuggestionsResponseBody {
+  unnarrowedSources?: string[];
   data: {
     id: number | null;
     name: string;
@@ -122,16 +126,32 @@ interface PlaceSuggestionsResponseBody {
 
 const EXTERNAL_ID_PREFIX = "external:";
 
+/** What the server needs to know which sources a place field has and what feeds them. */
+export interface PlaceSuggestionScope {
+  /** The place field: the server reads its sources from its configuration, the client never names them. */
+  fieldId: string;
+  projectId?: string;
+  typeId?: string;
+  /** The place picked in each field a source parameter reads (null while empty). */
+  deps: Record<string, string | null>;
+}
+
 /**
- * GET /api/v1/places/suggestions — a place field configured with external sources (FieldResource
- * .placeSources): the organization's places first, then the sources' suggestions. A suggestion
- * that is not a place yet gets a synthetic id and is created when picked (createPlaceFromSuggestion).
+ * GET /api/v1/places/suggestions — a place field configured with external sources: the organization's
+ * places first, then the sources' suggestions, each narrowed by the places picked in the fields its
+ * parameters read (`dep.<fieldId>=<placeId>`). A suggestion that is not a place yet gets a synthetic
+ * id and is created when picked (createPlaceFromSuggestion).
  */
-export async function fetchPlaceSuggestions(organizationId: number, sources: string[], q?: string): Promise<FilterOption[]> {
-  const query = new URLSearchParams({ organizationId: String(organizationId), sources: sources.join(",") });
+export async function fetchPlaceSuggestions(organizationId: number, scope: PlaceSuggestionScope, q?: string): Promise<OptionList> {
+  const query = new URLSearchParams({ organizationId: String(organizationId), fieldId: scope.fieldId });
+  if (scope.projectId) query.set("projectId", scope.projectId);
+  if (scope.typeId) query.set("typeId", scope.typeId);
+  for (const [fromField, placeId] of Object.entries(scope.deps)) {
+    if (placeId != null) query.set(`dep.${fromField}`, placeId);
+  }
   if (q) query.set("q", q);
   const body = await apiFetch<PlaceSuggestionsResponseBody>(`/api/v1/places/suggestions?${query.toString()}`);
-  return body.data.map((p) => {
+  const options: OptionList = body.data.map((p) => {
     const place: PlaceItemInfo = {
       source: p.source,
       code: p.code ?? undefined,
@@ -141,6 +161,8 @@ export async function fetchPlaceSuggestions(organizationId: number, sources: str
     place.external = { name: p.name, code: p.code ?? undefined, address: p.address ?? undefined };
     return { id: `${EXTERNAL_ID_PREFIX}${p.source}:${p.code ?? p.name}`, label: p.name, place };
   });
+  options.unnarrowedSources = body.unnarrowedSources ?? [];
+  return options;
 }
 
 /**
@@ -309,6 +331,8 @@ const ENTITY_SEGMENTS: Record<string, { projectPath: string; orgPath: string }> 
 export interface OptionScope {
   valueConceptId?: string;
   optionsContext?: OptionsContext;
+  /** A place field with sources: the places picked in the fields they read. */
+  placeContext?: PlaceContext;
 }
 
 function relatedConceptOf(context: OptionsContext | undefined): string | undefined {
@@ -349,8 +373,13 @@ export function optionSourceFor(
     case "SELECT_ONE_SPATIAL_UNIT":
     case "SELECT_MULTIPLE_SPATIAL_UNIT_TREE":
     case "SELECT_MULTIPLE_SPATIAL_UNIT":
-      return field.placeSources?.length
-        ? (q) => fetchPlaceSuggestions(organizationId, field.placeSources as string[], q)
+      return scope.placeContext
+        ? (q) =>
+            fetchPlaceSuggestions(
+              organizationId,
+              { fieldId: field.id, projectId, typeId: scope.valueConceptId, deps: scope.placeContext!.deps },
+              q,
+            )
         : (q) => fetchPlaceOptions(organizationId, q);
     case "SELECT_ONE_PERSON":
     case "SELECT_MULTIPLE_PERSON":

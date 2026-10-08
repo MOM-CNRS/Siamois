@@ -473,7 +473,6 @@ describe("an external place suggestion", () => {
     label: "Lieu principal",
     answerType: "SELECT_ONE_SPATIAL_UNIT",
     isSystemField: true,
-    placeSources: ["INSEE"],
   };
   const lyon: FilterOption = {
     id: "external:INSEE:69123",
@@ -525,5 +524,35 @@ describe("an external place suggestion", () => {
     await pickFirstSuggestion(onChange);
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("a place field whose source waits for another field", () => {
+  it("invites to fill the field a source depends on, while still listing what it found", async () => {
+    mockedOptionSourceFor.mockImplementation(
+      () => async () => Object.assign([{ id: "5", label: "Rue de la Paix" }], { unnarrowedSources: ["GEOPLAT"] }),
+    );
+    act(() => {
+      root.render(
+        <SelectOneSpatialUnitRenderer
+          field={{ id: "-104", resourceType: "fields", label: "Précis", answerType: "SELECT_ONE_SPATIAL_UNIT", isSystemField: true }}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+          placeContext={{ deps: { "-108": null } }}
+          fieldLabelOf={(id) => (id === "-108" ? "Commune" : id)}
+        />,
+      );
+    });
+    await act(async () => {
+      container.querySelector("input")!.focus();
+      await new Promise((r) => setTimeout(r, 400));
+    });
+
+    expect(document.body.querySelector("li.p-autocomplete-item")?.textContent).toContain("Rue de la Paix");
+    expect(document.body.querySelector(".resource-ref-narrow-hint")?.textContent).toBe("Remplir le champ « Commune » pour affiner la recherche");
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(expect.anything(), 100, undefined, expect.objectContaining({ placeContext: { deps: { "-108": null } } }));
   });
 });

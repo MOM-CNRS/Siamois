@@ -5,6 +5,7 @@ import { CreateFormField, CreateFormShell } from "../../components/CreateFormShe
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
+import { placeContextOf as placeContextFrom } from "../../rules";
 import type { CreateFormContext } from "../types";
 import { createProject } from "./api";
 import { getProjectTypes } from "./projectTypes";
@@ -64,6 +65,13 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
     [typesQuery.data],
   );
   const pickerContext = useMemo(() => ({ organizationId }), [organizationId]);
+  // What each place picker suggests from, and the place picked in the field its sources depend on
+  // (the addresses of the commune chosen above): the form's rules, evaluated against what is picked so far.
+  const pickedByField: Record<string, unknown> = {};
+  if (mainLocationField) pickedByField[mainLocationField.id] = mainLocation;
+  if (spatialContextField) pickedByField[spatialContextField.id] = spatialContext;
+  const fieldLabelOf = (id: string) => typesQuery.data?.fields[id]?.label ?? id;
+  const placeContextForField = (field: FieldResource) => placeContextFrom(field.rules?.placeSources, (id) => pickedByField[id]);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -128,6 +136,8 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
             required={false}
             organizationId={organizationId}
             context={pickerContext}
+            placeContext={placeContextForField(mainLocationField)}
+            fieldLabelOf={fieldLabelOf}
             onChange={(v) => setMainLocation(v as ConceptPick | null)}
           />
         </CreateFormField>
@@ -142,6 +152,8 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
             required={false}
             organizationId={organizationId}
             context={pickerContext}
+            placeContext={placeContextForField(spatialContextField)}
+            fieldLabelOf={fieldLabelOf}
             onChange={(v) => setSpatialContext((v as ConceptPick[] | null) ?? [])}
           />
         </CreateFormField>
