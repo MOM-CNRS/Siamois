@@ -21,6 +21,9 @@ public class ContainerPatchRequest {
             + "avec le droit validateur (_permissions.canValidate).")
     private ValidationStatus validated;
 
+    @Schema(description = "Nouvel identifiant (texte libre, unique dans le projet) ; absent = inchangé.")
+    private String identifier;
+
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();
 

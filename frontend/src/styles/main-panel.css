@@ -1687,29 +1687,29 @@ body button.p-button.status-button.status-button-compact {
   flex: 1 1 auto;
 }
 
-.project-detail-header {
+.entity-detail-header {
   flex: 1 1 auto;
   flex-wrap: nowrap;
   min-width: 0;
   align-items: center;
 }
 
-.project-detail-header-name-input {
+.entity-detail-header-primary-input {
   min-width: 12rem;
 }
 
-.project-detail-header-identifier-input {
+.entity-detail-header-secondary-input {
   min-width: 8rem;
 }
 
-.project-detail-header .project-detail-header-edit.p-button {
+.entity-detail-header .entity-detail-header-edit.p-button {
   margin-left: auto;
   opacity: 0;
   transition: opacity 0.15s;
 }
 
-.project-detail-header:hover .project-detail-header-edit.p-button,
-.project-detail-header:focus-within .project-detail-header-edit.p-button,
-.project-detail-header-edit.p-button:has(.pi-check) {
+.entity-detail-header:hover .entity-detail-header-edit.p-button,
+.entity-detail-header:focus-within .entity-detail-header-edit.p-button,
+.entity-detail-header-edit.p-button:has(.pi-check) {
   opacity: 1;
 }

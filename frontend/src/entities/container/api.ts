@@ -12,4 +12,5 @@ const api = createEntityApi<ContainerSummary, ContainerDetail, ContainerCreateBo
 export const listContainers = api.list;
 export const getContainer = api.get;
 export const patchContainerAnswers = api.patchAnswers;
+export const patchContainer = api.patch;
 export const createContainer = api.create;

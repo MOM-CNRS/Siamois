@@ -26,6 +26,7 @@ const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, Recording
 export const listRecordingUnits = api.list;
 export const getRecordingUnit = api.get;
 export const patchRecordingUnitAnswers = api.patchAnswers;
+export const patchRecordingUnit = api.patch;
 export const createRecordingUnit = api.create;
 export const duplicateRecordingUnit = api.duplicate;
 

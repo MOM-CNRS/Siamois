@@ -19,6 +19,7 @@ const api = createEntityApi<DocumentSummary, DocumentDetail, DocumentCreateBody>
 export const listDocuments = api.list;
 export const getDocument = api.get;
 export const patchDocumentAnswers = api.patchAnswers;
+export const patchDocument = api.patch;
 export const createDocument = api.create;
 
 // The stored file: sent and removed apart from the form's answers (its bytes cannot travel in a PATCH).

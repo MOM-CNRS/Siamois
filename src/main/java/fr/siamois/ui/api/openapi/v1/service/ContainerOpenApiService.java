@@ -133,14 +133,25 @@ public class ContainerOpenApiService {
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
+        String newIdentifier = request.getIdentifier() == null ? null : request.getIdentifier().trim();
+        if (newIdentifier != null && newIdentifier.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier ne peut pas être vide");
+        }
+        boolean identifierChange = newIdentifier != null && !newIdentifier.equals(container.getIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(container.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || !statusChange) && !canEdit) {
+        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
         validationOpenApiService.requireAllowed(container.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        if (answersChange || !statusChange) {
+        if (identifierChange) {
+            container.setIdentifier(newIdentifier);
+            if (containerService.identifierAlreadyExistInAction(container)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet identifiant existe déjà dans le projet");
+            }
+        }
+        if (answersChange || identifierChange || !statusChange) {
             Long projectId = container.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the container-types catalog lays out (system + additional fields).

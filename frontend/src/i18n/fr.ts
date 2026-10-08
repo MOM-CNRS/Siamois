@@ -195,6 +195,7 @@ export const fr = {
   "header.nameRequired": "Le nom est obligatoire",
   "header.validate": "Valider",
   "header.editHeader": "Modifier l'en-tête",
+  "header.noType": "Sans type",
   "header.editType": "Modifier le type",
   "header.identifierRequired": "L'identifiant est obligatoire",
   "header.saveFailed": "Échec de l'enregistrement",

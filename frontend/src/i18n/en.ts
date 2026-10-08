@@ -195,6 +195,7 @@ export const en: Record<MessageKey, string> = {
   "header.nameRequired": "The name is required",
   "header.validate": "Validate",
   "header.editHeader": "Edit the header",
+  "header.noType": "No type",
   "header.editType": "Edit the type",
   "header.identifierRequired": "The identifier is required",
   "header.saveFailed": "Saving failed",

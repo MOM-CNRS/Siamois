@@ -94,7 +94,7 @@ afterEach(() => {
 });
 
 function headerPencil() {
-  return container.querySelector(".project-detail-header-edit") as HTMLElement;
+  return container.querySelector(".entity-detail-header-edit") as HTMLElement;
 }
 
 describe("ProjectDetailHeader", () => {
@@ -123,7 +123,7 @@ describe("ProjectDetailHeader", () => {
     });
     await flush();
 
-    const input = container.querySelector(".project-detail-header-identifier-input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-secondary-input") as HTMLInputElement;
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
     await act(async () => {
       nativeSetter.call(input, "   ");
@@ -151,8 +151,8 @@ describe("ProjectDetailHeader", () => {
     expect(container.querySelectorAll(".pi-check")).toHaveLength(1);
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
     for (const [selector, value] of [
-      [".project-detail-header-name-input", "Fouille B"],
-      [".project-detail-header-identifier-input", "FB"],
+      [".entity-detail-header-primary-input", "Fouille B"],
+      [".entity-detail-header-secondary-input", "FB"],
     ] as const) {
       const input = container.querySelector(selector) as HTMLInputElement;
       await act(async () => {
@@ -180,9 +180,9 @@ describe("ProjectDetailHeader", () => {
     });
     await flush();
 
-    expect(container.querySelector(".project-detail-header-name-input")).toBeTruthy();
-    expect(container.querySelector(".project-detail-header-identifier-input")).toBeTruthy();
-    expect(container.querySelector(".project-detail-header-category .p-autocomplete input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-primary-input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-secondary-input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-category .p-autocomplete input")).toBeTruthy();
   });
 });
 
@@ -191,14 +191,14 @@ describe("ProjectDetailHeader — category chip", () => {
     renderHeader(project());
     await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sondage");
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
   });
 
   it("labels an untyped project rather than rendering an empty chip", async () => {
     renderHeader(project({ type: undefined }));
     await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sans type");
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sans type");
   });
 
   it("keeps the type as a chip when the catalog has no type field to edit with", async () => {
@@ -210,8 +210,8 @@ describe("ProjectDetailHeader — category chip", () => {
     });
     await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sondage");
-    expect(container.querySelector(".project-detail-header-category .p-autocomplete")).toBeFalsy();
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
+    expect(container.querySelector(".entity-detail-header-category .p-autocomplete")).toBeFalsy();
   });
 
   it("swaps the chip for the shared concept autocomplete in edit mode", async () => {
@@ -223,7 +223,7 @@ describe("ProjectDetailHeader — category chip", () => {
     });
     await flush();
 
-    const input = container.querySelector(".project-detail-header-category .p-autocomplete input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-category .p-autocomplete input") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(input.value).toBe("Sondage");
   });

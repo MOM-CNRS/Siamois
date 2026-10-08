@@ -99,3 +99,18 @@ export async function duplicatePlace(id: string | number): Promise<{ id: number 
   const response = await apiFetch<PlaceCreatedResponseBody>(`/api/v1/places/${id}/duplicate`, { method: "POST" });
   return response.data;
 }
+
+/**
+ * The header's save: a new name (a place's identifier is its name) and/or a new type, in one
+ * PATCH — the flat `name` / `typeConceptId` of PlacePatchRequest.
+ */
+export async function patchPlaceHeader(
+  id: string | number,
+  changes: { name?: string; typeId?: string | null },
+): Promise<PlaceDetail> {
+  const body: Record<string, unknown> = {};
+  if (changes.name !== undefined) body.name = changes.name;
+  if (changes.typeId !== undefined) body.typeConceptId = changes.typeId == null ? null : Number(changes.typeId);
+  const response = await apiFetch<PlaceResponseBody>(`/api/v1/places/${id}`, { method: "PATCH", body });
+  return response.data;
+}

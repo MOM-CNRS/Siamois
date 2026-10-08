@@ -304,4 +304,57 @@ class ContainerOpenApiServiceTest {
 
         verify(containerService).save(container, additional);
     }
+
+    @Test
+    void patchContainer_identifierProvided_isTrimmedSavedAndChecked() {
+        ContainerDTO container = containerOn(projectWithInstitution());
+        container.setIdentifier("OLD");
+        when(containerService.findById(5L)).thenReturn(container);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
+                .thenReturn(true);
+        when(effectiveFormResolver.resolveEffectiveForm(7L, ConfigurableTable.CONTENANT, null))
+                .thenReturn(new FormUiDto());
+
+        ContainerPatchRequest req = new ContainerPatchRequest();
+        req.setIdentifier(" NEW ");
+        service.patchContainer(5L, req, personDto, Set.of(10L), "fr");
+
+        assertThat(container.getIdentifier()).isEqualTo("NEW");
+        verify(containerService).save(eq(container), any());
+    }
+
+    @Test
+    void patchContainer_identifierAlreadyUsed_throws409() {
+        ContainerDTO container = containerOn(projectWithInstitution());
+        when(containerService.findById(5L)).thenReturn(container);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
+                .thenReturn(true);
+        when(containerService.identifierAlreadyExistInAction(container)).thenReturn(true);
+
+        ContainerPatchRequest req = new ContainerPatchRequest();
+        req.setIdentifier("TAKEN");
+        var ids = Set.of(10L);
+        assertThatThrownBy(() -> service.patchContainer(5L, req, personDto, ids, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(containerService, never()).save(any(), any());
+    }
+
+    @Test
+    void patchContainer_blankIdentifier_throws400() {
+        ContainerDTO container = containerOn(projectWithInstitution());
+        when(containerService.findById(5L)).thenReturn(container);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
+                .thenReturn(true);
+
+        ContainerPatchRequest req = new ContainerPatchRequest();
+        req.setIdentifier("   ");
+        var ids = Set.of(10L);
+        assertThatThrownBy(() -> service.patchContainer(5L, req, personDto, ids, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
 }
