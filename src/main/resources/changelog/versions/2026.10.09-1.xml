@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Action codes are gone: the action_code table, the primary and secondary codes of a project, and the
+    SELECT_ONE_ACTION_CODE field type with its answers. Liquibase runs BEFORE Hibernate's ddl-auto: update,
+    which never drops anything, so the data and the schema are removed here, in this order:
+
+    1. The custom fields of that type, with every row that points at them (answers, form configurations…):
+       every foreign key onto custom_field is followed, on the single-column ones. The answers of that type
+       are removed first, since their discriminator is in custom_field_answer.
+    2. The join tables and the column that point at action_code, then action_code itself (and their
+       Envers _aud tables).
+    On a fresh database none of this exists: every statement is guarded.
+    -->
+
+    <changeSet id="2026.10.09-1-drop-action-code" author="Gregory Bliault" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                field_ids bigint[];
+                fk record;
+                t text;
+            BEGIN
+                IF to_regclass('custom_field') IS NOT NULL THEN
+                    SELECT coalesce(array_agg(custom_field_id), ARRAY[]::bigint[]) INTO field_ids
+                    FROM custom_field WHERE answer_type = 'SELECT_ONE_ACTION_CODE';
+
+                    IF to_regclass('custom_field_answer_action_code_answers') IS NOT NULL THEN
+                        DROP TABLE custom_field_answer_action_code_answers CASCADE;
+                    END IF;
+                    IF to_regclass('custom_field_answer_action_code_answers_aud') IS NOT NULL THEN
+                        DROP TABLE custom_field_answer_action_code_answers_aud CASCADE;
+                    END IF;
+                    IF to_regclass('custom_field_answer') IS NOT NULL THEN
+                        DELETE FROM custom_field_answer WHERE answer_type = 'SELECT_ONE_ACTION_CODE';
+                    END IF;
+
+                    IF array_length(field_ids, 1) IS NOT NULL THEN
+                        FOR fk IN
+                            SELECT c.conrelid::regclass::text AS tbl, a.attname AS col
+                            FROM pg_constraint c
+                                     JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+                            WHERE c.contype = 'f'
+                              AND c.confrelid = 'custom_field'::regclass
+                              AND c.conrelid <> 'custom_field'::regclass
+                              AND array_length(c.conkey, 1) = 1
+                        LOOP
+                            EXECUTE format('DELETE FROM %s WHERE %I = ANY ($1)', fk.tbl, fk.col) USING field_ids;
+                        END LOOP;
+                        DELETE FROM custom_field WHERE custom_field_id = ANY (field_ids);
+                    END IF;
+                END IF;
+
+                FOREACH t IN ARRAY ARRAY['action_action_code', 'action_action_code_aud'] LOOP
+                    IF to_regclass(t) IS NOT NULL THEN
+                        EXECUTE format('DROP TABLE %I CASCADE', t);
+                    END IF;
+                END LOOP;
+
+                FOREACH t IN ARRAY ARRAY['action_unit', 'action_unit_aud'] LOOP
+                    IF to_regclass(t) IS NOT NULL THEN
+                        EXECUTE format('ALTER TABLE %I DROP COLUMN IF EXISTS fk_primary_action_code CASCADE', t);
+                    END IF;
+                END LOOP;
+
+                FOREACH t IN ARRAY ARRAY['action_code', 'action_code_aud'] LOOP
+                    IF to_regclass(t) IS NOT NULL THEN
+                        EXECUTE format('DROP TABLE %I CASCADE', t);
+                    END IF;
+                END LOOP;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

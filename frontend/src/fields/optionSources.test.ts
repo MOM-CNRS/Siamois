@@ -159,8 +159,7 @@ describe("optionSourceFor — reference fields", () => {
     expect(options).toEqual([{ id: "11", label: "Argile" }]);
   });
 
-  it("has no source for the read-only kinds", () => {
-    expect(optionSourceFor(field({ answerType: "SELECT_ONE_ACTION_CODE" }), 100)).toBeNull();
+  it("has no source for the read-only kind", () => {
     expect(optionSourceFor(field({ answerType: "SELECT_ADDRESS" }), 100)).toBeNull();
   });
 });

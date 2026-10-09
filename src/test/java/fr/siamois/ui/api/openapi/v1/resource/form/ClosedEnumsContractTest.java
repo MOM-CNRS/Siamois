@@ -33,7 +33,7 @@ class ClosedEnumsContractTest {
         Set<String> published = allowableValuesOf(ResourceRef.class, "resourceType");
 
         assertThat(published).contains("projects", "places", "finds", "recording-units", "phases",
-                "containers", "documents", "concepts", "persons", "action-codes");
-        assertThat(published).doesNotContain("action-units", "spatial-units");
+                "containers", "documents", "concepts", "persons");
+        assertThat(published).doesNotContain("action-units", "spatial-units", "action-codes");
     }
 }

@@ -1,9 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
@@ -32,7 +30,6 @@ import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -85,8 +82,6 @@ public class FieldAnswerPatchService {
     private final PersonMapper personMapper;
     private final ActionUnitRepository actionUnitRepository;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final ActionCodeRepository actionCodeRepository;
-    private final ActionCodeMapper actionCodeMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final RecordingUnitRepository recordingUnitRepository;
@@ -376,7 +371,7 @@ public class FieldAnswerPatchService {
                 || f instanceof CustomFieldDateTime || f instanceof CustomFieldMeasurement
                 || f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne
                 || f instanceof CustomFieldSelectOnePerson || f instanceof CustomFieldSelectOneActionUnit
-                || f instanceof CustomFieldSelectOneActionCode || f instanceof CustomFieldSelectOneSpatialUnit
+                || f instanceof CustomFieldSelectOneSpatialUnit
                 || f instanceof CustomFieldSelectOneRecordingUnit;
     }
 
@@ -484,7 +479,6 @@ public class FieldAnswerPatchService {
         if (f instanceof CustomFieldSelectOneActionUnit) {
             return one(raw, "Projet", actionUnitRepository::findById, actionUnitSummaryMapper::convert);
         }
-        if (f instanceof CustomFieldSelectOneActionCode) return actionCode(raw);
         if (f instanceof CustomFieldSelectOneSpatialUnit) {
             return one(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
         }
@@ -533,13 +527,6 @@ public class FieldAnswerPatchService {
         return items.stream()
                 .map(item -> one(item, label, find, convert))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private Object actionCode(Object raw) {
-        String code = String.valueOf(raw instanceof Map<?, ?> m && m.get("id") != null ? m.get("id") : raw);
-        ActionCode actionCode = actionCodeRepository.findById(code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code d'action introuvable : " + code));
-        return actionCodeMapper.convert(actionCode);
     }
 
     private static Double toDouble(Object raw) {

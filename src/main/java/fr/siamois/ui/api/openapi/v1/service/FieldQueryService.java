@@ -11,7 +11,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionUnit;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
@@ -361,7 +360,6 @@ public class FieldQueryService {
         if (CustomFieldAnswerSelectPerson.class.isAssignableFrom(answerClass)) return reference(false, "persons", refKind, targetOf(answerClass, "persons"), answerClass);
         if (CustomFieldAnswerSpatialUnit.class.isAssignableFrom(answerClass)) return reference(false, "spatialUnits", refKind, targetOf(answerClass, "spatialUnits"), answerClass);
         if (CustomFieldAnswerActionUnit.class.isAssignableFrom(answerClass)) return reference(false, "actionUnits", refKind, targetOf(answerClass, "actionUnits"), answerClass);
-        if (CustomFieldAnswerActionCode.class.isAssignableFrom(answerClass)) return reference(false, "actionCodes", refKind, targetOf(answerClass, "actionCodes"), answerClass);
         return null;
     }
 

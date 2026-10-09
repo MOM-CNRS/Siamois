@@ -41,7 +41,7 @@ Things most likely to break an existing client, in order:
 | B6b | Sorting on RU lists (`/projects/{id}/recording-units`, `/recording-units/{id}/children`) and on find lists (`/recording-units/{id}/mobiliers`) | Unknown property → silently fell back to `creationTime:desc` | Unknown property → **`400 Champ de tri inconnu`** | Only send documented properties (see §4 "Sorting"). |
 | B7 | `GET /api/context/check` *(internal, see §5)* | `institutionId`, `panelIds` | `panelIds` removed | Stop sending `panelIds`. It is ignored now, not rejected. |
 | B8 | **Error body**, every `/api/v1` error | Three shapes: `{error:"error",message}` (the `error` value was the literal `"error"` except for 401), a legacy `{status,error,message,path,timestamp}`, and the 409 | One body: `{ "error": "<code>", "message": "…", "details"?: [{field,message}], "correlationId"? }`. `error` is a **stable code** to switch on: `bad_request`, `validation_failed`, `unauthorized`, `forbidden`, `not_found`, `method_not_allowed`, `conflict`, `payload_too_large`, `unsupported_media_type`, `internal_error`. `message` is for humans and may change. `details` only on `validation_failed`; `correlationId` only on `internal_error`. The 409 revision conflict is the same two keys plus its `data` (server state). | Read `error`, not `message`. `status`, `path` and `timestamp` are gone (the HTTP status is the status). |
-| B9 | `ResourceRef.resourceType` | `action-units`, `spatial-units` | **`projects`, `places`** (the route names). Closed set: `concepts`, `persons`, `projects`, `places`, `action-codes`, `recording-units`, `finds`, `phases`, `containers`, `documents` | Update the lookup table of reference types. |
+| B9 | `ResourceRef.resourceType` | `action-units`, `spatial-units` | **`projects`, `places`** (the route names). Closed set: `concepts`, `persons`, `projects`, `places`, `recording-units`, `finds`, `phases`, `containers`, `documents` | Update the lookup table of reference types. |
 | B10 | Finds sub-collections | `GET /projects/{id}/mobiliers`, `/recording-units/{id}/mobiliers`, `/places/{id}/mobiliers` | **`/finds`** under each | Rename the path segment. |
 | B11 | `validated` on every entity resource, `PATCH` body, DB column | `validated` (a `ValidationStatus`, not a boolean) | **`validationStatus`** (`INCOMPLETE`, `COMPLETE`, `VALIDATED`, `CANCELLED`) on the 7 resources and the 7 patch requests; column `validation_status` (Liquibase `2026.10.09-0`). `status` was not used: a project already has a `status` (a concept). | Rename the property in reads and in `PATCH` bodies. |
 | B12 | Entity keys in paths and request bodies | A project / recording unit / find could also be addressed by `fullIdentifier`, or a project by its short identifier | **The database id only**, as a string. Any other value is a `404`. | Use the `id` of the resource. |
@@ -370,6 +370,9 @@ For clients that read the 2026-10-01 version of this document. B8–B13 are in �
 **Breaking**
 - B8 error body, B9 `resourceType`, B10 `/finds` paths, B11 `validationStatus`, B12 database id only, B13 string ids (all §2).
 - `ValidationStatus`, `answerType`, `resourceType`, `vocabulary.mode`, `Source.kind`, `ConceptStateEntry.state` and the `error` codes are closed sets (§8).
+
+**Removed**
+- Action codes: the `SELECT_ONE_ACTION_CODE` answer type and the `action-codes` reference type no longer exist (no field, answer or reference carries them), and the `action_code` table is dropped (Liquibase `2026.10.09-1`).
 
 **Added**
 - `GET /places/suggestions` and `POST /places/from-suggestion` (§3.1).

@@ -11,8 +11,8 @@ import {
 } from "./renderers";
 
 // Called once at app startup (from mount.ts) to populate the base renderer set: every answerType a
-// form can hold, except the two that stay read-only (FallbackRenderer) — SELECT_ONE_ACTION_CODE
-// (read-only in JSF too) and SELECT_ADDRESS (waits for the GéoPlateforme lookup). Every reference
+// form can hold, except SELECT_ADDRESS, which stays read-only (FallbackRenderer: it waits for the
+// GéoPlateforme lookup). Every reference
 // answerType shares one picker; fields/optionSources.ts is where each one's option source lives.
 let registered = false;
 

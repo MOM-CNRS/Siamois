@@ -130,7 +130,7 @@ public class FieldAnswerWireService {
             case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, toOffsetDateTime(raw));
             case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
-                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT",
+                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT",
                  "SELECT_ADDRESS", "SELECT_ONE" ->
                     new SelectOneFieldAnswer(answerType, field, raw == null ? null : toResourceRef(answerType, first(raw), lang));
             case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
@@ -175,8 +175,6 @@ public class FieldAnswerWireService {
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof ActionUnitSummaryDTO a) return ref(a.getId(), "projects", a.getName());
         if (item instanceof ActionUnitDTO a) return ref(a.getId(), "projects", a.getName());
-        // An action code is keyed by its code: that is also what a PATCH sends back for it.
-        if (item instanceof ActionCodeDTO ac) return new ResourceRef(ac.getCode(), "action-codes", ac.getCode());
         return toExcavationRef(answerType, item);
     }
 

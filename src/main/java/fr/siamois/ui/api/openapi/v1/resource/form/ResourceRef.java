@@ -12,7 +12,7 @@ public record ResourceRef(
         String resourceId,
 
         @Schema(description = "Type de l'entité, nom de sa collection d'API (ensemble fermé en v1)",
-                allowableValues = {"concepts", "persons", "projects", "places", "action-codes", "recording-units",
+                allowableValues = {"concepts", "persons", "projects", "places", "recording-units",
                         "finds", "phases", "containers", "documents"},
                 example = "recording-units")
         String resourceType,

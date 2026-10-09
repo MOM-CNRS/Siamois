@@ -2,7 +2,6 @@ package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
@@ -28,7 +27,6 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
@@ -74,7 +72,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
-    private final ActionCodeRepository actionCodeRepository;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
@@ -296,16 +293,6 @@ public class ActionUnitService implements ArkEntityService {
         List<ProfileDTO> institutionMemberProfileDTOS = new ArrayList<>();
         institutionMemberProfileDTOS.add(profileMapper.convert(institutionMember));
         personProfileAssignmentService.addToInstitution(actionUnit.getCreatedByInstitution(), info.getUser(), institutionMemberProfileDTOS);
-    }
-
-    /**
-     * Find all ActionCodes that contain the given query string in their code, ignoring case.
-     *
-     * @param query The query string to search for in ActionCodes
-     * @return A list of ActionCodes that match the query
-     */
-    public List<ActionCode> findAllActionCodeByCodeIsContainingIgnoreCase(String query) {
-        return actionCodeRepository.findAllByCodeIsContainingIgnoreCase(query);
     }
 
     /**
@@ -1029,7 +1016,6 @@ public class ActionUnitService implements ArkEntityService {
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
-        actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);

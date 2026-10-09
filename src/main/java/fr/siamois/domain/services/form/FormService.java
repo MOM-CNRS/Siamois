@@ -267,8 +267,6 @@ public class FormService {
                             a -> extractSpatialUnit((CustomFieldAnswerSelectOneSpatialUnitViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class,
                             a -> extractSpatialUnitSet((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) a)),
-                    Map.entry(CustomFieldAnswerSelectOneActionCodeViewModel.class,
-                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerIntegerViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerDecimalViewModel.class,
@@ -444,7 +442,6 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class, this::handleConcept);
         handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
-        handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
         handlers.put(CustomFieldAnswerDecimalViewModel.class, this::handleDecimal);
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
@@ -540,12 +537,6 @@ public class FormService {
                 spatialUnitAnswer.setValue(dto);
             }
 
-        }
-    }
-
-    private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
-            actionCodeAnswer.setValue((ActionCodeDTO) value);
         }
     }
 

@@ -1,13 +1,11 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
@@ -37,7 +35,6 @@ class ActionUnitSeederTest {
 
 
     @Mock PersonRepository personRepository;
-    @Mock ActionCodeRepository actionCodeRepository;
     @Mock ConceptRepository conceptRepository;
     @Mock InstitutionRepository institutionRepository;
     @Mock SpatialUnitRepository spatialUnitRepository;
@@ -51,7 +48,6 @@ class ActionUnitSeederTest {
     void setUp() {
         seeder = new ActionUnitSeeder(
                 personRepository,
-                actionCodeRepository,
                 conceptRepository,
                 institutionRepository,
                 spatialUnitRepository,
@@ -62,14 +58,11 @@ class ActionUnitSeederTest {
 
     private void commonLookupsOk(String vocabExtId, String conceptExtId,
                                  String authorEmail, String institutionIdentifier,
-                                 String primaryCode,
-                                 Concept concept, Person author, Institution institution, ActionCode code) {
+                                 Concept concept, Person author, Institution institution) {
         when(conceptRepository.findConceptByExternalIdIgnoreCase(vocabExtId, conceptExtId))
                 .thenReturn(Optional.of(concept));
         when(personRepository.findByEmailIgnoreCase(authorEmail))
                 .thenReturn(Optional.of(author));
-        when(actionCodeRepository.findById(primaryCode))
-                .thenReturn(Optional.of(code));
         when(institutionRepository.findInstitutionByIdentifier(institutionIdentifier))
                 .thenReturn(Optional.of(institution));
     }
@@ -80,14 +73,12 @@ class ActionUnitSeederTest {
         Concept concept = new Concept(); concept.setId(1L);
         Person author = new Person();   // set fields if needed
         Institution institution = new Institution(); institution.setId(99L);
-        ActionCode code = new ActionCode(); code.setCode("AC001");
 
         Set<SpatialUnitSeeder.SpatialUnitKey>
                 keys = new HashSet<SpatialUnitSeeder.SpatialUnitKey>();
         keys.add(new SpatialUnitSeeder.SpatialUnitKey("spatial"));
 
-        commonLookupsOk("vocA", "conA", "author@x.test", "INST-1", "AC001",
-                concept, author, institution, code);
+        commonLookupsOk("vocA", "conA", "author@x.test", "INST-1", concept, author, institution);
 
         when(actionUnitRepository.findByFullIdentifier("AU-1"))
                 .thenReturn(Optional.empty());
@@ -98,7 +89,7 @@ class ActionUnitSeederTest {
         var end   = OffsetDateTime.parse("2024-12-31T00:00:00Z");
 
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs(
-                "AU-1", "Name 1", "ID-1", "AC001",
+                "AU-1", "Name 1", "ID-1",
                 "vocA", "conA",
                 "author@x.test",
                 "INST-1", begin, end,
@@ -115,7 +106,6 @@ class ActionUnitSeederTest {
         assertThat(saved.getFullIdentifier()).isEqualTo("AU-1");
         assertThat(saved.getIdentifier()).isEqualTo("ID-1");
         assertThat(saved.getName()).isEqualTo("Name 1");
-        assertThat(saved.getPrimaryActionCode()).isEqualTo(code);
         assertThat(saved.getType()).isEqualTo(concept);
         assertThat(saved.getCreatedBy()).isEqualTo(author);
         assertThat(saved.getCreatedByInstitution()).isEqualTo(institution);
@@ -131,16 +121,14 @@ class ActionUnitSeederTest {
         Concept concept = new Concept(); concept.setId(1L);
         Person author = new Person();
         Institution institution = new Institution(); institution.setId(88L);
-        ActionCode code = new ActionCode(); code.setCode("AC002");
 
-        commonLookupsOk("vocB", "conB", "a@b.c", "INST-2", "AC002",
-                concept, author, institution, code);
+        commonLookupsOk("vocB", "conB", "a@b.c", "INST-2", concept, author, institution);
 
         when(actionUnitRepository.findByFullIdentifier("AU-EXIST"))
                 .thenReturn(Optional.of(new ActionUnit())); // déjà présent
 
         ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs(
-                "AU-EXIST", "Name X", "IDX", "AC002",
+                "AU-EXIST", "Name X", "IDX",
                 "vocB", "conB",
                 "a@b.c", "INST-2",
                 NOW, null,
@@ -160,7 +148,7 @@ class ActionUnitSeederTest {
         when(conceptRepository.findConceptByExternalIdIgnoreCase("v", "c"))
                 .thenReturn(Optional.empty());
 
-        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-2", "Name", "ID", "ACX",
+        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-2", "Name", "ID",
                 "v", "c",
                 "author@x", "INST",
                 null, null, null, null);
@@ -172,7 +160,7 @@ class ActionUnitSeederTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Concept introuvable");
 
-        verifyNoInteractions(personRepository, actionCodeRepository, institutionRepository, spatialUnitRepository, actionUnitRepository);
+        verifyNoInteractions(personRepository, institutionRepository, spatialUnitRepository, actionUnitRepository);
     }
 
     @Test
@@ -186,7 +174,7 @@ class ActionUnitSeederTest {
 
 
 
-        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-3", "Name", "ID", "ACX",
+        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-3", "Name", "ID",
                 "v", "c",
                 "missing@x", "INST",
                 null, null, null, null);
@@ -197,31 +185,6 @@ class ActionUnitSeederTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Auteur introuvable");
 
-        verifyNoInteractions(actionCodeRepository, institutionRepository, spatialUnitRepository, actionUnitRepository);
-    }
-
-    @Test
-    void seed_throws_whenActionCodeMissing() {
-        // Given
-        Concept concept = new Concept(); concept.setId(1L);
-        Person author = new Person();
-
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("v", "c"))
-                .thenReturn(Optional.of(concept));
-        when(personRepository.findByEmailIgnoreCase("a@x")).thenReturn(Optional.of(author));
-        when(actionCodeRepository.findById("MISSING")).thenReturn(Optional.empty());
-
-        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-4", "Name", "ID", "MISSING",
-                "v", "c",
-                "a@x", "INST",
-                null, null, null, null);
-
-        List<ActionUnitSeeder.ActionUnitSpecs> specs = List.of(s);
-
-        assertThatThrownBy(() -> seeder.seed(specs))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Action code introuvable");
-
         verifyNoInteractions(institutionRepository, spatialUnitRepository, actionUnitRepository);
     }
 
@@ -230,16 +193,14 @@ class ActionUnitSeederTest {
         // Given
         Concept concept = new Concept(); concept.setId(1L);
         Person author = new Person();
-        ActionCode code = new ActionCode(); code.setCode("ACZ");
 
         when(conceptRepository.findConceptByExternalIdIgnoreCase("v", "c"))
                 .thenReturn(Optional.of(concept));
         when(personRepository.findByEmailIgnoreCase("a@x")).thenReturn(Optional.of(author));
-        when(actionCodeRepository.findById("ACZ")).thenReturn(Optional.of(code));
-        when(institutionRepository.findInstitutionByIdentifier("MISSING"))
+                when(institutionRepository.findInstitutionByIdentifier("MISSING"))
                 .thenReturn(Optional.empty());
 
-        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-5", "Name", "ID", "ACZ",
+        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-5", "Name", "ID",
                 "v", "c",
                 "a@x", "MISSING",
                 null, null, null, null);
@@ -259,14 +220,12 @@ class ActionUnitSeederTest {
         Concept concept = new Concept(); concept.setId(1L);
         Person author = new Person();
         Institution institution = new Institution(); institution.setId(77L);
-        ActionCode code = new ActionCode(); code.setCode("AC777");
 
-        commonLookupsOk("v77", "c77", "a@77", "INST-77", "AC777",
-                concept, author, institution, code);
+        commonLookupsOk("v77", "c77", "a@77", "INST-77", concept, author, institution);
 
         when(actionUnitRepository.findByFullIdentifier("AU-77")).thenReturn(Optional.empty());
 
-        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-77", "Name77", "ID77", "AC777",
+        ActionUnitSeeder.ActionUnitSpecs s = new ActionUnitSeeder.ActionUnitSpecs("AU-77", "Name77", "ID77",
                 "v77", "c77",
                 "a@77", "INST-77",
                 null, null, null, null);

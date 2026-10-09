@@ -85,7 +85,6 @@ jamais par un drapeau sur chaque ligne. Une relation hiérarchique implique :
 
 | Table | Relie | Statut |
 |---|---|---|
-| `action_action_code` | projet ↔ codes d'action | existe |
 | `specimen_group_attribution` | mobilier ↔ groupes (lots) | existe |
 | `recording_unit_on_the_fly_fields` | UE ↔ champs ajoutés à la volée | existe |
 
@@ -154,7 +153,6 @@ ses cibles par une table de liaison typée, avec vraies FK :
 | `custom_field_answer_person_answers` | personnes | existe |
 | `custom_field_answer_spatial_unit_answers` | lieux | existe |
 | `custom_field_answer_action_unit_answers` | projets | existe |
-| `custom_field_answer_action_code_answers` | codes d'action | existe |
 | `custom_field_answer_recording_unit_answers` | UE | **à créer** |
 | `custom_field_answer_specimen_answers` | mobilier | **à créer** |
 | `custom_field_answer_phase_answers` | phases | **à créer** |

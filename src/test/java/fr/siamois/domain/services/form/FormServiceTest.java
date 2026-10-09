@@ -83,7 +83,6 @@ class FormServiceTest {
         private ConceptDTO typeConcept;
         private ActionUnitSummaryDTO actionUnit;
         private SpatialUnitSummaryDTO spatialUnit;
-        private ActionCodeDTO actionCode;
         private PersonDTO person;
         private List<PersonDTO> personList;
         private Set<SpatialUnitSummaryDTO> spatialUnitSet;
@@ -95,7 +94,7 @@ class FormServiceTest {
         public List<String> getBindableFieldNames() {
             return List.of(
                     "title", "count", "createdAt", "typeConcept", "conceptSet",
-                    "actionUnit", "spatialUnit", "actionCode","recordingUnitParents", "specimenSet",
+                    "actionUnit", "spatialUnit", "recordingUnitParents", "specimenSet",
                     "person", "personList", "spatialUnitSet", "spatialUnitNull", "meas"
             );
         }
@@ -381,7 +380,6 @@ class FormServiceTest {
         CustomField conceptField = mockSystemField(true, "typeConcept");
         CustomField actionUnitField = mockSystemField(true, "actionUnit");
         CustomField spatialUnitField = mockSystemField(true, "spatialUnit");
-        CustomField actionCodeField = mockSystemField(true, "actionCode");
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
@@ -441,9 +439,6 @@ class FormServiceTest {
         CustomFieldAnswerSelectOneSpatialUnitViewModel  spatialUnitAnswer = new CustomFieldAnswerSelectOneSpatialUnitViewModel ();
         spatialUnitAnswer.setValue(answer);
 
-        ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
-        CustomFieldAnswerSelectOneActionCodeViewModel  actionCodeAnswer = new CustomFieldAnswerSelectOneActionCodeViewModel ();
-        actionCodeAnswer.setValue(actionCode);
 
         PersonDTO person = mock(PersonDTO.class);
         CustomFieldAnswerSelectOnePersonViewModel  personAnswer = new CustomFieldAnswerSelectOnePersonViewModel ();
@@ -477,7 +472,6 @@ class FormServiceTest {
         answers.put(conceptField, conceptAnswer);
         answers.put(actionUnitField, actionUnitAnswer);
         answers.put(spatialUnitField, spatialUnitAnswer);
-        answers.put(actionCodeField, actionCodeAnswer);
         answers.put(personField, personAnswer);
         answers.put(personListField, personListAnswer);
         answers.put(spatialUnitSetField, spatialUnitSetAnswer);
@@ -498,7 +492,6 @@ class FormServiceTest {
         assertEquals(concept, entity.getTypeConcept());
         assertEquals(actionUnit, entity.getActionUnit());
         assertEquals(spatialUnit, entity.getSpatialUnit());
-        assertEquals(actionCode, entity.getActionCode());
         assertEquals(person, entity.getPerson());
         assertEquals(personList, entity.getPersonList());
         assertEquals(2, entity.getSpatialUnitSet().size());
@@ -628,7 +621,6 @@ class FormServiceTest {
         CustomField conceptField = mockSystemField(true, "typeConcept");
         CustomField actionUnitField = mockSystemField(true, "actionUnit");
         CustomField spatialUnitField = mockSystemField(true, "spatialUnit");
-        CustomField actionCodeField = mockSystemField(true, "actionCode");
         CustomField personField = mockSystemField(true, "person");
         CustomField personListField = mockSystemField(true, "personList");
         CustomField spatialUnitSetField = mockSystemField(true, "spatialUnitSet");
@@ -645,7 +637,7 @@ class FormServiceTest {
         // Setup mocks for fieldSource
         when(fieldSource.getAllFields()).thenReturn(
                 List.of(titleField, countField, createdAtField, conceptField, actionUnitField, multipleConceptField, specimenSetField,
-                        spatialUnitField, actionCodeField, personField, personListField, spatialUnitSetField, measurementField)
+                        spatialUnitField, personField, personListField, spatialUnitSetField, measurementField)
         );
 
         // Create a dummy entity with all types of values
@@ -668,8 +660,6 @@ class FormServiceTest {
         placeSuggestionDTO.setSourceName("INTERNAL");
         entity.setSpatialUnit(spatialUnit);
 
-        ActionCodeDTO actionCode = mock(ActionCodeDTO.class);
-        entity.setActionCode(actionCode);
 
         PersonDTO person = mock(PersonDTO.class);
         entity.setPerson(person);
@@ -728,8 +718,6 @@ class FormServiceTest {
                     .thenReturn(new CustomFieldAnswerSelectOneActionUnitViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitField))
                     .thenReturn(new CustomFieldAnswerSelectOneSpatialUnitViewModel());
-            mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(actionCodeField))
-                    .thenReturn(new CustomFieldAnswerSelectOneActionCodeViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(personField))
                     .thenReturn(new CustomFieldAnswerSelectOnePersonViewModel());
             mockedFactory.when(() -> CustomFieldAnswerFactory.instantiateAnswerForField(spatialUnitSetField))
@@ -753,7 +741,6 @@ class FormServiceTest {
             assertEquals("en", ((CustomFieldAnswerSelectOneFromFieldCodeViewModel) response.getAnswers().get(conceptField)).getValue().getConceptLabelToDisplay().getLangCode());
             assertEquals(actionUnit, ((CustomFieldAnswerSelectOneActionUnitViewModel) response.getAnswers().get(actionUnitField)).getValue());
             assertEquals(placeSuggestionDTO.getName(), ((CustomFieldAnswerSelectOneSpatialUnitViewModel) response.getAnswers().get(spatialUnitField)).getValue().getName());
-            assertEquals(actionCode, ((CustomFieldAnswerSelectOneActionCodeViewModel) response.getAnswers().get(actionCodeField)).getValue());
             assertEquals(person, ((CustomFieldAnswerSelectOnePersonViewModel) response.getAnswers().get(personField)).getValue());
             assertEquals(personList, ((CustomFieldAnswerSelectMultiplePersonViewModel) response.getAnswers().get(personListField)).getValue());
             assertEquals(measurement.getNumericValue(), ((CustomFieldAnswerMeasurementViewModel) response.getAnswers().get(measurementField)).getValue().getNumericValue());

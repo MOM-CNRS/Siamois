@@ -6,7 +6,6 @@ import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -115,8 +114,7 @@ class FindOpenApiServiceTest {
     void setUp() {
         fieldAnswerPatchService = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
                 personRepository, personMapper, actionUnitRepository, actionUnitSummaryMapper,
-                mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
-                spatialUnitRepository, spatialUnitSummaryMapper,
+                                spatialUnitRepository, spatialUnitSummaryMapper,
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),

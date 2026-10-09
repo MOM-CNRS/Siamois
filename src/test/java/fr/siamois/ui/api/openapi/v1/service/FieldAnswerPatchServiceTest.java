@@ -20,7 +20,6 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -74,8 +73,7 @@ class FieldAnswerPatchServiceTest {
     void setUp() {
         service = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class),
-                mock(ActionUnitSummaryMapper.class), mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
-                mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
+                mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));

@@ -3,7 +3,6 @@ package fr.siamois.domain.services;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
@@ -27,7 +26,6 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
@@ -72,7 +70,6 @@ class ActionUnitServiceTest {
     @Mock private ActionUnitRepository actionUnitRepository;
     @Mock private RecordingUnitRepository recordingUnitRepository;
     @Mock private ConceptService conceptService;
-    @Mock private ActionCodeRepository actionCodeRepository;
     @Mock private ActionUnitMapper actionUnitMapper;
     @Mock private PersonMapper personMapper;
     @Mock private ConceptMapper conceptMapper;
@@ -96,13 +93,6 @@ class ActionUnitServiceTest {
     ActionUnitDTO actionUnit1dto ;
     ActionUnitDTO actionUnit2dto ;
 
-    ActionUnit actionUnitWithCodesBefore;
-    ActionUnit actionUnitWithCodesAfter;
-    ActionCode primaryActionCode;
-    ActionCode primaryActionCodeBefore;
-    ActionCode secondaryActionCode1;
-    ActionCode secondaryActionCode2;
-    ActionCode failedCode;
     Concept c1, c2, c3;
 
     UserInfo info;
@@ -140,28 +130,6 @@ class ActionUnitServiceTest {
         c2.setExternalId("2");
         c3.setExternalId("3");
 
-        actionUnitWithCodesAfter = new ActionUnit();
-        actionUnitWithCodesBefore = new ActionUnit();
-        primaryActionCode = new ActionCode();
-        primaryActionCode.setCode("primary");
-        primaryActionCode.setType(c1);
-        primaryActionCode = new ActionCode();
-        primaryActionCodeBefore = new ActionCode();
-        primaryActionCodeBefore.setCode("primaryBefore");
-        primaryActionCodeBefore.setType(c2);
-        secondaryActionCode1 = new ActionCode();
-        secondaryActionCode1.setCode("secondary1");
-        secondaryActionCode1.setType(c2);
-        secondaryActionCode2 = new ActionCode();
-        secondaryActionCode2.setCode("secondary2");
-        secondaryActionCode2.setType(c3);
-        actionUnitWithCodesBefore.setPrimaryActionCode(primaryActionCodeBefore);
-        actionUnitWithCodesAfter.setPrimaryActionCode(primaryActionCode);
-        actionUnitWithCodesAfter.setSecondaryActionCodes(new HashSet<>(List.of(secondaryActionCode1, secondaryActionCode2)));
-
-        failedCode = new ActionCode();
-        failedCode.setType(c2);
-        failedCode.setCode("primary");
 
         page = new PageImpl<>(List.of(actionUnit1, actionUnit2));
         pageable = PageRequest.of(0, 10);
@@ -389,40 +357,6 @@ class ActionUnitServiceTest {
         verifyNoInteractions(personProfileAssignmentService);
     }
 
-
-    @Test
-    void findAllActionCodeByCodeIsContainingIgnoreCase_Success() {
-        // Arrange
-        String query = "test";
-        ActionCode actionCode1 = new ActionCode();
-        actionCode1.setCode("testCode1");
-        ActionCode actionCode2 = new ActionCode();
-        actionCode2.setCode("anotherTestCode");
-        when(actionCodeRepository.findAllByCodeIsContainingIgnoreCase(query)).thenReturn(List.of(actionCode1, actionCode2));
-
-        // Act
-        List<ActionCode> actualResult = actionUnitService.findAllActionCodeByCodeIsContainingIgnoreCase(query);
-
-        // Assert
-        assertNotNull(actualResult);
-        assertEquals(2, actualResult.size());
-        assertThat(actualResult).extracting(ActionCode::getCode).containsExactlyInAnyOrder("testCode1", "anotherTestCode");
-    }
-
-    @Test
-    void findAllActionCodeByCodeIsContainingIgnoreCase_Exception() {
-        // Arrange
-        String query = "test";
-        when(actionCodeRepository.findAllByCodeIsContainingIgnoreCase(query)).thenThrow(new RuntimeException("Database error"));
-
-        // Act & Assert
-        Exception exception = assertThrows(
-                RuntimeException.class,
-                () -> actionUnitService.findAllActionCodeByCodeIsContainingIgnoreCase(query)
-        );
-
-        assertEquals("Database error", exception.getMessage());
-    }
 
 
 
@@ -1035,7 +969,6 @@ class ActionUnitServiceTest {
         verify(personProfileAssignmentRepository).deleteAllByProfileActionUnitId(1L);
         verify(profileRepository).deleteAllByActionUnitId(1L);
         verify(recordingUnitIdLabelRepository).deleteAllByActionUnitId(1L);
-        verify(actionUnitRepository).deleteSecondaryActionCodeLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteById(1L);

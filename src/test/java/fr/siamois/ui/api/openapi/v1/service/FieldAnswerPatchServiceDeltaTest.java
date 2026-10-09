@@ -9,7 +9,6 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -36,7 +35,7 @@ class FieldAnswerPatchServiceDeltaTest {
         FormService fs = new FormService(mock(LabelBean.class), mock(UnitDefinitionMapper.class), mock(CustomFieldAnswerService.class));
         FieldAnswerPatchService service = new FieldAnswerPatchService(fs, mock(ConceptRepository.class), mock(ConceptMapper.class),
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class), mock(ActionUnitSummaryMapper.class),
-                mock(ActionCodeRepository.class), mock(ActionCodeMapper.class), mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
+                mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 rus, new RecordingUnitSummaryMapperImpl(mock(fr.siamois.ui.mapper.adapter.ConversionServiceAdapter.class)), mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
         CustomFieldSelectMultipleRecordingUnit f = CustomFieldSelectMultipleRecordingUnit.builder().label("x").isSystemField(true).id(-319L).valueBinding("parents").build();

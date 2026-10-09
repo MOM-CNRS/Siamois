@@ -7,7 +7,6 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -1695,20 +1694,17 @@ class TableFieldConfigServiceImplTest {
     // --- typeOf / toDto ---
 
     @Test
-    void getFieldsConfig_shouldMapActionUnitAndActionCodeFields() {
+    void getFieldsConfig_shouldMapActionUnitField() {
         CustomField projectField = CustomFieldSelectOneActionUnit.builder()
                 .id(1L).label("Projet").isSystemField(true).build();
-        CustomField actionCodeField = CustomFieldSelectOneActionCode.builder()
-                .id(2L).label("Code opération").isSystemField(true).build();
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
-                fieldConfig(defaultConfig, projectField, true, false),
-                fieldConfig(defaultConfig, actionCodeField, true, false)));
+                fieldConfig(defaultConfig, projectField, true, false)));
 
         List<TypeFieldFormConfig> fields =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.PROJET, FieldType.SELECT_ONE);
+                .containsExactly(FieldType.PROJET);
         assertThat(fields).extracting(TypeFieldFormConfig::getSourceLabel).containsOnly("—");
     }
 

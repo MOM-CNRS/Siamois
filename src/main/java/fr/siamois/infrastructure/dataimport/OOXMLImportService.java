@@ -174,7 +174,6 @@ public class OOXMLImportService {
 
             List<Sheet> institutionSheets  = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, INSTITUTION) : List.of();
             List<Sheet> personSheets       = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, PERSON) : List.of();
-            List<Sheet> actionCodeSheets   = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, "code") : List.of();
             List<Sheet> actionUnitSheets   = scope == ImportScope.ALL ? getSheetsForTable(workbook, meta, "action_unit") : List.of();
             List<Sheet> spatialUnitSheets  = getSheetsForTable(workbook, meta, "spatial_unit");
             List<Sheet> recordingUnitSheets = getSheetsForTable(workbook, meta, "recording_unit");
@@ -186,7 +185,6 @@ public class OOXMLImportService {
 
             int institutionRows = sumDataRows(institutionSheets);
             int personRows = sumDataRows(personSheets);
-            int actionCodeRows = sumDataRows(actionCodeSheets);
             int actionUnitRows = sumDataRows(actionUnitSheets);
             int spatialUnitRows = sumDataRows(spatialUnitSheets);
             int recordingUnitRows = sumDataRows(recordingUnitSheets);
@@ -195,19 +193,17 @@ public class OOXMLImportService {
             int recordingRelRows = sumDataRows(recordingRelSheets);
             int stratiRelRows = sumDataRows(stratiRelSheets);
             int spatialUnitRelRows = sumDataRows(spatialUnitRelSheets);
-            progress.start(ImportProgress.Phase.PARSING, institutionRows + personRows + actionCodeRows + actionUnitRows
+            progress.start(ImportProgress.Phase.PARSING, institutionRows + personRows + actionUnitRows
                     + spatialUnitRows + recordingUnitRows + specimenRows + phaseRows + recordingRelRows + stratiRelRows
                     + spatialUnitRelRows);
 
             List<InstitutionSeeder.InstitutionSpec>             institutions  = new ArrayList<>();
             List<PersonSeeder.PersonSpec>                       persons       = new ArrayList<>();
-            List<ActionCodeSeeder.ActionCodeSpec>               actionCodes   = new ArrayList<>();
             List<ActionUnitSeeder.ActionUnitSpecs>              actionUnits   = new ArrayList<>();
 
             if (scope == ImportScope.ALL) {
                 institutions = parseInstitutions(institutionSheets, meta, errors, progress);
                 persons      = parsePersons(personSheets, meta, errors, progress);
-                actionCodes  = parseActionCodes(actionCodeSheets, meta, errors, progress);
                 actionUnits  = parseActionUnits(actionUnitSheets, meta, errors, progress);
             }
 
@@ -221,7 +217,7 @@ public class OOXMLImportService {
             List<SpatialUnitRelSeeder.SpatialUnitRelDTO>                      spatialUnitRels = parseSpatialUnitRels(spatialUnitRelSheets, meta, errors, progress);
             spatialUnitRels.addAll(0, spatialUnitChildRels);
 
-            ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionCodes, actionUnits,
+            ImportSpecs specs = new ImportSpecs(institutions, persons, spatialUnits, actionUnits,
                     recordingUnits, specimenSpecs, phaseSpecs, recordingRels, stratiRels, spatialUnitRels);
 
             Map<String, List<String>> allSheetColumns = collectAllSheetColumns(workbook);
@@ -502,37 +498,6 @@ public class OOXMLImportService {
                 row.getRowNum() + 1));
     }
 
-    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(Sheet sheet) {
-        if (sheet == null) return List.of();
-        List<ImportError> errors = new ArrayList<>();
-        return parseActionCodes(List.of(sheet), SheetMetadata.empty(), errors, new ImportProgress());
-    }
-
-    public List<ActionCodeSeeder.ActionCodeSpec> parseActionCodes(List<Sheet> sheets, SheetMetadata meta, List<ImportError> errors, ImportProgress progress) {
-        List<ActionCodeSeeder.ActionCodeSpec> specs = new ArrayList<>();
-        for (Sheet sheet : sheets) {
-            try {
-                Map<String, Integer> cols = indexRequiredColumns(sheet, meta, "code", TYPE_URI);
-                if (cols == null) continue;
-                forEachDataRow(sheet, errors, progress, row -> parseRowToActionCode(row, cols).ifPresent(specs::add));
-            } catch (Exception e) {
-                errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
-            }
-        }
-        return specs;
-    }
-
-    private Optional<ActionCodeSeeder.ActionCodeSpec> parseRowToActionCode(Row row, Map<String, Integer> cols) {
-        String code = getStringCellOrNull(row, cols, "code");
-        if (code == null || code.isBlank()) return Optional.empty();
-        String typeUri = getStringCellOrNull(row, cols, TYPE_URI);
-        return Optional.of(new ActionCodeSeeder.ActionCodeSpec(
-                code,
-                extractIdcFromUri(typeUri).orElse(null),
-                extractIdtFromUri(typeUri).orElse(null)
-        ));
-    }
-
     public List<ActionUnitSeeder.ActionUnitSpecs> parseActionUnits(Sheet sheet) {
         if (sheet == null || sheet.getRow(0) == null) return List.of();
         List<ImportError> errors = new ArrayList<>();
@@ -561,7 +526,6 @@ public class OOXMLImportService {
             return Optional.empty();
         }
 
-        String code          = getOptionalCell(row, cols, "code");
         String typeUri       = getStringCellOrNull(row, cols, TYPE_URI);
         String createur      = getStringCellOrNull(row, cols, "createur");
         String institution   = getStringCellOrNull(row, cols, INSTITUTION);
@@ -582,7 +546,6 @@ public class OOXMLImportService {
                 fullIdentifier,
                 name,
                 identifier,
-                code,
                 typeVocabularyId,
                 typeConceptId,
                 createur,
@@ -592,15 +555,6 @@ public class OOXMLImportService {
                 spatialContextKeys,
                 new SpatialUnitSeeder.SpatialUnitKey(mainLoc)
         ));
-    }
-
-    private String getOptionalCell(Row row, Map<String, Integer> cols, String key) {
-        try {
-            String val = getStringCellOrNull(row, cols, key);
-            return (val == null || val.isBlank()) ? null : val;
-        } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
-        }
     }
 
     private OffsetDateTime parseOptionalDate(Row row, Map<String, Integer> cols, String key) {
