@@ -45,7 +45,7 @@
                                      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
                             WHERE c.contype = 'f'
                               AND c.confrelid = 'custom_field'::regclass
-                              AND c.conrelid <> 'custom_field'::regclass
+                              AND c.conrelid != 'custom_field'::regclass
                               AND array_length(c.conkey, 1) = 1
                         LOOP
                             EXECUTE format('DELETE FROM %s WHERE %I = ANY ($1)', fk.tbl, fk.col) USING field_ids;

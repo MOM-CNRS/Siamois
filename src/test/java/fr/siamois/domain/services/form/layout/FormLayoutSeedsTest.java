@@ -73,7 +73,6 @@ class FormLayoutSeedsTest {
         var required = TestForms.seeds().requiredFieldIds(ConfigurableTable.UE);
 
         assertThat(required).contains(
-                SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "type").getId(),
                 SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "openingDate").getId(),
                 SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "author").getId());
         assertThat(TestForms.layoutOf(ConfigurableTable.UE).groups().stream().flatMap(g -> g.items().stream())

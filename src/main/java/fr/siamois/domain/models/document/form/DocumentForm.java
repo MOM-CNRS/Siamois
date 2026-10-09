@@ -271,7 +271,7 @@ public abstract class DocumentForm {
                 SystemFieldSpec.hiddenReadOnly(identifierField),
                 SystemFieldSpec.of(otherIdentifiersField),
                 SystemFieldSpec.hiddenReadOnly(actionUnitField),
-                SystemFieldSpec.of(categoryField),
+                SystemFieldSpec.hidden(categoryField),
                 SystemFieldSpec.of(documentTypeField),
                 SystemFieldSpec.of(supportNaturesField),
                 SystemFieldSpec.of(formatField),

@@ -19,11 +19,6 @@
       "label" : "document.header.identification",
       "fields" : [
         {
-          "fieldId" : -704,
-          "binding" : "category",
-          "width" : "QUARTER"
-        },
-        {
           "fieldId" : -705,
           "binding" : "documentType",
           "width" : "QUARTER"

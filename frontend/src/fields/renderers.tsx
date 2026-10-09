@@ -108,24 +108,46 @@ export function DecimalRenderer({ field, value, readOnly, required, onChange }: 
 
 export function DateRenderer({ field, value, readOnly, required, onChange, bounds }: FieldRendererProps) {
   const showTime = field.constraints?.showTime === true;
+  // A date field saves the instant its value changes (commitsImmediately), but PrimeReact reports a
+  // valid partial parse on every keystroke ("12/03/20" is year 20): typed text is only held here
+  // and committed when the input is left or Enter is pressed. A pick in the panel still commits at once.
+  const typed = useRef<Date | null | undefined>(undefined);
+  const commitTyped = () => {
+    if (typed.current === undefined) return;
+    const date = typed.current;
+    typed.current = undefined;
+    onChange(date ? formatDateAnswer(date, showTime) : null);
+  };
   return (
-    <Calendar
-      value={parseDateAnswer(value, showTime)}
-      disabled={readOnly}
-      required={required}
-      // Days outside another field's date (closing before opening…) can't be picked; the overlay
-      // still refuses a typed-in one (CellEditOverlay's bound check).
-      minDate={dayBound(bounds?.min, showTime, +1)}
-      maxDate={dayBound(bounds?.max, showTime, -1)}
-      dateFormat="dd/mm/yy"
-      showTime={showTime}
-      hourFormat="24"
-      // The panel lives inside the edit overlay's own fixed box instead of being appended to
-      // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
-      // below the fold.
-      appendTo="self"
-      onChange={(e) => onChange(e.value ? formatDateAnswer(e.value as Date, showTime) : null)}
-    />
+    <span style={{ display: "contents" }} onKeyDown={(e) => e.key === "Enter" && commitTyped()}>
+      <Calendar
+        value={parseDateAnswer(value, showTime)}
+        disabled={readOnly}
+        required={required}
+        // Days outside another field's date (closing before opening…) can't be picked; the overlay
+        // still refuses a typed-in one (CellEditOverlay's bound check).
+        minDate={dayBound(bounds?.min, showTime, +1)}
+        maxDate={dayBound(bounds?.max, showTime, -1)}
+        dateFormat="dd/mm/yy"
+        showTime={showTime}
+        hourFormat="24"
+        // The panel lives inside the edit overlay's own fixed box instead of being appended to
+        // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
+        // below the fold.
+        appendTo="self"
+        onBlur={commitTyped}
+        onChange={(e) => {
+          const date = (e.value as Date | null) ?? null;
+          // React reports the typed-in text as an "input" event; a pick in the panel is a click/keydown.
+          if (e.originalEvent?.type === "input" || e.originalEvent?.type === "change") {
+            typed.current = date;
+            return;
+          }
+          typed.current = undefined;
+          onChange(date ? formatDateAnswer(date, showTime) : null);
+        }}
+      />
+    </span>
   );
 }
 

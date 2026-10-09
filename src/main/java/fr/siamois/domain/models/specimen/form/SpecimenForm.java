@@ -468,7 +468,7 @@ public abstract class SpecimenForm {
             SystemFieldSpec.hiddenReadOnly(specimenIdField),
             SystemFieldSpec.readOnly(actionUnitField),
             SystemFieldSpec.of(specimenOtherIdField),
-            SystemFieldSpec.of(specimenCategoryField),
+            SystemFieldSpec.hidden(specimenCategoryField),
             SystemFieldSpec.of(isolationNumberField),
             SystemFieldSpec.of(containerField),
             SystemFieldSpec.of(materialField),
