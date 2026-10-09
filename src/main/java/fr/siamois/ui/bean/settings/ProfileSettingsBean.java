@@ -85,7 +85,7 @@ public class ProfileSettingsBean implements Serializable {
     private ProgressWrapper progressWrapper = new ProgressWrapper();
 
     /** The profiles the user holds, where each applies and what it grants — the "my rights" dashboard. */
-    private List<ProfilePermissionService.ProfileGrant> rights = List.of();
+    private transient List<ProfilePermissionService.ProfileGrant> rights = List.of();
 
     @EventListener(InstitutionChangeEvent.class)
     public void init() {

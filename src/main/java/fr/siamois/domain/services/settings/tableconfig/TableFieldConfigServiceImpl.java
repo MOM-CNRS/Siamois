@@ -27,6 +27,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
@@ -890,9 +891,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
         try {
-            return Optional.ofNullable(fieldConfigurationService
-                    .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId)
-                    .getConcept());
+            ConceptFieldConfig config = fieldConfigurationService
+                    .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId);
+            return config == null ? Optional.empty() : Optional.ofNullable(config.getConcept());
         } catch (NoConfigForFieldException e) {
             log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
             return Optional.empty();
