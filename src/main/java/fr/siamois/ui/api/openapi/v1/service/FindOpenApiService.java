@@ -131,18 +131,24 @@ public class FindOpenApiService {
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo,
                 dto.getActionUnit() != null ? dto.getActionUnit().getId() : null);
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((!answers.isEmpty() || !statusChange) && !canEdit) {
+        if ((!answers.isEmpty() || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
         validationOpenApiService.requireAllowed(dto.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        if (answers.isEmpty() && !statusChange) {
+        if (answers.isEmpty() && !identifierChange && !statusChange) {
             return findOpenApiMapper.toResource(dto);
         }
 
-        if (!answers.isEmpty()) {
+        if (identifierChange) {
+            dto.setFullIdentifier(newIdentifier);
+            IdentifierPatch.requireFree(specimenService.fullIdentifierAlreadyExistInAction(dto));
+        }
+        if (!answers.isEmpty() || identifierChange) {
             writeAnswers(dto, ru, answers, userInfo);
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.

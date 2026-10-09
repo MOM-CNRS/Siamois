@@ -12,4 +12,5 @@ const api = createEntityApi<PhaseSummary, PhaseDetail, PhaseCreateBody>("phases"
 export const listPhases = api.list;
 export const getPhase = api.get;
 export const patchPhaseAnswers = api.patchAnswers;
+export const patchPhase = api.patch;
 export const createPhase = api.create;

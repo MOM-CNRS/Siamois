@@ -359,4 +359,37 @@ class PhaseOpenApiServiceTest {
 
         verify(phaseService).save(phase, additional);
     }
+
+    @Test
+    void patchPhase_blankIdentifier_throws400() {
+        PhaseDTO phase = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(phase);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        var request = new PhasePatchRequest();
+        request.setIdentifier("   ");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchPhase(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchPhase_identifierAlreadyUsedInTheProject_throws409() {
+        PhaseDTO phase = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(phase);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        when(phaseService.identifierAlreadyExistInAction(any())).thenReturn(true);
+        var request = new PhasePatchRequest();
+        request.setIdentifier("NEW-1");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchPhase(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(phaseService, never()).save(any());
+    }
+
 }

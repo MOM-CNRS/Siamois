@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { patchRecordingUnitAnswers } from "./api";
+import { patchRecordingUnit } from "./api";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { FieldResource } from "../../fields/types";
@@ -10,9 +10,9 @@ import { WriteModeProvider } from "../../panels/writeMode";
 import type { RecordingUnitDetail } from "./types";
 
 
-vi.mock("./api", () => ({ patchRecordingUnitAnswers: vi.fn() }));
+vi.mock("./api", () => ({ patchRecordingUnit: vi.fn() }));
 vi.mock("./recordingUnitTypes", () => ({ getRecordingUnitTypes: vi.fn() }));
-const mockedPatch = vi.mocked(patchRecordingUnitAnswers);
+const mockedPatch = vi.mocked(patchRecordingUnit);
 const mockedGetTypes = vi.mocked(getRecordingUnitTypes);
 
 // RecordingUnitForm.RECORDING_UNIT_TYPE_FIELD as the project catalog serves it — the category
@@ -81,22 +81,43 @@ afterEach(() => {
 });
 
 describe("RecordingUnitDetailHeader", () => {
-  it("shows the fullIdentifier as a plain, non-editable chip (no PATCH path exists for it)", async () => {
+  it("shows the fullIdentifier with ONE pencil for the whole header", async () => {
     renderHeader(ru());
     await flush();
 
     expect(container.textContent).toContain("OA-UE-42");
-    // Exactly one pencil on the whole header — the category chip's. The identifier chip itself
-    // has none: unlike Project's, this one is read-only (no PATCH path for fullIdentifier).
     expect(container.querySelectorAll(".pi-pencil")).toHaveLength(1);
-    expect(container.querySelector(".recording-unit-detail-header-category .pi-pencil")).toBeTruthy();
+  });
+
+  it("saves a new identifier through the flat `identifier` of the patch", async () => {
+    mockedPatch.mockResolvedValue({} as never);
+    const onSaved = renderHeader(ru());
+    await flush();
+
+    const pencil = () => container.querySelector(".entity-detail-header-edit") as HTMLElement;
+    await act(async () => {
+      pencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const input = container.querySelector(".entity-detail-header-primary-input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    await act(async () => {
+      setter.call(input, "OA-UE-43");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      pencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(mockedPatch).toHaveBeenCalledWith("42", { identifier: "OA-UE-43" });
+    expect(onSaved).toHaveBeenCalled();
   });
 
   it("shows the type as a chip with a pencil once the type catalog has loaded", async () => {
     renderHeader(ru());
     await flush();
 
-    expect(container.querySelector(".recording-unit-detail-header-category")?.textContent).toContain("US");
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("US");
     expect(container.querySelector(".pi-pencil")).toBeTruthy();
   });
 
@@ -104,16 +125,20 @@ describe("RecordingUnitDetailHeader", () => {
     renderHeader(ru({ type: undefined }));
     await flush();
 
-    expect(container.querySelector(".recording-unit-detail-header-category")?.textContent).toContain("Sans type");
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sans type");
   });
 
-  it("offers no pencil when the catalog has no type field to edit with", async () => {
+  it("keeps the type as a chip when the catalog has no type field to edit with", async () => {
     mockedGetTypes.mockResolvedValue({ tableColumns: [], fields: {} });
     renderHeader(ru());
     await flush();
+    await act(async () => {
+      (container.querySelector(".entity-detail-header-edit") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
 
-    expect(container.querySelector(".recording-unit-detail-header-category")?.textContent).toContain("US");
-    expect(container.querySelector(".pi-pencil")).toBeFalsy();
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("US");
+    expect(container.querySelector(".entity-detail-header-category .p-autocomplete")).toBeFalsy();
   });
 
   it("swaps the chip for the shared concept autocomplete when the pencil is pressed", async () => {
@@ -126,7 +151,7 @@ describe("RecordingUnitDetailHeader", () => {
     });
     await flush();
 
-    const input = container.querySelector(".recording-unit-detail-header-category .p-autocomplete input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-category .p-autocomplete input") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(input.value).toBe("US");
   });

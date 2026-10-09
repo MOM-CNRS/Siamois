@@ -147,3 +147,35 @@ describe("FormLayoutView rules", () => {
     expect(col("4").querySelector(".field-value-cell")?.getAttribute("title")).toContain("« Z inf »");
   });
 });
+
+describe("FormLayoutView type field", () => {
+  it("leaves the entity's type out of the form: it is edited from the header", () => {
+    const withType: Record<string, FieldResource> = {
+      ...fields,
+      "9": { ...field("9", "Type"), isSystemField: true, valueBinding: "type" },
+    };
+    const withTypePanels: FormLayoutPanel[] = [
+      { name: "general", rows: [{ columns: [
+        { width: W, isRequired: false, isReadOnly: false, fieldId: 9 },
+        { width: W, isRequired: false, isReadOnly: false, fieldId: 1 },
+      ] }] },
+    ];
+
+    act(() => {
+      root.render(
+        <FormLayoutView
+          entity={entity({ "1": "fosse" })}
+          entityType="recordingUnit"
+          fields={withType}
+          panels={withTypePanels}
+          canEdit
+          onSave={vi.fn()}
+          onSaved={vi.fn()}
+        />,
+      );
+    });
+
+    expect(container.querySelector('[data-field-id="9"]')).toBeNull();
+    expect(container.querySelector('[data-field-id="1"]')).not.toBeNull();
+  });
+});

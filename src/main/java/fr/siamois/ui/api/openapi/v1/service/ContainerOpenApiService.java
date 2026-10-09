@@ -13,8 +13,6 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ContainerService;
@@ -133,14 +131,20 @@ public class ContainerOpenApiService {
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, container.getIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(container.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || !statusChange) && !canEdit) {
+        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
         validationOpenApiService.requireAllowed(container.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        if (answersChange || !statusChange) {
+        if (identifierChange) {
+            container.setIdentifier(newIdentifier);
+            IdentifierPatch.requireFree(containerService.identifierAlreadyExistInAction(container));
+        }
+        if (answersChange || identifierChange || !statusChange) {
             Long projectId = container.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the container-types catalog lays out (system + additional fields).

@@ -56,141 +56,133 @@
         }
     </script>
 
+    <!-- Same look as the new-project dialog and the React create overlay: a coloured top edge, the
+         title with the entity's icon, each field with its label ABOVE it, a footer with the actions. -->
     <p:dialog
             widgetVar="newInstitutionDialog"
             id="newInstitutionDialog"
-            width="40vw"
+            showHeader="false"
+            styleClass="sia-create-dialog"
             showEffect="fade"
             modal="true"
             closable="false"
     >
-        <f:facet name="header">
-            <h3>#{institutionDialogBean.title}</h3>
-        </f:facet>
         <h:form>
             <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
-            <div class="dialog-new-institution">
-                <div class="sia-settings-dialog-form">
-                    <div class="form-group row">
-                        <p:outputLabel class="col-lg-4 col-form-label"
-                                       for="name">#{langBean.msg('organisationManagement.orgName')}</p:outputLabel>
-                        <div class="col-lg-6 ms-auto">
-                            <p:inputText
-                                    required="true"
-                                    style="width: 100%"
-                                    placeholder="#{langBean.msg('common.placeholder.institution')}"
-                                    id="name"
-                                    widgetVar="nameW"
-                                    value="#{institutionDialogBean.institutionName}"
-                                    maxlength="50"
-                            >
-                                <p:ajax event="keyup" delay="300" oncomplete="updateSlugFromName()" />
-                            </p:inputText>
-                        </div>
+            <div class="sia-create-form">
+                <div class="sia-create-form-header">
+                    <h4>#{institutionDialogBean.title}</h4>
+                </div>
+
+                <div class="sia-create-form-body ui-fluid">
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="name" value="#{langBean.msg('organisationManagement.orgName')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:inputText
+                                required="true"
+                                placeholder="#{langBean.msg('common.placeholder.institution')}"
+                                id="name"
+                                widgetVar="nameW"
+                                value="#{institutionDialogBean.institutionName}"
+                                maxlength="50"
+                        >
+                            <p:ajax event="keyup" delay="300" oncomplete="updateSlugFromName()" />
+                        </p:inputText>
                     </div>
-                    <div class="form-group row">
-                        <p:outputLabel class="col-lg-4 col-form-label"
-                                       for="identifier">#{langBean.msg('common.label.identifier')}</p:outputLabel>
-                        <div class="col-lg-6 ms-auto">
-                            <p:inputText
-                                    required="true"
-                                    style="width: 100%"
-                                    id="identifier"
-                                    widgetVar="slugW"
-                                    placeholder="#{langBean.msg('common.placeholder.institutionCode')}"
-                                    value="#{institutionDialogBean.identifier}"
-                                    oninput="markSlugDirty()"
-                            >
-                                <f:validateRegex pattern="^[a-z0-9]+(-[a-z0-9]+)*$"/>
-                            </p:inputText>
-                            <small id="slugHelp" class="form-text text-muted">
-                                Lettres, chiffres et tirets uniquement, en minuscules.
-                            </small>
-                        </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="identifier" value="#{langBean.msg('common.label.identifier')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:inputText
+                                required="true"
+                                id="identifier"
+                                widgetVar="slugW"
+                                placeholder="#{langBean.msg('common.placeholder.institutionCode')}"
+                                value="#{institutionDialogBean.identifier}"
+                                oninput="markSlugDirty()"
+                        >
+                            <f:validateRegex pattern="^[a-z0-9]+(-[a-z0-9]+)*$"/>
+                        </p:inputText>
+                        <small id="slugHelp" class="sia-create-form-hint">
+                            Lettres, chiffres et tirets uniquement, en minuscules.
+                        </small>
                     </div>
-                    <div class="form-group row">
-                        <p:outputLabel class="col-lg-3 col-form-label"
-                                       for="thesaurus">Adresse du serveur de Opentheso</p:outputLabel>
-                        <div class="col-lg-1 ms-auto">
-                            <p:commandButton id="reload-info-list"
-                                             icon="bi bi-arrow-counterclockwise"
-                                             action="#{institutionDialogBean.reloadThesaurusInfoList()}"
-                                             update="thesaurus-selection-menu"
-                                             process="@this thesaurus-selection-menu thesaurus"
-                            />
-                        </div>
-                        <div class="col-lg-6 ms-auto">
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="thesaurus" value="Adresse du serveur de Opentheso"
+                                       styleClass="sia-create-form-label"/>
+                        <div class="sia-create-form-inline">
                             <p:inputText
-                                    style="width: 100%"
                                     required="true"
                                     placeholder="ex: https://thesaurus.mom.fr"
                                     id="thesaurus"
                                     value="#{institutionDialogBean.thesaurusServerUrl}"
                                     styleClass="#{institutionDialogBean.thesaurusError ? 'ui-state-error' : ''}"
                             />
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <p:outputLabel class="col-lg-4 col-form-label"
-                                       for="thesaurus-selection-menu">Selection du thésaurus*</p:outputLabel>
-                        <div class="col-lg-6 ms-auto">
-                            <p:autoComplete
-                                    id="thesaurus-selection-menu"
-                                    value="#{institutionDialogBean.selected}"
-                                    completeMethod="#{institutionDialogBean.completeFromInput}"
-                                    var="publicThesoInfo"
-                                    itemLabel="#{publicThesoInfo.label()} (#{publicThesoInfo.idTheso()})"
-                                    itemValue="#{publicThesoInfo}"
-                                    forceSelection="true"
-                                    converter="#{thesaurusInfoConverter}"
-                                    dropdown="true"
-                                    scrollHeight="300"
+                            <p:commandButton id="reload-info-list"
+                                             icon="bi bi-arrow-counterclockwise"
+                                             styleClass="ui-button-outlined"
+                                             action="#{institutionDialogBean.reloadThesaurusInfoList()}"
+                                             update="thesaurus-selection-menu"
+                                             process="@this thesaurus-selection-menu thesaurus"
                             />
                         </div>
                     </div>
-                    <div class="form-group row">
-                        <p:outputLabel class="col-lg-4 col-form-label"
-                                       for="description">#{langBean.msg('common.label.description')}</p:outputLabel>
-                        <div class="col-lg-6 ms-auto">
-                            <p:inputTextarea
-                                    style="width: 100%"
-                                    id="description"
-                                    value="#{institutionDialogBean.description}"
-                            />
-                        </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="thesaurus-selection-menu" value="Sélection du thésaurus *"
+                                       styleClass="sia-create-form-label"/>
+                        <p:autoComplete
+                                id="thesaurus-selection-menu"
+                                value="#{institutionDialogBean.selected}"
+                                completeMethod="#{institutionDialogBean.completeFromInput}"
+                                var="publicThesoInfo"
+                                itemLabel="#{publicThesoInfo.label()} (#{publicThesoInfo.idTheso()})"
+                                itemValue="#{publicThesoInfo}"
+                                forceSelection="true"
+                                converter="#{thesaurusInfoConverter}"
+                                dropdown="true"
+                                scrollHeight="300"
+                        />
                     </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="description" value="#{langBean.msg('common.label.description')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:inputTextarea
+                                id="description"
+                                value="#{institutionDialogBean.description}"
+                                rows="3"
+                        />
+                    </div>
+
+                    <p id="institutionFunnyMessage"
+                       class="institution-progress-bar sia-create-form-hint"
+                       style="visibility: collapse; margin: 0;"
+                    />
+
+                    <p:progressBar widgetVar="pbAjaxInstitutionCreateWidget"
+                                   id="pbAjaxInstitutionCreate"
+                                   ajax="true"
+                                   value="#{institutionDialogBean.progressWrapper.progressPercentage}"
+                                   labelTemplate="{value}%"
+                                   styleClass="institution-progress-bar"
+                                   global="true"
+                                   interval="500"
+                                   style="visibility: collapse"
+                    />
                 </div>
 
-                <p id="institutionFunnyMessage"
-                   class="institution-progress-bar text-muted"
-                   style="visibility: collapse; font-style: italic; margin-top: 0.5rem; margin-bottom: 0;"
-                />
-
-                <p:progressBar widgetVar="pbAjaxInstitutionCreateWidget"
-                               id="pbAjaxInstitutionCreate"
-                               ajax="true"
-                               value="#{institutionDialogBean.progressWrapper.progressPercentage}"
-                               labelTemplate="{value}%"
-                               styleClass="mt-3 institution-progress-bar"
-                               global="true"
-                               interval="500"
-                               style="visibility: collapse"
-                />
-
-                <hr/>
-
-                <p:toolbar class="dialog-buttons">
-                    <p:toolbarGroup align="right">
-                        <p:commandButton value="#{langBean.msg('common.action.cancel')}"
-                                         styleClass="ui-button-secondary"
-                                         immediate="true" action="#{institutionDialogBean.exit()}" update="@form"/>
-                        <p:commandButton value="#{institutionDialogBean.buttonLabel}"
-                                         action="#{institutionDialogBean.save()}"
-                                         update="@form institutionManagerDatatable:formCC:institutionManagerForm"
-                                         onstart="startInstitutionProgressBar()"
-                                         oncomplete="endInstitutionProgressBar()"/>
-                    </p:toolbarGroup>
-                </p:toolbar>
+                <div class="sia-create-form-footer">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     styleClass="ui-button-flat"
+                                     immediate="true" action="#{institutionDialogBean.exit()}" update="@form"/>
+                    <p:commandButton value="#{institutionDialogBean.buttonLabel}"
+                                     action="#{institutionDialogBean.save()}"
+                                     update="@form institutionManagerDatatable:formCC:institutionManagerForm"
+                                     onstart="startInstitutionProgressBar()"
+                                     oncomplete="endInstitutionProgressBar()"/>
+                </div>
             </div>
         </h:form>
     </p:dialog>

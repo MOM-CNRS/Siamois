@@ -13,6 +13,7 @@ const api = createEntityApi<FindSummary, FindDetail, FindCreateBody>("finds");
 export const listFinds = api.list;
 export const getFind = api.get;
 export const patchFindAnswers = api.patchAnswers;
+export const patchFind = api.patch;
 export const createFind = api.create;
 // POST /api/v1/finds/{id}/duplicate — a copy on the same recording unit, with a new identifier.
 export const duplicateFind = api.duplicate;

@@ -33,7 +33,7 @@ public class ProjectSettingsControllerApi {
 
     @GetMapping("/{id}/recording-unit-types")
     @Operation(summary = "Récupère tout les types d'UE d'un projet et leurs configurations (formulaires, settings, ..)",
-            description = "Retourne la configuration du type par défaut (_default) et la liste des types configurés pour l'institution du projet.")
+            description = "Retourne la liste des types configurés pour le projet.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "400", description = "Paramètres invalides"),

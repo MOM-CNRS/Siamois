@@ -47,7 +47,7 @@ public class OrganizationProjectsControllerApi {
     @GetMapping("/{id}/project-types")
     @Operation(summary = "Types de projet de l'organisation et leur configuration (formulaire, champs)",
             description = "Remplace GET /api/v1/projects/form. Retourne le layout, le catalogue de champs partagé "
-                    + "et la configuration du type par défaut (_default). data reste vide tant que Project n'a pas "
+                    + "et le formulaire du projet (form, fieldConfigs, tableColumns). data reste vide tant que Project n'a pas "
                     + "de types configurables (comme GET /api/v1/projects/{id}/recording-unit-types pour les UE).")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

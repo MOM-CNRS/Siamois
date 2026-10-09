@@ -906,8 +906,8 @@
 
 .sia-create-form-header h4 {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
   color: inherit;
 }
 
@@ -1050,9 +1050,9 @@
   font-size: 0.85rem;
 }
 
-/* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
-   in the entity's color (inverted). Only that chip — a linked entity's chip in another column
-   (the row's project…) keeps its outline. */
+/* The row's own chip (the name when the list has one, else the identifier) opens the row in the
+   overview; while its row is hovered it fills in the entity's color (inverted). Only that chip —
+   a linked entity's chip in another column keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
   background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
@@ -1061,6 +1061,12 @@
 
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
+}
+
+/* Selection checkboxes aligned to the left of their cell. */
+.entity-list-panel .p-datatable-thead > tr > th.p-selection-column,
+.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column {
+  text-align: left;
 }
 
 /* The gear's settings overlays (components/table/VisibilityChooser.tsx): a search box, then the
@@ -1561,7 +1567,9 @@ body button.p-button.status-button.status-button-compact {
   display: flex;
   gap: 0.2em;
   align-items: center;
-  font-weight: bold;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
 }
 .sia-card-grid {
   display: grid;
@@ -1587,7 +1595,24 @@ body button.p-button.status-button.status-button-compact {
   font-size: 2rem;
   color: var(--main-color);
 }
+/* Count-card title: title-card level, same weight as the counter chip next to it */
+.sia-count-card-title {
+  flex: 1 1 auto;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
+}
+/* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
+.sia-welcome-card .sia-count-card-row + div small {
+  color: var(--text-light);
+}
+.sia-welcome-card .sia-row-gap span {
+  color: var(--text-main);
+}
 .sia-list-title-text {
+  font-size: var(--font-size-title-page);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
   padding-right: 0.5em;
 }
 .entity-list-panel.embedded {
@@ -1652,6 +1677,67 @@ body button.p-button.status-button.status-button-compact {
 .file-cell-inline-image img { display: block; max-width: 100%; max-height: 20rem; margin: 0 auto; }
 .file-cell-inline-pdf { width: 100%; height: 24rem; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; }
 
+/* ----------------------------------------- project fiche header: one line
+
+   Primary chip (name), secondary chips (identifier, type, location), then ONE pencil pushed to the
+   far right of the header — before the toolbar buttons in the main layout, at the end in the
+   overview. It only shows while the header is hovered or holds focus, so a stray click can't start
+   an edit; in edit mode it is the one validate button and stays visible. */
+.sideview-titlebar > .sia-hstack {
+  flex: 1 1 auto;
+}
+
+.entity-detail-header {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  align-items: center;
+}
+
+.entity-detail-header-primary-input {
+  min-width: 12rem;
+}
+
+.entity-detail-header-secondary-input {
+  min-width: 8rem;
+}
+
+.entity-detail-header .entity-detail-header-edit.p-button {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.entity-detail-header:hover .entity-detail-header-edit.p-button,
+.entity-detail-header:focus-within .entity-detail-header-edit.p-button,
+.entity-detail-header-edit.p-button:has(.pi-check) {
+  opacity: 1;
+}
+
+/* ----------------------------------------- panel frame: the panels define the border, not the top bar
+
+   The top bar of a panel (its title bar) draws no line of its own: the panel's own border — the entity
+   coloured edge on top and its hairline around — is the only one. The main panel is flat, with square
+   corners (the side panel keeps its rounded edge). */
+.siamois-panel .sideview-titlebar,
+.entity-list-panel.p-panel > .p-panel-header,
+.entity-detail-panel.p-panel > .p-panel-header {
+  border: none;
+  box-shadow: none;
+}
+
+.panel-splitter-panel-l.siamois-panel,
+.siamois-panel.panel-docked {
+  border-radius: 0;
+}
+
+/* The JSF frame that hosts the React main panel (`.panel-docked`) draws no border of its own: the pane inside
+   it already has the entity-coloured edge. Both drew one, stacked — a second line (green wherever the frame did
+   not carry the entity's colour) and a coloured edge a few pixels short on each side, inset by the frame's own
+   side borders. */
+.panel-docked.siamois-panel:has(> .react-main-panel-mount) {
+  border: none;
+  border-radius: 0;
 /* A place suggestion in a picker: icon, name, type and code, and the source it comes from. */
 .place-item {
   display: flex;

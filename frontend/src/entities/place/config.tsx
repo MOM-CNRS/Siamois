@@ -7,7 +7,7 @@ import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
-import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { PlaceDetailHeader } from "./DetailHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
@@ -106,9 +106,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         entityRef: placeRef,
       }),
     ],
-    header: (entity) => (
-      <IdentifierTypeHeader entityType="place" chipPrefix="spatial-unit" label={entity.name} typeLabel={entity.type?.resolvedLabel} />
-    ),
+    header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
     chrome: (entity) => bookmarkChrome(entity, entity.name),
   },
   routes: jsfRoutes("spatial-unit"),

@@ -4,17 +4,15 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:f="http://java.sun.com/jsf/core">
 
-    <h:form id="profileDetailForm">
+    <h:form id="profileDetailForm" styleClass="profile-detail-form">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <p:sidebar widgetVar="profileDetailSidebar" visible="#{bean.profileDetailOpen}"
-                   position="right" modal="true" dismissable="true" closeOnEscape="true" blockScroll="true"
-                   styleClass="profile-drawer-sidebar" style="width:460px;max-width:92vw;">
-            <p:ajax event="close" listener="#{bean.closeProfileDetail()}" update=":profileDetailForm:drawerContent"/>
-
-            <h:panelGroup id="drawerContent" layout="block" styleClass="profile-drawer">
+        <h:panelGroup id="drawerContent" layout="block" styleClass="profile-drawer" rendered="#{bean.profileDetailOpen}">
+                <div class="profile-resizer"></div>
                 <div class="profile-drawer-header">
                     <div class="profile-drawer-title">#{empty bean.selectedProfile ? '' : bean.selectedProfile.name}</div>
+                    <p:commandButton icon="pi pi-times" actionListener="#{bean.closeProfileDetail()}" update="@(.profile-detail-form)"
+                                     styleClass="ui-button-flat ui-button-sm profile-drawer-close" process="@this"/>
                     <div class="profile-drawer-system-note">#{langBean.msg('profile.detail.systemNote')}</div>
                 </div>
 
@@ -36,6 +34,32 @@
                     </ui:repeat>
                 </div>
             </h:panelGroup>
-        </p:sidebar>
     </h:form>
+    <script>
+//<![CDATA[
+        if (!window.siaProfileResizer) {
+            window.siaProfileResizer = true;
+            document.addEventListener('mousedown', function (e) {
+                var handle = e.target.closest ? e.target.closest('.profile-resizer') : null;
+                if (!handle) return;
+                var split = handle.closest('.profiles-split');
+                if (!split) return;
+                e.preventDefault();
+                handle.classList.add('dragging');
+                var right = split.getBoundingClientRect().right;
+                var move = function (ev) {
+                    var w = Math.max(280, Math.min(right - ev.clientX, split.clientWidth - 280));
+                    split.style.setProperty('--profile-panel-w', w + 'px');
+                };
+                var up = function () {
+                    handle.classList.remove('dragging');
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', up);
+                };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', up);
+            });
+        }
+//]]>
+    </script>
 </ui:fragment>

@@ -128,7 +128,7 @@ class FormLayoutServiceTest {
 
     private FormConfig laidOutConfig() {
         FormConfig config = config(1L);
-        when(tableFieldConfigService.listTypes(5L, TABLE)).thenReturn(List.of(new TypeSummary("Type", false)));
+        when(tableFieldConfigService.listTypes(5L, TABLE)).thenReturn(List.of(new TypeSummary("Type")));
         when(tableFieldConfigService.findFormConfig(5L, TABLE, "Type")).thenReturn(Optional.of(config));
         when(groupRepository.countByFormConfigId(1L)).thenReturn(2L);
         org.mockito.Mockito.lenient().when(groupRepository.save(any(FormConfigGroup.class))).thenAnswer(call -> {
@@ -204,7 +204,7 @@ class FormLayoutServiceTest {
     @Test
     void aConfigurationWithoutLayoutGetsItsEffectiveFormWrittenAsGroups() {
         FormConfig config = config(1L);
-        when(tableFieldConfigService.listTypes(5L, TABLE)).thenReturn(List.of(new TypeSummary("Type", false)));
+        when(tableFieldConfigService.listTypes(5L, TABLE)).thenReturn(List.of(new TypeSummary("Type")));
         when(tableFieldConfigService.findFormConfig(5L, TABLE, "Type")).thenReturn(Optional.of(config));
         when(groupRepository.countByFormConfigId(1L)).thenReturn(0L);
         CustomFieldText a = field(1L, "fa");

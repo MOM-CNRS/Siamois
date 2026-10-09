@@ -39,6 +39,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.event.TabChangeEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
@@ -56,8 +58,18 @@ import java.util.regex.Pattern;
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class ProjectTableFieldSettingsBean implements Serializable {
 
+    /** Set by Spring (not part of the constructor); null where the bean is built by hand. */
+    private transient ApplicationEventPublisher eventPublisher;
+
+    @Autowired(required = false)
+    void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
+
     public static final int TAB_CHAMPS = 0;
-    public static final int TAB_IDENTIFIANTS = 1;
+    public static final int TAB_APERCU = 1;
+    public static final int TAB_DEFINITION = 2;
+    public static final int TAB_IDENTIFIANTS = 3;
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
     public static final String BRANCHE = "branche";
@@ -190,6 +202,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         pickerOpen = false;
         pickerQuery = null;
         closeDrawer();
+        expandedNodes.clear();
+        treeCache.clear();
         newTypeName = null;
         identSegments = new ArrayList<>();
         identFirst = null;
@@ -222,27 +236,34 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void selectTable(ConfigurableTable table) {
         selectedTable = table;
+        expandedNodes.add(tableNode(table));
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
-        String firstNonDefault = typesForSelectedTable.stream()
-                .filter(t -> !t.isDefault())
-                .map(TypeSummary::getName)
-                .findFirst()
-                .orElse(typesForSelectedTable.isEmpty() ? null : typesForSelectedTable.get(0).getName());
-        selectType(firstNonDefault);
+        // a table opens on its first type; one with none yet (its thesaurus gave it nothing) opens empty
+        selectType(typesForSelectedTable.isEmpty() ? null : typesForSelectedTable.get(0).getName());
     }
 
     public void selectType(String typeName) {
+        // a field open in the main panel belongs to the type being left
+        closeDrawer();
+        if (!java.util.Objects.equals(selectedTypeName, typeName)) {
+            collapsedGroups.clear();
+            fieldSearch = null;
+        }
         selectedTypeName = typeName;
-        if (typeName == null) {
+        // a type belongs to a table: without one there is nothing to load
+        if (typeName == null || selectedTable == null) {
             formConfig = null;
             setFieldsConfig(null);
             layoutRows = new ArrayList<>();
             return;
         }
+        expandedNodes.add(tableNode(selectedTable));
+        expandedNodes.add(typeNode(selectedTable, typeName));
         loadConfigs();
     }
 
     private void loadConfigs() {
+        treeCache.clear();
         formConfig = tableFieldConfigService.getFormConfig(project.getId(), selectedTable, selectedTypeName);
         setFieldsConfig(tableFieldConfigService.getFieldsConfig(project.getId(), selectedTable, selectedTypeName));
         reloadLayoutRows();
@@ -271,16 +292,137 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void reloadLayoutRows() {
         layoutRows = new ArrayList<>(formLayoutService.rowsOf(project.getId(), selectedTable, selectedTypeName));
+        // a field is either part of the type's form or it is not: a removed one (stored as inactive) is not listed.
+        // Saving the arrangement without it is harmless — the service files anything unplaced in the last group.
+        layoutRows.removeIf(row -> row.isFieldRow() && !row.getField().isActive());
+        refreshHiddenRows();
         layoutRows.stream().filter(LayoutRow::isGroup)
                 .forEach(row -> row.setDisplayLabel(resolveGroupLabel(row.getGroupLabel())));
     }
 
-    public boolean isSelectedTypeDefault() {
-        return "_default".equals(selectedTypeName);
+    // ---- the layout table: groups fold, and a search narrows the rows to the fields whose name matches ----
+
+    /** The groups the user folded, by stored id (or label for one not saved yet) — their fields are not shown. */
+    private final Set<String> collapsedGroups = new HashSet<>();
+    /** What the search box holds. */
+    private String fieldSearch;
+    /** Keys of the rows left out of the table (folded group, no match): they stay in the list so a drag keeps its indexes. */
+    private final Set<String> hiddenRowKeys = new HashSet<>();
+
+    /** The group a field being added is meant for (its "+ champ" button), or null for the end of the form. */
+    private String targetGroupKey;
+    /** The row just added: the page scrolls to it and highlights it. */
+    private String focusKey;
+
+    public boolean isFocusRow(LayoutRow row) {
+        if (focusKey == null) return false;
+        return focusKey.equals(row.isGroup() ? groupKey(row) : "f:" + row.getField().getName());
     }
 
-    public long getHiddenFieldCount() {
-        return layoutRows.stream().filter(LayoutRow::isFieldRow).filter(r -> !r.getField().isActive()).count();
+    /** The "+ champ" button of a group: the field the picker adds lands in that group. */
+    public void addFieldToGroup(LayoutRow group) {
+        targetGroupKey = groupKey(group);
+        openPicker();
+    }
+
+    /**
+     * Once a field is added to the type: moves it to the end of the group it was asked for (if any), puts the
+     * search and the folded groups aside so the new row can be seen, and marks it so the page scrolls to it.
+     */
+    private void placeAfterAdd(String fieldName) {
+        fieldSearch = null;
+        collapsedGroups.clear();
+        LayoutRow row = layoutRows.stream()
+                .filter(r -> r.isFieldRow() && r.getField().getName().equals(fieldName))
+                .findFirst().orElse(null);
+        if (row != null && targetGroupKey != null) {
+            layoutRows.remove(row);
+            layoutRows.add(endOfGroup(targetGroupKey), row);
+            saveRows();
+        }
+        targetGroupKey = null;
+        focusKey = "f:" + fieldName;
+        refreshHiddenRows();
+    }
+
+    /** The index just after the last row of the group (the end of the list when the group is gone). */
+    private int endOfGroup(String key) {
+        int at = layoutRows.size();
+        for (int i = 0; i < layoutRows.size(); i++) {
+            if (layoutRows.get(i).isGroup() && groupKey(layoutRows.get(i)).equals(key)) {
+                at = i + 1;
+                while (at < layoutRows.size() && !layoutRows.get(at).isGroup()) at++;
+                break;
+            }
+        }
+        return at;
+    }
+
+    private static String groupKey(LayoutRow group) {
+        return group.getGroupId() != null ? "id:" + group.getGroupId() : "label:" + group.getGroupLabel();
+    }
+
+    public boolean isGroupCollapsed(LayoutRow group) {
+        return collapsedGroups.contains(groupKey(group));
+    }
+
+    public void toggleGroup(LayoutRow group) {
+        if (!collapsedGroups.remove(groupKey(group))) {
+            collapsedGroups.add(groupKey(group));
+        }
+        refreshHiddenRows();
+    }
+
+    public boolean isRowHidden(LayoutRow row) {
+        return hiddenRowKeys.contains(row.getKey());
+    }
+
+    public void onFieldSearch() {
+        refreshHiddenRows();
+    }
+
+    /**
+     * Works out which rows the table leaves out. While searching, a field shows only if its name matches and
+     * a group only if one of its fields does (folding is set aside, so a match is never hidden); otherwise the
+     * fields of a folded group are hidden.
+     */
+    private void refreshHiddenRows() {
+        hiddenRowKeys.clear();
+        String needle = fieldSearch == null ? "" : fieldSearch.toLowerCase().trim();
+        boolean searching = !needle.isEmpty();
+        LayoutRow group = null;
+        List<LayoutRow> members = new ArrayList<>();
+        for (LayoutRow row : layoutRows) {
+            if (row.isGroup()) {
+                settleGroup(group, members, searching, needle);
+                group = row;
+                members = new ArrayList<>();
+            } else {
+                members.add(row);
+            }
+        }
+        settleGroup(group, members, searching, needle);
+    }
+
+    private void settleGroup(LayoutRow group, List<LayoutRow> members, boolean searching, String needle) {
+        if (group == null) {
+            return;
+        }
+        if (searching) {
+            boolean any = false;
+            for (LayoutRow member : members) {
+                if (resolveFieldLabel(member.getField()).toLowerCase().contains(needle)) {
+                    any = true;
+                } else {
+                    hiddenRowKeys.add(member.getKey());
+                }
+            }
+            if (!any) {
+                hiddenRowKeys.add(group.getKey());
+            }
+        } else if (isGroupCollapsed(group)) {
+            members.forEach(member -> hiddenRowKeys.add(member.getKey()));
+        }
     }
 
     public long getFieldCount() {
@@ -372,6 +514,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void addGroup() {
         layoutRows.add(LayoutRow.header(null, langBean.msg("projectTables.layout.newGroup")));
         saveRows();
+        fieldSearch = null;
+        collapsedGroups.clear();
+        // the new group is the last one, and has its stored id by now
+        layoutRows.stream().filter(LayoutRow::isGroup).reduce((first, second) -> second)
+                .ifPresent(last -> focusKey = groupKey(last));
+        refreshHiddenRows();
     }
 
     /** A group can be deleted once it holds no field: its header is then followed by another or by nothing. */
@@ -413,6 +561,88 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         saveRows();
     }
 
+    // ---- the tree: tables and types fold and unfold on their own, independently of what is selected ----
+
+    /** Open nodes of the tree: "T:&lt;table&gt;" for a table, "Y:&lt;table&gt;:&lt;type&gt;" for a type. */
+    private final Set<String> expandedNodes = new HashSet<>();
+    /** What the open nodes loaded (types of a table, fields of a type) — dropped whenever a config is reloaded. */
+    private final Map<String, Object> treeCache = new HashMap<>();
+
+    private static String tableNode(ConfigurableTable table) {
+        return "T:" + table.name();
+    }
+
+    private static String typeNode(ConfigurableTable table, String typeName) {
+        return "Y:" + table.name() + ":" + typeName;
+    }
+
+    public boolean isTableExpanded(ConfigurableTable table) {
+        return expandedNodes.contains(tableNode(table));
+    }
+
+    public boolean isTypeExpanded(ConfigurableTable table, String typeName) {
+        return expandedNodes.contains(typeNode(table, typeName));
+    }
+
+    public void toggleTable(ConfigurableTable table) {
+        toggleNode(tableNode(table));
+    }
+
+    public void toggleType(ConfigurableTable table, String typeName) {
+        toggleNode(typeNode(table, typeName));
+    }
+
+    private void toggleNode(String node) {
+        if (!expandedNodes.remove(node)) {
+            expandedNodes.add(node);
+        }
+    }
+
+    /** The types of a table, whether it is the selected one or only unfolded in the tree. */
+    @SuppressWarnings("unchecked")
+    public List<TypeSummary> typesOf(ConfigurableTable table) {
+        if (table == selectedTable && typesForSelectedTable != null) {
+            return typesForSelectedTable;
+        }
+        return (List<TypeSummary>) treeCache.computeIfAbsent("types:" + table.name(),
+                key -> tableFieldConfigService.listTypes(project.getId(), table));
+    }
+
+    /** The fields of a type, in the form's order for the selected type and as configured for the others. */
+    @SuppressWarnings("unchecked")
+    public List<TypeFieldFormConfig> fieldsOf(ConfigurableTable table, String typeName) {
+        if (table == selectedTable && typeName.equals(selectedTypeName)) {
+            return layoutRows.stream().filter(LayoutRow::isFieldRow).map(LayoutRow::getField).toList();
+        }
+        return (List<TypeFieldFormConfig>) treeCache.computeIfAbsent("fields:" + table.name() + ":" + typeName,
+                key -> tableFieldConfigService.getFieldsConfig(project.getId(), table, typeName).getFields().stream()
+                        .filter(TypeFieldFormConfig::isActive)
+                        .toList());
+    }
+
+    /** Selects a type of any table of the tree (and the table with it). */
+    public void selectTypeOf(ConfigurableTable table, String typeName) {
+        if (table != selectedTable) {
+            selectedTable = table;
+            typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
+        }
+        selectType(typeName);
+    }
+
+    /** Opens a field of any type of the tree in the main panel, selecting its type first when needed. */
+    public void openFieldOf(ConfigurableTable table, String typeName, TypeFieldFormConfig field) {
+        if (table != selectedTable || !typeName.equals(selectedTypeName)) {
+            selectTypeOf(table, typeName);
+        }
+        if (fieldsConfig == null) {
+            return;
+        }
+        fieldsConfig.getFields().stream()
+                .filter(candidate -> candidate.getName().equals(field.getName()))
+                .findFirst()
+                .ifPresent(this::openDrawerForEdit);
+    }
+
     public int getTypeCountFor(ConfigurableTable table) {
         return tableFieldConfigService.listTypes(project.getId(), table).size();
     }
@@ -421,15 +651,40 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         // activeTabIndex is bound directly via p:tabView activeIndex, nothing else to do here
     }
 
+    /** Whether the field open in the main panel can be taken out of the type's form (not the table's type field, nor a locked one). */
+    public boolean isDraftRemovable() {
+        if (draftOriginalName == null || fieldsConfig == null) return false;
+        return fieldsConfig.getFields().stream()
+                .filter(f -> f.getName().equals(draftOriginalName))
+                .anyMatch(f -> !isPivotField(f) && !f.isInstitutionLocked());
+    }
+
+    /** "Retirer du formulaire", from the field's own view: removes it, then goes back to the type's view. */
+    public void removeDraftField() {
+        if (draftOriginalName == null || fieldsConfig == null) return;
+        fieldsConfig.getFields().stream()
+                .filter(f -> f.getName().equals(draftOriginalName))
+                .findFirst()
+                .ifPresent(this::removeField);
+        closeDrawer();
+    }
+
     /**
-     * The p:toggleSwitch controls bind directly (two-way) to the row's boolean property, so by the
-     * time these listeners fire, the row already carries its new value — we just persist it. A
-     * field marked institutionLocked ignores the write (enforced server-side by the service too).
+     * Takes a field out of the type's form, a system field included: it stops being listed and no longer
+     * appears in the form or the table. An additional field is deleted (unless it already has answers);
+     * a system field is only set aside, and can be picked again from the catalog.
      */
-    public void toggleFieldActive(TypeFieldFormConfig field) {
-        formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
-        tableFieldConfigService.setFieldActive(project.getId(), selectedTable, selectedTypeName, field.getName(), field.isActive());
-        reloadLayoutRows();
+    public void removeField(TypeFieldFormConfig field) {
+        if (isPivotField(field) || field.isInstitutionLocked()) {
+            return;
+        }
+        if (field.isSystemField()) {
+            formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
+            tableFieldConfigService.setFieldActive(project.getId(), selectedTable, selectedTypeName, field.getName(), false);
+            loadConfigs();
+            return;
+        }
+        deleteAdditionalField(field.getName());
     }
 
     public void toggleFieldMandatory(TypeFieldFormConfig field) {
@@ -453,6 +708,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void addField() {
+        targetGroupKey = null;
         openPicker();
     }
 
@@ -472,14 +728,41 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     public List<FieldCatalogEntry> getFieldCatalog() {
         if (project == null || selectedTable == null || selectedTypeName == null) return List.of();
-        return tableFieldConfigService.searchFieldCatalog(project.getId(), selectedTable, selectedTypeName, pickerQuery);
+        List<FieldCatalogEntry> entries = new ArrayList<>(removedSystemFieldEntries());
+        entries.addAll(tableFieldConfigService.searchFieldCatalog(project.getId(), selectedTable, selectedTypeName, pickerQuery));
+        return entries;
+    }
+
+    /** The system fields taken out of this type, offered again by the picker. */
+    private List<FieldCatalogEntry> removedSystemFieldEntries() {
+        if (fieldsConfig == null) return List.of();
+        String needle = pickerQuery == null ? "" : pickerQuery.toLowerCase().trim();
+        return fieldsConfig.getFields().stream()
+                .filter(f -> f.isSystemField() && !f.isActive())
+                .filter(f -> needle.isBlank() || resolveFieldLabel(f).toLowerCase().contains(needle))
+                .map(f -> FieldCatalogEntry.builder()
+                        .name(resolveFieldLabel(f))
+                        .type(f.getType())
+                        .description(f.getDescription())
+                        .build())
+                .toList();
     }
 
     public void pickExistingField(FieldCatalogEntry entry) {
         formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
-        tableFieldConfigService.addExistingField(project.getId(), selectedTable, selectedTypeName, entry.getName());
+        TypeFieldFormConfig removed = fieldsConfig == null ? null : fieldsConfig.getFields().stream()
+                .filter(f -> f.isSystemField() && !f.isActive() && resolveFieldLabel(f).equals(entry.getName()))
+                .findFirst().orElse(null);
+        String addedName = removed != null ? removed.getName() : entry.getName();
+        if (removed != null) {
+            // a system field put back: it is switched on again rather than added
+            tableFieldConfigService.setFieldActive(project.getId(), selectedTable, selectedTypeName, removed.getName(), true);
+        } else {
+            tableFieldConfigService.addExistingField(project.getId(), selectedTable, selectedTypeName, entry.getName());
+        }
         pickerOpen = false;
         loadConfigs();
+        placeAfterAdd(addedName);
     }
 
     public void openNewFieldDrawer() {
@@ -510,6 +793,24 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             prefillVocabularyConfig();
         }
         drawerOpen = true;
+        announceOpenField(field);
+    }
+
+    /** Tells the rules editor which field is open, so its section shows that field's conditional rules. */
+    private void announceOpenField(TypeFieldFormConfig field) {
+        if (eventPublisher != null && field != null) {
+            eventPublisher.publishEvent(new FieldOpenedEvent(field));
+        }
+    }
+
+    /**
+     * The field's Save: its definition and vocabulary are written unless it is a system field with nothing to
+     * edit there (name, type and description are locked). The conditional rules are saved separately, after this.
+     */
+    public void saveDrawerIfEditable() {
+        if (!draftIsSystem || isDraftConfigurable()) {
+            saveDrawer();
+        }
     }
 
     /**
@@ -571,6 +872,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         lastCollectionResults = List.of(match);
         draftCollectionName = match.getLabelToDisplay();
         draftOriginalCollectionKey = match.getExternalId();
+    }
+
+    /** What the banner names while a field is open: its caption, or "new field" while one is being created. */
+    public String getDraftDisplayName() {
+        if (draftName == null || draftName.isBlank()) {
+            return langBean.msg("projectTables.drawer.newFieldName");
+        }
+        return draftIsSystem ? langBean.msg(draftName) : draftName;
     }
 
     public void closeDrawer() {
@@ -771,6 +1080,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     public void saveDrawer() {
         drawerErrorMessage = null;
+        boolean created = draftOriginalName == null;
         formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
@@ -797,6 +1107,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         }
 
         loadConfigs();
+        if (created) {
+            placeAfterAdd(draftName);
+        }
         // the drawer stays open : the user can keep editing (or check what the vocabulary config
         // resolved to) without reopening it — re-reading it mirrors openDrawerForEdit's initial load,
         // so draftOriginalBrancheConceptKey/draftOriginalCollectionKey track what was just persisted
@@ -805,6 +1118,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             prefillVocabularyConfig();
         }
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "projectTables.drawer.saveSuccess");
+        if (fieldsConfig != null) {
+            fieldsConfig.getFields().stream()
+                    .filter(f -> f.getName().equals(draftName))
+                    .findFirst()
+                    .ifPresent(this::announceOpenField);
+        }
     }
 
     /**

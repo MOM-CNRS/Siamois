@@ -118,22 +118,30 @@ main form:first-child .field-value-group {
     border-color: var(--siamois-green);
 }
 
+// Title, description, then ONE line holding the search, the filters (the extraFilter facet) and the
+// add button; the table below. The two forms of the composite (header, content) and the grid of
+// .datatable-info are flattened (display: contents) so the filter form — a sibling of both, kept
+// outside them on purpose (a nested <form> breaks p:autoComplete) — can sit on the search's line.
 .datatable-settings {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 3vw auto 1fr auto 3vw;
+    grid-template-areas:
+        ". title title title ."
+        ". desc desc desc ."
+        ". search filter add ."
+        "content content content content content";
+    column-gap: 1em;
+    row-gap: 0.75em;
     margin-top: 2em;
-    row-gap: 1em;
+    align-items: center;
+}
+
+.datatable-settings > form {
+    display: contents;
 }
 
 .datatable-info {
-    margin-left: 3vw;
-    margin-right: 3vw;
-
-    display: grid;
-    grid-template:
-        "title title title title title"
-        "desc desc desc desc desc"
-        "search search . . add";
+    display: contents;
 }
 
 .dt-title {
@@ -150,10 +158,51 @@ main form:first-child .field-value-group {
     grid-area: search;
 }
 
+.datatable-settings > form.member-filter-row {
+    grid-area: filter;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
 .dt-content {
     grid-area: content;
     max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
+}
+
+// Rows that open a settings page: the whole row is the link; a row without the right to open it
+// has no hover and no pointer.
+.dt-content .ui-datatable-data > tr.row-clickable {
+    cursor: pointer;
+}
+
+.dt-content .ui-datatable-data > tr.row-clickable:hover {
+    background: var(--siamois-green-light-50);
+}
+
+.dt-content .ui-datatable-data > tr.row-no-access {
+    cursor: default;
+    color: var(--text-light);
+}
+
+.dt-content .ui-datatable-data > tr.row-no-access:hover {
+    background: transparent;
+}
+
+// Settings tables: tighter rows.
+.dt-content .ui-datatable-tablewrapper td {
+    padding-top: 0.35em;
+    padding-bottom: 0.35em;
+}
+
+.row-rights-icon {
+    color: var(--siamois-green-active);
+}
+
+.row-no-access .row-rights-icon {
+    color: var(--text-light);
 }
 
 // PrimeFaces renders the table itself at width:100%, which never exceeds its container — so columns
@@ -743,3 +792,438 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 // PrimeReact parity (see theme-base/_primereact.scss). settings.css is compiled on its own, so the
 // .p-* aliases the React main panel needs from THIS file are declared here too.
 .p-tabview-nav { @extend .ui-tabs-nav; }
+
+// "Mes droits" on the profile page: a card like the other sections; the permissions of a profile
+// wrap as chips inside their cell instead of being clipped.
+.rights-description {
+    margin: 0;
+    color: var(--text-light);
+}
+
+.field-value-content .ui-datatable-tablewrapper td.rights-permissions-cell {
+    white-space: normal;
+    overflow: visible;
+}
+
+.rights-permissions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.rights-open-cell {
+    width: 1%;
+}
+
+// Filter bar of the settings lists, the same pattern as the React lists: one chip per active filter
+// (click to change its value, ✕ to drop it), a ghost chip for the quick preset ("Mes projets"), and an
+// "Ajouter un filtre" chip that offers the filters not on screen yet.
+.member-filter-row {
+    flex-wrap: wrap;
+}
+
+.member-filter-chip .filter-chip-label.ui-button {
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    box-shadow: none;
+}
+
+.member-filter-chip .filter-chip-label.ui-button:hover {
+    background: transparent;
+    text-decoration: underline;
+}
+
+.filter-chip-ghost,
+.filter-chip-add.ui-button,
+.filter-chip-add {
+    background: transparent;
+    border: 1px dashed var(--siamois-green-light-350);
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.filter-chip-ghost:hover,
+.filter-chip-add:hover {
+    background: var(--siamois-green-light-50);
+    color: #3a5a3c;
+}
+
+.filter-overlay .ui-autocomplete {
+    width: 260px;
+}
+
+.filter-add-item {
+    display: block;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--text-main);
+}
+
+.filter-add-item:hover {
+    background: var(--siamois-green-light-50);
+}
+
+.member-filter-chip i {
+    margin-right: 4px;
+}
+
+// All the chips of the bar are the same height — an active filter, the ghost preset and the "add" chip
+// — whatever markup they are built on (a PrimeFaces button inside a span, a link, a button).
+.member-filter-row .member-filter-chip {
+    box-sizing: border-box;
+    height: 30px;
+    line-height: 1;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.member-filter-row .member-filter-chip .filter-chip-label.ui-button {
+    height: auto;
+    min-height: 0;
+    line-height: 1;
+    padding: 0;
+}
+
+.member-filter-row .member-filter-chip.ui-button {
+    padding: 0 14px;
+}
+
+.member-filter-row .member-filter-chip.ui-button .ui-button-text,
+.member-filter-row .member-filter-chip .filter-chip-label .ui-button-text {
+    padding: 0;
+    line-height: 1;
+}
+
+// Create dialogs of the settings pages, in the look of the React create overlay: a coloured top edge, the
+// title with the entity's icon, each field with its label above it, a tinted footer holding the actions.
+.sia-create-dialog.ui-dialog {
+    border-radius: 10px;
+    overflow: hidden;
+    border-top: 3px solid var(--siamois-green-active);
+}
+
+body .sia-create-dialog.ui-dialog .ui-dialog-content {
+    padding: 0 !important;
+}
+
+.sia-create-dialog .sia-create-form {
+    display: flex;
+    flex-direction: column;
+    min-width: 24rem;
+    max-width: 30rem;
+}
+
+.sia-create-dialog .sia-create-form-header {
+    padding: 1rem 1.25rem 0.25rem;
+    color: var(--siamois-green-active);
+}
+
+.sia-create-dialog .sia-create-form-header h4 {
+    margin: 0;
+    font-size: var(--font-size-title-card);
+    font-weight: var(--font-weight-title);
+    color: inherit;
+}
+
+.sia-create-dialog .sia-create-form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0.75rem 1.25rem 1.25rem;
+}
+
+.sia-create-dialog .sia-create-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.sia-create-dialog .sia-create-form-label {
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+.sia-create-dialog .sia-create-form-hint {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+// A field and a small button side by side (the thesaurus address and its reload button).
+.sia-create-dialog .sia-create-form-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sia-create-dialog .sia-create-form-inline .ui-inputfield {
+    flex: 1 1 auto;
+}
+
+// Every widget fills its field.
+// The body is .ui-fluid: PrimeFaces then sizes an autocomplete's input and its dropdown button together
+// on one line, which a plain width: 100% on the input would break (the button drops below it).
+.sia-create-dialog .sia-create-form-field .ui-inputfield,
+.sia-create-dialog .sia-create-form-field .ui-selectonemenu {
+    width: 100%;
+}
+
+// ...but .ui-fluid also stretches every button: the small inline ones stay their own size.
+.sia-create-dialog .ui-fluid .sia-create-form-inline .ui-button {
+    flex: 0 0 auto;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+}
+
+.sia-create-dialog .sia-create-form-inline .ui-button .ui-button-icon-left {
+    position: static;
+    margin: 0;
+}
+
+.sia-create-dialog .sia-create-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: var(--siamois-green-light-50);
+    border-top: 1px solid var(--siamois-green-light-200);
+}
+
+// Sortable column headers of the settings lists: a link with the direction icon (neutral until sorted on).
+.sort-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.sort-header .sort-header-icon {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    opacity: 0.6;
+}
+
+.sort-header .sort-header-active {
+    color: var(--siamois-green-active);
+    opacity: 1;
+}
+
+// The top of a settings page, down to its title: a white band. The box-shadow + clip-path pair paints the
+// white sideways to the edges of the screen even when the page content sits in a narrower container.
+.settings-header {
+    background: #ffffff;
+    box-shadow: 0 0 0 100vmax #ffffff;
+    clip-path: inset(0 -100vmax);
+    padding: 0.25rem 0 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.settings-header .breadCrumpForm {
+    margin-top: 0.75em;
+}
+
+// The list pages: the header rows (title, description, search / filters / add) get the same band.
+.datatable-settings {
+    margin-top: 0;
+}
+
+.datatable-settings::before {
+    content: "";
+    grid-row: 1 / 4;
+    grid-column: 1 / -1;
+    background: #ffffff;
+    box-shadow: 0 0 0 100vmax #ffffff;
+    clip-path: inset(0 -100vmax);
+    margin-bottom: -0.75em;
+}
+
+.datatable-settings .dt-title {
+    padding-top: 1.25em;
+}
+
+.datatable-settings > form.member-filter-row,
+.dt-searchInput {
+    margin-bottom: 0.9em;
+}
+
+.dt-content {
+    margin-top: 0.75em;
+}
+
+// The tables & fields page is one screen high: the header stays put and its two sections (the tree, the
+// details of the type or field) each scroll on their own.
+main.ptc-fixed {
+    height: 100vh;
+    overflow: hidden;
+}
+
+// On the tables & fields page the header, the tree and the details are three rectangles that fit together:
+// no space between them and square corners.
+main.ptc-fixed .settings-header {
+    margin-bottom: 0;
+    border-bottom: 1px solid #e7e7e3;
+}
+
+// Members / profiles lists: compact rows (one line per user, no username).
+.member-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-user-cell .member-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 11px;
+}
+
+.member-email {
+    color: var(--text-light);
+    font-size: 0.85em;
+}
+
+// Profiles tab: list on the left, the selected profile's detail as a right-hand panel.
+.profiles-split {
+    --profile-panel-w: 420px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+}
+
+// The list's own form (the composite wraps .datatable-settings in one) takes all the room left.
+.profiles-split > form:first-child {
+    display: block;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.profiles-split > form.profile-detail-form {
+    flex: 0 0 var(--profile-panel-w);
+    width: var(--profile-panel-w);
+    min-width: 0;
+    display: flex;
+}
+
+.profiles-split > form.profile-detail-form:not(:has(.profile-drawer)) {
+    display: none;
+}
+
+.profiles-split .profile-drawer {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin-top: 2em;
+    background: #fff;
+}
+
+// Drag handle on the panel's left edge.
+.profile-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: var(--siamois-green-light-100);
+    z-index: 2;
+}
+
+.profile-resizer:hover,
+.profile-resizer.dragging {
+    background: var(--siamois-green-active);
+}
+
+.profile-drawer-header,
+.profile-drawer-body {
+    padding-left: 28px;
+}
+
+.profile-drawer-header {
+    position: relative;
+}
+
+.profile-drawer-close.ui-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 2rem;
+    height: 2rem;
+}
+
+.profile-name-cell {
+    gap: 8px;
+}
+
+.profile-card-name {
+    font-size: 14px;
+}
+
+.dt-content .ui-datatable-data > tr.ui-state-highlight {
+    background: var(--siamois-green-light-50);
+    color: inherit;
+}
+
+// Profiles tab: the two panes scroll on their own; only their headers (the table's column header, the
+// profile's title block) stay put. The split is bounded by the viewport (the app shell never scrolls).
+.profiles-split {
+    height: calc(100dvh - 17rem);
+    min-height: 320px;
+}
+
+.profiles-split > form:first-child {
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.profiles-split > form:first-child .datatable-settings {
+    margin-top: 0;
+}
+
+.profiles-split > form:first-child .dt-content {
+    overflow: visible;
+}
+
+.profiles-split > form:first-child .ui-datatable-tablewrapper {
+    overflow: visible !important;
+}
+
+.profiles-split > form:first-child .ui-datatable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.profiles-split > form.profile-detail-form {
+    min-height: 0;
+}
+
+.profiles-split .profile-drawer {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.profiles-split .profile-drawer-header {
+    flex: none;
+}
+
+.profiles-split .profile-drawer-body {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+}

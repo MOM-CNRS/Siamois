@@ -1,0 +1,72 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!-- Same look as the create overlay of the React lists: a coloured top edge, the title with the
+         entity's icon, each field with its label ABOVE it, a footer with the actions. -->
+    <p:dialog widgetVar="newProjectDialog"
+              id="newProjectDialog"
+              showHeader="false"
+              styleClass="sia-create-dialog"
+              showEffect="fade"
+              modal="true"
+              resizable="false"
+              closeOnEscape="true">
+        <h:form id="newProjectForm">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <div class="sia-create-form">
+                <div class="sia-create-form-header">
+                    <h4>#{langBean.msg('projectList.create')}</h4>
+                </div>
+
+                <div class="sia-create-form-body ui-fluid">
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="organisation" value="#{langBean.msg('common.entity.institution')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:selectOneMenu id="organisation" value="#{newProjectDialogBean.institutionId}" required="true">
+                            <f:selectItems value="#{newProjectDialogBean.creatableInstitutions}" var="org"
+                                           itemValue="#{org.id}" itemLabel="#{org.name}"/>
+                            <p:ajax event="change" listener="#{newProjectDialogBean.loadTypes()}" process="@this"
+                                    update="type"/>
+                        </p:selectOneMenu>
+                    </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="name" value="#{langBean.msg('common.label.name')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:inputText id="name" value="#{newProjectDialogBean.name}" required="true" maxlength="100"/>
+                    </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="identifier" value="#{langBean.msg('common.label.identifier')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:inputText id="identifier" value="#{newProjectDialogBean.identifier}" required="true"
+                                     maxlength="50"/>
+                    </div>
+
+                    <div class="sia-create-form-field">
+                        <p:outputLabel for="type" value="#{langBean.msg('projectList.create.type')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:selectOneMenu id="type" value="#{newProjectDialogBean.typeId}" required="true"
+                                         filter="true" filterMatchMode="contains">
+                            <f:selectItem itemLabel="#{langBean.msg('projectList.create.type.choose')}"
+                                          itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItems value="#{newProjectDialogBean.types}" var="typeChoice"
+                                           itemValue="#{typeChoice.id}" itemLabel="#{typeChoice.label}"/>
+                        </p:selectOneMenu>
+                    </div>
+                </div>
+
+                <div class="sia-create-form-footer">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}" type="button"
+                                     styleClass="ui-button-flat" onclick="PF('newProjectDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('common.action.create')}"
+                                     actionListener="#{newProjectDialogBean.create()}"
+                                     process="@form" update="@form :projectListDatatable:formCC:projectListForm"
+                                     oncomplete="if (args &amp;&amp; args.created) PF('newProjectDialog').hide()"/>
+                </div>
+            </div>
+        </h:form>
+    </p:dialog>
+</ui:fragment>

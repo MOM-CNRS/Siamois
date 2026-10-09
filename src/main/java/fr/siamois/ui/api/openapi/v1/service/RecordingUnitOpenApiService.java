@@ -48,7 +48,6 @@ import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.*;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
@@ -56,15 +55,10 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectFieldConfigResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.resource.type.FindDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
-import fr.siamois.ui.api.openapi.v1.resource.type.ContainerDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.ContainerType;
-import fr.siamois.ui.api.openapi.v1.resource.type.DocumentDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.DocumentType;
-import fr.siamois.ui.api.openapi.v1.resource.type.PhaseDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.PhaseType;
-import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitDefaultType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
@@ -198,8 +192,8 @@ public class RecordingUnitOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, null);
-        RecordingUnitDefaultType defaultType = buildDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
+        Map<String, FieldResource> baseFields = baseFieldsOf(au.getId(), ConfigurableTable.UE, RecordingUnit.class,
+                institution, personDto, lang);
 
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.UE));
@@ -209,15 +203,14 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, concept.getId())))
                 .toList();
 
-        // _default first, so a per-type override of a system field's label/hint (an effective-form
-        // customization scoped to that one type) wins over the type-independent default — same
-        // layering the effective-form resolver itself applies.
-        Map<String, FieldResource> unionFields = new LinkedHashMap<>(defaultType.getFields());
+        // The table's own fields first, so a per-type override of a system field's label/hint (an
+        // effective-form customization scoped to that one type) wins over it.
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
         for (RecordingUnitType type : types) {
             unionFields.putAll(type.getFields());
         }
 
-        return new ProjectRecordingUnitTypeListResponse(types, defaultType, unionFields);
+        return new ProjectRecordingUnitTypeListResponse(types, unionFields, buildRecordingUnitTableColumnDefaults());
     }
 
     @Transactional
@@ -231,8 +224,8 @@ public class RecordingUnitOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, null);
-        FindDefaultType defaultType = buildFindDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
+        Map<String, FieldResource> baseFields = baseFieldsOf(au.getId(), ConfigurableTable.MOBILIER, Specimen.class,
+                institution, personDto, lang);
 
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.MOBILIER));
@@ -242,7 +235,23 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, concept.getId())))
                 .toList();
 
-        return new ProjectFindTypeListResponse(types, defaultType);
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
+        types.forEach(type -> unionFields.putAll(type.getFields()));
+        return new ProjectFindTypeListResponse(types, unionFields);
+    }
+
+    /**
+     * The fields of a table's form when the entity has no type — its system fields — which is the base the
+     * types' own fields are added to in a catalog of the project's fields.
+     */
+    private Map<String, FieldResource> baseFieldsOf(Long projectId, ConfigurableTable table, Class<?> entityClass,
+                                                    InstitutionDTO institution, PersonDTO personDto, String lang) {
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Locale locale = langService.localeForApiLang(lang);
+        return OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, table, null);
+            return buildFieldsMetadataOnly(new PanelFieldSource(formUiDto), locale, entityClass);
+        });
     }
 
     private RecordingUnitIdentifierConfig buildIdentifierConfig(UserInfo userInfo, Long projectId, ConfigurableTable table, Long typeConceptId) {
@@ -253,24 +262,6 @@ public class RecordingUnitOpenApiService {
         config.setMaxCode(stored.getMaxCode());
         config.setMinCode(stored.getMinCode());
         return config;
-    }
-
-    private RecordingUnitDefaultType buildDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
-                                                      RecordingUnitIdentifierConfig identifierConfig) {
-        RecordingUnitDefaultType defaultType = new RecordingUnitDefaultType();
-        defaultType.setIdentifierConfig(identifierConfig);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE, null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
-        });
-        defaultType.setFields(fields);
-        defaultType.setTableColumns(buildRecordingUnitTableColumnDefaults());
-        return defaultType;
     }
 
     /**
@@ -304,23 +295,6 @@ public class RecordingUnitOpenApiService {
         });
         type.setFields(fields);
         return type;
-    }
-
-    private FindDefaultType buildFindDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
-                                                 RecordingUnitIdentifierConfig identifierConfig) {
-        FindDefaultType defaultType = new FindDefaultType();
-        defaultType.setIdentifierConfig(identifierConfig);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
-        });
-        defaultType.setFields(fields);
-        return defaultType;
     }
 
     private FindType buildFindType(Long projectId, Concept concept,
@@ -358,8 +332,8 @@ public class RecordingUnitOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.PHASE, null);
-        PhaseDefaultType defaultType = buildPhaseDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
+        Map<String, FieldResource> baseFields = baseFieldsOf(au.getId(), ConfigurableTable.PHASE, Phase.class,
+                institution, personDto, lang);
 
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.PHASE));
@@ -369,24 +343,9 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.PHASE, concept.getId())))
                 .toList();
 
-        return new ProjectPhaseTypeListResponse(types, defaultType);
-    }
-
-    private PhaseDefaultType buildPhaseDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
-                                                   RecordingUnitIdentifierConfig identifierConfig) {
-        PhaseDefaultType defaultType = new PhaseDefaultType();
-        defaultType.setIdentifierConfig(identifierConfig);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.PHASE, null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
-        });
-        defaultType.setFields(fields);
-        return defaultType;
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
+        types.forEach(type -> unionFields.putAll(type.getFields()));
+        return new ProjectPhaseTypeListResponse(types, unionFields);
     }
 
     private PhaseType buildPhaseType(Long projectId, Concept concept,
@@ -428,10 +387,8 @@ public class RecordingUnitOpenApiService {
         // the project then has no category, no stored identifier format, and the seed layout as its form.
         boolean configurable = Boolean.TRUE.equals(OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.isTypeFieldConfigured(au.getId(), ConfigurableTable.DOCUMENT)));
-        RecordingUnitIdentifierConfig identifierConfig = configurable
-                ? buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.DOCUMENT, null) : null;
-        DocumentDefaultType defaultType = buildDocumentDefaultType(
-                configurable ? au.getId() : null, institution, personDto, lang, identifierConfig);
+        Map<String, FieldResource> baseFields = baseFieldsOf(configurable ? au.getId() : null, ConfigurableTable.DOCUMENT,
+                Document.class, institution, personDto, lang);
 
         List<Concept> configuredTypes = !configurable ? List.<Concept>of() : OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT));
@@ -441,24 +398,9 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.DOCUMENT, concept.getId())))
                 .toList();
 
-        return new ProjectDocumentTypeListResponse(types, defaultType);
-    }
-
-    private DocumentDefaultType buildDocumentDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
-                                                   RecordingUnitIdentifierConfig identifierConfig) {
-        DocumentDefaultType defaultType = new DocumentDefaultType();
-        defaultType.setIdentifierConfig(identifierConfig);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.DOCUMENT, null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Document.class);
-        });
-        defaultType.setFields(fields);
-        return defaultType;
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
+        types.forEach(type -> unionFields.putAll(type.getFields()));
+        return new ProjectDocumentTypeListResponse(types, unionFields);
     }
 
     private DocumentType buildDocumentType(Long projectId, Concept concept,
@@ -495,8 +437,8 @@ public class RecordingUnitOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        RecordingUnitIdentifierConfig identifierConfig = buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.CONTENANT, null);
-        ContainerDefaultType defaultType = buildContainerDefaultType(au.getId(), institution, personDto, lang, identifierConfig);
+        Map<String, FieldResource> baseFields = baseFieldsOf(au.getId(), ConfigurableTable.CONTENANT, Container.class,
+                institution, personDto, lang);
 
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.CONTENANT));
@@ -506,24 +448,9 @@ public class RecordingUnitOpenApiService {
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.CONTENANT, concept.getId())))
                 .toList();
 
-        return new ProjectContainerTypeListResponse(types, defaultType);
-    }
-
-    private ContainerDefaultType buildContainerDefaultType(Long projectId, InstitutionDTO institution, PersonDTO personDto, String lang,
-                                                            RecordingUnitIdentifierConfig identifierConfig) {
-        ContainerDefaultType defaultType = new ContainerDefaultType();
-        defaultType.setIdentifierConfig(identifierConfig);
-
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Locale locale = langService.localeForApiLang(lang);
-        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.CONTENANT, null);
-            FieldSource fieldSource = new PanelFieldSource(formUiDto);
-            defaultType.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
-        });
-        defaultType.setFields(fields);
-        return defaultType;
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
+        types.forEach(type -> unionFields.putAll(type.getFields()));
+        return new ProjectContainerTypeListResponse(types, unionFields);
     }
 
     private ContainerType buildContainerType(Long projectId, Concept concept,
@@ -578,8 +505,7 @@ public class RecordingUnitOpenApiService {
 
         List<ProjectTableColumnResource> tableColumns = buildTableColumnDefaults();
 
-        ProjectDefaultType defaultType = new ProjectDefaultType(form, fieldConfigs, tableColumns);
-        return new ProjectTypeListResponse(List.of(), defaultType, fields);
+        return new ProjectTypeListResponse(List.of(), form, fieldConfigs, tableColumns, fields);
     }
 
     /**
@@ -1081,7 +1007,9 @@ public class RecordingUnitOpenApiService {
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
         boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto);
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        boolean contentChange = !answers.isEmpty() || request.isGeomPresent();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
+        boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || identifierChange;
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((contentChange || !statusChange) && !canEdit) {
@@ -1094,6 +1022,11 @@ public class RecordingUnitOpenApiService {
             // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too.
             validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidated(), personDto);
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+        }
+
+        if (identifierChange) {
+            dto.setFullIdentifier(newIdentifier);
+            IdentifierPatch.requireFree(recordingUnitService.fullIdentifierAlreadyExistInAction(dto));
         }
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {

@@ -214,6 +214,7 @@
 
     <ui:define name="content">
         <main class="container-lg">
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm"
                            styleClass="breadCrumpForm"
                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -225,6 +226,7 @@
                     <p:menuitem value="Importer des données"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
 
             <form:csrfform formId="linkToActionForm" style="margin-top: 1em;">
                 <p:commandButton action="#{navBean.redirectToActionUnit()}"

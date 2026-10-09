@@ -85,7 +85,7 @@ const fields: Record<string, FieldResource> = {
     id: "-101",
     label: "Type",
     answerType: "SELECT_ONE_FROM_FIELD_CODE",
-    valueBinding: "type",
+    valueBinding: "projectKind",
     fieldCode: "SIAAU.TYPE",
     // What CustomFieldConcept.getIcon() actually returns for every vocabulary-backed field: a
     // background-image class, not a Bootstrap Icons font glyph.

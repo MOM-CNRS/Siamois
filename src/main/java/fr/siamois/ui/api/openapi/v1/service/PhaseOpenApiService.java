@@ -133,14 +133,20 @@ public class PhaseOpenApiService {
                 PermissionConstants.PROJECT_EDIT_PHASES);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, phase.getIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(phase.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || !statusChange) && !canEdit) {
+        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
         validationOpenApiService.requireAllowed(phase.getValidated(), request.getValidated(), canEdit, canValidate);
 
-        if (answersChange || !statusChange) {
+        if (identifierChange) {
+            phase.setIdentifier(newIdentifier);
+            IdentifierPatch.requireFree(phaseService.identifierAlreadyExistInAction(phase));
+        }
+        if (answersChange || identifierChange || !statusChange) {
             Long projectId = phase.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the phase-types catalog lays out (system + additional fields).

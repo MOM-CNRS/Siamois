@@ -93,6 +93,10 @@ afterEach(() => {
   container.remove();
 });
 
+function headerPencil() {
+  return container.querySelector(".entity-detail-header-edit") as HTMLElement;
+}
+
 describe("ProjectDetailHeader", () => {
   it("shows the identifier (fullIdentifier, falling back to identifier)", async () => {
     renderHeader(project({ fullIdentifier: "", identifier: "FA" }));
@@ -114,69 +118,112 @@ describe("ProjectDetailHeader", () => {
     renderHeader(project());
     await flush();
 
-    const pencil = container.querySelector(".project-fiche-tab-identifier button") as HTMLElement;
     await act(async () => {
-      pencil.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
-    const input = container.querySelector(".project-fiche-tab-identifier input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-secondary-input") as HTMLInputElement;
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
     await act(async () => {
       nativeSetter.call(input, "   ");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-
-    const checkButton = container.querySelector(".project-fiche-tab-identifier .pi-check")!.closest("button") as HTMLElement;
     await act(async () => {
-      checkButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
     expect(mockedPatchProject).not.toHaveBeenCalled();
     expect(container.textContent).toContain("L'identifiant est obligatoire");
   });
-});
 
-describe("ProjectDetailHeader — category chip", () => {
-  function categoryPencil() {
-    return container.querySelector(".project-detail-header-category .pi-pencil")?.closest("button") as HTMLElement;
-  }
+  it("saves every changed field with ONE validate button and one patch", async () => {
+    mockedPatchProject.mockResolvedValue({} as never);
+    const onSaved = renderHeader(project());
+    await flush();
 
-  it("shows the type as a chip with a pencil once the field catalog has loaded", async () => {
+    await act(async () => {
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(container.querySelectorAll(".pi-check")).toHaveLength(1);
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+    for (const [selector, value] of [
+      [".entity-detail-header-primary-input", "Fouille B"],
+      [".entity-detail-header-secondary-input", "FB"],
+    ] as const) {
+      const input = container.querySelector(selector) as HTMLInputElement;
+      await act(async () => {
+        nativeSetter.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+    await act(async () => {
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(mockedPatchProject).toHaveBeenCalledTimes(1);
+    expect(mockedPatchProject).toHaveBeenCalledWith("1", { name: "Fouille B", identifier: "FB" });
+    expect(onSaved).toHaveBeenCalled();
+  });
+
+  it("has a single pencil, which turns name, identifier and type into editors", async () => {
     renderHeader(project());
     await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sondage");
-    expect(categoryPencil()).toBeTruthy();
+    expect(container.querySelectorAll(".pi-pencil")).toHaveLength(1);
+    await act(async () => {
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(container.querySelector(".entity-detail-header-primary-input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-secondary-input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-category .p-autocomplete input")).toBeTruthy();
+  });
+});
+
+describe("ProjectDetailHeader — category chip", () => {
+  it("shows the type as a chip", async () => {
+    renderHeader(project());
+    await flush();
+
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
   });
 
   it("labels an untyped project rather than rendering an empty chip", async () => {
     renderHeader(project({ type: undefined }));
     await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sans type");
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sans type");
   });
 
-  it("offers no pencil when the catalog has no type field to edit with", async () => {
+  it("keeps the type as a chip when the catalog has no type field to edit with", async () => {
     mockedGetProjectTypes.mockResolvedValue({ layoutJson: "[]", fieldConfigs: [], tableColumns: [], fields: {} });
     renderHeader(project());
     await flush();
+    await act(async () => {
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
 
-    expect(container.querySelector(".project-detail-header-category")?.textContent).toContain("Sondage");
-    expect(categoryPencil()).toBeFalsy();
+    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
+    expect(container.querySelector(".entity-detail-header-category .p-autocomplete")).toBeFalsy();
   });
 
-  it("swaps the chip for the shared concept autocomplete when the pencil is pressed", async () => {
+  it("swaps the chip for the shared concept autocomplete in edit mode", async () => {
     renderHeader(project());
     await flush();
 
     await act(async () => {
-      categoryPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      headerPencil().dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
 
-    const input = container.querySelector(".project-detail-header-category .p-autocomplete input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-category .p-autocomplete input") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(input.value).toBe("Sondage");
   });

@@ -2,10 +2,10 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { getDocument, listDocuments, patchDocumentAnswers } from "./api";
+import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
 import { DocumentCreateForm } from "./CreateForm";
-import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
@@ -57,12 +57,16 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
         ),
       },
     ],
-    header: (entity) => (
-      <IdentifierTypeHeader
+    header: (entity, helpers) => (
+      <SchemaEntityHeader
         entityType="document"
         chipPrefix="document"
-        label={entity.label || entity.identifier}
-        typeLabel={entity.type?.resolvedLabel}
+        entity={entity}
+        identifier={entity.identifier ?? ""}
+        title={{ value: entity.title }}
+        typesSegment="document-types"
+        patch={patchDocument}
+        onSaved={helpers.refetch}
       />
     ),
     chrome: (entity) => bookmarkChrome(entity, entity.identifier ?? entity.label),

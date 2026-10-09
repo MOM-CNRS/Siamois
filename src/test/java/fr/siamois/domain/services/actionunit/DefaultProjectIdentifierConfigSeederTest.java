@@ -15,9 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -107,45 +108,42 @@ class DefaultProjectIdentifierConfigSeederTest {
     }
 
     @Test
-    void seed_shouldSetTheDefaultMobilierIdentifierFormat() throws Exception {
+    void seed_shouldGiveEveryConfiguredTableItsStandardType_withTheTablesOwnIdentifierFormat() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        String standardUri = "https://opentheso2.mom.fr/?idc=1&idt=th277";
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "mobilierTypeUri", standardUri);
 
         Vocabulary vocabulary = new Vocabulary();
-        Concept usConcept = new Concept();
-        usConcept.setId(1L);
-        Concept fConcept = new Concept();
-        fConcept.setId(2L);
-        when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
-        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenReturn(vocabulary);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, F_URI, null)).thenReturn(fConcept);
+        Concept standard = new Concept();
+        standard.setId(77L);
+        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
+        when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenAnswer(invocation -> {
+            String uri = invocation.getArgument(1);
+            if (uri.equals(standardUri)) return standard;
+            Concept other = new Concept();
+            other.setId(1L);
+            return other;
+        });
 
         seeder.seed(PROJECT_ID);
 
-        ArgumentCaptor<TypeFormConfig> mobilierConfig = ArgumentCaptor.forClass(TypeFormConfig.class);
-        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.MOBILIER), mobilierConfig.capture());
-        assertThat(mobilierConfig.getValue().getTypeName()).isEqualTo(TableFieldConfigService.DEFAULT_TYPE);
-        assertThat(mobilierConfig.getValue().getIdentifierFormat()).isEqualTo("MOB{NUM_MOBILIER:0}");
-        assertThat(mobilierConfig.getValue().getMinCode()).isEqualTo(1);
-        assertThat(mobilierConfig.getValue().getMaxCode()).isEqualTo(999);
+        ArgumentCaptor<TypeFormConfig> config = ArgumentCaptor.forClass(TypeFormConfig.class);
+        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.MOBILIER), eq(77L), config.capture());
+        assertThat(config.getValue().getIdentifierFormat()).isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
     }
 
     @Test
-    void seed_shouldNotFailProjectCreationWhenMobilierHasNoVocabularyConfigured() throws Exception {
+    void seed_shouldLeaveATableWithoutAStandardTypeWhenNoneIsConfigured() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
-
         Vocabulary vocabulary = new Vocabulary();
-        Concept usConcept = new Concept();
-        usConcept.setId(1L);
-        Concept fConcept = new Concept();
-        fConcept.setId(2L);
-        when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
-        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenReturn(vocabulary);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, F_URI, null)).thenReturn(fConcept);
-        doThrow(new IllegalStateException("No vocabulary configured"))
-                .when(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.MOBILIER), any(TypeFormConfig.class));
+        Concept concept = new Concept();
+        concept.setId(1L);
+        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
+        when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenReturn(concept);
 
-        assertThatCode(() -> seeder.seed(PROJECT_ID)).doesNotThrowAnyException();
+        seeder.seed(PROJECT_ID);
+
+        verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.MOBILIER), anyLong(), any());
+        verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.PHASE), anyLong(), any());
     }
 }

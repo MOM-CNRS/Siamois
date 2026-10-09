@@ -180,17 +180,23 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
 const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Sources of the last search that could not be narrowed because the field they depend on is empty.
   const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
-  const loadOptions =
+  const sourceOptions =
     orgId != null
       ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext })
       : null;
+  const loadOptions = declaredOptions
+    ? async (q?: string) => {
+        const needle = (q ?? "").trim().toLowerCase();
+        return declaredOptions.filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
+      }
+    : sourceOptions;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const { capTo, panelStyle } = useFieldWidthCap();
   const target = referenceTargetOf(field);

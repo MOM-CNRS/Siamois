@@ -16,15 +16,20 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -36,6 +41,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
@@ -58,6 +64,10 @@ public class ProfileSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient LangageChangeEventPublisher langageChangeEventPublisher;
     private final transient ConversionService conversionService;
+    private final transient ProfilePermissionService profilePermissionService;
+    private final transient ActionUnitService actionUnitService;
+    private final transient NavBean navBean;
+    private final InstitutionListSettingsBean institutionListSettingsBean;
 
     private Set<InstitutionDTO> refInstitutions;
     private PersonSettings personSettings;
@@ -74,6 +84,9 @@ public class ProfileSettingsBean implements Serializable {
 
     private ProgressWrapper progressWrapper = new ProgressWrapper();
 
+    /** The profiles the user holds, where each applies and what it grants — the "my rights" dashboard. */
+    private transient List<ProfilePermissionService.ProfileGrant> rights = List.of();
+
     @EventListener(InstitutionChangeEvent.class)
     public void init() {
         UserInfo info = sessionSettingsBean.getUserInfo();
@@ -81,6 +94,7 @@ public class ProfileSettingsBean implements Serializable {
         initPersonSection(info);
         initThesaurusSection(info);
         initInstitutions(user, info);
+        rights = profilePermissionService.grantsOf(user);
 
         fSelectedLang = langBean.getLanguageCode();
     }
@@ -114,6 +128,36 @@ public class ProfileSettingsBean implements Serializable {
         fLastname = user.getLastname();
         fFirstname = user.getName();
         personSettings = personService.createOrGetSettingsOf(user);
+    }
+
+    /** The label of a permission code, falling back to the code itself when it has no translation. */
+    public String permissionLabel(String code) {
+        String key = "permission." + code;
+        String label = langBean.msg(key);
+        return label == null || label.equals(key) ? code : label;
+    }
+
+    /** Whether the grant points at a project or an organisation the user can jump to. */
+    public boolean canOpen(ProfilePermissionService.ProfileGrant grant) {
+        return grant.getActionUnitId() != null || grant.getInstitutionId() != null;
+    }
+
+    /** Quick access from the dashboard: opens the settings of the project or organisation of a grant. */
+    public void open(ProfilePermissionService.ProfileGrant grant) throws IOException {
+        if (grant.getActionUnitId() != null) {
+            navBean.redirectToActionUnitSettings(actionUnitService.findById(grant.getActionUnitId()));
+            return;
+        }
+        if (grant.getInstitutionId() == null) {
+            return;
+        }
+        institutionListSettingsBean.init();
+        String path = institutionListSettingsBean.redirectToInstitution(institutionService.findById(grant.getInstitutionId()));
+        if (path == null) {
+            return;
+        }
+        ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
+        externalContext.redirect(externalContext.getRequestContextPath() + path);
     }
 
     public void saveProfile() {

@@ -482,4 +482,37 @@ class DocumentOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
+
+    @Test
+    void patchDocument_blankIdentifier_throws400() {
+        DocumentDTO document = documentOn(projectWithInstitution());
+        when(documentService.findDtoById(5L)).thenReturn(document);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        var request = new DocumentPatchRequest();
+        request.setIdentifier("   ");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchDocument_identifierAlreadyUsedInTheProject_throws409() {
+        DocumentDTO document = documentOn(projectWithInstitution());
+        when(documentService.findDtoById(5L)).thenReturn(document);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        when(documentService.identifierAlreadyExistInProject(any())).thenReturn(true);
+        var request = new DocumentPatchRequest();
+        request.setIdentifier("NEW-1");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(documentService, never()).save(any(DocumentDTO.class));
+    }
+
 }

@@ -18,26 +18,25 @@
 
     <ui:define name="content">
         <main>
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="#{langBean.msg('nav.header.administration')}" action="#{navBean.goToUserManagementSettings()}"/>
                     <p:menuitem value="#{langBean.msg('nav.userManagement')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
             <div class="settings-page-header">
                 <h2 class="dt-title">#{langBean.msg('administrationSettings.membersProfiles.title')}</h2>
-                <p class="dt-desc">#{langBean.msg('administrationSettings.membersProfiles.description')}</p>
             </div>
             <p:tabView id="applicationMembersTabs" dynamic="false" styleClass="settings-tabs">
             <p:tab title="#{langBean.msg('common.label.members.tab')}">
             <settings:datatable
                     id="applicationMembersDatatable"
-                    title="#{langBean.msg('administrationSettings.userManagement.title')}"
                     filterAction="#{applicationMembersListBean.filter()}"
                     formId="applicationMembersForm"
                     addAction="#{applicationMembersListBean.add()}"
                     searchInputTextValue="#{applicationMembersListBean.searchInput}"
-                    description="#{langBean.msg('administrationSettings.userManagement.description')}"
                     renderCreateButton="false"
                     createButtonLabel="#{langBean.msg('administrationSettings.userManagement.dialog.label')}"
             >
@@ -61,13 +60,10 @@
                         </p>
                     </f:facet>
                     <p:column headerText="#{langBean.msg('common.label.user')}">
-                        <div style="display: flex; align-items: center; gap: 11px">
+                        <div class="member-user-cell">
                             <span class="member-avatar">#{member.person.initials()}</span>
-                            <div style="display: flex; flex-direction: column">
-                                <strong>#{member.displayName()}</strong>
-                                <p style="margin-bottom: 0; font-style: italic">#{member.person.email}</p>
-                                <p>#{member.person.username}</p>
-                            </div>
+                            <strong>#{member.displayName()}</strong>
+                            <span class="member-email">#{member.person.email}</span>
                         </div>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.profile')}">
@@ -117,16 +113,16 @@
             </settings:datatable>
             </p:tab>
             <p:tab title="#{langBean.msg('profile.tab.label')}">
+                <div class="profiles-split">
                 <settings:profilesList
-                        title="#{langBean.msg('administrationSettings.titles.profiles')}"
-                        description="#{langBean.msg('administrationSettings.profiles.description')}"
                         profiles="#{applicationMembersListBean.availableProfiles}"
-                        onOpen="#{applicationMembersListBean.openProfileDetail}"/>
+                        bean="#{applicationMembersListBean}"/>
+                <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
+                    <ui:param name="bean" value="#{applicationMembersListBean}"/>
+                </ui:include>
+                </div>
             </p:tab>
             </p:tabView>
-            <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
-                <ui:param name="bean" value="#{applicationMembersListBean}"/>
-            </ui:include>
         </main>
     </ui:define>
 

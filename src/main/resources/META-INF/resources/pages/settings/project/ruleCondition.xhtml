@@ -11,7 +11,7 @@
             <div class="ptc-hint">#{langBean.msg('rules.advancedKept')}</div>
             <p:commandButton value="#{langBean.msg('rules.removeAdvanced')}" styleClass="ui-button-outlined ui-button-sm"
                              actionListener="#{fieldRulesEditorBean.clearAdvanced(draft)}" process="@this"
-                             update=":rulesForm:rulesContent"/>
+                             update=":fieldEditForm:rulesBlock"/>
         </h:panelGroup>
 
         <h:panelGroup rendered="#{not draft.advanced}">
@@ -28,18 +28,18 @@
                         <f:selectItem itemLabel="#{langBean.msg('rules.chooseField')}" itemValue="#{null}" noSelectionOption="true"/>
                         <f:selectItems value="#{fieldRulesEditorBean.otherFields}" var="of"
                                        itemLabel="#{fieldRulesEditorBean.labelOf(of)}" itemValue="#{of.id}"/>
-                        <p:ajax event="change" listener="#{fieldRulesEditorBean.onLeafFieldChanged(leaf)}" update=":rulesForm:rulesContent"/>
+                        <p:ajax event="change" listener="#{fieldRulesEditorBean.onLeafFieldChanged(leaf)}" update=":fieldEditForm:rulesBlock"/>
                     </p:selectOneMenu>
                     <h:panelGroup rendered="#{leaf.fieldId ne null}">
                         <div class="ptc-rule-leaf-row">
                             <p:selectOneMenu value="#{leaf.op}" style="width:170px;">
                                 <f:selectItems value="#{fieldRulesEditorBean.operatorsFor(leaf.fieldId)}" var="o"
                                                itemLabel="#{fieldRulesEditorBean.opLabel(o)}" itemValue="#{o}"/>
-                                <p:ajax event="change" update=":rulesForm:rulesContent"/>
+                                <p:ajax event="change" update=":fieldEditForm:rulesBlock"/>
                             </p:selectOneMenu>
                             <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm"
                                              actionListener="#{fieldRulesEditorBean.removeLeaf(draft, leaf)}" process="@this"
-                                             update=":rulesForm:rulesContent"/>
+                                             update=":fieldEditForm:rulesBlock"/>
                         </div>
                         <h:panelGroup rendered="#{fieldRulesEditorBean.needsValue(leaf)}">
                             <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() eq 'CONCEPT'}">
@@ -61,7 +61,7 @@
 
             <p:commandButton value="#{langBean.msg('rules.addCondition')}" styleClass="ui-button-outlined ui-button-sm"
                              actionListener="#{fieldRulesEditorBean.addLeaf(draft)}" process="@form"
-                             update=":rulesForm:rulesContent"/>
+                             update=":fieldEditForm:rulesBlock"/>
         </h:panelGroup>
     </div>
 </ui:fragment>

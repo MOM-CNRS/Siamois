@@ -1031,4 +1031,33 @@ class FindOpenApiServiceTest {
         ui.setLayout(List.of(panel));
         return ui;
     }
+
+    @Test
+    void patchFind_blankIdentifier_throws400() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+
+        FindPatchRequest request = new FindPatchRequest();
+        request.setIdentifier("  ");
+        assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchFind_identifierAlreadyUsedInTheProject_throws409() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+        when(specimenService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true);
+
+        FindPatchRequest request = new FindPatchRequest();
+        request.setIdentifier("NEW-1");
+        assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(specimenService, never()).save(any());
+    }
 }

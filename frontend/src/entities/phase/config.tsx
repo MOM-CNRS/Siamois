@@ -4,10 +4,10 @@ import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { getPhase, listPhases, patchPhaseAnswers } from "./api";
+import { getPhase, listPhases, patchPhase, patchPhaseAnswers } from "./api";
 import { phaseColumns } from "./columns";
 import { PhaseCreateForm } from "./CreateForm";
-import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
@@ -72,8 +72,17 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
         creatable: false,
       }),
     ],
-    header: (entity) => (
-      <IdentifierTypeHeader entityType="phase" chipPrefix="phase" label={entity.label || entity.identifier} typeLabel={entity.type?.resolvedLabel} />
+    header: (entity, helpers) => (
+      <SchemaEntityHeader
+        entityType="phase"
+        chipPrefix="phase"
+        entity={entity}
+        identifier={entity.identifier ?? ""}
+        title={{ value: entity.title }}
+        typesSegment="phase-types"
+        patch={patchPhase}
+        onSaved={helpers.refetch}
+      />
     ),
     chrome: (entity) => bookmarkChrome(entity, entity.identifier ?? entity.label),
     // The titlebar's "Créer" makes a sibling in the same project.
