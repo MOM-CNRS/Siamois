@@ -43,6 +43,9 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.VocabularyMode;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
@@ -77,6 +80,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
@@ -2543,6 +2547,47 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(response.getFields()).containsKey("45");
         assertThat(response.getFields()).containsKey("46");
         assertThat(response.getFields().get("45").label()).isEqualTo("Champ par défaut (redéfini par le type)");
+    }
+
+    @Test
+    void buildProjectRecordingUnitTypeSettings_vocabularyFieldSaysWhereItsListComesFromPerType_andNotInTheRootCatalog() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
+                .thenReturn(new FormUiDto());
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(43L);
+        field.setLabel("Matière");
+        field.setIsSystemField(false);
+        field.setFieldCode("SIARU.MATIERE");
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 42L))
+                .thenReturn(formUiDtoWithOneField(field));
+        when(fieldConfigurationService.describeVocabulary(field, 5L, 42L)).thenReturn(
+                new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 99L, null,
+                        VocabularyMode.FOLLOW, Map.of(101L, ConceptState.DISABLED)));
+
+        ProjectRecordingUnitTypeListResponse response =
+                service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
+
+        FieldResource.Vocabulary vocabulary = response.getData().get(0).getFields().get("43").vocabulary();
+        assertThat(vocabulary.source()).isEqualTo(new FieldResource.Source("BRANCH", null, "99", null));
+        assertThat(vocabulary.mode()).isEqualTo("FOLLOW");
+        assertThat(vocabulary.excludedConceptIds()).containsExactly("101");
+        // the root catalog is the union of the types: a vocabulary can differ per type, so it is left out
+        assertThat(response.getFields().get("43").vocabulary()).isNull();
     }
 
     @Test

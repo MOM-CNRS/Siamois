@@ -16,7 +16,9 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.document.DocumentLinkKind;
@@ -30,10 +32,12 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import org.hibernate.Hibernate;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.VocabularyResourceMapper;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
@@ -207,7 +211,7 @@ public class RecordingUnitOpenApiService {
         // effective-form customization scoped to that one type) wins over it.
         Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
         for (RecordingUnitType type : types) {
-            unionFields.putAll(type.getFields());
+            putCatalogFields(unionFields, type.getFields());
         }
 
         return new ProjectRecordingUnitTypeListResponse(types, unionFields, buildRecordingUnitTableColumnDefaults());
@@ -236,7 +240,7 @@ public class RecordingUnitOpenApiService {
                 .toList();
 
         Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
-        types.forEach(type -> unionFields.putAll(type.getFields()));
+        types.forEach(type -> putCatalogFields(unionFields, type.getFields()));
         return new ProjectFindTypeListResponse(types, unionFields);
     }
 
@@ -291,7 +295,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class);
+            return buildFieldsMetadataOnly(fieldSource, locale, RecordingUnit.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;
@@ -310,7 +314,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class);
+            return buildFieldsMetadataOnly(fieldSource, locale, Specimen.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;
@@ -344,7 +348,7 @@ public class RecordingUnitOpenApiService {
                 .toList();
 
         Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
-        types.forEach(type -> unionFields.putAll(type.getFields()));
+        types.forEach(type -> putCatalogFields(unionFields, type.getFields()));
         return new ProjectPhaseTypeListResponse(types, unionFields);
     }
 
@@ -361,7 +365,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.PHASE, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Phase.class);
+            return buildFieldsMetadataOnly(fieldSource, locale, Phase.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;
@@ -399,7 +403,7 @@ public class RecordingUnitOpenApiService {
                 .toList();
 
         Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
-        types.forEach(type -> unionFields.putAll(type.getFields()));
+        types.forEach(type -> putCatalogFields(unionFields, type.getFields()));
         return new ProjectDocumentTypeListResponse(types, unionFields);
     }
 
@@ -416,7 +420,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.DOCUMENT, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Document.class);
+            return buildFieldsMetadataOnly(fieldSource, locale, Document.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;
@@ -449,7 +453,7 @@ public class RecordingUnitOpenApiService {
                 .toList();
 
         Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
-        types.forEach(type -> unionFields.putAll(type.getFields()));
+        types.forEach(type -> putCatalogFields(unionFields, type.getFields()));
         return new ProjectContainerTypeListResponse(types, unionFields);
     }
 
@@ -466,7 +470,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.CONTENANT, concept.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
-            return buildFieldsMetadataOnly(fieldSource, locale, Container.class);
+            return buildFieldsMetadataOnly(fieldSource, locale, Container.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;
@@ -737,6 +741,33 @@ public class RecordingUnitOpenApiService {
                     fieldQueryService.withQuery(toFieldResource(field, locale), entityType, field));
         }
         return fields;
+    }
+
+    /**
+     * The fields of one type's form, each vocabulary field saying where its list comes from for that
+     * project and type ({@link FieldConfigurationService#describeVocabulary}).
+     */
+    private Map<String, FieldResource> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale, Class<?> entityType,
+                                                               Long projectId, Long typeConceptId) {
+        Map<String, FieldResource> fields = buildFieldsMetadataOnly(fieldSource, locale, entityType);
+        for (CustomField field : fieldSource.getAllFields()) {
+            if (field == null || field.getId() == null) continue;
+            if (Hibernate.unproxy(field) instanceof CustomFieldConcept conceptField) {
+                FieldVocabularyConfig vocabulary = fieldConfigurationService.describeVocabulary(conceptField, projectId, typeConceptId);
+                fields.computeIfPresent(String.valueOf(field.getId()),
+                        (id, resource) -> resource.withVocabulary(VocabularyResourceMapper.toResource(vocabulary)));
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * Adds one type's fields to the project's flat catalog. The catalog is the union of the types' fields,
+     * the last type winning on a shared field: a vocabulary can differ from one type to the next, so it is
+     * left out here and only read from each type's own {@code fields}.
+     */
+    private static void putCatalogFields(Map<String, FieldResource> catalog, Map<String, FieldResource> typeFields) {
+        typeFields.forEach((id, resource) -> catalog.put(id, resource.withVocabulary(null)));
     }
 
     private FieldResource toFieldResource(CustomField field, Locale locale) {

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller.project;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.DeprecatedEndpointHeaders;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.ProjectConceptsResponse;
@@ -38,12 +39,21 @@ public class ProjectConceptsControllerApi {
     private final ProjectApiService projectApiService;
     private final VocabularyOpenApiService vocabularyOpenApiService;
 
+    /**
+     * @deprecated Ignore la restriction branche/collection du champ, les concepts désactivés et les listes figées :
+     * il ne connaît que le field code. À remplacer par {@code GET /api/v1/organizations/{id}/concepts?fieldId=}.
+     */
+    @Deprecated(forRemoval = true)
     @GetMapping("/concepts")
     @Operation(
             summary = "Concepts d'un projet pour un fieldCode",
-            description = "Sans `q` : retourne tous les concepts paginés. "
-                    + "Avec `q` : mode suggestion (autocomplete, non paginé, résultats limités). "
-
+            description = "**Déprécié** : ne connaît que le field code, donc ignore la restriction branche/collection du "
+                    + "champ, ses concepts désactivés et sa liste figée. Utiliser "
+                    + "`GET /api/v1/organizations/{id}/concepts?fieldId=…&projectId=…&valueConceptId=…`, le `fieldId` "
+                    + "étant celui du champ dans la configuration des types du projet. "
+                    + "Sans `q` : retourne tous les concepts paginés. "
+                    + "Avec `q` : mode suggestion (autocomplete, non paginé, résultats limités). ",
+            deprecated = true
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -80,16 +90,25 @@ public class ProjectConceptsControllerApi {
         List<ResolvedConceptResource> page = (isSuggestMode ? all : paginate(all, offset, limit))
                 .stream().map(ResolvedConceptResource::from).toList();
 
-        return ResponseEntity.ok()
+        return DeprecatedEndpointHeaders.apply(ResponseEntity.ok(), "/api/v1/organizations/{id}/concepts?fieldId=")
                 .header("X-Total-Count", String.valueOf(all.size()))
                 .body(new ProjectConceptsResponse(page));
     }
 
+    /**
+     * @deprecated Les champs sont découverts par la configuration des types du projet
+     * ({@code GET /api/v1/projects/{id}/recording-unit-types}, etc.), qui donne leur {@code fieldId} et leur
+     * {@code vocabulary}, y compris pour un champ sans field code.
+     */
+    @Deprecated(forRemoval = true)
     @GetMapping("/field-codes")
     @Operation(
             summary = "FieldCodes disponibles pour un projet",
-            description = "Retourne les fieldCodes ayant un vocabulaire configuré pour l'organisation liée au projet. "
-                    + "Utiliser ces codes comme valeur du paramètre `fieldCode` sur GET /api/v1/projects/{id}/concepts."
+            description = "**Déprécié** : un champ de vocabulaire n'a pas forcément de field code. Découvrir les champs par la "
+                    + "configuration des types du projet (`fields[<fieldId>].vocabulary`) et lire leurs concepts par "
+                    + "`GET /api/v1/organizations/{id}/concepts?fieldId=`. "
+                    + "Retourne les fieldCodes ayant un vocabulaire configuré pour l'organisation liée au projet.",
+            deprecated = true
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -109,7 +128,8 @@ public class ProjectConceptsControllerApi {
         List<String> fieldCodes = vocabularyOpenApiService.getAvailableFieldCodesForOrganization(
                 organizationId, lang, caller.person());
 
-        return ResponseEntity.ok(new ProjectFieldCodesResponse(fieldCodes));
+        return DeprecatedEndpointHeaders.apply(ResponseEntity.ok(), "/api/v1/projects/{id}/recording-unit-types")
+                .body(new ProjectFieldCodesResponse(fieldCodes));
     }
 
     private long resolveOrganizationId(ProjectApiCaller caller, long projectId) {

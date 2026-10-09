@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.organization;
 
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.DeprecatedEndpointHeaders;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
@@ -68,11 +69,15 @@ public class OrganizationProjectsControllerApi {
 
     @GetMapping("/{id}/concepts")
     @Operation(
-            summary = "Concepts de l'organisation pour un fieldCode",
-            description = "Équivalent organisation-scopé de GET /api/v1/projects/{projectId}/concepts (plan §3 "
-                    + "phase 3) — pour les filtres de la liste des projets, qui n'ont pas de projet de contexte "
-                    + "pour dériver l'organisation. Sans `q` : tous les concepts paginés. Avec `q` : mode "
-                    + "suggestion (autocomplete, non paginé, résultats limités)."
+            summary = "Concepts de l'organisation pour un champ (fieldId) ou un fieldCode",
+            description = "Les concepts proposés par un champ de vocabulaire. **Utiliser `fieldId`** (celui du champ dans la "
+                    + "configuration des types du projet) avec `projectId` et `valueConceptId` : le serveur applique la "
+                    + "restriction branche/collection du champ, ses concepts désactivés ou sa liste figée, puis le "
+                    + "thésaurus du projet, puis le field code. **`fieldCode` seul est déprécié** (réponse marquée "
+                    + "`Deprecation: true`) : il ignore tout cela et renvoie la liste complète du code. "
+                    + "Pour les filtres de la liste des projets, qui n'ont pas de projet de contexte. "
+                    + "Sans `q` : tous les concepts paginés. Avec `q` : mode suggestion (autocomplete, non paginé, "
+                    + "résultats limités)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -125,7 +130,11 @@ public class OrganizationProjectsControllerApi {
         List<ResolvedConceptResource> page = (isSuggestMode ? all : paginate(all, offset, limit))
                 .stream().map(ResolvedConceptResource::from).toList();
 
-        return ResponseEntity.ok()
+        boolean byFieldCodeOnly = relatedToConceptId == null && fieldId == null;
+        ResponseEntity.BodyBuilder response = byFieldCodeOnly
+                ? DeprecatedEndpointHeaders.apply(ResponseEntity.ok(), "/api/v1/organizations/{id}/concepts?fieldId=")
+                : ResponseEntity.ok();
+        return response
                 .header("X-Total-Count", String.valueOf(all.size()))
                 .body(new ProjectConceptsResponse(page));
     }

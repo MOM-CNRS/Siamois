@@ -129,6 +129,30 @@ class ProjectConceptsControllerApiTest {
     }
 
     @Test
+    void getConcepts_isDeprecated_andPointsToTheFieldIdEndpoint() throws Exception {
+        stubAccessibleProject(9L, institutionDto);
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto)))
+                .thenReturn(List.of(conceptAutocomplete(1L, "A")));
+
+        mockMvc.perform(get("/api/v1/projects/9/concepts").param("fieldCode", "SIARU.TYPE"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Deprecation", "true"))
+                .andExpect(header().string("Link", "</api/v1/organizations/{id}/concepts?fieldId=>; rel=\"successor-version\""));
+    }
+
+    @Test
+    void getFieldCodes_isDeprecated() throws Exception {
+        stubAccessibleProject(9L, institutionDto);
+        when(vocabularyOpenApiService.getAvailableFieldCodesForOrganization(eq(100L), anyString(), eq(personDto)))
+                .thenReturn(List.of("SIARU.TYPE"));
+
+        mockMvc.perform(get("/api/v1/projects/9/field-codes"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Deprecation", "true"))
+                .andExpect(jsonPath("$.data[0]").value("SIARU.TYPE"));
+    }
+
+    @Test
     void getConcepts_suggestMode_returnsUnpaginatedResultsWithTotalCountHeader() throws Exception {
         stubAccessibleProject(9L, institutionDto);
         List<ConceptAutocompleteDTO> all = List.of(

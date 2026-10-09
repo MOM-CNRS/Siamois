@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.form;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 @Schema(description = "Définition d'un champ de formulaire")
@@ -58,8 +59,25 @@ public record FieldResource(
                 + "(enabledWhen, requiredWhen, options, constraints — même langage que les colonnes du layout). "
                 + "Là où une liste n'a pas de layout, c'est ce qui permet de griser une cellule ou d'en borner "
                 + "la valeur ; null si le champ n'a aucune règle")
-        @Nullable Map<String, Object> rules
+        @Nullable Map<String, Object> rules,
+
+        @Schema(description = "D'où vient la liste d'un champ de vocabulaire, pour le projet et le type de la fiche "
+                + "qui le porte : source (field code, branche ou collection du thésaurus), mode (suivre ou figé) "
+                + "et état des concepts. Renseigné dans le `fields` imbriqué de chaque type, jamais dans le "
+                + "catalogue `fields` racine (union des types : un même champ peut y différer d'un type à l'autre). "
+                + "Les concepts eux-mêmes sont à GET /api/v1/organizations/{id}/concepts?fieldId=. "
+                + "Null pour un champ qui n'est pas de vocabulaire, ou hors d'une fiche de type.")
+        @Nullable Vocabulary vocabulary
 ) {
+
+    /** The pre-vocabulary shape. */
+    public FieldResource(String id, String resourceType, String label, String answerType, String hint,
+                         Boolean isSystemField, String valueBinding, String fieldCode, Boolean isTextArea,
+                         String icon, String conceptUri, Constraints constraints, Query query, Boolean readOnly,
+                         Map<String, Object> rules) {
+        this(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode, isTextArea,
+                icon, conceptUri, constraints, query, readOnly, rules, null);
+    }
 
     /** The pre-rules shape. */
     public FieldResource(String id, String resourceType, String label, String answerType, String hint,
@@ -95,17 +113,58 @@ public record FieldResource(
 
     public FieldResource withQuery(@Nullable Query query) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, vocabulary);
     }
 
     public FieldResource withReadOnly(@Nullable Boolean readOnly) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, vocabulary);
+    }
+
+    public FieldResource withVocabulary(@Nullable Vocabulary vocabulary) {
+        return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, vocabulary);
     }
 
     public FieldResource withRules(@Nullable Map<String, Object> rules) {
         return new FieldResource(id, resourceType, label, answerType, hint, isSystemField, valueBinding, fieldCode,
-                isTextArea, icon, conceptUri, constraints, query, readOnly, rules);
+                isTextArea, icon, conceptUri, constraints, query, readOnly, rules, vocabulary);
+    }
+
+    @Schema(description = "Source, mode et état des concepts de la liste d'un champ de vocabulaire")
+    public record Vocabulary(
+            @Schema(description = "Ce dont la liste est tirée")
+            Source source,
+            @Schema(description = "FOLLOW : la liste suit sa source (un concept ajouté au thésaurus y apparaît, un concept "
+                    + "retiré en sort) ; FROZEN : la liste est l'ensemble des concepts activés, la source ne l'a fait "
+                    + "qu'initialiser", allowableValues = {"FOLLOW", "FROZEN"})
+            String mode,
+            @Schema(description = "FOLLOW : identifiants des concepts de la source désactivés pour ce champ (absents de la "
+                    + "liste) ; vide si aucun. Null en FROZEN")
+            @Nullable List<String> excludedConceptIds,
+            @Schema(description = "FROZEN : les concepts de la liste et leur état. Null en FOLLOW")
+            @Nullable List<ConceptStateEntry> concepts
+    ) {
+    }
+
+    @Schema(description = "Origine de la liste d'un champ de vocabulaire : un seul des trois jeux de champs est renseigné")
+    public record Source(
+            @Schema(description = "FIELD_CODE : concepts configurés pour le field code ; BRANCH : sous-arbre d'un concept ; "
+                    + "COLLECTION : collection du thésaurus", allowableValues = {"FIELD_CODE", "BRANCH", "COLLECTION"})
+            String kind,
+            @Schema(description = "FIELD_CODE : le code du champ (ex. SIARU.TYPE)") @Nullable String fieldCode,
+            @Schema(description = "BRANCH : identifiant du concept racine de la branche") @Nullable String topTermConceptId,
+            @Schema(description = "COLLECTION : identifiant de la collection") @Nullable String collectionId
+    ) {
+    }
+
+    @Schema(description = "Un concept d'une liste figée et son état")
+    public record ConceptStateEntry(
+            @Schema(description = "Identifiant du concept") String id,
+            @Schema(description = "ENABLED : proposé ; DISABLED : écarté ; PENDING : nouveau dans la source, pas encore "
+                    + "activé (non proposé)", allowableValues = {"ENABLED", "DISABLED", "PENDING"})
+            String state
+    ) {
     }
 
     @Schema(description = "Contraintes de saisie d'un champ")
