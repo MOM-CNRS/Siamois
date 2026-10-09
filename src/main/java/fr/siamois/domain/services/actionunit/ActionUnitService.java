@@ -965,7 +965,7 @@ public class ActionUnitService implements ArkEntityService {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             throw new ActionUnitNotFoundException("No institution scope for current user");
         }
-        ActionUnitDTO dto = loadProjectDtoForLookupKey(idOrKey, accessibleInstitutionIds);
+        ActionUnitDTO dto = loadProjectDtoForLookupKey(idOrKey);
         InstitutionDTO inst = dto.getCreatedByInstitution();
         if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
             throw new ActionUnitNotFoundException("Project not found or not accessible");
@@ -1022,7 +1022,7 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */
-    private ActionUnitDTO loadProjectDtoForLookupKey(String id, Set<Long> accessibleInstitutionIds) {
+    private ActionUnitDTO loadProjectDtoForLookupKey(String id) {
         String key = id == null ? "" : id.trim();
         if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
             throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);

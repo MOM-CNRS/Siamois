@@ -32,8 +32,9 @@ class ClosedEnumsContractTest {
     void resourceRefType_coversEveryTypeWithADetailEndpoint() throws Exception {
         Set<String> published = allowableValuesOf(ResourceRef.class, "resourceType");
 
-        assertThat(published).contains("projects", "places", "finds", "recording-units", "phases",
-                "containers", "documents", "concepts", "persons");
-        assertThat(published).doesNotContain("action-units", "spatial-units", "action-codes");
+        assertThat(published)
+                .contains("projects", "places", "finds", "recording-units", "phases",
+                        "containers", "documents", "concepts", "persons")
+                .doesNotContain("action-units", "spatial-units", "action-codes");
     }
 }
