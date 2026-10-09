@@ -21,7 +21,8 @@ export interface ProjectCreateBody {
   name: string;
   identifier: string;
   typeId: string;
-  // Places the project is attached to (ActionUnit.spatialContext).
+  // The project's main location / the places it is attached to (ActionUnit.mainLocation / .spatialContext).
+  mainLocationId?: string;
   spatialContextSpatialUnitIds?: string[];
 }
 
@@ -33,6 +34,7 @@ export async function createProject(body: ProjectCreateBody): Promise<ProjectDet
       name: body.name,
       identifier: body.identifier,
       typeConceptId: body.typeId,
+      mainLocationId: body.mainLocationId,
       spatialContextSpatialUnitIds: body.spatialContextSpatialUnitIds,
     },
   });

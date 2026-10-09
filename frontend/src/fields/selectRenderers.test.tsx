@@ -13,10 +13,12 @@ vi.mock("./optionSources", async (importOriginal) => {
   return {
     ...actual,
     optionSourceFor: vi.fn(actual.optionSourceFor),
+    createPlaceFromSuggestion: vi.fn(),
   };
 });
-import { optionSourceFor } from "./optionSources";
+import { createPlaceFromSuggestion, optionSourceFor, type FilterOption } from "./optionSources";
 const mockedOptionSourceFor = vi.mocked(optionSourceFor);
+const mockedCreatePlace = vi.mocked(createPlaceFromSuggestion);
 
 function conceptField(overrides: Partial<FieldResource> = {}): FieldResource {
   return {
@@ -461,5 +463,96 @@ describe("picked entity chips", () => {
       remove.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+});
+
+describe("an external place suggestion", () => {
+  const spatialField: FieldResource = {
+    id: "-108",
+    resourceType: "fields",
+    label: "Lieu principal",
+    answerType: "SELECT_ONE_SPATIAL_UNIT",
+    isSystemField: true,
+  };
+  const lyon: FilterOption = {
+    id: "external:INSEE:69123",
+    label: "Lyon",
+    place: { source: "INSEE", code: "69123", external: { name: "Lyon", code: "69123" } },
+  };
+
+  async function pickFirstSuggestion(onChange: (v: unknown) => void) {
+    mockedOptionSourceFor.mockImplementation(() => async () => [lyon]);
+    act(() => {
+      root.render(
+        <SelectOneSpatialUnitRenderer
+          field={spatialField}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={onChange}
+          organizationId={100}
+          context={{ organizationId: 100, projectId: "3" }}
+        />,
+      );
+    });
+    await act(async () => {
+      container.querySelector("input")!.focus();
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    const item = document.body.querySelector("li.p-autocomplete-item") as HTMLElement;
+    expect(item.textContent).toContain("Lyon");
+    expect(item.querySelector(".bi-globe2")).not.toBeNull();
+    await act(async () => {
+      item.click();
+    });
+  }
+
+  it("is created before it is picked, and the created place is the value", async () => {
+    mockedCreatePlace.mockResolvedValueOnce({ id: "77", label: "Lyon" });
+    const onChange = vi.fn();
+
+    await pickFirstSuggestion(onChange);
+
+    expect(mockedCreatePlace).toHaveBeenCalledWith(100, lyon, "3");
+    expect(onChange).toHaveBeenLastCalledWith({ resourceId: "77", resourceType: "spatial-units", label: "Lyon" });
+  });
+
+  it("is not picked when its creation fails", async () => {
+    mockedCreatePlace.mockRejectedValueOnce(new Error("403"));
+    const onChange = vi.fn();
+
+    await pickFirstSuggestion(onChange);
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("a place field whose source waits for another field", () => {
+  it("invites to fill the field a source depends on, while still listing what it found", async () => {
+    mockedOptionSourceFor.mockImplementation(
+      () => async () => Object.assign([{ id: "5", label: "Rue de la Paix" }], { unnarrowedSources: ["GEOPLAT"] }),
+    );
+    act(() => {
+      root.render(
+        <SelectOneSpatialUnitRenderer
+          field={{ id: "-104", resourceType: "fields", label: "Précis", answerType: "SELECT_ONE_SPATIAL_UNIT", isSystemField: true }}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={() => {}}
+          organizationId={100}
+          placeContext={{ deps: { "-108": null } }}
+          fieldLabelOf={(id) => (id === "-108" ? "Commune" : id)}
+        />,
+      );
+    });
+    await act(async () => {
+      container.querySelector("input")!.focus();
+      await new Promise((r) => setTimeout(r, 400));
+    });
+
+    expect(document.body.querySelector("li.p-autocomplete-item")?.textContent).toContain("Rue de la Paix");
+    expect(document.body.querySelector(".resource-ref-narrow-hint")?.textContent).toBe("Remplir le champ « Commune » pour affiner la recherche");
+    expect(mockedOptionSourceFor).toHaveBeenCalledWith(expect.anything(), 100, undefined, expect.objectContaining({ placeContext: { deps: { "-108": null } } }));
   });
 });

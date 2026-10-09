@@ -51,11 +51,26 @@ export interface FieldConstraint {
   fieldId: number | string;
 }
 
+/** What of the place picked in another field feeds a source parameter. */
+export type PlaceAttribute = "CODE" | "NAME" | "POSTCODE";
+
+/**
+ * A source a place field suggests from besides the organization's places (INSEE, GEOPLAT…), and what
+ * narrows its query: a parameter the source declares, bound to an attribute of the place picked in
+ * another field. `onMissing` says what the server does when that field has no usable value.
+ */
+export interface PlaceSourceSpec {
+  source: string;
+  params?: Record<string, { fromField: number | string; attribute: PlaceAttribute }>;
+  onMissing?: "SKIP" | "UNFILTERED";
+}
+
 export interface FieldRules {
   enabledWhen?: Condition;
   requiredWhen?: Condition;
   options?: OptionsFilter;
   constraints?: FieldConstraint[];
+  placeSources?: PlaceSourceSpec[];
 }
 
 /** What the evaluator needs from a layout column. */
@@ -78,6 +93,15 @@ export type OptionsContext =
   | { kind: "RELATED_CONCEPTS"; parentFieldId: string; relatedTo: string | null }
   | { kind: "REF_MATCH"; parentFieldId: string; candidateFieldId: string; value: string | null };
 
+/**
+ * What the suggestions of a place field need: the place picked in each field a source parameter reads
+ * (by field id; null while that field is empty). The server turns these into the parameters — the
+ * client only says which places are picked.
+ */
+export interface PlaceContext {
+  deps: Record<string, string | null>;
+}
+
 /** A bound derived from a constraint: `value` is comparable (ms for a date), `raw` as read. */
 export interface Bound {
   value: number;
@@ -91,5 +115,7 @@ export interface FieldState {
   required: boolean;
   incoherent: IncoherenceReason[];
   optionsContext?: OptionsContext;
+  /** Present when the field has place sources. */
+  placeContext?: PlaceContext;
   bounds?: { min?: Bound; max?: Bound };
 }

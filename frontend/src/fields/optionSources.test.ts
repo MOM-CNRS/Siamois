@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
 import {
   fetchConceptOptions,
+  createPlaceFromSuggestion,
   fetchPlaceOptions,
+  fetchPlaceSuggestions,
   optionSourceFor,
   referenceTargetOf,
 } from "./optionSources";
@@ -227,5 +229,76 @@ describe("optionSourceFor with an option scope", () => {
     const url = String(mockedApiFetch.mock.calls[0][0]);
     expect(url).toContain("/api/v1/projects/5/recording-units?");
     expect(url).toContain("f.-304=8");
+  });
+});
+
+describe("place suggestions", () => {
+  const placeField = () => field({ id: "-104", answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" });
+
+  it("asks the suggestions endpoint, by field and with the places picked in the fields the sources read", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+
+    await optionSourceFor(placeField(), 100, "3", { valueConceptId: "9", placeContext: { deps: { "-108": "7", "-109": null } } })!("rue");
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toMatch(/^\/api\/v1\/places\/suggestions\?/);
+    const query = new URLSearchParams((path as string).split("?")[1]);
+    expect(query.get("organizationId")).toBe("100");
+    expect(query.get("fieldId")).toBe("-104");
+    expect(query.get("projectId")).toBe("3");
+    expect(query.get("typeId")).toBe("9");
+    expect(query.get("q")).toBe("rue");
+    expect(query.get("dep.-108")).toBe("7");
+    expect(query.has("dep.-109")).toBe(false);
+    // The client never says which sources: the server reads them from the field's configuration.
+    expect(query.has("sources")).toBe(false);
+  });
+
+  it("keeps the plain autocomplete for a field with no place source", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [] });
+
+    await optionSourceFor(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), 100)!("lyo");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toMatch(/^\/api\/v1\/places\/autocomplete\?/);
+  });
+
+  it("maps a place of the organization to its id and a suggestion to a synthetic one", async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      unnarrowedSources: ["GEOPLAT"],
+      data: [
+        { id: 5, name: "Lyon", code: "69123", source: "SIAMOIS", concept: { resolvedLabel: "Commune" } },
+        { id: null, name: "Lyonnais", code: "42000", source: "INSEE", concept: null },
+      ],
+    });
+
+    const options = await fetchPlaceSuggestions(100, { fieldId: "-108", deps: {} }, "lyo");
+    const [own, external] = options;
+
+    expect(own).toEqual({ id: "5", label: "Lyon", place: { source: "SIAMOIS", code: "69123", category: "Commune" } });
+    expect(external.id).toBe("external:INSEE:42000");
+    expect(external.place?.external).toEqual({ name: "Lyonnais", code: "42000", address: undefined });
+    expect(options.unnarrowedSources).toEqual(["GEOPLAT"]);
+  });
+
+  it("creates the place of an external suggestion and returns its id", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: 77, name: "Lyon" } });
+
+    const created = await createPlaceFromSuggestion(
+      100,
+      { id: "external:INSEE:69123", label: "Lyon", place: { source: "INSEE", external: { name: "Lyon", code: "69123" } } },
+      "3",
+    );
+
+    expect(created).toEqual({ id: "77", label: "Lyon" });
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/places/from-suggestion", {
+      method: "POST",
+      body: { organizationId: 100, projectId: "3", source: "INSEE", name: "Lyon", code: "69123", address: undefined },
+    });
+  });
+
+  it("leaves a place that already exists alone", async () => {
+    const own = { id: "5", label: "Lyon" };
+    expect(await createPlaceFromSuggestion(100, own)).toBe(own);
+    expect(mockedApiFetch).not.toHaveBeenCalled();
   });
 });
