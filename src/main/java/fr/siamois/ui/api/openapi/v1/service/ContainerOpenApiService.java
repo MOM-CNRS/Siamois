@@ -13,8 +13,6 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ContainerService;
@@ -133,11 +131,8 @@ public class ContainerOpenApiService {
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = request.getIdentifier() == null ? null : request.getIdentifier().trim();
-        if (newIdentifier != null && newIdentifier.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier ne peut pas être vide");
-        }
-        boolean identifierChange = newIdentifier != null && !newIdentifier.equals(container.getIdentifier());
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, container.getIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(container.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((answersChange || identifierChange || !statusChange) && !canEdit) {
@@ -147,9 +142,7 @@ public class ContainerOpenApiService {
 
         if (identifierChange) {
             container.setIdentifier(newIdentifier);
-            if (containerService.identifierAlreadyExistInAction(container)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet identifiant existe déjà dans le projet");
-            }
+            IdentifierPatch.requireFree(containerService.identifierAlreadyExistInAction(container));
         }
         if (answersChange || identifierChange || !statusChange) {
             Long projectId = container.getActionUnit().getId();

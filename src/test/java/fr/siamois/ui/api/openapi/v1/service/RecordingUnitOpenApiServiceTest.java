@@ -3347,4 +3347,35 @@ class RecordingUnitOpenApiServiceTest {
         verify(recordingUnitService, never()).addHierarchyChild(anyLong(), anyLong());
     }
 
+    @Test
+    void patchRecordingUnit_blankIdentifier_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+
+        var request = new RecordingUnitPatchRequest();
+        request.setIdentifier("  ");
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_identifierAlreadyUsedInTheProject_throws409() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true);
+
+        var request = new RecordingUnitPatchRequest();
+        request.setIdentifier("NEW-1");
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
 }

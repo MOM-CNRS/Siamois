@@ -5,7 +5,7 @@
              xmlns:f="http://java.sun.com/jsf/core">
 
     <script>
-        var fieldDrawerFunnyMessages = [
+        window.fieldDrawerFunnyMessages = [
             "#{langBean.msg('organisationManagement.creating.funny.1')}",
             "#{langBean.msg('organisationManagement.creating.funny.2')}",
             "#{langBean.msg('organisationManagement.creating.funny.3')}",
@@ -23,7 +23,7 @@
             "#{langBean.msg('organisationManagement.creating.funny.15')}",
             "#{langBean.msg('organisationManagement.creating.funny.16')}"
         ];
-        var fieldDrawerFunnyMessageInterval = null;
+        window.fieldDrawerFunnyMessageInterval = null;
 
         function nextFieldDrawerFunnyMessage() {
             const label = document.getElementById('fieldDrawerFunnyMessage');

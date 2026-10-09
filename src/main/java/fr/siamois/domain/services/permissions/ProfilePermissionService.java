@@ -48,7 +48,7 @@ public class ProfilePermissionService {
 
     /** One line of the "my rights" dashboard: a profile held, where it applies, and what it grants. */
     @lombok.Value
-    public static class ProfileGrant {
+    public static class ProfileGrant implements java.io.Serializable {
         String profileName;
         PermissionScopeType scope;
         Long institutionId;

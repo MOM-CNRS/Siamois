@@ -1007,11 +1007,8 @@ public class RecordingUnitOpenApiService {
         Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
         boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto);
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        String newIdentifier = request.getIdentifier() == null ? null : request.getIdentifier().trim();
-        if (newIdentifier != null && newIdentifier.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier ne peut pas être vide");
-        }
-        boolean identifierChange = newIdentifier != null && !newIdentifier.equals(dto.getFullIdentifier());
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
         boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || identifierChange;
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
@@ -1029,9 +1026,7 @@ public class RecordingUnitOpenApiService {
 
         if (identifierChange) {
             dto.setFullIdentifier(newIdentifier);
-            if (recordingUnitService.fullIdentifierAlreadyExistInAction(dto)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet identifiant existe déjà dans le projet");
-            }
+            IdentifierPatch.requireFree(recordingUnitService.fullIdentifierAlreadyExistInAction(dto));
         }
 
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {

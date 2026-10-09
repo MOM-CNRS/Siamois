@@ -112,7 +112,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         List<TypeSummary> types = new ArrayList<>();
         configuredTypeNames(projectId, table).stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                .map(name -> new TypeSummary(name))
+                .map(TypeSummary::new)
                 .forEach(types::add);
         return types;
     }
@@ -890,7 +890,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
         try {
-            return Optional.of(fieldConfigurationService
+            return Optional.ofNullable(fieldConfigurationService
                     .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId)
                     .getConcept());
         } catch (NoConfigForFieldException e) {

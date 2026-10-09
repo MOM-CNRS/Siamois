@@ -59,8 +59,12 @@ import java.util.regex.Pattern;
 public class ProjectTableFieldSettingsBean implements Serializable {
 
     /** Set by Spring (not part of the constructor); null where the bean is built by hand. */
-    @Autowired(required = false)
     private transient ApplicationEventPublisher eventPublisher;
+
+    @Autowired(required = false)
+    void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     public static final int TAB_CHAMPS = 0;
     public static final int TAB_APERCU = 1;
@@ -313,7 +317,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public boolean isFocusRow(LayoutRow row) {
         if (focusKey == null) return false;
-        return row.isGroup() ? focusKey.equals(groupKey(row)) : focusKey.equals("f:" + row.getField().getName());
+        return focusKey.equals(row.isGroup() ? groupKey(row) : "f:" + row.getField().getName());
     }
 
     /** The "+ champ" button of a group: the field the picker adds lands in that group. */
@@ -334,24 +338,25 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                 .findFirst().orElse(null);
         if (row != null && targetGroupKey != null) {
             layoutRows.remove(row);
-            int at = -1;
-            for (int i = 0; i < layoutRows.size(); i++) {
-                if (layoutRows.get(i).isGroup() && groupKey(layoutRows.get(i)).equals(targetGroupKey)) {
-                    at = i + 1;
-                    break;
-                }
-            }
-            if (at < 0) {
-                layoutRows.add(row);
-            } else {
-                while (at < layoutRows.size() && !layoutRows.get(at).isGroup()) at++;
-                layoutRows.add(at, row);
-            }
+            layoutRows.add(endOfGroup(targetGroupKey), row);
             saveRows();
         }
         targetGroupKey = null;
         focusKey = "f:" + fieldName;
         refreshHiddenRows();
+    }
+
+    /** The index just after the last row of the group (the end of the list when the group is gone). */
+    private int endOfGroup(String key) {
+        int at = layoutRows.size();
+        for (int i = 0; i < layoutRows.size(); i++) {
+            if (layoutRows.get(i).isGroup() && groupKey(layoutRows.get(i)).equals(key)) {
+                at = i + 1;
+                while (at < layoutRows.size() && !layoutRows.get(at).isGroup()) at++;
+                break;
+            }
+        }
+        return at;
     }
 
     private static String groupKey(LayoutRow group) {
@@ -647,11 +652,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         // activeTabIndex is bound directly via p:tabView activeIndex, nothing else to do here
     }
 
-    /**
-     * The p:toggleSwitch controls bind directly (two-way) to the row's boolean property, so by the
-     * time these listeners fire, the row already carries its new value — we just persist it. A
-     * field marked institutionLocked ignores the write (enforced server-side by the service too).
-     */
     /** Whether the field open in the main panel can be taken out of the type's form (not the table's type field, nor a locked one). */
     public boolean isDraftRemovable() {
         if (draftOriginalName == null || fieldsConfig == null) return false;

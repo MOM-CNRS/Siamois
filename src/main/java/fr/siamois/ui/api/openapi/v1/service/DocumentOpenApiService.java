@@ -152,11 +152,8 @@ public class DocumentOpenApiService {
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = request.getIdentifier() == null ? null : request.getIdentifier().trim();
-        if (newIdentifier != null && newIdentifier.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier ne peut pas être vide");
-        }
-        boolean identifierChange = newIdentifier != null && !newIdentifier.equals(document.getIdentifier());
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, document.getIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(document.getValidated(), request.getValidated());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((answersChange || identifierChange || !statusChange) && !canEdit) {
@@ -166,9 +163,7 @@ public class DocumentOpenApiService {
 
         if (identifierChange) {
             document.setIdentifier(newIdentifier);
-            if (documentService.identifierAlreadyExistInProject(document)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet identifiant existe déjà dans le projet");
-            }
+            IdentifierPatch.requireFree(documentService.identifierAlreadyExistInProject(document));
         }
         if (answersChange || identifierChange || !statusChange) {
             Long projectId = document.getActionUnit().getId();

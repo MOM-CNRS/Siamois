@@ -313,4 +313,22 @@ class ProfilePermissionServiceTest {
         assertThat(grants.get(1).isOrganisation()).isTrue();
         assertThat(grants.get(1).getTargetName()).isEqualTo("Bibracte");
     }
+
+    @Test
+    void grantsOf_instanceProfileWithoutNameNorTarget_fallsBackToItsCode() {
+        fr.siamois.domain.models.permissions.Profile instanceProfile = new fr.siamois.domain.models.permissions.Profile();
+        instanceProfile.setCode("SUPER_ADMIN");
+        instanceProfile.setScope(fr.siamois.domain.models.permissions.PermissionScopeType.INSTANCE);
+        when(assignmentRepository.findProfilesOfPerson(3L)).thenReturn(java.util.List.of(instanceProfile));
+
+        var grant = profilePermissionService.grantsOf(person).get(0);
+
+        assertThat(grant.getProfileName()).isEqualTo("SUPER_ADMIN");
+        assertThat(grant.isInstance()).isTrue();
+        assertThat(grant.isProject()).isFalse();
+        assertThat(grant.isOrganisation()).isFalse();
+        assertThat(grant.getTargetName()).isNull();
+        assertThat(grant.getInstitutionId()).isNull();
+        assertThat(grant.getActionUnitId()).isNull();
+    }
 }
