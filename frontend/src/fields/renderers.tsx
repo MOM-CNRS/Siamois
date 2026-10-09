@@ -1,4 +1,5 @@
 import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
+import { PlaceOptionItem } from "./PlaceOptionItem";
 import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -16,13 +17,18 @@ import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
 import { refColor } from "./display";
 import {
+  createPlaceFromSuggestion,
   entityRowLabel,
+  isExternalSuggestion,
   optionSourceFor,
   referenceTargetOf,
   type FilterOption,
+  type OptionList,
   type ReferenceTarget,
 } from "./optionSources";
 import { t } from "../i18n";
+import { useNotify } from "../notify/NotifyProvider";
+import { messageForError } from "../api/errors";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
 // generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,
@@ -172,15 +178,18 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // whether a « Nouveau » footer can create the target — all derived from the field
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
+const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
+  // Sources of the last search that could not be narrowed because the field they depend on is empty.
+  const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
   const sourceOptions =
     orgId != null
-      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
+      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext })
       : null;
   const loadOptions = declaredOptions
     ? async (q?: string) => {
@@ -199,7 +208,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
     capTo(e);
-    setSuggestions(await loadOptions(e.query));
+    const found = (await loadOptions(e.query)) as OptionList;
+    setUnnarrowedSources(found.unnarrowedSources ?? []);
+    setSuggestions(found);
   }
 
   // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
@@ -238,6 +249,29 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     }
   }
 
+  // A suggestion from an external source (INSEE, GéoPlateforme) is not a place yet: it is created
+  // — once per organization, the server answers the existing one — before it can be picked.
+  const notify = useNotify();
+  const [creatingPlace, setCreatingPlace] = useState(false);
+  async function commitPicked(next: FilterOption[] | FilterOption | null) {
+    const picked = next == null ? [] : Array.isArray(next) ? next : [next];
+    if (orgId == null || !picked.some(isExternalSuggestion)) {
+      commit(next);
+      return;
+    }
+    setCreatingPlace(true);
+    try {
+      const resolved = await Promise.all(
+        picked.map((o) => (isExternalSuggestion(o) ? createPlaceFromSuggestion(orgId, o, context?.projectId) : o)),
+      );
+      commit(Array.isArray(next) ? resolved : resolved[0] ?? null);
+    } catch (error) {
+      notify.error(messageForError(error, t("field.placeCreateFailed")));
+    } finally {
+      setCreatingPlace(false);
+    }
+  }
+
   // « Nouveau » creates the target in the edited entity's project and picks it straight away — it
   // is added to a multi-valued answer, it replaces a single one.
   const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
@@ -255,20 +289,32 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     else commit(created);
   }
 
-  const footer = createConfig
+  // Some sources searched without their filter: say which field to fill (or what is wrong with its place).
+  const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
+  const parents = Object.entries(placeContext?.deps ?? {});
+  const emptyParents = parents.filter(([, placeId]) => placeId == null).map(([fieldId]) => fieldId);
+  const narrowHint =
+    emptyParents.length > 0
+      ? t("field.fillToNarrow", { field: named(emptyParents) })
+      : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
+
+  const footer = createConfig || unnarrowedSources.length > 0
     ? (_: unknown, hide: () => void) => (
         <div className="resource-ref-create-footer">
-          <Button
-            type="button"
-            text
-            size="small"
-            icon="bi bi-plus-lg"
-            label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
-            onClick={() => {
-              hide();
-              setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
-            }}
-          />
+          {unnarrowedSources.length > 0 && <small className="resource-ref-narrow-hint">{narrowHint}</small>}
+          {createConfig && (
+            <Button
+              type="button"
+              text
+              size="small"
+              icon="bi bi-plus-lg"
+              label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
+              onClick={() => {
+                hide();
+                setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
+              }}
+            />
+          )}
         </div>
       )
     : undefined;
@@ -314,7 +360,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         field="label"
         multiple={asTokens}
         dropdown={false}
-        disabled={readOnly}
+        disabled={readOnly || creatingPlace}
         required={required}
         onFocus={onFocus}
         // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
@@ -326,15 +372,15 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={target.resourceType === "concepts" ? conceptItem : undefined}
+        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "spatial-units" ? placeItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (asTokens && !multiple) {
             // The last pick is the value; none left means cleared.
             const picked = (e.value as FilterOption[] | null) ?? [];
-            commit(picked.length > 0 ? picked[picked.length - 1] : null);
+            void commitPicked(picked.length > 0 ? picked[picked.length - 1] : null);
           } else {
-            commit(e.value as FilterOption[] | FilterOption | null);
+            void commitPicked(e.value as FilterOption[] | FilterOption | null);
           }
         }}
       />

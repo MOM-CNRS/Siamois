@@ -66,6 +66,8 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
     )
     Optional<SpatialUnit> findByNameAndInstitution(String spatialUnitName, Long institutionId);
 
+    Optional<SpatialUnit> findFirstByCodeAndCategoryIdAndCreatedByInstitutionId(String code, Long categoryId, Long institutionId);
+
     @Query(
             nativeQuery = true,
             value = "SELECT su.* FROM spatial_unit su " +
