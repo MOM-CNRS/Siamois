@@ -191,7 +191,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setCode(su.getCode());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
-        spatialUnit.setCategory(conceptService.saveOrGetConcept(su.getCategory()));
+        spatialUnit.setType(conceptService.saveOrGetConcept(su.getType()));
         spatialUnit.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
         spatialUnit.setGeom(su.getGeom() != null ? geometryDtoMapper.toMultiPolygon(su.getGeom()) : null);
 
@@ -270,7 +270,7 @@ public class SpatialUnitService implements ArkEntityService {
         try {
             SpatialUnit managedSpatialUnit;
             SpatialUnit spatialUnit = spatialUnitMapper.invertConvert(toSave);
-            ConceptDTO conceptDTO = toSave.getCategory();
+            ConceptDTO conceptDTO = toSave.getType();
 
             if (spatialUnit.getId() != null) {
                 Optional<SpatialUnit> optUnit = spatialUnitRepository.findById(spatialUnit.getId());
@@ -287,7 +287,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
             Concept type = conceptService.saveOrGetConcept(conceptDTO);
-            managedSpatialUnit.setCategory(type);
+            managedSpatialUnit.setType(type);
 
             return spatialUnitMapper.convert(spatialUnitRepository.save(managedSpatialUnit));
 
@@ -528,10 +528,10 @@ public class SpatialUnitService implements ArkEntityService {
      * The place of the institution a suggestion already stands for: the one with the same code and category,
      * else the one with the same name (names are unique per institution).
      */
-    public Optional<SpatialUnitDTO> findExistingForSuggestion(Long institutionId, String name, String code, Long categoryId) {
-        if (code != null && !code.isBlank() && categoryId != null) {
+    public Optional<SpatialUnitDTO> findExistingForSuggestion(Long institutionId, String name, String code, Long typeId) {
+        if (code != null && !code.isBlank() && typeId != null) {
             Optional<SpatialUnit> byCode = spatialUnitRepository
-                    .findFirstByCodeAndCategoryIdAndCreatedByInstitutionId(code, categoryId, institutionId);
+                    .findFirstByCodeAndTypeIdAndCreatedByInstitutionId(code, typeId, institutionId);
             if (byCode.isPresent()) {
                 return byCode.map(spatialUnitMapper::convert);
             }
@@ -544,15 +544,15 @@ public class SpatialUnitService implements ArkEntityService {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setCode(entity.getCode());
-        if (entity.getCategory() != null) {
-            dto.setCategory(conceptMapper.convert(entity.getCategory()));
+        if (entity.getType() != null) {
+            dto.setType(conceptMapper.convert(entity.getType()));
         }
         dto.setSourceName("SIAMOIS");
         return dto;
     }
 
-    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
-            Long institutionId, String name, Long[] categoryIds, String fullIdentifier, String global, String langCode, Pageable pageable) {
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
+            Long institutionId, String name, Long[] typeIds, String fullIdentifier, String global, String langCode, Pageable pageable) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionId)
                 .and(SpatialUnitSpec.nameContaining(name));
         return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
@@ -667,8 +667,8 @@ public class SpatialUnitService implements ArkEntityService {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
         }
 
-        if (filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
-            specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        if (filterDTO.containsColumn(SpatialUnitSpec.TYPE_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.typeIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.TYPE_FILTER)));
         }
 
         if (filterDTO.containsColumn(SpatialUnitSpec.PARENT_FILTER)) {
@@ -686,8 +686,8 @@ public class SpatialUnitService implements ArkEntityService {
             specs = specs.and(SpatialUnitSpec.nameContaining(filterDTO.valueOfAsString(SpatialUnitSpec.NAME_FILTER)));
         }
 
-        if (scopeKeys.contains(SpatialUnitSpec.CATEGORY_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.CATEGORY_FILTER)) {
-            specs = specs.and(SpatialUnitSpec.categoryIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.CATEGORY_FILTER)));
+        if (scopeKeys.contains(SpatialUnitSpec.TYPE_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.TYPE_FILTER)) {
+            specs = specs.and(SpatialUnitSpec.typeIsIn(filterDTO.valueAsIdListOf(SpatialUnitSpec.TYPE_FILTER)));
         }
 
         if (scopeKeys.contains(SpatialUnitSpec.PARENT_FILTER) && filterDTO.containsColumn(SpatialUnitSpec.PARENT_FILTER)) {
@@ -732,27 +732,27 @@ public class SpatialUnitService implements ArkEntityService {
     public SpatialUnitDTO updatePlace(UserInfo info,
                                       long placeId,
                                       String newName,
-                                      ConceptDTO newCategory,
+                                      ConceptDTO newType,
                                       FullAddress newAddress) throws SpatialUnitAlreadyExistsException {
-        return updatePlace(info, placeId, newName, newCategory, newAddress, null, false, null, false);
+        return updatePlace(info, placeId, newName, newType, newAddress, null, false, null, false);
     }
 
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
     public SpatialUnitDTO updatePlace(UserInfo info,
                                       long placeId,
                                       String newName,
-                                      ConceptDTO newCategory,
+                                      ConceptDTO newType,
                                       FullAddress newAddress,
                                       Integer newPlaceNumber,
                                       boolean updatePlaceNumber) throws SpatialUnitAlreadyExistsException {
-        return updatePlace(info, placeId, newName, newCategory, newAddress, newPlaceNumber, updatePlaceNumber, null, false);
+        return updatePlace(info, placeId, newName, newType, newAddress, newPlaceNumber, updatePlaceNumber, null, false);
     }
 
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
     public SpatialUnitDTO updatePlace(UserInfo info,
                                       long placeId,
                                       String newName,
-                                      ConceptDTO newCategory,
+                                      ConceptDTO newType,
                                       FullAddress newAddress,
                                       Integer newPlaceNumber,
                                       boolean updatePlaceNumber,
@@ -772,8 +772,8 @@ public class SpatialUnitService implements ArkEntityService {
             }
             dto.setName(trimmed);
         }
-        if (newCategory != null) {
-            dto.setCategory(newCategory);
+        if (newType != null) {
+            dto.setType(newType);
         }
         if (newAddress != null) {
             dto.setAddress(newAddress);

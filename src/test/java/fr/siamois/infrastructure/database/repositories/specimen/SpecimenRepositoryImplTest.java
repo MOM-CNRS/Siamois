@@ -54,7 +54,7 @@ class SpecimenRepositoryImplTest {
     Specimen specimen = new Specimen();
     doReturn(List.of(specimen)).when(queries.dataQuery()).getResultList();
 
-    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
         1L,
         2L,
         "RU-1",
@@ -93,7 +93,7 @@ class SpecimenRepositoryImplTest {
     // when offset + pageSize > count (see Spring Data PageImpl constructor).
     PageRequest pageable = PageRequest.of(0, 3);
 
-    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
         1L, 2L, "RU-1", new Long[] {5L, 7L}, "global", "fr",
         "s.creation_time DESC, s.specimen_id ASC",
         pageable);
@@ -127,7 +127,7 @@ class SpecimenRepositoryImplTest {
     verify(query).setParameter("institutionId", 1L);
     verify(query).setParameter("recordingUnitId", 2L);
     verify(query).setParameter("fullIdentifier", "RU-1");
-    verify(query).setParameter("categoryIds", new Long[] {5L, 7L});
+    verify(query).setParameter("typeIds", new Long[] {5L, 7L});
     verify(query).setParameter("global", "global");
     verify(query).setParameter("langCode", "fr");
   }
@@ -138,7 +138,7 @@ class SpecimenRepositoryImplTest {
     when(queries.countQuery().getSingleResult()).thenReturn(12L);
     when(queries.dataQuery().getResultList()).thenReturn(List.of());
 
-    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    Page<Specimen> page = repository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
         1L, 2L, null, null, null, "fr",
         "s.creation_time DESC, s.specimen_id ASC",
         PageRequest.of(2, 5));

@@ -316,7 +316,7 @@ public class FormService {
         dto.setId(ans.getId());
         dto.setName(ans.getName());
         dto.setCode(ans.getCode());
-        dto.setCategory(ans.getCategory());
+        dto.setType(ans.getType());
         return dto;
     }
 
@@ -328,7 +328,7 @@ public class FormService {
                     dto.setId(place.getId());
                     dto.setName(place.getName());
                     dto.setCode(place.getCode());
-                    dto.setCategory(place.getCategory());
+                    dto.setType(place.getType());
                     return dto;
                 })
                 .collect(Collectors.toSet());
@@ -584,7 +584,7 @@ public class FormService {
         dto.setName(val.getName());
         dto.setCode(val.getCode());
         dto.setSourceName("INTERNAL");
-        dto.setCategory(val.getCategory());
+        dto.setType(val.getType());
         return dto;
     }
 

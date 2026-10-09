@@ -265,7 +265,7 @@ public class PlaceOpenApiService {
         answers.put(String.valueOf(SpatialUnit.NAME_FIELD.getId()), dto.getName());
         answers.put(String.valueOf(SpatialUnit.CODE_FIELD.getId()), dto.getCode());
         answers.put(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), dto.getPlaceNumber());
-        if (dto.getCategory() != null && resolvedType != null) {
+        if (dto.getType() != null && resolvedType != null) {
             answers.put(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId()),
                     new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));
         }
@@ -351,7 +351,7 @@ public class PlaceOpenApiService {
 
         SpatialUnitDTO toSave = new SpatialUnitDTO();
         toSave.setName(name);
-        toSave.setCategory(category);
+        toSave.setType(category);
         toSave.setPlaceNumber(request.getPlaceNumber());
         toSave.setGeom(request.getGeom());
         if (request.getAddress() != null) {

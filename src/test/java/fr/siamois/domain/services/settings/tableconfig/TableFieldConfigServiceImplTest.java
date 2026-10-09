@@ -69,7 +69,7 @@ class TableFieldConfigServiceImplTest {
     private static final Long STANDARD_CONCEPT_ID = 210L;
     private static final Long PERSON_ID = 2L;
     private static final String IDENTIFIER_FIELD = "recordingunit.field.identifier";
-    private static final String CATEGORY_FIELD = "specimen.field.category";
+    private static final String CATEGORY_FIELD = "specimen.field.type";
     private static final String MATERIAL_FIELD = "specimen.field.material";
     private static final String RECORDING_UNIT_FIELD = "specimen.field.recordingUnit";
     private static final String AUTHORS_FIELD = "specimen.field.authors";
@@ -298,11 +298,11 @@ class TableFieldConfigServiceImplTest {
                 .filter(field -> ueIdentifierLabel.equals(field.getLabel()))
                 .findFirst().orElseThrow();
         ueIdentifier.setId(SYSTEM_FIELD_FIRST_ID);
-        CustomField mobilierCategory = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
+        CustomField mobilierType = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
                 .filter(field -> CATEGORY_FIELD.equals(field.getLabel()))
                 .findFirst().orElseThrow();
-        mobilierCategory.setId(SYSTEM_FIELD_FIRST_ID + 1);
-        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierCategory));
+        mobilierType.setId(SYSTEM_FIELD_FIRST_ID + 1);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierType));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "Standard").getFields())
@@ -1383,7 +1383,7 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(fields).hasSize(1);
         assertThat(fields.get(0).getType()).isEqualTo(FieldType.SELECT_ONE);
-        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.CAT_FIELD);
+        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.TYPE_FIELD);
     }
 
     // --- createField ---

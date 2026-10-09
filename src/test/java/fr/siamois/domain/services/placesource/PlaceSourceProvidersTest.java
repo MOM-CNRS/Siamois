@@ -71,14 +71,14 @@ class PlaceSourceProvidersTest {
 
         assertThat(draft.getName()).isEqualTo("Lyon");
         assertThat(draft.getCode()).isEqualTo("69123");
-        assertThat(draft.getCategory()).isSameAs(concept);
+        assertThat(draft.getType()).isSameAs(concept);
     }
 
     @Test
     void inseeCategoryIsRequired() {
         when(conceptRepository.findConceptByExternalIdIgnoreCase(any(), any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> insee.category()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> insee.type()).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

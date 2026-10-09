@@ -21,12 +21,12 @@ class FormLayoutComposerTest {
 
     @Test
     void aGroupBecomesAPanelOfOneRowOfItsActiveFields() {
-        var type = SystemFieldCatalog.fieldBoundTo(TABLE, "type");
+        var spatialUnit = SystemFieldCatalog.fieldBoundTo(TABLE, "spatialUnit");
         var length = SystemFieldCatalog.fieldBoundTo(TABLE, "length");
         var width = SystemFieldCatalog.fieldBoundTo(TABLE, "width");
         FormLayout layout = new FormLayout(List.of(
                 new FormLayout.Group(1L, "Identité", List.of(
-                        item(type, FieldWidth.THREE_QUARTERS, true, true))),
+                        item(spatialUnit, FieldWidth.THREE_QUARTERS, true, true))),
                 new FormLayout.Group(2L, "Mesures", List.of(
                         item(length, FieldWidth.HALF, true, false),
                         item(width, FieldWidth.HALF, false, false)))));
@@ -54,7 +54,7 @@ class FormLayoutComposerTest {
         List<CustomColUiDto> firstGroup = form.getLayout().get(0).getRows().get(0).getColumns();
         assertThat(firstGroup.stream().filter(CustomColUiDto::isHidden))
                 .extracting(c -> c.getField().getValueBinding())
-                .containsExactlyInAnyOrder("identifier", "actionUnit");
+                .containsExactlyInAnyOrder("identifier", "type", "actionUnit");
         assertThat(form.getLayout().get(1).getRows().get(0).getColumns()).noneMatch(CustomColUiDto::isHidden);
     }
 

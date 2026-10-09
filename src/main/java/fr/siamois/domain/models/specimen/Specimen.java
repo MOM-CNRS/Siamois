@@ -43,7 +43,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @SuppressWarnings("CopyConstructorMissesField")
     public Specimen(@NonNull Specimen specimen) {
         setRecordingUnit(specimen.getRecordingUnit());
-        setCategory(specimen.getCategory());
+        setType(specimen.getType());
         setCreatedByInstitution(specimen.getCreatedByInstitution());
         setCreatedBy(specimen.getCreatedBy());
         setAuthors(specimen.getAuthors());
@@ -76,7 +76,7 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     public static final String METHOD_FIELD = "SIAS.METHOD";
 
     @FieldCode
-    public static final String CAT_FIELD = "SIAS.CAT"; // lot, individu, echantillon
+    public static final String TYPE_FIELD = "SIAS.CAT"; // lot, individu, echantillon
 
     @FieldCode
     public static final String MATIERE_FIELD = "SIAS.MATIERE";
@@ -98,8 +98,8 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     protected Ark ark;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_specimen_category")
-    protected Concept category; // lot, object, echantillon
+    @JoinColumn(name = "fk_specimen_type")
+    protected Concept type; // lot, object, echantillon
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_interpretation")

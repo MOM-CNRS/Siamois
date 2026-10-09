@@ -192,7 +192,7 @@ class ProjectResponseMapperTest {
         SpatialUnitSummaryDTO main = new SpatialUnitSummaryDTO();
         main.setId(100L);
         main.setName("Lieu");
-        main.setCategory(cat);
+        main.setType(cat);
         dto.setMainLocation(main);
 
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");

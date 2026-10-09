@@ -44,7 +44,7 @@ public class InseeCommunesProvider implements PlaceSourceProvider {
     }
 
     @Override
-    public ConceptDTO category() {
+    public ConceptDTO type() {
         return conceptMapper.convert(conceptRepository.findConceptByExternalIdIgnoreCase(THESAURUS, COMMUNE_CONCEPT)
                 .orElseThrow(() -> new IllegalStateException("Concept « Commune » introuvable")));
     }
@@ -54,7 +54,7 @@ public class InseeCommunesProvider implements PlaceSourceProvider {
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName(place.name());
         draft.setCode(place.code());
-        draft.setCategory(category());
+        draft.setType(type());
         return draft;
     }
 

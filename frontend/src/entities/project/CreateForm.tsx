@@ -48,7 +48,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   });
 
   // ActionUnitForm.ACTION_UNIT_TYPE_FIELD, located by its valueBinding like every other place
-  // this app resolves the project type field (DetailHeader.tsx's own CategoryChip) — never
+  // this app resolves the project type field (DetailHeader.tsx's own TypeChip) — never
   // hardcoded, so a renumbering of the system-field catalog doesn't silently break this.
   const typeField = useMemo<FieldResource | undefined>(
     () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),

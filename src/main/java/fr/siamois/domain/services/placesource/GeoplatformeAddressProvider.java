@@ -52,7 +52,7 @@ public class GeoplatformeAddressProvider implements PlaceSourceProvider {
     }
 
     @Override
-    public ConceptDTO category() {
+    public ConceptDTO type() {
         return conceptMapper.convert(conceptRepository.findConceptByExternalIdIgnoreCase(THESAURUS, ADDRESS_CONCEPT)
                 .orElseThrow(() -> new IllegalStateException("Concept « Adresse » introuvable")));
     }
@@ -67,7 +67,7 @@ public class GeoplatformeAddressProvider implements PlaceSourceProvider {
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName(place.name());
         draft.setAddress(address);
-        draft.setCategory(category());
+        draft.setType(type());
         return draft;
     }
 }

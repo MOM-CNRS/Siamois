@@ -937,7 +937,7 @@
       "field": {
         "concept": {
           "thesaurus": "th230",
-          "id": "document.category"
+          "id": "document.type"
         }
       }
     },

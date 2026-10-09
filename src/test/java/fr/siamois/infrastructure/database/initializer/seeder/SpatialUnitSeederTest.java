@@ -113,7 +113,7 @@ class SpatialUnitSeederTest {
         }));
         assertNotNull(res.get("name"));
         assertThat(res.get("name")).isSameAs(existing);
-        assertThat(existing.getCategory()).isNotNull();
+        assertThat(existing.getType()).isNotNull();
         SeedCounts.Counts counts = seedCounts.get(ImportSchema.SPATIAL_UNIT);
         assertThat(counts.created()).isZero();
         assertThat(counts.updated()).isEqualTo(1);

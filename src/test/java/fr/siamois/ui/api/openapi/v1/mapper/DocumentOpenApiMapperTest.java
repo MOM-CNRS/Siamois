@@ -42,7 +42,7 @@ class DocumentOpenApiMapperTest {
         dto.setSize(12L);
         dto.setMd5Sum("md5");
         dto.setActionUnit(project(3L));
-        dto.setCategory(new ConceptDTO());
+        dto.setType(new ConceptDTO());
         Map<Long, String> labels = Map.of();
 
         DocumentResource r = mapper.toResource(dto, "fr", labels);
@@ -57,7 +57,7 @@ class DocumentOpenApiMapperTest {
         assertThat(r.getProjectId()).isEqualTo("2");
         assertThat(r.getOrganization().getId()).isEqualTo("3");
         assertThat(r.getResourceUri()).isEqualTo("/document/7");
-        verify(responses).toConceptFieldValue(dto.getCategory(), "fr", labels);
+        verify(responses).toConceptFieldValue(dto.getType(), "fr", labels);
     }
 
     @Test

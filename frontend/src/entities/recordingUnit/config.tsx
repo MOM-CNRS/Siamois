@@ -28,7 +28,7 @@ function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
 // looked up by key ("recordingUnit") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// detail.tabs/header now built (fiche + identifier/category header, mirroring Project's own —
+// detail.tabs/header now built (fiche + identifier/type header, mirroring Project's own —
 // see FicheTab.tsx/DetailHeader.tsx for what's deliberately still absent and why). Prev/next is
 // scoped to the RU's own project (GET /recording-units/{id}/siblings), not an organization the way
 // Project's is.

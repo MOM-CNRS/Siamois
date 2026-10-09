@@ -201,7 +201,7 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE ruh.fk_parent_id = :parentId " +
                     "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(ru.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) " +
-                    "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR ru.fk_type IN (:categoryIds)) " +
+                    "  AND (CAST(:typeIds AS BIGINT[]) IS NULL OR ru.fk_type IN (:typeIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(ru.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) ",
             countQuery = "WITH ranked_labels AS ( " +
@@ -229,13 +229,13 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
                     "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 " +
                     "WHERE ruh.fk_parent_id = :parentId " +
                     "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(ru.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) " +
-                    "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR ru.fk_type IN (:categoryIds)) " +
+                    "  AND (CAST(:typeIds AS BIGINT[]) IS NULL OR ru.fk_type IN (:typeIds)) " +
                     "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(ru.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  " +
                     "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) "
     )
-    Page<RecordingUnit> findAllByParentAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(@Param("parentId") Long parentId,
+    Page<RecordingUnit> findAllByParentAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(@Param("parentId") Long parentId,
                                                                                                          @Param("fullIdentifier") String fullIdentifier,
-                                                                                                         @Param("categoryIds") Long[] categoryIds,
+                                                                                                         @Param("typeIds") Long[] typeIds,
                                                                                                          @Param("global") String global,
                                                                                                          @Param("langCode") String langCode,
                                                                                                          Pageable pageable);

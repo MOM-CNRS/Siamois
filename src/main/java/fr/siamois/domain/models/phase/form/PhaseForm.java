@@ -163,7 +163,7 @@ public abstract class PhaseForm {
     public static List<SystemFieldSpec> systemFields() {
         return List.of(
             SystemFieldSpec.hiddenReadOnly(identifierField),
-            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.hidden(typeField),
             SystemFieldSpec.of(titleField),
             SystemFieldSpec.hiddenReadOnly(actionUnitField),
             SystemFieldSpec.of(orderNumberField),

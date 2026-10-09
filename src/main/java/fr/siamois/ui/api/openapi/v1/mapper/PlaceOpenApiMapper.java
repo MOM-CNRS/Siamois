@@ -30,7 +30,7 @@ public class PlaceOpenApiMapper {
         resource.setPlaceNumber(dto.getPlaceNumber());
         resource.setGeom(dto.getGeom());
 
-        ConceptDTO category = dto.getCategory();
+        ConceptDTO category = dto.getType();
         if (category != null) {
             ResolvedConceptResource typeRef = new ResolvedConceptResource();
             typeRef.setResourceType("concepts");

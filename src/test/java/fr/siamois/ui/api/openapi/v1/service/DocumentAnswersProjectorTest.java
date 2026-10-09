@@ -60,12 +60,12 @@ class DocumentAnswersProjectorTest {
         dto.setItemCount(3);
         dto.setSizeMb(2.5);
         dto.setProductionDate(java.time.OffsetDateTime.parse("2026-03-01T00:00:00Z"));
-        dto.setCategory(concept(10));
+        dto.setType(concept(10));
         dto.setKeywords(Set.of(concept(20)));
 
         Map<Long, Map<String, Object>> out = projector.project(
                 List.of(dto),
-                Set.of(idOf("title"), idOf("itemCount"), idOf("sizeMb"), idOf("productionDate"), idOf("category"), idOf("keywords")),
+                Set.of(idOf("title"), idOf("itemCount"), idOf("sizeMb"), idOf("productionDate"), idOf("type"), idOf("keywords")),
                 Map.of(10L, "Plan", 20L, "Bronze"));
 
         Map<String, Object> answers = out.get(1L);
@@ -73,7 +73,7 @@ class DocumentAnswersProjectorTest {
                 .containsEntry(idOf("itemCount"), 3)
                 .containsEntry(idOf("sizeMb"), 2.5)
                 .containsEntry(idOf("productionDate"), java.time.OffsetDateTime.parse("2026-03-01T00:00:00Z"))
-                .containsEntry(idOf("category"), new ResourceRef("10", "concepts", "Plan"));
+                .containsEntry(idOf("type"), new ResourceRef("10", "concepts", "Plan"));
         assertThat((List<Object>) answers.get(idOf("keywords"))).containsExactly(new ResourceRef("20", "concepts", "Bronze"));
     }
 
@@ -126,11 +126,11 @@ class DocumentAnswersProjectorTest {
     @Test
     void project_unresolvedLabelFallsBackToTheExternalId_andNullsStayNull() {
         DocumentDTO dto = document(2L);
-        dto.setCategory(concept(11));
+        dto.setType(concept(11));
 
-        Map<String, Object> answers = projector.project(List.of(dto), Set.of(idOf("category"), idOf("title")), null).get(2L);
+        Map<String, Object> answers = projector.project(List.of(dto), Set.of(idOf("type"), idOf("title")), null).get(2L);
 
-        assertThat(answers).containsEntry(idOf("category"), new ResourceRef("11", "concepts", "[ext11]"));
+        assertThat(answers).containsEntry(idOf("type"), new ResourceRef("11", "concepts", "[ext11]"));
         assertThat(answers.get(idOf("title"))).isNull();
     }
 
@@ -159,15 +159,15 @@ class DocumentAnswersProjectorTest {
     @Test
     void collectConcepts_gathersSingleAndCollectionConcepts() {
         DocumentDTO dto = document(4L);
-        dto.setCategory(concept(1));
+        dto.setType(concept(1));
         dto.setSupportNatures(Set.of(concept(2)));
         dto.setKeywords(Set.of(concept(3)));
 
         List<ConceptDTO> concepts = projector.collectConcepts(
-                java.util.Arrays.asList(dto, null), Set.of(idOf("category"), idOf("supportNatures"), idOf("keywords")));
+                java.util.Arrays.asList(dto, null), Set.of(idOf("type"), idOf("supportNatures"), idOf("keywords")));
 
         assertThat(concepts).extracting(ConceptDTO::getId).containsExactlyInAnyOrder(1L, 2L, 3L);
-        assertThat(projector.collectConcepts(null, Set.of(idOf("category")))).isEmpty();
+        assertThat(projector.collectConcepts(null, Set.of(idOf("type")))).isEmpty();
         assertThat(projector.collectConcepts(List.of(dto), Set.of())).isEmpty();
     }
 

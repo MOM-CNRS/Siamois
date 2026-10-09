@@ -860,13 +860,13 @@ class CustomFieldAnswerServiceTest {
         assertThat(saved.getValue().getValue()).isEqualTo("Phase ancienne");
     }
 
-    private static fr.siamois.dto.entity.DocumentDTO documentDto(long id, long projectId, Long categoryId) {
+    private static fr.siamois.dto.entity.DocumentDTO documentDto(long id, long projectId, Long typeId) {
         fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
         document.setId(id);
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
         project.setId(projectId);
         document.setActionUnit(project);
-        if (categoryId != null) document.setCategory(conceptDto(categoryId));
+        if (typeId != null) document.setType(conceptDto(typeId));
         return document;
     }
 
@@ -914,7 +914,7 @@ class CustomFieldAnswerServiceTest {
         category.setId(70L);
         SpecimenDTO find = new SpecimenDTO();
         find.setId(400L);
-        find.setCategory(category);
+        find.setType(category);
         RecordingUnitSummaryDTO unitSummary = new RecordingUnitSummaryDTO();
         unitSummary.setId(100L);
         find.setRecordingUnit(unitSummary);

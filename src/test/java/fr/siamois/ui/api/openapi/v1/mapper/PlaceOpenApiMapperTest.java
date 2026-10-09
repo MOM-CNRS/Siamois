@@ -79,7 +79,7 @@ class PlaceOpenApiMapperTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(1L);
         dto.setName("Lieu");
-        dto.setCategory(category);
+        dto.setType(category);
 
         PlaceResource resource = mapper.toResource(dto, "fr");
 
@@ -129,7 +129,7 @@ class PlaceOpenApiMapperTest {
     void toResource_nullCategory_skipsType() {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(2L);
-        dto.setCategory(null);
+        dto.setType(null);
 
         PlaceResource resource = mapper.toResource(dto, "fr");
 

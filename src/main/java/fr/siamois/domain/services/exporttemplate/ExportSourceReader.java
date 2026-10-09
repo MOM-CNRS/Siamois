@@ -111,11 +111,11 @@ public class ExportSourceReader {
     private static Concept typeOf(ExportSubject subject, Object entity) {
         return switch (subject) {
             case RECORDING_UNIT -> ((RecordingUnit) entity).getType();
-            case SPECIMEN -> ((Specimen) entity).getCategory();
+            case SPECIMEN -> ((Specimen) entity).getType();
             case PHASE -> ((Phase) entity).getType();
-            case DOCUMENT -> ((Document) entity).getCategory();
+            case DOCUMENT -> ((Document) entity).getType();
             case CONTAINER -> ((Container) entity).getType();
-            case SPATIAL_UNIT -> ((SpatialUnit) entity).getCategory();
+            case SPATIAL_UNIT -> ((SpatialUnit) entity).getType();
             case PROJECT -> null;
         };
     }

@@ -128,9 +128,9 @@ public class CustomFieldAnswerService {
         if (dto == null || dto.getId() == null) return null;
         Long projectId = specimenProjectId(dto);
         if (projectId == null) return null;
-        // A find's form config is keyed by its category (Specimen.CAT_FIELD), not by its type.
+        // A find's form config is keyed by its type (Specimen.TYPE_FIELD), not by its type.
         return new AnswerOwner("find " + dto.getId(), projectId, ConfigurableTable.MOBILIER,
-                idOf(dto.getCategory()),
+                idOf(dto.getType()),
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
@@ -159,9 +159,9 @@ public class CustomFieldAnswerService {
 
     private AnswerOwner ownerOf(DocumentDTO dto) {
         if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
-        // A document's form config is keyed by its category (Document.TYPE_FIELD).
+        // A document's form config is keyed by its type (Document.TYPE_FIELD).
         return new AnswerOwner("document " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.DOCUMENT,
-                idOf(dto.getCategory()),
+                idOf(dto.getType()),
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
@@ -440,7 +440,7 @@ public class CustomFieldAnswerService {
         return null;
     }
 
-    /** Removes every additional-field answer a document holds, whatever category's form they were saved under. */
+    /** Removes every additional-field answer a document holds, whatever type's form they were saved under. */
     @Transactional(rollbackFor = Exception.class)
     public void deleteAdditionalFieldAnswers(DocumentDTO documentDTO) {
         for (FormConfigAnswer set : formConfigAnswerService.findAllFormConfigAnswers(documentDTO)) {

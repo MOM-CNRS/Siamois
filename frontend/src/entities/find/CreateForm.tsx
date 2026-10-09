@@ -5,7 +5,8 @@ import { Message } from "primereact/message";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
-import { useDeclaredTypes } from "../useDeclaredTypes";
+import { useDeclaredTypesState } from "../useDeclaredTypes";
+import { NoTypeHint } from "../../components/NoTypeHint";
 import type { FieldResource } from "../../fields/types";
 import type { CreateFormContext } from "../types";
 import { fetchList } from "../listApi";
@@ -26,12 +27,7 @@ import { t } from "../../i18n";
 // "recording units of a project" autocomplete endpoint, and building the whole list page for 20
 // rows would be overkill for what's a small, bounded set per project in practice.
 //
-// The category picker below is deliberately resolved by `valueBinding === "category"`, NOT
-// "type": Specimen's own form has no field bound to "type" at all — FindCreateRequest.typeId
-// actually writes SpecimenDTO.type, but the concept VOCABULARY it's drawn from (and the one
-// GET /api/v1/projects/{id}/find-types enumerates configured types against) is
-// Specimen.CAT_FIELD ("category" in the field catalog, ConfigurableTable.MOBILIER's own
-// fieldCode) — a genuine naming quirk in the domain model itself, not a bug introduced here.
+// The type picker below is resolved by `valueBinding === "type"`, like every other entity's.
 interface ConceptPick {
   resourceId: string;
   resourceType: string;
@@ -53,10 +49,10 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   const recordingUnitId = fixedRecordingUnit?.id ?? recordingUnit?.id;
   const [ruQuery, setRuQuery] = useState("");
   const [ruSuggestions, setRuSuggestions] = useState<RecordingUnitOption[]>([]);
-  const [category, setCategory] = useState<ConceptPick | null>(null);
-  // Categories and recording units are per project: a pick from the previous project no longer applies.
+  const [type, setType] = useState<ConceptPick | null>(null);
+  // Types and recording units are per project: a pick from the previous project no longer applies.
   useEffect(() => {
-    setCategory(null);
+    setType(null);
     setRecordingUnit(null);
     setRuQuery("");
   }, [projectId]);
@@ -69,10 +65,10 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
     enabled: projectId != null,
   });
 
-  const declaredCategories = useDeclaredTypes("find-types", projectId);
+  const { options: declaredTypes, loaded: typesLoaded } = useDeclaredTypesState("find-types", projectId);
 
-  const categoryField = useMemo<FieldResource | undefined>(
-    () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "category"),
+  const typeField = useMemo<FieldResource | undefined>(
+    () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
     [typesQuery.data],
   );
 
@@ -88,14 +84,14 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   }
 
   const mutation = useMutation({
-    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: category!.resourceId }),
+    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: type!.resourceId }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(messageForError(err, t("create.failed")));
     },
   });
 
-  const canSubmit = projectId != null && recordingUnitId != null && category != null && !mutation.isPending;
+  const canSubmit = projectId != null && recordingUnitId != null && type != null && !mutation.isPending;
 
   return (
     <CreateFormShell
@@ -137,16 +133,18 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
         </CreateFormField>
       )}
 
-      <CreateFormField label={t("common.category")} required>
-        {categoryField ? (
+      <CreateFormField label={t("common.type")} required>
+        {projectId != null && typesLoaded && declaredTypes.length === 0 ? (
+          <NoTypeHint kind="find" projectId={projectId} />
+        ) : typeField ? (
           <SelectOneConceptRenderer
-            field={categoryField}
-            value={category}
+            field={typeField}
+            value={type}
             readOnly={false}
             required
             organizationId={organizationId}
-            declaredOptions={declaredCategories}
-            onChange={(v) => setCategory(v as ConceptPick | null)}
+            declaredOptions={declaredTypes}
+            onChange={(v) => setType(v as ConceptPick | null)}
           />
         ) : (
           <span className="sia-create-form-hint">{projectId == null ? t("create.chooseProjectFirst") : t("common.loading")}</span>

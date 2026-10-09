@@ -539,7 +539,7 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(CHILDREN_FIELD),
             SystemFieldSpec.readOnly(STRATIGRAPHIC_RELATIONSHIPS_FIELD),
             SystemFieldSpec.readOnly(FINDS_FIELD),
-            SystemFieldSpec.of(RECORDING_UNIT_TYPE_FIELD),
+            SystemFieldSpec.hidden(RECORDING_UNIT_TYPE_FIELD),
             SystemFieldSpec.of(NATURE_FIELD),
             SystemFieldSpec.of(GEOMORPHO_AGENT_FIELD),
             SystemFieldSpec.of(INTERPRETATION_FIELD),

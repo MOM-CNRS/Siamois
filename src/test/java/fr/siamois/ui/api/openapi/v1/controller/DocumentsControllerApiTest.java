@@ -309,7 +309,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(post("/api/v1/documents")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                        .content("{\"projectId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value("55"));
     }
@@ -323,7 +323,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(post("/api/v1/documents")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                        .content("{\"projectId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isForbidden());
     }
 

@@ -24,7 +24,7 @@ public interface PlaceSourceProvider {
     List<ExternalPlace> search(String query, Map<String, String> params);
 
     /** The type of the places this source creates. */
-    ConceptDTO category();
+    ConceptDTO type();
 
     /** The place to create when a suggestion is picked. */
     SpatialUnitDTO draftOf(ExternalPlace place);

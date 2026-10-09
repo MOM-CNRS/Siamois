@@ -63,15 +63,15 @@ class PlaceSuggestionApiServiceTest {
         lenient().when(insee.identifiedByCode()).thenReturn(true);
         communeConcept = new ConceptDTO();
         communeConcept.setId(417L);
-        lenient().when(insee.category()).thenReturn(communeConcept);
-        lenient().when(geoplat.category()).thenReturn(communeConcept);
+        lenient().when(insee.type()).thenReturn(communeConcept);
+        lenient().when(geoplat.type()).thenReturn(communeConcept);
         service = new PlaceSuggestionApiService(projectApiService, spatialUnitService, institutionService,
                 profilePermissionService, new PlaceSourceRegistry(List.of(insee, geoplat)), configResolver, labelService);
         caller = new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of());
     }
 
     private void ownPlaces(SpatialUnitDTO... places) {
-        lenient().when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        lenient().when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 anyLong(), any(), any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of(places)));
         ConceptLabelDTO label = mock(ConceptLabelDTO.class);
         lenient().when(label.getLabel()).thenReturn("Commune");
@@ -303,7 +303,7 @@ class PlaceSuggestionApiServiceTest {
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName("Lyon");
         draft.setCode("69123");
-        draft.setCategory(communeConcept);
+        draft.setType(communeConcept);
         when(insee.draftOf(new ExternalPlace("Lyon", "69123", null))).thenReturn(draft);
         when(spatialUnitService.findExistingForSuggestion(any(), any(), any(), any())).thenReturn(Optional.empty());
         SpatialUnitDTO saved = place(11L, "Lyon", "69123", 10L);

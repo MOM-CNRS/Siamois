@@ -21,7 +21,6 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private String otherIdentifier;
     private String isolationNumber;
     private ConceptDTO type;
-    private ConceptDTO category;
     private List<PersonDTO> authors;
     private List<PersonDTO> collectors;
     private RecordingUnitSummaryDTO recordingUnit;
@@ -52,7 +51,6 @@ public class SpecimenDTO extends AbstractEntityDTO {
     public SpecimenDTO(SpecimenDTO original) {
         createdByInstitution = original.getCreatedByInstitution();
         type = original.getType();
-        category = original.getCategory();
         recordingUnit = original.getRecordingUnit();
         actionUnit = original.getActionUnit();
         authors = original.getAuthors() == null ? null : new ArrayList<>(original.getAuthors());
@@ -84,7 +82,6 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "isolationNumber",
                 "authors",
                 "collectors",
-                "category",
                 "collectionDate",
                 "material",
                 "materialClass",

@@ -40,7 +40,7 @@ public class SpecimenSeeder {
 
     public record SpecimenSpecs(String fullIdentifier, Integer identifier,
                                      ConceptSeeder.ConceptKey material,
-                                     ConceptSeeder.ConceptKey category,
+                                     ConceptSeeder.ConceptKey type,
                                      ConceptSeeder.ConceptKey interpretation,
                                      String authorEmail,
                                      String institutionIdentifier,
@@ -145,7 +145,7 @@ public class SpecimenSeeder {
      */
     private void mergeSpecimenInto(Specimen built, Specimen existing) {
         existing.setIdentifier(built.getIdentifier());
-        existing.setCategory(built.getCategory());
+        existing.setType(built.getType());
         existing.setAuthors(built.getAuthors());
         existing.setCollectors(built.getCollectors());
         existing.setMaterial(built.getMaterial());
@@ -175,10 +175,10 @@ public class SpecimenSeeder {
             });
             Long institutionId = institution.getId();
 
-            Concept cat = SeederUtils.field("category", () -> {
-                if (s.category() == null) throw new IllegalStateException("Catégorie obligatoire manquante");
-                Concept c = conceptsByKey.get(s.category());
-                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.category(), institutionId));
+            Concept cat = SeederUtils.field("type", () -> {
+                if (s.type() == null) throw new IllegalStateException("Type obligatoire manquant");
+                Concept c = conceptsByKey.get(s.type());
+                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.type(), institutionId));
                 return c;
             });
             Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
@@ -201,7 +201,7 @@ public class SpecimenSeeder {
             Specimen toGetOrCreate = new Specimen();
             toGetOrCreate.setCreatedByInstitution(institution);
             toGetOrCreate.setIdentifier(s.identifier);
-            toGetOrCreate.setCategory(cat);
+            toGetOrCreate.setType(cat);
             toGetOrCreate.setCreatedBy(author);
             toGetOrCreate.setFullIdentifier(s.fullIdentifier);
             toGetOrCreate.setRecordingUnit(ru);
@@ -300,7 +300,7 @@ public class SpecimenSeeder {
     private Map<ConceptSeeder.ConceptKey, Concept> fetchConcepts(List<SpecimenSpecs> specs) {
         Map<String, Set<String>> lowerIdcsByVocab = new HashMap<>();
         for (SpecimenSpecs s : specs) {
-            addConceptKey(lowerIdcsByVocab, s.category());
+            addConceptKey(lowerIdcsByVocab, s.type());
             addConceptKey(lowerIdcsByVocab, s.material());
             addConceptKey(lowerIdcsByVocab, s.interpretation());
             addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());

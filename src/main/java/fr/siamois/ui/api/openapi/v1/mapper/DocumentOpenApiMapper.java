@@ -45,8 +45,8 @@ public class DocumentOpenApiMapper {
                 r.setOrganization(org);
             }
         }
-        if (document.getCategory() != null) {
-            r.setType(projectResponseMapper.toConceptFieldValue(document.getCategory(), lang, resolvedLabels));
+        if (document.getType() != null) {
+            r.setType(projectResponseMapper.toConceptFieldValue(document.getType(), lang, resolvedLabels));
         }
         if (document.getId() != null) {
             r.setResourceUri("/document/" + document.getId());

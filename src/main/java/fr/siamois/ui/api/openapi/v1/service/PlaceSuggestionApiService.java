@@ -100,12 +100,12 @@ public class PlaceSuggestionApiService {
     }
 
     private List<PlaceSuggestionItemApi> ownPlaces(SuggestionRequest request) {
-        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 request.organizationId(), request.query(), null, null, null, request.lang(),
                 PageRequest.of(0, request.limit(), Sort.by("name")));
         return page.getContent().stream()
                 .map(dto -> new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getCode(), SOURCE_INTERNAL,
-                        resolveConcept(dto.getCategory(), request.lang()), null))
+                        resolveConcept(dto.getType(), request.lang()), null))
                 .toList();
     }
 
@@ -187,7 +187,7 @@ public class PlaceSuggestionApiService {
     private List<PlaceSuggestionItemApi> externalSuggestions(PlaceSourceProvider provider, String query,
                                                              Map<String, String> params, String lang) {
         try {
-            ConceptDTO category = provider.category();
+            ConceptDTO category = provider.type();
             ResolvedConceptResource concept = resolveConcept(category, lang);
             return provider.search(query, params).stream()
                     .map(place -> new PlaceSuggestionItemApi(null, place.name(), place.code(), provider.id(), concept, place.address()))
@@ -223,7 +223,7 @@ public class PlaceSuggestionApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         requireMayCreate(caller, userInfo, request.getProjectId());
 
-        ConceptDTO category = provider.category();
+        ConceptDTO category = provider.type();
         ExternalPlace picked = new ExternalPlace(name, blankToNull(request.getCode()), request.getAddress());
         SpatialUnitDTO draft = provider.draftOf(picked);
         String code = draft.getCode();

@@ -91,7 +91,7 @@ public class PlaceSearchControllerApi {
         }
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 organizationId,
                 query,
                 null,
@@ -195,7 +195,7 @@ public class PlaceSearchControllerApi {
     }
 
     private PlaceAutocompleteItemApi toItem(SpatialUnitDTO dto, String lang) {
-        ConceptDTO cat = dto.getCategory();
+        ConceptDTO cat = dto.getType();
         ResolvedConceptResource concept = null;
         if (cat != null) {
             concept = new ResolvedConceptResource();

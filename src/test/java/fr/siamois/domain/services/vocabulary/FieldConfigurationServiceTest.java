@@ -282,7 +282,7 @@ class FieldConfigurationServiceTest {
         Concept c = new Concept();
         c.setVocabulary(vocabulary);
         c.setExternalId("12");
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(c));
         Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
@@ -294,7 +294,7 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findVocabularyUrlOfInstitution_shouldReturnEmpty_whenConfigDoesNotExist() {
-        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptRepository.findTopTermConfigForFieldCodeOfInstitution(1L, SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.empty());
         Optional<String> result = service.findVocabularyUrlOfInstitutionId(1L);
 
@@ -308,7 +308,7 @@ class FieldConfigurationServiceTest {
         c.setExternalId("12");
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         cfc.setConcept(c);
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(cfc));
 
         Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
@@ -320,7 +320,7 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findVocabularyUrlOfActionUnit_shouldReturnEmpty_whenConfigDoesNotExist() {
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.empty());
 
         Optional<String> result = service.findVocabularyUrlOfActionUnitId(42L);
@@ -335,12 +335,12 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
-        Concept result = service.findParentConceptForFieldcode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
+        Concept result = service.findParentConceptForFieldcode(userInfo, SpatialUnit.TYPE_FIELD_CODE);
 
         assertThat(result)
                 .isNotNull()
@@ -349,7 +349,7 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findParentConceptForFieldcode_shouldThrowNoConfigException_whenConfigDoesNotExist() {
-        assertThrows(NoConfigForFieldException.class, () -> service.findParentConceptForFieldcode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE));
+        assertThrows(NoConfigForFieldException.class, () -> service.findParentConceptForFieldcode(userInfo, SpatialUnit.TYPE_FIELD_CODE));
     }
 
     @Test
@@ -370,19 +370,19 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
-        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE);
 
         assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
     }
 
     @Test
     void getUrlForFieldCode_shouldReturnNull_whenConfigDoesNotExist() {
-        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE);
 
         assertThat(result).isNull();
     }
@@ -439,17 +439,17 @@ class FieldConfigurationServiceTest {
     @Test
     void getUrlForConceptField_shouldFallBackOnFieldCode_whenNoFormConfigExists() {
         CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
-        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        field.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         Concept concept = new Concept();
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(cfc));
 
         String result = service.getUrlForConceptField(field, 42L);
@@ -462,17 +462,17 @@ class FieldConfigurationServiceTest {
         // an empty ConceptFieldFormConfig (neither branch nor collection) must be treated the same as
         // no configuration at all, not surfaced as a branch/collection URL
         CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
-        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        field.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
         ConceptFieldConfig cfc = new ConceptFieldConfig();
         Concept concept = new Concept();
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(new ConceptFieldFormConfig()));
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(cfc));
 
         String result = service.getUrlForConceptField(field, 42L);
@@ -494,7 +494,7 @@ class FieldConfigurationServiceTest {
     @Test
     void getUrlForConceptField_shouldReturnNull_whenNoFormConfigAndNoExecutionContextIsBound() {
         CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
-        field.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        field.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
         ExecutionContextHolder.clear();
@@ -590,12 +590,12 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE);
 
         assertThat(result)
                 .isEqualTo(cfc);
@@ -603,7 +603,7 @@ class FieldConfigurationServiceTest {
 
     @Test
     void findConfigurationForFieldCode_shouldThrowNoConfigException_whenConfigDoesNotExist() {
-        assertThrows(NoConfigForFieldException.class, () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE));
+        assertThrows(NoConfigForFieldException.class, () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE));
     }
 
     @Test
@@ -616,12 +616,12 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         actionUnitConfig.setConcept(concept);
-        actionUnitConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        actionUnitConfig.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(actionUnitConfig));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, actionUnit);
 
         assertThat(result).isEqualTo(actionUnitConfig);
         verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
@@ -637,14 +637,14 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         institutionConfig.setConcept(concept);
-        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        institutionConfig.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.empty());
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(institutionConfig));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, actionUnit);
 
         assertThat(result).isEqualTo(institutionConfig);
     }
@@ -654,24 +654,24 @@ class FieldConfigurationServiceTest {
         ActionUnitDTO actionUnit = new ActionUnitDTO();
         actionUnit.setId(42L);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.empty());
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.empty());
 
         assertThrows(NoConfigForFieldException.class,
-                () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, actionUnit));
+                () -> service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, actionUnit));
     }
 
     @Test
     void findConfigurationForFieldCodeWithActionUnitId_shouldReturnInstitutionConfig_whenActionUnitIdIsNull() throws NoConfigForFieldException {
         ConceptFieldConfig institutionConfig = new ConceptFieldConfig();
-        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        institutionConfig.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(institutionConfig));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, (Long) null);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, (Long) null);
 
         assertThat(result).isEqualTo(institutionConfig);
         verify(conceptFieldConfigRepository, never()).findOneByFieldCodeAndActionUnitId(anyString(), anyLong());
@@ -680,12 +680,12 @@ class FieldConfigurationServiceTest {
     @Test
     void findConfigurationForFieldCodeWithActionUnitId_shouldReturnActionUnitConfig_whenExists() throws NoConfigForFieldException {
         ConceptFieldConfig actionUnitConfig = new ConceptFieldConfig();
-        actionUnitConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        actionUnitConfig.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(actionUnitConfig));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, 42L);
 
         assertThat(result).isEqualTo(actionUnitConfig);
         verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), anyString());
@@ -694,14 +694,14 @@ class FieldConfigurationServiceTest {
     @Test
     void findConfigurationForFieldCodeWithActionUnitId_shouldFallbackOnInstitutionConfig_whenNoActionUnitConfig() throws NoConfigForFieldException {
         ConceptFieldConfig institutionConfig = new ConceptFieldConfig();
-        institutionConfig.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        institutionConfig.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.empty());
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(institutionConfig));
 
-        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+        ConceptFieldConfig result = service.findConfigurationForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, 42L);
 
         assertThat(result).isEqualTo(institutionConfig);
     }
@@ -769,12 +769,12 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, 42L))
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, 42L))
                 .thenReturn(Optional.of(cfc));
 
-        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, 42L);
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, 42L);
 
         assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
     }
@@ -786,12 +786,12 @@ class FieldConfigurationServiceTest {
         concept.setVocabulary(vocabulary);
         concept.setExternalId("12");
         cfc.setConcept(concept);
-        cfc.setFieldCode(SpatialUnit.CATEGORY_FIELD_CODE);
+        cfc.setFieldCode(SpatialUnit.TYPE_FIELD_CODE);
 
-        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.CATEGORY_FIELD_CODE))
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), SpatialUnit.TYPE_FIELD_CODE))
                 .thenReturn(Optional.of(cfc));
 
-        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.CATEGORY_FIELD_CODE, null);
+        String result = service.getUrlForFieldCode(userInfo, SpatialUnit.TYPE_FIELD_CODE, null);
 
         assertThat(result).isEqualTo("http://exemple.org/?idc=12&idt=th2");
     }

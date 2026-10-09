@@ -2,8 +2,11 @@ package fr.siamois.ui.redirection;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.NavBean;
@@ -11,7 +14,9 @@ import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.settings.InstitutionListSettingsBean;
 import fr.siamois.ui.bean.settings.administration.ApplicationMembersListBean;
 import fr.siamois.ui.bean.settings.exporttemplate.ExportTemplatesSettingsBean;
+import fr.siamois.ui.bean.settings.project.ProjectDetailsBean;
 import fr.siamois.ui.bean.settings.project.ProjectListBean;
+import fr.siamois.ui.bean.settings.project.ProjectTableFieldSettingsBean;
 import jakarta.ws.rs.ForbiddenException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
@@ -32,6 +37,9 @@ public class SettingsController {
     private final PersonService personService;
     private final PersonMapper personMapper;
     private final ExportTemplatesSettingsBean exportTemplatesSettingsBean;
+    private final ProjectDetailsBean projectDetailsBean;
+    private final ProjectTableFieldSettingsBean projectTableFieldSettingsBean;
+    private final ActionUnitService actionUnitService;
 
 
 
@@ -42,7 +50,13 @@ public class SettingsController {
                                ProjectListBean projectListBean,
                                PersonService personService,
                                PersonMapper personMapper,
-                               ExportTemplatesSettingsBean exportTemplatesSettingsBean) {
+                               ExportTemplatesSettingsBean exportTemplatesSettingsBean,
+                               ProjectDetailsBean projectDetailsBean,
+                               ProjectTableFieldSettingsBean projectTableFieldSettingsBean,
+                               ActionUnitService actionUnitService) {
+        this.projectDetailsBean = projectDetailsBean;
+        this.projectTableFieldSettingsBean = projectTableFieldSettingsBean;
+        this.actionUnitService = actionUnitService;
         this.exportTemplatesSettingsBean = exportTemplatesSettingsBean;
         this.navBean = navBean;
         this.institutionListSettingsBean = institutionListSettingsBean;
@@ -115,6 +129,32 @@ public class SettingsController {
             projectListBean.init();
         }
         return "forward:/pages/settings/project/projectList.xhtml";
+    }
+
+    /**
+     * Straight to a project's table configuration (the page behind its "tables" tile), optionally
+     * opened on one table: what a creation form links to when a table has no type declared yet.
+     */
+    @GetMapping("/settings/project/{projectId}/tables")
+    public String goToProjectTablesSettings(@PathVariable("projectId") Long projectId,
+                                            @RequestParam(value = "table", required = false) String table) {
+        if (!profilePermissionService.hasProjectPermission(
+                sessionSettingsBean.getUserInfo(), projectId, PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+            throw new ForbiddenException();
+        }
+        ActionUnitDTO project = actionUnitService.findById(projectId);
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        projectDetailsBean.setProject(project);
+        projectDetailsBean.init();
+        projectTableFieldSettingsBean.init(project);
+        if (table != null) {
+            try {
+                projectTableFieldSettingsBean.selectTable(ConfigurableTable.valueOf(table));
+            } catch (IllegalArgumentException ignored) {
+                // an unknown table: the page opens on its first one
+            }
+        }
+        return "forward:/pages/settings/project/projectTablesSettings.xhtml";
     }
 
     @GetMapping("/settings/administration")

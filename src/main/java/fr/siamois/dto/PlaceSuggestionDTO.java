@@ -9,7 +9,7 @@ import java.io.Serializable;
 @Data
 public class PlaceSuggestionDTO implements Serializable {
     private String name;
-    private ConceptDTO category;
+    private ConceptDTO type;
     private Long id;
     private String code;
     private String sourceName; // "SIAMOIS" or sourceName

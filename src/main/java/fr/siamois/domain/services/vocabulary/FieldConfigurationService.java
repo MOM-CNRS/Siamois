@@ -259,7 +259,7 @@ public class FieldConfigurationService {
     @NonNull
     public Optional<String> findVocabularyUrlOfInstitutionId(@NonNull Long institutionId) {
         Optional<Concept> optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfInstitution(institutionId, SpatialUnit.CATEGORY_FIELD_CODE);
+                .findTopTermConfigForFieldCodeOfInstitution(institutionId, SpatialUnit.TYPE_FIELD_CODE);
         if (optConcept.isEmpty()) return Optional.empty();
         Vocabulary vocabulary = optConcept.get().getVocabulary();
         return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());
@@ -274,7 +274,7 @@ public class FieldConfigurationService {
     @NonNull
     public Optional<String> findVocabularyUrlOfActionUnitId(@NonNull Long actionUnitId) {
         Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository
-                .findOneByFieldCodeAndActionUnitId(SpatialUnit.CATEGORY_FIELD_CODE, actionUnitId);
+                .findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, actionUnitId);
         if (optConfig.isEmpty()) return Optional.empty();
         Concept concept = optConfig.get().getConcept();
         Hibernate.initialize(concept.getVocabulary());

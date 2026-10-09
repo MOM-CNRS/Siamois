@@ -161,9 +161,9 @@ public class FindOpenApiService {
         Long projectId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
         OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             // The same effective form the find-types catalog lays out: system fields minus the
-            // inactive ones, plus the category's additional fields.
+            // inactive ones, plus the type's additional fields.
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId,
-                    ConfigurableTable.MOBILIER, dto.getCategory() != null ? dto.getCategory().getId() : null);
+                    ConfigurableTable.MOBILIER, dto.getType() != null ? dto.getType().getId() : null);
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                     fieldAnswerPatchService.apply(dto, formUiDto, answers, projectId);
             return specimenService.save(dto, additionalAnswers);

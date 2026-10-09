@@ -171,7 +171,7 @@ export function EntityDetailHeader({
           <Chip label={secondary.value} className={`mr-2 ${chipPrefix}-type-chip`} />
         ))}
       {typeEditable ? (
-        <span className="entity-detail-header-category sia-inline-center">
+        <span className="entity-detail-header-type sia-inline-center">
           <SelectOneConceptRenderer
             field={type!.field!}
             value={typeDraft as never}
@@ -184,7 +184,7 @@ export function EntityDetailHeader({
         </span>
       ) : (
         (typeLabel || (canEdit && type?.field != null)) && (
-          <span className="entity-detail-header-category sia-inline-center">
+          <span className="entity-detail-header-type sia-inline-center">
             <Chip label={typeLabel ?? t("header.noType")} className={`mr-2 ${chipPrefix}-type-chip`} />
           </span>
         )

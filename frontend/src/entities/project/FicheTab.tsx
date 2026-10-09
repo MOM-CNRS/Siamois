@@ -119,7 +119,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
   return (
     <div className="project-fiche-tab sia-fiche-tab">
       {/* No edit/save toolbar: the app's own read/write switch decides, and each field persists
-          itself. The identifier and category chips keep their explicit pencil/apply/cancel, in
+          itself. The identifier and type chips keep their explicit pencil/apply/cancel, in
           ProjectDetailHeader — that is what JSF does too (headerEditControls.xhtml). */}
       {organizationIdRaw == null && (
         <Message severity="warn" text={t("fiche.unknownOrganization")} />
