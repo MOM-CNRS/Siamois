@@ -697,7 +697,7 @@ class ActionUnitServiceTest {
 
         ActionUnit entity = new ActionUnit();
         SpatialUnit existingMainLoc = new SpatialUnit();
-        existingMainLoc.setCategory(new Concept());
+        existingMainLoc.setType(new Concept());
         entity.setMainLocation(existingMainLoc);
 
         when(actionUnitRepository.findByNameAndCreatedByInstitutionId(any(), any())).thenReturn(Optional.empty());
@@ -728,7 +728,7 @@ class ActionUnitServiceTest {
 
         SpatialUnitSummaryDTO newPlace = new SpatialUnitSummaryDTO();
         newPlace.setName("Brand new");
-        newPlace.setCategory(new ConceptDTO());
+        newPlace.setType(new ConceptDTO());
 
         dto.setSpatialContext(Set.of(existingPlace, newPlace));
 

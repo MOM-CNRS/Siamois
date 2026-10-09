@@ -125,7 +125,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 List.of(spec),
                 PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "creationTime")),
                 1L);
-        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(55L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
@@ -150,14 +150,14 @@ class ProjectApiServiceRecordingUnitFindsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("1"), eq(SCOPE), isNull())).thenReturn(ru);
 
         PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
-        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), eq("id:asc"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         projectApiService.pageFindsForAccessibleRecordingUnit(
                 caller(), "1", 0, 10, "id:asc", "it-CH,it;q=0.9");
 
-        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(1L), isNull(), isNull(), isNull(), eq("it"), eq("id:asc"), any(Pageable.class));
     }
 
@@ -171,13 +171,13 @@ class ProjectApiServiceRecordingUnitFindsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(SCOPE), isNull())).thenReturn(ru);
 
         PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0L);
-        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         projectApiService.pageFindsForAccessibleRecordingUnit(caller(), "2", 0, 10, "creationTime:desc", null);
 
-        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), eq("creationTime:desc"), any(Pageable.class));
     }
 
@@ -191,14 +191,14 @@ class ProjectApiServiceRecordingUnitFindsTest {
         when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(SCOPE), isNull())).thenReturn(ru);
 
         PageImpl<SpecimenDTO> specimenPage = new PageImpl<>(List.of(), PageRequest.of(2, 10), 0L);
-        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), isNull(), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
         projectApiService.pageFindsForAccessibleRecordingUnit(caller(), "2", 20, 10, null, null);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        verify(specimenService).findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(2L), isNull(), isNull(), isNull(), eq("fr"), isNull(), pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);

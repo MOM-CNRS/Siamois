@@ -179,7 +179,7 @@ class DocumentOpenApiServiceTest {
     void createDocument_blankProjectId_throws400() {
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId(" ");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -199,7 +199,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -220,7 +220,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -239,7 +239,7 @@ class DocumentOpenApiServiceTest {
         when(documentService.save(any(DocumentDTO.class))).thenReturn(documentOn(au));
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
         return req;
     }
 
@@ -319,7 +319,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
         req.setTitle("Document 1");
 
         DocumentResource result = service.createDocument(req, personDto, Set.of(10L), "fr");
@@ -327,7 +327,7 @@ class DocumentOpenApiServiceTest {
         ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
         verify(documentService).save(captor.capture());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
-        assertThat(captor.getValue().getCategory()).isEqualTo(typeDto);
+        assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(captor.getValue().getTitle()).isEqualTo("Document 1");
         // TraceableEntity's NOT NULL author and organization: the caller, in the project's organization.
         assertThat(captor.getValue().getCreatedBy()).isSameAs(personDto);
@@ -409,7 +409,7 @@ class DocumentOpenApiServiceTest {
         DocumentDTO document = documentOn(projectWithInstitution());
         ConceptDTO type = new ConceptDTO();
         type.setId(40L);
-        document.setCategory(type);
+        document.setType(type);
         when(documentService.findDtoById(5L)).thenReturn(document);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))

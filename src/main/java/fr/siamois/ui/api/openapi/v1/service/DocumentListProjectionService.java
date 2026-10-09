@@ -54,8 +54,8 @@ public class DocumentListProjectionService {
 
         List<ConceptDTO> concepts = new ArrayList<>(documentAnswersProjector.collectConcepts(rows, fieldIds));
         for (DocumentDTO dto : rows) {
-            if (dto != null && dto.getCategory() != null) {
-                concepts.add(dto.getCategory());
+            if (dto != null && dto.getType() != null) {
+                concepts.add(dto.getType());
             }
         }
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);

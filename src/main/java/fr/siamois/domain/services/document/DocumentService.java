@@ -182,7 +182,7 @@ public class DocumentService implements ArkEntityService {
      * {@code PhaseService.save(PhaseDTO, Map)}.
      *
      * @param dto                    the document to save
-     * @param additionalFieldAnswers answers to the category's additional fields, keyed by field
+     * @param additionalFieldAnswers answers to the type's additional fields, keyed by field
      * @return the saved document
      */
     @Transactional
@@ -248,7 +248,7 @@ public class DocumentService implements ArkEntityService {
     private static void copyEditableFields(Document from, Document to) {
         to.setIdentifier(from.getIdentifier());
         to.setOtherIdentifiers(from.getOtherIdentifiers());
-        to.setCategory(from.getCategory());
+        to.setType(from.getType());
         to.setDocumentType(from.getDocumentType());
         to.setFormat(from.getFormat());
         to.setTitle(from.getTitle());
@@ -290,7 +290,7 @@ public class DocumentService implements ArkEntityService {
     /**
      * A new document attached to a project gets its identifier from the project's format, unless it brings one.
      * <p>
-     * That format lives on the form configuration of the category field ({@link Document#TYPE_FIELD}), which the
+     * That format lives on the form configuration of the type field ({@link Document#TYPE_FIELD}), which the
      * institution's thesaurus has to declare. Where it does not (documents come from the mobile API too, which
      * does not know about categories), the document gets a provisional identifier, replaced by {@code DOC-<id>}
      * as soon as the row exists, rather than the creation failing.
@@ -325,7 +325,7 @@ public class DocumentService implements ArkEntityService {
                 .generationRequired(document -> document.getId() == null
                         && (document.getIdentifier() == null || document.getIdentifier().isBlank()))
                 .actionUnit(Document::getActionUnit)
-                .typeId(document -> document.getCategory() == null ? null : document.getCategory().getId())
+                .typeId(document -> document.getType() == null ? null : document.getType().getId())
                 .displayValue("ID_UA", document -> document.getActionUnit().getFullIdentifier())
                 .identifierAlreadyUsed((document, candidate) ->
                         documentRepository.existsByActionUnitIdAndIdentifier(
@@ -610,7 +610,7 @@ public class DocumentService implements ArkEntityService {
         documentRepository.deletePhaseDocumentLinks(id);
         documentRepository.deleteContainerDocumentLinks(id);
         documentRepository.deleteSpecimenStudyDocumentLinks(id);
-        // answers to the category's additional fields hold a foreign key to the document
+        // answers to the type's additional fields hold a foreign key to the document
         DocumentDTO idOnly = new DocumentDTO();
         idOnly.setId(id);
         customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);

@@ -5,7 +5,8 @@ import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../entities/types";
 import { SelectOneConceptRenderer } from "../fields/renderers";
-import { useDeclaredTypes } from "../entities/useDeclaredTypes";
+import { useDeclaredTypesState } from "../entities/useDeclaredTypes";
+import { NoTypeHint } from "./NoTypeHint";
 import type { FieldResource } from "../fields/types";
 import { CreateFormField, CreateFormShell } from "./CreateFormShell";
 import { useCreateProject } from "./useCreateProject";
@@ -23,9 +24,6 @@ export interface TypeOnlyCreateFormProps extends CreateFormContext {
   title: string;
   // The project catalog whose untyped form carries the type field (valueBinding "type").
   typesSegment: string;
-  // The valueBinding of that type field: "type" unless the entity names its type differently
-  // (a document's is its "category").
-  typeBinding?: string;
   create: (projectId: string, typeId: string) => Promise<{ id: string | number }>;
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
@@ -41,7 +39,6 @@ export function TypeOnlyCreateForm({
   entityType,
   title,
   typesSegment,
-  typeBinding = "type",
   create,
   children,
   organizationId,
@@ -63,11 +60,11 @@ export function TypeOnlyCreateForm({
     enabled: projectId != null,
   });
   const typeField = useMemo<FieldResource | undefined>(
-    () => Object.values(formQuery.data?.fields ?? {}).find((f) => f.valueBinding === typeBinding),
-    [formQuery.data, typeBinding],
+    () => Object.values(formQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
+    [formQuery.data],
   );
 
-  const declaredTypes = useDeclaredTypes(typesSegment, projectId);
+  const { options: declaredTypes, loaded: typesLoaded } = useDeclaredTypesState(typesSegment, projectId);
 
   const mutation = useMutation({
     mutationFn: () => create(projectId as string, type!.resourceId),
@@ -91,7 +88,9 @@ export function TypeOnlyCreateForm({
       {projectId == null && !projectPicker && <Message severity="warn" text={t("create.unknownProject")} />}
 
       <CreateFormField label={t("common.type")} required>
-        {typeField ? (
+        {projectId != null && typesLoaded && declaredTypes.length === 0 ? (
+          <NoTypeHint kind={entityType} projectId={projectId} />
+        ) : typeField ? (
           <SelectOneConceptRenderer
             field={typeField}
             value={type}

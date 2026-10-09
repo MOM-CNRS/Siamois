@@ -15,7 +15,7 @@ vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
 const mockedPatchProject = vi.mocked(patchProject);
 const mockedGetProjectTypes = vi.mocked(getProjectTypes);
 
-// ActionUnitForm.ACTION_UNIT_TYPE_FIELD as the org catalog serves it — the category chip finds it
+// ActionUnitForm.ACTION_UNIT_TYPE_FIELD as the org catalog serves it — the type chip finds it
 // by valueBinding "type", never by its id.
 const typeField: FieldResource = {
   id: "-101",
@@ -182,23 +182,23 @@ describe("ProjectDetailHeader", () => {
 
     expect(container.querySelector(".entity-detail-header-primary-input")).toBeTruthy();
     expect(container.querySelector(".entity-detail-header-secondary-input")).toBeTruthy();
-    expect(container.querySelector(".entity-detail-header-category .p-autocomplete input")).toBeTruthy();
+    expect(container.querySelector(".entity-detail-header-type .p-autocomplete input")).toBeTruthy();
   });
 });
 
-describe("ProjectDetailHeader — category chip", () => {
+describe("ProjectDetailHeader — type chip", () => {
   it("shows the type as a chip", async () => {
     renderHeader(project());
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("Sondage");
   });
 
   it("labels an untyped project rather than rendering an empty chip", async () => {
     renderHeader(project({ type: undefined }));
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sans type");
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("Sans type");
   });
 
   it("keeps the type as a chip when the catalog has no type field to edit with", async () => {
@@ -210,8 +210,8 @@ describe("ProjectDetailHeader — category chip", () => {
     });
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sondage");
-    expect(container.querySelector(".entity-detail-header-category .p-autocomplete")).toBeFalsy();
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("Sondage");
+    expect(container.querySelector(".entity-detail-header-type .p-autocomplete")).toBeFalsy();
   });
 
   it("swaps the chip for the shared concept autocomplete in edit mode", async () => {
@@ -223,7 +223,7 @@ describe("ProjectDetailHeader — category chip", () => {
     });
     await flush();
 
-    const input = container.querySelector(".entity-detail-header-category .p-autocomplete input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-type .p-autocomplete input") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(input.value).toBe("Sondage");
   });

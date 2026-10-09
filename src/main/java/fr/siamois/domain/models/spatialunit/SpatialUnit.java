@@ -45,7 +45,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @SuppressWarnings("CopyConstructorMissesField")
     public SpatialUnit (SpatialUnit spatialUnit) {
         name = spatialUnit.getName();
-        category = spatialUnit.getCategory();
+        type = spatialUnit.getType();
         geom = spatialUnit.getGeom();
         placeNumber = spatialUnit.getPlaceNumber();
         validationStatus = ValidationStatus.INCOMPLETE;
@@ -57,7 +57,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     private Long id;
 
     @FieldCode
-    public static final String CATEGORY_FIELD_CODE = "SIASU.TYPE";
+    public static final String TYPE_FIELD_CODE = "SIASU.TYPE";
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
@@ -85,8 +85,8 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     protected Ark ark;
 
     @ManyToOne
-    @JoinColumn(name = "fk_concept_category_id")
-    protected Concept category;
+    @JoinColumn(name = "fk_concept_type_id")
+    protected Concept type;
 
     @Column(name="geom",columnDefinition = "geometry")
     @JsonIgnore
@@ -178,13 +178,13 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @Transient
     @JsonIgnore
     public static final CustomFieldSelectOneFromFieldCode SPATIAL_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
+            .label("specimen.field.type")
             .id(-201L)
             .isSystemField(true)
-            .valueBinding("category")
+            .valueBinding("type")
             .styleClass("mr-2 spatial-unit-type-chip")
             .iconClass("bi bi-geo-alt")
-            .fieldCode(SpatialUnit.CATEGORY_FIELD_CODE)
+            .fieldCode(SpatialUnit.TYPE_FIELD_CODE)
             .concept(SPATIAL_UNIT_TYPE_CONCEPT)
             .build();
 

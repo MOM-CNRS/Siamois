@@ -630,8 +630,8 @@ class OOXMLImportServiceTest {
         assertThat(sp.fullIdentifier()).isEqualTo("SP-001");
         assertThat(sp.material().vocabularyExtId()).isEqualTo("th12");
         assertThat(sp.material().conceptExtId()).isEqualTo("89");
-        assertThat(sp.category().vocabularyExtId()).isEqualTo("th12");
-        assertThat(sp.category().conceptExtId()).isEqualTo("88");
+        assertThat(sp.type().vocabularyExtId()).isEqualTo("th12");
+        assertThat(sp.type().conceptExtId()).isEqualTo("88");
         assertThat(sp.interpretation()).isNull();
         assertThat(sp.institutionIdentifier()).isEqualTo("INRAP");
         assertThat(sp.recordingUnitKey().fullIdentifier()).isEqualTo("US-001");
@@ -821,7 +821,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseSpatialUnits_labelFallback_resolvesCategoryConceptViaConceptService() {
         var au = actionUnitWithInstitution(9L);
-        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
+        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.TYPE_FIELD_CODE, "Site"))
                 .thenReturn(conceptWithKey("th2", "10"));
 
         Workbook wb = workbook();

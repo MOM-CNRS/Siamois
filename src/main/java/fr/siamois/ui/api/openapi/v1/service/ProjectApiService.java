@@ -1452,7 +1452,7 @@ public class ProjectApiService {
             return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru, page.getContent());
         }
         Pageable pageable = PageRequest.of(pageNumber, limit);
-        Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 institution.getId(),
                 ru.getId(),
                 search != null && !search.isBlank() ? search : null,

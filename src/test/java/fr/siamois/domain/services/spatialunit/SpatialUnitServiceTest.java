@@ -249,7 +249,7 @@ class SpatialUnitServiceTest {
         List<SpatialUnitSummaryDTO> parents = List.of(parent);
         SpatialUnitDTO unit = new SpatialUnitDTO();
         unit.setName(name);
-        unit.setCategory(type);
+        unit.setType(type);
         unit.setParents(new HashSet<>(parents));
 
         List<SpatialUnitSummaryDTO> children = List.of(new SpatialUnitSummaryDTO(spatialUnit2DTO));
@@ -301,7 +301,7 @@ class SpatialUnitServiceTest {
         List<SpatialUnitSummaryDTO> parents = List.of(new SpatialUnitSummaryDTO(spatialUnit1DTO));
         SpatialUnitDTO unit = new SpatialUnitDTO();
         unit.setName(name);
-        unit.setCategory(type);
+        unit.setType(type);
         unit.setChildren(new HashSet<>());
         unit.setParents(new HashSet<>(parents));
 
@@ -761,7 +761,7 @@ class SpatialUnitServiceTest {
         unit.setName("Paris Office");
         unit.setCode("PAR-01");
         // Mock category if necessary
-        unit.setCategory(new Concept());
+        unit.setType(new Concept());
 
         when(spatialUnitRepository.findTop3ByInstitutionIdBySimilarity(instId, query))
                 .thenReturn(List.of(unit));
@@ -777,7 +777,7 @@ class SpatialUnitServiceTest {
         assertEquals("Paris Office", dto.getName());
         assertEquals("PAR-01", dto.getCode());
         assertEquals("SIAMOIS", dto.getSourceName());
-        assertNotNull(dto.getCategory());
+        assertNotNull(dto.getType());
     }
 
     // ------------------------------------------------------------------
@@ -1073,7 +1073,7 @@ class SpatialUnitServiceTest {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(true);
-        filters.addScopeFilter(SpatialUnitSpec.CATEGORY_FILTER, List.of(9L), FilterDTO.FilterType.CONTAINS);
+        filters.addScopeFilter(SpatialUnitSpec.TYPE_FILTER, List.of(9L), FilterDTO.FilterType.CONTAINS);
 
         when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
         when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
@@ -1122,7 +1122,7 @@ class SpatialUnitServiceTest {
         inst.setId(1L);
         FilterDTO filters = new FilterDTO(false);
         filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
-        filters.add(SpatialUnitSpec.CATEGORY_FILTER, List.of(5L, 6L), FilterDTO.FilterType.CONTAINS);
+        filters.add(SpatialUnitSpec.TYPE_FILTER, List.of(5L, 6L), FilterDTO.FilterType.CONTAINS);
 
         when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of()));
@@ -1305,7 +1305,7 @@ class SpatialUnitServiceTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(5L);
         dto.setName("Ancien");
-        dto.setCategory(category);
+        dto.setType(category);
 
         when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(existing));
         when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(dto);

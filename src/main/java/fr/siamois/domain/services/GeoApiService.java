@@ -54,7 +54,7 @@ public class GeoApiService {
                 .map(r -> {
                     PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
                     dto.setName(r.getNom());
-                    dto.setCategory(conceptDTO);
+                    dto.setType(conceptDTO);
                     dto.setCode(r.getCode());
                     dto.setSourceName("INSEE");
                     return dto;

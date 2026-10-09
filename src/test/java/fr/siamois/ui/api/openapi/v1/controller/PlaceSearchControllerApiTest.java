@@ -76,7 +76,7 @@ class PlaceSearchControllerApiTest {
         su.setId(5L);
         su.setName("Abbaye");
         PageRequest firstPage = PageRequest.of(0, 20, Sort.by("name"));
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 eq(10L), eq(""), isNull(), isNull(), isNull(), eq("fr"), eq(firstPage)))
                 .thenReturn(new PageImpl<>(List.of(su), firstPage, 1));
 
@@ -113,7 +113,7 @@ class PlaceSearchControllerApiTest {
         su.setId(77L);
         su.setName("Rue des Lilas");
         su.setCode("LILAS");
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByCategoriesAndByGlobalContaining(
+        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 eq(10L),
                 eq("lilas"),
                 isNull(),

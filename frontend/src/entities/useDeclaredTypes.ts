@@ -9,14 +9,23 @@ import { fetchTypesCatalog } from "./typeCatalog";
  * Empty until the catalog is there, and without a project (there is nothing declared to pick from).
  */
 export function useDeclaredTypes(typesSegment: string | undefined, projectId: string | number | null | undefined): FilterOption[] {
+  return useDeclaredTypesState(typesSegment, projectId).options;
+}
+
+/** {@link useDeclaredTypes} that also says whether the catalog has arrived: "none declared" is not "not loaded yet". */
+export function useDeclaredTypesState(
+  typesSegment: string | undefined,
+  projectId: string | number | null | undefined,
+): { options: FilterOption[]; loaded: boolean } {
   const query = useQuery({
     queryKey: queryKeys.typesCatalog(`/api/v1/projects/${projectId}/${typesSegment}`),
     queryFn: () => fetchTypesCatalog(`/api/v1/projects/${projectId}/${typesSegment}`),
     enabled: typesSegment != null && projectId != null,
     staleTime: Infinity,
   });
-  return (query.data?.data ?? []).map((type) => ({
+  const options = (query.data?.data ?? []).map((type) => ({
     id: String(type.id),
     label: type.concept?.resolvedLabel ?? String(type.id),
   }));
+  return { options, loaded: query.isSuccess };
 }

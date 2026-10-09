@@ -5,7 +5,7 @@ import { apiBlob, apiFetch } from "../../api/client";
 // Mirrors DocumentCreateRequest's required pair (the title is editable afterwards, on the fiche).
 export interface DocumentCreateBody {
   projectId: string;
-  categoryId: string;
+  typeId: string;
   // What a Documents tab creates it linked to (the one entity's id, under its own list).
   recordingUnitIds?: Array<string | number>;
   findIds?: Array<string | number>;

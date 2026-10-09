@@ -32,7 +32,7 @@ public abstract class DocumentForm {
 
     private static final String LABEL_PREFIX = "document.field.";
     private static final String B_ACTION_UNIT = "actionUnit";
-    private static final String B_CATEGORY = "category";
+    private static final String B_TYPE = "type";
     private static final String B_AUTHORS = "authors";
     private static final String B_CONTRIBUTORS = "contributors";
     private static final String B_PRODUCTION_DATE = "productionDate";
@@ -100,14 +100,14 @@ public abstract class DocumentForm {
 
     /** The category: the table's type, hence the field that selects the form configuration. */
     @Transient
-    protected static final CustomFieldSelectOneFromFieldCode categoryField = CustomFieldSelectOneFromFieldCode.builder()
-            .label(LABEL_PREFIX + B_CATEGORY)
+    protected static final CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
+            .label(LABEL_PREFIX + B_TYPE)
             .isSystemField(true)
             .id(-704L)
-            .valueBinding(B_CATEGORY)
+            .valueBinding(B_TYPE)
             .fieldCode(Document.TYPE_FIELD)
-            .styleClass("mr-2 document-category-chip")
-            .concept(concept(B_CATEGORY))
+            .styleClass("mr-2 document-type-chip")
+            .concept(concept(B_TYPE))
             .build();
 
     @Transient
@@ -271,7 +271,7 @@ public abstract class DocumentForm {
                 SystemFieldSpec.hiddenReadOnly(identifierField),
                 SystemFieldSpec.of(otherIdentifiersField),
                 SystemFieldSpec.hiddenReadOnly(actionUnitField),
-                SystemFieldSpec.hidden(categoryField),
+                SystemFieldSpec.hidden(typeField),
                 SystemFieldSpec.of(documentTypeField),
                 SystemFieldSpec.of(supportNaturesField),
                 SystemFieldSpec.of(formatField),

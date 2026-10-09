@@ -13,7 +13,7 @@ import java.io.Serializable;
 public class SpatialUnitSummaryDTO implements Serializable {
 
     private String name;
-    private ConceptDTO category;
+    private ConceptDTO type;
     private Long id;
     private String code;
     private Integer placeNumber;
@@ -21,7 +21,7 @@ public class SpatialUnitSummaryDTO implements Serializable {
     public SpatialUnitSummaryDTO(SpatialUnitDTO spatialUnitDTO) {
         this.id = spatialUnitDTO.getId();
         this.name = spatialUnitDTO.getName();
-        this.category = spatialUnitDTO.getCategory();
+        this.type = spatialUnitDTO.getType();
         this.code = spatialUnitDTO.getCode();
         this.placeNumber = spatialUnitDTO.getPlaceNumber();
     }

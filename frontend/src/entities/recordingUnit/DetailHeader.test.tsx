@@ -16,7 +16,7 @@ const mockedPatch = vi.mocked(patchRecordingUnit);
 const mockedGetTypes = vi.mocked(getRecordingUnitTypes);
 
 // RecordingUnitForm.RECORDING_UNIT_TYPE_FIELD as the project catalog serves it — the category
-// chip finds it by valueBinding "type", never by its id, mirroring Project's own CategoryChip.
+// chip finds it by valueBinding "type", never by its id, mirroring Project's own TypeChip.
 const typeField: FieldResource = {
   id: "-302",
   resourceType: "fields",
@@ -117,7 +117,7 @@ describe("RecordingUnitDetailHeader", () => {
     renderHeader(ru());
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("US");
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("US");
     expect(container.querySelector(".pi-pencil")).toBeTruthy();
   });
 
@@ -125,7 +125,7 @@ describe("RecordingUnitDetailHeader", () => {
     renderHeader(ru({ type: undefined }));
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("Sans type");
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("Sans type");
   });
 
   it("keeps the type as a chip when the catalog has no type field to edit with", async () => {
@@ -137,8 +137,8 @@ describe("RecordingUnitDetailHeader", () => {
     });
     await flush();
 
-    expect(container.querySelector(".entity-detail-header-category")?.textContent).toContain("US");
-    expect(container.querySelector(".entity-detail-header-category .p-autocomplete")).toBeFalsy();
+    expect(container.querySelector(".entity-detail-header-type")?.textContent).toContain("US");
+    expect(container.querySelector(".entity-detail-header-type .p-autocomplete")).toBeFalsy();
   });
 
   it("swaps the chip for the shared concept autocomplete when the pencil is pressed", async () => {
@@ -151,7 +151,7 @@ describe("RecordingUnitDetailHeader", () => {
     });
     await flush();
 
-    const input = container.querySelector(".entity-detail-header-category .p-autocomplete input") as HTMLInputElement;
+    const input = container.querySelector(".entity-detail-header-type .p-autocomplete input") as HTMLInputElement;
     expect(input).toBeTruthy();
     expect(input.value).toBe("US");
   });

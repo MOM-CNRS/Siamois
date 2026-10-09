@@ -387,7 +387,7 @@ public class RecordingUnitOpenApiService {
         }
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        // Nothing can be configured on the table until the institution's thesaurus declares its category field:
+        // Nothing can be configured on the table until the institution's thesaurus declares its type field:
         // the project then has no category, no stored identifier format, and the seed layout as its form.
         boolean configurable = Boolean.TRUE.equals(OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.isTypeFieldConfigured(au.getId(), ConfigurableTable.DOCUMENT)));
@@ -649,10 +649,10 @@ public class RecordingUnitOpenApiService {
 
         Map<String, FieldAnswer> answers = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             // The effective form, as the find-types catalog lays it out and the PATCH writes it:
-            // without the category's additional fields their answers would never be read back.
+            // without the type's additional fields their answers would never be read back.
             Long projectId = specimenProjectId(specimen);
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
-                    specimen.getCategory() != null ? specimen.getCategory().getId() : null);
+                    specimen.getType() != null ? specimen.getType().getId() : null);
             return buildSpecimenFieldsWithFallback(specimen, new PanelFieldSource(formUiDto), locale);
         });
 

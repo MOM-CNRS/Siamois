@@ -145,8 +145,8 @@ public class Document extends TraceableEntity implements ArkEntity {
 
     /** The category (arrêté du 7 février 2022), which also selects the document's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_category")
-    protected Concept category;
+    @JoinColumn(name = "fk_type")
+    protected Concept type;
 
     /** The document type, restricted per category by the category's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)

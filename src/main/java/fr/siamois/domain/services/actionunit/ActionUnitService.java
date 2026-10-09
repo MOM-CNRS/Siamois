@@ -199,7 +199,7 @@ public class ActionUnitService implements ArkEntityService {
 
     private SpatialUnit saveNewMainLocation(ActionUnit actionUnit, SpatialUnitSummaryDTO mainLocation) {
         SpatialUnit toSave = new SpatialUnit();
-        toSave.setCategory(actionUnit.getMainLocation().getCategory());
+        toSave.setType(actionUnit.getMainLocation().getType());
         toSave.setName(mainLocation.getName());
         toSave.setCreatedBy(actionUnit.getCreatedBy());
         toSave.setCode(mainLocation.getCode());
@@ -223,7 +223,7 @@ public class ActionUnitService implements ArkEntityService {
             SpatialUnit toSave = new SpatialUnit();
             toSave.setName(summary.getName());
             toSave.setCode(summary.getCode());
-            toSave.setCategory(conceptMapper.invertConvert(summary.getCategory()));
+            toSave.setType(conceptMapper.invertConvert(summary.getType()));
             toSave.setCreatedBy(actionUnit.getCreatedBy());
             toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
             return Optional.of(spatialUnitRepository.save(toSave));

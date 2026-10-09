@@ -12,7 +12,7 @@ import java.util.List;
 public class SpatialUnitSpec {
 
     public static final String NAME_FILTER = "name";
-    public static final String CATEGORY_FILTER = "category";
+    public static final String TYPE_FILTER = "type";
     public static final String ID_FILTER = "id";
     public static final String PARENT_FILTER = "parents";
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByActionsCount(Sort.Direction)}. */
@@ -40,8 +40,8 @@ public class SpatialUnitSpec {
     }
 
     @NonNull
-    public static Specification<SpatialUnit> categoryIsIn(List<Long> conceptIds) {
-        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(SpatialUnitSpec.CATEGORY_FILTER).get("id")).value(conceptIds);
+    public static Specification<SpatialUnit> typeIsIn(List<Long> conceptIds) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.in(root.get(SpatialUnitSpec.TYPE_FILTER).get("id")).value(conceptIds);
     }
 
     @NonNull

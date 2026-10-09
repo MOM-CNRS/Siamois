@@ -16,7 +16,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
         super(spatialUnitDTO);
         id = spatialUnitDTO.getId();
         name = spatialUnitDTO.getName();
-        category = spatialUnitDTO.getCategory();
+        type = spatialUnitDTO.getType();
         parents = spatialUnitDTO.getParents();
         recordingUnitList = spatialUnitDTO.getRecordingUnitList();
         relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
@@ -27,7 +27,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
 
     private String name;
     private FullAddress address;
-    private ConceptDTO category;
+    private ConceptDTO type;
     private Set<SpatialUnitSummaryDTO> parents;
     private Set<SpatialUnitSummaryDTO> children;
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
@@ -38,7 +38,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
-        return List.of("category", "name", "address", "code", "placeNumber");
+        return List.of("type", "name", "address", "code", "placeNumber");
     }
 
 

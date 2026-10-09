@@ -83,7 +83,7 @@ public abstract class ActionUnitForm {
     @Transient
     @JsonIgnore
     public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
+            .label("specimen.field.type")
             .isSystemField(true)
             .id(-101L)
             .valueBinding("type")

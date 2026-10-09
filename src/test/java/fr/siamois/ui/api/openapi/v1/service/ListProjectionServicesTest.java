@@ -100,7 +100,7 @@ class ListProjectionServicesTest {
         DocumentListProjectionService service = new DocumentListProjectionService(projector, labels, multiValue, additional);
         fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
         document.setId(1L);
-        document.setCategory(concept(9));
+        document.setType(concept(9));
         List<fr.siamois.dto.entity.DocumentDTO> rows = Arrays.asList(document, null, new fr.siamois.dto.entity.DocumentDTO());
         Set<String> fieldIds = Set.of("-1");
         Map<Long, String> resolved = Map.of(9L, "Plan");

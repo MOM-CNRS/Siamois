@@ -20,7 +20,7 @@ class SpecimenDTOTest {
         o.setOtherIdentifier("ANCIEN-3");
         o.setIsolationNumber("ISO-9");
         o.setType(new ConceptDTO());
-        o.setCategory(new ConceptDTO());
+        o.setType(new ConceptDTO());
         o.setRecordingUnit(new RecordingUnitSummaryDTO());
         o.setActionUnit(new ActionUnitSummaryDTO());
         o.setCreatedByInstitution(new InstitutionDTO());
@@ -52,7 +52,7 @@ class SpecimenDTOTest {
         assertThat(copy.getActionUnit()).isSameAs(o.getActionUnit());
         assertThat(copy.getCreatedByInstitution()).isSameAs(o.getCreatedByInstitution());
         assertThat(copy.getType()).isSameAs(o.getType());
-        assertThat(copy.getCategory()).isSameAs(o.getCategory());
+        assertThat(copy.getType()).isSameAs(o.getType());
         assertThat(copy.getDescription()).isEqualTo("silex");
         assertThat(copy.getComments()).isEqualTo("à revoir");
         assertThat(copy.getTaq()).isEqualTo(100);

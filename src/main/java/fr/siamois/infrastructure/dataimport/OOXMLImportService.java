@@ -371,7 +371,7 @@ public class OOXMLImportService {
         String enfantsRaw  = getStringCellOrNull(row, cols, "enfants");
 
         ConceptSeeder.ConceptKey typeKey = conceptKeyFromColumnOrLabel(row, cols, "uri type", TYPE_LABEL1,
-                SpatialUnit.CATEGORY_FIELD_CODE, institutionDbId);
+                SpatialUnit.TYPE_FIELD_CODE, institutionDbId);
 
         SpatialUnitSeeder.SpatialUnitSpecs spec = new SpatialUnitSeeder.SpatialUnitSpecs(
                 name,
@@ -735,7 +735,7 @@ public class OOXMLImportService {
         ConceptSeeder.ConceptKey material = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "matiere uri", "matiere", "matiere label",
                 Specimen.MATIERE_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey category = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "categorie uri", "categorie", "categorie label",
-                Specimen.CAT_FIELD, institutionDbId);
+                Specimen.TYPE_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey interpretation = conceptKeyFromColumnOrLabelWithLegacy(row, cols, "designation uri", "designation", "designation label",
                 Specimen.INTERPRETATION_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey chronologicalAttribution = conceptKeyFromColumnOrLabel(row, cols, "chronologie uri", "chronologie label",

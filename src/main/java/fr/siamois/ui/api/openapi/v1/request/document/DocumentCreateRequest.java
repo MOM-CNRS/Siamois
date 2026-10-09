@@ -21,7 +21,7 @@ public class DocumentCreateRequest {
     private String projectId;
 
     @Schema(description = "Identifiant du concept de catégorie (concept_id)", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String categoryId;
+    private String typeId;
 
     @Schema(description = "Titre du document")
     private String title;
