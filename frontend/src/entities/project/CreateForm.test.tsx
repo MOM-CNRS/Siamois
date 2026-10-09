@@ -22,7 +22,7 @@ vi.mock("../../fields/renderers", () => ({
     </button>
   ),
   SelectOneSpatialUnitRenderer: ({ onChange, placeContext }: FieldRendererProps) => (
-    <button type="button" data-testid="pick-main-location" data-place-context={JSON.stringify(placeContext ?? null)} onClick={() => onChange({ resourceId: "31", resourceType: "spatial-units", label: "Lyon" })}>
+    <button type="button" data-testid="pick-main-location" data-place-context={JSON.stringify(placeContext ?? null)} onClick={() => onChange({ resourceId: "31", resourceType: "places", label: "Lyon" })}>
       Choisir le lieu principal
     </button>
   ),
@@ -33,8 +33,8 @@ vi.mock("../../fields/renderers", () => ({
       data-place-context={JSON.stringify(placeContext ?? null)}
       onClick={() =>
         onChange([
-          { resourceId: "32", resourceType: "spatial-units", label: "Rhône" },
-          { resourceId: "33", resourceType: "spatial-units", label: "Ain" },
+          { resourceId: "32", resourceType: "places", label: "Rhône" },
+          { resourceId: "33", resourceType: "places", label: "Ain" },
         ])
       }
     >

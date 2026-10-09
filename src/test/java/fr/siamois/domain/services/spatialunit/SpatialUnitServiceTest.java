@@ -712,17 +712,17 @@ class SpatialUnitServiceTest {
         when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(new SpatialUnitDTO());
 
         // 1. Incomplete -> Complete
-        unit.setValidated(fr.siamois.domain.models.ValidationStatus.INCOMPLETE);
+        unit.setValidationStatus(fr.siamois.domain.models.ValidationStatus.INCOMPLETE);
         spatialUnitService.toggleValidated(id);
-        assertEquals(fr.siamois.domain.models.ValidationStatus.COMPLETE, unit.getValidated());
+        assertEquals(fr.siamois.domain.models.ValidationStatus.COMPLETE, unit.getValidationStatus());
 
         // 2. Complete -> Validated
         spatialUnitService.toggleValidated(id);
-        assertEquals(fr.siamois.domain.models.ValidationStatus.VALIDATED, unit.getValidated());
+        assertEquals(fr.siamois.domain.models.ValidationStatus.VALIDATED, unit.getValidationStatus());
 
         // 3. Validated -> Incomplete
         spatialUnitService.toggleValidated(id);
-        assertEquals(fr.siamois.domain.models.ValidationStatus.INCOMPLETE, unit.getValidated());
+        assertEquals(fr.siamois.domain.models.ValidationStatus.INCOMPLETE, unit.getValidationStatus());
     }
 
     @Test
@@ -861,7 +861,7 @@ class SpatialUnitServiceTest {
     void toggleValidated_unknownStatus_throwsNullPointer() {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(1L);
-        unit.setValidated(null);
+        unit.setValidationStatus(null);
         when(spatialUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
 
         assertThrows(NullPointerException.class, () -> spatialUnitService.toggleValidated(1L));

@@ -28,7 +28,6 @@ public class PervoliaDatasetInitializer  {
     private final ConceptSeeder conceptSeeder;
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
-    private final ActionCodeSeeder actionCodeSeeder;
     private final SpatialUnitSeeder spatialUnitSeeder;
     private final ActionUnitSeeder actionUnitSeeder;
     private final RecordingUnitSeeder recordingUnitSeeder;
@@ -42,14 +41,13 @@ public class PervoliaDatasetInitializer  {
     private String adminUsername;
 
     public PervoliaDatasetInitializer(
-            PersonSeeder personSeeder, ActionCodeSeeder actionCodeSeeder,
+            PersonSeeder personSeeder,
             ConceptSeeder conceptSeeder, ThesaurusSeeder thesaurusSeeder, SpatialUnitSeeder spatialUnitSeeder, ActionUnitSeeder actionUnitSeeder,
             RecordingUnitSeeder recordingUnitSeeder, SpecimenSeeder specimenSeeder, InstitutionSeeder institutionSeeder, OOXMLImportService ooxmlImportService, InstitutionRepository institutionRepository) {
 
 
 
         this.personSeeder = personSeeder;
-        this.actionCodeSeeder = actionCodeSeeder;
         this.conceptSeeder = conceptSeeder;
         this.thesaurusSeeder = thesaurusSeeder;
         this.spatialUnitSeeder = spatialUnitSeeder;
@@ -92,7 +90,6 @@ public class PervoliaDatasetInitializer  {
             institutionSeeder.seed(specs.institutions());
             Institution ch = institutionRepository.findInstitutionByIdentifier("pervolia").orElseThrow(() -> new RuntimeException("PERVOLIA NOT FOUND"));
             spatialUnitSeeder.seed(specs.spatialUnits());
-            actionCodeSeeder.seed(specs.actionCodes());
             actionUnitSeeder.seed(specs.actionUnits());
             recordingUnitSeeder.seed(specs.recordingUnits());
             specimenSeeder.seed(specs.specimenSpecs(), ch.getId());

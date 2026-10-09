@@ -117,13 +117,13 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         createPrefill: (entity) => ({ parent: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.children ?? 0,
       }),
-      // JSF's SpecimenTab. REST segment "mobiliers", not Find's own collectionPath.
+      // JSF's SpecimenTab. REST segment "finds" (same as Find's own collectionPath).
       relationTab<RecordingUnitDetail>({
         key: "finds",
         label: t("entity.find.plural"),
         target: "find",
         scopeEntityType: "recordingUnit",
-        path: "mobiliers",
+        path: "finds",
         projectId: (entity) => entity.projectId,
         createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.finds ?? 0,

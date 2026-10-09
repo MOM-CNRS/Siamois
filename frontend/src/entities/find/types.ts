@@ -1,5 +1,5 @@
 // Mirrors fr.siamois.ui.api.openapi.v1.resource.find.FindResource — GET
-// /api/v1/projects/{id}/mobiliers (list) and GET /api/v1/finds/{id} (detail) both return this
+// /api/v1/projects/{id}/finds (list) and GET /api/v1/finds/{id} (detail) both return this
 // shape, like RecordingUnitResource. Keep in sync with that class if it changes.
 
 import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
@@ -39,8 +39,8 @@ export interface FindResource {
   bookmarked?: boolean;
   // Detail only: what the fiche's tab badges count.
   _counts?: { documents?: number | null };
-  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
-  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
+  // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
+  validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
 }
 
 // Same resource both in the list and the detail response, like Project/RecordingUnit.

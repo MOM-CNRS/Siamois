@@ -44,8 +44,8 @@ export interface PlaceResource {
   _permissions?: PlacePermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
-  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
-  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
+  // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
+  validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   // Detail only — the fiche's tab badges (PlaceOpenApiService#getPlaceById).
   _counts?: { children?: number | null; projects?: number | null; recordingUnits?: number | null; documents?: number | null };
 }

@@ -242,7 +242,7 @@
         { "fieldId": 160 },
         { "fieldId": 161, "rules": { "placeSources": [{ "source": "INSEE" }, { "source": "GEOPLAT", "params": { "citycode": { "fromField": 160, "attribute": "CODE" } }, "onMissing": "SKIP" }] } }
       ],
-      "values": { "160": { "resourceId": "7", "resourceType": "spatial-units" }, "161": [{ "resourceId": "8", "resourceType": "spatial-units" }] },
+      "values": { "160": { "resourceId": "7", "resourceType": "places" }, "161": [{ "resourceId": "8", "resourceType": "places" }] },
       "expected": { "161": { "enabled": true, "required": false, "incoherent": [] } }
     }
   ]

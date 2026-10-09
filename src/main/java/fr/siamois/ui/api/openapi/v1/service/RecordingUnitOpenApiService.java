@@ -976,7 +976,7 @@ public class RecordingUnitOpenApiService {
         shell.setCreatedBy(personDto);
         shell.setContributors(new ArrayList<>(List.of(personDto)));
         shell.setOpeningDate(OffsetDateTime.now(ZoneOffset.UTC));
-        shell.setValidated(ValidationStatus.INCOMPLETE);
+        shell.setValidationStatus(ValidationStatus.INCOMPLETE);
         shell.setParents(new HashSet<>());
         shell.setChildren(new HashSet<>());
         List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(shell);
@@ -1041,17 +1041,17 @@ public class RecordingUnitOpenApiService {
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
         boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || identifierChange;
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((contentChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidated(), request.getValidated(), canEdit,
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit,
                 profilePermissionService.hasValidatePermission(userInfo, projectId));
 
         if (!contentChange) {
             // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too.
-            validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidated(), personDto);
+            validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
             return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
         }
 
@@ -1079,7 +1079,7 @@ public class RecordingUnitOpenApiService {
             }
         });
         // After the save: it writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidated(), personDto);
+        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
 
         return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }

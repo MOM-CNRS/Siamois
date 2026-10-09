@@ -215,7 +215,7 @@ public class DocumentsControllerApi {
             summary = "Modifier les métadonnées d'un document",
             description = "Client mobile : titre, description et concepts (nature, échelle, format) à plat. "
                     + "Client web : `answers` (fusion partielle des champs du formulaire, comme les autres entités) "
-                    + "et `validated`. Le fichier n'est pas remplacé par cet endpoint."
+                    + "et `validationStatus`. Le fichier n'est pas remplacé par cet endpoint."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),

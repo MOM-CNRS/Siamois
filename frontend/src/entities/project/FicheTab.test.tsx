@@ -118,7 +118,7 @@ function project(overrides: Partial<ProjectDetail> = {}): ProjectDetail {
       "42": "OA-2024-17",
       "43": "Un commentaire",
       "44": { resourceId: "3", resourceType: "concepts", label: "En cours" },
-      "46": [{ resourceId: "55", resourceType: "spatial-units", label: "Lyon 5e" }],
+      "46": [{ resourceId: "55", resourceType: "places", label: "Lyon 5e" }],
       "47": "verrouillé",
     },
     ...overrides,
@@ -527,9 +527,9 @@ describe("ProjectFicheTab — per-field click-to-edit", () => {
 describe("ProjectFicheTab — footer", () => {
   it("builds the footer from the whole history: creation, last change and distinct contributors", async () => {
     mockedGetProjectHistory.mockResolvedValue([
-      { revisionNumber: 3, revisionDate: "2026-09-01T10:00:00Z", revisionType: "MOD", author: { id: 2, name: "Grace", lastname: "Hopper" } },
-      { revisionNumber: 2, revisionDate: "2026-05-02T10:00:00Z", revisionType: "MOD", author: { id: 1, name: "Ada", lastname: "Lovelace" } },
-      { revisionNumber: 1, revisionDate: "2026-01-03T10:00:00Z", revisionType: "ADD", author: { id: 1, name: "Ada", lastname: "Lovelace" } },
+      { revisionNumber: 3, revisionDate: "2026-09-01T10:00:00Z", revisionType: "MOD", author: { id: "2", name: "Grace", lastname: "Hopper" } },
+      { revisionNumber: 2, revisionDate: "2026-05-02T10:00:00Z", revisionType: "MOD", author: { id: "1", name: "Ada", lastname: "Lovelace" } },
+      { revisionNumber: 1, revisionDate: "2026-01-03T10:00:00Z", revisionType: "ADD", author: { id: "1", name: "Ada", lastname: "Lovelace" } },
     ]);
     renderFiche(project());
     await flush();

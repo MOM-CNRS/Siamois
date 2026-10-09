@@ -171,7 +171,7 @@ function FicheFooter({ entity, history }: { entity: ProjectDetail; history?: Pro
         <div className="project-fiche-tab-footer">
           <FooterLine label={t("fiche.createdOn")} date={created.revisionDate} author={authorName(created)} />
           <FooterLine label={t("fiche.modifiedOn")} date={latest.revisionDate} author={authorName(latest)} />
-          {entity.validated === "VALIDATED" && (
+          {entity.validationStatus === "VALIDATED" && (
             <small>
               <i>
                 {t("fiche.validated")} <span className="panel-history-colored-span">{t("fiche.yes")}</span>

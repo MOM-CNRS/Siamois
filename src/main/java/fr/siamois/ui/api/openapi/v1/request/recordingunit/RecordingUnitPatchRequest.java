@@ -22,7 +22,7 @@ public class RecordingUnitPatchRequest {
     @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
             + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
             + "avec le droit validateur (_permissions.canValidate).")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @Schema(
             description = "Révision attendue (valeur de syncRevision au moment du chargement client). "

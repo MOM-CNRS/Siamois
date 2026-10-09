@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.response.place;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import fr.siamois.ui.api.openapi.v1.generic.response.Response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -17,8 +19,8 @@ public class PlaceCreatedResponse extends Response<PlaceCreatedResponse.PlaceCre
     @Schema(description = "Lieu créé")
     public static class PlaceCreatedItem {
 
-        @Schema(description = "Identifiant spatial_unit_id")
-        private Long id;
+        @Schema(description = "Identifiant spatial_unit_id", type = "string")
+        @JsonSerialize(using = ToStringSerializer.class) private Long id;
 
         @Schema(description = "Nom du lieu")
         private String name;

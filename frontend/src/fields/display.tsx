@@ -99,9 +99,7 @@ const GREEN_BORDER = "var(--siamois-green-light-100, #e6f0e6)";
 // for concepts and persons, which have no fiche), its colour — its entity's, Siamois green for
 // vocabulary concepts — and the lighter one its read-only chip is outlined with.
 const REF_KINDS: Record<string, { entityType?: EntityKey; color: string; border: string }> = {
-  "spatial-units": { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
   places: { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
-  "action-units": { entityType: "project", color: ENTITY_COLORS.project, border: CONTEXT_BORDER },
   projects: { entityType: "project", color: ENTITY_COLORS.project, border: CONTEXT_BORDER },
   "recording-units": { entityType: "recordingUnit", color: ENTITY_COLORS.recordingUnit, border: GROUND_BORDER },
   finds: { entityType: "find", color: ENTITY_COLORS.find, border: GROUND_BORDER },

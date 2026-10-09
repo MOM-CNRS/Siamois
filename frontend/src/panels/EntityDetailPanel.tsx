@@ -260,7 +260,7 @@ export function EntityDetailPanel({
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
   const settingsProjectId = config.detail.settingsProjectId?.(data);
   // Every entity resource carries its TraceableEntity status and the validator right.
-  const validation = data as { validated?: string | null; _permissions?: { canValidate?: boolean } };
+  const validation = data as { validationStatus?: string | null; _permissions?: { canValidate?: boolean } };
   const entityActions: PanelActions = {
     create: canEdit && config.list.createForm ? openCreate : undefined,
     duplicate:
@@ -287,12 +287,12 @@ export function EntityDetailPanel({
           title={
             <>
               {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
-              {validation.validated !== undefined && (
+              {validation.validationStatus !== undefined && (
                 <ValidationStatusButton
                   entityType={entityType}
                   collectionPath={config.collectionPath}
                   entityId={entityId}
-                  status={validation.validated}
+                  status={validation.validationStatus}
                   canEdit={canEdit}
                   canValidate={writeMode && validation._permissions?.canValidate === true}
                 />

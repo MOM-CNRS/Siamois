@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    TraceableEntity.validated becomes validation_status. The name "status" is taken: a project already has
+    a status (a concept), and the field holds a ValidationStatus, not a boolean. The column is renamed on
+    every table of a TraceableEntity and on its Envers audit table, BEFORE Hibernate's ddl-auto: update
+    runs (it would otherwise add a NOT NULL validation_status next to the old column and fail on the
+    existing rows). The CHECK constraint widened by 2026.09.24-0 follows the column and keeps its old name.
+    On a fresh database the tables do not exist yet: the preconditions mark each change as ran, and
+    Hibernate creates the column under its new name.
+    -->
+
+    <changeSet id="2026.10.09-0-action_unit-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="action_unit" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="action_unit" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-action_unit_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="action_unit_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="action_unit_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-recording_unit-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="recording_unit" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="recording_unit" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-recording_unit_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="recording_unit_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="recording_unit_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-spatial_unit-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="spatial_unit" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="spatial_unit" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-spatial_unit_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="spatial_unit_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="spatial_unit_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-specimen-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="specimen" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="specimen" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-specimen_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="specimen_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="specimen_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-container-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="container" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="container" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-container_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="container_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="container_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-phase-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="phase" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="phase" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-phase_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="phase_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="phase_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-siamois_document-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="siamois_document" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="siamois_document" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-siamois_document_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="siamois_document_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="siamois_document_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-specimen_study-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="specimen_study" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="specimen_study" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+    <changeSet id="2026.10.09-0-specimen_study_aud-validation-status" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="specimen_study_aud" columnName="validated"/>
+        </preConditions>
+        <renameColumn tableName="specimen_study_aud" oldColumnName="validated" newColumnName="validation_status"/>
+    </changeSet>
+
+</databaseChangeLog>

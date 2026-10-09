@@ -174,7 +174,7 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setCollectionDate(specimen.getCollectionDate());
         managedSpecimen.setWeight(withResolvedUnit(specimen.getWeight()));
         managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
-        managedSpecimen.setValidated(specimen.getValidated());
+        managedSpecimen.setValidationStatus(specimen.getValidationStatus());
         managedSpecimen.setValidatedAt(specimen.getValidatedAt());
         managedSpecimen.setValidatedBy(specimen.getValidatedBy());
         managedSpecimen.setTaq(specimen.getTaq());
@@ -440,37 +440,23 @@ public class SpecimenService implements ArkEntityService {
     }
 
     /**
-     * Spécimen accessible par clé API : {@code specimen_id} numérique ou {@code full_identifier}.
+     * Spécimen accessible par son {@code specimen_id} (seule clé de l'API) ; vide si l'identifiant n'est pas
+     * numérique ou si le spécimen n'est pas dans une institution accessible.
      */
     @Transactional(readOnly = true)
-    public Optional<SpecimenDTO> findAccessibleByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+    public Optional<SpecimenDTO> findAccessibleByKey(String id, Set<Long> accessibleInstitutionIds) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return Optional.empty();
         }
-        String key = idOrKey == null ? "" : idOrKey.trim();
-        if (key.isEmpty()) {
+        String key = id == null ? "" : id.trim();
+        if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
             return Optional.empty();
         }
-
-        if (key.chars().allMatch(Character::isDigit)) {
-            try {
-                long numericId = Long.parseLong(key);
-                Optional<SpecimenDTO> byPk = resolveAccessibleById(numericId, accessibleInstitutionIds);
-                if (byPk.isPresent()) {
-                    return byPk;
-                }
-                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-            } catch (NumberFormatException e) {
-                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-            }
+        try {
+            return resolveAccessibleById(Long.parseLong(key), accessibleInstitutionIds);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
         }
-        return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-    }
-
-    private Optional<SpecimenDTO> findAccessibleByFullIdentifier(String fullIdentifier,
-                                                                 Set<Long> accessibleInstitutionIds) {
-        return specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
-                .map(specimenMapper::convert);
     }
 
     /**
@@ -678,7 +664,7 @@ public class SpecimenService implements ArkEntityService {
         Specimen unit = specimenRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        unit.setValidated(unit.getValidated().nextInCycle());
+        unit.setValidationStatus(unit.getValidationStatus().nextInCycle());
 
         return specimenMapper.convert(specimenRepository.save(unit));
     }

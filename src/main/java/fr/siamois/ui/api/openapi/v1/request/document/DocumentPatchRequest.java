@@ -39,7 +39,7 @@ public class DocumentPatchRequest {
 
     @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE, COMPLETE, CANCELLED avec le droit "
             + "de modification ; VALIDATED — l'atteindre ou le quitter — avec le droit validateur.")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();
@@ -48,6 +48,6 @@ public class DocumentPatchRequest {
     @JsonIgnore
     @Schema(hidden = true)
     public boolean isFormPatch() {
-        return validated != null || (answers != null && !answers.isEmpty());
+        return validationStatus != null || (answers != null && !answers.isEmpty());
     }
 }

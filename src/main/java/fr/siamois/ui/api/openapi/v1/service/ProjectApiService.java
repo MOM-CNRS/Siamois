@@ -551,15 +551,15 @@ public class ProjectApiService {
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
         boolean canEdit = profilePermissionService.hasActionUnitWritePermission(userInfo, dto);
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), patch.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), patch.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if (!(statusChange && patch.isStatusOnly()) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidated(), patch.getValidated(), canEdit,
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), patch.getValidationStatus(), canEdit,
                 profilePermissionService.hasValidatePermission(userInfo, dto.getId()));
         if (statusChange && patch.isStatusOnly()) {
-            validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
+            validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidationStatus(), caller.person());
             return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
         }
         applyProjectPatch(dto, patch);
@@ -591,7 +591,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
         // After the save: it writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
+        validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidationStatus(), caller.person());
         return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
     }
 
@@ -1155,7 +1155,7 @@ public class ProjectApiService {
     }
 
     /**
-     * Page de mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — pendant réduit
+     * Page de mobiliers d'un projet ({@code GET /api/v1/projects/{id}/finds}) — pendant réduit
      * de {@link #pageRecordingUnitsForProject} : recherche libre sur {@code fullIdentifier} et tri
      * sur une petite liste blanche, sans le contrat {@code f.<clé>} par colonne (pas encore
      * construit côté mobilier — voir le plan de migration React, lot Mobilier).

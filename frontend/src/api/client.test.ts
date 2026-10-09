@@ -7,7 +7,7 @@ vi.mock("../auth/sessionAuth", () => ({
   resetSession: vi.fn(),
 }));
 
-// extractErrorMessage (client.ts) surfaces OpenApiRestExceptionHandler's {error, message} body
+// extractErrorMessage (client.ts) surfaces RestExceptionHandler's {error, message} body
 // instead of the raw response text — the identifier inline-edit error in the Project fiche
 // (FicheTab.tsx) depends on ApiError.message actually being the human-readable string.
 describe("apiFetch error handling", () => {

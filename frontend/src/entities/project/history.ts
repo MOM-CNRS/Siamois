@@ -5,7 +5,7 @@ import { apiFetch } from "../../api/client";
 // unused restore UI for ActionUnit (ActionUnitPanel.visualise() is a no-op), so this only needs
 // the most recent entry, not the full list rendered anywhere.
 export interface ProjectHistoryAuthor {
-  id: number | null;
+  id: string | null;
   name: string | null;
   lastname: string | null;
 }

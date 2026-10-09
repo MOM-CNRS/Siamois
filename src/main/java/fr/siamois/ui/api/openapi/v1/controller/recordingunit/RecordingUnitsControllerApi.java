@@ -50,7 +50,7 @@ public class RecordingUnitsControllerApi {
             summary = "Formulaire de création d'une unité d'enregistrement",
             description = "Bundle formulaire (layout), définition des champs et vocabulaires pour un type d'UE donné "
                     + "(concept) dans le contexte d'un projet. "
-                    + "Paramètres : `projectId` (identifiant ou clé du projet, dans le périmètre JWT) et "
+                    + "Paramètres : `projectId` (identifiant du projet, dans le périmètre JWT) et "
                     + "`recordingUnitTypeConceptId` (identifiant du concept de type d'UE). "
                     + "La langue des libellés de vocabulaire suit l'en-tête Accept-Language. "
                     + "**Déprécié** : ne retourne qu'un seul type par appel — préférer "

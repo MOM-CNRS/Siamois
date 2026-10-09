@@ -46,7 +46,7 @@ export interface ProjectResource {
   identifier: string;
   beginDate?: string | null;
   endDate?: string | null;
-  validated?: ValidationStatus | null;
+  validationStatus?: ValidationStatus | null;
   type?: ResolvedConcept | null;
   mainLocation?: PlaceLight | null;
   spatialContext?: PlaceLight[];

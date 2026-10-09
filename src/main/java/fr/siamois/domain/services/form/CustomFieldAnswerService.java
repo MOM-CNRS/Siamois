@@ -1,10 +1,8 @@
 package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionUnit;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
@@ -14,18 +12,15 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.mapper.ActionCodeMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.PlaceSuggestionMapper;
@@ -100,8 +95,6 @@ public class CustomFieldAnswerService {
     private final PlaceSuggestionMapper placeSuggestionMapper;
     private final ActionUnitRepository actionUnitRepository;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final ActionCodeRepository actionCodeRepository;
-    private final ActionCodeMapper actionCodeMapper;
     private final RecordingUnitRepository recordingUnitRepository;
 
     // ========== Owners ==========
@@ -532,8 +525,6 @@ public class CustomFieldAnswerService {
                     .collect(Collectors.toCollection(ArrayList::new)));
         } else if (viewModel instanceof CustomFieldAnswerSelectOneActionUnitViewModel v) {
             v.setValue(storedEntities(value, ActionUnit.class).stream().map(actionUnitSummaryMapper::convert).findFirst().orElse(null));
-        } else if (viewModel instanceof CustomFieldAnswerSelectOneActionCodeViewModel v) {
-            v.setValue(storedEntities(value, ActionCode.class).stream().map(actionCodeMapper::convert).findFirst().orElse(null));
         } else {
             return false;
         }
@@ -650,9 +641,6 @@ public class CustomFieldAnswerService {
         if (answer instanceof CustomFieldAnswerActionUnit) {
             return shaped(references(raw, ActionUnit.class, CustomFieldAnswerService::idOfEntity, actionUnitRepository::findAllById, ActionUnit::getId), multiple);
         }
-        if (answer instanceof CustomFieldAnswerActionCode) {
-            return shaped(references(raw, ActionCode.class, CustomFieldAnswerService::codeOfActionCode, actionCodeRepository::findAllById, ActionCode::getCode), multiple);
-        }
         if (answer instanceof CustomFieldAnswerDateTime) {
             if (raw instanceof OffsetDateTime offset) return offset.toLocalDateTime();
             if (raw instanceof LocalDate date) return date.atStartOfDay();
@@ -725,12 +713,6 @@ public class CustomFieldAnswerService {
         if (picked instanceof SpatialUnitSummaryDTO summary) return summary.getId();
         if (picked instanceof SpatialUnit spatialUnit) return spatialUnit.getId();
         return idOfEntity(picked);
-    }
-
-    private static String codeOfActionCode(Object picked) {
-        if (picked instanceof ActionCodeDTO dto) return dto.getCode();
-        if (picked instanceof ActionCode code) return code.getCode();
-        return picked instanceof String code ? code : null;
     }
 
     private void createOrUpdateMeasurementAnswer(CustomFieldAnswerMeasurement answer,

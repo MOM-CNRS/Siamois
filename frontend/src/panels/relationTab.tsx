@@ -22,7 +22,7 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
   // entities/listApi.ts resolves back to a collectionPath itself.
   scopeEntityType: string;
   // Overrides the child REST segment when it differs from the target entity's own
-  // collectionPath (e.g. an action-unit's finds live at "/mobiliers", not "/finds").
+  // collectionPath (e.g. a recording unit's phases).
   path?: string;
   badge?: (entity: TDetail) => number | string | undefined;
   // The parent's project, when the parent isn't itself the project (see ListScope.projectId).

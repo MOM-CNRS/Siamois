@@ -31,8 +31,7 @@ export type FilterValue =
 // project", "the documents OF this recording unit" — rather than the entity type's global list.
 // `entityType` is the parent's registry key (so the URL builder can look up its own
 // `collectionPath`, e.g. "project" -> "projects"); `path` overrides the child segment when it
-// isn't the child entity's own `collectionPath` (e.g. an action-unit's finds live at
-// "/mobiliers", not "/finds"). Lives here, not in panels/tableState.ts, for the same reason
+// isn't the child entity's own `collectionPath`. Lives here, not in panels/tableState.ts, for the same reason
 // FilterValue does: both ListParams and TableState-adjacent code need it without panels/
 // becoming something entities/ depends on.
 export interface ListScope {
@@ -84,7 +83,7 @@ export interface EntitySibling {
 // once; everything below it is a skeleton until the entity arrives.
 export interface EntityPreview {
   label: string;
-  validated?: string | null;
+  validationStatus?: string | null;
 }
 
 export interface EntitySiblings {

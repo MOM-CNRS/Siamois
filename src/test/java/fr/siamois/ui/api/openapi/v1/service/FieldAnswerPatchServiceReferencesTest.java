@@ -1,11 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
@@ -26,13 +24,11 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.mapper.ActionCodeMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.ContainerMapper;
@@ -80,7 +76,6 @@ class FieldAnswerPatchServiceReferencesTest {
     private final FormService formService = mock(FormService.class);
     private final PersonRepository persons = mock(PersonRepository.class);
     private final ActionUnitRepository actionUnits = mock(ActionUnitRepository.class);
-    private final ActionCodeRepository actionCodes = mock(ActionCodeRepository.class);
     private final SpatialUnitRepository spatialUnits = mock(SpatialUnitRepository.class);
     private final RecordingUnitRepository recordingUnits = mock(RecordingUnitRepository.class);
     private final ContainerRepository containers = mock(ContainerRepository.class);
@@ -99,7 +94,7 @@ class FieldAnswerPatchServiceReferencesTest {
     void setUp() {
         service = new FieldAnswerPatchService(formService, concepts, mapper(ConceptMapper.class),
                 persons, personMapper, actionUnits, mapper(ActionUnitSummaryMapper.class),
-                actionCodes, mapper(ActionCodeMapper.class), spatialUnits, mapper(SpatialUnitSummaryMapper.class),
+                spatialUnits, mapper(SpatialUnitSummaryMapper.class),
                 recordingUnits, mapper(RecordingUnitSummaryMapper.class), mock(PhaseRepository.class), mapper(PhaseMapper.class),
                 containers, mapper(ContainerMapper.class), specimens, mapper(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
     }
@@ -173,21 +168,15 @@ class FieldAnswerPatchServiceReferencesTest {
     }
 
     @Test
-    void peopleProjectsCodesAndPlaces() {
+    void peopleProjectsAndPlaces() {
         when(personMapper.convert(any(Person.class))).thenReturn(new fr.siamois.dto.entity.PersonDTO());
         when(persons.findById(anyLong())).thenReturn(Optional.of(new Person()));
         when(actionUnits.findById(anyLong())).thenReturn(Optional.of(project(PROJECT)));
-        when(actionCodes.findById("OA-1")).thenReturn(Optional.of(new ActionCode()));
-        when(actionCodes.findById("KO")).thenReturn(Optional.empty());
         when(spatialUnits.findById(anyLong())).thenReturn(Optional.of(new SpatialUnit()));
 
         assertThat(applied(field(new CustomFieldSelectOneActionUnit()), new AnswerInput(9, null))).isNotNull();
-        assertThat(applied(field(CustomFieldSelectOneActionCode.builder().build()), new AnswerInput("OA-1", null))).isNotNull();
-        assertThat(applied(field(CustomFieldSelectOneActionCode.builder().build()), new AnswerInput(Map.of("id", "OA-1"), null))).isNotNull();
         assertThat(applied(field(new CustomFieldSelectOneSpatialUnit()), new AnswerInput(4, null))).isNotNull();
         assertThat((java.util.Collection<?>) applied(field(new CustomFieldSelectMultipleSpatialUnitTree()), new AnswerInput(null, List.of(4)))).isNotEmpty();
-
-        assertThat(refused(field(CustomFieldSelectOneActionCode.builder().build()), new AnswerInput("KO", null))).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     // ---------- entities of the project ----------

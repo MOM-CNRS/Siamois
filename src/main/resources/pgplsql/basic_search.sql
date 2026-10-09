@@ -50,19 +50,6 @@ BEGIN
                      similarity(au.name, p_input) AS similarity_score
               FROM action_unit au
               WHERE au.name ILIKE concat(left(p_input, 1), '%')
-                AND au.fk_institution_id = p_fk_institution_id
-
-              UNION ALL
-
-              SELECT aac.fk_action_code_id                      AS matching_term,
-                     aac.fk_action_id                           AS action_unit_id,
-                     NULL::BIGINT                               AS spatial_unit_id,
-                     NULL::BIGINT                               AS recording_unit_id,
-                     NULL::BIGINT                               AS specimen_id,
-                     similarity(aac.fk_action_code_id, p_input) AS similarity_score
-              FROM action_action_code aac
-                       JOIN public.action_unit au ON aac.fk_action_id = au.action_unit_id
-              WHERE aac.fk_action_code_id ILIKE concat(left(p_input, 1), '%')
                 AND au.fk_institution_id = p_fk_institution_id) AS resultats
         ORDER BY resultats.similarity_score DESC
         LIMIT 50;

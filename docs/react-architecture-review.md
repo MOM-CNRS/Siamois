@@ -61,7 +61,7 @@ Ranked by value for the effort. **Bold** items are the ones I would do first.
 ### 2.2 DTOs are hand-written and drift silently from Java
 
 - All `entities/*/types.ts` and `fields/types.ts` (212 lines) are written by hand from the OpenAPI responses. A renamed field on the Java side compiles here and fails at runtime, usually as a blank cell.
-- The backend already publishes OpenAPI (`OpenApiRestExceptionHandler`, `*OpenApiService`).
+- The backend already publishes OpenAPI (`RestExceptionHandler`, `*OpenApiService`).
 - **Improvement:** generate types with `openapi-typescript` into `src/api/generated/`, commit the output, and add a Maven/CI check that regenerated output equals the committed file. Then narrow the hand-written types to `Pick`/`Omit` of the generated ones. Also gives request-body types (`*CreateBody`) for free.
 - **Effort:** medium; the value grows with every new endpoint. Already listed as post-merge.
 

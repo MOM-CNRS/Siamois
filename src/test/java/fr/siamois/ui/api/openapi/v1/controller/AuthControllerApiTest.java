@@ -2,7 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fr.siamois.ui.api.openapi.v1.OpenApiRestExceptionHandler;
+import fr.siamois.ui.api.handler.RestExceptionHandler;
 import fr.siamois.ui.api.openapi.v1.auth.dto.AuthUserResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.LoginResponse;
 import fr.siamois.ui.api.openapi.v1.auth.dto.OrganizationSummaryResponse;
@@ -46,7 +46,7 @@ class AuthControllerApiTest {
         AuthControllerApi controller = new AuthControllerApi(authService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new OpenApiRestExceptionHandler())
+                .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(json)
                 .build();
     }

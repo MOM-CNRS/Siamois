@@ -9,7 +9,6 @@ import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -979,8 +978,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private FieldType typeOf(CustomField field) {
         if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
         if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
-        if (field instanceof CustomFieldSelectOneFromFieldCode
-                || field instanceof CustomFieldSelectOneActionCode) return FieldType.SELECT_ONE;
+        if (field instanceof CustomFieldSelectOneFromFieldCode) return FieldType.SELECT_ONE;
         if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
         if (field instanceof CustomFieldSelectOneSpatialUnit
                 || field instanceof CustomFieldSelectMultipleSpatialUnitTree

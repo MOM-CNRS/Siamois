@@ -191,7 +191,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/documents/100/file"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .andExpect(jsonPath("$.error").value("not_found"));
     }
 
     @Test
@@ -225,7 +225,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(delete("/api/v1/documents/99"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .andExpect(jsonPath("$.error").value("not_found"));
     }
 
     @Test

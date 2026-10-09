@@ -94,7 +94,7 @@ public class FindOpenApiService {
         shell.setAuthors(new ArrayList<>(List.of(personDto)));
         shell.setCollectors(new ArrayList<>(List.of(personDto)));
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
-        shell.setValidated(ValidationStatus.INCOMPLETE);
+        shell.setValidationStatus(ValidationStatus.INCOMPLETE);
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
@@ -133,12 +133,12 @@ public class FindOpenApiService {
         Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), request.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((!answers.isEmpty() || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidated(), request.getValidated(), canEdit, canValidate);
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (answers.isEmpty() && !identifierChange && !statusChange) {
             return findOpenApiMapper.toResource(dto);
@@ -152,7 +152,7 @@ public class FindOpenApiService {
             writeAnswers(dto, ru, answers, userInfo);
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(Specimen.class, specimenId, request.getValidated(), personDto);
+        validationOpenApiService.apply(Specimen.class, specimenId, request.getValidationStatus(), personDto);
         SpecimenDTO fresh = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds).orElse(dto);
         return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
     }
@@ -219,7 +219,7 @@ public class FindOpenApiService {
         SpecimenDTO copy = new SpecimenDTO(source);
         copy.setCreatedBy(personDto);
         copy.setAuthors(new ArrayList<>(List.of(personDto)));
-        copy.setValidated(ValidationStatus.INCOMPLETE);
+        copy.setValidationStatus(ValidationStatus.INCOMPLETE);
         SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> specimenService.save(copy));
         return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
     }

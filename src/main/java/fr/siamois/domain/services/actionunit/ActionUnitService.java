@@ -2,7 +2,6 @@ package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
@@ -28,7 +27,6 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import fr.siamois.infrastructure.database.repositories.permissions.ProfileRepository;
@@ -74,7 +72,6 @@ public class ActionUnitService implements ArkEntityService {
     private final ActionUnitRepository actionUnitRepository;
     private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
-    private final ActionCodeRepository actionCodeRepository;
     private final ActionUnitMapper actionUnitMapper;
     private final PersonMapper personMapper;
     private final SpatialUnitRepository spatialUnitRepository;
@@ -299,16 +296,6 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Find all ActionCodes that contain the given query string in their code, ignoring case.
-     *
-     * @param query The query string to search for in ActionCodes
-     * @return A list of ActionCodes that match the query
-     */
-    public List<ActionCode> findAllActionCodeByCodeIsContainingIgnoreCase(String query) {
-        return actionCodeRepository.findAllByCodeIsContainingIgnoreCase(query);
-    }
-
-    /**
      * Find an ActionUnit by its ARK.
      *
      * @param ark The ARK of the ActionUnit to find
@@ -452,7 +439,7 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
 
-        actionUnit.setValidated(actionUnit.getValidated().nextInCycle());
+        actionUnit.setValidationStatus(actionUnit.getValidationStatus().nextInCycle());
 
 
         return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
@@ -966,12 +953,9 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Détail d'un projet (action unit) si son institution est dans {@code accessibleInstitutionIds}.
      * <ul>
-     *     <li>Si {@code idOrKey} n'est composé que de chiffres décimaux : clé primaire {@code action_unit_id}.</li>
-     *     <li>Sinon : {@link ActionUnitRepository#findByFullIdentifier(String)} (identifiant métier complet).</li>
-     *     <li>Sinon encore : {@link ActionUnitRepository#findByIdentifierAndCreatedByInstitutionId(String, Long)}
-     *     pour chaque institution accessible (ex. identifiant court {@code C309_01} dans une org).</li>
+     *     <li>{@code idOrKey} est la clé primaire {@code action_unit_id}, en chiffres décimaux : c'est la seule
+     *     clé de l'API (ni identifiant complet, ni identifiant court).</li>
      * </ul>
-     * Les identifiants contenant des « / » doivent être correctement encodés dans l'URL (ex. {@code %2F}).
      *
      * @throws ActionUnitNotFoundException clé inconnue, ou projet hors périmètre (comportement type 404)
      */
@@ -981,7 +965,7 @@ public class ActionUnitService implements ArkEntityService {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             throw new ActionUnitNotFoundException("No institution scope for current user");
         }
-        ActionUnitDTO dto = loadProjectDtoForLookupKey(idOrKey, accessibleInstitutionIds);
+        ActionUnitDTO dto = loadProjectDtoForLookupKey(idOrKey);
         InstitutionDTO inst = dto.getCreatedByInstitution();
         if (inst == null || inst.getId() == null || !accessibleInstitutionIds.contains(inst.getId())) {
             throw new ActionUnitNotFoundException("Project not found or not accessible");
@@ -1032,34 +1016,26 @@ public class ActionUnitService implements ArkEntityService {
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
-        actionUnitRepository.deleteSecondaryActionCodeLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);
     }
 
-    private ActionUnitDTO loadProjectDtoForLookupKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
-        String key = idOrKey == null ? "" : idOrKey.trim();
-        if (key.isEmpty()) {
-            throw new ActionUnitNotFoundException("Project key must not be empty");
+    /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */
+    private ActionUnitDTO loadProjectDtoForLookupKey(String id) {
+        String key = id == null ? "" : id.trim();
+        if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
+            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
         }
-        if (key.chars().allMatch(Character::isDigit)) {
-            long id = Long.parseLong(key);
-            ActionUnit actionUnit = actionUnitRepository.findById(id)
-                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return convertWithCount(actionUnit);
+        long projectId;
+        try {
+            projectId = Long.parseLong(key);
+        } catch (NumberFormatException e) {
+            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
         }
-        Optional<ActionUnit> byFullId = actionUnitRepository.findByFullIdentifier(key);
-        if (byFullId.isPresent()) {
-            return actionUnitMapper.convert(byFullId.get());
-        }
-        for (Long institutionId : accessibleInstitutionIds) {
-            Optional<ActionUnit> byShortId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(key, institutionId);
-            if (byShortId.isPresent()) {
-                return actionUnitMapper.convert(byShortId.get());
-            }
-        }
-        throw new ActionUnitNotFoundException("ActionUnit not found with key: " + key);
+        ActionUnit actionUnit = actionUnitRepository.findById(projectId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + projectId));
+        return convertWithCount(actionUnit);
     }
 
     private static Map<Long, Long> countingMap(List<Object[]> rows) {

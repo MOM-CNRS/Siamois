@@ -48,7 +48,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
         category = spatialUnit.getCategory();
         geom = spatialUnit.getGeom();
         placeNumber = spatialUnit.getPlaceNumber();
-        validated = ValidationStatus.INCOMPLETE;
+        validationStatus = ValidationStatus.INCOMPLETE;
     }
 
     @Id

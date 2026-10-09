@@ -387,16 +387,16 @@ public class PlaceOpenApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         boolean fieldsChange = patch.getName() != null || patch.getTypeConceptId() != null || patch.getAddress() != null
                 || patch.isPlaceNumberPresent() || patch.isGeomPresent();
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), patch.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), patch.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if (fieldsChange || !statusChange) {
             requirePlaceWritePermission(caller, dto, lang, "Modification de lieu non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidated(), patch.getValidated(),
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), patch.getValidationStatus(),
                 profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES),
                 profilePermissionService.hasPlaceValidatePermission(userInfo));
         if (!fieldsChange && statusChange) {
-            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidated(), caller.person());
+            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(dto.getId(), dto.getName(), dto.getCode(), dto.getPlaceNumber());
         }
 
@@ -418,7 +418,7 @@ public class PlaceOpenApiService {
                             patch.getGeom(), patch.isGeomPresent())
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
             // After the save: it writes the entity's previous status back.
-            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidated(), caller.person());
+            validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(
                     saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {

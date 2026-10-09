@@ -203,7 +203,7 @@ export function EntityTable({
       // The row already holds the label and status: the overview's header shows them right away.
       const preview = {
         label: entityRowLabel(row as Parameters<typeof entityRowLabel>[0]),
-        validated: (row as { validated?: string | null }).validated,
+        validationStatus: (row as { validationStatus?: string | null }).validationStatus,
       };
       onOpenOverview(entityType, row.id, preview);
     } else onNavigate?.(entityType, row.id);
@@ -419,7 +419,7 @@ export function EntityTable({
               sortable={col.sortable}
               sortField={col.fieldId ?? col.key}
               // The row's validation state renders in the identifier's cell but outside the
-              // clickable chip, exactly like JSF's merged statusIdActionsCol — `validated` is a
+              // clickable chip, exactly like JSF's merged statusIdActionsCol — `validationStatus` is a
               // root property of every entity (TraceableEntity), so every list shows it; a picker
               // when the user may change it. Every cell goes through the same wrapper, so no cell
               // is ever more than one line: .entity-list-panel-cell is the flex row (validation

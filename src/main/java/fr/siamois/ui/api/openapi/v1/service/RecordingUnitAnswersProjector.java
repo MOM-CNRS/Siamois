@@ -76,8 +76,8 @@ public class RecordingUnitAnswersProjector {
 
     private static final String CONCEPTS = "concepts";
     private static final String PERSONS = "persons";
-    private static final String ACTION_UNITS = "action-units";
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String ACTION_UNITS = "projects";
+    private static final String SPATIAL_UNITS = "places";
     private static final String PHASES = "phases";
 
     private static final Map<String, CustomField> FIELDS_BY_ID = indexDetailsFormFields();
