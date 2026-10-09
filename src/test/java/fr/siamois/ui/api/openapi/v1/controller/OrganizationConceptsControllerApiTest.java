@@ -141,4 +141,38 @@ class OrganizationConceptsControllerApiTest {
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].resolvedLabel").value("B"));
     }
+
+    @Test
+    void getConcepts_byFieldCodeAlone_isMarkedDeprecated() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        when(vocabularyOpenApiService.getConceptsForOrganization(eq(100L), eq("SIARU.TYPE"), isNull(), anyString(), eq(personDto)))
+                .thenReturn(List.of(conceptAutocomplete(1L, "A")));
+
+        mockMvc.perform(get("/api/v1/organizations/100/concepts").param("fieldCode", "SIARU.TYPE"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Deprecation", "true"));
+    }
+
+    @Test
+    void getConcepts_byFieldId_isNotDeprecated() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        when(vocabularyOpenApiService.getConceptsForField(eq(100L), eq(43L), eq(9L), eq(42L), isNull(), anyString(), eq(personDto)))
+                .thenReturn(List.of(conceptAutocomplete(1L, "A")));
+
+        mockMvc.perform(get("/api/v1/organizations/100/concepts")
+                        .param("fieldId", "43").param("projectId", "9").param("valueConceptId", "42"))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist("Deprecation"))
+                .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
+    @Test
+    void getConcepts_byFieldId_whenTheFieldHasNoVocabularySource_returns404() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        when(vocabularyOpenApiService.getConceptsForField(eq(100L), eq(43L), isNull(), isNull(), isNull(), anyString(), eq(personDto)))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucun vocabulaire configuré pour le champ : 43"));
+
+        mockMvc.perform(get("/api/v1/organizations/100/concepts").param("fieldId", "43"))
+                .andExpect(status().isNotFound());
+    }
 }

@@ -6,6 +6,10 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.config.ConceptFieldState;
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.form.config.VocabularyMode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.misc.ProgressWrapper;
@@ -19,6 +23,7 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
@@ -39,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +84,9 @@ class FieldConfigurationServiceTest {
 
     @Mock
     private FieldFormConfigRepository fieldFormConfigRepository;
+
+    @Mock
+    private ConceptFieldStateRepository conceptFieldStateRepository;
 
     @Mock
     private ObjectProvider<FieldConfigurationService> selfProvider;
@@ -974,7 +983,7 @@ class FieldConfigurationServiceTest {
 
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L));
+        assertThrows(NoConfigForFieldException.class, () -> service.fetchAutocomplete(field, "que", 42L));
         verifyNoInteractions(autocompleteRepository);
     }
 
@@ -1059,7 +1068,7 @@ class FieldConfigurationServiceTest {
 
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> service.fetchAutocomplete(field, "que", 42L, null));
+        assertThrows(NoConfigForFieldException.class, () -> service.fetchAutocomplete(field, "que", 42L, null));
 
         verify(fieldFormConfigRepository, never()).findByFieldAndActionUnitAndValue(any(), any(), any());
     }
@@ -1124,4 +1133,151 @@ class FieldConfigurationServiceTest {
         assertThat(result).containsEntry(fieldCode, expected);
     }
 
+
+    // --- vocabulary mode and concept states -------------------------------------------------------
+
+    private static ConceptAutocompleteDTO candidate(long conceptId, String label) {
+        ConceptDTO concept = new ConceptDTO();
+        concept.setId(conceptId);
+        return new ConceptAutocompleteDTO(concept, label, "fr");
+    }
+
+    private static ConceptFieldState state(Concept concept, ConceptState state) {
+        ConceptFieldState s = new ConceptFieldState();
+        s.setConcept(concept);
+        s.setState(state);
+        return s;
+    }
+
+    private static Concept conceptWithId(long id) {
+        Concept c = new Concept();
+        c.setId(id);
+        return c;
+    }
+
+    private ConceptFieldFormConfig branchConfig(CustomFieldSelectOne field, VocabularyMode mode, FormConfig formConfig, Concept topTerm) {
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setBranchTopTerm(topTerm);
+        config.setVocabularyMode(mode);
+        config.setFormConfig(formConfig);
+        lenient().when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+        return config;
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldDropDisabledConcepts_andReadThatManyMore_whenListFollowsItsSource() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        Concept topTerm = conceptWithId(99L);
+        FormConfig formConfig = new FormConfig();
+        branchConfig(field, VocabularyMode.FOLLOW, formConfig, topTerm);
+
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, formConfig))
+                .thenReturn(List.of(state(conceptWithId(101L), ConceptState.DISABLED), state(conceptWithId(102L), ConceptState.DISABLED)));
+        when(autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "que", FieldConfigurationService.LIMIT_RESULTS + 2))
+                .thenReturn(List.of(candidate(100L, "A"), candidate(101L, "B"), candidate(102L, "C"), candidate(103L, "D")));
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).extracting(r -> r.getConceptLabelToDisplay().getConcept().getId()).containsExactly(100L, 103L);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldOfferNewConcepts_whenListFollowsItsSource() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        Concept topTerm = conceptWithId(99L);
+        FormConfig formConfig = new FormConfig();
+        branchConfig(field, VocabularyMode.FOLLOW, formConfig, topTerm);
+
+        // a concept the field has no state for is offered: it follows the thesaurus
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, formConfig))
+                .thenReturn(List.of(state(conceptWithId(101L), ConceptState.DISABLED)));
+        when(autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "que", FieldConfigurationService.LIMIT_RESULTS + 1))
+                .thenReturn(List.of(candidate(100L, "A"), candidate(104L, "new in the thesaurus")));
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).extracting(r -> r.getConceptLabelToDisplay().getConcept().getId()).containsExactly(100L, 104L);
+    }
+
+    @Test
+    void fetchAutocompleteOfField_shouldKeepOnlyEnabledConcepts_whenListIsFrozen() throws NoConfigForFieldException {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(55L);
+        FormConfig formConfig = new FormConfig();
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setCollection(collection);
+        config.setVocabularyMode(VocabularyMode.FROZEN);
+        config.setFormConfig(formConfig);
+        when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, formConfig)).thenReturn(List.of(
+                state(conceptWithId(100L), ConceptState.ENABLED),
+                state(conceptWithId(101L), ConceptState.DISABLED),
+                state(conceptWithId(102L), ConceptState.PENDING)));
+        when(autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", "que", FieldConfigurationService.FROZEN_SCAN_LIMIT))
+                .thenReturn(List.of(candidate(100L, "A"), candidate(101L, "B"), candidate(102L, "C"), candidate(103L, "no state: not frozen in")));
+
+        List<ConceptAutocompleteDTO> results = service.fetchAutocomplete(field, "que", 42L);
+
+        assertThat(results).extracting(r -> r.getConceptLabelToDisplay().getConcept().getId()).containsExactly(100L);
+    }
+
+    @Test
+    void describeVocabulary_shouldDescribeABranchWithItsDisabledConcepts() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        Concept topTerm = conceptWithId(99L);
+        FormConfig formConfig = new FormConfig();
+        branchConfig(field, VocabularyMode.FOLLOW, formConfig, topTerm);
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, formConfig))
+                .thenReturn(List.of(state(conceptWithId(101L), ConceptState.DISABLED)));
+
+        FieldVocabularyConfig result = service.describeVocabulary(field, 42L, null);
+
+        assertThat(result).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 99L, null,
+                VocabularyMode.FOLLOW, Map.of(101L, ConceptState.DISABLED)));
+    }
+
+    @Test
+    void describeVocabulary_shouldDescribeACollection() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(55L);
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setCollection(collection);
+        when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.of(config));
+
+        FieldVocabularyConfig result = service.describeVocabulary(field, 42L, null);
+
+        assertThat(result).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, 55L,
+                VocabularyMode.FOLLOW, Map.of()));
+    }
+
+    @Test
+    void describeVocabulary_shouldFallBackOnTheFieldCode_whenFieldHasNoRestriction() {
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(7L);
+        field.setFieldCode("SIARU.TYPE");
+        when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+
+        FieldVocabularyConfig result = service.describeVocabulary(field, 42L, null);
+
+        assertThat(result).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, "SIARU.TYPE", null, null,
+                VocabularyMode.FOLLOW, Map.of()));
+        verifyNoInteractions(conceptFieldStateRepository);
+    }
+
+    @Test
+    void describeVocabulary_shouldReturnNull_whenFieldHasNeitherRestrictionNorFieldCode() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
+
+        assertThat(service.describeVocabulary(field, 42L, null)).isNull();
+    }
 }

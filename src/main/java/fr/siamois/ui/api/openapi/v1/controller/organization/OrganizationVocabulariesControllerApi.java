@@ -29,10 +29,10 @@ public class OrganizationVocabulariesControllerApi {
 
     /**
      * @deprecated Non scopé par projet et renvoie tous les field_codes configurés pour l'institution en
-     * une seule réponse (pas de pagination/suggestion). À remplacer par
-     * {@code GET /api/v1/projects/{id}/field-codes} (liste des field_codes d'un projet) combiné à
-     * {@code GET /api/v1/projects/{id}/concepts?fieldCode=…} (vocabulaire pour un field_code donné,
-     * paginé pour la synchronisation ou en mode suggestion selon l'usage du paramètre `q`).
+     * une seule réponse (pas de pagination/suggestion). À remplacer par la configuration des types du projet
+     * ({@code GET /api/v1/projects/{id}/recording-unit-types}, etc. : {@code fields[<fieldId>].vocabulary}) combinée à
+     * {@code GET /api/v1/organizations/{id}/concepts?fieldId=…} (concepts d'un champ, paginés pour la
+     * synchronisation ou en mode suggestion selon l'usage du paramètre `q`).
      */
     @Deprecated(forRemoval = true)
     @GetMapping("/{id}/vocabularies")
@@ -41,7 +41,8 @@ public class OrganizationVocabulariesControllerApi {
             description = "Retourne le catalogue des thésaurus et les listes de concepts par field_code "
                     + "(configuration institution / utilisateur), nécessaires aux formulaires. "
                     + "**Déprécié** : non scopé par projet — remplacé par "
-                    + "`GET /api/v1/projects/{id}/field-codes` et `GET /api/v1/projects/{id}/concepts?fieldCode=…`.",
+                    + "la configuration des types du projet (`fields[<fieldId>].vocabulary`) et "
+                    + "`GET /api/v1/organizations/{id}/concepts?fieldId=…`.",
             deprecated = true
     )
     @ApiResponses(value = {

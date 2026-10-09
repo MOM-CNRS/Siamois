@@ -6,6 +6,9 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.config.ConceptFieldState;
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.VocabularyMode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
 import fr.siamois.domain.models.institution.Institution;
@@ -15,12 +18,14 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.FeedbackFieldConfig;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
@@ -51,6 +56,11 @@ public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
     public static final int LIMIT_RESULTS = 200;
+    /**
+     * How many candidates a frozen list reads from its source before keeping the enabled ones: the
+     * enabled concepts are not necessarily among the first {@link #LIMIT_RESULTS} the source returns.
+     */
+    static final int FROZEN_SCAN_LIMIT = 10_000;
     public static final int NUMBER_OF_STEPS_IN_FIELD_CONFIG = 2;
     public static final int NUMBER_OF_STEPS_IN_CONCEPT_UPDATE = 5;
     private final ConceptApi conceptApi;
@@ -63,6 +73,7 @@ public class FieldConfigurationService {
     private final InstitutionMapper institutionMapper;
     private final ActionUnitMapper actionUnitMapper;
     private final FieldFormConfigRepository fieldFormConfigRepository;
+    private final ConceptFieldStateRepository conceptFieldStateRepository;
     private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
@@ -352,6 +363,33 @@ public class FieldConfigurationService {
     }
 
     /**
+     * Where the list of a vocabulary field comes from for a project and a type, resolved the way
+     * {@link #fetchAutocomplete(CustomFieldConcept, String, Long, Long)} resolves it: the field's own
+     * branch/collection first, then its field code. What a client needs to rebuild that list offline.
+     *
+     * @param conceptField   the vocabulary field
+     * @param actionUnitId   the project the field is displayed in, or null for institution-only
+     * @param valueConceptId the concept of the entity's type, or null for the default configuration
+     * @return the field's vocabulary, or null when it has neither a restriction nor a field code
+     */
+    @Nullable
+    @Transactional(readOnly = true)
+    public FieldVocabularyConfig describeVocabulary(@NonNull CustomFieldConcept conceptField, @Nullable Long actionUnitId, @Nullable Long valueConceptId) {
+        Optional<ConceptFieldFormConfig> opt = findFieldFormConfig(conceptField, actionUnitId, valueConceptId);
+        if (opt.isPresent() && !opt.get().isNotValid()) {
+            ConceptFieldFormConfig config = opt.get();
+            Map<Long, ConceptState> states = statesOf(conceptField, config);
+            return config.isBranchConfig()
+                    ? new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, config.getBranchTopTerm().getId(), null, config.getVocabularyMode(), states)
+                    : new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, config.getCollection().getId(), config.getVocabularyMode(), states);
+        }
+        if (conceptField instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
+            return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, fromFieldCode.getFieldCode(), null, null, VocabularyMode.FOLLOW, Map.of());
+        }
+        return null;
+    }
+
+    /**
      * Same as {@link #getUrlForConceptField(CustomFieldConcept, Long, Long)}, without scoping to a
      * specific value of the entity's scope field.
      *
@@ -537,7 +575,8 @@ public class FieldConfigurationService {
      *                       when unknown — see {@link #findFieldFormConfig}
      * @return a list of matching ConceptAutocompleteDTO objects
      * @throws NoConfigForFieldException if the field falls back on a field code that has no configuration
-     * @throws IllegalStateException     if the field has no usable configuration at all
+     * @throws NoConfigForFieldException if the field has neither a branch/collection nor a field code
+     * @throws IllegalStateException     if the field's restriction is saved without a branch nor a collection
      */
     @NonNull
     @ExecutionTimeLogger
@@ -557,16 +596,67 @@ public class FieldConfigurationService {
             if (conceptField instanceof CustomFieldConceptFromFieldCode conceptFromFieldCode) {
                 return fetchAutocomplete(info, conceptFromFieldCode.getFieldCode(), input, actionUnitId);
             }
-            throw new IllegalStateException(String.format("CustomFieldConcept %s has no configuration which is not allowed", conceptField.getId()));
+            throw new NoConfigForFieldException(String.format("CustomFieldConcept %s has no configuration", conceptField.getId()));
         }
         ConceptFieldFormConfig conceptFieldFormConfig = opt.get();
         if (conceptFieldFormConfig.isNotValid()) {
             throw new IllegalStateException(String.format("ConceptFieldFormConfig %s should not be saved without any configurations", conceptFieldFormConfig.getId()));
         }
-        if (conceptFieldFormConfig.isBranchConfig()) {
-            return autocompleteRepository.findMatchingConceptsInBranchOf(conceptFieldFormConfig.getBranchTopTerm(), info.getLang(), input, LIMIT_RESULTS);
+        Map<Long, ConceptState> states = statesOf(conceptField, conceptFieldFormConfig);
+        int limit = scanLimit(conceptFieldFormConfig, states);
+        List<ConceptAutocompleteDTO> candidates = conceptFieldFormConfig.isBranchConfig()
+                ? autocompleteRepository.findMatchingConceptsInBranchOf(conceptFieldFormConfig.getBranchTopTerm(), info.getLang(), input, limit)
+                : autocompleteRepository.findMatchingConceptsInCollection(conceptFieldFormConfig.getCollection(), info.getLang(), input, limit);
+        return applyStates(candidates, conceptFieldFormConfig, states);
+    }
+
+    /**
+     * The explicit states of the concepts of a restricted field, by concept id. Empty for a field
+     * whose list has never been customised.
+     */
+    private Map<Long, ConceptState> statesOf(CustomFieldConcept conceptField, ConceptFieldFormConfig config) {
+        Map<Long, ConceptState> states = new HashMap<>();
+        for (ConceptFieldState state : conceptFieldStateRepository.findAllByFieldAndFormConfig(conceptField, config.getFormConfig())) {
+            states.put(state.getConcept().getId(), state.getState());
         }
-        return autocompleteRepository.findMatchingConceptsInCollection(conceptFieldFormConfig.getCollection(), info.getLang(), input, LIMIT_RESULTS);
+        return states;
+    }
+
+    /**
+     * How many candidates to read from the source: a followed list loses its disabled concepts after
+     * the read, so it reads that many more to still fill {@link #LIMIT_RESULTS}; a frozen list keeps only
+     * the concepts it enabled, which may sit anywhere in the source.
+     */
+    private static int scanLimit(ConceptFieldFormConfig config, Map<Long, ConceptState> states) {
+        if (config.isFrozen()) {
+            return FROZEN_SCAN_LIMIT;
+        }
+        long disabled = states.values().stream().filter(state -> state == ConceptState.DISABLED).count();
+        return LIMIT_RESULTS + (int) disabled;
+    }
+
+    /**
+     * A followed list offers every candidate but the disabled ones; a frozen list offers only the
+     * enabled ones. Without any explicit state a followed list is returned as read.
+     */
+    private static List<ConceptAutocompleteDTO> applyStates(List<ConceptAutocompleteDTO> candidates,
+                                                           ConceptFieldFormConfig config,
+                                                           Map<Long, ConceptState> states) {
+        if (states.isEmpty() && !config.isFrozen()) {
+            return candidates;
+        }
+        return candidates.stream()
+                .filter(candidate -> isOffered(candidate, config, states))
+                .limit(LIMIT_RESULTS)
+                .toList();
+    }
+
+    private static boolean isOffered(ConceptAutocompleteDTO candidate, ConceptFieldFormConfig config, Map<Long, ConceptState> states) {
+        Long conceptId = candidate.getConceptLabelToDisplay() == null || candidate.getConceptLabelToDisplay().getConcept() == null
+                ? null
+                : candidate.getConceptLabelToDisplay().getConcept().getId();
+        ConceptState state = conceptId == null ? null : states.get(conceptId);
+        return config.isFrozen() ? state == ConceptState.ENABLED : state != ConceptState.DISABLED;
     }
 
     /**
