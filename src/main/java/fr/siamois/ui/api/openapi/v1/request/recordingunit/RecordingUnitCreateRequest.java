@@ -16,9 +16,8 @@ import java.util.Map;
 public class RecordingUnitCreateRequest {
 
     @Schema(
-            description = "Clé du projet (unité d'action) : identifiant numérique (action_unit_id), "
-                    + "full_identifier ou identifiant court dans une organisation accessible.",
-            example = "INST-PROJ-2024",
+            description = "Identifiant du projet (unité d'action) : action_unit_id, en chaîne.",
+            example = "42",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @JsonAlias("actionUnitId")

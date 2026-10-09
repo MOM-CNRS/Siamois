@@ -8,8 +8,8 @@ import java.util.Map;
 
 /**
  * Layout et champs d'un formulaire mobilier.
- * Sur {@code GET /mobiliers/form} : métadonnées UI seules ({@code currentValue} absent).
- * Sur {@code GET /mobiliers/{id}} : inclut les valeurs persistées.
+ * Sur {@code GET /finds/form} : métadonnées UI seules ({@code currentValue} absent).
+ * Sur {@code GET /finds/{id}} : inclut les valeurs persistées.
  * Vocabulaires : {@code GET /api/v1/vocabularies}.
  */
 @Schema(description = "Formulaire mobilier (layout et champs)")

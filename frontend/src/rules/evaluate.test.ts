@@ -89,7 +89,7 @@ describe("placeContextOf", () => {
 
   it("names the place picked in the field a source parameter reads", () => {
     const columns: RuledColumn[] = [{ fieldId: -108 }, { fieldId: -104, rules: { placeSources: [{ source: "INSEE" }, geoplat] } }];
-    const values: Record<string, unknown> = { "-108": { resourceId: "7", resourceType: "spatial-units", label: "Lyon" } };
+    const values: Record<string, unknown> = { "-108": { resourceId: "7", resourceType: "places", label: "Lyon" } };
 
     expect(evaluateForm(columns, (id) => values[id]).get("-104")?.placeContext).toEqual({ deps: { "-108": "7" } });
   });

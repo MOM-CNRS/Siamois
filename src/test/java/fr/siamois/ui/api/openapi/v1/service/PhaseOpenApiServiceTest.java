@@ -288,7 +288,7 @@ class PhaseOpenApiServiceTest {
         verify(phaseService, never()).save(any());
     }
 
-    // `validated` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
+    // `validationStatus` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
     // right covers validé — alone, a validator without the edit right may change the status only.
     @Test
     void patchPhase_validatorWithoutEditRight_mayChangeOnlyTheStatus() {
@@ -301,7 +301,7 @@ class PhaseOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
 
         PhasePatchRequest statusOnly = new PhasePatchRequest();
-        statusOnly.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        statusOnly.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         service.patchPhase(5L, statusOnly, personDto, Set.of(10L), "fr");
 
         verify(validationStatusService).setStatus(fr.siamois.domain.models.phase.Phase.class, 5L,
@@ -309,7 +309,7 @@ class PhaseOpenApiServiceTest {
         verify(phaseService, never()).save(any());
 
         PhasePatchRequest withAnswers = new PhasePatchRequest();
-        withAnswers.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        withAnswers.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         withAnswers.setAnswers(Map.of("-503", new AnswerInput("Titre", null)));
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchPhase(5L, withAnswers, personDto, arg4, "fr"))
@@ -326,7 +326,7 @@ class PhaseOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(false);
 
         PhasePatchRequest req = new PhasePatchRequest();
-        req.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        req.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
 
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchPhase(5L, req, personDto, arg4, "fr"))

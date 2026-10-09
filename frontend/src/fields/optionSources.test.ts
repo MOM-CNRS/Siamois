@@ -140,14 +140,14 @@ describe("optionSourceFor — reference fields", () => {
     expect(options).toEqual([{ id: "8", label: "Phase 1" }]);
   });
 
-  it("falls back to the organization-wide list without a project (finds live at /mobiliers under a project, /finds at the top)", async () => {
+  it("falls back to the organization-wide list without a project (finds live at /finds under a project, /finds at the top)", async () => {
     mockedApiFetch.mockResolvedValue({ data: [{ id: 2, fullIdentifier: "M-2" }] });
 
     await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_SPECIMEN" }), 100)!();
     expect(mockedApiFetch).toHaveBeenLastCalledWith("/api/v1/finds?offset=0&limit=20&organizationId=100");
 
     await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_SPECIMEN" }), 100, "5")!();
-    expect(mockedApiFetch).toHaveBeenLastCalledWith("/api/v1/projects/5/mobiliers?offset=0&limit=20");
+    expect(mockedApiFetch).toHaveBeenLastCalledWith("/api/v1/projects/5/finds?offset=0&limit=20");
   });
 
   it("asks a legacy vocabulary field's own suggestions by field id, in the project", async () => {
@@ -167,13 +167,13 @@ describe("optionSourceFor — reference fields", () => {
 
 describe("referenceTargetOf", () => {
   it.each([
-    ["SELECT_ONE_SPATIAL_UNIT", "spatial-units", "place", "place"],
+    ["SELECT_ONE_SPATIAL_UNIT", "places", "place", "place"],
     ["SELECT_MULTIPLE_RECORDING_UNIT", "recording-units", "recordingUnit", "recordingUnit"],
     ["SELECT_MULTIPLE_SPECIMEN", "finds", "find", "find"],
     ["SELECT_MULTIPLE_CONTAINER", "containers", "container", "container"],
     ["SELECT_MULTIPLE_PHASE", "phases", "phase", "phase"],
     ["SELECT_ONE_PERSON", "persons", undefined, undefined],
-    ["SELECT_ONE_ACTION_UNIT", "action-units", "project", undefined],
+    ["SELECT_ONE_ACTION_UNIT", "projects", "project", undefined],
     ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined, undefined],
   ])("%s references %s, opened as %s, created as %s", (answerType, resourceType, entityType, createEntityType) => {
     const expected: Record<string, string> = { resourceType };

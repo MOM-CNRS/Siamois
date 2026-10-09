@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.response.spatialunit;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,8 +12,8 @@ import org.springframework.lang.Nullable;
  */
 @Schema(description = "Suggestion de lieu, interne (id renseigné) ou issue d'une source externe (id null)")
 public record PlaceSuggestionItemApi(
-        @Schema(description = "spatial_unit_id si le lieu existe déjà dans l'organisation ; null pour une suggestion externe")
-        @Nullable Long id,
+        @Schema(description = "spatial_unit_id si le lieu existe déjà dans l'organisation ; null pour une suggestion externe", type = "string")
+        @Nullable @JsonSerialize(using = ToStringSerializer.class) Long id,
         String name,
         @Nullable @Schema(description = "Code du lieu (code INSEE pour une commune)") String code,
         @Schema(description = "SIAMOIS, INSEE ou GEOPLAT", example = "INSEE") String source,

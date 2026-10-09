@@ -24,7 +24,7 @@ public class DocumentOpenApiMapper {
         DocumentResource r = new DocumentResource();
         r.setResourceType("documents");
         r.setId(document.getId() != null ? String.valueOf(document.getId()) : null);
-        r.setValidated(document.getValidated());
+        r.setValidationStatus(document.getValidationStatus());
         r.setIdentifier(document.getIdentifier());
         r.setTitle(document.getTitle());
         r.setDescription(document.getDescription());

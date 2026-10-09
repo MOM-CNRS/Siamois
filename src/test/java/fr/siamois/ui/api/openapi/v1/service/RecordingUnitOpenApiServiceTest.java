@@ -1792,12 +1792,12 @@ class RecordingUnitOpenApiServiceTest {
 
         SelectOneFieldAnswer spatialAnswer = (SelectOneFieldAnswer) data.getAnswers().get("40");
         assertThat(spatialAnswer.value().resourceId()).isEqualTo("500");
-        assertThat(spatialAnswer.value().resourceType()).isEqualTo("spatial-units");
+        assertThat(spatialAnswer.value().resourceType()).isEqualTo("places");
         assertThat(spatialAnswer.value().label()).isEqualTo("Locus 1");
 
         SelectOneFieldAnswer actionUnitAnswer = (SelectOneFieldAnswer) data.getAnswers().get("41");
         assertThat(actionUnitAnswer.value().resourceId()).isEqualTo("501");
-        assertThat(actionUnitAnswer.value().resourceType()).isEqualTo("action-units");
+        assertThat(actionUnitAnswer.value().resourceType()).isEqualTo("projects");
         assertThat(actionUnitAnswer.value().label()).isEqualTo("Op1");
 
         SelectOneFieldAnswer actionCodeAnswer = (SelectOneFieldAnswer) data.getAnswers().get("42");
@@ -1938,7 +1938,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(answer.values().get(0).label()).isEqualTo("Jean Dupont");
         assertThat(answer.values().get(2).resourceType()).isEqualTo("concepts");
         assertThat(answer.values().get(2).label()).isEqualTo("stub-label");
-        assertThat(answer.values().get(3).resourceType()).isEqualTo("spatial-units");
+        assertThat(answer.values().get(3).resourceType()).isEqualTo("places");
         assertThat(answer.values().get(4).resourceType()).isEqualTo("recording-units");
         assertThat(answer.values().get(5).resourceId()).isEqualTo("C606");
         assertThat(answer.values().get(1).resourceId()).isEqualTo("602");

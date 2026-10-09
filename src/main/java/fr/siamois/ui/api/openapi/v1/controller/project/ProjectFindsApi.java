@@ -29,12 +29,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — même contrat que
+ * Mobiliers d'un projet ({@code GET /api/v1/projects/{id}/finds}) — même contrat que
  * {@link ProjectContainersControllerApi} : recherche, tri et filtres {@code f.<id de champ>},
  * projection {@code ?fields=} dans {@code answers}.
  */
 @RestController
-@RequestMapping("/api/v1/projects/{id}/mobiliers")
+@RequestMapping("/api/v1/projects/{id}/finds")
 @Tag(name = OpenApiTags.PROJECT)
 @RequiredArgsConstructor
 public class ProjectFindsApi {

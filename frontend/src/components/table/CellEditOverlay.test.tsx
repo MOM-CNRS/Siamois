@@ -350,7 +350,7 @@ describe("CellEditOverlay", () => {
       answerType: "SELECT_ONE_ACTION_UNIT",
       isSystemField: false,
     };
-    const row = { id: "1", answers: { "-5": { resourceId: "7", resourceType: "action-units", label: "7894" } } };
+    const row = { id: "1", answers: { "-5": { resourceId: "7", resourceType: "projects", label: "7894" } } };
     act(() => {
       root.render(
         <EntityNavigationProvider value={openEntity}>

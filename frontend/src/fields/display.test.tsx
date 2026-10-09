@@ -94,7 +94,7 @@ describe("reference chips", () => {
   });
 
   it("accepts a flat resolved resource (ProjectResource.type / mainLocation)", () => {
-    const html = markup(renderAnswerCell(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), { id: 9, resourceType: "spatial-units", name: "Bibracte" }));
+    const html = markup(renderAnswerCell(field({ answerType: "SELECT_ONE_SPATIAL_UNIT" }), { id: 9, resourceType: "places", name: "Bibracte" }));
     expect(html).toContain(">Bibracte</span>");
     expect(html).toContain("--context-main-color");
   });

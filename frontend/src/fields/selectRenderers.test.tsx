@@ -514,7 +514,7 @@ describe("an external place suggestion", () => {
     await pickFirstSuggestion(onChange);
 
     expect(mockedCreatePlace).toHaveBeenCalledWith(100, lyon, "3");
-    expect(onChange).toHaveBeenLastCalledWith({ resourceId: "77", resourceType: "spatial-units", label: "Lyon" });
+    expect(onChange).toHaveBeenLastCalledWith({ resourceId: "77", resourceType: "places", label: "Lyon" });
   });
 
   it("is not picked when its creation fails", async () => {

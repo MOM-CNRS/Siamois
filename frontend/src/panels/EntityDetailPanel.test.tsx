@@ -661,7 +661,7 @@ describe("EntityDetailPanel entity actions", () => {
   });
 
   it("shows the validation status button on a fiche that has a status", async () => {
-    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } , validated: "COMPLETE" } as ActionEntity);
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } , validationStatus: "COMPLETE" } as ActionEntity);
     renderPanel({ writeMode: true });
     await flush();
 

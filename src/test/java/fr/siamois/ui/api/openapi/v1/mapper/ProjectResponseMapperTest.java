@@ -137,18 +137,18 @@ class ProjectResponseMapperTest {
 
     @Test
     void toResource_exposesValidationStatus() {
-        dto.setValidated(ValidationStatus.VALIDATED);
+        dto.setValidationStatus(ValidationStatus.VALIDATED);
 
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
-        assertThat(r.getValidated()).isEqualTo(ValidationStatus.VALIDATED);
+        assertThat(r.getValidationStatus()).isEqualTo(ValidationStatus.VALIDATED);
     }
 
     @Test
     void toResource_validationStatusDefaultsToIncomplete() {
         ProjectResource r = projectResponseMapper.toResource(new AccessibleProjectForApi(dto, 0L, 0L), "fr");
 
-        assertThat(r.getValidated()).isEqualTo(ValidationStatus.INCOMPLETE);
+        assertThat(r.getValidationStatus()).isEqualTo(ValidationStatus.INCOMPLETE);
     }
 
     @Test

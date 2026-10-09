@@ -9,6 +9,6 @@ public interface SpecimenProjection {
 
     String getFullIdentifier();
 
-    ValidationStatus getValidated();
+    ValidationStatus getValidationStatus();
 
 }

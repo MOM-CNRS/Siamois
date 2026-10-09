@@ -206,7 +206,7 @@ public class SpecimenAnswersProjector {
         if (item instanceof PersonDTO p) return ref(p.getId(), "persons", p.displayName());
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof ActionUnitSummaryDTO a) {
-            return ref(a.getId(), "action-units", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
+            return ref(a.getId(), "projects", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
         }
         if (item instanceof SpecimenSummaryDTO s) return ref(s.getId(), "finds", s.getFullIdentifier());
         if (item instanceof ContainerDTO c) return ref(c.getId(), "containers", c.getIdentifier());

@@ -41,8 +41,8 @@ public abstract class TraceableEntity implements Serializable {
     protected Institution createdByInstitution;
 
     @Enumerated(EnumType.STRING) // Stores the enum name as a string in the database
-    @Column(name = "validated", nullable = false)
-    protected ValidationStatus validated = ValidationStatus.INCOMPLETE;
+    @Column(name = "validation_status", nullable = false)
+    protected ValidationStatus validationStatus = ValidationStatus.INCOMPLETE;
 
     @Column(name = "validated_at")
     protected OffsetDateTime validatedAt ;

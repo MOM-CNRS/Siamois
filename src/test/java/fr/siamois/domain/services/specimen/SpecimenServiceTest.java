@@ -667,7 +667,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.INCOMPLETE);
+        specimen.setValidationStatus(ValidationStatus.INCOMPLETE);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -677,7 +677,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.COMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.COMPLETE, specimen.getValidationStatus());
         verify(specimenRepository).save(specimen);
     }
 
@@ -686,7 +686,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.COMPLETE);
+        specimen.setValidationStatus(ValidationStatus.COMPLETE);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -696,7 +696,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.VALIDATED, specimen.getValidated());
+        assertEquals(ValidationStatus.VALIDATED, specimen.getValidationStatus());
     }
 
     @Test
@@ -704,7 +704,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.VALIDATED);
+        specimen.setValidationStatus(ValidationStatus.VALIDATED);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -714,7 +714,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidationStatus());
     }
 
     @Test
@@ -1064,32 +1064,17 @@ class SpecimenServiceTest {
     }
 
     @Test
-    void findAccessibleByKey_fullIdentifier_whenNumericMiss() {
-        Specimen specimen = new Specimen();
-        specimen.setId(1L);
-        SpecimenDTO dto = new SpecimenDTO();
+    void findAccessibleByKey_numericId_notFound_isEmpty() {
         when(specimenRepository.findById(123L, Specimen.class)).thenReturn(Optional.empty());
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn("123", Set.of(10L)))
-                .thenReturn(Optional.of(specimen));
-        when(specimenMapper.convert(specimen)).thenReturn(dto);
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        dto.setCreatedByInstitution(inst);
 
-        Optional<SpecimenDTO> result = specimenService.findAccessibleByKey("123", Set.of(10L));
-
-        assertTrue(result.isPresent());
+        assertTrue(specimenService.findAccessibleByKey("123", Set.of(10L)).isEmpty());
+        verify(specimenRepository, never()).findFirstByFullIdentifierAndInstitutionIdIn(any(), any());
     }
 
     @Test
-    void findAccessibleByKey_nonNumeric_usesFullIdentifier() {
-        Specimen specimen = new Specimen();
-        SpecimenDTO dto = new SpecimenDTO();
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn("RU-1_2", Set.of(10L)))
-                .thenReturn(Optional.of(specimen));
-        when(specimenMapper.convert(specimen)).thenReturn(dto);
-
-        assertTrue(specimenService.findAccessibleByKey("RU-1_2", Set.of(10L)).isPresent());
+    void findAccessibleByKey_nonNumeric_isNotAKey() {
+        assertTrue(specimenService.findAccessibleByKey("RU-1_2", Set.of(10L)).isEmpty());
+        verifyNoInteractions(specimenRepository);
     }
 
     @Test
@@ -1894,33 +1879,24 @@ class SpecimenServiceTest {
     }
 
     @Test
-    void findAccessibleByKey_digitOverflow_fallsBackToFullIdentifier() {
-        String overflowKey = "9223372036854775808";
-        Specimen entity = new Specimen();
-        SpecimenDTO dto = new SpecimenDTO();
+    void findAccessibleByKey_digitOverflow_isEmpty() {
         Set<Long> scope = Set.of(10L);
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope))
-                .thenReturn(Optional.of(entity));
-        when(specimenMapper.convert(entity)).thenReturn(dto);
 
-        Optional<SpecimenDTO> result = specimenService.findAccessibleByKey(overflowKey, scope);
-
-        assertTrue(result.isPresent());
-        assertSame(dto, result.get());
-        verify(specimenRepository).findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope);
+        assertTrue(specimenService.findAccessibleByKey("9223372036854775808", scope).isEmpty());
+        verifyNoInteractions(specimenRepository);
     }
 
     @Test
     void toggleValidated_cancelled_reentersTheCycleAtIncomplete() {
         // The validated column is NOT NULL: the only status outside the JSF cycle is CANCELLED.
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.CANCELLED);
+        specimen.setValidationStatus(ValidationStatus.CANCELLED);
         when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(specimen)).thenReturn(specimen);
 
         specimenService.toggleValidated(1L);
 
-        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidationStatus());
     }
 
     @Test

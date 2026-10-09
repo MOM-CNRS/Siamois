@@ -1,9 +1,9 @@
 # SIAMOIS REST API — changes on `feat/main-panel-react-migration` vs `main`
 
-**Scope:** public API under `/api/v1/**` (JWT-authenticated). First generated 2026-09-25 from a source diff of controllers, request/response DTOs and mappers; **updated 2026-10-01** on `feat/field-rules-engine` (see §7 for what changed since the first version).
+**Scope:** public API under `/api/v1/**` (JWT-authenticated). First generated 2026-09-25 from a source diff of controllers, request/response DTOs and mappers; **updated 2026-10-01** on `feat/field-rules-engine`, then **2026-10-09** on `refactor/api` (see §7 and §9 for what changed since the first version).
 **Audience:** external API consumers.
 
-> Conventions used below: `{id}` for a project accepts the numeric id, the `fullIdentifier` or the short identifier (unchanged). All list endpoints keep the `offset` / `limit` pagination, the `meta: { total, limit, offset }` envelope and the `X-Total-Count` header unless stated otherwise.
+> Conventions used below: every `{id}` (project, recording unit, find…) is the **database id**, as a string; a `fullIdentifier` or short identifier is a `404` (B12). Every error has the body of B8. All list endpoints keep the `offset` / `limit` pagination, the `meta: { total, limit, offset }` envelope and the `X-Total-Count` header unless stated otherwise.
 
 ---
 
@@ -12,8 +12,8 @@
 | Kind | Count |
 |---|---|
 | Endpoints **removed** | 3 |
-| Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks) |
-| Endpoints **added** | 43 |
+| Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks, and B8–B13 of 2026-10-09) |
+| Endpoints **added** | 45 |
 | Existing endpoints with **additive** changes (new params/fields) | ~17 |
 
 Things most likely to break an existing client, in order:
@@ -34,13 +34,19 @@ Things most likely to break an existing client, in order:
 |---|---|---|---|---|
 | B1 | `GET /api/v1/organizations/{id}/recording-units` | Paginated RU list of an organisation (`offset`, `limit` only, no sort/search) | **Removed** | `GET /api/v1/recording-units?organizationId={id}&offset=&limit=`. Adds `search`, `sort` (default `creationTime:desc`) and `f.*` filters. A member without organisation-wide access only sees RUs of their own projects. |
 | B2 | `GET /api/v1/organizations/{id}/places` | Paginated places, default `limit=50`, `sort` in `name,id,code,creationTime` | **Removed** | `GET /api/v1/places?organizationId={id}`. **Default `limit` is now 10** (was 50), so pass `limit` explicitly. Adds `search`. Default sort `name:asc`. |
-| B3 | `GET /api/v1/projects/form?organizationId=` | `ProjectFormResponse { data: ProjectFormData }`: layout + field definitions of the creation form | **Removed** (`ProjectFormResponse` / `ProjectFormData` schemas deleted) | `GET /api/v1/organizations/{id}/project-types` → `ProjectTypeListResponse { data: ProjectType[], _default: ProjectDefaultType { form, fieldConfigs, tableColumns }, fields: {fieldId → FieldResource} }`. The form layout is `_default.form`. `data` is empty for now, since projects have no configurable types yet. |
+| B3 | `GET /api/v1/projects/form?organizationId=` | `ProjectFormResponse { data: ProjectFormData }`: layout + field definitions of the creation form | **Removed** (`ProjectFormResponse` / `ProjectFormData` schemas deleted) | `GET /api/v1/organizations/{id}/project-types` → `ProjectTypeListResponse { data: ProjectType[], form, fieldConfigs, tableColumns, fields: {fieldId → FieldResource} }`. The form layout is `form`. `data` is empty for now, since projects have no configurable types yet. |
 | B4 | `GET /api/v1/projects/{id}/phases` | **All** phases, unpaginated. Returned the bare body, `meta.total == data.length` | Paginated: `offset` (0), **`limit` (default 10)**, `search`, `sort` (default `orderNumber:asc`; also `identifier`, `title`, `id`), `f.*` filters, `fields` projection | To keep fetching all phases, page through with `meta.total`, or pass a large `limit`. |
 | B5 | `GET /api/v1/recording-units/{id}/children` | **All** direct children, unpaginated, **`meta: null`** | Paginated: `offset` (0), **`limit` (default 200)**, `search`, `sort` (default `creationTime:desc`), `f.*`, `fields`. `meta` is now always populated, plus the `X-Total-Count` header | Clients that assumed `meta == null` or that the list is complete must page. |
 | B6 | `GET /api/v1/projects` — `sort` | The parameter was mis-declared (`name="name:asc"`), so **`sort=` was ignored** and results came back in default order | `sort` is honoured. Default `name:asc`. Allowed: `id, name, identifier, fullIdentifier, beginDate, endDate, creationTime, recordingUnitCount`, and `<fieldId>:asc\|desc`. **An unknown property returns `400`** | Check any `sort` you already send, because it is now applied and validated. |
 | B6b | Sorting on RU lists (`/projects/{id}/recording-units`, `/recording-units/{id}/children`) and on find lists (`/recording-units/{id}/mobiliers`) | Unknown property → silently fell back to `creationTime:desc` | Unknown property → **`400 Champ de tri inconnu`** | Only send documented properties (see §4 "Sorting"). |
 | B7 | `GET /api/context/check` *(internal, see §5)* | `institutionId`, `panelIds` | `panelIds` removed | Stop sending `panelIds`. It is ignored now, not rejected. |
-| S1 | `ValidationStatus` enum | `INCOMPLETE, COMPLETE, VALIDATED` | **+ `CANCELLED`** | Clients that deserialise into a closed enum must accept the new value. `validated` is now also exposed on all entity resources (see A-fields). |
+| B8 | **Error body**, every `/api/v1` error | Three shapes: `{error:"error",message}` (the `error` value was the literal `"error"` except for 401), a legacy `{status,error,message,path,timestamp}`, and the 409 | One body: `{ "error": "<code>", "message": "…", "details"?: [{field,message}], "correlationId"? }`. `error` is a **stable code** to switch on: `bad_request`, `validation_failed`, `unauthorized`, `forbidden`, `not_found`, `method_not_allowed`, `conflict`, `payload_too_large`, `unsupported_media_type`, `internal_error`. `message` is for humans and may change. `details` only on `validation_failed`; `correlationId` only on `internal_error`. The 409 revision conflict is the same two keys plus its `data` (server state). | Read `error`, not `message`. `status`, `path` and `timestamp` are gone (the HTTP status is the status). |
+| B9 | `ResourceRef.resourceType` | `action-units`, `spatial-units` | **`projects`, `places`** (the route names). Closed set: `concepts`, `persons`, `projects`, `places`, `action-codes`, `recording-units`, `finds`, `phases`, `containers`, `documents` | Update the lookup table of reference types. |
+| B10 | Finds sub-collections | `GET /projects/{id}/mobiliers`, `/recording-units/{id}/mobiliers`, `/places/{id}/mobiliers` | **`/finds`** under each | Rename the path segment. |
+| B11 | `validated` on every entity resource, `PATCH` body, DB column | `validated` (a `ValidationStatus`, not a boolean) | **`validationStatus`** (`INCOMPLETE`, `COMPLETE`, `VALIDATED`, `CANCELLED`) on the 7 resources and the 7 patch requests; column `validation_status` (Liquibase `2026.10.09-0`). `status` was not used: a project already has a `status` (a concept). | Rename the property in reads and in `PATCH` bodies. |
+| B12 | Entity keys in paths and request bodies | A project / recording unit / find could also be addressed by `fullIdentifier`, or a project by its short identifier | **The database id only**, as a string. Any other value is a `404`. | Use the `id` of the resource. |
+| B13 | Numeric ids in responses | `AuthUserResponse.id`, `OrganizationSummaryResponse.id`, place autocomplete / suggestion / created `id`, history `author.id` were JSON numbers | **Strings**, like every other id. Requests still accept a number or a string. | Treat all ids as strings. |
+| S1 | `ValidationStatus` enum | `INCOMPLETE, COMPLETE, VALIDATED` | **+ `CANCELLED`** | Clients that deserialise into a closed enum must accept the new value. `validationStatus` is now also exposed on all entity resources (see A-fields). |
 | S2 | `RecordingUnitResource.answers` on **lists** (`/projects/{id}/recording-units`, `/recording-units`, `/phases/{id}/recording-units`, children) | Always present, always `{}` | **Absent** unless `?fields=all\|default\|<id,id,…>` is sent. When present, it holds **raw values** keyed by fieldId, **not** the `FieldAnswer` envelope | Don't rely on the key existing. Ask for `fields=` if you need values. On the **detail** endpoint (`GET /recording-units/{id}`) `answers` is still the `FieldAnswer` envelope, unchanged. |
 | S3 | `FindResource.recordingUnit` | `RecordingUnitResourceIdentifier { resourceType, id }` | `RecordingUnitReference { resourceType, id, fullIdentifier? }` | Additive on the wire (`fullIdentifier` added, omitted when null). Only strict/closed schema validators break. |
 | S4 | `FieldAnswer` polymorphism (`answerType` discriminator) | `TEXT`, `INTEGER`, `DATE`, … | **+ `DECIMAL`** (`DecimalFieldAnswer { answerType, field, value: number \| null }`), **+ `SELECT_MULTIPLE_STRATIGRAPHY`** (a `SelectManyFieldAnswer` whose values carry a `qualifier`) | Handle the new discriminator values. Treat unknown ones as a fallback. |
@@ -80,7 +86,7 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 |---|---|
 | `GET /api/v1/phases/{id}` | `PhaseResponse`. Numeric id. |
 | `POST /api/v1/phases` | Body `PhaseCreateRequest { projectId*, typeId*, title }` → `201 PhaseResponse` |
-| `PATCH /api/v1/phases/{id}` | Body `PhasePatchRequest { validated?, answers? }` |
+| `PATCH /api/v1/phases/{id}` | Body `PhasePatchRequest { validationStatus?, answers? }` |
 | `GET /api/v1/phases/{id}/recording-units` | RUs of a phase. Same contract as the project RU list. |
 | `GET /api/v1/phases/{id}/siblings` | Previous/next, see "Siblings" below |
 | `GET /api/v1/projects/{id}/phase-types` | `ProjectPhaseTypeListResponse` (types + form bundle + identifier config) |
@@ -91,7 +97,7 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 |---|---|
 | `GET /api/v1/containers/{id}` | `ContainerResponse` |
 | `POST /api/v1/containers` | `ContainerCreateRequest { projectId*, typeId* }` → `201`. Requires container edit rights. |
-| `PATCH /api/v1/containers/{id}` | `ContainerPatchRequest { validated?, answers? }` |
+| `PATCH /api/v1/containers/{id}` | `ContainerPatchRequest { validationStatus?, answers? }` |
 | `GET /api/v1/containers/{id}/siblings` | |
 | `GET /api/v1/projects/{id}/containers` | Paginated. Default sort `identifier:asc`. Supports `search`, `f.*`, `fields`. |
 | `GET /api/v1/projects/{id}/container-types` | `ProjectContainerTypeListResponse` |
@@ -143,7 +149,7 @@ Items in these organisation lists carry a `project: ResourceRef` (owning project
 
 | Endpoint | Notes |
 |---|---|
-| `GET /api/v1/organizations/{id}/recording-unit-types` | `OrganizationFieldCatalogResponse { data: [], _default: { fields, tableColumns? }, fields }`. `data` is always empty. `fields` = system fields of the detail form + the union of **active** additional fields of every project of the organisation, for the matching table. `403` if the organisation is out of scope. |
+| `GET /api/v1/organizations/{id}/recording-unit-types` | `OrganizationFieldCatalogResponse { data: [], fields, tableColumns? }`. `data` is always empty. `fields` = system fields of the detail form + the union of **active** additional fields of every project of the organisation, for the matching table. `403` if the organisation is out of scope. |
 | `GET /api/v1/organizations/{id}/find-types` | Same, for finds |
 | `GET /api/v1/organizations/{id}/phase-types` | Same, for phases |
 | `GET /api/v1/organizations/{id}/container-types` | Same, for containers |
@@ -163,11 +169,21 @@ The `fields` ids returned here are the ones accepted by `fields=`, `sort=<fieldI
 
 **Siblings contract** (every `…/siblings` endpoint): `{ data: { previous: { id, label, resourceUri } | null, next: … | null } }`. The list wraps around, so the next of the last item is the first. A value is `null` only when there is no other item.
 
-**Documents.** A document is now a full entity (identifier, mandatory project, national common-base fields, links to UE / finds / places / phases / containers). New: `GET /api/v1/documents/{id}`, `GET /api/v1/documents/{id}/siblings`, `POST /api/v1/documents` (JSON: `projectId`, `categoryId`, `title`), `GET /api/v1/{projects|organizations}/{id}/document-types`. `PATCH /api/v1/documents/{id}` keeps its flat mobile body (`title`, `description`, `natureConceptId`, `scaleConceptId`, `formatConceptId`) and also takes `answers` / `validated` like the other entities; as soon as either is present the flat fields are ignored. `DELETE` and `PATCH` now require the document edit right on the document's project (`403` otherwise, it used to be any member of the organisation). `GET /api/v1/projects/{id}/documents` is unchanged without `limit` (every document, unpaged); with `limit` it is a paged list (`offset`, `sort`, `search`, `f.*`, `fields`). `DocumentResource` gains `identifier`, `label`, `projectId`, `type` (the category), `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validated`, all omitted when empty.
+**Documents.** A document is now a full entity (identifier, mandatory project, national common-base fields, links to UE / finds / places / phases / containers). New: `GET /api/v1/documents/{id}`, `GET /api/v1/documents/{id}/siblings`, `POST /api/v1/documents` (JSON: `projectId`, `categoryId`, `title`), `GET /api/v1/{projects|organizations}/{id}/document-types`. `PATCH /api/v1/documents/{id}` keeps its flat mobile body (`title`, `description`, `natureConceptId`, `scaleConceptId`, `formatConceptId`) and also takes `answers` / `validationStatus` like the other entities; as soon as either is present the flat fields are ignored. `DELETE` and `PATCH` now require the document edit right on the document's project (`403` otherwise, it used to be any member of the organisation). `GET /api/v1/projects/{id}/documents` is unchanged without `limit` (every document, unpaged); with `limit` it is a paged list (`offset`, `sort`, `search`, `f.*`, `fields`). `DocumentResource` gains `identifier`, `label`, `projectId`, `type` (the category), `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validationStatus`, all omitted when empty.
 
 **Document file.** New: `PUT /api/v1/documents/{id}/file` (multipart `file`; replaces the stored file, fills `sizeMb` and, when empty, `format`; `400` on a refused type or size, `403` without the edit right) and `DELETE /api/v1/documents/{id}/file` (the document and its external URL stay); both answer the document. `GET /api/v1/documents/{id}/file` takes `?download=true` (`attachment` instead of `inline`), serves the file under its own name rather than its storage code, and answers `404` for a document with no file. The form's new `FILE` field (id `-728`) is read-only in `answers`: `{fileName, mimeType, size}`, never written by a PATCH. The external URL (`-722`) must start with `http://` or `https://` (`400` otherwise). The `/content/...` URL of a stored file now follows the configured context path instead of a hard-coded `/siamois`.
 
 **Documents tab of the other fiches.** New: `GET /api/v1/{finds|phases|containers|places}/{id}/documents` (paged: `offset`, `limit`, `sort` among `identifier`, `title`, `creationTime`, `id`, `search`, `f.*`, `fields`; each row carries `_permissions`, `resourceUri`, `bookmarked`) and `PUT` / `DELETE /api/v1/{recording-units|finds|phases|containers|places}/{id}/documents/{documentId}` (idempotent, `204`; `400` when the document and the entity are in different projects, `403` without the document edit right on the document's project; a place has no project, so any document of the organization can be linked to it). `GET /api/v1/recording-units/{id}/documents` is unchanged without `limit` (every document, unpaged, for the mobile); with `limit` it is the same paged list. `POST /api/v1/documents` accepts optional `recordingUnitIds`, `findIds`, `placeIds`, `phaseIds`, `containerIds` to create the document already linked (each entity must be in the document's project; `400` otherwise). The detail resources of finds, phases and containers gain `_counts.documents`; places' `_counts` gains `documents`; recording units' `_counts.documents` is filled when the detail is asked with `counts=documents`.
+
+**Type catalogues.** `GET /projects/{id}/{recording-unit|find|phase|document|container}-types` and `GET /organizations/{id}/project-types` return the configuration of a project's types in one call. `data[i]` is one type (its concept, its `form` layout and the `fields` it uses, each `FieldResource` carrying its `vocabulary`, `constraints`, `rules`…); the root `fields` is the union of the fields of every type (the last type wins on a shared field id: read `vocabulary` and `rules` from the type's own `fields`); `tableColumns` gives the default columns of the list. The project catalogue has one form, so its `form`, `fieldConfigs`, `tableColumns` and `fields` sit at the root and `data` is empty. The organisation catalogues (`/organizations/{id}/…-types`) have an empty `data` and only the root `fields` and `tableColumns`.
+
+**External place suggestions.** New: `GET /api/v1/places/suggestions` (`organizationId`, `fieldId` required; `projectId`, `typeId`, `q`, `limit` default 20; `dep.<fieldId>=<placeId>` to narrow a source by the place picked in another field). It returns the organisation's places whose name contains `q`, then the suggestions of the sources the field's configuration enables (`INSEE` communes, `GEOPLAT` addresses). The client never picks the sources. Each item is `{ id, name, code, source, concept, address }`: `id` is set for a place of the organisation and `null` for an external suggestion; `unnarrowedSources` lists the sources queried without their narrowing filter. New: `POST /api/v1/places/from-suggestion` (`{ organizationId, projectId?, source, name, code?, address? }` → `200 PlaceCreatedResponse`). It creates the place of an external suggestion, or returns the existing one (same code and type, else same name), so it is idempotent. `403` without the edit right on `projectId` (or the right to create projects in the organisation when `projectId` is absent).
+
+**Vocabulary of a field.** `GET /api/v1/organizations/{id}/concepts?fieldId=&projectId=&valueConceptId=` is the one way to list the concepts of a field: the backend resolves the list (restriction of the field to a branch or a collection, else the field code, then the follow / frozen state), so a client never has to know where it comes from. `FieldResource.vocabulary` (see below) says where it comes from, for offline use.
+
+| Where | New |
+|---|---|
+| `FieldResource.vocabulary` | `{ source: { kind: FIELD_CODE\|BRANCH\|COLLECTION, fieldCode?, topTermConceptId?, collectionId? }, mode: FOLLOW\|FROZEN, excludedConceptIds?: string[] (FOLLOW), concepts?: [{ id, state: ENABLED\|DISABLED\|PENDING }] (FROZEN) }`. Set in the `fields` nested in each type, **never** in the root `fields` catalogue (a field can differ from one type to another there); `null` for a field that is not a vocabulary field. Today every field is `FOLLOW` with no exclusion. |
 
 ### 3.2 New query parameters on existing endpoints
 
@@ -202,8 +218,9 @@ When present, `answers` holds raw values keyed by fieldId.
 
 | Request | New field |
 |---|---|
-| `ProjectPatchRequest` | `validated: ValidationStatus`; `answers: { [fieldId]: { value } \| { values } }` merged after the flat fields. A missing key leaves the value untouched; `value: null` and `values: []` clear it; `values: null` leaves it untouched. |
-| `RecordingUnitPatchRequest`, `PlacePatchRequest`, `FindPatchRequest` | `validated: ValidationStatus`. Absent means unchanged. `INCOMPLETE`/`COMPLETE`/`CANCELLED` need the edit right. Reaching **or leaving** `VALIDATED` needs the validator right (`_permissions.canValidate`), otherwise `403`. |
+| `ProjectPatchRequest` | `validationStatus: ValidationStatus`; `answers: { [fieldId]: { value } \| { values } }` merged after the flat fields. A missing key leaves the value untouched; `value: null` and `values: []` clear it; `values: null` leaves it untouched. |
+| `RecordingUnitPatchRequest`, `PlacePatchRequest`, `FindPatchRequest` | `validationStatus: ValidationStatus`. Absent means unchanged. `INCOMPLETE`/`COMPLETE`/`CANCELLED` need the edit right. Reaching **or leaving** `VALIDATED` needs the validator right (`_permissions.canValidate`), otherwise `403`. |
+| `FindPatchRequest`, `PhasePatchRequest`, `ContainerPatchRequest`, `DocumentPatchRequest` | `identifier: string`: the new complete identifier (free text, unique in the project). Absent means unchanged. (`RecordingUnitPatchRequest` already had it.) |
 | `AnswerInput` (every `answers` map: project, RU, find, phase and container PATCH) | `add`, `remove`: ids to add to / remove from a multi-valued field, leaving every other value alone (an id already there, or not there, is ignored). Cannot be combined with `values` (`400`); a scalar field rejects them (`400`). The only safe write after reading an incomplete answer. |
 | `RecordingUnitCreateRequest` | `parentRecordingUnitId`, `childRecordingUnitId`: link the new RU as child/parent of an existing RU in the same project |
 | `PlaceCreateRequest` | `parentPlaceId`, `childPlaceId`: same idea, within the same organisation |
@@ -214,20 +231,20 @@ All of these are additive. Nullable fields are omitted when `null` wherever mark
 
 | Resource | New fields |
 |---|---|
-| `ProjectResource` | `validated`, `_permissions`, `bookmarked`, `resourceUri` (e.g. `/action-unit/42`), `answers` (only with `fields=`) |
+| `ProjectResource` | `validationStatus`, `_permissions`, `bookmarked`, `resourceUri` (e.g. `/action-unit/42`), `answers` (only with `fields=`) |
 | `ProjectResourceCounts` | `finds`, `phases`, `containers`, `documents` |
 | `ProjectResourceLinks` | `finds`, `phases`, `containers` (URLs) |
-| `RecordingUnitResource` | `organization { resourceType, id }`, `project` (org lists only), `_permissions`, `resourceUri`, `bookmarked`, `validated` |
+| `RecordingUnitResource` | `organization { resourceType, id }`, `project` (org lists only), `_permissions`, `resourceUri`, `bookmarked`, `validationStatus` |
 | `RecordingUnitResourceCounts` | `relationships` |
-| `FindResource` | `projectId`, `project` (org lists only), `_permissions`, `resourceUri`, `bookmarked`, `validated`, `recordingUnit.fullIdentifier`. `answers` is the envelope on detail and raw values on lists. |
-| `PhaseResource` | `projectId`, `project`, `organization`, `type`, `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validated` (existing `id`, `identifier`, `title`, `label` unchanged) |
-| `PlaceResource` | `answers`, `formBundle`, `fields`, `_permissions` (detail only), `resourceUri`, `bookmarked`, `validated` |
+| `FindResource` | `projectId`, `project` (org lists only), `_permissions`, `resourceUri`, `bookmarked`, `validationStatus`, `recordingUnit.fullIdentifier`. `answers` is the envelope on detail and raw values on lists. |
+| `PhaseResource` | `projectId`, `project`, `organization`, `type`, `answers`, `_permissions`, `resourceUri`, `bookmarked`, `validationStatus` (existing `id`, `identifier`, `title`, `label` unchanged) |
+| `PlaceResource` | `answers`, `formBundle`, `fields`, `_permissions` (detail only), `resourceUri`, `bookmarked`, `validationStatus` |
 | `OrganizationResource` | `_permissions { canCreateProjects }` |
 | `FieldResource` | `isTextArea`, `icon`, `conceptUri`, `constraints { min, max, showTime, unit }`, `query { sortable, filterOp }`, `readOnly` |
 | `ResourceRef` | `href`: the referenced resource's detail URL (`/api/v1/recording-units/12`), absent for a type with no detail endpoint (persons, action codes). `qualifier` (stratigraphic relationships only): `{ concept: ResourceRef, role: unit1\|unit2, position: anterior\|posterior\|synchronous, conceptDirection, asynchronous, uncertain }` |
 | New system fields | RU: **`-326` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`, binding `specimenList`), **`-327` Relations stratigraphiques** (`SELECT_MULTIPLE_STRATIGRAPHY`). Phase: **`-511` Unités d'enregistrement** (`SELECT_MULTIPLE_RECORDING_UNIT`). Container: **`-609` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`). All read-only (`FieldResource.readOnly`), sortable by number of values and filterable (`in`). The RU parents (`-319`) and children (`-320`) are now projected on lists too (preview + total) and are default columns, as are `-326` and `-327`. |
-| `RecordingUnitDefaultType` (`/projects/{id}/recording-unit-types` → `_default`) | `tableColumns: [{ columnId, fieldId, visible, order }]` |
-| `ProjectRecordingUnitTypeListResponse` | `fields`: merged field catalogue across `_default` and every type |
+| `ProjectRecordingUnitTypeListResponse` (`/projects/{id}/recording-unit-types`) | `tableColumns: [{ columnId, fieldId, visible, order }]`, at the root |
+| `ProjectRecordingUnitTypeListResponse` | `fields`: merged field catalogue across every type |
 
 `_permissions` (shared `ProjectResourcePermissions`):
 - `canEdit`, `canDelete`: always present.
@@ -277,7 +294,7 @@ GET /api/v1/places?organizationId=10&offset=0&limit=50&sort=name:asc      # now
 
 # B3 — project creation form
 GET /api/v1/projects/form?organizationId=10                               # main (now 404)
-GET /api/v1/organizations/10/project-types                                # now → _default.form.layoutJson + fields
+GET /api/v1/organizations/10/project-types                                # now → form.layoutJson + fieldConfigs + fields
 
 # B4/B5 — lists that used to return everything
 GET /api/v1/projects/OA-2024/phases                                       # main: all phases; now: first 10
@@ -292,7 +309,7 @@ GET /api/v1/projects/OA-2024/recording-units?f.42.from=2024-01-01&f.42.to=2024-1
 
 ```jsonc
 // PATCH /api/v1/recording-units/123 — validation status (needs _permissions.canValidate for VALIDATED)
-{ "validated": "COMPLETE" }
+{ "validationStatus": "COMPLETE" }
 
 // PATCH /api/v1/projects/OA-2024 — flat fields and form answers together
 { "name": "Fouille 2024", "answers": { "42": { "value": "2024-06-01" }, "17": { "values": ["5", "7"] } } }
@@ -338,3 +355,34 @@ For clients that read the first version of this document.
 - Sorting or filtering on an additional field is a correlated sub-query per row: measured at about 460 ms for 300 000 recording units. Fine today, to be re-measured at 10× that volume.
 - `offset` must still be a multiple of `limit`.
 - A fixed cost of about 430 table scans per page is not yet analysed (only matters if latency becomes an issue).
+
+## 8. Closed sets of v1 (2026-10-09)
+
+These enums are closed in v1: a value is never added or removed without a new major version, so a client may use an exhaustive `switch`.
+`FieldResource.answerType` (the `FieldAnswer` discriminator), `ResourceRef.resourceType`, `ValidationStatus`, `FieldResource.Vocabulary.mode`
+(`FOLLOW`, `FROZEN`), `Source.kind` (`FIELD_CODE`, `BRANCH`, `COLLECTION`), `ConceptStateEntry.state` (`ENABLED`, `DISABLED`, `PENDING`) and the `error` codes of B8.
+New fields on a response, new optional request fields, new endpoints and new query parameters stay additive.
+
+## 9. What changed since 2026-10-02 (2026-10-02 → 2026-10-09)
+
+For clients that read the 2026-10-01 version of this document. B8–B13 are in §2.
+
+**Breaking**
+- B8 error body, B9 `resourceType`, B10 `/finds` paths, B11 `validationStatus`, B12 database id only, B13 string ids (all §2).
+- `ValidationStatus`, `answerType`, `resourceType`, `vocabulary.mode`, `Source.kind`, `ConceptStateEntry.state` and the `error` codes are closed sets (§8).
+
+**Added**
+- `GET /places/suggestions` and `POST /places/from-suggestion` (§3.1).
+- `FieldResource.vocabulary` (§3.1).
+- `identifier` on the find, phase, container and document `PATCH` (§3.3).
+
+**Deprecated, still working.** The first three send `Deprecation: true` and a `Link: <…>; rel="successor-version"` header; the last three are marked `deprecated` in the OpenAPI only. No `Sunset` yet: the removal date is to be agreed with the clients still calling them.
+
+| Endpoint | Use instead |
+|---|---|
+| `GET /projects/{id}/concepts?fieldCode=` | `GET /organizations/{id}/concepts?fieldId=` |
+| `GET /organizations/{id}/concepts?fieldCode=` | `GET /organizations/{id}/concepts?fieldId=` |
+| `GET /projects/{id}/field-codes` | `GET /projects/{id}/recording-unit-types` (and the other `…-types`): each field says where its vocabulary comes from |
+| `GET /vocabularies`, `GET /organizations/{id}/vocabularies` | the type catalogues (`…-types`, `fields[<fieldId>].vocabulary`) and `GET /organizations/{id}/concepts?fieldId=` |
+| `GET /finds/form` | `GET /projects/{id}/find-types` |
+| `GET /recording-units/creation-form` | `GET /projects/{id}/recording-unit-types` |

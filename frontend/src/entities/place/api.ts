@@ -77,10 +77,10 @@ export interface PlaceCreateBody {
 }
 
 interface PlaceCreatedResponseBody {
-  data: { id: number; name: string; code?: string | null };
+  data: { id: string; name: string; code?: string | null };
 }
 
-export async function createPlace(body: PlaceCreateBody): Promise<{ id: number }> {
+export async function createPlace(body: PlaceCreateBody): Promise<{ id: string }> {
   const response = await apiFetch<PlaceCreatedResponseBody>("/api/v1/places", {
     method: "POST",
     body: {
@@ -95,7 +95,7 @@ export async function createPlace(body: PlaceCreateBody): Promise<{ id: number }
 }
 
 // POST /api/v1/places/{id}/duplicate — same fields and parents, named "name (n)".
-export async function duplicatePlace(id: string | number): Promise<{ id: number }> {
+export async function duplicatePlace(id: string | number): Promise<{ id: string }> {
   const response = await apiFetch<PlaceCreatedResponseBody>(`/api/v1/places/${id}/duplicate`, { method: "POST" });
   return response.data;
 }

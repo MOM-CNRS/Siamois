@@ -95,16 +95,16 @@ describe("ValidationStatusButton", () => {
     });
     await flush();
 
-    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/phases/3", { method: "PATCH", body: { validated: "VALIDATED" } });
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/phases/3", { method: "PATCH", body: { validationStatus: "VALIDATED" } });
   });
 
   it("writes the new status into the cached rows and fiche instead of refetching them", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const listKey = ["entity-list", "phase", { offset: 0, limit: 50 }];
     const otherTypeKey = ["entity-list", "project", { offset: 0, limit: 50 }];
-    queryClient.setQueryData(listKey, { data: [{ id: "3", validated: "COMPLETE" }, { id: "4", validated: "COMPLETE" }], totalCount: 2 });
-    queryClient.setQueryData(otherTypeKey, { data: [{ id: "3", validated: "COMPLETE" }], totalCount: 1 });
-    queryClient.setQueryData(["entity-detail", "phase", 3], { id: "3", name: "P", validated: "COMPLETE" });
+    queryClient.setQueryData(listKey, { data: [{ id: "3", validationStatus: "COMPLETE" }, { id: "4", validationStatus: "COMPLETE" }], totalCount: 2 });
+    queryClient.setQueryData(otherTypeKey, { data: [{ id: "3", validationStatus: "COMPLETE" }], totalCount: 1 });
+    queryClient.setQueryData(["entity-detail", "phase", 3], { id: "3", name: "P", validationStatus: "COMPLETE" });
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
 
     render({ status: "COMPLETE", canEdit: true, canValidate: false }, queryClient);
@@ -115,12 +115,12 @@ describe("ValidationStatusButton", () => {
     await flush();
 
     expect(queryClient.getQueryData(listKey)).toEqual({
-      data: [{ id: "3", validated: "CANCELLED" }, { id: "4", validated: "COMPLETE" }],
+      data: [{ id: "3", validationStatus: "CANCELLED" }, { id: "4", validationStatus: "COMPLETE" }],
       totalCount: 2,
     });
     // Same id, another entity type: untouched.
-    expect(queryClient.getQueryData(otherTypeKey)).toEqual({ data: [{ id: "3", validated: "COMPLETE" }], totalCount: 1 });
-    expect(queryClient.getQueryData(["entity-detail", "phase", 3])).toEqual({ id: "3", name: "P", validated: "CANCELLED" });
+    expect(queryClient.getQueryData(otherTypeKey)).toEqual({ data: [{ id: "3", validationStatus: "COMPLETE" }], totalCount: 1 });
+    expect(queryClient.getQueryData(["entity-detail", "phase", 3])).toEqual({ id: "3", name: "P", validationStatus: "CANCELLED" });
     expect(invalidate).not.toHaveBeenCalled();
   });
 

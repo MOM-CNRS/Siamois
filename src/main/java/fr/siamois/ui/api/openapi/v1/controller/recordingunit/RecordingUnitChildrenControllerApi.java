@@ -101,7 +101,7 @@ public class RecordingUnitChildrenControllerApi {
     public ResponseEntity<Void> addExistingChild(
             @Parameter(
                     description = "Clé d'UE parente : identifiant numérique (recording_unit_id) ou full_identifier.",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @RequestBody RecordingUnitHierarchyLinkRequest body) {
@@ -132,7 +132,7 @@ public class RecordingUnitChildrenControllerApi {
     public ResponseEntity<Void> removeExistingChild(
             @Parameter(
                     description = "Clé d'UE parente : identifiant numérique (recording_unit_id) ou full_identifier.",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @Parameter(description = "Identifiant numérique recording_unit_id de l'UE enfant à délier.", example = "88")

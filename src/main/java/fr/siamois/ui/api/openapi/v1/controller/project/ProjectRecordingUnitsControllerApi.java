@@ -46,7 +46,7 @@ public class ProjectRecordingUnitsControllerApi {
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un projet",
-            description = "Clé de projet : identique à GET /api/v1/projects/{id} (id numérique, fullIdentifier, identifiant court). "
+            description = "Projet : son identifiant (action_unit_id), comme GET /api/v1/projects/{id}. "
                     + "Tri : paramètre sort au format « propriété:asc » ou « propriété:desc » "
                     + "(propriétés autorisées : creationTime, id, identifier, fullIdentifier, openingDate, closingDate, "
                     + "plus les colonnes de RecordingUnitTableColumnDefaults et leurs tris synthétiques — "

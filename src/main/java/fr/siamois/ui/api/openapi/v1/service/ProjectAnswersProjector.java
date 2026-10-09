@@ -55,7 +55,7 @@ public class ProjectAnswersProjector {
     public static final String FIELDS_DEFAULT = "default";
 
     private static final String CONCEPTS = "concepts";
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String SPATIAL_UNITS = "places";
 
     /**
      * Champs du formulaire de détail projet, indexés par id sous forme de chaîne. Le formulaire est une

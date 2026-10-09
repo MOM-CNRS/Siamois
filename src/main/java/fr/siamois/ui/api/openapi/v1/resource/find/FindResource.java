@@ -48,7 +48,7 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
     // Two shapes share this one field, by endpoint — same convention as
     // RecordingUnitResource.answers: the detail (buildFindMobilierForm) sets it to a
     // Map<String, FieldAnswer> (each entry embeds its own field definition), the list
-    // (GET /api/v1/projects/{id}/mobiliers) would set raw values instead. fields/types.ts's
+    // (GET /api/v1/projects/{id}/finds) would set raw values instead. fields/types.ts's
     // unwrapAnswer already handles both on the client.
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Valeurs des champs formulaire, indexées par fieldId. Sur le détail, chaque "
@@ -71,6 +71,6 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
     private boolean bookmarked;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
 }

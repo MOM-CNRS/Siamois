@@ -372,7 +372,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "spatial-units" ? placeItem : undefined}
+        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (asTokens && !multiple) {

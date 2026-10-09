@@ -356,7 +356,7 @@ class DocumentOpenApiServiceTest {
         verify(documentService, never()).save(any(DocumentDTO.class));
     }
 
-    // `validated` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
+    // `validationStatus` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
     // right covers validé — alone, a validator without the edit right may change the status only.
     @Test
     void patchDocument_validatorWithoutEditRight_mayChangeOnlyTheStatus() {
@@ -369,7 +369,7 @@ class DocumentOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
 
         DocumentPatchRequest statusOnly = new DocumentPatchRequest();
-        statusOnly.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        statusOnly.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         service.patchDocument(5L, statusOnly, personDto, Set.of(10L), "fr");
 
         verify(validationStatusService).setStatus(fr.siamois.domain.models.document.Document.class, 5L,
@@ -377,7 +377,7 @@ class DocumentOpenApiServiceTest {
         verify(documentService, never()).save(any(DocumentDTO.class));
 
         DocumentPatchRequest withAnswers = new DocumentPatchRequest();
-        withAnswers.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        withAnswers.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         withAnswers.setAnswers(Map.of("-503", new AnswerInput("Titre", null)));
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, withAnswers, personDto, arg4, "fr"))
@@ -394,7 +394,7 @@ class DocumentOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(false);
 
         DocumentPatchRequest req = new DocumentPatchRequest();
-        req.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        req.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
 
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, req, personDto, arg4, "fr"))

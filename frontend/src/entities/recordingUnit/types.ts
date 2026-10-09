@@ -28,8 +28,8 @@ export interface RecordingUnitResource {
   // Navigation/bookmark URI ("/recording-unit/42") and the caller's bookmark flag.
   resourceUri?: string | null;
   bookmarked?: boolean;
-  // TraceableEntity.validated — "en cours", "terminé", "validé", "annulé".
-  validated?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
+  // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
+  validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   projectId?: string | null;
   // Organization-wide list only — see ProjectRef.
   project?: ProjectRef | null;

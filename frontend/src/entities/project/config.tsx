@@ -106,14 +106,13 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       // Migration plan lot 1 ("Mobilier") — no JSF equivalent tab exists on the project fiche
       // today (SpecimenLazyDataModel scoped to the action unit is built in
       // ActionUnitPanel.init() but never wired to a tab there), so this is new functionality,
-      // not a migration. `path: "mobiliers"` because the REST segment
-      // (GET /api/v1/projects/{id}/mobiliers) differs from Find's own collectionPath ("finds").
+      // not a migration. The REST segment is GET /api/v1/projects/{id}/finds.
       relationTab<ProjectDetail>({
         key: "finds",
         label: t("entity.find.plural"),
         target: "find",
         scopeEntityType: "project",
-        path: "mobiliers",
+        path: "finds",
         badge: (entity) => entity._counts?.finds ?? 0,
       }),
       // Migration plan lot 4 ("Lieux") — deliberately NOT a relationTab: there is no

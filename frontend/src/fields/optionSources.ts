@@ -98,7 +98,7 @@ export async function fetchConceptOptions(
 }
 
 interface PlaceAutocompleteResponseBody {
-  data: { id: number; name: string; code?: string | null }[];
+  data: { id: string; name: string; code?: string | null }[];
 }
 
 /**
@@ -115,7 +115,7 @@ export async function fetchPlaceOptions(organizationId: number, q?: string): Pro
 interface PlaceSuggestionsResponseBody {
   unnarrowedSources?: string[];
   data: {
-    id: number | null;
+    id: string | null;
     name: string;
     code?: string | null;
     source: string;
@@ -177,7 +177,7 @@ export async function createPlaceFromSuggestion(
 ): Promise<FilterOption> {
   const place = option.place;
   if (!place?.external) return option;
-  const body = await apiFetch<{ data: { id: number; name: string } }>("/api/v1/places/from-suggestion", {
+  const body = await apiFetch<{ data: { id: string; name: string } }>("/api/v1/places/from-suggestion", {
     method: "POST",
     body: {
       organizationId,
@@ -212,9 +212,9 @@ export interface ReferenceTarget {
 }
 
 const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: ReferenceTarget][] = [
-  [(t) => t.includes("SPATIAL_UNIT"), { resourceType: "spatial-units", entityType: "place", createEntityType: "place" }],
+  [(t) => t.includes("SPATIAL_UNIT"), { resourceType: "places", entityType: "place", createEntityType: "place" }],
   [(t) => t.endsWith("_PERSON"), { resourceType: "persons" }],
-  [(t) => t.endsWith("_ACTION_UNIT"), { resourceType: "action-units", entityType: "project" }],
+  [(t) => t.endsWith("_ACTION_UNIT"), { resourceType: "projects", entityType: "project" }],
   [(t) => t.endsWith("_RECORDING_UNIT"), { resourceType: "recording-units", entityType: "recordingUnit", createEntityType: "recordingUnit" }],
   [(t) => t.endsWith("_SPECIMEN"), { resourceType: "finds", entityType: "find", createEntityType: "find" }],
   [(t) => t.endsWith("_CONTAINER"), { resourceType: "containers", entityType: "container", createEntityType: "container" }],
@@ -317,7 +317,7 @@ async function fetchEntityOptions(
 
 const ENTITY_SEGMENTS: Record<string, { projectPath: string; orgPath: string }> = {
   "recording-units": { projectPath: "recording-units", orgPath: "recording-units" },
-  finds: { projectPath: "mobiliers", orgPath: "finds" },
+  finds: { projectPath: "finds", orgPath: "finds" },
   phases: { projectPath: "phases", orgPath: "phases" },
   containers: { projectPath: "containers", orgPath: "containers" },
   documents: { projectPath: "documents", orgPath: "documents" },

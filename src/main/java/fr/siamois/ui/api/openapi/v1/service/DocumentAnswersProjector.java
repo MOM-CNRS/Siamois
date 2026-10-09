@@ -246,11 +246,11 @@ public class DocumentAnswersProjector {
         }
         if (item instanceof PersonDTO p) return ref(p.getId(), "persons", p.displayName());
         if (item instanceof ActionUnitSummaryDTO a) {
-            return ref(a.getId(), "action-units", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
+            return ref(a.getId(), "projects", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
         }
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof SpecimenSummaryDTO sp) return ref(sp.getId(), "finds", sp.getFullIdentifier());
-        if (item instanceof SpatialUnitSummaryDTO su) return ref(su.getId(), "spatial-units", su.getName());
+        if (item instanceof SpatialUnitSummaryDTO su) return ref(su.getId(), "places", su.getName());
         if (item instanceof ContainerDTO c) return ref(c.getId(), "containers", c.getIdentifier());
         if (item instanceof PhaseDTO p) {
             String label = p.getTitle() != null && !p.getTitle().isBlank() ? p.getTitle() : p.getIdentifier();

@@ -62,7 +62,7 @@ public class PlaceResource extends PlaceResourceIdentifier implements Bookmarkab
     private boolean bookmarked;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @JsonProperty("_counts")
     private PlaceResourceCounts count;

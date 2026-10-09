@@ -115,10 +115,10 @@ class DocumentAnswersProjectorTest {
 
         assertThat(((List<ResourceRef>) answers.get(idOf("authors"))))
                 .extracting(ResourceRef::resourceType).containsExactly("persons");
-        assertThat(answers).containsEntry(idOf("actionUnit"), new ResourceRef("4", "action-units", "OA-4"));
+        assertThat(answers).containsEntry(idOf("actionUnit"), new ResourceRef("4", "projects", "OA-4"));
         assertThat((List<ResourceRef>) answers.get(idOf("recordingUnits"))).containsExactly(new ResourceRef("6", "recording-units", "UE-6"));
         assertThat((List<ResourceRef>) answers.get(idOf("finds"))).containsExactly(new ResourceRef("7", "finds", "M-7"));
-        assertThat((List<ResourceRef>) answers.get(idOf("places"))).containsExactly(new ResourceRef("8", "spatial-units", "Chantier"));
+        assertThat((List<ResourceRef>) answers.get(idOf("places"))).containsExactly(new ResourceRef("8", "places", "Chantier"));
         assertThat((List<ResourceRef>) answers.get(idOf("phases"))).containsExactly(new ResourceRef("11", "phases", "Bronze ancien"));
         assertThat((List<ResourceRef>) answers.get(idOf("containers"))).containsExactly(new ResourceRef("12", "containers", "C-12"));
     }

@@ -280,7 +280,7 @@ public class SpatialUnitService implements ArkEntityService {
             }
 
             managedSpatialUnit.setName(spatialUnit.getName());
-            managedSpatialUnit.setValidated(spatialUnit.getValidated());
+            managedSpatialUnit.setValidationStatus(spatialUnit.getValidationStatus());
             managedSpatialUnit.setArk(spatialUnit.getArk());
             managedSpatialUnit.setCreatedBy(spatialUnit.getCreatedBy());
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
@@ -503,7 +503,7 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit unit = spatialUnitRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("SpatialUnit not found with id: " + id));
 
-        unit.setValidated(unit.getValidated().nextInCycle());
+        unit.setValidationStatus(unit.getValidationStatus().nextInCycle());
 
         return spatialUnitMapper.convert(spatialUnitRepository.save(unit));
     }

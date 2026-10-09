@@ -106,7 +106,7 @@ class ProjectAnswersProjectorTest {
 
         assertThat(answers).containsEntry(fieldId(ActionUnitForm.STATUS_FIELD), new ResourceRef("7", "concepts", "En cours"))
                 .containsEntry(fieldId(ActionUnitForm.PERIODS_FIELD), List.of(new ResourceRef("8", "concepts", "Néolithique")))
-                .containsEntry(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD), new ResourceRef("9", "spatial-units", "Lyon"));
+                .containsEntry(fieldId(ActionUnitForm.MAIN_LOCATION_FIELD), new ResourceRef("9", "places", "Lyon"));
     }
 
     /**

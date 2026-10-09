@@ -11,8 +11,9 @@ public record ResourceRef(
         @Schema(description = "Identifiant de l'entité référencée", example = "42")
         String resourceId,
 
-        @Schema(description = "Type de l'entité, nom de sa collection d'API : concepts | persons | action-units | "
-                + "spatial-units | action-codes | recording-units | finds | phases | containers",
+        @Schema(description = "Type de l'entité, nom de sa collection d'API (ensemble fermé en v1)",
+                allowableValues = {"concepts", "persons", "projects", "places", "action-codes", "recording-units",
+                        "finds", "phases", "containers", "documents"},
                 example = "recording-units")
         String resourceType,
 
@@ -35,8 +36,8 @@ public record ResourceRef(
     /** The API collection serving each resourceType's detail, when it isn't the resourceType itself. */
     private static final Map<String, String> DETAIL_COLLECTIONS = Map.of(
             "concepts", "concepts",
-            "action-units", "projects",
-            "spatial-units", "places",
+            "projects", "projects",
+            "places", "places",
             "recording-units", "recording-units",
             "finds", "finds",
             "phases", "phases",

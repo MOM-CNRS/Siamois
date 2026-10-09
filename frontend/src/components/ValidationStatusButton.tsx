@@ -43,7 +43,7 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
     onSuccess: (_, target) => {
       overlayRef.current?.hide();
       // The new state is known: written into the cached rows and fiche, no refetch for one property.
-      patchCachedEntity(queryClient, entityType, entityId, { validated: target });
+      patchCachedEntity(queryClient, entityType, entityId, { validationStatus: target });
     },
   });
 

@@ -22,7 +22,7 @@ public class PlaceOpenApiMapper {
         }
         PlaceResource resource = new PlaceResource();
         resource.setResourceType("places");
-        resource.setValidated(dto.getValidated());
+        resource.setValidationStatus(dto.getValidationStatus());
         if (dto.getId() != null) {
             resource.setId(String.valueOf(dto.getId()));
         }

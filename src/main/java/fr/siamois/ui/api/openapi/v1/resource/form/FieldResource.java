@@ -17,7 +17,14 @@ public record FieldResource(
         @Schema(description = "Libellé affichable, résolu selon Accept-Language")
         String label,
 
-        @Schema(description = "Type de réponse (SELECT_ONE_FROM_FIELD_CODE, TEXT, DATE, INTEGER, ...)")
+        @Schema(description = "Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer",
+                allowableValues = {"TEXT", "INTEGER", "DECIMAL", "DATETIME", "MEASUREMENT",
+                        "SELECT_ONE", "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
+                        "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT", "SELECT_ADDRESS",
+                        "SELECT_MULTIPLE", "SELECT_MULTIPLE_FROM_FIELD_CODE", "SELECT_MULTIPLE_PERSON",
+                        "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT",
+                        "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
+                        "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE_STRATIGRAPHY"})
         String answerType,
 
         @Schema(description = "Texte d'aide, résolu selon Accept-Language")

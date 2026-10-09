@@ -135,12 +135,12 @@ public class PhaseOpenApiService {
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, phase.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(phase.getValidated(), request.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(phase.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(phase.getValidated(), request.getValidated(), canEdit, canValidate);
+        validationOpenApiService.requireAllowed(phase.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (identifierChange) {
             phase.setIdentifier(newIdentifier);
@@ -158,7 +158,7 @@ public class PhaseOpenApiService {
             });
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidated(), personDto);
+        validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidationStatus(), personDto);
         return loadPhase(id, personDto, accessibleInstitutionIds, lang);
     }
 

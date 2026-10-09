@@ -154,12 +154,12 @@ public class DocumentOpenApiService {
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, document.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(document.getValidated(), request.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(document.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(document.getValidated(), request.getValidated(), canEdit, canValidate);
+        validationOpenApiService.requireAllowed(document.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (identifierChange) {
             document.setIdentifier(newIdentifier);
@@ -178,7 +178,7 @@ public class DocumentOpenApiService {
             });
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(Document.class, id, request.getValidated(), personDto);
+        validationOpenApiService.apply(Document.class, id, request.getValidationStatus(), personDto);
         return loadDocument(id, personDto, accessibleInstitutionIds, lang);
     }
 

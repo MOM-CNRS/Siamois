@@ -452,7 +452,7 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnit actionUnit = actionUnitRepository.findById(actionUnitId)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + actionUnitId));
 
-        actionUnit.setValidated(actionUnit.getValidated().nextInCycle());
+        actionUnit.setValidationStatus(actionUnit.getValidationStatus().nextInCycle());
 
 
         return actionUnitMapper.convert(actionUnitRepository.save(actionUnit));
@@ -966,12 +966,9 @@ public class ActionUnitService implements ArkEntityService {
     /**
      * Détail d'un projet (action unit) si son institution est dans {@code accessibleInstitutionIds}.
      * <ul>
-     *     <li>Si {@code idOrKey} n'est composé que de chiffres décimaux : clé primaire {@code action_unit_id}.</li>
-     *     <li>Sinon : {@link ActionUnitRepository#findByFullIdentifier(String)} (identifiant métier complet).</li>
-     *     <li>Sinon encore : {@link ActionUnitRepository#findByIdentifierAndCreatedByInstitutionId(String, Long)}
-     *     pour chaque institution accessible (ex. identifiant court {@code C309_01} dans une org).</li>
+     *     <li>{@code idOrKey} est la clé primaire {@code action_unit_id}, en chiffres décimaux : c'est la seule
+     *     clé de l'API (ni identifiant complet, ni identifiant court).</li>
      * </ul>
-     * Les identifiants contenant des « / » doivent être correctement encodés dans l'URL (ex. {@code %2F}).
      *
      * @throws ActionUnitNotFoundException clé inconnue, ou projet hors périmètre (comportement type 404)
      */
@@ -1038,28 +1035,21 @@ public class ActionUnitService implements ArkEntityService {
         actionUnitRepository.deleteById(actionUnitId);
     }
 
-    private ActionUnitDTO loadProjectDtoForLookupKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
-        String key = idOrKey == null ? "" : idOrKey.trim();
-        if (key.isEmpty()) {
-            throw new ActionUnitNotFoundException("Project key must not be empty");
+    /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */
+    private ActionUnitDTO loadProjectDtoForLookupKey(String id, Set<Long> accessibleInstitutionIds) {
+        String key = id == null ? "" : id.trim();
+        if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
+            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
         }
-        if (key.chars().allMatch(Character::isDigit)) {
-            long id = Long.parseLong(key);
-            ActionUnit actionUnit = actionUnitRepository.findById(id)
-                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
-            return convertWithCount(actionUnit);
+        long projectId;
+        try {
+            projectId = Long.parseLong(key);
+        } catch (NumberFormatException e) {
+            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
         }
-        Optional<ActionUnit> byFullId = actionUnitRepository.findByFullIdentifier(key);
-        if (byFullId.isPresent()) {
-            return actionUnitMapper.convert(byFullId.get());
-        }
-        for (Long institutionId : accessibleInstitutionIds) {
-            Optional<ActionUnit> byShortId = actionUnitRepository.findByIdentifierAndCreatedByInstitutionId(key, institutionId);
-            if (byShortId.isPresent()) {
-                return actionUnitMapper.convert(byShortId.get());
-            }
-        }
-        throw new ActionUnitNotFoundException("ActionUnit not found with key: " + key);
+        ActionUnit actionUnit = actionUnitRepository.findById(projectId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + projectId));
+        return convertWithCount(actionUnit);
     }
 
     private static Map<Long, Long> countingMap(List<Object[]> rows) {

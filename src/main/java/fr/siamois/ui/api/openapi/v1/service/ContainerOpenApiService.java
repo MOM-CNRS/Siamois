@@ -133,12 +133,12 @@ public class ContainerOpenApiService {
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, container.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(container.getValidated(), request.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(container.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(container.getValidated(), request.getValidated(), canEdit, canValidate);
+        validationOpenApiService.requireAllowed(container.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (identifierChange) {
             container.setIdentifier(newIdentifier);
@@ -156,7 +156,7 @@ public class ContainerOpenApiService {
             });
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidated(), personDto);
+        validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidationStatus(), personDto);
         return loadContainer(id, personDto, accessibleInstitutionIds, lang);
     }
 
