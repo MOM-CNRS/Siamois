@@ -1072,3 +1072,158 @@ main.ptc-fixed .settings-header {
     margin-bottom: 0;
     border-bottom: 1px solid #e7e7e3;
 }
+
+// Members / profiles lists: compact rows (one line per user, no username).
+.member-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-user-cell .member-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 11px;
+}
+
+.member-email {
+    color: var(--text-light);
+    font-size: 0.85em;
+}
+
+// Profiles tab: list on the left, the selected profile's detail as a right-hand panel.
+.profiles-split {
+    --profile-panel-w: 420px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: 0;
+}
+
+// The list's own form (the composite wraps .datatable-settings in one) takes all the room left.
+.profiles-split > form:first-child {
+    display: block;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.profiles-split > form.profile-detail-form {
+    flex: 0 0 var(--profile-panel-w);
+    width: var(--profile-panel-w);
+    min-width: 0;
+    display: flex;
+}
+
+.profiles-split > form.profile-detail-form:not(:has(.profile-drawer)) {
+    display: none;
+}
+
+.profiles-split .profile-drawer {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    margin-top: 2em;
+    background: #fff;
+}
+
+// Drag handle on the panel's left edge.
+.profile-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: var(--siamois-green-light-100);
+    z-index: 2;
+}
+
+.profile-resizer:hover,
+.profile-resizer.dragging {
+    background: var(--siamois-green-active);
+}
+
+.profile-drawer-header,
+.profile-drawer-body {
+    padding-left: 28px;
+}
+
+.profile-drawer-header {
+    position: relative;
+}
+
+.profile-drawer-close.ui-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 2rem;
+    height: 2rem;
+}
+
+.profile-name-cell {
+    gap: 8px;
+}
+
+.profile-card-name {
+    font-size: 14px;
+}
+
+.dt-content .ui-datatable-data > tr.ui-state-highlight {
+    background: var(--siamois-green-light-50);
+    color: inherit;
+}
+
+// Profiles tab: the two panes scroll on their own; only their headers (the table's column header, the
+// profile's title block) stay put. The split is bounded by the viewport (the app shell never scrolls).
+.profiles-split {
+    height: calc(100dvh - 17rem);
+    min-height: 320px;
+}
+
+.profiles-split > form:first-child {
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.profiles-split > form:first-child .datatable-settings {
+    margin-top: 0;
+}
+
+.profiles-split > form:first-child .dt-content {
+    overflow: visible;
+}
+
+.profiles-split > form:first-child .ui-datatable-tablewrapper {
+    overflow: visible !important;
+}
+
+.profiles-split > form:first-child .ui-datatable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.profiles-split > form.profile-detail-form {
+    min-height: 0;
+}
+
+.profiles-split .profile-drawer {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.profiles-split .profile-drawer-header {
+    flex: none;
+}
+
+.profiles-split .profile-drawer-body {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+}

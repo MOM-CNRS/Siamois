@@ -29,18 +29,15 @@
             </div>
             <div class="settings-page-header">
                 <h2 class="dt-title">#{langBean.msg('projectSettings.membersProfiles.title')}</h2>
-                <p class="dt-desc">#{langBean.msg('projectSettings.membersProfiles.description')}</p>
             </div>
             <p:tabView id="projectMembersTabs" dynamic="false" styleClass="settings-tabs">
             <p:tab title="#{langBean.msg('common.label.members.tab')}">
             <settings:datatable
                     id="projectMembersDatatable"
-                    title="#{langBean.msg('projectSettings.members.title', projectDetailsBean.project.name)}"
                     filterAction="#{projectMembersListBean.filter()}"
                     formId="projectMembersForm"
                     addAction="#{projectMembersListBean.add()}"
                     searchInputTextValue="#{projectMembersListBean.searchInput}"
-                    description="#{langBean.msg('projectSettings.members.description')}"
                     renderCreateButton="true"
                     createButtonLabel="#{langBean.msg('projectSettings.members.dialog.label')}"
             >
@@ -61,13 +58,10 @@
                         </p>
                     </f:facet>
                     <p:column headerText="#{langBean.msg('common.label.user')}">
-                        <div style="display: flex; align-items: center; gap: 11px">
+                        <div class="member-user-cell">
                             <span class="member-avatar">#{member.person.initials()}</span>
-                            <div style="display: flex; flex-direction: column">
-                                <strong>#{member.displayName()}</strong>
-                                <p style="margin-bottom: 0; font-style: italic">#{member.person.email}</p>
-                                <p>#{member.person.username}</p>
-                            </div>
+                            <strong>#{member.displayName()}</strong>
+                            <span class="member-email">#{member.person.email}</span>
                         </div>
                     </p:column>
                     <p:column headerText="#{langBean.msg('common.label.profile')}">
@@ -108,19 +102,19 @@
             </settings:datatable>
             </p:tab>
             <p:tab title="#{langBean.msg('profile.tab.label')}">
+                <div class="profiles-split">
                 <settings:profilesList
-                        title="#{langBean.msg('projectSettings.titles.profiles')}"
-                        description="#{langBean.msg('projectSettings.profiles.description')}"
                         profiles="#{projectMembersListBean.availableProfiles}"
-                        onOpen="#{projectMembersListBean.openProfileDetail}"/>
+                        bean="#{projectMembersListBean}"/>
+                <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
+                    <ui:param name="bean" value="#{projectMembersListBean}"/>
+                </ui:include>
+                </div>
             </p:tab>
             </p:tabView>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newProjectMemberDialogBean}"/>
                 <ui:param name="updateTarget" value=":projectMembersTabs:projectMembersDatatable:formCC:projectMembersForm:membersDatatable"/>
-            </ui:include>
-            <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
-                <ui:param name="bean" value="#{projectMembersListBean}"/>
             </ui:include>
         </main>
     </ui:define>

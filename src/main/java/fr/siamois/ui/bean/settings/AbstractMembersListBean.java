@@ -143,6 +143,11 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         return selectedProfile;
     }
 
+    /** Selection binding of the profiles table: a row click opens the detail panel, an unselect closes it. */
+    public final void setSelectedProfile(ProfileDTO profile) {
+        this.selectedProfile = profile;
+    }
+
     /** @return {@code true} when the read-only profile detail drawer should be shown. */
     public final boolean isProfileDetailOpen() {
         return selectedProfile != null;
