@@ -250,16 +250,15 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             fieldSearch = null;
         }
         selectedTypeName = typeName;
-        if (typeName != null && selectedTable != null) {
-            expandedNodes.add(tableNode(selectedTable));
-            expandedNodes.add(typeNode(selectedTable, typeName));
-        }
-        if (typeName == null) {
+        // a type belongs to a table: without one there is nothing to load
+        if (typeName == null || selectedTable == null) {
             formConfig = null;
             setFieldsConfig(null);
             layoutRows = new ArrayList<>();
             return;
         }
+        expandedNodes.add(tableNode(selectedTable));
+        expandedNodes.add(typeNode(selectedTable, typeName));
         loadConfigs();
     }
 
