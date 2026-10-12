@@ -176,7 +176,7 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                <h:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="historyLinkNav"
@@ -185,10 +185,10 @@
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
                                     <p:tooltip for="historyLinkNav" value="Historique"/>
-                                </p:commandLink>
+                                </h:commandLink>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                <h:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
@@ -197,7 +197,7 @@
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>
                                     <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
-                                </p:commandLink>
+                                </h:commandLink>
                             </li>
                             <p:divider/>
 
