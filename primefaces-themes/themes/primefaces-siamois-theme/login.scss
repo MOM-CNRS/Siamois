@@ -46,3 +46,15 @@ div.invalid-feedback {
     display: block;
     padding-bottom: 10px;
 }
+
+.login-logo img {
+    width: 280px;
+    max-width: 80%;
+    height: auto;
+}
+
+@media (orientation: portrait) {
+    #left-image {
+        display: none;
+    }
+}
