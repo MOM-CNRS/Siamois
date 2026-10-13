@@ -88,6 +88,8 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
+    private static final String NO_CONFIG_FOR_FIELD = "No configuration for field {} in project {}";
+
     private static final String NO_SOURCE = "—";
     private static final int DEFAULT_MIN_CODE = 1;
     private static final int DEFAULT_MAX_CODE = 999;
@@ -450,8 +452,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName,
-                                           String fieldName, String newName, FieldType newType, String description,
-                                           FieldOptions options) {
+                                           String fieldName, FieldDefinition definition) {
+        String newName = definition.name();
+        FieldType newType = definition.type();
+        String description = definition.description();
+        FieldOptions options = definition.options();
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
                 .filter(field -> fieldName.equals(field.field().getLabel()))
                 .findFirst();
@@ -582,14 +587,17 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             booleanField.setAllowNoAnswer(given.allowNoAnswer());
         } else if (field instanceof CustomFieldMeasurement measurement) {
             applyUnits(measurement, given);
-            if (given.measureTypeConceptId() != null) {
-                measurement.setConcept(conceptRepository.findById(given.measureTypeConceptId())
-                        .orElseThrow(() -> new IllegalArgumentException("Concept inconnu : " + given.measureTypeConceptId())));
+            Long typeId = given.measureTypeConceptId();
+            if (typeId != null) {
+                measurement.setConcept(requireConcept(typeId));
             }
-            measurement.setMeasurementNature(given.measureNatureConceptId() == null ? null
-                    : conceptRepository.findById(given.measureNatureConceptId())
-                            .orElseThrow(() -> new IllegalArgumentException("Concept inconnu : " + given.measureNatureConceptId())));
+            Long natureId = given.measureNatureConceptId();
+            measurement.setMeasurementNature(natureId == null ? null : requireConcept(natureId));
         }
+    }
+
+    private Concept requireConcept(Long id) {
+        return conceptRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Concept inconnu : " + id));
     }
 
     /**
@@ -982,7 +990,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                     .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId);
             return config == null ? Optional.empty() : Optional.ofNullable(config.getConcept());
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
             return Optional.empty();
         }
     }
@@ -1022,7 +1030,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             }
             return fieldConfigurationService.fetchAutocomplete(currentUser(), table.getFieldCode(), input, projectId);
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
             return List.of();
         }
     }
@@ -1032,7 +1040,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         try {
             return fieldConfigurationService.fetchAutocomplete(currentUser(), fieldCode, input, projectId);
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", fieldCode, projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, fieldCode, projectId, e);
             return List.of();
         }
     }

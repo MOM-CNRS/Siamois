@@ -10,6 +10,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -1499,8 +1500,9 @@ class TableFieldConfigServiceImplTest {
         when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(
                 unit(1L, "m²", UnitDefinition.Dimension.AREA, 1.0),
                 unit(2L, "kg", UnitDefinition.Dimension.MASS, 1000.0)));
+        FieldOptions mixedDimensions = FieldOptions.units(1L, Set.of(1L, 2L));
         assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
-                "Surface", FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L, 2L))))
+                "Surface", FieldType.MEASUREMENT, "", mixedDimensions))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("même grandeur");
     }
@@ -1773,6 +1775,126 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(couleur.getPosition()).isZero();
         verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
+    }
+
+    // --- yes/no and measurement options ---
+
+    @Test
+    void updateField_shouldChangeWhetherAYesNoFieldAllowsNoAnswerInPlace() {
+        CustomFieldBoolean existing = CustomFieldBoolean.builder().id(1L).label("Topo").isSystemField(false).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+
+        TypeFieldFormConfig result = service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Topo",
+                new FieldDefinition("Topo", FieldType.BOOLEAN, "", FieldOptions.noAnswer(true)));
+
+        assertThat(existing.isNoAnswerAllowed()).isTrue();
+        assertThat(result.getOptions().allowNoAnswer()).isTrue();
+    }
+
+    @Test
+    void updateField_shouldSetWhatAMeasurementMeasuresAndItsNature() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        Concept height = new Concept();
+        height.setId(50L);
+        Concept maximal = new Concept();
+        maximal.setId(51L);
+        CustomFieldMeasurement existing = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
+        when(conceptRepository.findById(50L)).thenReturn(Optional.of(height));
+        when(conceptRepository.findById(51L)).thenReturn(Optional.of(maximal));
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(prefLabel("Mesure"));
+
+        service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Hauteur", new FieldDefinition("Hauteur maximale",
+                FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L)).measuring(50L, 51L)));
+
+        assertThat(existing.getConcept()).isSameAs(height);
+        assertThat(existing.getMeasurementNature()).isSameAs(maximal);
+    }
+
+    @Test
+    void updateField_shouldRefuseAMeasureConceptThatDoesNotExist() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        CustomFieldMeasurement existing = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
+        when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
+        FieldDefinition definition = new FieldDefinition("Hauteur", FieldType.MEASUREMENT, "",
+                FieldOptions.units(1L, Set.of(1L)).measuring(99L, null));
+
+        assertThatThrownBy(() -> service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Hauteur", definition))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void createField_shouldRefuseAMeasurementWhoseUnitIsNotInTheCatalogue() {
+        givenCurrentPersonExists();
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of());
+        FieldOptions unknown = FieldOptions.units(7L, Set.of(7L));
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", unknown))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unité inconnue");
+    }
+
+    @Test
+    void aMeasurementOfAFormConfigurationListsTheUnitsThatConfigurationOffers() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        FieldUnits configured = new FieldUnits(6L, List.of(new FieldUnits.UnitRef(5L, "cm"), new FieldUnits.UnitRef(6L, "mm")));
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false, configured);
+
+        assertThat(described.getOptions().allowedUnitIds()).containsExactlyInAnyOrder(5L, 6L);
+        assertThat(described.getOptions().defaultUnitId()).isEqualTo(6L);
+    }
+
+    @Test
+    void aMeasurementWithNoConfiguredUnitsListsItsOwnUnitFromTheCatalogue() {
+        UnitDefinition builtInCode = new UnitDefinition(null, null, "Mètre", "m", UnitDefinition.Dimension.LENGTH, 1.0, true);
+        UnitDefinition stored = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        when(unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc("m", UnitDefinition.Dimension.LENGTH))
+                .thenReturn(Optional.of(stored));
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("z").isSystemField(true).unit(builtInCode).build();
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false);
+
+        assertThat(described.getOptions().defaultUnitId()).isEqualTo(1L);
+        assertThat(described.getOptions().allowedUnitIds()).containsExactly(1L);
+    }
+
+    @Test
+    void aMeasurementIsDescribedByItsTypeAndNatureConcepts() {
+        Concept height = new Concept();
+        height.setId(50L);
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("Hauteur").hint("depuis la base")
+                .isSystemField(false).concept(height).build();
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(prefLabel("Hauteur"));
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false);
+
+        assertThat(described.getMeasureType().name()).isEqualTo("Hauteur");
+        assertThat(described.getMeasureType().id()).isEqualTo(50L);
+        assertThat(described.getMeasureNature()).isNull();
+        assertThat(described.getDescription()).isEqualTo("depuis la base");
+    }
+
+    @Test
+    void measureConceptsComeFromTheVocabularyOfTheirFieldCode() throws Exception {
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIAMD.TYPE"), eq("ha"), eq(PROJECT_ID)))
+                .thenReturn(List.of(autocomplete("Hauteur")));
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIAMD.NATURE"), any(), eq(PROJECT_ID)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.measureConcepts(PROJECT_ID, "SIAMD.TYPE", "ha")).hasSize(1);
+        assertThat(service.measureConcepts(PROJECT_ID, "SIAMD.NATURE", "x")).isEmpty();
     }
 
     // --- typeOf / toDto ---

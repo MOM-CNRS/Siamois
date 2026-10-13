@@ -73,6 +73,8 @@ class FieldAnswerPatchServiceTest {
     private ConceptMapper conceptMapper;
     @Mock
     private UnitDefinitionMapper unitDefinitionMapper;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository unitDefinitionRepository;
 
     private FieldAnswerPatchService service;
     private final PhaseDTO entity = new PhaseDTO();
@@ -84,7 +86,7 @@ class FieldAnswerPatchServiceTest {
                 mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, unitDefinitionRepository);
     }
 
     @Test
@@ -226,6 +228,66 @@ class FieldAnswerPatchServiceTest {
         assertThatThrownBy(() -> service.apply(entity, arg2, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("km²");
+    }
+
+    @Test
+    void apply_takesTheUnitsTheFormConfigurationOffersOverTheFieldsOwn() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        UnitDefinition hectare = areaUnit(2L, "ha", 10_000.0);
+        CustomFieldMeasurement surface = new CustomFieldMeasurement();
+        surface.setId(9L);
+        surface.setIsSystemField(false);
+        surface.setUnit(squareMetre);
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+        when(unitDefinitionRepository.findAllByOrderByLabelAsc()).thenReturn(List.of(squareMetre, hectare));
+        UnitDefinitionDTO hectareDto = UnitDefinitionDTO.builder().id(2L).symbol("ha").build();
+        when(unitDefinitionMapper.convert(hectare)).thenReturn(hectareDto);
+        CustomColUiDto column = col(surface);
+        column.setUnits(new fr.siamois.domain.models.form.config.FieldUnits(2L, List.of(
+                new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(2L, "ha"))));
+
+        service.apply(entity, formOf(column), Map.of("9", new AnswerInput(12.0, null)), PROJECT_ID);
+        service.apply(entity, formOf(column), Map.of("9", new AnswerInput(Map.of("numericValue", 3, "symbol", "ha"), null)), PROJECT_ID);
+
+        ArgumentCaptor<Object> applied = ArgumentCaptor.forClass(Object.class);
+        verify(formService, org.mockito.Mockito.times(2)).applyTypedValueToAnswer(any(), applied.capture());
+        assertThat(applied.getAllValues()).allSatisfy(v -> assertThat(((MeasurementAnswerDTO) v).getUnit()).isSameAs(hectareDto));
+    }
+
+    @Test
+    void apply_rejectsAUnitTheFormConfigurationDoesNotOfferEvenIfTheFieldDoes() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        UnitDefinition hectare = areaUnit(2L, "ha", 10_000.0);
+        CustomFieldMeasurement surface = surfaceField(squareMetre, hectare);
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+        CustomColUiDto column = col(surface);
+        column.setUnits(new fr.siamois.domain.models.form.config.FieldUnits(1L, List.of(
+                new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(1L, "m²"))));
+
+        var form = formOf(column);
+        var answers = Map.of("9", new AnswerInput(Map.of("numericValue", 1, "symbol", "ha"), null));
+        assertThatThrownBy(() -> service.apply(entity, form, answers, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("ha");
+    }
+
+    @Test
+    void apply_refusesAConfiguredUnitTheCatalogueDoesNotKnow() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        CustomFieldMeasurement surface = new CustomFieldMeasurement();
+        surface.setId(9L);
+        surface.setIsSystemField(false);
+        surface.setUnit(squareMetre);
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+        when(unitDefinitionRepository.findAllByOrderByLabelAsc()).thenReturn(List.of(squareMetre));
+        CustomColUiDto column = col(surface);
+        column.setUnits(new fr.siamois.domain.models.form.config.FieldUnits(3L, List.of(
+                new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(3L, "acre"))));
+
+        var form = formOf(column);
+        var answers = Map.of("9", new AnswerInput(Map.of("numericValue", 1, "symbol", "acre"), null));
+        assertThatThrownBy(() -> service.apply(entity, form, answers, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     private static UnitDefinition areaUnit(long id, String symbol, double factor) {

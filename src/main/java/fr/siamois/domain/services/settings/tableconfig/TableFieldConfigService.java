@@ -317,6 +317,12 @@ public interface TableFieldConfigService {
     List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query);
 
     /**
+     * The concepts a measurement can be defined by, from the vocabulary of a field code (what is
+     * measured, or its nature).
+     */
+    List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input);
+
+    /**
      * Creates a new additional field on a type from user-provided name, type and description.
      * Name and description are saved in as label and definition of the concept
      *      * linked to the custom field.
@@ -328,12 +334,6 @@ public interface TableFieldConfigService {
      * @param description the new field's description
      * @return a copy of the newly created field
      */
-    /**
-     * The concepts a measurement can be defined by, from the vocabulary of a field code (what is
-     * measured, or its nature).
-     */
-    List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input);
-
     default TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
         return createField(projectId, table, typeName, name, type, description, FieldOptions.NONE);
     }
@@ -374,16 +374,16 @@ public interface TableFieldConfigService {
      * @return a copy of the updated field
      */
     default TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
-        return updateField(projectId, table, typeName, fieldName, newName, newType, description, FieldOptions.NONE);
+        return updateField(projectId, table, typeName, fieldName, new FieldDefinition(newName, newType, description, FieldOptions.NONE));
     }
 
     /**
-     * Same as above, with the options the type carries ({@link FieldOptions}).
+     * Same as above, from a whole definition, with the options the type carries ({@link FieldOptions}).
      *
      * @throws IllegalArgumentException if the options are not valid for the type
      */
     TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName,
-                                    String newName, FieldType newType, String description, FieldOptions options);
+                                    FieldDefinition definition);
 
     /**
      * The layout a configuration without a stored layout effectively has: the table's initial layout

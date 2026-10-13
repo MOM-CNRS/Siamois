@@ -181,12 +181,12 @@
                     </h:panelGroup>
 
                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSupportsMultiple}" layout="block" styleClass="ptc-drawer-field">
-                        <label class="ptc-checkbox-row">
+                        <div class="ptc-checkbox-row">
                             <p:selectBooleanCheckbox id="draftMultiple" value="#{projectTableFieldSettingsBean.draftMultiple}">
                                 <p:ajax process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
                             </p:selectBooleanCheckbox>
-                            <span>#{langBean.msg('projectTables.drawer.multiple')}</span>
-                        </label>
+                            <p:outputLabel for="draftMultiple" value="#{langBean.msg('projectTables.drawer.multiple')}"/>
+                        </div>
                         <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.multipleHint')}</div>
                     </h:panelGroup>
 
@@ -195,10 +195,10 @@
                     </h:panelGroup>
 
                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftBoolean and not projectTableFieldSettingsBean.draftIsSystem}" layout="block" styleClass="ptc-drawer-field">
-                        <label class="ptc-checkbox-row">
+                        <div class="ptc-checkbox-row">
                             <p:selectBooleanCheckbox id="draftAllowNoAnswer" value="#{projectTableFieldSettingsBean.draftAllowNoAnswer}"/>
-                            <span>#{langBean.msg('projectTables.drawer.allowNoAnswer')}</span>
-                        </label>
+                            <p:outputLabel for="draftAllowNoAnswer" value="#{langBean.msg('projectTables.drawer.allowNoAnswer')}"/>
+                        </div>
                         <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.allowNoAnswerHint')}</div>
                     </h:panelGroup>
 

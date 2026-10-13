@@ -316,6 +316,68 @@ class FormLayoutServiceTest {
         verify(rulesValidator, never()).validate(any(), org.mockito.ArgumentMatchers.anyLong(), any());
     }
 
+    @Test
+    void theUnitsAMeasurementIsOfferedAreStoredAsJsonOnTheFieldRow() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveUnits(5L, TABLE, "Type", 1L, new fr.siamois.domain.models.form.config.FieldUnits(2L,
+                List.of(new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(1L, "m²"),
+                        new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(2L, "ha"))));
+
+        assertThat(fr.siamois.domain.models.form.config.FieldUnits.fromJson(fa.getUnits()).symbols()).containsExactly("m²", "ha");
+        verify(fieldFormConfigRepository).save(fa);
+    }
+
+    @Test
+    void noUnitsGoBackToTheFieldsOwnUnit() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        fa.setUnits("{\"defaultUnitId\":1,\"units\":[{\"id\":1,\"symbol\":\"m\"}]}");
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveUnits(5L, TABLE, "Type", 1L, null);
+
+        assertThat(fa.getUnits()).isNull();
+    }
+
+    @Test
+    void aFieldLockedByTheInstitutionKeepsItsUnits() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        fa.setInstitutionLocked(true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveUnits(5L, TABLE, "Type", 1L, null);
+
+        verify(fieldFormConfigRepository, never()).save(fa);
+    }
+
+    @Test
+    void unitsOfAnUnknownFieldAreRefused() {
+        FormConfig config = laidOutConfig();
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.saveUnits(5L, TABLE, "Type", 9L, null))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    @Test
+    void theLayoutOfAConfigurationCarriesTheUnitsItStoredForAField() {
+        FormConfig config = config(1L);
+        FormConfigGroup group = group(10L, config, "G", 0);
+        CustomFieldText a = field(1L, "fa");
+        FieldFormConfig fa = row(config, a, group, FieldWidth.QUARTER, true, false, null);
+        fa.setUnits("{\"defaultUnitId\":2,\"units\":[{\"id\":2,\"symbol\":\"ha\"}]}");
+        when(groupRepository.findAllByFormConfigIdOrderByPosition(1L)).thenReturn(List.of(group));
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        FormLayout layout = service.layoutOf(config).orElseThrow();
+
+        assertThat(layout.groups().get(0).items().get(0).units().defaultSymbol()).isEqualTo("ha");
+    }
+
     private static FormConfig config(long id) {
         FormConfig config = new FormConfig();
         config.setId(id);

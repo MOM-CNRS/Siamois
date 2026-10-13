@@ -80,12 +80,12 @@ public class FieldAnswerWireService {
     }
 
     /**
-     * The symbols a measurement can be entered in, the default unit first; null when the field has
-     * a single unit, which the client then shows as a plain suffix.
+     * The symbols a measurement can be entered in, the default unit first; empty when the field has
+     * a single unit, which the client then shows in a disabled selector.
      */
     private static List<String> unitsOf(CustomFieldMeasurement m) {
         Set<UnitDefinition> choices = m.unitsToChooseFrom();
-        if (choices.size() < 2) return null;
+        if (choices.size() < 2) return List.of();
         String defaultSymbol = m.getUnit() != null ? m.getUnit().getSymbol() : null;
         return choices.stream()
                 .sorted(Comparator.comparing((UnitDefinition u) -> !Objects.equals(u.getSymbol(), defaultSymbol))
@@ -120,7 +120,8 @@ public class FieldAnswerWireService {
             min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
             max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
             unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
-            units = unitsOf(m);
+            List<String> offered = unitsOf(m);
+            units = offered.isEmpty() ? null : offered;
         } else if (f instanceof CustomFieldDateTime dt) {
             showTime = dt.getShowTime();
         } else if (f instanceof CustomFieldBoolean b) {

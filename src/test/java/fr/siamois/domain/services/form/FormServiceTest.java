@@ -903,6 +903,29 @@ class FormServiceTest {
     // =====================================================================
 
     @Nested
+    class YesNoAnswerTests {
+
+        @Test
+        void aYesNoAnswerIsReadAsItsBoolean() {
+            CustomFieldAnswerBooleanViewModel answer = new CustomFieldAnswerBooleanViewModel();
+            answer.setValue(true);
+
+            assertEquals(true, formService.readAnswerValueForApi(answer));
+        }
+
+        @Test
+        void aTypedBooleanIsWrittenOntoTheAnswer_andAnythingElseClearsIt() {
+            CustomFieldAnswerBooleanViewModel answer = new CustomFieldAnswerBooleanViewModel();
+
+            formService.applyTypedValueToAnswer(answer, false);
+            assertEquals(false, answer.getValue());
+
+            formService.applyTypedValueToAnswer(answer, "not a boolean");
+            assertNull(answer.getValue());
+        }
+    }
+
+    @Nested
     class ReadAnswerValueForApiTests {
 
         @Test

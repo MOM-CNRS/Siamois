@@ -88,6 +88,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
     public static final String BRANCHE = "branche";
+    private static final String INTERNAL_ERROR = "common.error.internal";
     public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
@@ -1129,7 +1130,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
         } catch (JsonProcessingException | RuntimeException e) {
             log.error("Could not fetch the concepts matching '{}' in thesaurus {}", query, draftVocabulary.getBaseUri(), e);
-            showDrawerError("common.error.internal");
+            showDrawerError(INTERNAL_ERROR);
             return List.of();
         }
     }
@@ -1152,7 +1153,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         } catch (RuntimeException e) {
             log.error("Could not fetch the collections of thesaurus {}", draftVocabulary.getBaseUri(), e);
             lastCollectionResults = List.of();
-            showDrawerError("common.error.internal");
+            showDrawerError(INTERNAL_ERROR);
         }
         return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
@@ -1181,7 +1182,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription, options);
         } else {
-            tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription, options);
+            tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName,
+                    new FieldDefinition(draftName, draftType, draftDescription, options));
         }
         saveDraftUnits(options);
         // the field now exists under that name : should the vocabulary configuration fail below, the
@@ -1427,7 +1429,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return new ArrayList<>(tableFieldConfigService.measureConcepts(project.getId(), fieldCode, query));
         } catch (RuntimeException e) {
             log.error("Could not fetch the concepts of {} matching '{}'", fieldCode, query, e);
-            showDrawerError("common.error.internal");
+            showDrawerError(INTERNAL_ERROR);
             return new ArrayList<>();
         }
     }
