@@ -170,6 +170,8 @@ class CustomFieldAnswerServiceTest {
                         42, CustomFieldAnswerInteger.class, 42),
                 arguments(CustomFieldDateTime.builder().id(3L).build(),
                         moment, CustomFieldAnswerDateTime.class, moment),
+                arguments(fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.builder().id(12L).build(),
+                        false, fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean.class, false),
                 arguments(CustomFieldSelectOneFromFieldCode.builder().id(4L).build(),
                         concept, CustomFieldAnswerSelectOneFromFieldAnswerCode.class, concept),
                 arguments(CustomFieldSelectMultipleFromFieldCode.builder().id(5L).build(),
@@ -727,6 +729,28 @@ class CustomFieldAnswerServiceTest {
         assertThat(result.get(integerField)).isInstanceOfSatisfying(CustomFieldAnswerIntegerViewModel.class,
                 v -> assertThat(v.getValue()).isEqualTo(2));
         assertThat(result.values()).allSatisfy(v -> assertThat(v.getHasBeenModified()).isFalse());
+    }
+
+    @Test
+    void loadAdditionalFieldAnswers_readsBackAYesNoAnswer_falseIncluded() {
+        RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
+        FormConfig formConfig = new FormConfig();
+        formConfig.setId(9L);
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
+                .thenReturn(Optional.of(formConfig));
+        fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean doneField =
+                fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.builder().id(3L).build();
+        fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean doneAnswer =
+                new fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean();
+        doneAnswer.setCustomField(doneField);
+        doneAnswer.setValue(false);
+        formConfigAnswer.setAnswers(Set.of(doneAnswer));
+        when(formConfigAnswerService.findFormConfigAnswer(formConfig, unit)).thenReturn(Optional.of(formConfigAnswer));
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.loadAdditionalFieldAnswers(unit);
+
+        assertThat(result.get(doneField)).isInstanceOfSatisfying(CustomFieldAnswerBooleanViewModel.class,
+                v -> assertThat(v.getValue()).isFalse());
     }
 
     @Test

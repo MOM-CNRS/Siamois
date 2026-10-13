@@ -4,6 +4,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -385,6 +386,25 @@ class FieldQueryServiceQueryTest {
             run(build(RecordingUnit.class, sort(true)));
         }
         verify(cb, atLeastOnce()).greatest(any(jakarta.persistence.criteria.Expression.class));
+    }
+
+    @Test
+    void additionalYesNoFieldFiltersOnTrueOrFalse_andSortsYesAfterNo() {
+        field(CustomFieldBoolean.builder().build(), false, null);
+
+        run(build(RecordingUnit.class, filter(values("true", "FALSE"))));
+        run(build(RecordingUnit.class, sort(true)));
+
+        verify(cb, atLeastOnce()).isTrue(any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).greatest(any(jakarta.persistence.criteria.Expression.class));
+    }
+
+    @Test
+    void additionalYesNoFieldRefusesARangeAndAnythingButTrueOrFalse() {
+        field(CustomFieldBoolean.builder().build(), false, null);
+
+        assertThat(badRequest(RecordingUnit.class, filter(range("a", "b"))).getReason()).contains("plage impossible sur un champ oui/non");
+        assertThat(badRequest(RecordingUnit.class, filter(values("peut-être"))).getReason()).contains("Booléen invalide");
     }
 
     @Test

@@ -1,10 +1,13 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -314,6 +317,12 @@ public interface TableFieldConfigService {
     List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query);
 
     /**
+     * The concepts a measurement can be defined by, from the vocabulary of a field code (what is
+     * measured, or its nature).
+     */
+    List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input);
+
+    /**
      * Creates a new additional field on a type from user-provided name, type and description.
      * Name and description are saved in as label and definition of the concept
      *      * linked to the custom field.
@@ -325,7 +334,18 @@ public interface TableFieldConfigService {
      * @param description the new field's description
      * @return a copy of the newly created field
      */
-    TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description);
+    default TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
+        return createField(projectId, table, typeName, name, type, description, FieldOptions.NONE);
+    }
+
+    /**
+     * Same as above, with the options the type carries ({@link FieldOptions}).
+     *
+     * @throws IllegalArgumentException if the options are not valid for the type (a measurement
+     *                                  without a unit, or with units of different dimensions)
+     */
+    TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name,
+                                    FieldType type, String description, FieldOptions options);
 
     /**
      * Adds a field from the reusable catalog to a type as an additional field. No-op (returns the
@@ -353,7 +373,17 @@ public interface TableFieldConfigService {
      * @param description the field's new description
      * @return a copy of the updated field
      */
-    TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description);
+    default TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
+        return updateField(projectId, table, typeName, fieldName, new FieldDefinition(newName, newType, description, FieldOptions.NONE));
+    }
+
+    /**
+     * Same as above, from a whole definition, with the options the type carries ({@link FieldOptions}).
+     *
+     * @throws IllegalArgumentException if the options are not valid for the type
+     */
+    TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName,
+                                    FieldDefinition definition);
 
     /**
      * The layout a configuration without a stored layout effectively has: the table's initial layout
@@ -364,4 +394,8 @@ public interface TableFieldConfigService {
 
     /** The display model of a field in a given state, as the configuration screen lists it. */
     TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked);
+
+    /** The same, for a measurement whose form configuration offers {@code units} (null: the field's own). */
+    TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked,
+                                 @Nullable FieldUnits units);
 }

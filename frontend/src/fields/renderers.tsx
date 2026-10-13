@@ -4,6 +4,8 @@ import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
+import { Checkbox } from "primereact/checkbox";
+import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Button } from "primereact/button";
@@ -15,7 +17,7 @@ import type { Bound } from "../rules";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
-import { refColor } from "./display";
+import { refColor, YesNoTriState } from "./display";
 import {
   createPlaceFromSuggestion,
   entityRowLabel,
@@ -447,6 +449,33 @@ export const SelectOneConceptRenderer = SelectOneRefRenderer;
 export const SelectManyConceptRenderer = SelectManyRefRenderer;
 export const SelectOneSpatialUnitRenderer = SelectOneRefRenderer;
 
+// BOOLEAN: a checkbox, where unchecked reads as "no". A field that allows "no answer" has a third
+// state, so it gets PrimeReact's TriStateCheckbox: not specified ("?"), yes (ticked), no (empty).
+export function BooleanRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+  const current = typeof value === "boolean" ? value : null;
+  if (field.constraints?.allowNoAnswer) {
+    // The renderer only lives in the editing overlay: the current state is named beside the box there,
+    // while a read-only display (fields/display.tsx) shows the bare disabled checkbox.
+    const label = current === true ? t("field.yes") : current === false ? t("field.no") : t("field.notSpecified");
+    return (
+      // The gap is inline, like the overlay's padding: it must not depend on a stylesheet being reloaded.
+      <span className="boolean-renderer boolean-renderer-tristate" style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}>
+        <YesNoTriState value={current} disabled={readOnly} onChange={onChange} />
+        <span className="boolean-renderer-label" style={{ marginLeft: "0.4rem" }}>{label}</span>
+      </span>
+    );
+  }
+  return (
+    <Checkbox
+      className="boolean-renderer"
+      checked={current === true}
+      disabled={readOnly}
+      required={required}
+      onChange={(e) => onChange(e.checked === true)}
+    />
+  );
+}
+
 interface MeasurementValue {
   numericValue?: number | null;
   symbol?: string | null;
@@ -454,41 +483,89 @@ interface MeasurementValue {
   comment?: string | null;
 }
 
-// MEASUREMENT: a number in the field's own unit (the server always applies that unit — the client
-// never picks one) plus an optional comment. Emits the MeasurementRef shape the PATCH accepts
-// ({ numericValue, comment }), or null once both are empty.
+// The measurement form's layout is inline: it must not depend on a stylesheet having been reloaded.
+// A label sits above its field (a column), the value and the unit side by side, the comment below.
+const MEASUREMENT_FORM: CSSProperties = { display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: "16rem" };
+const MEASUREMENT_ROW: CSSProperties = { display: "flex", gap: "0.75rem", alignItems: "flex-end" };
+const MEASUREMENT_FIELD: CSSProperties = { display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 };
+const MEASUREMENT_LABEL: CSSProperties = {
+  fontSize: "0.75rem",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "var(--text-color-secondary, #6b7280)",
+};
+
+// MEASUREMENT: a number in a unit plus an optional comment. The unit is a selector over the units the
+// field's configuration offers (constraints.units), disabled when there is only one; the picked symbol
+// travels with the number. Emits the MeasurementRef shape the PATCH accepts
+// ({ numericValue, symbol, comment }), or null once the number and the comment are both empty.
 export function MeasurementRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const current = (value != null && typeof value === "object" ? value : {}) as MeasurementValue;
-  const unit = field.constraints?.unit ?? current.symbol ?? null;
+  const units = field.constraints?.units ?? null;
+  // Before any number is entered there is no answer to carry the choice: keep it here until there is.
+  const [picked, setPicked] = useState<string | null>(null);
+  const unit = current.symbol ?? picked ?? field.constraints?.unit ?? null;
 
   function emit(next: MeasurementValue) {
     const empty = next.numericValue == null && !next.comment;
     onChange(empty ? null : { numericValue: next.numericValue ?? null, symbol: unit, comment: next.comment || null });
   }
 
+  const inputNumber = (
+    <InputNumber
+      value={current.numericValue ?? null}
+      disabled={readOnly}
+      required={required}
+      mode="decimal"
+      maxFractionDigits={6}
+      useGrouping={false}
+      min={field.constraints?.min ?? undefined}
+      max={field.constraints?.max ?? undefined}
+      // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
+      onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
+    />
+  );
+  // The unit is always a selector over the units the field's configuration offers; with a single one
+  // it is shown disabled.
+  const offered = units && units.length > 0 ? units : unit ? [unit] : [];
+  const onlyOne = offered.length <= 1;
+
+  // A small form: the value and its unit on the first line, the comment on the second.
   return (
-    <div className="measurement-renderer">
-      <div className="p-inputgroup">
-        <InputNumber
-          value={current.numericValue ?? null}
-          disabled={readOnly}
-          required={required}
-          mode="decimal"
-          maxFractionDigits={6}
-          useGrouping={false}
-          min={field.constraints?.min ?? undefined}
-          max={field.constraints?.max ?? undefined}
-          // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
-          onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
-        />
-        {unit && <span className="p-inputgroup-addon">{unit}</span>}
+    <div className="measurement-renderer" style={MEASUREMENT_FORM}>
+      <div className="measurement-row" style={MEASUREMENT_ROW}>
+        <label className="measurement-field measurement-value" style={{ ...MEASUREMENT_FIELD, flex: "1 1 auto" }}>
+          <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.value")}</span>
+          {inputNumber}
+        </label>
+        {offered.length > 0 && (
+          <label className="measurement-field measurement-unit-field" style={{ ...MEASUREMENT_FIELD, flex: "0 0 8rem" }}>
+            <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.unit")}</span>
+            <Dropdown
+              className="measurement-unit"
+              value={unit}
+              options={offered}
+              disabled={readOnly || onlyOne}
+              aria-label={t("field.unit")}
+              onChange={(e) => {
+                const next = e.value as string;
+                setPicked(next);
+                if (current.numericValue != null || current.comment) {
+                  onChange({ numericValue: current.numericValue ?? null, symbol: next, comment: current.comment || null });
+                }
+              }}
+            />
+          </label>
+        )}
       </div>
-      <InputText
-        value={current.comment ?? ""}
-        disabled={readOnly}
-        placeholder={t("field.comment")}
-        onChange={(e) => emit({ ...current, comment: e.target.value })}
-      />
+      <label className="measurement-field" style={MEASUREMENT_FIELD}>
+        <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.comment")}</span>
+        <InputText
+          value={current.comment ?? ""}
+          disabled={readOnly}
+          onChange={(e) => emit({ ...current, comment: e.target.value })}
+        />
+      </label>
     </div>
   );
 }

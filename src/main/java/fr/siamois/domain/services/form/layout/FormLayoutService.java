@@ -3,6 +3,7 @@ package fr.siamois.domain.services.form.layout;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
@@ -84,7 +85,8 @@ public class FormLayoutService {
                     ffc.isActive(),
                     ffc.isMandatory(),
                     ffc.isInstitutionLocked(),
-                    parseRules(ffc)));
+                    parseRules(ffc),
+                    FieldUnits.fromJson(ffc.getUnits())));
         }
         List<FormLayout.Group> out = groups.stream()
                 .map(g -> new FormLayout.Group(g.getId(), g.getLabel(), itemsByGroup.get(g.getId())))
@@ -109,7 +111,7 @@ public class FormLayoutService {
             rows.add(LayoutRow.header(group.id(), group.label()));
             for (FormLayout.Item item : group.items()) {
                 rows.add(LayoutRow.of(tableFieldConfigService.describe(item.field(), item.active(), item.mandatory(),
-                        item.institutionLocked()), item.width(), item.rules() != null && !item.rules().isEmpty()));
+                        item.institutionLocked(), item.units()), item.width(), item.rules() != null && !item.rules().isEmpty()));
             }
         }
         return rows;
@@ -156,6 +158,25 @@ public class FormLayoutService {
             throw new InvalidRulesException(issues);
         }
         target.setRules(rulesJson(rules));
+        fieldFormConfigRepository.save(target);
+    }
+
+    /**
+     * Sets the units a measurement field is entered in under the type's configuration, replacing any
+     * it had; null (or none) goes back to the field's own unit. A field locked by the institution is
+     * left untouched.
+     */
+    @Transactional
+    public void saveUnits(Long projectId, ConfigurableTable table, String typeName, long fieldId, FieldUnits units) {
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
+        FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
+                .filter(r -> r.getField().getId() == fieldId).findFirst()
+                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+        if (target.isInstitutionLocked()) {
+            log.debug("Field {} is locked by the institution, its units cannot be changed", fieldId);
+            return;
+        }
+        target.setUnits(units == null ? null : units.toJson());
         fieldFormConfigRepository.save(target);
     }
 
@@ -306,6 +327,7 @@ public class FormLayoutService {
                 row.setMandatory(item.mandatory());
                 row.setInstitutionLocked(item.institutionLocked());
                 row.setRules(rulesJson(item.rules()));
+                row.setUnits(item.units() == null ? null : item.units().toJson());
                 fieldFormConfigRepository.save(row);
             }
         }

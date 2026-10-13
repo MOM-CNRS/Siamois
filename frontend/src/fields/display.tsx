@@ -1,6 +1,8 @@
 // Read-only cell formatting for a dynamic (schema-driven) list column. Deliberately separate from
 // fields/renderers.tsx: those are full PrimeReact edit-mode widgets meant for a form or an edit
 // overlay, which is far more machinery than a table cell needs. A cell just needs a string.
+import { Checkbox } from "primereact/checkbox";
+import { TriStateCheckbox } from "primereact/tristatecheckbox";
 import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
 import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
@@ -188,6 +190,9 @@ function formatOne(field: FieldResource, value: unknown): string {
   if (field.answerType === "DATETIME" && typeof value === "string") {
     return value.slice(0, 10);
   }
+  if (field.answerType === "BOOLEAN" && typeof value === "boolean") {
+    return value ? t("field.yes") : t("field.no");
+  }
   if (typeof value === "number") {
     return String(value);
   }
@@ -228,6 +233,10 @@ export function renderAnswerCell(
   options: { all?: boolean; onOpenLink?: () => void } = {},
 ): ReactNode {
   const value = unwrapAnswer(rawValue);
+  // A yes/no is a checkbox, not text: the editor's own, disabled.
+  if (field.answerType === "BOOLEAN" && (value == null || typeof value === "boolean")) {
+    return booleanMark(value as boolean | null | undefined, field.constraints?.allowNoAnswer === true);
+  }
   if (value == null) return "";
   // A document's external URL opens in a new tab; the click must not also open the cell's editor.
   if (field.valueBinding === "externalUrl" && typeof value === "string" && /^https?:\/\//i.test(value)) {
@@ -266,6 +275,45 @@ export function renderAnswerCell(
           +{hidden}
         </span>
       )}
+    </span>
+  );
+}
+
+/**
+ * The tri-state yes / no / not-specified box, shared by the editor and the read-only display.
+ * PrimeReact's three states are mapped on ours so the box reads the way the data does: its empty
+ * (unset) box is "no", its tick is "yes", and its remaining state, which it draws with the unchecked
+ * icon, is "not specified" and gets a "?" for that icon. Hence a click cycles no → yes → not specified.
+ * `value` and `onChange` are the answer's own (true, false, or null for not specified).
+ */
+export function YesNoTriState({ value, disabled, onChange }: {
+  value: boolean | null;
+  disabled?: boolean;
+  onChange?: (value: boolean | null) => void;
+}) {
+  const shown = value === null ? false : value ? true : null;
+  return (
+    <TriStateCheckbox
+      className={`yes-no-tristate yes-no-${value === null ? "unknown" : value ? "yes" : "no"}`}
+      value={shown}
+      disabled={disabled}
+      uncheckIcon={<span className="yes-no-unknown-mark">?</span>}
+      onChange={(e) => onChange?.(e.value === true ? true : e.value === false ? null : false)}
+    />
+  );
+}
+
+/** A read-only yes/no: the editor's own checkbox, disabled, with the name of its state beside it. */
+function booleanMark(value: boolean | null | undefined, allowNoAnswer: boolean): ReactNode {
+  const label = value === true ? t("field.yes") : value === false ? t("field.no") : allowNoAnswer ? t("field.notSpecified") : t("field.no");
+  return (
+    <span className="boolean-renderer boolean-renderer-tristate" style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}>
+      {allowNoAnswer ? (
+        <YesNoTriState value={value ?? null} disabled />
+      ) : (
+        <Checkbox checked={value === true} disabled />
+      )}
+      <span className="boolean-renderer-label" style={{ marginLeft: "0.4rem" }}>{label}</span>
     </span>
   );
 }

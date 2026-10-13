@@ -111,8 +111,9 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
   if (col.fieldId == null || col.hidden) return null;
 
   const fieldId = String(col.fieldId);
-  const field = fields[fieldId];
-  if (!field) return null;
+  const catalogField = fields[fieldId];
+  if (!catalogField) return null;
+  const field = withColumnUnits(catalogField, col.units);
   // The type is edited from the fiche's header, not as one of the form's fields.
   if (isTypeField(field)) return null;
 
@@ -144,4 +145,16 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
       </div>
     </div>
   );
+}
+
+/**
+ * A measurement field as this form configuration offers it: the column's units, when it sets some,
+ * replace the units the field's own definition carries (the default one and the list to pick from).
+ */
+export function withColumnUnits(field: FieldResource, units: FormLayoutCol["units"]): FieldResource {
+  if (!units || units.symbols.length === 0 || field.answerType !== "MEASUREMENT") return field;
+  return {
+    ...field,
+    constraints: { ...field.constraints, unit: units.default, units: units.symbols.length > 1 ? units.symbols : null },
+  };
 }

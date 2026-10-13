@@ -1,5 +1,6 @@
 package fr.siamois.ui.form.dto;
 
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import lombok.Data;
@@ -21,6 +22,8 @@ public class CustomColUiDto implements Serializable {
     private boolean hidden = false;
     // Règles conditionnelles (actif / requis / liste filtrée / contraintes) — voir FieldRules.
     private FieldRules rules = FieldRules.NONE;
+    // Measurement: the units this form configuration offers; null keeps the field's own unit.
+    private FieldUnits units;
 
     /**
      * The PrimeFaces styleClass {@code customFormPanelContent.xhtml} binds via {@code col.className}
@@ -72,6 +75,11 @@ public class CustomColUiDto implements Serializable {
 
         public Builder rules(FieldRules rules) {
             col.setRules(rules == null ? FieldRules.NONE : rules);
+            return this;
+        }
+
+        public Builder units(FieldUnits units) {
+            col.setUnits(units);
             return this;
         }
 

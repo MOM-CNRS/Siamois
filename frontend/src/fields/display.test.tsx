@@ -81,6 +81,30 @@ describe("renderAnswerCell (one-line cell)", () => {
 
 // A reference reads as a light chip in its type's colour — the edit-mode token without its remove
 // button — and opens its fiche in the overview when it has one.
+describe("BOOLEAN answers", () => {
+  const yesNo = field({ answerType: "BOOLEAN" });
+
+  it("reads true as Oui and false as Non, and keeps false instead of dropping it as empty", () => {
+    expect(renderAnswerValue(yesNo, true)).toBe("Oui");
+    expect(renderAnswerValue(yesNo, false)).toBe("Non");
+    expect(markup(renderAnswerCell(yesNo, true))).toContain("Oui");
+    expect(markup(renderAnswerCell(yesNo, true))).toMatch(/class="[^"]*\bp-highlight\b/);
+    expect(markup(renderAnswerCell(yesNo, false))).not.toMatch(/class="[^"]*\bp-highlight\b/);
+  });
+
+  it("shows nothing as text for an unanswered field, and a disabled tri-state checkbox when 'no answer' is allowed", () => {
+    expect(renderAnswerValue(yesNo, null)).toBe("");
+    const tri = field({ answerType: "BOOLEAN", constraints: { allowNoAnswer: true } });
+    expect(markup(renderAnswerCell(tri, null))).toContain("p-tristatecheckbox");
+    expect(markup(renderAnswerCell(tri, null))).toContain("Non renseigné");
+  });
+
+  it("shows a measurement with the unit it was entered in", () => {
+    const surface = field({ answerType: "MEASUREMENT" });
+    expect(renderAnswerValue(surface, { numericValue: 3.5, symbol: "ha" })).toBe("3.5 ha");
+  });
+});
+
 describe("reference chips", () => {
   it("colours a chip by what it points at", () => {
     const ru = markup(renderAnswerCell(field({ answerType: "SELECT_MULTIPLE_RECORDING_UNIT" }), [

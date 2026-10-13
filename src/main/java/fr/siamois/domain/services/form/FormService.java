@@ -269,6 +269,8 @@ public class FormService {
                             a -> extractSpatialUnitSet((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) a)),
                     Map.entry(CustomFieldAnswerIntegerViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerBooleanViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerDecimalViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerSelectOneAddressViewModel.class,
@@ -443,6 +445,7 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
+        handlers.put(CustomFieldAnswerBooleanViewModel.class, this::handleBoolean);
         handlers.put(CustomFieldAnswerDecimalViewModel.class, this::handleDecimal);
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
@@ -543,6 +546,12 @@ public class FormService {
     private void handleDecimal(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerDecimalViewModel decimalAnswer) {
             decimalAnswer.setValue(value instanceof Number n ? n.doubleValue() : null);
+        }
+    }
+
+    private void handleBoolean(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerBooleanViewModel booleanAnswer) {
+            booleanAnswer.setValue(value instanceof Boolean b ? b : null);
         }
     }
 

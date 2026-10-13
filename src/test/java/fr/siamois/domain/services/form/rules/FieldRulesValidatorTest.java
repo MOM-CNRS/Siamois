@@ -32,6 +32,26 @@ class FieldRulesValidatorTest {
     private final Map<Long, CustomField> fields = List.of(concept, otherConcept, number, otherNumber, text, date).stream()
             .collect(Collectors.toMap(CustomField::getId, f -> f));
 
+    private final CustomField done = fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.builder().id(7L).label("topo").build();
+
+    @Test
+    void aYesNoFieldIsComparedToTrueOrFalse() {
+        Map<Long, CustomField> withBoolean = new java.util.HashMap<>(fields);
+        withBoolean.put(7L, done);
+
+        List<String> ok = validator.validate(FieldRules.NONE.withEnabledWhen(Condition.eq(7L, FieldValueSpec.literal(true))), 1L, withBoolean)
+                .stream().map(FieldRulesValidator.Issue::key).toList();
+        List<String> notABoolean = validator.validate(FieldRules.NONE.withEnabledWhen(Condition.eq(7L, FieldValueSpec.literal("oui"))), 1L, withBoolean)
+                .stream().map(FieldRulesValidator.Issue::key).toList();
+        List<String> ordered = validator.validate(FieldRules.NONE.withEnabledWhen(
+                        new Condition.Leaf(7L, ConditionOp.GT, List.of(FieldValueSpec.literal(true)))), 1L, withBoolean)
+                .stream().map(FieldRulesValidator.Issue::key).toList();
+
+        assertThat(ok).isEmpty();
+        assertThat(notABoolean).containsExactly("rules.error.valueType");
+        assertThat(ordered).containsExactly("rules.error.opNotAllowed");
+    }
+
     private static CustomField conceptField(long id, String label) {
         CustomFieldSelectOne field = new CustomFieldSelectOne();
         field.setId(id);

@@ -36,6 +36,7 @@ describe("registerDefaultFieldRenderers", () => {
     "SELECT_ONE",
     "SELECT_MULTIPLE",
     "MEASUREMENT",
+    "BOOLEAN",
   ])("registers the reference/measurement editor for %s", (answerType) => {
     expect(hasFieldRenderer(answerType)).toBe(true);
   });

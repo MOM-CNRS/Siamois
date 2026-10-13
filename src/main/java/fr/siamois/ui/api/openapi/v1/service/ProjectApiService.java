@@ -11,6 +11,7 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -746,6 +747,7 @@ public class ProjectApiService {
         if (field instanceof CustomFieldInteger) return coerceIntegerAnswer(raw);
         if (field instanceof CustomFieldDecimal) return coerceDecimalAnswer(raw);
         if (field instanceof CustomFieldDateTime) return coerceDateTimeAnswer(raw);
+        if (field instanceof CustomFieldBoolean) return coerceBooleanAnswer(raw);
         if (field instanceof CustomFieldSelectOneFromFieldCode) return coerceConceptId(raw);
         if (field instanceof CustomFieldSelectOneSpatialUnit) return coerceSpatialUnitId(raw);
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -775,6 +777,14 @@ public class ProjectApiService {
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Entier attendu, reçu : " + raw);
         }
+    }
+
+    private static Boolean coerceBooleanAnswer(Object raw) {
+        if (raw instanceof Boolean b) return b;
+        String text = String.valueOf(raw).trim();
+        if ("true".equalsIgnoreCase(text)) return Boolean.TRUE;
+        if ("false".equalsIgnoreCase(text)) return Boolean.FALSE;
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booléen attendu (true ou false), reçu : " + raw);
     }
 
     private static Double coerceDecimalAnswer(Object raw) {

@@ -484,15 +484,30 @@ public class CustomFieldAnswerService {
 
     /** Fills a view-model whose value is held by the answer itself; false when it is not one of those. */
     private boolean fillScalar(CustomFieldAnswerViewModel viewModel, CustomFieldAnswer answer, Object value) {
+        return fillPlainScalar(viewModel, value) || fillStructuredScalar(viewModel, answer);
+    }
+
+    /** A text, number, yes/no or date: the value is the answer's own, whatever else it holds. */
+    private static boolean fillPlainScalar(CustomFieldAnswerViewModel viewModel, Object value) {
         if (viewModel instanceof CustomFieldAnswerTextViewModel v && value instanceof String s) {
             v.setValue(s);
         } else if (viewModel instanceof CustomFieldAnswerIntegerViewModel v && value instanceof Integer i) {
             v.setValue(i);
+        } else if (viewModel instanceof CustomFieldAnswerBooleanViewModel v && value instanceof Boolean b) {
+            v.setValue(b);
         } else if (viewModel instanceof CustomFieldAnswerDecimalViewModel v && value instanceof Number n) {
             v.setValue(n.doubleValue());
         } else if (viewModel instanceof CustomFieldAnswerDateTimeViewModel v && value instanceof LocalDateTime d) {
             v.setValue(d);
-        } else if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    /** A measurement or a vocabulary pick: what the view-model holds is built from several of the answer's parts. */
+    private boolean fillStructuredScalar(CustomFieldAnswerViewModel viewModel, CustomFieldAnswer answer) {
+        if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
                 && answer instanceof CustomFieldAnswerMeasurement stored) {
             v.setValue(MeasurementAnswerDTO.builder()
                     .numericValue(stored.getValue())

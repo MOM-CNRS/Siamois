@@ -12,6 +12,7 @@ import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionUnit;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
@@ -141,7 +142,7 @@ public class FieldQueryService {
     private final EntityManager entityManager;
 
     private enum Kind {
-        TEXT("contains"), NUMBER("range"), DATE("date-range"), REFERENCE("in"), REFERENCES("in");
+        TEXT("contains"), NUMBER("range"), DATE("date-range"), BOOLEAN("equals"), REFERENCE("in"), REFERENCES("in");
 
         final String filterOp;
 
@@ -356,6 +357,7 @@ public class FieldQueryService {
         if (CustomFieldAnswerDecimal.class.isAssignableFrom(answerClass)
                 || CustomFieldAnswerMeasurement.class.isAssignableFrom(answerClass)) return scalarAnswer(answerClass, Kind.NUMBER, Double.class);
         if (CustomFieldAnswerDateTime.class.isAssignableFrom(answerClass)) return scalarAnswer(answerClass, Kind.DATE, LocalDateTime.class);
+        if (CustomFieldAnswerBoolean.class.isAssignableFrom(answerClass)) return scalarAnswer(answerClass, Kind.BOOLEAN, Boolean.class);
         if (CustomFieldAnswerSelectConcept.class.isAssignableFrom(answerClass)) return reference(false, "concepts", refKind, Concept.class, answerClass);
         if (CustomFieldAnswerSelectPerson.class.isAssignableFrom(answerClass)) return reference(false, "persons", refKind, targetOf(answerClass, "persons"), answerClass);
         if (CustomFieldAnswerSpatialUnit.class.isAssignableFrom(answerClass)) return reference(false, "spatialUnits", refKind, targetOf(answerClass, "spatialUnits"), answerClass);
@@ -448,6 +450,9 @@ public class FieldQueryService {
             case NUMBER, DATE -> {
                 if (!criterion.isRange()) throw badRequest("Filtre attendu en plage (.from/.to) : f." + fieldId);
             }
+            case BOOLEAN -> {
+                if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur un champ oui/non : f." + fieldId);
+            }
             case REFERENCE, REFERENCES -> {
                 if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur une référence : f." + fieldId);
                 if (!target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
@@ -462,6 +467,7 @@ public class FieldQueryService {
         Object from = bound(target, fieldId, criterion.from(), true);
         Object to = bound(target, fieldId, criterion.to(), false);
         List<String> texts = criterion.values().stream().map(v -> "%" + v.toLowerCase(Locale.ROOT) + "%").toList();
+        List<Boolean> flags = target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
 
         return (root, query, cb) -> {
             if (isStratigraphy(root.getJavaType(), target.attribute)) {
@@ -482,7 +488,7 @@ public class FieldQueryService {
                 return cb.exists(elements);
             }
             if (target.system) {
-                return valuePredicate(target, systemValue(root, target), texts, ids, from, to, cb);
+                return valuePredicate(target, systemValue(root, target), new Filter(texts, ids, flags, from, to), cb);
             }
             Subquery<Integer> answers = query.subquery(Integer.class);
             Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
@@ -491,7 +497,7 @@ public class FieldQueryService {
                     : answer.get(target.attribute);
             answers.select(cb.literal(1)).where(
                     ownedBy(answer, root, fieldId, cb),
-                    valuePredicate(target, value, texts, ids, from, to, cb));
+                    valuePredicate(target, value, new Filter(texts, ids, flags, from, to), cb));
             return cb.exists(answers);
         };
     }
@@ -512,9 +518,13 @@ public class FieldQueryService {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static Predicate valuePredicate(Target target, Expression<?> value, List<String> texts, List<Long> ids,
-                                            @Nullable Object from, @Nullable Object to, CriteriaBuilder cb) {
+    private static Predicate valuePredicate(Target target, Expression<?> value, Filter filter, CriteriaBuilder cb) {
+        List<String> texts = filter.texts();
+        List<Long> ids = filter.ids();
+        Object from = filter.from();
+        Object to = filter.to();
         return switch (target.kind) {
+            case BOOLEAN -> value.in(filter.flags());
             case TEXT -> cb.or(texts.stream()
                     .map(t -> cb.like(cb.lower((Expression<String>) value), t))
                     .toArray(Predicate[]::new));
@@ -528,6 +538,11 @@ public class FieldQueryService {
             }
             case REFERENCE, REFERENCES -> ((Path<?>) value).get("id").in(ids);
         };
+    }
+
+    /** What a filter compares a column with, parsed once for the kind of the column. */
+    private record Filter(List<String> texts, List<Long> ids, List<Boolean> flags,
+                          @Nullable Object from, @Nullable Object to) {
     }
 
     // ========== Sort ==========
@@ -562,7 +577,7 @@ public class FieldQueryService {
     private Expression<?> systemSortKey(Target target, Root<?> root, CriteriaQuery<?> query, CriteriaBuilder cb, String lang) {
         return switch (target.kind) {
             case TEXT -> cb.lower(root.<String>get(target.attribute));
-            case NUMBER, DATE -> systemValue(root, target);
+            case NUMBER, DATE, BOOLEAN -> systemValue(root, target);
             case REFERENCE -> target.concept
                     ? conceptLabel(query, cb, root.get(target.attribute), lang)
                     : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
@@ -573,6 +588,15 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> additionalSortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query, CriteriaBuilder cb, String lang) {
         return switch (target.kind) {
+            case BOOLEAN -> {
+                // max() has no boolean form: sort on 1 (yes) / 0 (no), and no value stays empty.
+                Subquery<Integer> sub = query.subquery(Integer.class);
+                Root<? extends CustomFieldAnswer> answer = sub.from(target.answerClass);
+                Expression<Boolean> flag = answer.get(target.attribute);
+                sub.select(cb.greatest(cb.<Integer>selectCase().when(cb.isTrue(flag), 1).when(cb.isFalse(flag), 0)))
+                        .where(ownedBy(answer, root, fieldId, cb));
+                yield sub;
+            }
             case TEXT, NUMBER, DATE -> {
                 Subquery<Comparable> sub = query.subquery(Comparable.class);
                 Root<? extends CustomFieldAnswer> answer = sub.from(target.answerClass);
@@ -631,6 +655,16 @@ public class FieldQueryService {
     }
 
     // ========== Values ==========
+
+    private static List<Boolean> parseBooleans(long fieldId, List<String> values) {
+        List<Boolean> flags = new ArrayList<>(values.size());
+        for (String value : values) {
+            if ("true".equalsIgnoreCase(value)) flags.add(Boolean.TRUE);
+            else if ("false".equalsIgnoreCase(value)) flags.add(Boolean.FALSE);
+            else throw badRequest("Booléen invalide pour f." + fieldId + " : " + value + " (true ou false attendu)");
+        }
+        return flags;
+    }
 
     private static List<Long> parseIds(long fieldId, List<String> values) {
         List<Long> ids = new ArrayList<>(values.size());

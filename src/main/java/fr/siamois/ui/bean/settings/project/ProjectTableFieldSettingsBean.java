@@ -8,9 +8,12 @@ import fr.siamois.domain.models.exceptions.form.NoVocabularySelectedException;
 import fr.siamois.domain.models.exceptions.form.VocabularyConfigNotSavedException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldWidth;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -19,17 +22,20 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.identifier.*;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
@@ -50,6 +56,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -66,6 +73,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.eventPublisher = eventPublisher;
     }
 
+    /** Set by Spring, like the publisher; null where the bean is built by hand. */
+    private transient UnitDefinitionService unitDefinitionService;
+
+    @Autowired(required = false)
+    void setUnitDefinitionService(UnitDefinitionService unitDefinitionService) {
+        this.unitDefinitionService = unitDefinitionService;
+    }
+
     public static final int TAB_CHAMPS = 0;
     public static final int TAB_APERCU = 1;
     public static final int TAB_DEFINITION = 2;
@@ -73,6 +88,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
     public static final String BRANCHE = "branche";
+    private static final String INTERNAL_ERROR = "common.error.internal";
     public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
@@ -112,7 +128,23 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private String draftOriginalName;
     private String draftName;
     private FieldType draftType;
+    /** The type the open field had when the drawer opened: null for a new field. */
+    private FieldType draftOriginalType;
+    /** MEASUREMENT: the concepts that define the measure, shown instead of the free name and description. */
+    private ConceptSummary draftMeasureType;
+    private ConceptSummary draftMeasureNature;
+    /** MEASUREMENT added by the project: what the user picked (labels round-trip through the autocompletes). */
+    private String draftMeasureTypeLabel;
+    private String draftMeasureNatureLabel;
+    private transient List<ConceptAutocompleteDTO> lastMeasureTypeResults = new ArrayList<>();
+    private transient List<ConceptAutocompleteDTO> lastMeasureNatureResults = new ArrayList<>();
     private String draftDescription;
+    /** BOOLEAN: the answer may stay empty (a third state beside yes and no). */
+    private boolean draftAllowNoAnswer;
+    /** MEASUREMENT: what the units measure, the units offered, and the one a new answer starts in. */
+    private UnitDefinition.Dimension draftDimension;
+    private List<String> draftUnitIds = new ArrayList<>();
+    private String draftDefaultUnitId;
 
     private boolean draftIsSystem;
     private String draftFieldCode;
@@ -240,6 +272,22 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
         // a table opens on its first type; one with none yet (its thesaurus gave it nothing) opens empty
         selectType(typesForSelectedTable.isEmpty() ? null : typesForSelectedTable.get(0).getName());
+    }
+
+    /**
+     * The table's own page, from its name in the tree: what the table is for and a way to add a type,
+     * with no type open.
+     */
+    public void selectTableOnly(ConfigurableTable table) {
+        selectedTable = table;
+        expandedNodes.add(tableNode(table));
+        typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
+        selectType(null);
+    }
+
+    /** What the selected table is for, shown on its page. */
+    public String getSelectedTableDescription() {
+        return selectedTable == null ? "" : langBean.msg("projectTables.table.description." + selectedTable.name());
     }
 
     public void selectType(String typeName) {
@@ -643,6 +691,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                 .ifPresent(this::openDrawerForEdit);
     }
 
+    /** The "+ champ" of a type in the tree: selects that type, then opens the picker that adds a field to it. */
+    public void addFieldToType(ConfigurableTable table, String typeName) {
+        if (table != selectedTable || !typeName.equals(selectedTypeName)) {
+            selectTypeOf(table, typeName);
+        }
+        addField();
+    }
+
     public int getTypeCountFor(ConfigurableTable table) {
         return tableFieldConfigService.listTypes(project.getId(), table).size();
     }
@@ -774,8 +830,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftOriginalName = null;
         draftName = "";
         draftType = FieldType.TEXT;
+        draftOriginalType = null;
+        draftMeasureType = null;
+        draftMeasureNature = null;
+        draftMeasureTypeLabel = null;
+        draftMeasureNatureLabel = null;
         draftDescription = "";
         draftIsSystem = false;
+        loadDraftOptions(FieldOptions.NONE);
         resetDraftParams();
         drawerOpen = true;
     }
@@ -784,8 +846,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftOriginalName = field.getName();
         draftName = field.getName();
         draftType = field.getType();
+        draftOriginalType = field.getType();
         draftDescription = field.getDescription();
         draftIsSystem = field.isSystemField();
+        loadDraftOptions(field.getOptions() == null ? FieldOptions.NONE : field.getOptions());
+        draftMeasureType = field.getMeasureType();
+        draftMeasureNature = field.getMeasureNature();
+        draftMeasureTypeLabel = draftMeasureType == null ? null : draftMeasureType.name();
+        draftMeasureNatureLabel = draftMeasureNature == null ? null : draftMeasureNature.name();
         draftFieldCode = field.getSourceLabel();
         resetDraftParams();
         draftSource = draftIsSystem && field.getType().isConfigurable() ? "principal" : null;
@@ -808,7 +876,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * edit there (name, type and description are locked). The conditional rules are saved separately, after this.
      */
     public void saveDrawerIfEditable() {
-        if (!draftIsSystem || isDraftConfigurable()) {
+        if (!draftIsSystem || isDraftConfigurable() || isDraftMeasurement()) {
             saveDrawer();
         }
     }
@@ -876,6 +944,17 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     /** What the banner names while a field is open: its caption, or "new field" while one is being created. */
     public String getDraftDisplayName() {
+        if (isDraftMeasureSelectable() && draftMeasureTypeLabel != null && !draftMeasureTypeLabel.isBlank()) {
+            return measureName();
+        }
+        if (isDraftDefinedByMeasureConcepts()) {
+            String nature = getDraftMeasureNatureName();
+            return nature.isBlank() ? getDraftMeasureTypeName() : getDraftMeasureTypeName() + " " + nature;
+        }
+        return draftCaption();
+    }
+
+    private String draftCaption() {
         if (draftName == null || draftName.isBlank()) {
             return langBean.msg("projectTables.drawer.newFieldName");
         }
@@ -887,7 +966,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftOriginalName = null;
         draftName = null;
         draftType = null;
+        draftOriginalType = null;
+        draftMeasureType = null;
+        draftMeasureNature = null;
+        draftMeasureTypeLabel = null;
+        draftMeasureNatureLabel = null;
         draftDescription = null;
+        loadDraftOptions(FieldOptions.NONE);
         draftIsSystem = false;
         draftFieldCode = null;
         resetDraftParams();
@@ -1045,7 +1130,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return conceptService.fetchAutocompleteFromRemoteThesaurus(draftVocabulary, query);
         } catch (JsonProcessingException | RuntimeException e) {
             log.error("Could not fetch the concepts matching '{}' in thesaurus {}", query, draftVocabulary.getBaseUri(), e);
-            showDrawerError("common.error.internal");
+            showDrawerError(INTERNAL_ERROR);
             return List.of();
         }
     }
@@ -1068,7 +1153,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         } catch (RuntimeException e) {
             log.error("Could not fetch the collections of thesaurus {}", draftVocabulary.getBaseUri(), e);
             lastCollectionResults = List.of();
-            showDrawerError("common.error.internal");
+            showDrawerError(INTERNAL_ERROR);
         }
         return lastCollectionResults.stream().map(ConceptCollectionDetachedDTO::getLabelToDisplay).toList();
     }
@@ -1081,12 +1166,26 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void saveDrawer() {
         drawerErrorMessage = null;
         boolean created = draftOriginalName == null;
+        if (isDraftMeasureSelectable()) {
+            if (measureConceptIdOf(draftMeasureTypeLabel, lastMeasureTypeResults, draftMeasureType) == null) {
+                showDrawerError("projectTables.drawer.measure.typeRequired");
+                return;
+            }
+            draftName = measureName();
+        }
+        FieldOptions options = draftOptions();
+        if (!draftIsSystem && draftType == FieldType.MEASUREMENT && options.allowedUnitIds().isEmpty()) {
+            showDrawerError("projectTables.drawer.units.required");
+            return;
+        }
         formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
         if (draftOriginalName == null) {
-            tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription);
+            tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription, options);
         } else {
-            tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName, draftName, draftType, draftDescription);
+            tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName,
+                    new FieldDefinition(draftName, draftType, draftDescription, options));
         }
+        saveDraftUnits(options);
         // the field now exists under that name : should the vocabulary configuration fail below, the
         // drawer stays open on the error, and saving again must update that field rather than try to
         // create a second one — or, after a rename, update from a name that no longer exists
@@ -1227,23 +1326,221 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return draftOriginalName == null;
     }
 
-    public FieldType[] getFieldTypeOptions() {
-        return new FieldType[]{FieldType.TEXT, FieldType.INTEGER, FieldType.MEASUREMENT, FieldType.SELECT_ONE, FieldType.SELECT_MULTIPLE};
+    /**
+     * The types a field can be created as, one entry per family: "multiple values" is a checkbox
+     * beside the type, not a type of its own.
+     */
+    public List<FieldType> getFieldTypeOptions() {
+        return FieldType.userCreatableTypes().stream().filter(t -> !t.isMultiple()).toList();
     }
 
-    /**
-     * The {@code p:selectOneMenu} binds to this String-backed pair rather than {@code draftType}
-     * directly: every other {@code p:selectOneMenu} in this codebase does the same (see
-     * {@code ProfileSettingsBean.FDefaultInstitutionId}/{@code FSelectedLang}), because relying on
-     * JSF's implicit enum converter here doesn't reliably round-trip the selection on postback.
-     */
+    /** The family the type menu shows for the open field (a multiple-valued type shows as its single sibling). */
     public String getDraftTypeName() {
-        return draftType == null ? null : draftType.name();
+        return draftType == null ? null : draftType.family().name();
     }
 
     public void setDraftTypeName(String name) {
-        draftType = name == null ? null : FieldType.valueOf(name);
+        if (name == null) {
+            draftType = null;
+            return;
+        }
+        boolean multiple = draftType != null && draftType.isMultiple();
+        FieldType family = FieldType.valueOf(name);
+        draftType = multiple && family.supportsMultiple() ? family.multipleVariant() : family;
     }
+
+    /**
+     * JSF fills this list from the unit checkboxes with whatever type their item values have (the
+     * units' Long ids), whatever the generic type says: they are kept as Strings here, which is
+     * what every reader of the list compares with.
+     */
+    public void setDraftUnitIds(List<String> ids) {
+        // read as List<?>: the elements may be Longs, and a String-typed read would cast each one
+        List<?> raw = ids;
+        draftUnitIds = raw == null ? new ArrayList<>()
+                : raw.stream().map(String::valueOf).collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /** Whether the type menu's choice has a multiple-valued sibling, so the checkbox is offered. */
+    public boolean isDraftSupportsMultiple() {
+        return draftType != null && !draftIsSystem && draftType.family().supportsMultiple();
+    }
+
+    public boolean isDraftMultiple() {
+        return draftType != null && draftType.isMultiple();
+    }
+
+    public void setDraftMultiple(boolean multiple) {
+        if (draftType == null || !draftType.family().supportsMultiple()) return;
+        draftType = multiple ? draftType.family().multipleVariant() : draftType.family();
+    }
+
+    /** Changing the type of a saved field makes a new field: the answers given so far are not carried over. */
+    public boolean isDraftTypeChanged() {
+        return draftOriginalType != null && draftType != null && draftOriginalType != draftType;
+    }
+
+    public boolean isDraftBoolean() {
+        return draftType == FieldType.BOOLEAN;
+    }
+
+    /**
+     * A measure added by the project is defined by what it measures and its nature, both picked in the
+     * thesaurus: they replace the free name, which is the two put together.
+     */
+    public boolean isDraftMeasureSelectable() {
+        return draftType == FieldType.MEASUREMENT && !draftIsSystem;
+    }
+
+    /**
+     * A system measure shows what it measures and its nature, read-only: its name and description are
+     * not its own to set. One with no concept for it is shown by its own name, with an empty nature.
+     */
+    public boolean isDraftDefinedByMeasureConcepts() {
+        return draftType == FieldType.MEASUREMENT && draftIsSystem && draftOriginalName != null;
+    }
+
+    /** Whether the free name is hidden: a measure's name is built from its type and nature. */
+    public boolean isDraftNameDerived() {
+        return isDraftMeasureSelectable() || isDraftDefinedByMeasureConcepts();
+    }
+
+    /** What the system measure measures: its type concept, the field's own name when it has none. */
+    public String getDraftMeasureTypeName() {
+        return draftMeasureType != null ? draftMeasureType.name() : draftCaption();
+    }
+
+    public String getDraftMeasureNatureName() {
+        return draftMeasureNature != null ? draftMeasureNature.name() : "";
+    }
+
+    public List<String> completeMeasureTypes(String query) {
+        lastMeasureTypeResults = measureConcepts(CustomFieldMeasurement.MEASUREMENT_TYPE_FIELD_CODE, query);
+        return lastMeasureTypeResults.stream().map(this::measureLabelOf).toList();
+    }
+
+    public List<String> completeMeasureNatures(String query) {
+        lastMeasureNatureResults = measureConcepts(CustomFieldMeasurement.MEASUREMENT_NATURE_FIELD_CODE, query);
+        return lastMeasureNatureResults.stream().map(this::measureLabelOf).toList();
+    }
+
+    private List<ConceptAutocompleteDTO> measureConcepts(String fieldCode, String query) {
+        try {
+            return new ArrayList<>(tableFieldConfigService.measureConcepts(project.getId(), fieldCode, query));
+        } catch (RuntimeException e) {
+            log.error("Could not fetch the concepts of {} matching '{}'", fieldCode, query, e);
+            showDrawerError(INTERNAL_ERROR);
+            return new ArrayList<>();
+        }
+    }
+
+    private String measureLabelOf(ConceptAutocompleteDTO concept) {
+        return concept.getConceptLabelToDisplay() != null ? concept.getConceptLabelToDisplay().getLabel() : concept.getOriginalPrefLabel();
+    }
+
+    /** The concept behind a label the user picked: a search result, or the concept the field already had. */
+    private Long measureConceptIdOf(String label, List<ConceptAutocompleteDTO> results, ConceptSummary current) {
+        if (label == null || label.isBlank()) return null;
+        return results.stream().filter(c -> label.equals(measureLabelOf(c))).map(c -> c.concept().getId()).findFirst()
+                .orElseGet(() -> current != null && label.equals(current.name()) ? current.id() : null);
+    }
+
+    /** The name of a measure: what it measures, then its nature. */
+    private String measureName() {
+        String nature = draftMeasureNatureLabel == null ? "" : draftMeasureNatureLabel.trim();
+        String type = draftMeasureTypeLabel == null ? "" : draftMeasureTypeLabel.trim();
+        return nature.isEmpty() ? type : type + " " + nature;
+    }
+
+    public boolean isDraftMeasurement() {
+        return draftType == FieldType.MEASUREMENT;
+    }
+
+    private void loadDraftOptions(FieldOptions options) {
+        draftAllowNoAnswer = options.allowNoAnswer();
+        draftUnitIds = options.allowedUnitIds().stream().map(String::valueOf).collect(Collectors.toCollection(ArrayList::new));
+        draftDefaultUnitId = options.defaultUnitId() == null ? null : String.valueOf(options.defaultUnitId());
+        draftDimension = unitCatalogue().stream()
+                .filter(u -> options.defaultUnitId() != null && options.defaultUnitId().equals(u.getId()))
+                .map(UnitDefinitionDTO::getDimension)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * The units a measurement is entered in belong to the form configuration of the type, not to the
+     * field: they are written there, for a system field as well as for one added by the project.
+     */
+    private void saveDraftUnits(FieldOptions options) {
+        if (draftType != FieldType.MEASUREMENT || options.allowedUnitIds().isEmpty()) return;
+        Map<Long, String> symbolById = new HashMap<>();
+        unitCatalogue().forEach(u -> symbolById.put(u.getId(), u.getSymbol()));
+        List<FieldUnits.UnitRef> units = options.allowedUnitIds().stream()
+                .filter(symbolById::containsKey)
+                .map(id -> new FieldUnits.UnitRef(id, symbolById.get(id)))
+                .toList();
+        tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftName)
+                .ifPresent(field -> formLayoutService.saveUnits(project.getId(), selectedTable, selectedTypeName,
+                        field.getId(), new FieldUnits(options.defaultUnitId(), units)));
+    }
+
+    private FieldOptions draftOptions() {
+        if (draftType == FieldType.BOOLEAN) {
+            return FieldOptions.noAnswer(draftAllowNoAnswer);
+        }
+        if (draftType == FieldType.MEASUREMENT) {
+            Set<Long> ids = draftUnitIds.stream().map(Long::valueOf).collect(Collectors.toCollection(LinkedHashSet::new));
+            Long defaultId = draftDefaultUnitId == null || draftDefaultUnitId.isBlank() ? null : Long.valueOf(draftDefaultUnitId);
+            if (defaultId != null && !ids.contains(defaultId)) defaultId = null;
+            if (defaultId == null && !ids.isEmpty()) defaultId = ids.iterator().next();
+            return FieldOptions.units(defaultId, ids).measuring(
+                    measureConceptIdOf(draftMeasureTypeLabel, lastMeasureTypeResults, draftMeasureType),
+                    measureConceptIdOf(draftMeasureNatureLabel, lastMeasureNatureResults, draftMeasureNature));
+        }
+        return FieldOptions.NONE;
+    }
+
+    private List<UnitDefinitionDTO> unitCatalogue() {
+        return unitDefinitionService == null ? List.of() : unitDefinitionService.findOptions();
+    }
+
+    /** What a measurement can measure: every dimension the unit catalogue has a unit for. */
+    public List<UnitDefinition.Dimension> getDimensionOptions() {
+        return unitCatalogue().stream().map(UnitDefinitionDTO::getDimension).distinct().sorted().toList();
+    }
+
+    public String dimensionLabel(UnitDefinition.Dimension dimension) {
+        return langBean.msg("projectTables.drawer.dimension." + dimension.name());
+    }
+
+    /** The units of the chosen dimension, base unit first. */
+    public List<UnitDefinitionDTO> getUnitOptions() {
+        if (draftDimension == null) return List.of();
+        return unitCatalogue().stream()
+                .filter(u -> u.getDimension() == draftDimension)
+                .sorted(Comparator.comparing(UnitDefinitionDTO::getFactorToBase))
+                .toList();
+    }
+
+    public String getDraftDimensionName() {
+        return draftDimension == null ? null : draftDimension.name();
+    }
+
+    /** Another dimension means other units: what was picked for the previous one is dropped. */
+    public void setDraftDimensionName(String name) {
+        UnitDefinition.Dimension chosen = name == null || name.isBlank() ? null : UnitDefinition.Dimension.valueOf(name);
+        if (chosen != draftDimension) {
+            draftUnitIds = new ArrayList<>();
+            draftDefaultUnitId = null;
+        }
+        draftDimension = chosen;
+    }
+
+    /** The units picked so far, as the choices for the default unit. */
+    public List<UnitDefinitionDTO> getPickedUnitOptions() {
+        return getUnitOptions().stream().filter(u -> draftUnitIds.contains(String.valueOf(u.getId()))).toList();
+    }
+
 
     public List<String> completeConfigurableTypes(String query) {
         return tableFieldConfigService.listConfigurableTypes(project.getId(), selectedTable, query);

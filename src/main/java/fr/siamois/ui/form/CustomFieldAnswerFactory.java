@@ -2,6 +2,7 @@ package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -26,6 +27,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
@@ -74,6 +76,7 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldSelectMultipleSpatialUnit.class, f ->
                         new CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel(((CustomFieldSelectMultipleSpatialUnit) f).getSource())),
                 Map.entry(CustomFieldInteger.class, f -> new CustomFieldAnswerIntegerViewModel()),
+                Map.entry(CustomFieldBoolean.class, f -> new CustomFieldAnswerBooleanViewModel()),
                 Map.entry(CustomFieldDecimal.class, f -> new CustomFieldAnswerDecimalViewModel()),
                 Map.entry(CustomFieldSelectOnePerson.class, f -> new CustomFieldAnswerSelectOnePersonViewModel()),
                 Map.entry(CustomFieldSelectMultipleRecordingUnit.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
@@ -100,6 +103,7 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldText.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldFile.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldInteger.class, v -> new CustomFieldAnswerInteger()),
+                Map.entry(CustomFieldBoolean.class, v -> new CustomFieldAnswerBoolean()),
                 Map.entry(CustomFieldDecimal.class, v -> new CustomFieldAnswerDecimal()),
                 Map.entry(CustomFieldDateTime.class, v -> new CustomFieldAnswerDateTime()),
                 Map.entry(CustomFieldSelectOneFromFieldCode.class, v -> new CustomFieldAnswerSelectOneFromFieldAnswerCode()),

@@ -5,11 +5,15 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -25,6 +29,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.layout.FormLayout;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
@@ -40,11 +45,13 @@ import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepositor
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -81,6 +88,8 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
+    private static final String NO_CONFIG_FOR_FIELD = "No configuration for field {} in project {}";
+
     private static final String NO_SOURCE = "—";
     private static final int DEFAULT_MIN_CODE = 1;
     private static final int DEFAULT_MAX_CODE = 999;
@@ -100,6 +109,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
     private final FormLayoutSeeds formLayoutSeeds;
     private final FormConfigGroupRepository formConfigGroupRepository;
+    private final UnitDefinitionRepository unitDefinitionRepository;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -403,8 +413,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
-                                           String name, FieldType type, String description) {
-        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description);
+                                           String name, FieldType type, String description, FieldOptions options) {
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description, options);
         return toDto(linkField(result.savedReplacement, result.owner, true, false));
     }
 
@@ -442,7 +452,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName,
-                                           String fieldName, String newName, FieldType newType, String description) {
+                                           String fieldName, FieldDefinition definition) {
+        String newName = definition.name();
+        FieldType newType = definition.type();
+        String description = definition.description();
+        FieldOptions options = definition.options();
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
                 .filter(field -> fieldName.equals(field.field().getLabel()))
                 .findFirst();
@@ -460,11 +474,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (typeOf(current) == newType) {
             current.setLabel(newName);
             current.setHint(description);
+            applyOptions(current, options);
             customFieldRepository.save(current);
             return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
         }
 
-        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description);
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description, options);
 
         boolean owned = ownedBy(effective, result.owner());
         if (owned) {
@@ -480,9 +495,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return toDto(link);
     }
 
-    private @NonNull TableFieldConfigServiceImpl.SetupReplacementLabelResult configureReplacementLabel(Long projectId, ConfigurableTable table, String typeName, String newName, FieldType newType, String description) {
+    private @NonNull TableFieldConfigServiceImpl.SetupReplacementLabelResult configureReplacementLabel(Long projectId, ConfigurableTable table, String typeName, String newName, FieldType newType, String description, FieldOptions options) {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         CustomField replacement = newCustomFieldOfType(newType);
+        applyOptions(replacement, options);
         replacement.setLabel(newName);
         replacement.setIsSystemField(false);
         replacement.setHint(description);
@@ -536,6 +552,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         to.setWidth(from.getWidth());
         to.setPosition(from.getPosition());
         to.setRules(from.getRules());
+        to.setUnits(from.getUnits());
         fieldFormConfigRepository.save(to);
     }
 
@@ -551,12 +568,91 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private CustomField newCustomFieldOfType(FieldType type) {
         return switch (type) {
+            case TEXT -> CustomFieldText.builder().isTextArea(false).build();
             case INTEGER -> CustomFieldInteger.builder().build();
+            case DECIMAL -> CustomFieldDecimal.builder().build();
+            case DATETIME -> CustomFieldDateTime.builder().build();
+            case BOOLEAN -> CustomFieldBoolean.builder().build();
             case MEASUREMENT -> CustomFieldMeasurement.builder().build();
             case SELECT_ONE -> new CustomFieldSelectOne();
             case SELECT_MULTIPLE -> new CustomFieldSelectMultiple();
-            default -> CustomFieldText.builder().isTextArea(false).build();
+            default -> throw new IllegalArgumentException("Un champ de type " + type + " ne se crée pas depuis cet écran");
         };
+    }
+
+    /** Sets on a new or edited field the options its type carries; the other types have none. */
+    private void applyOptions(CustomField field, FieldOptions options) {
+        FieldOptions given = options == null ? FieldOptions.NONE : options;
+        if (field instanceof CustomFieldBoolean booleanField) {
+            booleanField.setAllowNoAnswer(given.allowNoAnswer());
+        } else if (field instanceof CustomFieldMeasurement measurement) {
+            applyUnits(measurement, given);
+            Long typeId = given.measureTypeConceptId();
+            if (typeId != null) {
+                measurement.setConcept(requireConcept(typeId));
+            }
+            Long natureId = given.measureNatureConceptId();
+            measurement.setMeasurementNature(natureId == null ? null : requireConcept(natureId));
+        }
+    }
+
+    private Concept requireConcept(Long id) {
+        return conceptRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Concept inconnu : " + id));
+    }
+
+    /**
+     * The units picked for a measurement all measure the same thing, and the default one is the
+     * field's own unit; a field with none picked as default takes the first.
+     */
+    private void applyUnits(CustomFieldMeasurement measurement, FieldOptions options) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (options.defaultUnitId() != null) ids.add(options.defaultUnitId());
+        ids.addAll(options.allowedUnitIds());
+        if (ids.isEmpty()) {
+            throw new IllegalArgumentException("Une mesure a besoin d'au moins une unité");
+        }
+        Map<Long, UnitDefinition> found = new HashMap<>();
+        unitDefinitionRepository.findAllById(ids).forEach(unit -> found.put(unit.getId(), unit));
+        if (!found.keySet().containsAll(ids)) {
+            throw new IllegalArgumentException("Unité inconnue parmi : " + ids);
+        }
+        List<UnitDefinition> units = ids.stream().map(found::get).toList();
+        if (units.stream().map(UnitDefinition::getDimension).distinct().count() > 1) {
+            throw new IllegalArgumentException("Les unités d'une mesure doivent mesurer la même grandeur");
+        }
+        // Only the default unit is the field's own: the list a user picks among belongs to the form
+        // configuration (FieldFormConfig#units), saved by FormLayoutService#saveUnits.
+        measurement.setUnit(units.get(0));
+    }
+
+    /**
+     * What the field carries besides its type. A measurement's units are the ones its form
+     * configuration offers when it set some, the field's own unit otherwise; a system field's unit is
+     * built in code with no id, so units are matched on the catalogue by symbol.
+     */
+    private FieldOptions optionsOf(CustomField field, @Nullable FieldUnits configured) {
+        if (field instanceof CustomFieldBoolean booleanField) {
+            return FieldOptions.noAnswer(booleanField.isNoAnswerAllowed());
+        }
+        if (field instanceof CustomFieldMeasurement measurement) {
+            if (configured != null) {
+                return FieldOptions.units(configured.defaultUnitId(), new LinkedHashSet<>(configured.ids()));
+            }
+            Set<Long> ids = new LinkedHashSet<>();
+            measurement.unitsToChooseFrom().forEach(u -> catalogueUnit(u.getSymbol(), u.getDimension()).ifPresent(c -> ids.add(c.getId())));
+            Long defaultId = measurement.getUnit() == null ? null
+                    : catalogueUnit(measurement.getUnit().getSymbol(), measurement.getUnit().getDimension()).map(UnitDefinition::getId).orElse(null);
+            return FieldOptions.units(defaultId, ids);
+        }
+        return FieldOptions.NONE;
+    }
+
+    private Optional<UnitDefinition> catalogueUnit(@Nullable String symbol, @Nullable UnitDefinition.Dimension dimension) {
+        if (symbol == null) return Optional.empty();
+        if (dimension != null) {
+            return unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc(symbol, dimension);
+        }
+        return unitDefinitionRepository.findAllByOrderByLabelAsc().stream().filter(u -> symbol.equals(u.getSymbol())).findFirst();
     }
 
     /**
@@ -894,7 +990,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                     .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId);
             return config == null ? Optional.empty() : Optional.ofNullable(config.getConcept());
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
             return Optional.empty();
         }
     }
@@ -934,13 +1030,28 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             }
             return fieldConfigurationService.fetchAutocomplete(currentUser(), table.getFieldCode(), input, projectId);
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input) {
+        try {
+            return fieldConfigurationService.fetchAutocomplete(currentUser(), fieldCode, input, projectId);
+        } catch (NoConfigForFieldException e) {
+            log.warn(NO_CONFIG_FOR_FIELD, fieldCode, projectId, e);
             return List.of();
         }
     }
 
     private String labelOf(@Nullable Concept concept) {
         return concept == null ? "" : labelService.findLabelOf(concept, currentUser().getLang()).getLabel();
+    }
+
+    private @Nullable ConceptSummary summaryOf(@Nullable Concept concept) {
+        if (concept == null || concept.getId() == null) return null;
+        return new ConceptSummary(concept.getId(), labelOf(concept), definitionOf(concept));
     }
 
     private String definitionOf(@Nullable Concept concept) {
@@ -950,45 +1061,56 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private TypeFieldFormConfig toDto(EffectiveField effective) {
-        return describe(effective.field(), effective.active(), effective.mandatory(), effective.institutionLocked());
+        FieldFormConfig stored = effective.stored();
+        return describe(effective.field(), effective.active(), effective.mandatory(), effective.institutionLocked(),
+                stored == null ? null : FieldUnits.fromJson(stored.getUnits()));
     }
 
     @Override
     public TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked) {
+        return describe(field, active, mandatory, institutionLocked, null);
+    }
+
+    @Override
+    public TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked,
+                                        @Nullable FieldUnits units) {
         FieldType type = typeOf(field);
-        return TypeFieldFormConfig.builder()
+        TypeFieldFormConfig dto = TypeFieldFormConfig.builder()
                 .id(field.getId())
                 .ruleFamily(fr.siamois.domain.models.form.rules.RuleFieldFamily.of(field))
                 .name(field.getLabel())
+                .description(field.getHint())
                 .type(type)
                 .systemField(isSystemField(field))
                 .active(active)
                 .mandatory(mandatory)
                 .institutionLocked(institutionLocked)
                 .configurable(type.isConfigurable())
+                .options(optionsOf(field, units))
                 .sourceLabel(sourceOf(field))
                 .valueBinding(field.getValueBinding())
                 .build();
+        if (field instanceof CustomFieldMeasurement measurement) {
+            dto.setMeasureType(summaryOf(measurement.getConcept()));
+            dto.setMeasureNature(summaryOf(measurement.getMeasurementNature()));
+        }
+        return dto;
     }
 
     private TypeFieldFormConfig toDto(FieldFormConfig config) {
         return toDto(new EffectiveField(config.getField(), config, config.isMandatory()));
     }
 
+    /**
+     * The type of a field, read from the {@code answer_type} discriminator of its class so the two
+     * can never drift apart; a class without one is a programming error, not a text field.
+     */
     private FieldType typeOf(CustomField field) {
-        if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
-        if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
-        if (field instanceof CustomFieldSelectOneFromFieldCode) return FieldType.SELECT_ONE;
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
-        if (field instanceof CustomFieldSelectOneSpatialUnit
-                || field instanceof CustomFieldSelectMultipleSpatialUnitTree
-                || field instanceof CustomFieldSelectOneAddress) return FieldType.SELECT_ONE_SPATIAL_UNIT;
-        if (field instanceof CustomFieldSelectOneActionUnit) return FieldType.PROJET;
-        if (field instanceof CustomFieldSelectOneRecordingUnit
-                || field instanceof CustomFieldSelectMultipleRecordingUnit) return FieldType.SELECT_ONE_RECORDING_UNIT;
-        if (field instanceof CustomFieldSelectOne) return FieldType.SELECT_ONE;
-        if (field instanceof CustomFieldSelectMultiple) return FieldType.SELECT_MULTIPLE;
-        return FieldType.TEXT;
+        DiscriminatorValue discriminator = Hibernate.getClass(field).getAnnotation(DiscriminatorValue.class);
+        if (discriminator == null) {
+            throw new IllegalStateException("No answer_type discriminator on " + Hibernate.getClass(field).getName());
+        }
+        return FieldType.fromDiscriminator(discriminator.value());
     }
 
     private String sourceOf(CustomField field) {

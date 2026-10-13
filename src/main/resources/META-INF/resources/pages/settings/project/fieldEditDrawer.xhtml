@@ -70,21 +70,49 @@
                     </h:panelGroup>
                 </h:panelGroup>
 
+                <!-- The actions stay at the top, outside the scrolling body. -->
+                <p:progressBar widgetVar="pbAjaxFieldDrawerSaveWidget"
+                               id="pbAjaxFieldDrawerSave"
+                               ajax="true"
+                               value="#{projectTableFieldSettingsBean.progressWrapper.progressPercentage}"
+                               labelTemplate="{value}%"
+                               styleClass="field-drawer-progress-bar"
+                               style="visibility: collapse; margin: 0 22px 0.5rem;"
+                               global="true"
+                               interval="500"
+                />
+
+                <p id="fieldDrawerFunnyMessage"
+                   class="field-drawer-progress-bar text-muted"
+                   style="visibility: collapse; font-style: italic; margin: 0 22px 0.5rem;"
+                />
+                <div class="ptc-drawer-actions">
+                    <p:commandButton value="#{langBean.msg('projectTables.drawer.remove')}" icon="bi bi-x-lg"
+                                      styleClass="ui-button-flat ptc-drawer-remove"
+                                      rendered="#{projectTableFieldSettingsBean.draftRemovable}"
+                                      actionListener="#{projectTableFieldSettingsBean.removeDraftField()}" immediate="true"
+                                      update=":ptcMain :treeFormCC:treeForm" oncomplete="ptcScrollToFocus()"/>
+                    <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
+                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
+                                      update=":ptcMain :treeFormCC:treeForm"/>
+                    <!-- Only the two field tables are re-rendered, not the whole outer form: the tab
+                         panel is what scrolls, so replacing the full form would put the user back at
+                         the top of it after every save/cancel. Both tables are targeted because the
+                         saved draft can be either a system or an additional field. -->
+                    <p:commandButton value="#{langBean.msg('common.action.save')}"
+                                      rendered="#{not projectTableFieldSettingsBean.draftIsSystem or projectTableFieldSettingsBean.draftConfigurable or projectTableFieldSettingsBean.draftMeasurement or fieldRulesEditorBean.open}"
+                                      actionListener="#{projectTableFieldSettingsBean.saveDrawerIfEditable()}"
+                                      action="#{fieldRulesEditorBean.saveIfOpen()}"
+                                      process="@form"
+                                      update=":ptcMain :treeFormCC:treeForm"
+                                      onstart="startFieldDrawerProgressBar()" oncomplete="endFieldDrawerProgressBar()"/>
+                </div>
+
                 <div class="ptc-drawer-body">
                   <!-- 1. The field itself: its definition (a thesaurus concept). -->
                   <div class="ptc-drawer-section">
                     <h3 class="ptc-drawer-section-title">#{langBean.msg('projectTables.drawer.section.definition')}</h3>
                     <p class="ptc-drawer-section-hint">#{langBean.msg('projectTables.drawer.section.definitionHint')}</p>
-                    <div class="ptc-drawer-field">
-                        <label class="ptc-drawer-label" for="fieldEditForm:draftName">#{langBean.msg('projectTables.drawer.name')}</label>
-                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
-                            <p:inputText id="draftName" value="#{projectTableFieldSettingsBean.draftName}" style="width:100%"/>
-                        </h:panelGroup>
-                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
-                            <div class="ptc-readonly-value">#{langBean.msg(projectTableFieldSettingsBean.draftName)}</div>
-                        </h:panelGroup>
-                    </div>
-
                     <div class="ptc-drawer-field">
                         <label class="ptc-drawer-label" for="fieldEditForm:draftType">#{langBean.msg('projectTables.drawer.type')}</label>
                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
@@ -98,8 +126,86 @@
                         </h:panelGroup>
                     </div>
 
+                    <!-- A measure added by the project: what it measures and its nature are picked in the thesaurus; its name is both. -->
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasureSelectable}" layout="block">
+                        <div class="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftMeasureType">#{langBean.msg('projectTables.drawer.measure.type')}</label>
+                            <p:autoComplete id="draftMeasureType" value="#{projectTableFieldSettingsBean.draftMeasureTypeLabel}"
+                                            completeMethod="#{projectTableFieldSettingsBean.completeMeasureTypes}"
+                                            scrollHeight="220" style="width:100%" dropdown="true" forceSelection="true"
+                                            placeholder="#{langBean.msg('projectTables.drawer.measure.typePlaceholder')}">
+                                <p:ajax event="itemSelect" process="@this" update=":fieldEditForm:measureNameHint"/>
+                            </p:autoComplete>
+                        </div>
+                        <div class="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftMeasureNature">#{langBean.msg('projectTables.drawer.measure.nature')} #{langBean.msg('projectTables.drawer.descriptionOptional')}</label>
+                            <p:autoComplete id="draftMeasureNature" value="#{projectTableFieldSettingsBean.draftMeasureNatureLabel}"
+                                            completeMethod="#{projectTableFieldSettingsBean.completeMeasureNatures}"
+                                            scrollHeight="220" style="width:100%" dropdown="true" forceSelection="true"
+                                            placeholder="#{langBean.msg('projectTables.drawer.measure.naturePlaceholder')}">
+                                <p:ajax event="itemSelect" process="@this" update=":fieldEditForm:measureNameHint"/>
+                            </p:autoComplete>
+                            <h:panelGroup id="measureNameHint" layout="block" styleClass="ptc-field-hint">
+                                #{langBean.msg('projectTables.drawer.measure.nameHint')} #{projectTableFieldSettingsBean.draftDisplayName}
+                            </h:panelGroup>
+                        </div>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftDefinedByMeasureConcepts}" layout="block">
+                        <div class="ptc-drawer-field">
+                            <span class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.measure.type')}</span>
+                            <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftMeasureTypeName}</div>
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasureType ne null and projectTableFieldSettingsBean.draftMeasureType.hasDescription()}">
+                                <div class="ptc-field-hint">#{projectTableFieldSettingsBean.draftMeasureType.description}</div>
+                            </h:panelGroup>
+                        </div>
+                        <div class="ptc-drawer-field">
+                            <span class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.measure.nature')}</span>
+                            <div class="ptc-readonly-value">#{empty projectTableFieldSettingsBean.draftMeasureNatureName ? '—' : projectTableFieldSettingsBean.draftMeasureNatureName}</div>
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasureNature ne null and projectTableFieldSettingsBean.draftMeasureNature.hasDescription()}">
+                                <div class="ptc-field-hint">#{projectTableFieldSettingsBean.draftMeasureNature.description}</div>
+                            </h:panelGroup>
+                        </div>
+                    </h:panelGroup>
+                    <h:panelGroup layout="block" style="#{projectTableFieldSettingsBean.draftNameDerived ? 'display:none' : ''}"><!-- hidden, not removed: the ajax calls of the drawer process draftName and draftDescription by id -->
                     <div class="ptc-drawer-field">
-                        <label class="ptc-drawer-label" for="fieldEditForm:draftDescription">#{langBean.msg('projectTables.drawer.description')} #{langBean.msg('projectTables.drawer.descriptionOptional')}</label>
+                        <label class="ptc-drawer-label" for="fieldEditForm:draftName">#{langBean.msg('projectTables.drawer.name')}</label>
+                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
+                            <p:inputText id="draftName" value="#{projectTableFieldSettingsBean.draftName}" style="width:100%"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
+                            <div class="ptc-readonly-value">#{langBean.msg(projectTableFieldSettingsBean.draftName)}</div>
+                        </h:panelGroup>
+                    </div>
+
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSupportsMultiple}" layout="block" styleClass="ptc-drawer-field">
+                        <div class="ptc-checkbox-row">
+                            <p:selectBooleanCheckbox id="draftMultiple" value="#{projectTableFieldSettingsBean.draftMultiple}">
+                                <p:ajax process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                            </p:selectBooleanCheckbox>
+                            <p:outputLabel for="draftMultiple" value="#{langBean.msg('projectTables.drawer.multiple')}"/>
+                        </div>
+                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.multipleHint')}</div>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftTypeChanged}" layout="block" styleClass="ptc-drawer-field">
+                        <div class="ptc-field-hint ptc-field-warning">#{langBean.msg('projectTables.drawer.typeChangedWarning')}</div>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftBoolean and not projectTableFieldSettingsBean.draftIsSystem}" layout="block" styleClass="ptc-drawer-field">
+                        <div class="ptc-checkbox-row">
+                            <p:selectBooleanCheckbox id="draftAllowNoAnswer" value="#{projectTableFieldSettingsBean.draftAllowNoAnswer}"/>
+                            <p:outputLabel for="draftAllowNoAnswer" value="#{langBean.msg('projectTables.drawer.allowNoAnswer')}"/>
+                        </div>
+                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.allowNoAnswerHint')}</div>
+                    </h:panelGroup>
+
+
+                    <h:panelGroup layout="block">
+                    <div class="ptc-drawer-field">
+                        <label class="ptc-drawer-label" for="fieldEditForm:draftDescription">#{projectTableFieldSettingsBean.draftMeasurement ? langBean.msg('projectTables.drawer.measure.comment') : langBean.msg('projectTables.drawer.description')} #{langBean.msg('projectTables.drawer.descriptionOptional')}</label>
                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftIsSystem}">
                             <p:inputTextarea id="draftDescription" value="#{projectTableFieldSettingsBean.draftDescription}"
                                              placeholder="#{langBean.msg('projectTables.drawer.descriptionPlaceholder')}"
@@ -110,14 +216,46 @@
                             <div class="ptc-readonly-value">#{empty projectTableFieldSettingsBean.draftDescription ? langBean.msg('projectTables.drawer.descriptionEmpty') : projectTableFieldSettingsBean.draftDescription}</div>
                         </h:panelGroup>
                     </div>
+                    </h:panelGroup>
 
                   </div>
 
-                  <!-- 2. Its possible values: the vocabulary list (controlled vocabulary fields only). -->
-                  <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}" layout="block" styleClass="ptc-drawer-section">
+
+                  <!-- 2. Its possible values: the vocabulary list, the units of a measurement, the order with other fields. -->
+                  <h:panelGroup id="valuesBlock" layout="block">
+                  <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable or projectTableFieldSettingsBean.draftMeasurement or (fieldRulesEditorBean.open and fieldRulesEditorBean.ownOrdered and projectTableFieldSettingsBean.draftOriginalName ne null)}" layout="block" styleClass="ptc-drawer-section">
                     <h3 class="ptc-drawer-section-title">#{langBean.msg('projectTables.drawer.section.values')}</h3>
-                    <p class="ptc-drawer-section-hint">#{langBean.msg('projectTables.drawer.section.valuesHint')}</p>
-                    <h:panelGroup rendered="true">
+                    <p class="ptc-drawer-section-hint" style="#{projectTableFieldSettingsBean.draftConfigurable ? '' : 'display:none'}">#{langBean.msg('projectTables.drawer.section.valuesHint')}</p>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasurement}" layout="block" styleClass="ptc-drawer-field">
+                        <label class="ptc-drawer-label" for="fieldEditForm:draftDimension">#{langBean.msg('projectTables.drawer.units.dimension')}</label>
+                        <h:selectOneMenu id="draftDimension" value="#{projectTableFieldSettingsBean.draftDimensionName}" styleClass="ptc-native-select">
+                            <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.units.pickDimension')}" itemValue="" noSelectionOption="true"/>
+                            <f:selectItems value="#{projectTableFieldSettingsBean.dimensionOptions}" var="d"
+                                           itemLabel="#{projectTableFieldSettingsBean.dimensionLabel(d)}" itemValue="#{d.name()}"/>
+                            <p:ajax event="change" process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                        </h:selectOneMenu>
+
+                        <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.draftDimensionName}" layout="block">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftUnits">#{langBean.msg('projectTables.drawer.units.pick')}</label>
+                            <p:selectManyCheckbox id="draftUnits" value="#{projectTableFieldSettingsBean.draftUnitIds}" layout="responsive" columns="2">
+                                <f:selectItems value="#{projectTableFieldSettingsBean.unitOptions}" var="u"
+                                               itemLabel="#{u.label} (#{u.symbol})" itemValue="#{u.id}"/>
+                                <p:ajax process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                            </p:selectManyCheckbox>
+
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.pickedUnitOptions.size() gt 1}" layout="block">
+                                <label class="ptc-drawer-label" for="fieldEditForm:draftDefaultUnit">#{langBean.msg('projectTables.drawer.units.default')}</label>
+                                <h:selectOneMenu id="draftDefaultUnit" value="#{projectTableFieldSettingsBean.draftDefaultUnitId}" styleClass="ptc-native-select">
+                                    <f:selectItems value="#{projectTableFieldSettingsBean.pickedUnitOptions}" var="u"
+                                                   itemLabel="#{u.label} (#{u.symbol})" itemValue="#{u.id}"/>
+                                </h:selectOneMenu>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.units.hint')}</div>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}">
                         <div class="ptc-params">
                             <div class="ptc-params-title">#{langBean.msg('projectTables.drawer.params.title', projectTableFieldSettingsBean.draftType.label)}</div>
 
@@ -215,6 +353,29 @@
                             </h:panelGroup>
                         </div>
                     </h:panelGroup>
+                    <h:panelGroup rendered="#{fieldRulesEditorBean.ownOrdered}" layout="block" styleClass="ptc-drawer-field ptc-rule-block">
+                            <span class="ptc-drawer-label">#{langBean.msg('rules.constraints')}</span>
+                            <ui:repeat value="#{fieldRulesEditorBean.constraints}" var="cn">
+                                <div class="ptc-rule-leaf-row">
+                                    <p:selectOneMenu value="#{cn.op}" style="width:150px;">
+                                        <f:selectItems value="#{fieldRulesEditorBean.constraintOps}" var="co"
+                                                       itemLabel="#{fieldRulesEditorBean.constraintOpLabel(co)}" itemValue="#{co}"/>
+                                    </p:selectOneMenu>
+                                    <p:selectOneMenu value="#{cn.fieldId}" style="flex:1;" filter="true">
+                                        <f:selectItem itemLabel="#{langBean.msg('rules.chooseField')}" itemValue="#{null}" noSelectionOption="true"/>
+                                        <f:selectItems value="#{fieldRulesEditorBean.comparableFields}" var="cmp"
+                                                       itemLabel="#{fieldRulesEditorBean.labelOf(cmp)}" itemValue="#{cmp.id}"/>
+                                    </p:selectOneMenu>
+                                    <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm"
+                                                     actionListener="#{fieldRulesEditorBean.removeConstraint(cn)}" process="@this"
+                                                     update=":fieldEditForm:valuesBlock"/>
+                                </div>
+                            </ui:repeat>
+                            <p:commandButton value="#{langBean.msg('rules.addConstraint')}" styleClass="ui-button-outlined ui-button-sm"
+                                             actionListener="#{fieldRulesEditorBean.addConstraint()}" process="@form"
+                                             update=":fieldEditForm:valuesBlock"/>
+                        </h:panelGroup>
+                  </h:panelGroup>
                   </h:panelGroup>
 
                   <!-- 3. Conditional rules: when the field is enabled, when it is required, which options and constraints. -->
@@ -258,69 +419,11 @@
                             </h:panelGroup>
                         </h:panelGroup>
 
-                        <h:panelGroup rendered="#{fieldRulesEditorBean.ownOrdered}" layout="block" styleClass="ptc-drawer-field ptc-rule-block">
-                            <span class="ptc-drawer-label">#{langBean.msg('rules.constraints')}</span>
-                            <ui:repeat value="#{fieldRulesEditorBean.constraints}" var="cn">
-                                <div class="ptc-rule-leaf-row">
-                                    <p:selectOneMenu value="#{cn.op}" style="width:150px;">
-                                        <f:selectItems value="#{fieldRulesEditorBean.constraintOps}" var="co"
-                                                       itemLabel="#{fieldRulesEditorBean.constraintOpLabel(co)}" itemValue="#{co}"/>
-                                    </p:selectOneMenu>
-                                    <p:selectOneMenu value="#{cn.fieldId}" style="flex:1;" filter="true">
-                                        <f:selectItem itemLabel="#{langBean.msg('rules.chooseField')}" itemValue="#{null}" noSelectionOption="true"/>
-                                        <f:selectItems value="#{fieldRulesEditorBean.comparableFields}" var="cmp"
-                                                       itemLabel="#{fieldRulesEditorBean.labelOf(cmp)}" itemValue="#{cmp.id}"/>
-                                    </p:selectOneMenu>
-                                    <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm"
-                                                     actionListener="#{fieldRulesEditorBean.removeConstraint(cn)}" process="@this"
-                                                     update=":fieldEditForm:rulesBlock"/>
-                                </div>
-                            </ui:repeat>
-                            <p:commandButton value="#{langBean.msg('rules.addConstraint')}" styleClass="ui-button-outlined ui-button-sm"
-                                             actionListener="#{fieldRulesEditorBean.addConstraint()}" process="@form"
-                                             update=":fieldEditForm:rulesBlock"/>
-                        </h:panelGroup>
                     </h:panelGroup>
                   </h:panelGroup>
                 </div>
 
-                <p id="fieldDrawerFunnyMessage"
-                   class="field-drawer-progress-bar text-muted"
-                   style="visibility: collapse; font-style: italic; margin: 0 22px 0.5rem;"
-                />
 
-                <p:progressBar widgetVar="pbAjaxFieldDrawerSaveWidget"
-                               id="pbAjaxFieldDrawerSave"
-                               ajax="true"
-                               value="#{projectTableFieldSettingsBean.progressWrapper.progressPercentage}"
-                               labelTemplate="{value}%"
-                               styleClass="field-drawer-progress-bar"
-                               style="visibility: collapse; margin: 0 22px 0.5rem;"
-                               global="true"
-                               interval="500"
-                />
-
-                <div class="ptc-drawer-footer">
-                    <p:commandButton value="#{langBean.msg('projectTables.drawer.remove')}" icon="bi bi-x-lg"
-                                      styleClass="ui-button-flat ptc-drawer-remove"
-                                      rendered="#{projectTableFieldSettingsBean.draftRemovable}"
-                                      actionListener="#{projectTableFieldSettingsBean.removeDraftField()}" immediate="true"
-                                      update=":ptcMain :treeFormCC:treeForm" oncomplete="ptcScrollToFocus()"/>
-                    <p:commandButton id="cancelBtn" value="#{langBean.msg('common.action.cancel')}" styleClass="ui-button-secondary"
-                                      actionListener="#{projectTableFieldSettingsBean.closeDrawer()}" immediate="true"
-                                      update=":ptcMain :treeFormCC:treeForm"/>
-                    <!-- Only the two field tables are re-rendered, not the whole outer form: the tab
-                         panel is what scrolls, so replacing the full form would put the user back at
-                         the top of it after every save/cancel. Both tables are targeted because the
-                         saved draft can be either a system or an additional field. -->
-                    <p:commandButton value="#{langBean.msg('common.action.save')}"
-                                      rendered="#{not projectTableFieldSettingsBean.draftIsSystem or projectTableFieldSettingsBean.draftConfigurable or fieldRulesEditorBean.open}"
-                                      actionListener="#{projectTableFieldSettingsBean.saveDrawerIfEditable()}"
-                                      action="#{fieldRulesEditorBean.saveIfOpen()}"
-                                      process="@form"
-                                      update=":ptcMain :treeFormCC:treeForm"
-                                      onstart="startFieldDrawerProgressBar()" oncomplete="endFieldDrawerProgressBar()"/>
-                </div>
             </h:panelGroup>
         </div>
     </h:form>

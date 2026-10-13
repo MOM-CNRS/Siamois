@@ -96,7 +96,7 @@ class FieldAnswerPatchServiceReferencesTest {
                 persons, personMapper, actionUnits, mapper(ActionUnitSummaryMapper.class),
                 spatialUnits, mapper(SpatialUnitSummaryMapper.class),
                 recordingUnits, mapper(RecordingUnitSummaryMapper.class), mock(PhaseRepository.class), mapper(PhaseMapper.class),
-                containers, mapper(ContainerMapper.class), specimens, mapper(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
+                containers, mapper(ContainerMapper.class), specimens, mapper(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
     }
 
     // ---------- helpers ----------

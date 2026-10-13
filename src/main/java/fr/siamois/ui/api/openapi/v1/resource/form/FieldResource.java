@@ -18,7 +18,7 @@ public record FieldResource(
         String label,
 
         @Schema(description = "Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer",
-                allowableValues = {"TEXT", "INTEGER", "DECIMAL", "DATETIME", "MEASUREMENT",
+                allowableValues = {"TEXT", "INTEGER", "DECIMAL", "DATETIME", "BOOLEAN", "MEASUREMENT",
                         "SELECT_ONE", "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                         "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ADDRESS",
                         "SELECT_MULTIPLE", "SELECT_MULTIPLE_FROM_FIELD_CODE", "SELECT_MULTIPLE_PERSON",
@@ -179,8 +179,17 @@ public record FieldResource(
             @Schema(description = "Borne basse (INTEGER, DECIMAL, MEASUREMENT)") @Nullable Double min,
             @Schema(description = "Borne haute (INTEGER, DECIMAL, MEASUREMENT)") @Nullable Double max,
             @Schema(description = "DATETIME : saisir aussi l'heure") @Nullable Boolean showTime,
-            @Schema(description = "MEASUREMENT : symbole de l'unité du champ", example = "cm") @Nullable String unit
+            @Schema(description = "MEASUREMENT : symbole de l'unité par défaut du champ", example = "cm") @Nullable String unit,
+            @Schema(description = "MEASUREMENT : symboles des unités que la saisie peut choisir (l'unité par défaut en "
+                    + "fait partie) ; null si le champ n'a qu'une unité", example = "[\"m²\", \"ha\"]")
+            @Nullable List<String> units,
+            @Schema(description = "BOOLEAN : la réponse peut rester vide (trois états oui / non / sans réponse)")
+            @Nullable Boolean allowNoAnswer
     ) {
+        /** The shape before several units and the no-answer option. */
+        public Constraints(@Nullable Double min, @Nullable Double max, @Nullable Boolean showTime, @Nullable String unit) {
+            this(min, max, showTime, unit, null, null);
+        }
     }
 
     @Schema(description = "Ce qu'une liste accepte sur la colonne du champ : sort=<id>:asc|desc, f.<id>…")
@@ -188,8 +197,8 @@ public record FieldResource(
             @Schema(description = "Triable (sort=<id>:asc) ; une colonne multivaluée se trie par nombre de valeurs")
             boolean sortable,
             @Schema(description = "Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, "
-                    + "nombres), date-range (idem, dates ISO), in (f.<id>=id répétable) ; null si aucun",
-                    allowableValues = {"contains", "range", "date-range", "in"})
+                    + "nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable) ; null si aucun",
+                    allowableValues = {"contains", "range", "date-range", "equals", "in"})
             @Nullable String filterOp
     ) {
     }

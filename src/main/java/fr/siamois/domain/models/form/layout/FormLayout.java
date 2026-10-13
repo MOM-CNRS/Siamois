@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.form.layout;
 
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.rules.FieldRules;
@@ -23,7 +24,14 @@ public record FormLayout(List<Group> groups) {
     public record Group(Long id, String label, List<Item> items) {
     }
 
+    /** @param units for a measurement, the units this configuration offers; null keeps the field's own */
     public record Item(CustomField field, FieldWidth width, boolean active, boolean mandatory,
-                       boolean institutionLocked, FieldRules rules) {
+                       boolean institutionLocked, FieldRules rules, FieldUnits units) {
+
+        /** An item with no units of its own. */
+        public Item(CustomField field, FieldWidth width, boolean active, boolean mandatory,
+                    boolean institutionLocked, FieldRules rules) {
+            this(field, width, active, mandatory, institutionLocked, rules, null);
+        }
     }
 }
