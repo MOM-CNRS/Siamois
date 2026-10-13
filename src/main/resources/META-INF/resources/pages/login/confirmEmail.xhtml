@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<HTML xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+      xml:lang="#{langBean.languageCode}"
+>
+
+<h:head>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <h:outputStylesheet library="css" name="bootstrap.min.css"/>
+    <title>#{langBean.msg('confirmEmail.title')}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
+    <h:outputStylesheet library="css" name="login.css"/>
+</h:head>
+
+<h:body>
+    <section class="h-100 gradient-form">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-xl-6">
+                    <div class="card rounded-3">
+                        <div class="login-logo text-center pt-4">
+                            <a href="https://siamois.eu" target="_blank" rel="noopener noreferrer">
+                                <h:graphicImage library="img" name="logos/siamois-couleur-baseline.png" alt="Siamois"/>
+                            </a>
+                        </div>
+                        <div class="px-3 py-4 p-md-5 mx-md-4">
+                            <h1>#{langBean.msg('confirmEmail.title')}</h1>
+
+                            <h:panelGroup rendered="#{confirmEmailBean.pending}">
+                                <p class="description">#{langBean.msg('confirmEmail.question', confirmEmailBean.newEmail)}</p>
+                                <hr/>
+                                <form:csrfform formId="confirmEmailForm">
+                                    <h:commandButton styleClass="btn btn-success me-2"
+                                                     value="#{langBean.msg('confirmEmail.action.accept')}"
+                                                     action="#{confirmEmailBean.accept}"/>
+                                    <h:commandButton styleClass="btn btn-outline-secondary"
+                                                     value="#{langBean.msg('confirmEmail.action.refuse')}"
+                                                     action="#{confirmEmailBean.refuse}"/>
+                                </form:csrfform>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{not confirmEmailBean.pending}">
+                                <p class="description">
+                                    <h:outputText rendered="#{confirmEmailBean.accepted}" value="#{langBean.msg('confirmEmail.accepted', confirmEmailBean.newEmail)}"/>
+                                    <h:outputText rendered="#{confirmEmailBean.refused}" value="#{langBean.msg('confirmEmail.refused')}"/>
+                                    <h:outputText rendered="#{confirmEmailBean.failed}" value="#{langBean.msg('confirmEmail.failed')}"/>
+                                </p>
+                                <hr/>
+                                <a class="btn btn-success" href="#{request.contextPath}/login">#{langBean.msg('confirmEmail.action.login')}</a>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</h:body>
+
+</HTML>

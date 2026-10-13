@@ -6,6 +6,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.person.verifier.EmailVerifier;
 import fr.siamois.domain.services.person.verifier.PasswordVerifier;
 import fr.siamois.domain.services.person.verifier.PersonDataVerifier;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -268,6 +269,42 @@ public class PersonService {
         String encodedPassword = passwordEncoder.encode(newPassword);
 
         personRepository.updatePasswordById(id, encodedPassword);
+    }
+
+    /**
+     * Check that an address can become the e-mail of a person: valid format and not already used.
+     *
+     * @param newEmail the candidate address
+     * @throws InvalidEmailException if the address is invalid (or already used: {@code EmailAlreadyExistException})
+     */
+    public void checkNewEmail(String newEmail) throws InvalidEmailException {
+        PersonDTO probe = new PersonDTO();
+        probe.setEmail(newEmail);
+        for (PersonDataVerifier verifier : verifiers) {
+            if (verifier instanceof EmailVerifier) {
+                verifier.setForCreation(true);
+                try {
+                    verifier.verify(probe);
+                } catch (InvalidEmailException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new InvalidEmailException(e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Replace the e-mail of a person, after checking the new one with {@link #checkNewEmail(String)}.
+     *
+     * @param id       the person id
+     * @param newEmail the new address
+     * @throws InvalidEmailException if the address is invalid or already used
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void updateEmail(Long id, String newEmail) throws InvalidEmailException {
+        checkNewEmail(newEmail);
+        personRepository.updateEmailById(id, newEmail);
     }
 
     /**
