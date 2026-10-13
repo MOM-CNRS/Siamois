@@ -356,7 +356,7 @@ class FormLayoutServiceTest {
 
     @Test
     void unitsOfAnUnknownFieldAreRefused() {
-        FormConfig config = laidOutConfig();
+        laidOutConfig();
         when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of());
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.saveUnits(5L, TABLE, "Type", 9L, null))

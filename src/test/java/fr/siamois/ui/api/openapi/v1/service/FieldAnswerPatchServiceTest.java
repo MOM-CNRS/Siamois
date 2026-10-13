@@ -250,7 +250,7 @@ class FieldAnswerPatchServiceTest {
         service.apply(entity, formOf(column), Map.of("9", new AnswerInput(Map.of("numericValue", 3, "symbol", "ha"), null)), PROJECT_ID);
 
         ArgumentCaptor<Object> applied = ArgumentCaptor.forClass(Object.class);
-        verify(formService, org.mockito.Mockito.times(2)).applyTypedValueToAnswer(any(), applied.capture());
+        verify(formService, times(2)).applyTypedValueToAnswer(any(), applied.capture());
         assertThat(applied.getAllValues()).allSatisfy(v -> assertThat(((MeasurementAnswerDTO) v).getUnit()).isSameAs(hectareDto));
     }
 

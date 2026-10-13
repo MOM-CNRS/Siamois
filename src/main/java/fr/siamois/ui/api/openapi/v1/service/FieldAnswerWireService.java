@@ -104,33 +104,39 @@ public class FieldAnswerWireService {
      * ±Double.MAX_VALUE) mean "unbounded" and are dropped rather than sent as bounds.
      */
     private static FieldResource.Constraints constraintsOf(Object f) {
-        Double min = null;
-        Double max = null;
-        Boolean showTime = null;
-        String unit = null;
-        List<String> units = null;
-        Boolean allowNoAnswer = null;
         if (f instanceof CustomFieldInteger i) {
-            min = boundOrNull(i.getMinValue(), Integer.MIN_VALUE);
-            max = boundOrNull(i.getMaxValue(), Integer.MAX_VALUE);
-        } else if (f instanceof CustomFieldDecimal d) {
-            min = boundOrNull(d.getMinValue(), -Double.MAX_VALUE);
-            max = boundOrNull(d.getMaxValue(), Double.MAX_VALUE);
-        } else if (f instanceof CustomFieldMeasurement m) {
-            min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
-            max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
-            unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
-            List<String> offered = unitsOf(m);
-            units = offered.isEmpty() ? null : offered;
-        } else if (f instanceof CustomFieldDateTime dt) {
-            showTime = dt.getShowTime();
-        } else if (f instanceof CustomFieldBoolean b) {
-            allowNoAnswer = b.isNoAnswerAllowed() ? Boolean.TRUE : null;
+            return bounded(boundOrNull(i.getMinValue(), Integer.MIN_VALUE), boundOrNull(i.getMaxValue(), Integer.MAX_VALUE));
         }
-        if (min == null && max == null && showTime == null && unit == null && units == null && allowNoAnswer == null) {
+        if (f instanceof CustomFieldDecimal d) {
+            return bounded(boundOrNull(d.getMinValue(), -Double.MAX_VALUE), boundOrNull(d.getMaxValue(), Double.MAX_VALUE));
+        }
+        if (f instanceof CustomFieldMeasurement m) {
+            return measurementConstraints(m);
+        }
+        if (f instanceof CustomFieldDateTime dt) {
+            return dt.getShowTime() == null ? null : new FieldResource.Constraints(null, null, dt.getShowTime(), null, null, null);
+        }
+        if (f instanceof CustomFieldBoolean b && b.isNoAnswerAllowed()) {
+            return new FieldResource.Constraints(null, null, null, null, null, Boolean.TRUE);
+        }
+        return null;
+    }
+
+    /** Numeric bounds, or no constraints at all when both are open. */
+    private static FieldResource.Constraints bounded(Double min, Double max) {
+        return min == null && max == null ? null : new FieldResource.Constraints(min, max, null, null, null, null);
+    }
+
+    private static FieldResource.Constraints measurementConstraints(CustomFieldMeasurement m) {
+        Double min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
+        Double max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
+        String unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+        List<String> offered = unitsOf(m);
+        List<String> units = offered.isEmpty() ? null : offered;
+        if (min == null && max == null && unit == null && units == null) {
             return null;
         }
-        return new FieldResource.Constraints(min, max, showTime, unit, units, allowNoAnswer);
+        return new FieldResource.Constraints(min, max, null, unit, units, null);
     }
 
     /**
