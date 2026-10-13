@@ -95,7 +95,7 @@ public class PersonActionTokenService {
         int port = httpServletRequest.getServerPort();
         String domain = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName()
                 + (port != 80 && port != 443 ? ":" + port : "");
-        return String.format("%s%s/%s/%s", domain, httpServletRequest.getContextPath(), path, token.getToken());
+        return domain + httpServletRequest.getContextPath() + "/" + path + "/" + token.getToken();
     }
 
     public static Duration validityOf(PersonActionType type) {

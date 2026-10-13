@@ -92,4 +92,81 @@ class PersonActionTokenServiceTest {
 
         assertTrue(service.canIssue(1L, PersonActionType.PASSWORD_RESET));
     }
+
+    @Test
+    void findValid_returnsTokenWhenNotExpired() {
+        PersonActionToken valid = new PersonActionToken();
+        valid.setExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(5));
+        when(tokenRepository.findByTokenAndType("t", PersonActionType.EMAIL_CHANGE)).thenReturn(Optional.of(valid));
+
+        assertEquals(Optional.of(valid), service.findValid("t", PersonActionType.EMAIL_CHANGE));
+    }
+
+    @Test
+    void canIssue_trueWhenPreviousTokenIsOldEnough() {
+        PersonActionToken old = new PersonActionToken();
+        old.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(5));
+        when(tokenRepository.findByPersonIdAndType(1L, PersonActionType.EMAIL_CHANGE)).thenReturn(Optional.of(old));
+
+        assertTrue(service.canIssue(1L, PersonActionType.EMAIL_CHANGE));
+    }
+
+    @Test
+    void issue_throwsWhenPersonUnknown() {
+        when(personRepository.findById(Long.valueOf(9L))).thenReturn(Optional.empty());
+
+        assertThrows(jakarta.persistence.EntityNotFoundException.class,
+                () -> service.issue(9L, PersonActionType.PASSWORD_RESET, null));
+    }
+
+    @Test
+    void generateToken_retriesWhileTokenAlreadyExists() {
+        when(tokenRepository.existsByToken(any())).thenReturn(true, false);
+
+        String token = service.generateToken();
+
+        assertEquals(PersonActionTokenService.TOKEN_LENGTH, token.length());
+        verify(tokenRepository, times(2)).existsByToken(any());
+    }
+
+    @Test
+    void delete_delegatesToRepository() {
+        PersonActionToken token = new PersonActionToken();
+
+        service.delete(token);
+
+        verify(tokenRepository).delete(token);
+    }
+
+    @Test
+    void validityOf_isShorterForPasswordReset() {
+        assertTrue(PersonActionTokenService.validityOf(PersonActionType.PASSWORD_RESET)
+                .compareTo(PersonActionTokenService.validityOf(PersonActionType.EMAIL_CHANGE)) < 0);
+    }
+
+    @Test
+    void link_buildsResetPasswordUrlWithoutCommonPort() {
+        when(request.getScheme()).thenReturn("https");
+        when(request.getServerName()).thenReturn("siamois.eu");
+        when(request.getServerPort()).thenReturn(443);
+        when(request.getContextPath()).thenReturn("");
+        PersonActionToken token = new PersonActionToken();
+        token.setType(PersonActionType.PASSWORD_RESET);
+        token.setToken("abc");
+
+        assertEquals("https://siamois.eu/reset-password/abc", service.link(token));
+    }
+
+    @Test
+    void link_buildsConfirmEmailUrlWithCustomPortAndContext() {
+        when(request.getScheme()).thenReturn("http");
+        when(request.getServerName()).thenReturn("localhost");
+        when(request.getServerPort()).thenReturn(8080);
+        when(request.getContextPath()).thenReturn("/siamois");
+        PersonActionToken token = new PersonActionToken();
+        token.setType(PersonActionType.EMAIL_CHANGE);
+        token.setToken("xyz");
+
+        assertEquals("http://localhost:8080/siamois/confirm-email/xyz", service.link(token));
+    }
 }
