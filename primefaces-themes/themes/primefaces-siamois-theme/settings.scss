@@ -107,6 +107,90 @@ main form:first-child .field-value-group {
     margin-left: auto;
 }
 
+// Profile page: tighter, full width (equal side margins on mobile), sections side by side on wide
+// screens, and each save button sits at the bottom of its white card.
+.sia-profile-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1em;
+    margin-top: 2vh;
+    width: 100%;
+}
+
+@media (min-width: 992px) {
+    .sia-profile-grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+main form.sia-profile-form {
+    margin: 0 0 1em;
+}
+
+main form.sia-profile-form .field-value-group {
+    width: 100%;
+    margin-top: 0;
+    grid-row-gap: 1vh;
+    grid-template:
+        "title"
+        "card-content";
+}
+
+.sia-profile-form .field-value-title {
+    font-size: var(--font-size-title-card, 1.25rem);
+    margin: 0;
+}
+
+.sia-profile-form .field-value-content {
+    padding: 20px;
+    row-gap: 14px;
+}
+
+.sia-profile-form .field-value-content .field-value-save {
+    margin-left: auto;
+    margin-top: 4px;
+}
+
+// Secondary (outlined) action: the generic submit-button rule would paint it green with green text.
+.sia-profile-form .field-value-group button.sia-profile-password-btn {
+    margin-left: 0;
+    background-color: transparent;
+    color: var(--siamois-green-active);
+    border: 1px solid var(--siamois-green);
+}
+
+.sia-profile-form .field-value-group button.sia-profile-password-btn:hover {
+    background-color: var(--siamois-green-light-100);
+}
+
+.sia-profile-rights {
+    margin-top: 1em;
+}
+
+// Profile page: each field is its label ABOVE the widget.
+.sia-profile-form .sia-profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.sia-profile-form .sia-profile-label {
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+.sia-profile-form .sia-profile-hint {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.sia-profile-form .sia-profile-field .ui-inputfield,
+.sia-profile-form .sia-profile-field .ui-selectonemenu {
+    width: 100%;
+}
+
 .field-value-value * {
     width: 100%;
 }
@@ -800,19 +884,62 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     color: var(--text-light);
 }
 
+// One line per grant: cells never wrap, long names are ellipsed. The permissions cell shows the
+// first permission (ellipsed) and a "+N" chip opening the whole list in an overlay.
+.field-value-content .ui-datatable-tablewrapper td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 18rem;
+}
+
 .field-value-content .ui-datatable-tablewrapper td.rights-permissions-cell {
-    white-space: normal;
-    overflow: visible;
+    max-width: 22rem;
 }
 
 .rights-permissions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 4px;
+}
+
+.rights-permissions .rights-permission-first {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rights-permissions .rights-permission-more {
+    flex: 0 0 auto;
+    cursor: pointer;
+    width: auto;
+    height: auto;
+    line-height: inherit;
+}
+
+.rights-overlay .rights-permissions-list {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    max-height: 20rem;
+    overflow-y: auto;
 }
 
 .rights-open-cell {
     width: 1%;
+}
+
+// The generic ".field-value-group button[type=submit]" rule (fit-content width, green background and
+// border) would squash this icon-only button into a green bar: give it its natural flat look back.
+.field-value-group .rights-open-cell button[type=submit] {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-left: 0;
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--siamois-green-active);
 }
 
 // Filter bar of the settings lists, the same pattern as the React lists: one chip per active filter

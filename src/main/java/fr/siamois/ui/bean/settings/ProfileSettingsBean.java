@@ -2,14 +2,13 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.events.publisher.LangageChangeEventPublisher;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
+import fr.siamois.domain.models.auth.token.PersonActionToken;
+import fr.siamois.domain.models.auth.token.PersonActionType;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.auth.InvalidNameException;
-import fr.siamois.domain.models.exceptions.auth.InvalidUserInformationException;
-import fr.siamois.domain.models.exceptions.auth.UserAlreadyExistException;
+import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
+import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -17,15 +16,16 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.auth.PersonActionTokenService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
-import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.ui.email.AccountActionMailer;
 import fr.siamois.utils.MessageUtils;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.ExternalContext;
@@ -38,14 +38,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 @Slf4j
 @Getter
@@ -55,6 +53,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ProfileSettingsBean implements Serializable {
 
+    public static final String DEFAULT_THEME = "siamois-day";
+
     private final SessionSettingsBean sessionSettingsBean;
     private final transient PersonService personService;
     private final transient FieldConfigurationService fieldConfigurationService;
@@ -63,24 +63,26 @@ public class ProfileSettingsBean implements Serializable {
     private final transient LangService langService;
     private final LangBean langBean;
     private final transient LangageChangeEventPublisher langageChangeEventPublisher;
-    private final transient ConversionService conversionService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient ActionUnitService actionUnitService;
     private final transient NavBean navBean;
     private final InstitutionListSettingsBean institutionListSettingsBean;
+    private final transient PersonActionTokenService personActionTokenService;
+    private final transient AccountActionMailer accountActionMailer;
 
-    private Set<InstitutionDTO> refInstitutions;
     private PersonSettings personSettings;
     private Concept refConfigConcept;
 
-    private String fEmail;
+    /** Identity shown read-only in the profile section. */
     private String fLastname;
     private String fFirstname;
+    private String fEmail;
 
     private String fSelectedLang;
+    /** The only theme for now; not persisted yet. */
+    private String fSelectedTheme = DEFAULT_THEME;
 
     private String fThesaurusUrl;
-    private Long fDefaultInstitutionId;
 
     private ProgressWrapper progressWrapper = new ProgressWrapper();
 
@@ -93,21 +95,9 @@ public class ProfileSettingsBean implements Serializable {
         PersonDTO user = info.getUser();
         initPersonSection(info);
         initThesaurusSection(info);
-        initInstitutions(user, info);
         rights = profilePermissionService.grantsOf(user);
 
         fSelectedLang = langBean.getLanguageCode();
-    }
-
-    private void initInstitutions(PersonDTO user, UserInfo info) {
-        refInstitutions = institutionService.findInstitutionsOfPerson(user);
-        PersonSettings settings = personService.createOrGetSettingsOf(user);
-        if (settings.getDefaultInstitution() != null) {
-            fDefaultInstitutionId = settings.getDefaultInstitution().getId();
-        } else {
-            fDefaultInstitutionId = info.getInstitution().getId();
-        }
-        log.trace("Found {} institutions", refInstitutions.size());
     }
 
     private void initThesaurusSection(UserInfo info) {
@@ -160,38 +150,51 @@ public class ProfileSettingsBean implements Serializable {
         externalContext.redirect(externalContext.getRequestContextPath() + path);
     }
 
-    public void saveProfile() {
-        boolean updated = false;
+    /**
+     * Asks to change the e-mail address: nothing is modified now, a confirmation link is sent to the
+     * new address and the change is applied when it is followed.
+     */
+    public void requestEmailChange() {
         PersonDTO user = sessionSettingsBean.getAuthenticatedUser();
-        if (fEmail != null && !fEmail.isEmpty() && !fEmail.equals(user.getEmail())) {
-            user.setEmail(fEmail);
-            updated = true;
-        }
-
-        if (fLastname != null && !fLastname.isEmpty() && !fLastname.equals(user.getLastname())) {
-            user.setLastname(fLastname);
-            updated = true;
-        }
-
-        if (fFirstname != null && !fFirstname.isEmpty() && !fFirstname.equals(user.getName())) {
-            user.setName(fFirstname);
-            updated = true;
-        }
-
-        if (!updated) {
+        String newEmail = StringUtils.trimToEmpty(fEmail);
+        if (newEmail.equalsIgnoreCase(user.getEmail())) {
             MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "myProfile.message.unchanged");
             return;
         }
-
         try {
-            personService.updatePerson(user);
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.message.success");
-        } catch (InvalidNameException e) {
-            log.error(e.getMessage());
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "common.entity.person.invalidname", Person.NAME_MAX_LENGTH);
-        } catch (InvalidUserInformationException | UserAlreadyExistException e) {
-            log.error("There was a problem while updating the person", e);
-            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "common.error.internal");
+            personService.checkNewEmail(newEmail);
+        } catch (EmailAlreadyExistException e) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "register.error.email.alreadyexists", newEmail);
+            return;
+        } catch (InvalidEmailException e) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "register.error.email");
+            return;
+        }
+        if (!personActionTokenService.canIssue(user.getId(), PersonActionType.EMAIL_CHANGE)) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "myProfile.mail.tooSoon");
+            return;
+        }
+        PersonActionToken token = personActionTokenService.issue(user.getId(), PersonActionType.EMAIL_CHANGE, newEmail);
+        if (accountActionMailer.send(token, newEmail)) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.email.message.sent", newEmail);
+        } else {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.mail.error");
+        }
+        fEmail = user.getEmail();
+    }
+
+    /** Sends a link to the current address, letting the user choose a new password. */
+    public void requestPasswordReset() {
+        PersonDTO user = sessionSettingsBean.getAuthenticatedUser();
+        if (!personActionTokenService.canIssue(user.getId(), PersonActionType.PASSWORD_RESET)) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_WARN, "myProfile.mail.tooSoon");
+            return;
+        }
+        PersonActionToken token = personActionTokenService.issue(user.getId(), PersonActionType.PASSWORD_RESET, null);
+        if (accountActionMailer.send(token, user.getEmail())) {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.password.message.sent", user.getEmail());
+        } else {
+            MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_ERROR, "myProfile.mail.error");
         }
     }
 
@@ -224,18 +227,7 @@ public class ProfileSettingsBean implements Serializable {
         return localeToLangName(new Locale(code));
     }
 
-    private InstitutionDTO findInstitutionById(Long id) {
-        return refInstitutions.stream()
-                .filter(institution -> institution.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Institution not found"));
-    }
-
-
     public void savePreferences() {
-        personSettings.setDefaultInstitution(
-                conversionService.convert(findInstitutionById(fDefaultInstitutionId),Institution.class)
-                );
         if (!fSelectedLang.equalsIgnoreCase(personSettings.getLangCode())) {
             personSettings.setLangCode(fSelectedLang);
         }
@@ -246,10 +238,6 @@ public class ProfileSettingsBean implements Serializable {
         MessageUtils.displayMessage(langBean, FacesMessage.SEVERITY_INFO, "myProfile.preferences.message.success");
     }
 
-    public String labelOfInstitutionWithId(Long id) {
-        return findInstitutionById(id).getName();
-    }
-
     @EventListener(LoginEvent.class)
     public void reset() {
         fEmail = null;
@@ -257,10 +245,8 @@ public class ProfileSettingsBean implements Serializable {
         fFirstname = null;
         fThesaurusUrl = null;
         fSelectedLang = null;
-        fDefaultInstitutionId = null;
         personSettings = null;
         refConfigConcept = null;
-        refInstitutions = null;
         progressWrapper = new ProgressWrapper();
     }
 }

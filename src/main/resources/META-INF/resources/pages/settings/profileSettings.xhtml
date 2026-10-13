@@ -17,102 +17,88 @@
 
     <ui:define name="content">
         <main class="container-lg">
-            <h:form id="profileForm" styleClass="sia-settings-form">
+            <div class="sia-profile-grid">
+            <h:form id="profileForm" styleClass="sia-settings-form sia-profile-form">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                 <div class="field-value-group">
-                    <h2 class="field-value-title">#{langBean.msg('nav.myProfile')}</h2>
+                    <h2 class="field-value-title">#{langBean.msg('myProfile.section.profile')}</h2>
                     <div class="field-value-content">
-                        <div class="form-group row">
-                            <label for="profile-email" class="col-sm-2 col-form-label" style="width: 40%">#{langBean.msg('common.label.email')}</label>
-                            <div class="col-md-7 field-value-value">
-                                <p:inputText disabled="true" id="profile-email" type="email" value="#{profileSettingsBean.FEmail}"/>
-                            </div>
+                        <div class="sia-profile-field">
+                            <label for="profile-lastname" class="sia-profile-label">#{langBean.msg('common.label.lastname')}</label>
+                            <p:inputText id="profile-lastname" disabled="true" value="#{profileSettingsBean.FLastname}"/>
                         </div>
-                        <hr/>
-                        <div class="form-group row">
-                            <label for="profile-email" class="col-sm-2 col-form-label" style="width: 40%">#{langBean.msg('common.label.lastname')}</label>
-                            <div class="col-md-7 field-value-value">
-                                <p:inputText id="profile-lastname" value="#{profileSettingsBean.FLastname}"/>
-                            </div>
+                        <div class="sia-profile-field">
+                            <label for="profile-firstname" class="sia-profile-label">#{langBean.msg('common.label.firstname')}</label>
+                            <p:inputText id="profile-firstname" disabled="true" value="#{profileSettingsBean.FFirstname}"/>
                         </div>
-                        <div class="form-group row">
-                            <label for="profile-firstname" class="col-sm-2 col-form-label"
-                                   style="width: 40%">#{langBean.msg("common.label.firstname")}</label>
-                            <div class="col-md-7 field-value-value">
-                                <p:inputText id="profile-firstname" value="#{profileSettingsBean.FFirstname}"/>
-                            </div>
+                        <div class="sia-profile-field">
+                            <label for="profile-email" class="sia-profile-label">#{langBean.msg('common.label.email')}</label>
+                            <p:inputText id="profile-email" type="email" value="#{profileSettingsBean.FEmail}"/>
+                            <small class="sia-profile-hint">#{langBean.msg('myProfile.email.hint')}</small>
                         </div>
+                        <div class="sia-profile-field">
+                            <span class="sia-profile-label">#{langBean.msg('myProfile.password.label')}</span>
+                            <div>
+                                <p:commandButton value="#{langBean.msg('myProfile.password.change')}"
+                                                 styleClass="ui-button-outlined sia-profile-password-btn"
+                                                 actionListener="#{profileSettingsBean.requestPasswordReset()}"
+                                                 process="@this"/>
+                            </div>
+                            <small class="sia-profile-hint">#{langBean.msg('myProfile.password.hint')}</small>
+                        </div>
+                        <p:commandButton
+                                styleClass="field-value-save"
+                                value="#{langBean.msg('common.action.save')}"
+                                actionListener="#{profileSettingsBean.requestEmailChange()}"
+                                process="@form"
+                        />
                     </div>
-                    <p:commandButton
-                            styleClass="field-value-save"
-                            value="#{langBean.msg('common.action.save')}"
-                            action="#{profileSettingsBean.saveProfile()}"
-                    />
                 </div>
             </h:form>
-            <h:form id="preferenceSettingsForm" styleClass="sia-settings-form">
+            <h:form id="preferenceSettingsForm" styleClass="sia-settings-form sia-profile-form">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                 <div class="field-value-group">
-                    <h2 class="field-value-title">#{langBean.msg('myProfile.preferences')}</h2>
+                    <h2 class="field-value-title">#{langBean.msg('myProfile.section.interface')}</h2>
                     <div class="field-value-content">
-                        <div class="form-group row">
-                            <label for="institutionSelectionMenu" class="col-sm-2 col-form-label" style="width: 40%">#{langBean.msg('myProfile.preferences.institution')}</label>
-                            <div class="col-md-7 field-value-value">
-                                <p:selectOneMenu id="institutionSelectionMenu"
-                                                 value="#{profileSettingsBean.FDefaultInstitutionId}"
-                                                 var="inst"
-                                                 style="width: 100%"
-                                                 filter="true"
-                                                 filterMatchMode="contains"
-                                                 filterNormalize="true"
-                                >
-                                    <f:selectItems
-                                            value="#{profileSettingsBean.refInstitutions}"
-                                            var="item"
-                                            itemValue="#{item.id}"
-                                            itemLabel="#{item.name}"
-                                    />
+                        <div class="sia-profile-field">
+                            <label for="langSetting" class="sia-profile-label">#{langBean.msg('myProfile.preferences.lang')}</label>
+                            <p:selectOneMenu id="langSetting"
+                                             var="lang"
+                                             value="#{profileSettingsBean.FSelectedLang}"
+                                             label="#{profileSettingsBean.codeToLangName(lang)}"
+                                             style="width: 100%"
+                            >
+                                <f:selectItems
+                                        value="#{profileSettingsBean.refLangs}"
+                                        var="langItem"
+                                        itemValue="#{profileSettingsBean.localeToLangCode(langItem)}"
+                                        itemLabel="#{profileSettingsBean.localeToLangName(langItem)}"
+                                />
 
-                                    <p:column>
-                                        <h:outputText value="#{profileSettingsBean.labelOfInstitutionWithId(inst)}"/>
-                                    </p:column>
+                                <p:column>
+                                    <h:outputText value="#{profileSettingsBean.codeToLangName(lang)}"/>
+                                </p:column>
 
-                                </p:selectOneMenu>
-                            </div>
+                            </p:selectOneMenu>
                         </div>
-                        <hr/>
-                        <div class="form-group row">
-                            <label for="langSetting" class="col-sm-2 col-form-label" style="width: 40%">#{langBean.msg('myProfile.preferences.lang')}</label>
-                            <div class="col-md-7 field-value-value">
-                                <p:selectOneMenu id="langSetting"
-                                                 var="lang"
-                                                 value="#{profileSettingsBean.FSelectedLang}"
-                                                 label="#{profileSettingsBean.codeToLangName(lang)}"
-                                                 style="width: 100%"
-                                >
-                                    <f:selectItems
-                                            value="#{profileSettingsBean.refLangs}"
-                                            var="langItem"
-                                            itemValue="#{profileSettingsBean.localeToLangCode(langItem)}"
-                                            itemLabel="#{profileSettingsBean.localeToLangName(langItem)}"
-                                    />
-
-                                    <p:column>
-                                        <h:outputText value="#{profileSettingsBean.codeToLangName(lang)}"/>
-                                    </p:column>
-
-                                </p:selectOneMenu>
-                            </div>
+                        <div class="sia-profile-field">
+                            <label for="themeSetting" class="sia-profile-label">#{langBean.msg('myProfile.preferences.theme')}</label>
+                            <p:selectOneMenu id="themeSetting"
+                                             value="#{profileSettingsBean.FSelectedTheme}"
+                                             style="width: 100%">
+                                <f:selectItem itemValue="siamois-day" itemLabel="#{langBean.msg('myProfile.theme.siamoisDay')}"/>
+                            </p:selectOneMenu>
                         </div>
+                        <p:commandButton
+                                styleClass="field-value-save"
+                                value="#{langBean.msg('common.action.save')}"
+                                actionListener="#{profileSettingsBean.savePreferences()}"/>
                     </div>
-                    <p:commandButton
-                            styleClass="field-value-save"
-                            value="#{langBean.msg('common.action.save')}"
-                            actionListener="#{profileSettingsBean.savePreferences()}"/>
 
                 </div>
             </h:form>
-            <h:form id="rightsForm" styleClass="sia-settings-form">
+            </div>
+            <h:form id="rightsForm" styleClass="sia-settings-form sia-profile-form sia-profile-rights">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                 <div class="field-value-group">
                     <h2 class="field-value-title">#{langBean.msg('myProfile.rights')}</h2>
@@ -131,9 +117,22 @@
                             </p:column>
                             <p:column headerText="#{langBean.msg('myProfile.rights.permissions')}" styleClass="rights-permissions-cell">
                                 <div class="rights-permissions">
-                                    <ui:repeat var="code" value="#{grant.permissionCodes}">
-                                        <span class="chip chip-profile">#{profileSettingsBean.permissionLabel(code)}</span>
-                                    </ui:repeat>
+                                    <h:outputText styleClass="chip chip-profile rights-permission-first"
+                                          rendered="#{not empty grant.permissionCodes}"
+                                          title="#{profileSettingsBean.permissionLabel(grant.permissionCodes.get(0))}"
+                                          value="#{profileSettingsBean.permissionLabel(grant.permissionCodes.get(0))}"/>
+                                    <p:commandButton id="morePermissions" type="button"
+                                                     rendered="#{grant.permissionCodes.size() gt 1}"
+                                                     value="+#{grant.permissionCodes.size() - 1}"
+                                                     styleClass="chip chip-profile rights-permission-more"/>
+                                    <p:overlayPanel for="morePermissions" appendTo="@(body)" showCloseIcon="false" styleClass="filter-overlay rights-overlay"
+                                                    rendered="#{grant.permissionCodes.size() gt 1}">
+                                        <div class="rights-permissions-list">
+                                            <ui:repeat var="code" value="#{grant.permissionCodes}">
+                                                <span class="chip chip-profile">#{profileSettingsBean.permissionLabel(code)}</span>
+                                            </ui:repeat>
+                                        </div>
+                                    </p:overlayPanel>
                                 </div>
                             </p:column>
                             <p:column styleClass="rights-open-cell">
