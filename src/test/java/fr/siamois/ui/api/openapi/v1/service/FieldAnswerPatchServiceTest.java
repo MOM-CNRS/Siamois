@@ -2,7 +2,12 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
@@ -36,6 +41,7 @@ import fr.siamois.ui.viewmodel.fieldanswer.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -65,6 +71,8 @@ class FieldAnswerPatchServiceTest {
     private PhaseMapper phaseMapper;
     @Mock
     private ConceptMapper conceptMapper;
+    @Mock
+    private UnitDefinitionMapper unitDefinitionMapper;
 
     private FieldAnswerPatchService service;
     private final PhaseDTO entity = new PhaseDTO();
@@ -76,7 +84,7 @@ class FieldAnswerPatchServiceTest {
                 mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class));
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
     }
 
     @Test
@@ -138,6 +146,104 @@ class FieldAnswerPatchServiceTest {
 
         verify(formService).applyTypedValueToAnswer(any(), eq(OffsetDateTime.of(2026, 9, 25, 0, 0, 0, 0, ZoneOffset.UTC)));
         verify(formService).applyTypedValueToAnswer(any(), eq(12.5));
+    }
+
+    @Test
+    void apply_takesABooleanAsTrueFalseOrCleared() {
+        CustomFieldBoolean done = CustomFieldBoolean.builder().allowNoAnswer(true).build();
+        done.setId(7L);
+        done.setIsSystemField(false);
+        givenResponse(Map.of(done, new CustomFieldAnswerBooleanViewModel()));
+
+        service.apply(entity, form(done), Map.of("7", new AnswerInput(true, null)), PROJECT_ID);
+        service.apply(entity, form(done), Map.of("7", new AnswerInput("false", null)), PROJECT_ID);
+        Map<String, AnswerInput> clear = new HashMap<>();
+        clear.put("7", new AnswerInput(null, null));
+        service.apply(entity, form(done), clear, PROJECT_ID);
+
+        verify(formService).applyTypedValueToAnswer(any(), eq(true));
+        verify(formService).applyTypedValueToAnswer(any(), eq(false));
+        verify(formService).applyTypedValueToAnswer(any(), isNull());
+    }
+
+    @Test
+    void apply_rejectsABooleanThatIsNeitherTrueNorFalse() {
+        CustomFieldBoolean done = CustomFieldBoolean.builder().build();
+        done.setId(7L);
+        done.setIsSystemField(false);
+        givenResponse(Map.of(done, new CustomFieldAnswerBooleanViewModel()));
+
+        var arg2 = form(done);
+        var arg3 = Map.of("7", new AnswerInput("peut-être", null));
+        assertThatThrownBy(() -> service.apply(entity, arg2, arg3, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void apply_storesAMeasurementInTheUnitTheClientPickedAmongTheOnesTheFieldOffers() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        UnitDefinition hectare = areaUnit(2L, "ha", 10_000.0);
+        CustomFieldMeasurement surface = surfaceField(squareMetre, hectare);
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+        UnitDefinitionDTO hectareDto = UnitDefinitionDTO.builder().id(2L).symbol("ha").build();
+        when(unitDefinitionMapper.convert(hectare)).thenReturn(hectareDto);
+
+        service.apply(entity, form(surface),
+                Map.of("9", new AnswerInput(Map.of("numericValue", 3.5, "symbol", "ha"), null)), PROJECT_ID);
+
+        ArgumentCaptor<Object> applied = ArgumentCaptor.forClass(Object.class);
+        verify(formService).applyTypedValueToAnswer(any(), applied.capture());
+        MeasurementAnswerDTO dto = (MeasurementAnswerDTO) applied.getValue();
+        assertThat(dto.getNumericValue()).isEqualTo(3.5);
+        assertThat(dto.getUnit()).isSameAs(hectareDto);
+    }
+
+    @Test
+    void apply_fallsBackOnTheDefaultUnitWhenTheClientSendsNone() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        UnitDefinition hectare = areaUnit(2L, "ha", 10_000.0);
+        CustomFieldMeasurement surface = surfaceField(squareMetre, hectare);
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+        UnitDefinitionDTO squareMetreDto = UnitDefinitionDTO.builder().id(1L).symbol("m²").build();
+        when(unitDefinitionMapper.convert(squareMetre)).thenReturn(squareMetreDto);
+
+        service.apply(entity, form(surface), Map.of("9", new AnswerInput(12.0, null)), PROJECT_ID);
+
+        ArgumentCaptor<Object> applied = ArgumentCaptor.forClass(Object.class);
+        verify(formService).applyTypedValueToAnswer(any(), applied.capture());
+        assertThat(((MeasurementAnswerDTO) applied.getValue()).getUnit()).isSameAs(squareMetreDto);
+    }
+
+    @Test
+    void apply_rejectsAMeasurementUnitTheFieldDoesNotOffer() {
+        UnitDefinition squareMetre = areaUnit(1L, "m²", 1.0);
+        CustomFieldMeasurement surface = surfaceField(squareMetre, areaUnit(2L, "ha", 10_000.0));
+        givenResponse(Map.of(surface, new CustomFieldAnswerMeasurementViewModel()));
+
+        var arg2 = form(surface);
+        var arg3 = Map.of("9", new AnswerInput(Map.of("numericValue", 1, "symbol", "km²"), null));
+        assertThatThrownBy(() -> service.apply(entity, arg2, arg3, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("km²");
+    }
+
+    private static UnitDefinition areaUnit(long id, String symbol, double factor) {
+        UnitDefinition unit = new UnitDefinition();
+        unit.setId(id);
+        unit.setSymbol(symbol);
+        unit.setDimension(UnitDefinition.Dimension.AREA);
+        unit.setFactorToBase(factor);
+        return unit;
+    }
+
+    private static CustomFieldMeasurement surfaceField(UnitDefinition defaultUnit, UnitDefinition other) {
+        CustomFieldMeasurement surface = new CustomFieldMeasurement();
+        surface.setId(9L);
+        surface.setIsSystemField(false);
+        surface.setUnit(defaultUnit);
+        surface.setAllowedUnits(new LinkedHashSet<>(List.of(defaultUnit, other)));
+        return surface;
     }
 
     @Test

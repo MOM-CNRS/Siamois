@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    UnitDefinition.Dimension gains AREA (m², ha…). Hibernate generated a CHECK constraint listing the
+    enum's values when it created unit_definition, and ddl-auto: update never alters an existing
+    constraint, so it must be widened here or saving an area unit fails. On a fresh database Liquibase
+    runs before Hibernate creates the table: the precondition marks the change as ran, and Hibernate
+    then creates the constraint with every value.
+    -->
+
+    <changeSet id="2026.10.13-1-unit_definition-dimension-area" author="Gregory Bliault" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="unit_definition"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE unit_definition DROP CONSTRAINT IF EXISTS unit_definition_dimension_check;
+            ALTER TABLE unit_definition ADD CONSTRAINT unit_definition_dimension_check
+                CHECK (dimension IN ('LENGTH', 'VOLUME', 'MASS', 'TIME', 'ANGLE', 'COUNT', 'AREA'));
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

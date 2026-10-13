@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
@@ -222,6 +223,9 @@ public class ProjectAnswersProjector {
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
+        }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
         }
         if (field instanceof CustomFieldDecimal) {
             return raw instanceof Number n ? n.doubleValue() : null;

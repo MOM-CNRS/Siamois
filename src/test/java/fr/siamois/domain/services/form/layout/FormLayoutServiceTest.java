@@ -250,7 +250,7 @@ class FormLayoutServiceTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(1L))
                 .thenReturn(List.of(row(config, a, group, FieldWidth.THREE_QUARTERS, true, true, null)));
         TypeFieldFormConfig described = TypeFieldFormConfig.builder().name("fa").build();
-        when(tableFieldConfigService.describe(a, true, true, false)).thenReturn(described);
+        when(tableFieldConfigService.describe(a, true, true, false, null)).thenReturn(described);
 
         List<LayoutRow> rows = service.rowsOf(5L, TABLE, "Type");
 

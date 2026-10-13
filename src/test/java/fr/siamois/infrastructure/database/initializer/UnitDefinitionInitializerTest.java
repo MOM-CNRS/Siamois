@@ -75,10 +75,27 @@ class UnitDefinitionInitializerTest {
 
         assertThat(seededUnits())
                 .extracting(UnitDefinitionDTO::getSymbol, UnitDefinitionDTO::getDimension)
-                .containsExactlyInAnyOrder(
+                .contains(
                         tuple("m", UnitDefinition.Dimension.LENGTH),
                         tuple("cm", UnitDefinition.Dimension.LENGTH),
                         tuple("kg", UnitDefinition.Dimension.MASS));
+    }
+
+    /** A project picks its measurement units from the catalogue: surfaces (m², ha…) must be in it. */
+    @Test
+    @DisplayName("Startup offers surface units, each dimension with exactly one base unit")
+    void initialize_seedsSurfaceUnitsAndOneBasePerDimension() throws Exception {
+        initializer.initialize();
+
+        assertThat(seededUnits())
+                .extracting(UnitDefinitionDTO::getSymbol, UnitDefinitionDTO::getDimension)
+                .contains(
+                        tuple("m²", UnitDefinition.Dimension.AREA),
+                        tuple("ha", UnitDefinition.Dimension.AREA));
+        assertThat(seededUnits().stream().filter(UnitDefinitionDTO::isSystemBase)
+                .collect(java.util.stream.Collectors.groupingBy(UnitDefinitionDTO::getDimension,
+                        java.util.stream.Collectors.counting())))
+                .allSatisfy((dimension, bases) -> assertThat(bases).as(dimension.name()).isEqualTo(1L));
     }
 
     /** Nothing to add to a unit already known: the seeder is what skips it, and it needs its id. */

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -190,6 +191,9 @@ public class PhaseAnswersProjector {
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
+        }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
         }
         if (field instanceof CustomFieldSelectOneFromFieldCode) {
             return raw instanceof ConceptDTO c ? conceptRef(c, labels) : null;

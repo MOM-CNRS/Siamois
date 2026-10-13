@@ -43,6 +43,7 @@ public final class FormLayoutComposer {
                         .readOnly(spec != null && spec.readOnly())
                         .isRequired(item.mandatory())
                         .rules(item.rules())
+                        .units(item.units())
                         .build());
             }
         }

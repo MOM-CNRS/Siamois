@@ -118,12 +118,16 @@
             .ptc-editor .ui-tabs-panels .ptc-table-scroll:last-child { margin-bottom: 0; }
 
             .ptc-path { display: flex; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid #ececec; background: var(--siamois-green-light-50, #f3f6f2); flex-wrap: wrap; }
-            .ptc-path-link.ui-commandlink { color: var(--siamois-green-active, #5e8c61); text-decoration: none; cursor: pointer; }
-            .ptc-path-link.ui-commandlink:hover { text-decoration: underline; }
             .ptc-path-step { display: flex; flex-direction: column; gap: 1px; }
             .ptc-path-step-right { margin-left: auto; }
             .ptc-path-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #8c8c8c; }
             .ptc-path-value { font-size: 15px; font-weight: 600; color: #2b2b2b; }
+            /* A step you can go back to is underlined; the one you are on is green. The theme styles links
+               (size, decoration) with more weight than a single class, hence the doubled selector and the
+               !important. The link's hit area is padded, the padding taken back with a negative margin so the
+               layout does not move. */
+            .ptc-path .ptc-path-value.ptc-path-link { font-size: 15px !important; font-weight: 600 !important; color: #2b2b2b !important; text-decoration: underline !important; cursor: pointer; display: inline-block; padding: 6px 10px; margin: -6px -10px; }
+            .ptc-path .ptc-path-value.ptc-path-current { color: var(--siamois-green-active, #5e8c61); }
             .ptc-path-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-weight: 500; }
             .ptc-path-sep { color: #b5b5b0; font-size: 13px; }
 
@@ -142,6 +146,13 @@
             .ptc-hint { font-size: 13px; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0; }
             .ptc-readonly-value, .ptc-static-placeholder { font-size: 15px; border: 1px solid #d8d8d2; border-radius: 8px; padding: 9px 11px; background: #fff; color: #777; }
             .ptc-field-hint { font-size: 12.5px; color: #a3a3a0; margin-top: 4px; }
+            .ptc-tree-add-field.ui-button { margin-top: 4px; }
+            .ptc-table-page { padding: 28px 32px; max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
+            .ptc-table-page-title { font-size: 22px; font-weight: 600; margin: 0; }
+            .ptc-table-page-description { color: #666; font-size: 14.5px; line-height: 1.5; margin: 0; }
+            .ptc-table-page-add.ui-button { width: auto; align-self: flex-start; padding: 8px 18px; }
+            .ptc-field-warning { color: #b45309; }
+            .ptc-checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
 
             .ptc-section-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
             .ptc-section-title { font-size: 17px; font-weight: 600; }
@@ -200,7 +211,11 @@
 
             /* ── field edit drawer (p:sidebar) ─────────── */
             .ui-sidebar.ptc-drawer-sidebar { padding: 0; display: flex; flex-direction: column; }
-            .ptc-drawer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+            .ptc-drawer { display: flex; flex-direction: column; flex: 1 1 auto; height: 100%; min-height: 0; }
+            /* the body scrolls, the footer (save / cancel) stays in view whatever the height of the form */
+            .ptc-field-view .ptc-drawer { height: auto; overflow: hidden; }
+            .ptc-field-view .ptc-drawer-body { min-height: 0; }
+            .ptc-drawer-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 22px; border-bottom: 1px solid #ececec; flex: none; }
             .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
             .ptc-drawer-title { font-size: 18px; font-weight: 600; }
             .ptc-drawer-back.ui-button { padding-left: 0 !important; color: var(--siamois-green-active, #5e8c61) !important; }
@@ -309,7 +324,7 @@
                                                styleClass="ptc-tree-chevron" title="#{langBean.msg('projectTables.tree.toggle')}">
                                     <i class="bi #{projectTableFieldSettingsBean.isTableExpanded(t) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
                                 </p:commandLink>
-                                <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTable(t)}" update=":treeFormCC:treeForm :ptcMain"
+                                <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTableOnly(t)}" update=":treeFormCC:treeForm :ptcMain"
                                                styleClass="ptc-tree-label">
                                     <span>#{t.label}</span>
                                     <span class="ptc-count-badge">#{projectTableFieldSettingsBean.getTypeCountFor(t)}</span>
@@ -335,10 +350,15 @@
                                             <p:commandLink actionListener="#{projectTableFieldSettingsBean.openFieldOf(t, ty.name, fld)}"
                                                            update=":treeFormCC:treeForm :ptcMain"
                                                            styleClass="ptc-tree-field-row #{projectTableFieldSettingsBean.drawerOpen and projectTableFieldSettingsBean.selectedTable eq t and projectTableFieldSettingsBean.selectedTypeName eq ty.name and projectTableFieldSettingsBean.draftOriginalName eq fld.name ? 'ptc-selected' : ''} #{not fld.active ? 'ptc-tree-field-off' : ''}">
-                                                <i class="bi #{fld.type.icon} ptc-field-icon" title="#{fld.type.label}"/>
+                                                <i class="#{fld.type.icon} ptc-field-icon" title="#{fld.type.label}"/>
                                                 <span>#{projectTableFieldSettingsBean.resolveFieldLabel(fld)}</span>
                                             </p:commandLink>
                                         </ui:repeat>
+                                        <p:commandButton actionListener="#{projectTableFieldSettingsBean.addFieldToType(t, ty.name)}"
+                                                         update=":addFieldForm :treeFormCC:treeForm :ptcMain"
+                                                         icon="bi bi-plus-lg"
+                                                         value="#{langBean.msg('projectTables.tree.addField')}"
+                                                         styleClass="ptc-new-type-btn ptc-tree-add-field"/>
                                     </h:panelGroup>
                                 </ui:repeat>
                                 <h:panelGroup rendered="#{projectTableFieldSettingsBean.selectedTable eq t}">
@@ -362,13 +382,18 @@
                                 <div class="ptc-path">
                                     <span class="ptc-path-step">
                                         <span class="ptc-path-label">#{langBean.msg('projectTables.path.table')}</span>
-                                        <span class="ptc-path-value">#{projectTableFieldSettingsBean.selectedTable.label}</span>
+                                        <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTableOnly(projectTableFieldSettingsBean.selectedTable)}"
+                                                       update=":ptcMain :treeFormCC:treeForm"
+                                                       styleClass="ptc-path-value ptc-path-link"
+                                                       title="#{langBean.msg('projectTables.path.backToTable')}">
+                                            #{projectTableFieldSettingsBean.selectedTable.label}
+                                        </p:commandLink>
                                     </span>
                                     <i class="bi bi-chevron-right ptc-path-sep"/>
                                     <span class="ptc-path-step">
                                         <span class="ptc-path-label">#{langBean.msg('projectTables.path.type')}</span>
                                         <h:panelGroup rendered="#{not projectTableFieldSettingsBean.drawerOpen}">
-                                            <span class="ptc-path-value">#{projectTableFieldSettingsBean.selectedTypeName}</span>
+                                            <span class="ptc-path-value ptc-path-current">#{projectTableFieldSettingsBean.selectedTypeName}</span>
                                         </h:panelGroup>
                                         <h:panelGroup rendered="#{projectTableFieldSettingsBean.drawerOpen}">
                                             <p:commandLink actionListener="#{projectTableFieldSettingsBean.closeDrawer()}"
@@ -387,7 +412,7 @@
                                         </h:panelGroup>
                                         <h:panelGroup rendered="#{projectTableFieldSettingsBean.drawerOpen}">
                                             <span class="ptc-path-label">#{langBean.msg('projectTables.path.field')}</span>
-                                            <span class="ptc-path-value">#{projectTableFieldSettingsBean.draftDisplayName}</span>
+                                            <span class="ptc-path-value ptc-path-current">#{projectTableFieldSettingsBean.draftDisplayName}</span>
                                         </h:panelGroup>
                                     </span>
                                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.identTabAvailable}">
@@ -402,7 +427,18 @@
 
                         <!-- A table whose thesaurus gave it no type yet: nothing to show until one is added. -->
                         <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.selectedTypeName}" layout="block" styleClass="ptc-main-panel ptc-no-type">
-                            <div class="ptc-ident-placeholder">#{langBean.msg('projectTables.empty.noType')}</div>
+                            <div class="ptc-table-page">
+                                <h2 class="ptc-table-page-title">#{projectTableFieldSettingsBean.selectedTable.label}</h2>
+                                <p class="ptc-table-page-description">#{projectTableFieldSettingsBean.selectedTableDescription}</p>
+                                <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.typesForSelectedTable}">
+                                    <div class="ptc-ident-placeholder">#{langBean.msg('projectTables.empty.noType')}</div>
+                                </h:panelGroup>
+                                <form:csrfform id="tablePageFormCC" formId="tablePageForm">
+                                    <p:commandButton type="button" value="#{langBean.msg('projectTables.tree.newConfig')}"
+                                                     styleClass="ptc-new-type-btn ptc-table-page-add"
+                                                     onclick="PF('newConfigDialogWidget').show()"/>
+                                </form:csrfform>
+                            </div>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.selectedTypeName and not projectTableFieldSettingsBean.drawerOpen}" layout="block" styleClass="ptc-main-panel">
                             <form:csrfform id="projectTablesFormCC" formId="projectTablesForm" styleClass="sia-settings-form">
@@ -456,11 +492,8 @@
                                                 </p:inputText>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{r.fieldRow}">
-                                                <i class="bi #{r.field.type.icon} ptc-field-icon" title="#{r.field.type.label}"/>
+                                                <i class="#{r.field.type.icon} ptc-field-icon" title="#{r.field.type.label}"/>
                                                 <span class="#{not r.field.active ? 'ptc-hidden-name' : ''}">#{projectTableFieldSettingsBean.resolveFieldLabel(r.field)}</span>
-                                                <h:panelGroup rendered="#{r.hasRules}">
-                                                    <i class="bi bi-diagram-2-fill ptc-rules-flag" title="#{langBean.msg('rules.title')}"/>
-                                                </h:panelGroup>
                                                 <h:panelGroup rendered="#{r.field.institutionLocked}">
                                                     <span class="bi bi-lock-fill ptc-lock-icon" title="#{langBean.msg('projectTables.champs.institutionLocked')}"/>
                                                 </h:panelGroup>
@@ -511,7 +544,7 @@
                                                     #{projectTableFieldSettingsBean.resolveFieldLabel(pr.field)}<span class="ptc-preview-required" style="#{pr.field.mandatory ? '' : 'display:none'}"> *</span>
                                                 </div>
                                                 <div class="ptc-preview-control">
-                                                    <i class="bi #{pr.field.type.icon}"/>
+                                                    <i class="#{pr.field.type.icon}"/>
                                                     <span>#{pr.field.type.label}</span>
                                                 </div>
                                             </h:panelGroup>

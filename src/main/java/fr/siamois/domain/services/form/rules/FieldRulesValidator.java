@@ -46,6 +46,8 @@ public class FieldRulesValidator {
     }
 
     private static final Set<ConditionOp> EMPTINESS = EnumSet.of(ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
+    private static final Set<ConditionOp> BOOLEAN_OPS = EnumSet.of(ConditionOp.EQ, ConditionOp.NEQ,
+            ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
     private static final Set<ConditionOp> EQUALITY = EnumSet.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.IN,
             ConditionOp.NOT_IN, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
 
@@ -140,6 +142,7 @@ public class FieldRulesValidator {
         Set<ConditionOp> allowed = switch (family) {
             case NUMBER, DATE -> EnumSet.allOf(ConditionOp.class);
             case CONCEPT, TEXT -> EQUALITY;
+            case BOOLEAN -> BOOLEAN_OPS;
             case OTHER -> EMPTINESS;
         };
         if (!allowed.contains(leaf.op())) {
@@ -174,6 +177,7 @@ public class FieldRulesValidator {
             case CONCEPT -> value instanceof FieldValueSpec.ConceptValue;
             case NUMBER -> value instanceof FieldValueSpec.LiteralValue literal && literal.value() instanceof Number;
             case TEXT -> value instanceof FieldValueSpec.LiteralValue literal && literal.value() instanceof String;
+            case BOOLEAN -> value instanceof FieldValueSpec.LiteralValue literal && literal.value() instanceof Boolean;
             case DATE -> value instanceof FieldValueSpec.LiteralValue literal && literal.value() instanceof String s && isDate(s);
             case OTHER -> false;
         };

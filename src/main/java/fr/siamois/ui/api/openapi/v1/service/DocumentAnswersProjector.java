@@ -5,6 +5,7 @@ import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldFile;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -198,7 +199,8 @@ public class DocumentAnswersProjector {
 
     private static boolean isScalar(CustomField field) {
         return field instanceof CustomFieldFile || field instanceof CustomFieldText || field instanceof CustomFieldInteger
-                || field instanceof CustomFieldDecimal || field instanceof CustomFieldDateTime;
+                || field instanceof CustomFieldDecimal || field instanceof CustomFieldDateTime
+                || field instanceof CustomFieldBoolean;
     }
 
     /** A value that is not a reference: text, number, date, or the stored file. */
@@ -211,6 +213,9 @@ public class DocumentAnswersProjector {
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
+        }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
         }
         if (field instanceof CustomFieldDecimal) {
             return raw instanceof Number n ? n.doubleValue() : null;

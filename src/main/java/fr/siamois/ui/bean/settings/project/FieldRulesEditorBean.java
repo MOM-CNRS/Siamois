@@ -214,7 +214,7 @@ public class FieldRulesEditorBean implements Serializable {
             case NUMBER, DATE -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.GT, ConditionOp.GTE,
                     ConditionOp.LT, ConditionOp.LTE, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
             case CONCEPT -> List.of(ConditionOp.IN, ConditionOp.NOT_IN, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
-            case TEXT -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
+            case TEXT, BOOLEAN -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
             case OTHER -> List.of(ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
         };
     }
@@ -382,6 +382,8 @@ public class FieldRulesEditorBean implements Serializable {
                     BigDecimal number = new BigDecimal(text.replace(',', '.'));
                     values.add(FieldValueSpec.literal(number.stripTrailingZeros().scale() <= 0
                             ? (Object) number.longValue() : (Object) number.doubleValue()));
+                } else if (family == RuleFieldFamily.BOOLEAN) {
+                    values.add(FieldValueSpec.literal(Boolean.parseBoolean(text)));
                 } else {
                     values.add(FieldValueSpec.literal(text));
                 }

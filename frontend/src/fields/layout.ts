@@ -29,6 +29,9 @@ export interface FormLayoutCol {
   fieldId?: number | string | null;
   // Conditional rules (enabledWhen / requiredWhen / options / constraints) — see rules/types.ts.
   rules?: FieldRules | null;
+  // Measurement: the units this form configuration offers (the default one first-class), which
+  // replace the field's own — see withColumnUnits in FormLayoutView.
+  units?: { default: string; symbols: string[] } | null;
 }
 
 /**

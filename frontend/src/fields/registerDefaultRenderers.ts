@@ -1,5 +1,6 @@
 import { registerFallbackFieldRenderer, registerFieldRenderer } from "./registry";
 import {
+  BooleanRenderer,
   DateRenderer,
   DecimalRenderer,
   FallbackRenderer,
@@ -45,6 +46,7 @@ export function registerDefaultFieldRenderers(): void {
   registerFieldRenderer("INTEGER", IntegerRenderer);
   registerFieldRenderer("DECIMAL", DecimalRenderer);
   registerFieldRenderer("DATETIME", DateRenderer);
+  registerFieldRenderer("BOOLEAN", BooleanRenderer);
   registerFieldRenderer("MEASUREMENT", MeasurementRenderer);
   for (const answerType of SINGLE_REFERENCES) registerFieldRenderer(answerType, SelectOneRefRenderer);
   for (const answerType of MULTIPLE_REFERENCES) registerFieldRenderer(answerType, SelectManyRefRenderer);

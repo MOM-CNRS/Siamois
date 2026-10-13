@@ -17,7 +17,8 @@ import lombok.NonNull;
         @Index(name = "idx_custom_field_answer_integer", columnList = "fk_custom_field_id, value_as_integer"),
         @Index(name = "idx_custom_field_answer_decimal", columnList = "fk_custom_field_id, value_as_decimal"),
         @Index(name = "idx_custom_field_answer_datetime", columnList = "fk_custom_field_id, value_as_datetime"),
-        @Index(name = "idx_custom_field_answer_double", columnList = "fk_custom_field_id, value_as_double")
+        @Index(name = "idx_custom_field_answer_double", columnList = "fk_custom_field_id, value_as_double"),
+        @Index(name = "idx_custom_field_answer_boolean", columnList = "fk_custom_field_id, value_as_boolean")
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "answer_type", discriminatorType = DiscriminatorType.STRING)

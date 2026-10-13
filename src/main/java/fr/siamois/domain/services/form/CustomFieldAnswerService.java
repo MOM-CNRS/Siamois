@@ -488,6 +488,8 @@ public class CustomFieldAnswerService {
             v.setValue(s);
         } else if (viewModel instanceof CustomFieldAnswerIntegerViewModel v && value instanceof Integer i) {
             v.setValue(i);
+        } else if (viewModel instanceof CustomFieldAnswerBooleanViewModel v && value instanceof Boolean b) {
+            v.setValue(b);
         } else if (viewModel instanceof CustomFieldAnswerDecimalViewModel v && value instanceof Number n) {
             v.setValue(n.doubleValue());
         } else if (viewModel instanceof CustomFieldAnswerDateTimeViewModel v && value instanceof LocalDateTime d) {

@@ -4,10 +4,14 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 
 @Getter
@@ -26,11 +30,24 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
     private Long maxValue ;
 
     /**
-     * Unit as a measurement unit
+     * The default unit of the field: the one a new answer is entered in unless the user picks
+     * another of {@link #allowedUnits}.
      */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_unit")
     private UnitDefinition unit;
+
+    /**
+     * The units a user may enter an answer in, all of the same dimension as {@link #unit}. Empty
+     * for a field that only ever uses its default unit, which is how every field created before
+     * this list existed reads: see {@link #unitsToChooseFrom()}.
+     */
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "custom_field_unit",
+            joinColumns = @JoinColumn(name = "fk_custom_field_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_unit_id"))
+    private Set<UnitDefinition> allowedUnits = new LinkedHashSet<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_nature")
@@ -41,6 +58,14 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
 
     @FieldCode
     public static final String MEASUREMENT_NATURE_FIELD_CODE = "SIAMD.NATURE";
+
+    /** The units an answer may be entered in: the allowed ones, and always the default unit. */
+    public Set<UnitDefinition> unitsToChooseFrom() {
+        Set<UnitDefinition> units = new LinkedHashSet<>();
+        if (unit != null) units.add(unit);
+        if (allowedUnits != null) units.addAll(allowedUnits);
+        return units;
+    }
 
     @Override
     public String getIcon() {

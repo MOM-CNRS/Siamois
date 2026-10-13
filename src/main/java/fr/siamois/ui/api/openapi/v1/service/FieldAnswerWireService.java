@@ -1,11 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.form.FormService;
@@ -77,6 +79,21 @@ public class FieldAnswerWireService {
                 constraintsOf(f));
     }
 
+    /**
+     * The symbols a measurement can be entered in, the default unit first; null when the field has
+     * a single unit, which the client then shows as a plain suffix.
+     */
+    private static List<String> unitsOf(CustomFieldMeasurement m) {
+        Set<UnitDefinition> choices = m.unitsToChooseFrom();
+        if (choices.size() < 2) return null;
+        String defaultSymbol = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+        return choices.stream()
+                .sorted(Comparator.comparing((UnitDefinition u) -> !Objects.equals(u.getSymbol(), defaultSymbol))
+                        .thenComparing(UnitDefinition::getFactorToBase, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(UnitDefinition::getSymbol)
+                .toList();
+    }
+
     /** A bound as a double, or null when it is absent or is the "unbounded" default. */
     private static Double boundOrNull(Number value, double unbounded) {
         return value == null || value.doubleValue() == unbounded ? null : value.doubleValue();
@@ -91,6 +108,8 @@ public class FieldAnswerWireService {
         Double max = null;
         Boolean showTime = null;
         String unit = null;
+        List<String> units = null;
+        Boolean allowNoAnswer = null;
         if (f instanceof CustomFieldInteger i) {
             min = boundOrNull(i.getMinValue(), Integer.MIN_VALUE);
             max = boundOrNull(i.getMaxValue(), Integer.MAX_VALUE);
@@ -101,11 +120,16 @@ public class FieldAnswerWireService {
             min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
             max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
             unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+            units = unitsOf(m);
         } else if (f instanceof CustomFieldDateTime dt) {
             showTime = dt.getShowTime();
+        } else if (f instanceof CustomFieldBoolean b) {
+            allowNoAnswer = b.isNoAnswerAllowed() ? Boolean.TRUE : null;
         }
-        if (min == null && max == null && showTime == null && unit == null) return null;
-        return new FieldResource.Constraints(min, max, showTime, unit);
+        if (min == null && max == null && showTime == null && unit == null && units == null && allowNoAnswer == null) {
+            return null;
+        }
+        return new FieldResource.Constraints(min, max, showTime, unit, units, allowNoAnswer);
     }
 
     /**
@@ -128,6 +152,7 @@ public class FieldAnswerWireService {
             case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
             case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Number n ? n.intValue() : null);
             case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
+            case "BOOLEAN" -> new BooleanFieldAnswer(answerType, field, raw instanceof Boolean b ? b : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, toOffsetDateTime(raw));
             case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                  "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT",

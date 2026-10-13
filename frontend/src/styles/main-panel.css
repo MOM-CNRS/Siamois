@@ -1781,3 +1781,80 @@ body button.p-button.status-button.status-button-compact {
   padding: 0.25rem 0.75rem;
   color: var(--red-500, #c0584d);
 }
+
+/* BOOLEAN in the editing overlay: the box and the name of its state, with room around them. The room
+   is on the overlay itself (it shows a widget edge to edge, and the widget's own padding would not
+   move it off the border), and the overlay is at least a form row tall so it hides the cell below. */
+.cell-edit-overlay:has(.boolean-renderer) {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.cell-edit-overlay .boolean-renderer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.boolean-renderer-label {
+  color: var(--text-color-secondary, #6b7280);
+  white-space: nowrap;
+}
+
+/* Yes / no / not specified (YesNoTriState): the "?" of the not-specified state sits on a plain box, not
+   the filled one PrimeReact draws for its unchecked state. */
+.yes-no-tristate.yes-no-unknown .p-checkbox-box {
+  background: var(--surface-0, #fff);
+  border-color: var(--surface-400, #bdbdbd);
+}
+
+.yes-no-unknown-mark {
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* The box and the name of its state, in the fiche and the lists as well as in the overlay. */
+.boolean-renderer-tristate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* MEASUREMENT editor, laid out as a small form: the value and its unit on one line, the comment below. */
+.measurement-renderer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 16rem;
+}
+
+.measurement-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.measurement-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.measurement-value {
+  flex: 1 1 auto;
+}
+
+.measurement-unit-field {
+  flex: 0 0 8rem;
+}
+
+.measurement-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary, #6b7280);
+}

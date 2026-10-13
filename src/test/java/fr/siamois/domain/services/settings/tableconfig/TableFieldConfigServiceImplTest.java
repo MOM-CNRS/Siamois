@@ -8,9 +8,12 @@ import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -100,6 +103,8 @@ class TableFieldConfigServiceImplTest {
     private ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
     @Mock
     private fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository formConfigGroupRepository;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository unitDefinitionRepository;
 
     @org.mockito.Spy
     private fr.siamois.domain.services.form.layout.FormLayoutSeeds formLayoutSeeds = fr.siamois.utils.TestForms.seeds();
@@ -1423,12 +1428,91 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.INTEGER, "").getType()).isEqualTo(FieldType.INTEGER);
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
-                "Champ", FieldType.MEASUREMENT, "").getType()).isEqualTo(FieldType.MEASUREMENT);
+                "Champ", FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L))).getType())
+                .isEqualTo(FieldType.MEASUREMENT);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.DECIMAL, "").getType()).isEqualTo(FieldType.DECIMAL);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.DATETIME, "").getType()).isEqualTo(FieldType.DATETIME);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.BOOLEAN, "").getType()).isEqualTo(FieldType.BOOLEAN);
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.SELECT_ONE, "").getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.SELECT_MULTIPLE, "").getType()).isEqualTo(FieldType.SELECT_MULTIPLE);
+    }
+
+    @Test
+    void createField_shouldRefuseATypeThatIsNotCreatableFromTheScreen() {
+        givenCurrentPersonExists();
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.SELECT_MULTIPLE_PHASE, ""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void createField_shouldStoreWhetherABooleanAllowsNoAnswer() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        TypeFieldFormConfig created = service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Topo faite", FieldType.BOOLEAN, "", FieldOptions.noAnswer(true));
+
+        assertThat(created.getOptions().allowNoAnswer()).isTrue();
+        ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
+        verify(customFieldRepository).save(saved.capture());
+        assertThat(((CustomFieldBoolean) saved.getValue()).isNoAnswerAllowed()).isTrue();
+    }
+
+    @Test
+    void createField_shouldTakeTheDefaultUnitPickedAsTheMeasurementsOwnUnit() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
+        UnitDefinition squareMetre = unit(1L, "m²", UnitDefinition.Dimension.AREA, 1.0);
+        UnitDefinition hectare = unit(2L, "ha", UnitDefinition.Dimension.AREA, 10_000.0);
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(squareMetre, hectare));
+
+        service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Surface",
+                FieldType.MEASUREMENT, "", FieldOptions.units(2L, Set.of(1L, 2L)));
+
+        ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
+        verify(customFieldRepository).save(saved.capture());
+        CustomFieldMeasurement measurement = (CustomFieldMeasurement) saved.getValue();
+        assertThat(measurement.getUnit()).isEqualTo(hectare);
+    }
+
+    @Test
+    void createField_shouldRefuseAMeasurementWithoutUnitOrWithUnitsOfDifferentDimensions() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", FieldOptions.NONE))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(
+                unit(1L, "m²", UnitDefinition.Dimension.AREA, 1.0),
+                unit(2L, "kg", UnitDefinition.Dimension.MASS, 1000.0)));
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L, 2L))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("même grandeur");
+    }
+
+    private static UnitDefinition unit(Long id, String symbol, UnitDefinition.Dimension dimension, double factor) {
+        UnitDefinition unit = new UnitDefinition();
+        unit.setId(id);
+        unit.setSymbol(symbol);
+        unit.setLabel(symbol);
+        unit.setDimension(dimension);
+        unit.setFactorToBase(factor);
+        return unit;
     }
 
     // --- updateField ---
@@ -1704,12 +1788,12 @@ class TableFieldConfigServiceImplTest {
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.PROJET);
+                .containsExactly(FieldType.SELECT_ONE_ACTION_UNIT);
         assertThat(fields).extracting(TypeFieldFormConfig::getSourceLabel).containsOnly("—");
     }
 
     @Test
-    void getFieldsConfig_shouldMapEveryFlavourOfSpatialUnitFieldToTheSameType() {
+    void getFieldsConfig_shouldMapEachFlavourOfSpatialUnitFieldToItsOwnType() {
         CustomField address = CustomFieldSelectOneAddress.builder()
                 .id(1L).label("Adresse").isSystemField(true).build();
         CustomField tree = CustomFieldSelectMultipleSpatialUnitTree.builder()
@@ -1720,15 +1804,12 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT, FieldType.SELECT_ONE_SPATIAL_UNIT);
+                .containsExactly(FieldType.SELECT_ADDRESS, FieldType.SELECT_MULTIPLE_SPATIAL_UNIT_TREE);
     }
 
-    /**
-     * The screen shows fewer types than the entity hierarchy expresses; one it has no type for falls
-     * back on text, and only the controlled-vocabulary types are announced as configurable.
-     */
+    /** A date is a date: it keeps its own type instead of reading as text; only vocabularies are configurable. */
     @Test
-    void getFieldsConfig_shouldFallBackOnTextForAFieldItHasNoTypeFor() {
+    void getFieldsConfig_shouldMapADateFieldToTheDateType() {
         CustomField dateField = CustomFieldDateTime.builder()
                 .id(1L).label("Date d'ouverture").isSystemField(true).build();
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
@@ -1737,7 +1818,7 @@ class TableFieldConfigServiceImplTest {
         TypeFieldFormConfig field =
                 service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields().get(0);
 
-        assertThat(field.getType()).isEqualTo(FieldType.TEXT);
+        assertThat(field.getType()).isEqualTo(FieldType.DATETIME);
         assertThat(field.isConfigurable()).isFalse();
     }
 

@@ -43,4 +43,10 @@ public class TypeFieldFormConfig implements Serializable {
     private String sourceLabel;
     private String valueBinding;
     private RuleFieldFamily ruleFamily;
+    /** What the field carries besides its type (no-answer, units); {@link FieldOptions#NONE} when it has none. */
+    @Builder.Default
+    private FieldOptions options = FieldOptions.NONE;
+    /** MEASUREMENT: the concepts that define the measure — what it measures, and its nature; null when it has none. */
+    private ConceptSummary measureType;
+    private ConceptSummary measureNature;
 }

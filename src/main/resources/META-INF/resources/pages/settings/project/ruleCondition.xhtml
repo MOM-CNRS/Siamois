@@ -50,7 +50,13 @@
                                                    itemLabel="#{c.label}" itemValue="#{c.value}"/>
                                 </p:selectCheckboxMenu>
                             </h:panelGroup>
-                            <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() ne 'CONCEPT'}">
+                            <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() eq 'BOOLEAN'}">
+                                <p:selectOneMenu value="#{leaf.value}" style="width:100%;">
+                                    <f:selectItem itemLabel="#{langBean.msg('rules.value.true')}" itemValue="true"/>
+                                    <f:selectItem itemLabel="#{langBean.msg('rules.value.false')}" itemValue="false"/>
+                                </p:selectOneMenu>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() ne 'CONCEPT' and fieldRulesEditorBean.familyOf(leaf.fieldId).name() ne 'BOOLEAN'}">
                                 <p:inputText value="#{leaf.value}" style="width:100%;"
                                              placeholder="#{fieldRulesEditorBean.familyOf(leaf.fieldId).name() eq 'DATE' ? 'AAAA-MM-JJ' : ''}"/>
                             </h:panelGroup>

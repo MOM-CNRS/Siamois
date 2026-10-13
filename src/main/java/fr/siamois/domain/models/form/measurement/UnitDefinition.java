@@ -51,6 +51,7 @@ public class UnitDefinition implements Serializable {
 
     public enum Dimension {
         LENGTH,
+        AREA,
         VOLUME,
         MASS,
         TIME,

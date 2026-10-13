@@ -44,7 +44,12 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
 
   return (
     <div className="header-toggle-container">
-      <Tooltip target={`#${buttonId}`} content={field.label} position="left" />
+      <Tooltip target={`#${buttonId}`} position="left">
+        <div className="field-label-tooltip">
+          <strong>{field.label}</strong>
+          {field.hint && <div>{field.hint}</div>}
+        </div>
+      </Tooltip>
       <Button
         id={buttonId}
         type="button"
@@ -71,7 +76,6 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
           ]}
         />
       )}
-      {field.hint && <small className="field-hint">{field.hint}</small>}
     </div>
   );
 }
