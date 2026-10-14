@@ -37,6 +37,7 @@ class OrganizationCountsServiceTest {
     @Mock private PhaseService phaseService;
     @Mock private ContainerService containerService;
     @Mock private fr.siamois.domain.services.document.DocumentService documentService;
+    @Mock private fr.siamois.domain.services.study.StudyService studyService;
 
     private OrganizationCountsService service;
     private ProjectApiCaller caller;
@@ -45,7 +46,7 @@ class OrganizationCountsServiceTest {
     @BeforeEach
     void setUp() {
         service = new OrganizationCountsService(projectApiService, actionUnitService, spatialUnitService,
-                recordingUnitService, specimenService, phaseService, containerService, documentService);
+                recordingUnitService, specimenService, phaseService, containerService, documentService, studyService);
         institution = new InstitutionDTO();
         institution.setId(10L);
         PersonDTO person = new PersonDTO();
@@ -63,10 +64,11 @@ class OrganizationCountsServiceTest {
         when(phaseService.countSearchResults(eq(institution), any())).thenReturn(5);
         when(containerService.countSearchResults(eq(institution), any())).thenReturn(6);
         when(documentService.countSearchResults(eq(institution), any())).thenReturn(7);
+        when(studyService.countSearchResults(eq(institution), any())).thenReturn(8);
 
         OrganizationCountsResource counts = service.countsForOrganization(caller, 10L);
 
-        assertThat(counts).isEqualTo(new OrganizationCountsResource(1, 2, 3, 4, 5, 6, 7));
+        assertThat(counts).isEqualTo(new OrganizationCountsResource(1, 2, 3, 4, 5, 6, 7, 8));
     }
 
     @Test

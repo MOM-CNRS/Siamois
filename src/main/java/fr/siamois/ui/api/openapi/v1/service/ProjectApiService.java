@@ -1002,6 +1002,11 @@ public class ProjectApiService {
         return documentService.countByActionContext(row.actionUnit());
     }
 
+    /** Nombre d'études du projet — détail uniquement, même pattern que {@link #countDocumentsForProject}. */
+    public long countStudiesForProject(AccessibleProjectForApi row) {
+        return studyService.countByActionContext(row.actionUnit());
+    }
+
     private static final Set<String> ALLOWED_DOCUMENT_SORT_FIELDS =
             Set.of(DocumentSpec.IDENTIFIER_FILTER, "title", CREATION_TIME, "id");
 

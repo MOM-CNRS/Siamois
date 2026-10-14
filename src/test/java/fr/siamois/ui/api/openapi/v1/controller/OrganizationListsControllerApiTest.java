@@ -75,6 +75,8 @@ class OrganizationListsControllerApiTest {
     @Mock private PhaseListProjectionService phaseListProjectionService;
     @Mock private DocumentOpenApiMapper documentOpenApiMapper;
     @Mock private DocumentListProjectionService documentListProjectionService;
+    @Mock private fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper studyOpenApiMapper;
+    @Mock private fr.siamois.ui.api.openapi.v1.service.StudyListProjectionService studyListProjectionService;
     @Mock private ContainerOpenApiMapper containerOpenApiMapper;
     @Mock private ContainerListProjectionService containerListProjectionService;
 
@@ -89,7 +91,9 @@ class OrganizationListsControllerApiTest {
         OrganizationListsControllerApi controller = new OrganizationListsControllerApi(
                 projectApiService, organizationListService, placeOpenApiService,
                 recordingUnitResponseMapper, recordingUnitListProjectionService, findOpenApiMapper,
-                phaseOpenApiMapper, documentOpenApiMapper, documentListProjectionService, phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
+                phaseOpenApiMapper, documentOpenApiMapper, documentListProjectionService,
+                studyOpenApiMapper, studyListProjectionService,
+                phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
                 mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
@@ -215,6 +219,45 @@ class OrganizationListsControllerApiTest {
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource());
 
         mockMvc.perform(get("/api/v1/documents").param("organizationId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(false))
+                .andExpect(jsonPath("$.data[0].project").doesNotExist());
+    }
+
+    @Test
+    void listStudies_returnsThePageWithItsProjectAndPermissions() throws Exception {
+        authenticated();
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(6L);
+        study.setActionUnit(editableProject);
+        when(organizationListService.pageStudies(caller, institution, 0, 10, "identifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .thenReturn(new PageImpl<>(List.of(study), PageRequest.of(0, 10), 1));
+        permissions(OrganizationListService.EditPermissions.STUDIES);
+        when(studyListProjectionService.build(any(), isNull(), any()))
+                .thenReturn(fr.siamois.ui.api.openapi.v1.service.StudyListProjectionService.StudyListProjection.empty());
+        when(studyOpenApiMapper.toResource(eq(study), any(), any()))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.study.StudyResource());
+
+        mockMvc.perform(get("/api/v1/studies").param("organizationId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].project.resourceId").value("7"))
+                .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(true));
+    }
+
+    @Test
+    void listStudies_rowWithoutProject_isReadOnly() throws Exception {
+        authenticated();
+        fr.siamois.dto.entity.StudyDTO orphan = new fr.siamois.dto.entity.StudyDTO();
+        orphan.setId(8L);
+        when(organizationListService.pageStudies(caller, institution, 0, 10, "identifier:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .thenReturn(new PageImpl<>(List.of(orphan), PageRequest.of(0, 10), 1));
+        permissions(OrganizationListService.EditPermissions.STUDIES);
+        when(studyListProjectionService.build(any(), isNull(), any()))
+                .thenReturn(fr.siamois.ui.api.openapi.v1.service.StudyListProjectionService.StudyListProjection.empty());
+        when(studyOpenApiMapper.toResource(eq(orphan), any(), any()))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.study.StudyResource());
+
+        mockMvc.perform(get("/api/v1/studies").param("organizationId", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0]._permissions.canEdit").value(false))
                 .andExpect(jsonPath("$.data[0].project").doesNotExist());

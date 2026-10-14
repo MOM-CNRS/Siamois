@@ -93,7 +93,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
       label: t("entity.find.plural"),
       description: t("home.find.description"),
       className: "sia-welcome-card sia-specimen",
-      chipClassName: "specimen-count-chip-alt",
+      chipClassName: "specimen-count-chip",
       order: 40,
     }),
   },

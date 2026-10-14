@@ -65,7 +65,7 @@ function asRef(value: unknown): { id: string; label: string; resourceType: strin
 }
 
 // Each entity type's colour — the theme's own (themed-panel in _panels.scss): context for places and
-// projects, ground for recording units, finds and phases, third for containers. A chip showing an
+// projects, ground for recording units, finds and phases, third for containers, documents and studies. A chip showing an
 // entity always takes its entity's colour, never the colour of the panel it sits in.
 const ENTITY_COLORS: Record<EntityKey, string> = {
   place: "var(--context-main-color, #068da9)",
@@ -75,6 +75,7 @@ const ENTITY_COLORS: Record<EntityKey, string> = {
   phase: "var(--ground-main-color, #7e1717)",
   container: "var(--third-main-color, #e55807)",
   document: "var(--third-main-color, #e55807)",
+  study: "var(--third-main-color, #e55807)",
 };
 
 /** An entity type's colour (registry key), or undefined for a type without one. */
@@ -108,6 +109,7 @@ const REF_KINDS: Record<string, { entityType?: EntityKey; color: string; border:
   phases: { entityType: "phase", color: ENTITY_COLORS.phase, border: GROUND_BORDER },
   containers: { entityType: "container", color: ENTITY_COLORS.container, border: THIRD_BORDER },
   documents: { entityType: "document", color: ENTITY_COLORS.document, border: THIRD_BORDER },
+  studies: { entityType: "study", color: ENTITY_COLORS.study, border: THIRD_BORDER },
   concepts: { color: "var(--siamois-green, #80b480)", border: GREEN_BORDER },
   persons: { color: "var(--text-color-secondary, #6b7280)", border: "var(--surface-300, #e0e0e0)" },
 };

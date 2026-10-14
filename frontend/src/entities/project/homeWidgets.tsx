@@ -102,7 +102,7 @@ function ProjectCountCardWidget({ organizationId, onNavigate }: HomeWidgetContex
       description={t("home.project.description")}
       count={data?.projects}
       className="sia-welcome-card sia-action-unit"
-      chipClassName="action-unit-count-chip-alt"
+      chipClassName="action-unit-count-chip"
       // No id → App's client-side router switches to the React list, no page load.
       onOpen={() => onNavigate?.("project")}
     />

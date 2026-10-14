@@ -54,12 +54,13 @@ class OrganizationCountsControllerApiTest {
     void getCounts_returns200WithEveryCount() throws Exception {
         when(projectApiService.requireCaller()).thenReturn(caller);
         when(organizationCountsService.countsForOrganization(caller, 10L))
-                .thenReturn(new OrganizationCountsResource(1, 2, 3, 4, 5, 6, 7));
+                .thenReturn(new OrganizationCountsResource(1, 2, 3, 4, 5, 6, 7, 8));
 
         mockMvc.perform(get("/api/v1/organizations/10/counts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.projects").value(1))
                 .andExpect(jsonPath("$.data.places").value(2))
+                .andExpect(jsonPath("$.data.studies").value(8))
                 .andExpect(jsonPath("$.data.recordingUnits").value(3))
                 .andExpect(jsonPath("$.data.finds").value(4))
                 .andExpect(jsonPath("$.data.phases").value(5))

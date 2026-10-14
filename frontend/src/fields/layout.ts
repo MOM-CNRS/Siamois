@@ -136,6 +136,9 @@ const PANEL_LABELS: Record<string, MessageKey> = {
   "document.header.file": "panel.document.file",
   "document.header.links": "panel.document.links",
   "document.header.technical": "panel.document.technical",
+  "study.header.identification": "panel.study.identification",
+  "study.header.links": "panel.study.links",
+  "study.header.treatment": "panel.study.treatment",
 };
 
 export function panelLabel(nameCode: string): string {

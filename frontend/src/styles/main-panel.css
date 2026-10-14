@@ -1595,12 +1595,27 @@ body button.p-button.status-button.status-button-compact {
   font-size: 2rem;
   color: var(--main-color);
 }
-/* Count-card title: title-card level, same weight as the counter chip next to it */
+/* Count-card title: title-card level, same weight as the counter chip next to it. It does not grow:
+   the chip sits right after it, on the same line. */
 .sia-count-card-title {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: var(--font-size-title-card);
   font-weight: var(--font-weight-title);
   color: var(--title-color);
+}
+/* Home cards' counter: outlined in the entity colour (the theme's <entity>-count-chip), as big as the
+   title, and see-through inside — the theme paints that chip white. */
+.sia-welcome-card .sia-count-card-row .p-chip {
+  background-color: transparent;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
+  line-height: 1.2;
+  padding: 0 0.6rem;
+}
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+  margin: 0.15rem 0;
+  line-height: inherit;
 }
 /* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
 .sia-welcome-card .sia-count-card-row + div small {

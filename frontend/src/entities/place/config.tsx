@@ -118,7 +118,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
       label: t("entity.place.plural"),
       description: t("home.place.description"),
       className: "sia-welcome-card sia-spatial-unit",
-      chipClassName: "spatial-unit-count-chip-alt",
+      chipClassName: "spatial-unit-count-chip",
       order: 20,
     }),
   },
