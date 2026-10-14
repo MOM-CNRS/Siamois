@@ -13,6 +13,7 @@ import { BridgeProvider } from "./panels/bridge";
 import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName } from "./panels/panelTransition";
 import { PaneSplit } from "./panels/PaneSplit";
+import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
 import { t } from "./i18n";
@@ -142,6 +143,9 @@ function PanelContent({
  * mounted with, used until the main pane leaves it.
  */
 export function App({ options }: { options: MountOptions }) {
+  // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
+  // panel restores its tab, filters and folded sections from here.
+  const paneStateStore = usePaneStateStore();
   const { state, navigate, openOverview, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   const { view, overview, navigatedAway } = state;
 
@@ -205,6 +209,7 @@ export function App({ options }: { options: MountOptions }) {
   // (PanelToolbar's bookmark flag follows chrome.resourceUri).
   const mainPane = (
     <PaneErrorBoundary label={t("pane.main")} resetKey={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}>
+    <PaneStateScope name={mainPaneName}>
     <PanelContent
       key={`${view.panelKind}:${view.entityType}`}
       view={view}
@@ -214,11 +219,13 @@ export function App({ options }: { options: MountOptions }) {
       overview={overview}
       toolbar={mainToolbar}
     />
+    </PaneStateScope>
     </PaneErrorBoundary>
   );
 
   const overviewPane = overview && (
     <PaneErrorBoundary label={t("pane.overview")} resetKey={`${overview.entityType}:${overview.entityId}`}>
+    <PaneStateScope name={overviewPaneStyleName ?? ""}>
     <EntityDetailPanel
       entityType={overview.entityType}
       entityId={overview.entityId}
@@ -235,6 +242,7 @@ export function App({ options }: { options: MountOptions }) {
       // `navigate`, which would move the MAIN pane instead.
       onNavigateSibling={(id, preview) => openOverview(overview.entityType, id, preview)}
     />
+    </PaneStateScope>
     </PaneErrorBoundary>
   );
 
@@ -259,7 +267,9 @@ export function App({ options }: { options: MountOptions }) {
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>
         <BridgeProvider value={options.bridge}>
-          <EntityNavigationProvider value={openOverview}>{content}</EntityNavigationProvider>
+          <EntityNavigationProvider value={openOverview}>
+            <PaneStateProvider store={paneStateStore}>{content}</PaneStateProvider>
+          </EntityNavigationProvider>
         </BridgeProvider>
       </WriteModeProvider>
       </NotifyProvider>
