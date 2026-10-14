@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HomePanel } from "./HomePanel";
+import { PaneStateProvider, PaneStateStore } from "./paneState";
 
 describe("HomePanel", () => {
   it("renders an empty shell when there are no widgets", () => {
@@ -71,5 +74,45 @@ describe("HomePanel", () => {
     );
     expect(html.indexOf("Card 10")).toBeLessThan(html.indexOf("Card 30"));
     expect(html.indexOf("Card 30")).toBeLessThan(html.indexOf("Card none"));
+  });
+});
+
+describe("HomePanel folded state", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("keeps the database panel folded when the home panel mounts again", () => {
+    const store = new PaneStateStore();
+    const renderWithStore = () =>
+      act(() => {
+        root.render(
+          <PaneStateProvider store={store}>
+            <HomePanel widgets={[{ key: "card", kind: "card", render: () => <span>Card</span> }]} />
+          </PaneStateProvider>,
+        );
+      });
+    const isFolded = () => container.querySelector(".p-panel-toggler")?.getAttribute("aria-expanded") === "false";
+
+    renderWithStore();
+    expect(isFolded()).toBe(false);
+    act(() => {
+      (container.querySelector(".p-panel-toggler") as HTMLElement).click();
+    });
+    expect(isFolded()).toBe(true);
+
+    act(() => root.render(null));
+    renderWithStore();
+    expect(isFolded()).toBe(true);
   });
 });

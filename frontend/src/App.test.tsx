@@ -572,6 +572,46 @@ describe("App focus mode", () => {
     expect(setOverview).toHaveBeenLastCalledWith("fake-parent-with-child-tab", "1");
   });
 
+  describe("pane state", () => {
+    const overviewPane = () => container.querySelector(".panel-splitter-panel-r") as HTMLElement;
+    const selectedTab = (pane: HTMLElement) => pane.querySelector(".p-tabview-selected")?.textContent ?? "";
+
+    async function openParentOverviewOnChildrenTab() {
+      childListMock.mockReset().mockResolvedValue({ data: [{ id: "9", name: "Child row" }], totalCount: 1, limit: 20, offset: 0 });
+      act(() => {
+        root.render(
+          <App options={baseOptions({ overviewEntityType: "fake-parent-with-child-tab", overviewEntityId: "1" })} />,
+        );
+      });
+      await flush();
+      const childrenTab = Array.from(overviewPane().querySelectorAll(".p-tabview-nav li a")).find((el) =>
+        el.textContent?.includes("Children"),
+      );
+      await click(childrenTab);
+      expect(selectedTab(overviewPane())).toContain("Children");
+    }
+
+    it("keeps a fiche on its tab when it goes to the main pane in focus mode and back", async () => {
+      await openParentOverviewOnChildrenTab();
+
+      await click(overviewPane().querySelector(".bi-arrows-angle-expand"));
+      expect(selectedTab(mainPane())).toContain("Children");
+
+      await click(mainPane().querySelector(".bi-arrows-angle-contract"));
+      expect(selectedTab(overviewPane())).toContain("Children");
+    });
+
+    it("forgets the state of a pane once it is closed", async () => {
+      await openParentOverviewOnChildrenTab();
+
+      await click(container.querySelector(".bi-chevron-double-right"));
+      expect(overviewPane()).toBeNull();
+
+      await click(mainPane().querySelector(".entity-list-panel-identifier-link"));
+      expect(selectedTab(overviewPane())).toContain("Fiche");
+    });
+  });
+
   it("falls back to a real navigation to goBackUrl when the page itself was loaded in focus mode", async () => {
     act(() => {
       root.render(

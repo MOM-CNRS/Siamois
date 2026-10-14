@@ -3,8 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
   type Dispatch,
   type ReactNode,
@@ -53,15 +51,19 @@ export class PaneStateStore {
 const StoreContext = createContext<PaneStateStore | null>(null);
 const ScopeContext = createContext("");
 
-export function PaneStateProvider({ store, children }: { store: PaneStateStore; children: ReactNode }) {
+export function PaneStateProvider({ store, children }: Readonly<{ store: PaneStateStore; children: ReactNode }>) {
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
 /** Narrows the identity of every `usePaneState` below: `name` is appended to the enclosing scope. */
-export function PaneStateScope({ name, children }: { name: string; children: ReactNode }) {
+export function PaneStateScope({ name, children }: Readonly<{ name: string; children: ReactNode }>) {
   const parent = useContext(ScopeContext);
   const scope = `${parent}/${name}`;
   return <ScopeContext.Provider value={scope}>{children}</ScopeContext.Provider>;
+}
+
+function resolveInitial<T>(initial: T | (() => T)): T {
+  return typeof initial === "function" ? (initial as () => T)() : initial;
 }
 
 interface Slot<T> {
@@ -83,7 +85,7 @@ export function usePaneState<T>(name: string, initial: T | (() => T)): [T, Dispa
 
   const [slot, setSlot] = useState<Slot<T>>(() => ({
     key,
-    value: store?.has(key) ? (store.get(key) as T) : typeof initial === "function" ? (initial as () => T)() : initial,
+    value: store?.has(key) ? (store.get(key) as T) : resolveInitial(initial),
   }));
 
   let current = slot;
@@ -112,7 +114,6 @@ export function usePaneState<T>(name: string, initial: T | (() => T)): [T, Dispa
 
 /** A store for the lifetime of the calling component (App). */
 export function usePaneStateStore(): PaneStateStore {
-  const ref = useRef<PaneStateStore>();
-  ref.current ??= new PaneStateStore();
-  return useMemo(() => ref.current!, []);
+  const [store] = useState(() => new PaneStateStore());
+  return store;
 }

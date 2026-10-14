@@ -172,4 +172,18 @@ class DefaultProjectIdentifierConfigSeederTest {
         assertThat(boundDuringSave).isNotEmpty().allMatch(bound -> bound == INFO);
         assertThat(ExecutionContextHolder.get()).isNull();
     }
+
+    @Test
+    void seed_shouldPutBackTheUserThatWasBoundBeforeIt() {
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        UserInfo caller = mock(UserInfo.class);
+        ExecutionContextHolder.set(caller);
+        try {
+            seeder.seed(INFO, PROJECT_ID);
+
+            assertThat(ExecutionContextHolder.get()).isSameAs(caller);
+        } finally {
+            ExecutionContextHolder.clear();
+        }
+    }
 }
