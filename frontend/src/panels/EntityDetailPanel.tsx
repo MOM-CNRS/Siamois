@@ -12,6 +12,7 @@ import { SiblingNav } from "../components/SiblingNav";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
 import { useBridge } from "./bridge";
+import { PaneStateScope, usePaneState } from "./paneState";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
 import { DetailBodySkeleton } from "../components/DetailSkeleton";
@@ -99,7 +100,7 @@ export function EntityDetailPanel({
   // index would silently reset to 0 on the entity that follows the loading tick. This component
   // itself never unmounts across that tick (same type, same position in the tree), so this state
   // survives it — the fiche stays on whichever tab you were looking at, same as JSF's `?tab=N`.
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [activeTabIndex, setActiveTabIndex] = usePaneState("activeTab", 0);
   // ...but ONLY within the same entity type: retargeting the overview to a DIFFERENT entity type
   // (a relationTab row click — "recording units" inside a project's fiche — opening a recording
   // unit in the overview in its place) can change how many tabs even exist, so an index carried
@@ -363,7 +364,7 @@ export function EntityDetailPanel({
               }
             >
               <PaneErrorBoundary label={t("detail.tabError", { label: tab.label })} resetKey={`${entityType}:${entityId}`}>
-                {tab.render(data, helpers)}
+                <PaneStateScope name={`tab:${tab.key}`}>{tab.render(data, helpers)}</PaneStateScope>
               </PaneErrorBoundary>
             </TabPanel>
           );

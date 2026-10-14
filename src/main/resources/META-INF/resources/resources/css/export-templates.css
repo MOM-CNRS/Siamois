@@ -279,3 +279,10 @@
 a.xe-row { color: var(--text); text-decoration: none; cursor: pointer; }
 .xe-cols { margin-top: 0; margin-bottom: 22px; }
 .xe-cols .xe-pane { border: 0; border-radius: 0; border-top: 1px solid var(--border); }
+
+/* ---- liste : seul le fil d'Ariane (fond blanc) est propre à cette page, le reste reprend les listes des paramètres */
+.xt.xt-topbar-only { background: transparent; }
+.xt-row-actions { text-align: right; white-space: nowrap; }
+.xt-row-actions a { color: var(--text-secondary, #6B7280); margin-left: 12px; cursor: pointer; text-decoration: none; }
+.xt-row-actions a:hover { color: var(--text, #2A2C30); }
+.xt-row-actions a.danger:hover { color: #C0463D; }

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { usePaneState } from "../panels/paneState";
 import { Panel } from "primereact/panel";
 import { evaluateForm, type FieldState } from "../rules";
 import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";
@@ -48,6 +49,9 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
     return evaluateForm(columns, (id) => valueOfField(entity, fields, id));
   }, [panels, fields, entity]);
 
+  // Which sections are folded: remembered, so a fiche moving between panes (focus) keeps them.
+  const [folded, setFolded] = usePaneState<Record<number, boolean>>("foldedSections", {});
+
   return (
     <>
       {panels.map((panel, panelIndex) => (
@@ -55,6 +59,8 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
           key={panelIndex}
           header={panelLabel(panel.name)}
           toggleable
+          collapsed={folded[panelIndex] === true}
+          onToggle={(e) => setFolded((prev) => ({ ...prev, [panelIndex]: e.value }))}
           className={`sia-form-panel ${panel.className ?? ""}`.trim()}
         >
           {panel.rows.map((row, rowIndex) => (

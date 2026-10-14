@@ -560,7 +560,8 @@ describe("App focus mode", () => {
     expect(mainPane().textContent).toContain("Child detail of Child row");
 
     await click(mainPane().querySelector(".bi-arrows-angle-contract"));
-    expect(mainPane().textContent).toContain("Detail of Row A");
+    // The parent fiche comes back on the tab it was left on (its state outlives the pane change).
+    expect(mainPane().querySelector(".p-tabview-selected")?.textContent).toContain("Children");
     expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Child detail of Child row");
 
     await click(mainPane().querySelector(".bi-arrows-angle-contract"));

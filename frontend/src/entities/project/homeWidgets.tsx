@@ -8,6 +8,7 @@ import type { HomeWidgetContext, HomeWidgetDef } from "../types";
 import { listProjects } from "./api";
 import { queryKeys } from "../../api/queryKeys";
 import { t } from "../../i18n";
+import { usePaneState } from "../../panels/paneState";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
@@ -44,9 +45,16 @@ function useRecentProjects(organizationId?: number) {
 function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext) {
   const { data, isLoading } = useRecentProjects(organizationId);
   const projects = data?.data ?? [];
+  const [folded, setFolded] = usePaneState("recentProjectsFolded", false);
 
   return (
-    <Panel header={t("home.recentProjects")} toggleable className="sia-form-panel">
+    <Panel
+      header={t("home.recentProjects")}
+      toggleable
+      collapsed={folded}
+      onToggle={(e) => setFolded(e.value)}
+      className="sia-form-panel"
+    >
       {isLoading && (
         <div className="loading-skeleton sia-card-grid">
           {Array.from({ length: 3 }, (_, i) => (
