@@ -981,9 +981,9 @@ class ProjectApiServiceMutationTest {
 
     @Test
     void parseStudySort_defaultsToTheIdentifierAndEndsOnTheId() {
-        assertThat(ProjectApiService.parseStudySort(null).toString()).isEqualTo("identifier: ASC,id: ASC");
-        assertThat(ProjectApiService.parseStudySort("creationTime:desc").toString()).isEqualTo("creationTime: DESC,id: ASC");
-        assertThat(ProjectApiService.parseStudySort("id:desc").toString()).isEqualTo("id: DESC");
+        assertThat(ProjectApiService.parseStudySort(null)).hasToString("identifier: ASC,id: ASC");
+        assertThat(ProjectApiService.parseStudySort("creationTime:desc")).hasToString("creationTime: DESC,id: ASC");
+        assertThat(ProjectApiService.parseStudySort("id:desc")).hasToString("id: DESC");
     }
 
     @Test

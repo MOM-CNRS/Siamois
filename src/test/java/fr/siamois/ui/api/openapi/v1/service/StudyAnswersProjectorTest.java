@@ -79,9 +79,9 @@ class StudyAnswersProjectorTest {
                 Set.of(IDENTIFIER_ID, METHOD_ID, DATE_ID, PLACE_ID, RECORDING_UNITS_ID), Map.of(9L, "Microscopie"));
 
         Map<String, Object> answers = projected.get(1L);
-        assertThat(answers.get(IDENTIFIER_ID)).isEqualTo("ETU0001");
-        assertThat(answers.get(PLACE_ID)).isEqualTo("Laboratoire");
-        assertThat(answers.get(DATE_ID)).isEqualTo(study.getStudyDate());
+        assertThat(answers).containsEntry(IDENTIFIER_ID, "ETU0001");
+        assertThat(answers).containsEntry(PLACE_ID, "Laboratoire");
+        assertThat(answers).containsEntry(DATE_ID, study.getStudyDate());
         assertThat(answers.get(METHOD_ID)).isInstanceOfSatisfying(ResourceRef.class, ref -> {
             assertThat(ref.resourceId()).isEqualTo("9");
             assertThat(ref.label()).isEqualTo("Microscopie");

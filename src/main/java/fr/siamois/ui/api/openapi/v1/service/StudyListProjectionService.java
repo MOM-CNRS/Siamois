@@ -68,6 +68,6 @@ public class StudyListProjectionService {
 
     /** Une seule étude (détail) — les valeurs multiples coupées à la limite d'un détail. */
     public StudyListProjection buildOne(StudyDTO row, String lang) {
-        return build(row == null ? List.of() : List.of(row), StudyAnswersProjector.FIELDS_ALL, lang, ValuesLimit.forDetail());
+        return build(row == null ? List.of() : List.of(row), ReflectiveAnswersProjector.FIELDS_ALL, lang, ValuesLimit.forDetail());
     }
 }

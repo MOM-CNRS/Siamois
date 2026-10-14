@@ -71,6 +71,6 @@ public class DocumentListProjectionService {
      * à la limite d'un détail.
      */
     public DocumentListProjection buildOne(DocumentDTO row, String lang) {
-        return build(row == null ? List.of() : List.of(row), DocumentAnswersProjector.FIELDS_ALL, lang, ValuesLimit.forDetail());
+        return build(row == null ? List.of() : List.of(row), ReflectiveAnswersProjector.FIELDS_ALL, lang, ValuesLimit.forDetail());
     }
 }
