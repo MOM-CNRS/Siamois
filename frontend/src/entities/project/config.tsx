@@ -80,6 +80,13 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         badge: (entity) => entity._counts?.documents ?? 0,
       }),
       relationTab<ProjectDetail>({
+        key: "studies",
+        label: t("entity.study.plural"),
+        target: "study",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.studies ?? 0,
+      }),
+      relationTab<ProjectDetail>({
         key: "recording-units",
         label: t("entity.recordingUnit.plural"),
         target: "recordingUnit",

@@ -161,10 +161,10 @@ class TableFieldConfigServiceImplTest {
     // ========== Existing Tests ==========
 
     @Test
-    void listTables_shouldExposeTheFiveTablesWithTheirTypeFieldCode() {
+    void listTables_shouldExposeTheSixTablesWithTheirTypeFieldCode() {
         assertThat(service.listTables()).containsExactly(
                 ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT,
-                ConfigurableTable.DOCUMENT);
+                ConfigurableTable.DOCUMENT, ConfigurableTable.STUDY);
         assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CAT");
     }
 
@@ -813,6 +813,57 @@ class TableFieldConfigServiceImplTest {
         verify(fieldFormConfigRepository).save(saved.capture());
         assertThat(saved.getValue().isActive()).isFalse();
         assertThat(saved.getValue().getFormConfig()).isEqualTo(ceramiqueConfig);
+    }
+
+    @Test
+    void setFieldActive_byConceptId_shouldWriteOnTheTypeOwnConfig() {
+        CustomField ownField = textField(1L, "Description", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
+
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Description", false);
+
+        ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
+        verify(fieldFormConfigRepository).save(saved.capture());
+        assertThat(saved.getValue().isActive()).isFalse();
+        assertThat(saved.getValue().getFormConfig()).isEqualTo(ceramiqueConfig);
+    }
+
+    @Test
+    void setFieldMandatory_byConceptId_shouldWriteOnTheTypeOwnConfig() {
+        CustomField ownField = textField(1L, "Description", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
+
+        service.setFieldMandatory(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Description", true);
+
+        ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
+        verify(fieldFormConfigRepository).save(saved.capture());
+        assertThat(saved.getValue().isMandatory()).isTrue();
+    }
+
+    @Test
+    void setFieldActive_byConceptId_shouldLeaveAnInstitutionLockedFieldUntouched() {
+        FieldFormConfig locked = fieldConfig(ceramiqueConfig, textField(1L, "Identifiant", true), true, true);
+        locked.setInstitutionLocked(true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(locked));
+
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Identifiant", false);
+
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
+        assertThat(locked.isActive()).isTrue();
+    }
+
+    @Test
+    void setFieldActive_byConceptId_shouldIgnoreAnUnknownField() {
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Inexistant", false);
+
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
     }
 
     @Test

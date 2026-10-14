@@ -3,9 +3,15 @@ import { projectEntityConfig } from "./config";
 import type { ProjectDetail } from "./types";
 
 describe("projectEntityConfig detail tabs", () => {
-  it("declares the fiche tab first, then documents, recording-units, containers, phases, finds and places", () => {
+  it("declares the fiche tab first, then documents, studies, recording-units, containers, phases, finds and places", () => {
     const keys = projectEntityConfig.detail.tabs.map((t) => t.key);
-    expect(keys).toEqual(["fiche", "documents", "recording-units", "containers", "phases", "finds", "places"]);
+    expect(keys).toEqual(["fiche", "documents", "studies", "recording-units", "containers", "phases", "finds", "places"]);
+  });
+
+  it("the studies tab reads its badge count from the project's study count", () => {
+    const tab = projectEntityConfig.detail.tabs.find((t) => t.key === "studies")!;
+    expect(tab.badge?.({ _counts: { studies: 4 } } as unknown as ProjectDetail)).toBe(4);
+    expect(tab.badge?.({} as unknown as ProjectDetail)).toBe(0);
   });
 
   it("the places tab reads its badge count from spatialContext's own length", () => {

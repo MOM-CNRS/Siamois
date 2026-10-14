@@ -344,6 +344,22 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Checks if the user can write the given study, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_STUDIES} on the study's project.
+     *
+     * @param user  the user information
+     * @param study the study to write
+     * @return true if the user can write the study
+     */
+    public boolean hasStudyWritePermission(UserInfo user, StudyDTO study) {
+        Long actionUnitId = study.getActionUnit() != null ? study.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES,
+                PermissionConstants.PROJECT_EDIT_STUDIES);
+    }
+
+    /**
      * Checks if the user can write the given action unit's own fields, i.e. holds
      * {@link PermissionConstants#PROJECT_MANAGE_SETTINGS} on the action unit itself, or
      * {@link PermissionConstants#ORGANIZATION_MANAGE_ACTIONS} on the user's institution.

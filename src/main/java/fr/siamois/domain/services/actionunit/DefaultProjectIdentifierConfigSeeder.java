@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.study.form.StudyDefaults;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -65,6 +66,14 @@ public class DefaultProjectIdentifierConfigSeeder {
     @Value("${siamois.default-types.document:}")
     private String documentTypeUri;
 
+    /** The concept URI of each default study type, by {@link StudyDefaults.DefaultStudyType#key()}. */
+    @Value("${siamois.default-types.study.mobilier:}")
+    private String studyFindTypeUri;
+    @Value("${siamois.default-types.study.ue:}")
+    private String studyRecordingUnitTypeUri;
+    @Value("${siamois.default-types.study.traitement:}")
+    private String studyTreatmentTypeUri;
+
     public void seed(UserInfo info, Long projectId) {
         UserInfo previous = ExecutionContextHolder.get();
         ExecutionContextHolder.set(info);
@@ -86,6 +95,38 @@ public class DefaultProjectIdentifierConfigSeeder {
         seedStandardType(projectId, ConfigurableTable.PHASE, phaseTypeUri);
         seedStandardType(projectId, ConfigurableTable.CONTENANT, contenantTypeUri);
         seedStandardType(projectId, ConfigurableTable.DOCUMENT, documentTypeUri);
+        seedStudyType(projectId, StudyDefaults.FIND_STUDY, studyFindTypeUri);
+        seedStudyType(projectId, StudyDefaults.RECORDING_UNIT_STUDY, studyRecordingUnitTypeUri);
+        seedStudyType(projectId, StudyDefaults.TREATMENT, studyTreatmentTypeUri);
+    }
+
+    /**
+     * Creates one of the default study types and switches its fields on or off: the study table's fields
+     * are shared by its types, each type using only some of them.
+     */
+    private void seedStudyType(Long projectId, StudyDefaults.DefaultStudyType type, String uri) {
+        if (uri == null || uri.isBlank()) {
+            log.debug("No {} study type configured: the project starts without it", type.key());
+            return;
+        }
+        ConfigurableTable table = ConfigurableTable.STUDY;
+        try {
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(uri.trim());
+            Concept concept = conceptService.saveOrGetConceptFromUri(vocabulary, uri.trim(), null);
+            tableFieldConfigService.saveFormConfig(projectId, table, concept.getId(), TypeFormConfig.builder()
+                    .identifierFormat(table.getDefaultIdentifierFormat())
+                    .minCode(MIN_CODE)
+                    .maxCode(MAX_CODE)
+                    .build());
+            for (String binding : StudyDefaults.ALL_BINDINGS) {
+                String label = StudyDefaults.labelOf(binding);
+                tableFieldConfigService.setFieldActive(projectId, table, concept.getId(), label, type.isActive(binding));
+                tableFieldConfigService.setFieldMandatory(projectId, table, concept.getId(), label, type.isMandatory(binding));
+            }
+        } catch (Exception e) {
+            log.warn("Could not seed the default study type {} from {} for project {}",
+                    type.key(), uri, projectId, e);
+        }
     }
 
     private void seedStandardType(Long projectId, ConfigurableTable table, String uri) {

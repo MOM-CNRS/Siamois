@@ -82,7 +82,7 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
       label: t("entity.document.plural"),
       description: t("home.document.description"),
       className: "sia-welcome-card sia-document",
-      chipClassName: "document-count-chip-alt",
+      chipClassName: "document-count-chip",
       order: 55,
     }),
   },

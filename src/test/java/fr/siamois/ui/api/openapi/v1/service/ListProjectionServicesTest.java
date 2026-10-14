@@ -175,6 +175,47 @@ class ListProjectionServicesTest {
         verify(projector).project(eq(List.of(container)), any(), any());
     }
 
+    // ---------- studies ----------
+
+    @Test
+    void studies_buildResolvesTheLabelsOfTheTypesAndProjectsTheRows() {
+        StudyAnswersProjector projector = mock(StudyAnswersProjector.class);
+        StudyListProjectionService service = new StudyListProjectionService(projector, labels, multiValue, additional);
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(1L);
+        study.setType(concept(9));
+        List<fr.siamois.dto.entity.StudyDTO> rows = Arrays.asList(study, null);
+        Set<String> fieldIds = Set.of("-801");
+        Map<Long, String> resolved = Map.of(9L, "Type");
+        Map<Long, Map<String, Object>> projected = Map.of(1L, Map.of("-801", "x"));
+        when(projector.resolveRequestedFieldIds("all")).thenReturn(fieldIds);
+        when(projector.collectConcepts(rows, fieldIds)).thenReturn(List.of());
+        when(labels.resolveLabels(any(Collection.class), eq("fr"))).thenReturn(resolved);
+        when(projector.project(rows, fieldIds, resolved)).thenReturn(projected);
+        when(additional.merge(projected, CustomFieldAnswerService.ListOwner.STUDY, List.of(1L), "all", fieldIds, "fr")).thenReturn(projected);
+        when(multiValue.shape(eq(fr.siamois.domain.models.study.Study.class), eq(projected), eq(fieldIds), anyInt(), eq("fr"))).thenReturn(projected);
+
+        StudyListProjectionService.StudyListProjection projection = service.build(rows, "all", "fr");
+
+        assertThat(projection.answersFor(1L)).containsEntry("-801", "x");
+        assertThat(projection.resolvedLabels()).containsEntry(9L, "Type");
+    }
+
+    @Test
+    void studies_buildOfNothingIsEmpty_andBuildOneDelegates() {
+        StudyAnswersProjector projector = mock(StudyAnswersProjector.class);
+        StudyListProjectionService service = new StudyListProjectionService(projector, labels, multiValue, additional);
+
+        assertThat(service.build(List.of(), "all", "fr").resolvedLabels()).isEmpty();
+        assertThat(service.buildOne(null, "fr").resolvedLabels()).isEmpty();
+        assertThat(StudyListProjectionService.StudyListProjection.empty().answersFor(1L)).isNull();
+
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(4L);
+        service.buildOne(study, "fr");
+        verify(projector).project(eq(List.of(study)), any(), any());
+    }
+
     // ---------- additional answers ----------
 
     @Test

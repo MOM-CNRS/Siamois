@@ -33,6 +33,11 @@ siamois:
     phase: ${SIAMOIS_DEFAULT_TYPE_PHASE:https://thesaurus.mom.fr/?idc=4291164&idt=th252}
     contenant: ${SIAMOIS_DEFAULT_TYPE_CONTENANT:https://thesaurus.mom.fr/?idc=4291165&idt=th252}
     document: ${SIAMOIS_DEFAULT_TYPE_DOCUMENT:https://thesaurus.mom.fr/?idc=4291166&idt=th252}
+    # Les trois types d'étude d'un nouveau projet, dans "TBL_étude > Type d'étude" du thésaurus th252.
+    study:
+      mobilier: ${SIAMOIS_DEFAULT_TYPE_STUDY_MOBILIER:https://thesaurus.mom.fr/?idc=4291173&idt=th252}
+      ue: ${SIAMOIS_DEFAULT_TYPE_STUDY_UE:https://thesaurus.mom.fr/?idc=4291172&idt=th252}
+      traitement: ${SIAMOIS_DEFAULT_TYPE_STUDY_TRAITEMENT:https://thesaurus.mom.fr/?idc=4291174&idt=th252}
   jwt:
     # HS256 : au moins 256 bits — utiliser une valeur forte en prod (variable SIAMOIS_JWT_SECRET).
     secret: ${SIAMOIS_JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}

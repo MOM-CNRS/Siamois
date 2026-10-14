@@ -102,7 +102,7 @@ class ProjectApiServiceRecordingUnitFindsTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService, containerService,
+                recordingUnitOpenApiService, phaseService, containerService, mock(fr.siamois.domain.services.study.StudyService.class),
                 bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
     }
 

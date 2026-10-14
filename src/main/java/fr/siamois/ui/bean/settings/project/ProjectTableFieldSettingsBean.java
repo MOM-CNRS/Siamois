@@ -1649,6 +1649,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             case CONTENANT -> 8;
             case PHASE -> 2;
             case DOCUMENT -> 15;
+            case STUDY -> 4;
         });
         values.put(ID_UA, "UA1");
         return new MapIdentifierRenderContext(values);

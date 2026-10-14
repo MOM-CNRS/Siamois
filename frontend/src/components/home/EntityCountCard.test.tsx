@@ -40,6 +40,16 @@ function link(): HTMLElement {
 }
 
 describe("EntityCountCard", () => {
+  it("puts the count chip right after the title, on the same row as the icon", () => {
+    render(5);
+
+    const row = container.querySelector(".sia-count-card-row")!;
+    const [icon, title, chip] = Array.from(row.children);
+    expect(icon.classList.contains("bi")).toBe(true);
+    expect(title.classList.contains("sia-count-card-title")).toBe(true);
+    expect(chip.classList.contains("p-chip")).toBe(true);
+  });
+
   it("renders label, description and count, with no button", () => {
     render(5);
 

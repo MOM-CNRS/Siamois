@@ -102,7 +102,7 @@ liaison, avec deux vraies FK ; c'est le **document** qui porte la collection (`@
 | `spatial_unit_document` | document ↔ lieu | existe (idem) |
 | `phase_document` | document ↔ phase | créée |
 | `container_document` | document ↔ contenant | créée |
-| `specimen_study_document` | document ↔ étude de mobilier | inchangée (hors périmètre) |
+| `study_document` | document ↔ étude | créée (côté `Document.studies`) ; `specimen_study_document` n'est plus mappée, sa table reste orpheline en base |
 | `action_unit_document` | document ↔ projet | **supprimée** : remplacée par la colonne de rattachement ; la migration a repris ses liens |
 
 **Pourquoi pas une table unique `document_link`** (une colonne FK par type, une seule renseignée) — l'option
@@ -199,9 +199,11 @@ Pour mémoire — vocabulaires, droits et configuration, non concernés par ce m
 1. ~~**Liens de documents**~~ **Fait (01–02/10/2026).** Voir §3 : table de liaison par type, projet obligatoire,
    `ru_study_document` retiré de `DocumentRepository`. Reste à faire avec la table d'études unique et la
    table des mouvements : leurs documents.
-2. **Table d'études unique** (`study`) regroupant `specimen_study` et les études d'UE — rattachée à son UE
-   ou son mobilier (colonnes FK exclusives, comme `form_config_answer`, ou tables de liaison si une étude porte
-   sur plusieurs entités : à décider).
+2. ~~**Table d'études unique**~~ **Fait (14/10/2026), côté backend et API.** `study` (entité `Study`, tables de
+   liaison `study_recording_unit` et `study_specimen`, `study_document`) remplace `specimen_study`, supprimée
+   sans reprise de données car inutilisée. Trois types par défaut, dont « Traitement par défaut » qui porte les
+   colonnes de la feuille 8 du référentiel SDA (voir `StudyDefaults`). Reste : le front React, les onglets
+   « études » des fiches UE et mobilier, la liste d'organisation et la feuille `traitement` de l'export.
 3. **Mouvements** : décider si un mouvement concerne un seul mobilier (colonne actuelle) ou plusieurs
    (`movement_specimen`).
 4. **Champs additionnels** : tables de réponses vers UE, mobilier, phase, contenant ; propriétés

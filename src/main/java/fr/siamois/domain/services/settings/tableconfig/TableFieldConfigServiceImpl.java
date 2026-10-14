@@ -310,6 +310,18 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     @Transactional
+    public void setFieldActive(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean active) {
+        applyFieldChange(projectId, table, typeConceptId, fieldName, config -> config.setActive(active));
+    }
+
+    @Override
+    @Transactional
+    public void setFieldMandatory(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean mandatory) {
+        applyFieldChange(projectId, table, typeConceptId, fieldName, config -> config.setMandatory(mandatory));
+    }
+
+    @Override
+    @Transactional
     public void reorderAdditionalFields(Long projectId, ConfigurableTable table, String typeName, List<String> orderedFieldNames) {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         List<FieldFormConfig> fieldConfigs = fieldFormConfigRepository.findAllByFormConfigId(owner.getId());
@@ -855,6 +867,32 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
 
         FormConfig owner = requireFormConfig(projectId, table, typeName);
+        FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
+        change.accept(config);
+        assert config != null;
+        fieldFormConfigRepository.save(config);
+    }
+
+    /** Concept-id-keyed equivalent of {@link #applyFieldChange(Long, ConfigurableTable, String, String, Consumer)}. */
+    private void applyFieldChange(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName,
+                                  Consumer<FieldFormConfig> change) {
+        Optional<EffectiveField> target = effectiveFields(projectId, table, typeConceptId).values().stream()
+                .filter(field -> fieldName.equals(field.field().getLabel()))
+                .findFirst();
+
+        if (target.isEmpty()) {
+            warnNoFieldOnType(projectId, table, String.valueOf(typeConceptId), fieldName);
+            return;
+        }
+        EffectiveField field = target.get();
+        if (field.institutionLocked()) {
+            log.debug("Field '{}' is locked by the institution, project {} cannot change it", fieldName, projectId);
+            return;
+        }
+
+        FormConfig owner = createOrGetFormConfig(projectId, table, typeConceptId)
+                .orElseThrow(() -> new IllegalStateException(
+                        NO_VOCABULARY_CONFIGURED_FOR_FIELD + table.getFieldCode() + OF_PROJECT + projectId));
         FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
         change.accept(config);
         assert config != null;

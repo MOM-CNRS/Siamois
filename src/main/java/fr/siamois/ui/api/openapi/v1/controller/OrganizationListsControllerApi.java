@@ -2,6 +2,12 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.study.Study;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
+import fr.siamois.ui.api.openapi.v1.response.study.StudyListResponse;
+import fr.siamois.ui.api.openapi.v1.service.StudyListProjectionService;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -90,6 +96,8 @@ public class OrganizationListsControllerApi {
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final DocumentOpenApiMapper documentOpenApiMapper;
     private final DocumentListProjectionService documentListProjectionService;
+    private final StudyOpenApiMapper studyOpenApiMapper;
+    private final StudyListProjectionService studyListProjectionService;
     private final PhaseListProjectionService phaseListProjectionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
@@ -282,6 +290,51 @@ public class OrganizationListsControllerApi {
                 .toList();
         resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
         return ok(new DocumentListResponse(resources, meta(page, limit, offset)), page);
+    }
+
+    @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @GetMapping("/api/v1/studies")
+    @Tag(name = "Etude")
+    @Operation(summary = "Etudes d'une organisation",
+            description = "Tri : identifier, creationTime, id (400 sur propriété inconnue). Recherche : identifier. "
+                    + "Un membre sans accès à toute l'organisation ne voit que ses projets.")
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "400", description = "organizationId absent, pagination ou tri invalides")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    @ApiResponse(responseCode = "404", description = "Organisation introuvable")
+    public ResponseEntity<StudyListResponse> listStudies(
+            @Parameter(description = ORG_PARAM_DOC) @RequestParam(required = false) Long organizationId,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "identifier:asc") String sort,
+            @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
+            @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        projectApiService.validatePagedListRequest(offset, limit);
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+
+        Page<StudyDTO> page = organizationListService.pageStudies(caller, institution, offset, limit, sort, search,
+                fieldQueryService.parse(Study.class, queryParams, sort, acceptLanguage));
+        Map<Long, Boolean> canEdit = canEdit(caller, institution, page, StudyDTO::getActionUnit, lang, EditPermissions.STUDIES);
+        Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
+                page.getContent().stream().map(StudyDTO::getActionUnit).toList(), lang);
+        StudyListProjectionService.StudyListProjection projection = studyListProjectionService.build(page.getContent(), fields, lang);
+
+        List<StudyResource> resources = page.getContent().stream()
+                .map(dto -> {
+                    StudyResource resource = studyOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
+                    if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
+                    return resource;
+                })
+                .toList();
+        resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
+        return ok(new StudyListResponse(resources, meta(page, limit, offset)), page);
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)

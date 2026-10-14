@@ -44,7 +44,8 @@ public class ProfileService {
             PermissionConstants.INSTANCE_EDIT_PHASES,
             PermissionConstants.INSTANCE_EDIT_FINDS,
             PermissionConstants.INSTANCE_EDIT_CONTAINERS,
-            PermissionConstants.INSTANCE_EDIT_DOCUMENTS
+            PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+            PermissionConstants.INSTANCE_EDIT_STUDIES
     );
 
     private final PermissionRepository permissionRepository;
@@ -145,7 +146,8 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_FINDS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
-                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES
         ), institutionDTO);
     }
 
@@ -200,7 +202,8 @@ public class ProfileService {
             PermissionConstants.PROJECT_EDIT_FINDS,
             PermissionConstants.PROJECT_EDIT_PHASES,
             PermissionConstants.PROJECT_EDIT_CONTAINERS,
-            PermissionConstants.PROJECT_EDIT_DOCUMENTS
+            PermissionConstants.PROJECT_EDIT_DOCUMENTS,
+            PermissionConstants.PROJECT_EDIT_STUDIES
     );
 
     private static final List<String> PROJECT_MEMBER_PERMISSIONS = List.of(
@@ -208,7 +211,8 @@ public class ProfileService {
             PermissionConstants.PROJECT_EDIT_FINDS,
             PermissionConstants.PROJECT_EDIT_PHASES,
             PermissionConstants.PROJECT_EDIT_CONTAINERS,
-            PermissionConstants.PROJECT_EDIT_DOCUMENTS
+            PermissionConstants.PROJECT_EDIT_DOCUMENTS,
+            PermissionConstants.PROJECT_EDIT_STUDIES
     );
 
     @NonNull

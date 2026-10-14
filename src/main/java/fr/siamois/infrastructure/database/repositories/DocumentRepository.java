@@ -136,8 +136,8 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
 
     @Modifying
     @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM specimen_study_document WHERE fk_document_id = :documentId")
-    void deleteSpecimenStudyDocumentLinks(@Param("documentId") Long documentId);
+    @Query(nativeQuery = true, value = "DELETE FROM study_document WHERE fk_document_id = :documentId")
+    void deleteStudyDocumentLinks(@Param("documentId") Long documentId);
 
     /** Attaches the document to its project: the project is a column of the document, not a link table. */
     @Transactional

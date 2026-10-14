@@ -151,7 +151,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       label: t("entity.recordingUnit.plural"),
       description: t("home.recordingUnit.description"),
       className: "sia-welcome-card sia-recording-unit",
-      chipClassName: "recording-unit-count-chip-alt",
+      chipClassName: "recording-unit-count-chip",
       order: 30,
     }),
   },

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services;
 
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
@@ -25,6 +26,7 @@ public class ResourceInstitutionService {
     private final ContainerService containerService;
     private final PhaseService phaseService;
     private final DocumentService documentService;
+    private final StudyService studyService;
 
     /**
      * Finds the institution owning the entity of the given resource type and id.
@@ -52,6 +54,7 @@ public class ResourceInstitutionService {
                 case "container" -> containerService.findById(entityId);
                 case "phase" -> phaseService.findById(entityId);
                 case "document" -> documentService.findDtoById(entityId);
+                case "study" -> studyService.findById(entityId);
                 default -> null;
             };
         } catch (RuntimeException e) {

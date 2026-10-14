@@ -21,6 +21,7 @@ export interface ProjectCounts {
   finds?: number | null;
   phases?: number | null;
   documents?: number | null;
+  studies?: number | null;
   containers?: number | null;
 }
 

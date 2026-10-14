@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -61,11 +62,13 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFo
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.resource.type.FindType;
 import fr.siamois.ui.api.openapi.v1.resource.type.ContainerType;
+import fr.siamois.ui.api.openapi.v1.resource.type.StudyType;
 import fr.siamois.ui.api.openapi.v1.resource.type.DocumentType;
 import fr.siamois.ui.api.openapi.v1.resource.type.PhaseType;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitIdentifierConfig;
 import fr.siamois.ui.api.openapi.v1.resource.type.RecordingUnitType;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectStudyTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectDocumentTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
@@ -471,6 +474,56 @@ public class RecordingUnitOpenApiService {
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
             return buildFieldsMetadataOnly(fieldSource, locale, Container.class, projectId, concept.getId());
+        });
+        type.setFields(fields);
+        return type;
+    }
+
+    /**
+     * {@code GET /api/v1/projects/{projectId}/study-types} — pendant, pour Study, de
+     * {@link #buildProjectPhaseTypeSettings}, même structure.
+     */
+    @Transactional
+    public ProjectStudyTypeListResponse buildProjectStudyTypeSettings(
+            String projectKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectKey, accessibleInstitutionIds);
+        ActionUnitDTO au = project.actionUnit();
+        InstitutionDTO institution = au.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
+        }
+
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        Map<String, FieldResource> baseFields = baseFieldsOf(au.getId(), ConfigurableTable.STUDY, Study.class,
+                institution, personDto, lang);
+
+        List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.STUDY));
+        Locale locale = langService.localeForApiLang(lang);
+        List<StudyType> types = configuredTypes.stream()
+                .map(concept -> buildStudyType(au.getId(), concept, userInfo, locale,
+                        buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.STUDY, concept.getId())))
+                .toList();
+
+        Map<String, FieldResource> unionFields = new LinkedHashMap<>(baseFields);
+        types.forEach(type -> putCatalogFields(unionFields, type.getFields()));
+        return new ProjectStudyTypeListResponse(types, unionFields);
+    }
+
+    private StudyType buildStudyType(Long projectId, Concept concept,
+                                             UserInfo userInfo, Locale locale,
+                                             RecordingUnitIdentifierConfig identifierConfig) {
+        ConceptDTO typeDto = conceptMapper.convert(concept);
+        StudyType type = new StudyType();
+        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setId(String.valueOf(concept.getId()));
+        type.setIdentifierConfig(identifierConfig);
+
+        Map<String, FieldResource> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
+            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.STUDY, concept.getId());
+            FieldSource fieldSource = new PanelFieldSource(formUiDto);
+            type.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(formUiDto.getLayout())));
+            return buildFieldsMetadataOnly(fieldSource, locale, Study.class, projectId, concept.getId());
         });
         type.setFields(fields);
         return type;

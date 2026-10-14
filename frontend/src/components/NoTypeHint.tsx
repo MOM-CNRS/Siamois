@@ -9,6 +9,7 @@ const TABLE_OF: Record<CreatableKind, string> = {
   phase: "PHASE",
   container: "CONTENANT",
   document: "DOCUMENT",
+  study: "STUDY",
 };
 
 /**

@@ -279,6 +279,21 @@ public interface TableFieldConfigService {
     void setFieldMandatory(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean mandatory);
 
     /**
+     * Concept-id-keyed equivalent of {@link #setFieldActive(Long, ConfigurableTable, String, String, boolean)},
+     * for a caller that already holds the type's concept (the seeding of a new project's types).
+     *
+     * @param typeConceptId the type's concept id
+     */
+    void setFieldActive(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean active);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #setFieldMandatory(Long, ConfigurableTable, String, String, boolean)}.
+     *
+     * @param typeConceptId the type's concept id
+     */
+    void setFieldMandatory(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean mandatory);
+
+    /**
      * Removes an additional field from a type. No-op if the named field is a system field (system
      * fields can be deactivated but never deleted) or doesn't exist.
      * <p>

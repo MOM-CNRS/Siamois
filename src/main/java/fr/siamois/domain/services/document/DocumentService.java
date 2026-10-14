@@ -609,7 +609,7 @@ public class DocumentService implements ArkEntityService {
         documentRepository.deleteSpecimenDocumentLinks(id);
         documentRepository.deletePhaseDocumentLinks(id);
         documentRepository.deleteContainerDocumentLinks(id);
-        documentRepository.deleteSpecimenStudyDocumentLinks(id);
+        documentRepository.deleteStudyDocumentLinks(id);
         // answers to the type's additional fields hold a foreign key to the document
         DocumentDTO idOnly = new DocumentDTO();
         idOnly.setId(id);

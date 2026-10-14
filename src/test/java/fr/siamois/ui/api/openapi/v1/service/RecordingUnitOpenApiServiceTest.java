@@ -2820,6 +2820,57 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildProjectStudyTypeSettings_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.buildProjectStudyTypeSettings("5", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildProjectStudyTypeSettings_returnsEachConfiguredTypeWithItsForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        CustomFieldText defaultField = new CustomFieldText();
+        defaultField.setId(-806L);
+        defaultField.setLabel("Champ par défaut");
+        defaultField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.STUDY), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.STUDY)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        CustomFieldText typeField = new CustomFieldText();
+        typeField.setId(-807L);
+        typeField.setLabel("Champ du type");
+        typeField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.STUDY, 42L))
+                .thenReturn(formUiDtoWithOneField(typeField));
+
+        fr.siamois.ui.api.openapi.v1.response.project.type.ProjectStudyTypeListResponse response =
+                service.buildProjectStudyTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getFields()).containsKey("-806");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getFields()).containsKey("-807");
+    }
+
+    @Test
     void addExistingParent_linksUnitsAndReturnsRelations() {
         RecordingUnit childEntity = new RecordingUnit();
         childEntity.setId(6L);

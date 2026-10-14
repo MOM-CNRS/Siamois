@@ -86,7 +86,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
       label: t("entity.container.plural"),
       description: t("home.container.description"),
       className: "sia-welcome-card sia-container",
-      chipClassName: "container-count-chip-alt",
+      chipClassName: "container-count-chip",
       order: 60,
     }),
   },
