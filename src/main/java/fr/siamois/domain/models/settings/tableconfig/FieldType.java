@@ -25,7 +25,7 @@ public enum FieldType {
     INTEGER("Entier", "bi bi-123", true),
     DECIMAL("Nombre décimal", "bi bi-123", true),
     DATETIME("Date", "bi bi-calendar-event", true),
-    BOOLEAN("Oui / non", "bi bi-check-square", true),
+    BOOLEAN("Oui / non", "bi bi-ui-checks", true),
     MEASUREMENT("Mesure", "bi bi-rulers", true),
     FILE("Fichier", "bi bi-file-earmark", false),
     SELECT_ONE("Vocabulaire contrôlé", "sia-icon-opentheso", true),

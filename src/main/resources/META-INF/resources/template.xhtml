@@ -295,7 +295,7 @@
         <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
             <nav id="sidebarSettings" class="sidebar" aria-label="Settings sidebar">
                 <form:csrfform formId="settingsNavForm">
-                    <ul class="nav flex-column">
+                    <ul class="nav flex-column" style="margin-bottom: 1.25rem;">
                         <li class="nav-item">
                             <h:commandLink action="#{navBean.backFromSettings()}" styleClass="nav-link"
                                            id="backToDashboardLink">
@@ -326,20 +326,12 @@
                             </h:commandLink>
                         </li>
                         <li class="nav-item">
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings/profile')}"
-                                           styleClass="nav-link" id="myProfileLink">
-                                <i class="bi bi-person"/>
-                                <span class="menu-text">#{langBean.msg('nav.myProfile')}</span>
-                                <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
-                            </h:commandLink>
-                        </li>
-                        <li class="nav-item">
-                            <h:commandLink action="#{navBean.goToExportTemplatesSettings()}" styleClass="nav-link"
-                                           id="exportTemplatesLink">
-                                <i class="bi bi-file-earmark-spreadsheet"/>
-                                <span class="menu-text">#{langBean.msg('nav.exportTemplates')}</span>
-                                <p:tooltip for="exportTemplatesLink"
-                                           value="#{langBean.msg('nav.exportTemplates.hint')}"/>
+                            <h:commandLink action="#{navBean.goToServicesSettings()}" styleClass="nav-link"
+                                           id="servicesLink">
+                                <i class="bi bi-grid"/>
+                                <span class="menu-text">#{langBean.msg('nav.services')}</span>
+                                <p:tooltip for="servicesLink"
+                                           value="#{langBean.msg('nav.services.hint')}"/>
                             </h:commandLink>
                         </li>
                         <ui:fragment rendered="#{navBean.administrationVisible}">
@@ -353,6 +345,14 @@
                                 </h:commandLink>
                             </li>
                         </ui:fragment>
+                        <li class="nav-item">
+                            <h:commandLink action="#{redirectBean.redirectTo('/settings/profile')}"
+                                           styleClass="nav-link" id="myProfileLink">
+                                <i class="bi bi-person"/>
+                                <span class="menu-text">#{langBean.msg('nav.myProfile')}</span>
+                                <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
+                            </h:commandLink>
+                        </li>
                     </ul>
 
 

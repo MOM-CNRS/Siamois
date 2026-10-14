@@ -47,7 +47,7 @@ public class CustomFieldBoolean extends CustomField {
 
     @Override
     public String getIcon() {
-        return "bi bi-check-square";
+        return "bi bi-ui-checks";
     }
 
 }

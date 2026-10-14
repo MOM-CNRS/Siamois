@@ -14,4 +14,12 @@ public class OptionElement {
     private String title;
     private String description;
     private RedirectAction actionFromBean;
+    /** Élément affiché mais non ouvrable (ex. service en travaux). */
+    private boolean disabled;
+    /** Infobulle du service non ouvrable. */
+    private String disabledHint;
+
+    public OptionElement(String bootstrapIconClass, String title, String description, RedirectAction actionFromBean) {
+        this(bootstrapIconClass, title, description, actionFromBean, false, null);
+    }
 }

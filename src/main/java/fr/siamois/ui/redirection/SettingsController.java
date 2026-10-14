@@ -94,6 +94,15 @@ public class SettingsController {
         return "forward:/pages/settings/thesaurusSettings.xhtml";
     }
 
+    @GetMapping("/settings/services")
+    public String goToServicesSettings() {
+        if (!profilePermissionService.canViewInstitutionData(sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {
+            throw new ForbiddenException();
+        }
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        return "forward:/pages/settings/services.xhtml";
+    }
+
     @GetMapping("/settings/export-templates")
     public String goToExportTemplatesSettings() {
         if (!profilePermissionService.canViewInstitutionData(sessionSettingsBean.getUserInfo().getUser(), sessionSettingsBean.getSelectedInstitution())) {

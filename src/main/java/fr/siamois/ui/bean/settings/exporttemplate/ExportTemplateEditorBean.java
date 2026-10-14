@@ -361,6 +361,29 @@ public class ExportTemplateEditorBean implements Serializable {
         }
     }
 
+    public static final String VIEW_MAPPING = "MAPPING";
+    public static final String VIEW_PREVIEW = "PREVIEW";
+
+    /** Vue demandée par la bascule Mapping / Aperçu, appliquée par {@link #applyViewMode()}. */
+    private String requestedView;
+
+    /** Vue affichée : l'aperçu n'est « ouvert » que s'il a pu être calculé. */
+    public String getViewMode() {
+        return previewOpen ? VIEW_PREVIEW : VIEW_MAPPING;
+    }
+
+    public void setViewMode(String mode) {
+        this.requestedView = mode;
+    }
+
+    public void applyViewMode() {
+        if (VIEW_PREVIEW.equals(requestedView)) {
+            refreshPreview();
+        } else {
+            closePreview();
+        }
+    }
+
     public void closePreview() {
         previewOpen = false;
         preview = null;
