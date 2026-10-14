@@ -49,6 +49,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -192,9 +194,12 @@ class ActionUnitServiceTest {
         assertEquals("ActionUnit not found with ID: 1", exception.getMessage());
     }
 
-    @Test
-    void save_withUserInfo_success() throws ActionUnitAlreadyExistsException {
-        // Arrange
+    /** A creation of action unit 1 for institution 1, with every collaborator stubbed. */
+    private record Creation(UserInfo userInfo, ActionUnitDTO actionUnit, ConceptDTO type, ActionUnitDTO expected,
+                            ActionUnit entity) {
+    }
+
+    private Creation stubCreation() throws ActionUnitAlreadyExistsException {
         String identifier = "Test";
         String institutionIdentifier = "MOM";
         String name = "Test Action Unit";
@@ -265,6 +270,24 @@ class ActionUnitServiceTest {
         when(spatialUnitRepository.save(any(SpatialUnit.class))).thenReturn(new SpatialUnit());
         when(conceptMapper.invertConvert(null)).thenReturn(null);
 
+        return new Creation(userInfo, actionUnitDto, typeConceptDto, expectedResult, actionUnit);
+    }
+
+    @Test
+    void save_withUserInfo_success() throws ActionUnitAlreadyExistsException {
+        // Arrange
+        Creation creation = stubCreation();
+        UserInfo userInfo = creation.userInfo();
+        ActionUnitDTO actionUnitDto = creation.actionUnit();
+        ConceptDTO typeConceptDto = creation.type();
+        ActionUnitDTO expectedResult = creation.expected();
+        String name = actionUnitDto.getName();
+        String identifier = actionUnitDto.getIdentifier();
+        String institutionIdentifier = userInfo.getInstitution().getIdentifier();
+        PersonDTO personDto = userInfo.getUser();
+        InstitutionDTO institutionDto = userInfo.getInstitution();
+        ActionUnit actionUnit = creation.entity();
+
         // Act
         ActionUnitDTO result = actionUnitService.save(userInfo, actionUnitDto, typeConceptDto);
 
@@ -288,6 +311,22 @@ class ActionUnitServiceTest {
         verify(actionUnitMapper).convert(actionUnit);
         verify(personProfileAssignmentService).addToProjectMembers(eq(expectedResult), eq(personDto), anyList());
         verify(personProfileAssignmentService).addToInstitution(eq(institutionDto), eq(personDto), anyList());
+        verify(defaultProjectIdentifierConfigSeeder).seed(userInfo, expectedResult.getId());
+    }
+
+    @Test
+    void save_withUserInfo_creation_seedsTheDefaultTypesOnlyOnceTheTransactionHasCommitted() throws Exception {
+        Creation creation = stubCreation();
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+            verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+            verify(defaultProjectIdentifierConfigSeeder).seed(creation.userInfo(), creation.expected().getId());
+        } finally {
+            TransactionSynchronizationManager.clear();
+        }
     }
 
     @Test
@@ -355,6 +394,7 @@ class ActionUnitServiceTest {
         assertNotNull(result);
         assertEquals(existingId, result.getId());
         verifyNoInteractions(personProfileAssignmentService);
+        verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
     }
 
 

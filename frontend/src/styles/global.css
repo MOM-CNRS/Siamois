@@ -35,6 +35,16 @@ body {
   animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/* The panes only ever change width (they all span the full height). The browser's default for the
+   snapshot images is `height: auto`, which rescales their height with their width while a pane
+   shrinks or grows — the pane then drifts vertically too, a diagonal move. Pinned to the group's
+   box, the morph is horizontal only. */
+::view-transition-old(*),
+::view-transition-new(*) {
+  width: 100%;
+  height: 100%;
+}
+
 /* Everything outside the panes (topbar, sidebar, splitter gutter) doesn't move: no page-wide
    cross-fade on top of the pane animations. */
 ::view-transition-old(root),

@@ -64,6 +64,17 @@ describe("usePaneState", () => {
     expect(latest[0]).toBe(2);
   });
 
+  it("retain drops the panes that are neither open nor stacked", () => {
+    const store = new PaneStateStore();
+    store.set("/pane-a#x", 1);
+    store.set("/pane-a/tab:t#y", 2);
+    store.set("/pane-b#x", 3);
+    store.retain(["pane-a"]);
+    expect(store.has("/pane-a#x")).toBe(true);
+    expect(store.has("/pane-a/tab:t#y")).toBe(true);
+    expect(store.has("/pane-b#x")).toBe(false);
+  });
+
   it("is plain local state without a store", () => {
     act(() => root.render(<Probe />));
     act(() => latest[1]((n) => n + 1));

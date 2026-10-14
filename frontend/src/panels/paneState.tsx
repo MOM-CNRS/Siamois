@@ -3,8 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
   type Dispatch,
   type ReactNode,
@@ -18,9 +16,8 @@ import {
 // to it as it changes and read back when a panel of the same identity mounts again.
 //
 // Identity is the path of scopes above the hook: the pane (kind, entity type, entity id), then
-// whatever a panel adds for its parts (a fiche's tab…). One store per App instance.
-
-const MAX_ENTRIES = 300;
+// whatever a panel adds for its parts (a fiche's tab…). One store per App instance, kept to the
+// panes that are open or stacked in focus mode (see `retain`), so it stays small.
 
 export class PaneStateStore {
   private readonly entries = new Map<string, unknown>();
@@ -34,12 +31,18 @@ export class PaneStateStore {
   }
 
   set(key: string, value: unknown): void {
-    // Re-inserted last: the oldest entries are the ones dropped when the store is full.
-    this.entries.delete(key);
     this.entries.set(key, value);
-    if (this.entries.size > MAX_ENTRIES) {
-      const oldest = this.entries.keys().next().value;
-      if (oldest !== undefined) this.entries.delete(oldest);
+  }
+
+  /**
+   * Drops the state of every pane not named in `paneScopes`: the store only holds what the panes
+   * still on screen, or waiting in the focus stack, can come back to.
+   */
+  retain(paneScopes: readonly string[]): void {
+    for (const key of [...this.entries.keys()]) {
+      if (!paneScopes.some((scope) => key.startsWith(`/${scope}#`) || key.startsWith(`/${scope}/`))) {
+        this.entries.delete(key);
+      }
     }
   }
 }
@@ -48,15 +51,19 @@ export class PaneStateStore {
 const StoreContext = createContext<PaneStateStore | null>(null);
 const ScopeContext = createContext("");
 
-export function PaneStateProvider({ store, children }: { store: PaneStateStore; children: ReactNode }) {
+export function PaneStateProvider({ store, children }: Readonly<{ store: PaneStateStore; children: ReactNode }>) {
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
 /** Narrows the identity of every `usePaneState` below: `name` is appended to the enclosing scope. */
-export function PaneStateScope({ name, children }: { name: string; children: ReactNode }) {
+export function PaneStateScope({ name, children }: Readonly<{ name: string; children: ReactNode }>) {
   const parent = useContext(ScopeContext);
   const scope = `${parent}/${name}`;
   return <ScopeContext.Provider value={scope}>{children}</ScopeContext.Provider>;
+}
+
+function resolveInitial<T>(initial: T | (() => T)): T {
+  return typeof initial === "function" ? (initial as () => T)() : initial;
 }
 
 interface Slot<T> {
@@ -78,7 +85,7 @@ export function usePaneState<T>(name: string, initial: T | (() => T)): [T, Dispa
 
   const [slot, setSlot] = useState<Slot<T>>(() => ({
     key,
-    value: store?.has(key) ? (store.get(key) as T) : typeof initial === "function" ? (initial as () => T)() : initial,
+    value: store?.has(key) ? (store.get(key) as T) : resolveInitial(initial),
   }));
 
   let current = slot;
@@ -107,7 +114,6 @@ export function usePaneState<T>(name: string, initial: T | (() => T)): [T, Dispa
 
 /** A store for the lifetime of the calling component (App). */
 export function usePaneStateStore(): PaneStateStore {
-  const ref = useRef<PaneStateStore>();
-  ref.current ??= new PaneStateStore();
-  return useMemo(() => ref.current!, []);
+  const [store] = useState(() => new PaneStateStore());
+  return store;
 }

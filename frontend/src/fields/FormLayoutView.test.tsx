@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FormLayoutView } from "./FormLayoutView";
+import { PaneStateProvider, PaneStateStore } from "../panels/paneState";
 import { registerDefaultFieldRenderers } from "./registerDefaultRenderers";
 import type { FormLayoutPanel } from "../fields/layout";
 import type { FieldResource } from "./types";
@@ -177,5 +178,41 @@ describe("FormLayoutView type field", () => {
 
     expect(container.querySelector('[data-field-id="9"]')).toBeNull();
     expect(container.querySelector('[data-field-id="1"]')).not.toBeNull();
+  });
+});
+
+describe("FormLayoutView folded sections", () => {
+  function renderIn(store: PaneStateStore) {
+    act(() => {
+      root.render(
+        <PaneStateProvider store={store}>
+          <FormLayoutView
+            entity={entity({})}
+            entityType="recordingUnit"
+            fields={fields}
+            panels={panels}
+            canEdit
+            onSave={vi.fn()}
+            onSaved={vi.fn()}
+          />
+        </PaneStateProvider>,
+      );
+    });
+  }
+  const isFolded = () => container.querySelector(".p-panel-toggler")?.getAttribute("aria-expanded") === "false";
+
+  it("keeps a folded section folded when the form mounts again", () => {
+    const store = new PaneStateStore();
+    renderIn(store);
+    expect(isFolded()).toBe(false);
+
+    act(() => {
+      (container.querySelector(".p-panel-toggler") as HTMLElement).click();
+    });
+    expect(isFolded()).toBe(true);
+
+    act(() => root.render(null));
+    renderIn(store);
+    expect(isFolded()).toBe(true);
   });
 });

@@ -207,6 +207,18 @@ export function App({ options }: { options: MountOptions }) {
   // keeps the panel mounted (its active tab survives, as in JSF's `?tab=`), while switching to a
   // different kind or type starts fresh. Entity-bound local state resets itself on the entity
   // (PanelToolbar's bookmark flag follows chrome.resourceUri).
+  // Only the panes that can still come back keep their state: the two on screen and those stacked
+  // by focus mode (the main views left behind, and the overviews promoted over them). After the
+  // panels' own effects (children run first), so a value carried to a new identity is written first.
+  const stackScopes = state.focusStack.flatMap((level) => [
+    paneTransitionName(level.view.panelKind, level.view.entityType, level.view.entityId),
+    paneTransitionName("detail", level.overview.entityType, level.overview.entityId),
+  ]);
+  const liveScopes = [mainPaneName, ...(overviewPaneStyleName ? [overviewPaneStyleName] : []), ...stackScopes].join("\n");
+  useEffect(() => {
+    paneStateStore.retain(liveScopes.split("\n"));
+  }, [paneStateStore, liveScopes]);
+
   const mainPane = (
     <PaneErrorBoundary label={t("pane.main")} resetKey={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}>
     <PaneStateScope name={mainPaneName}>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useTableState } from "./useTableState";
+import { PaneStateProvider, PaneStateStore } from "./paneState";
 
 // No @testing-library/react in this project (see EntityListPanel.test.tsx's own createRoot/act
 // pattern) — a tiny harness component exposes the hook's latest return value for assertions.
@@ -96,5 +97,34 @@ describe("useTableState", () => {
     act(() => latest.setVisibleColumns([]));
     act(() => latest.seedVisibleColumns(["-118"]));
     expect(latest.state.visibleColumns).toEqual([]);
+  });
+
+  it("restores the table state and the seeded columns when a list mounts again in the same store", () => {
+    const store = new PaneStateStore();
+    const renderWithStore = () =>
+      act(() => {
+        root.render(
+          <PaneStateProvider store={store}>
+            <Harness />
+          </PaneStateProvider>,
+        );
+      });
+
+    renderWithStore();
+    act(() => latest.seedVisibleColumns(["a", "b"]));
+    act(() => latest.setFilters({ name: { op: "contains", v: "fos" } }));
+    act(() => latest.setSort("name:desc"));
+
+    act(() => root.render(null));
+    renderWithStore();
+
+    expect(latest.columnsSeeded).toBe(true);
+    expect(latest.state).toMatchObject({
+      visibleColumns: ["a", "b"],
+      filters: { name: { op: "contains", v: "fos" } },
+      sort: "name:desc",
+    });
+    act(() => latest.seedVisibleColumns(["z"]));
+    expect(latest.state.visibleColumns).toEqual(["a", "b"]);
   });
 });
