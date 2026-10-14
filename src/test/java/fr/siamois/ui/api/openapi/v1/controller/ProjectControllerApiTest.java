@@ -152,7 +152,7 @@ class ProjectControllerApiTest {
                 conceptMapper,
                 recordingUnitOpenApiService,
                 phaseService,
-                containerService,
+                containerService, mock(fr.siamois.domain.services.study.StudyService.class),
                 bookmarkService,
                 historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
         ProjectControllerApi controller = new ProjectControllerApi(

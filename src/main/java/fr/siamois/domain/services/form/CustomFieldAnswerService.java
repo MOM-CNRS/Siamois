@@ -13,6 +13,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
@@ -168,6 +169,17 @@ public class CustomFieldAnswerService {
                 List::of);
     }
 
+    private AnswerOwner ownerOf(StudyDTO dto) {
+        if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
+        // A study's form config is keyed by its type (Study.TYPE_FIELD).
+        return new AnswerOwner("study " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.STUDY,
+                idOf(dto.getType()),
+                config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
+                config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
+                () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
+                List::of);
+    }
+
     /** A find carries its project directly, or only through its recording unit (as SpecimenPanel resolves it). */
     private Long specimenProjectId(SpecimenDTO dto) {
         if (dto.getActionUnit() != null) return dto.getActionUnit().getId();
@@ -224,6 +236,12 @@ public class CustomFieldAnswerService {
     @Transactional(rollbackFor = Exception.class)
     public void saveAdditionalFieldAnswers(DocumentDTO documentDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
         save(ownerOf(documentDTO), answers);
+    }
+
+    /** Same as {@link #saveAdditionalFieldAnswers(RecordingUnitDTO, Map)}, for a study. */
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAdditionalFieldAnswers(StudyDTO studyDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
+        save(ownerOf(studyDTO), answers);
     }
 
     private void save(AnswerOwner owner, Map<CustomField, CustomFieldAnswerViewModel> answers) {
@@ -391,8 +409,13 @@ public class CustomFieldAnswerService {
         return load(ownerOf(documentDTO));
     }
 
+    @Transactional(readOnly = true)
+    public Map<CustomField, CustomFieldAnswerViewModel> loadAdditionalFieldAnswers(StudyDTO studyDTO) {
+        return load(ownerOf(studyDTO));
+    }
+
     /** The entities a list can show additional-field answers for. */
-    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER, DOCUMENT }
+    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER, DOCUMENT, STUDY }
 
     /**
      * The answers of a whole page of entities to some of their additional fields, in one query —
@@ -410,6 +433,7 @@ public class CustomFieldAnswerService {
             case PHASE -> customFieldAnswerRepository.findAnswersOfPhases(ownerIds, fieldIds);
             case CONTAINER -> customFieldAnswerRepository.findAnswersOfContainers(ownerIds, fieldIds);
             case DOCUMENT -> customFieldAnswerRepository.findAnswersOfDocuments(ownerIds, fieldIds);
+            case STUDY -> customFieldAnswerRepository.findAnswersOfStudies(ownerIds, fieldIds);
         };
         Map<Long, Map<CustomField, CustomFieldAnswerViewModel>> result = new HashMap<>();
         answers.stream()
@@ -431,12 +455,14 @@ public class CustomFieldAnswerService {
             case PHASE -> set.getPhase();
             case CONTAINER -> set.getContainer();
             case DOCUMENT -> set.getDocument();
+            case STUDY -> set.getStudy();
         };
         if (entity instanceof fr.siamois.domain.models.recordingunit.RecordingUnit ru) return ru.getId();
         if (entity instanceof fr.siamois.domain.models.specimen.Specimen sp) return sp.getId();
         if (entity instanceof fr.siamois.domain.models.phase.Phase ph) return ph.getId();
         if (entity instanceof fr.siamois.domain.models.container.Container c) return c.getId();
         if (entity instanceof fr.siamois.domain.models.document.Document d) return d.getId();
+        if (entity instanceof fr.siamois.domain.models.study.Study st) return st.getId();
         return null;
     }
 

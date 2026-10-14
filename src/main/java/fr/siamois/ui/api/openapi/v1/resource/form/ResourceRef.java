@@ -42,7 +42,8 @@ public record ResourceRef(
             "finds", "finds",
             "phases", "phases",
             "containers", "containers",
-            "documents", "documents");
+            "documents", "documents",
+            "studies", "studies");
 
     /** A plain reference, its {@code href} derived from its type. */
     public ResourceRef(String resourceId, String resourceType, @Nullable String label) {

@@ -23,6 +23,9 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.study.StudyService;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentLinkKind;
@@ -144,6 +147,7 @@ public class ProjectApiService {
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final PhaseService phaseService;
     private final ContainerService containerService;
+    private final StudyService studyService;
     private final BookmarkService bookmarkService;
     private final HistoryAuditService historyAuditService;
     private final ValidationOpenApiService validationOpenApiService;
@@ -276,7 +280,9 @@ public class ProjectApiService {
         CONTAINER("container", PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS),
         DOCUMENT("document", PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
-                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+        STUDY("study", PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES, PermissionConstants.PROJECT_EDIT_STUDIES);
 
         private final String key;
         private final String instanceCode;
@@ -1141,6 +1147,61 @@ public class ProjectApiService {
                 PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
+    }
+
+    private static final Set<String> ALLOWED_STUDY_SORT_FIELDS =
+            Set.of(StudySpec.IDENTIFIER_FILTER, CREATION_TIME, "id");
+
+    /**
+     * Same contract as {@link #parseContainerSort} — an unknown property is a 400.
+     */
+    static Sort parseStudySort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, StudySpec.IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_STUDY_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page d'études d'un projet ({@code GET /api/v1/projects/{id}/studies}) : recherche libre sur
+     * {@code identifier} et tri sur une petite liste blanche, comme les contenants.
+     */
+    public Page<StudyDTO> pageStudiesForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseStudySort);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
+        filterDTO.add(StudySpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(StudySpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return studyService.searchStudies(institution, filterDTO, pageable);
+    }
+
+    /** Whether the caller can write studies on this project: one boolean for the whole page. */
+    public boolean canEditStudiesForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES,
+                PermissionConstants.PROJECT_EDIT_STUDIES);
     }
 
     private static final Set<String> ALLOWED_FIND_SORT_FIELDS =

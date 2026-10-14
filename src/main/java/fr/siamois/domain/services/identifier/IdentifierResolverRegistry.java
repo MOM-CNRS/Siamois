@@ -47,6 +47,9 @@ public class IdentifierResolverRegistry {
                         text(ID_UA, null)),
                 ConfigurableTable.DOCUMENT, catalog(
                         numerical("NUM_DOCUMENT", null),
+                        text(ID_UA, null)),
+                ConfigurableTable.STUDY, catalog(
+                        numerical("NUM_ETUDE", null),
                         text(ID_UA, null))
         );
     }
@@ -109,6 +112,7 @@ public class IdentifierResolverRegistry {
             case CONTENANT -> "NUM_CONTAINER";
             case PHASE -> "NUM_PHASE";
             case DOCUMENT -> "NUM_DOCUMENT";
+            case STUDY -> "NUM_ETUDE";
         };
     }
 

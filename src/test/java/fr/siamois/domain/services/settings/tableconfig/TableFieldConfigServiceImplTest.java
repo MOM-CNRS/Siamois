@@ -161,10 +161,10 @@ class TableFieldConfigServiceImplTest {
     // ========== Existing Tests ==========
 
     @Test
-    void listTables_shouldExposeTheFiveTablesWithTheirTypeFieldCode() {
+    void listTables_shouldExposeTheSixTablesWithTheirTypeFieldCode() {
         assertThat(service.listTables()).containsExactly(
                 ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT,
-                ConfigurableTable.DOCUMENT);
+                ConfigurableTable.DOCUMENT, ConfigurableTable.STUDY);
         assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CAT");
     }
 

@@ -1,0 +1,79 @@
+{
+  "groups" : [
+    {
+      "label" : "study.header.identification",
+      "fields" : [
+        {
+          "fieldId" : -804,
+          "binding" : "method",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -805,
+          "binding" : "studyDate",
+          "width" : "HALF"
+        }
+      ]
+    },
+    {
+      "label" : "study.header.links",
+      "fields" : [
+        {
+          "fieldId" : -806,
+          "binding" : "recordingUnits",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -807,
+          "binding" : "specimens",
+          "width" : "HALF"
+        }
+      ]
+    },
+    {
+      "label" : "study.header.treatment",
+      "fields" : [
+        {
+          "fieldId" : -808,
+          "binding" : "treatmentType",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -809,
+          "binding" : "reportCode",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -810,
+          "binding" : "treatmentStart",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -811,
+          "binding" : "treatmentEnd",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -812,
+          "binding" : "treatmentPlace",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -813,
+          "binding" : "treatmentManager",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -814,
+          "binding" : "treatmentIdentifier",
+          "width" : "HALF"
+        },
+        {
+          "fieldId" : -815,
+          "binding" : "treatmentComments",
+          "width" : "FULL"
+        }
+      ]
+    }
+  ]
+}

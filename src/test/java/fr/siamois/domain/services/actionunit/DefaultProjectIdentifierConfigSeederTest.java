@@ -155,6 +155,62 @@ class DefaultProjectIdentifierConfigSeederTest {
     }
 
     @Test
+    void seed_shouldCreateTheThreeStudyTypes_eachWithItsOwnActiveFields() throws Exception {
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        String findUri = "https://example.org/?idc=1&idt=th1";
+        String ueUri = "https://example.org/?idc=2&idt=th1";
+        String treatmentUri = "https://example.org/?idc=3&idt=th1";
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyFindTypeUri", findUri);
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyRecordingUnitTypeUri", ueUri);
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyTreatmentTypeUri", treatmentUri);
+
+        Vocabulary vocabulary = new Vocabulary();
+        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
+        when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenAnswer(invocation -> {
+            String uri = invocation.getArgument(1);
+            Concept concept = new Concept();
+            concept.setId(uri.equals(findUri) ? 101L : uri.equals(ueUri) ? 102L : uri.equals(treatmentUri) ? 103L : 1L);
+            return concept;
+        });
+
+        seeder.seed(INFO, PROJECT_ID);
+
+        for (long id : new long[]{101L, 102L, 103L}) {
+            ArgumentCaptor<TypeFormConfig> config = ArgumentCaptor.forClass(TypeFormConfig.class);
+            verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.STUDY), eq(id), config.capture());
+            assertThat(config.getValue().getIdentifierFormat()).isEqualTo("ETU{NUM_ETUDE:0000}");
+        }
+
+        // the studies of finds and of recording units use the two links, and none of the treatment columns
+        for (long id : new long[]{101L, 102L}) {
+            verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.recordingUnits", true);
+            verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.specimens", true);
+            verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.treatmentType", false);
+        }
+        // the treatment uses the columns of the SDA sheet, the treated find being mandatory
+        verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentType", true);
+        verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentType", true);
+        verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.specimens", true);
+        verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.recordingUnits", false);
+        verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentComments", true);
+        verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentComments", false);
+    }
+
+    @Test
+    void seed_shouldLeaveTheStudyTableWithoutTypesWhenNoUriIsConfigured() throws Exception {
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        Vocabulary vocabulary = new Vocabulary();
+        Concept concept = new Concept();
+        concept.setId(1L);
+        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
+        when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenReturn(concept);
+
+        seeder.seed(INFO, PROJECT_ID);
+
+        verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.STUDY), anyLong(), any());
+    }
+
+    @Test
     void seed_shouldBindTheUserToTheThreadWhileSeeding_andUnbindItAfterwards() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
         Vocabulary vocabulary = new Vocabulary();

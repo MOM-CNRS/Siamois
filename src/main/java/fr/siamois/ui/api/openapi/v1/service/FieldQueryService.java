@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -91,7 +92,8 @@ public class FieldQueryService {
             Specimen.class, "specimen",
             Phase.class, "phase",
             Container.class, "container",
-            Document.class, "document");
+            Document.class, "document",
+            Study.class, "study");
 
     /** Where an entity's human label is, in order of preference. */
     private static final List<String> LABEL_ATTRIBUTES =
@@ -124,6 +126,7 @@ public class FieldQueryService {
             Phase.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.PHASE)),
             Container.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)),
             Document.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.DOCUMENT)),
+            Study.class, systemFieldsOf(SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.STUDY)),
             SpatialUnit.class, systemFieldsOf(SpatialUnit.DETAILS_FORM));
 
     private static Map<Long, CustomField> systemFieldsOf(fr.siamois.ui.form.dto.FormUiDto form) {
@@ -244,7 +247,8 @@ public class FieldQueryService {
             Specimen.class, ConfigurableTable.MOBILIER,
             Phase.class, ConfigurableTable.PHASE,
             Container.class, ConfigurableTable.CONTENANT,
-            Document.class, ConfigurableTable.DOCUMENT);
+            Document.class, ConfigurableTable.DOCUMENT,
+            Study.class, ConfigurableTable.STUDY);
 
     private static final Map<Class<?>, FormUiDto> DETAILS_FORMS = Map.of(
             ActionUnit.class, ActionUnit.DETAILS_FORM,
