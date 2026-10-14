@@ -18,9 +18,8 @@ import {
 // to it as it changes and read back when a panel of the same identity mounts again.
 //
 // Identity is the path of scopes above the hook: the pane (kind, entity type, entity id), then
-// whatever a panel adds for its parts (a fiche's tab…). One store per App instance.
-
-const MAX_ENTRIES = 300;
+// whatever a panel adds for its parts (a fiche's tab…). One store per App instance, kept to the
+// panes that are open or stacked in focus mode (see `retain`), so it stays small.
 
 export class PaneStateStore {
   private readonly entries = new Map<string, unknown>();
@@ -34,12 +33,18 @@ export class PaneStateStore {
   }
 
   set(key: string, value: unknown): void {
-    // Re-inserted last: the oldest entries are the ones dropped when the store is full.
-    this.entries.delete(key);
     this.entries.set(key, value);
-    if (this.entries.size > MAX_ENTRIES) {
-      const oldest = this.entries.keys().next().value;
-      if (oldest !== undefined) this.entries.delete(oldest);
+  }
+
+  /**
+   * Drops the state of every pane not named in `paneScopes`: the store only holds what the panes
+   * still on screen, or waiting in the focus stack, can come back to.
+   */
+  retain(paneScopes: readonly string[]): void {
+    for (const key of [...this.entries.keys()]) {
+      if (!paneScopes.some((scope) => key.startsWith(`/${scope}#`) || key.startsWith(`/${scope}/`))) {
+        this.entries.delete(key);
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.actionunit;
 
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -7,6 +8,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +29,9 @@ import java.util.List;
  * </ul>
  * A step whose thesaurus is unreachable, or whose project has no vocabulary configured yet for the
  * relevant field, is skipped rather than failing project creation.
+ * <p>The table configuration is read and written in the context of a user (their institution and language),
+ * which a REST request does not bind to its thread the way a JSF one does: the caller hands it over, and it
+ * is bound here for the duration of the seeding.</p>
  */
 @Slf4j
 @Service
@@ -60,7 +65,21 @@ public class DefaultProjectIdentifierConfigSeeder {
     @Value("${siamois.default-types.document:}")
     private String documentTypeUri;
 
-    public void seed(Long projectId) {
+    public void seed(UserInfo info, Long projectId) {
+        UserInfo previous = ExecutionContextHolder.get();
+        ExecutionContextHolder.set(info);
+        try {
+            seedAll(projectId);
+        } finally {
+            if (previous != null) {
+                ExecutionContextHolder.set(previous);
+            } else {
+                ExecutionContextHolder.clear();
+            }
+        }
+    }
+
+    private void seedAll(Long projectId) {
         seedTypes(projectId, ConfigurableTable.UE, DEFAULT_RECORDING_UNIT_TYPES);
         seedStandardType(projectId, ConfigurableTable.UE, ueTypeUri);
         seedStandardType(projectId, ConfigurableTable.MOBILIER, mobilierTypeUri);

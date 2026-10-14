@@ -248,20 +248,20 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         if (isCreation) {
             assignRoles(info, savedDTO);
-            seedIdentifierConfigAfterCommit(savedDTO.getId());
+            seedIdentifierConfigAfterCommit(info, savedDTO.getId());
         }
         return savedDTO;
     }
 
-    private void seedIdentifierConfigAfterCommit(Long projectId) {
+    private void seedIdentifierConfigAfterCommit(UserInfo info, Long projectId) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            defaultProjectIdentifierConfigSeeder.seed(projectId);
+            defaultProjectIdentifierConfigSeeder.seed(info, projectId);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                defaultProjectIdentifierConfigSeeder.seed(projectId);
+                defaultProjectIdentifierConfigSeeder.seed(info, projectId);
             }
         });
     }
