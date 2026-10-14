@@ -993,6 +993,22 @@ class CustomFieldAnswerServiceTest {
         verify(customFieldAnswerRepository, never()).save(any());
     }
 
+    @Test
+    void additionalAnswersOfAStudy_areSavedAndLoadedOnItsTableAndType() {
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(302L);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(7L);
+        study.setActionUnit(project);
+
+        service.saveAdditionalFieldAnswers(study, Map.of());
+        assertThat(service.loadAdditionalFieldAnswers(study)).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(new fr.siamois.dto.entity.StudyDTO())).isEmpty();
+
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.STUDY, (Long) null);
+        verify(customFieldAnswerRepository, never()).save(any());
+    }
+
     private static CustomFieldAnswerText textAnswer(CustomField field, FormConfigAnswer set, String value) {
         CustomFieldAnswerText answer = new CustomFieldAnswerText();
         answer.setCustomField(field);
@@ -1127,7 +1143,11 @@ class CustomFieldAnswerServiceTest {
         container.setId(5L);
         fr.siamois.domain.models.document.Document document = new fr.siamois.domain.models.document.Document();
         document.setId(5L);
+        fr.siamois.domain.models.study.Study study = new fr.siamois.domain.models.study.Study();
+        study.setId(5L);
         return List.of(
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.STUDY, set -> set.setStudy(study),
+                        (repo, ids) -> repo.findAnswersOfStudies(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.DOCUMENT, set -> set.setDocument(document),
                         (repo, ids) -> repo.findAnswersOfDocuments(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.RECORDING_UNIT, set -> set.setRecordingUnit(unit),

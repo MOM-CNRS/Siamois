@@ -31,13 +31,15 @@ public abstract class StudyDefaults {
         }
     }
 
+    /** What the studies of finds and of recording units use: both links, the method and the date. */
+    private static final Set<String> LINKED_STUDY_BINDINGS =
+            Set.of(StudyForm.B_RECORDING_UNITS, StudyForm.B_SPECIMENS, StudyForm.B_METHOD, StudyForm.B_STUDY_DATE);
+
     /** "Etude de mobilier": the study of finds. */
-    public static final DefaultStudyType FIND_STUDY = new DefaultStudyType("mobilier",
-            Set.of("recordingUnits", "specimens", "method", "studyDate"), Set.of());
+    public static final DefaultStudyType FIND_STUDY = new DefaultStudyType("mobilier", LINKED_STUDY_BINDINGS, Set.of());
 
     /** "Etude d'UE": the study of recording units. */
-    public static final DefaultStudyType RECORDING_UNIT_STUDY = new DefaultStudyType("ue",
-            Set.of("recordingUnits", "specimens", "method", "studyDate"), Set.of());
+    public static final DefaultStudyType RECORDING_UNIT_STUDY = new DefaultStudyType("ue", LINKED_STUDY_BINDINGS, Set.of());
 
     /**
      * "Traitement par défaut": the columns of the "traitement" sheet of the national reference of the SDA.
@@ -46,14 +48,14 @@ public abstract class StudyDefaults {
      * {@code informations_complementaires_traitement}) are optional in the reference.
      */
     public static final DefaultStudyType TREATMENT = new DefaultStudyType("traitement",
-            Set.copyOf(Stream.concat(Stream.of("specimens"), StudyForm.TREATMENT_BINDINGS.stream()).toList()),
-            Set.of("specimens", "treatmentType", "reportCode", "treatmentStart", "treatmentPlace"));
+            Set.copyOf(Stream.concat(Stream.of(StudyForm.B_SPECIMENS), StudyForm.TREATMENT_BINDINGS.stream()).toList()),
+            Set.of(StudyForm.B_SPECIMENS, StudyForm.B_TREATMENT_TYPE, "reportCode", StudyForm.B_TREATMENT_START, "treatmentPlace"));
 
     public static final List<DefaultStudyType> TYPES = List.of(FIND_STUDY, RECORDING_UNIT_STUDY, TREATMENT);
 
     /** Every binding a type may use, to switch off the ones it does not. */
     public static final List<String> ALL_BINDINGS = Stream.of(
-                    Stream.of("method", "studyDate"),
+                    Stream.of(StudyForm.B_METHOD, StudyForm.B_STUDY_DATE),
                     StudyForm.LINK_BINDINGS.stream(),
                     StudyForm.TREATMENT_BINDINGS.stream())
             .flatMap(s -> s)

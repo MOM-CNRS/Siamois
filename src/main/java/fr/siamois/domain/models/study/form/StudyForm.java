@@ -26,13 +26,13 @@ public abstract class StudyForm {
     private static final String LABEL_PREFIX = "study.field.";
     private static final String B_ACTION_UNIT = "actionUnit";
     private static final String B_TYPE = "type";
-    private static final String B_METHOD = "method";
-    private static final String B_STUDY_DATE = "studyDate";
-    private static final String B_RECORDING_UNITS = "recordingUnits";
-    private static final String B_SPECIMENS = "specimens";
-    private static final String B_TREATMENT_TYPE = "treatmentType";
-    private static final String B_TREATMENT_START = "treatmentStart";
-    private static final String B_TREATMENT_END = "treatmentEnd";
+    public static final String B_METHOD = "method";
+    public static final String B_STUDY_DATE = "studyDate";
+    public static final String B_RECORDING_UNITS = "recordingUnits";
+    public static final String B_SPECIMENS = "specimens";
+    public static final String B_TREATMENT_TYPE = "treatmentType";
+    public static final String B_TREATMENT_START = "treatmentStart";
+    public static final String B_TREATMENT_END = "treatmentEnd";
 
     /** Bindings of the fields shared by the study of finds and the study of recording units. */
     public static final List<String> LINK_BINDINGS = List.of(B_RECORDING_UNITS, B_SPECIMENS);

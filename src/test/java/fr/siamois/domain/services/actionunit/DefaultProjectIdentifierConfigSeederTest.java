@@ -21,6 +21,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -194,6 +195,29 @@ class DefaultProjectIdentifierConfigSeederTest {
         verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.recordingUnits", false);
         verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentComments", true);
         verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentComments", false);
+    }
+
+    @Test
+    void seed_shouldSkipAStudyTypeThatCannotBeSeeded_andStillSeedTheOthers() throws Exception {
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        String brokenUri = "https://example.org/?idc=1&idt=th1";
+        String goodUri = "https://example.org/?idc=2&idt=th1";
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyFindTypeUri", brokenUri);
+        org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyRecordingUnitTypeUri", goodUri);
+        Vocabulary vocabulary = new Vocabulary();
+        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
+        when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenAnswer(invocation -> {
+            Concept concept = new Concept();
+            concept.setId(invocation.getArgument(1).equals(goodUri) ? 202L : 1L);
+            return concept;
+        });
+        doThrow(new IllegalStateException("No vocabulary configured"))
+                .when(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.STUDY), eq(1L), any());
+
+        seeder.seed(INFO, PROJECT_ID);
+
+        verify(tableFieldConfigService, never()).setFieldActive(eq(PROJECT_ID), eq(ConfigurableTable.STUDY), eq(1L), anyString(), anyBoolean());
+        verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 202L, "study.field.recordingUnits", true);
     }
 
     @Test

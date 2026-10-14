@@ -123,28 +123,26 @@ public class Study extends TraceableEntity {
 
     // ---------------------------------------------------------------- Links to other entities
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "study_recording_unit",
-            joinColumns = @JoinColumn(name = "fk_study_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_recording_unit_id")
-    )
-    @NotAudited
+    // Not part of the entity's identity or its JSON; owned by this side, one join table per target type.
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @NotAudited
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "study_recording_unit",
+            joinColumns = @JoinColumn(name = "fk_study_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_recording_unit_id"))
     private Set<RecordingUnit> recordingUnits = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "study_specimen",
-            joinColumns = @JoinColumn(name = "fk_study_id"),
-            inverseJoinColumns = @JoinColumn(name = "fk_specimen_id")
-    )
-    @NotAudited
+    // Not part of the entity's identity or its JSON; owned by this side, one join table per target type.
     @JsonIgnore
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @NotAudited
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "study_specimen",
+            joinColumns = @JoinColumn(name = "fk_study_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_specimen_id"))
     private Set<Specimen> specimens = new HashSet<>();
 
 }

@@ -35,8 +35,8 @@ class BooleanAnswerProjectionTest {
 
     @Test
     void aDocumentWritesABooleanAsIs() {
-        assertThat(ReflectionTestUtils.<Object>invokeMethod(DocumentAnswersProjector.class, "scalarValue", done, true)).isEqualTo(true);
-        assertThat(ReflectionTestUtils.<Boolean>invokeMethod(DocumentAnswersProjector.class, "isScalar", done)).isTrue();
+        assertThat(ReflectionTestUtils.<Object>invokeMethod(new DocumentAnswersProjector(), "scalarValue", done, true)).isEqualTo(true);
+        assertThat(ReflectionTestUtils.<Boolean>invokeMethod(new DocumentAnswersProjector(), "isScalar", done)).isTrue();
     }
 
     @Test

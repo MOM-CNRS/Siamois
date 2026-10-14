@@ -13,6 +13,17 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
+import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.FilterDTO;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import java.time.OffsetDateTime;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
@@ -47,6 +58,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -183,6 +195,34 @@ class StudyServiceTest {
     }
 
     @Test
+    void identifierSpec_readsTheStudyTypeProjectAndCollisions() {
+        when(studyMapper.invertConvert(studyDTO)).thenReturn(study);
+        when(studyRepository.save(study)).thenReturn(study);
+        when(studyMapper.convert(study)).thenReturn(studyDTO);
+        study.getActionUnit().setFullIdentifier("PRJ-7");
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(33L);
+        study.setType(type);
+        when(studyRepository.existsByActionUnitIdAndIdentifier(7L, "ETU0001")).thenReturn(true);
+
+        studyService.save(studyDTO);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<Study>> spec = ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).generateIdentifierIfRequired(eq(study), spec.capture());
+        IdentifierGenerationSpec<Study> captured = spec.getValue();
+        assertEquals(33L, captured.typeId().apply(study));
+        assertNull(captured.typeId().apply(new Study()));
+        assertEquals("PRJ-7", captured.displayValues().get("ID_UA").apply(study));
+        assertTrue(captured.identifierAlreadyUsed().test(study, "ETU0001"));
+        assertFalse(captured.identifierAlreadyUsed().test(study, "ETU0002"));
+        captured.numberSetter().accept(study, 12);
+        captured.identifierSetter().accept(study, "ETU0012");
+        assertEquals(12, study.getGeneratedNumber());
+        assertEquals("ETU0012", study.getIdentifier());
+    }
+
+    @Test
     void identifierAlreadyExistInAction_ignoresTheStudyItself() {
         studyDTO.setIdentifier("ETU0001");
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
@@ -196,6 +236,130 @@ class StudyServiceTest {
         other.setId(101L);
         when(studyRepository.findByActionUnitIdAndIdentifier(7L, "ETU0001")).thenReturn(List.of(other));
         assertTrue(studyService.identifierAlreadyExistInAction(studyDTO));
+    }
+
+    @Test
+    void searchStudies_scopesToTheInstitutionAndConvertsThePage() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        FilterDTO filters = new FilterDTO();
+        Pageable pageable = PageRequest.of(0, 10);
+        when(studyRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(study)));
+        when(studyMapper.convert(study)).thenReturn(studyDTO);
+
+        Page<StudyDTO> page = studyService.searchStudies(institution, filters, pageable);
+
+        assertEquals(List.of(studyDTO), page.getContent());
+    }
+
+    @Test
+    void searchStudies_acceptsTheNamedFilters() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(studyRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        FilterDTO byIdentifier = new FilterDTO();
+        byIdentifier.add(StudySpec.IDENTIFIER_FILTER, "ETU", FilterDTO.FilterType.CONTAINS);
+        byIdentifier.add(StudySpec.ACTION_UNIT_FILTER, List.of(7L), FilterDTO.FilterType.CONTAINS);
+        FilterDTO global = new FilterDTO();
+        global.add(ActionUnitSpec.GLOBAL_FILTER, "ETU", FilterDTO.FilterType.CONTAINS);
+
+        assertTrue(studyService.searchStudies(institution, byIdentifier, pageable).isEmpty());
+        assertTrue(studyService.searchStudies(institution, global, pageable).isEmpty());
+        verify(studyRepository, times(2)).findAll(any(Specification.class), eq(pageable));
+    }
+
+    @Test
+    void countSearchResults_countsTheSameSpecification() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        when(studyRepository.count(any(Specification.class))).thenReturn(4L);
+
+        assertEquals(4, studyService.countSearchResults(institution, new FilterDTO()));
+    }
+
+    @Test
+    void countByActionContext_countsTheProjectStudies() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        when(studyRepository.countByActionUnitId(7L)).thenReturn(5);
+
+        assertEquals(5, studyService.countByActionContext(project));
+    }
+
+    @Test
+    void identifierAlreadyExistInAction_isFalseWithoutAProject() {
+        assertFalse(studyService.identifierAlreadyExistInAction(new StudyDTO()));
+    }
+
+    @Test
+    void findById_convertsAKnownStudy() {
+        when(studyRepository.findById(100L)).thenReturn(Optional.of(study));
+        when(studyMapper.convert(study)).thenReturn(studyDTO);
+
+        assertSame(studyDTO, studyService.findById(100L));
+    }
+
+    @Test
+    void findNextByActionUnit_returnsTheNextOneOrWrapsToTheOldest() {
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(10L);
+        OffsetDateTime now = OffsetDateTime.now();
+        studyDTO.setCreationTime(now);
+        Study next = new Study();
+        StudyDTO nextDto = new StudyDTO();
+        when(studyRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(10L, now))
+                .thenReturn(Optional.of(next), Optional.empty());
+        when(studyMapper.convert(next)).thenReturn(nextDto);
+        when(studyRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L)).thenReturn(Optional.of(next));
+
+        assertSame(nextDto, studyService.findNextByActionUnit(project, studyDTO));
+        assertSame(nextDto, studyService.findNextByActionUnit(project, studyDTO));
+    }
+
+    @Test
+    void findPreviousByActionUnit_returnsThePreviousOneOrWrapsToTheMostRecent() {
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(10L);
+        OffsetDateTime now = OffsetDateTime.now();
+        studyDTO.setCreationTime(now);
+        Study previous = new Study();
+        StudyDTO previousDto = new StudyDTO();
+        when(studyRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(10L, now))
+                .thenReturn(Optional.of(previous), Optional.empty());
+        when(studyMapper.convert(previous)).thenReturn(previousDto);
+        when(studyRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L)).thenReturn(Optional.of(previous));
+
+        assertSame(previousDto, studyService.findPreviousByActionUnit(project, studyDTO));
+        assertSame(previousDto, studyService.findPreviousByActionUnit(project, studyDTO));
+    }
+
+    @Test
+    void siblings_failWhenTheProjectHasNoStudyAtAll() {
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(10L);
+        studyDTO.setCreationTime(OffsetDateTime.now());
+        when(studyRepository.findFirstByActionUnitIdAndCreationTimeAfterOrderByCreationTimeAsc(eq(10L), any()))
+                .thenReturn(Optional.empty());
+        when(studyRepository.findFirstByActionUnitIdAndCreationTimeBeforeOrderByCreationTimeDesc(eq(10L), any()))
+                .thenReturn(Optional.empty());
+        when(studyRepository.findFirstByActionUnitIdOrderByCreationTimeAsc(10L)).thenReturn(Optional.empty());
+        when(studyRepository.findFirstByActionUnitIdOrderByCreationTimeDesc(10L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class, () -> studyService.findNextByActionUnit(project, studyDTO));
+        assertThrows(ActionUnitNotFoundException.class, () -> studyService.findPreviousByActionUnit(project, studyDTO));
+    }
+
+    @Test
+    void save_withAdditionalAnswersPersistsThemForTheSavedStudy() {
+        when(studyMapper.invertConvert(studyDTO)).thenReturn(study);
+        when(studyRepository.save(study)).thenReturn(study);
+        when(studyMapper.convert(study)).thenReturn(studyDTO);
+
+        studyService.save(studyDTO, java.util.Map.of());
+
+        verify(customFieldAnswerService).saveAdditionalFieldAnswers(studyDTO, java.util.Map.of());
     }
 
     @Test

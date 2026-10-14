@@ -49,6 +49,9 @@ class ResourceInstitutionServiceTest {
     @Mock
     private fr.siamois.domain.services.document.DocumentService documentService;
 
+    @Mock
+    private fr.siamois.domain.services.study.StudyService studyService;
+
     @InjectMocks
     private ResourceInstitutionService resourceInstitutionService;
 
@@ -110,6 +113,17 @@ class ResourceInstitutionServiceTest {
         when(containerService.findById(11L)).thenReturn(container);
 
         Optional<InstitutionDTO> result = resourceInstitutionService.findInstitutionOf("container", 11L);
+
+        assertEquals(Optional.of(institution), result);
+    }
+
+    @Test
+    void findInstitutionOf_shouldReturnInstitutionOfStudy() {
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setCreatedByInstitution(institution);
+        when(studyService.findById(21L)).thenReturn(study);
+
+        Optional<InstitutionDTO> result = resourceInstitutionService.findInstitutionOf("study", 21L);
 
         assertEquals(Optional.of(institution), result);
     }

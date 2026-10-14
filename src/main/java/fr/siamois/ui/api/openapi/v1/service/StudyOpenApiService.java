@@ -72,9 +72,7 @@ public class StudyOpenApiService {
     }
 
     private StudyResource loadStudy(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
-        StudyDTO study = requireAccessibleStudy(id, personDto, accessibleInstitutionIds);
-        StudyResource resource = toResourceWithPermissionsAndAnswers(study, personDto, lang);
-        return resource;
+        return toResourceWithPermissionsAndAnswers(requireAccessibleStudy(id, personDto, accessibleInstitutionIds), personDto, lang);
     }
 
     @Transactional
@@ -182,16 +180,22 @@ public class StudyOpenApiService {
 
     private StudyDTO requireAccessibleStudy(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
         StudyDTO study = studyService.findById(id);
-        if (study == null || study.getActionUnit() == null) {
+        ActionUnitSummaryDTO project = study == null ? null : study.getActionUnit();
+        if (project == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Étude introuvable");
         }
-        InstitutionDTO institution = study.getActionUnit().getCreatedByInstitution();
-        if (institution == null || institution.getId() == null
-                || accessibleInstitutionIds == null || !accessibleInstitutionIds.contains(institution.getId())
-                || !profilePermissionService.canViewProject(personDto, institution, study.getActionUnit().getId())) {
+        if (!canSee(project, personDto, accessibleInstitutionIds)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Étude introuvable ou hors périmètre");
         }
         return study;
+    }
+
+    /** The caller sees a project when its organization is in the token's scope and its profile lets it view it. */
+    private boolean canSee(ActionUnitSummaryDTO project, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        InstitutionDTO institution = project.getCreatedByInstitution();
+        boolean inScope = institution != null && institution.getId() != null
+                && accessibleInstitutionIds != null && accessibleInstitutionIds.contains(institution.getId());
+        return inScope && profilePermissionService.canViewProject(personDto, institution, project.getId());
     }
 
     private static String requireNonBlank(String value, String name) {

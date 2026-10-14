@@ -79,5 +79,7 @@ class OrganizationFieldCatalogServiceTest {
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.UE)).isEqualTo(RecordingUnit.class);
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.DOCUMENT))
                 .isEqualTo(fr.siamois.domain.models.document.Document.class);
+        assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.STUDY))
+                .isEqualTo(fr.siamois.domain.models.study.Study.class);
     }
 }

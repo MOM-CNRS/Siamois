@@ -31,8 +31,8 @@ public class StudyDTO extends AbstractEntityDTO {
     protected String treatmentComments;
 
     /** The linked recording units and finds: the links are written from the study's side. */
-    protected Set<RecordingUnitSummaryDTO> recordingUnits = new HashSet<>();
-    protected Set<SpecimenSummaryDTO> specimens = new HashSet<>();
+    private Set<RecordingUnitSummaryDTO> recordingUnits = new HashSet<>();
+    private Set<SpecimenSummaryDTO> specimens = new HashSet<>();
 
     public static List<String> getBindableFieldNames() {
         return List.of("identifier", "generatedNumber", "actionUnit", "type", "studyDate", "method", "treatmentType",
