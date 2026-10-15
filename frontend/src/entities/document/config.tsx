@@ -2,6 +2,7 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
 import { DocumentCreateForm } from "./CreateForm";
@@ -25,6 +26,7 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
   panelClass: "document-panel",
   api: {
     siblings: (id) => fetchSiblings("documents", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("documents", id),
     get: getDocument,
     list: listDocuments,
     patchAnswers: (id, answers) => patchDocumentAnswers(id, answers),

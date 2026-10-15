@@ -2,6 +2,7 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { getContainer, listContainers, patchContainer, patchContainerAnswers } from "./api";
 import { containerColumns } from "./columns";
 import { ContainerCreateForm } from "./CreateForm";
@@ -27,6 +28,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   panelClass: "container-panel",
   api: {
     siblings: (id) => fetchSiblings("containers", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("containers", id),
     get: getContainer,
     list: listContainers,
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),

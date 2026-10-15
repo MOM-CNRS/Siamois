@@ -2,6 +2,7 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { duplicateFind, getFind, listFinds, patchFind, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
@@ -27,6 +28,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   panelClass: "specimen-panel",
   api: {
     siblings: (id) => fetchSiblings("finds", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("finds", id),
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),

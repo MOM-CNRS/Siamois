@@ -101,6 +101,8 @@ export const fr = {
   "home.title": "Accueil",
   "home.databases": "Accéder aux bases de données",
   "detail.allOf": "Tous les {plural}",
+  "breadcrumb.allPaths": "Tous les chemins",
+  "breadcrumb.truncated": "Liste tronquée",
   "detail.tabError": "l'onglet « {label} »",
   "pane.main": "le panneau principal",
   "pane.overview": "l'aperçu",

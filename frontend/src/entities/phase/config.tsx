@@ -4,6 +4,7 @@ import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { getPhase, listPhases, patchPhase, patchPhaseAnswers } from "./api";
 import { phaseColumns } from "./columns";
 import { PhaseCreateForm } from "./CreateForm";
@@ -28,6 +29,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   panelClass: "phase-panel",
   api: {
     siblings: (id) => fetchSiblings("phases", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("phases", id),
     get: getPhase,
     list: listPhases,
     patchAnswers: (id, answers) => patchPhaseAnswers(id, answers),

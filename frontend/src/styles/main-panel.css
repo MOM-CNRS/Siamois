@@ -867,7 +867,7 @@
 
 .entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-text,
 .entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-icon {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-light);
 }
 
@@ -1872,4 +1872,66 @@ body button.p-button.status-button.status-button-compact {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-color-secondary, #6b7280);
+}
+
+/* Fil d'Ariane des fiches (EntityBreadcrumbTrail): the "all paths" chevron sits in front of the trail. */
+.entity-detail-panel .panel-bc-row {
+  display: flex;
+  align-items: center;
+}
+
+/* The chevron is an inline SVG, so it is centred by the button's own flex box whatever the icon font does. */
+.entity-detail-panel .p-button.panel-bc-paths-button {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  color: var(--text-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-detail-panel .p-button.panel-bc-paths-button .panel-bc-paths-chevron {
+  width: 10px;
+  height: 10px;
+  display: block;
+  margin: 0;
+}
+
+/* Lighter, smaller separators between crumbs (PrimeReact draws them as an SVG chevron). */
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-separator,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-separator {
+  color: var(--text-light);
+  opacity: 0.55;
+}
+
+.entity-detail-panel .p-breadcrumb.panel-bc .p-breadcrumb-chevron,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-breadcrumb-chevron {
+  width: 9px;
+  height: 9px;
+}
+
+/* The overlay's trails: same small, frameless look as the one in the panel. */
+body .p-overlaypanel.panel-bc-paths-overlay .p-overlaypanel-content {
+  padding: 0.3rem 0.5rem;
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0.2em 0.3em;
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-text,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-icon {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
+  padding: 0.2em 0.3em;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-light);
 }

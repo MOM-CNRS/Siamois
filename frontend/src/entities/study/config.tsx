@@ -2,6 +2,7 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { getStudy, listStudies, patchStudy, patchStudyAnswers } from "./api";
 import { studyColumns } from "./columns";
 import { StudyCreateForm } from "./CreateForm";
@@ -26,6 +27,7 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   panelClass: "study-panel",
   api: {
     siblings: (id) => fetchSiblings("studies", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("studies", id),
     get: getStudy,
     list: listStudies,
     patchAnswers: (id, answers) => patchStudyAnswers(id, answers),
