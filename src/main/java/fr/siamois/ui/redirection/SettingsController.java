@@ -147,8 +147,8 @@ public class SettingsController {
     @GetMapping("/settings/project/{projectId}/tables")
     public String goToProjectTablesSettings(@PathVariable("projectId") Long projectId,
                                             @RequestParam(value = "table", required = false) String table) {
-        if (!profilePermissionService.hasProjectPermission(
-                sessionSettingsBean.getUserInfo(), projectId, PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+        if (!profilePermissionService.hasProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo(), projectId)) {
             throw new ForbiddenException();
         }
         ActionUnitDTO project = actionUnitService.findById(projectId);

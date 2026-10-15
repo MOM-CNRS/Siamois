@@ -331,4 +331,25 @@ class ProfilePermissionServiceTest {
         assertThat(grant.getInstitutionId()).isNull();
         assertThat(grant.getActionUnitId()).isNull();
     }
+
+    @Test
+    void hasProjectSettingsPermission_shouldBeGrantedToOrganizationProjectManager() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(true);
+
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(user, 7L));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_shouldFallBackToProjectProfile() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 7L, PermissionConstants.PROJECT_MANAGE_SETTINGS))
+                .thenReturn(true);
+
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(user, 7L));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(user, 8L));
+    }
 }

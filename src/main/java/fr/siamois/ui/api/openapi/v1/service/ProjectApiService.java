@@ -409,9 +409,8 @@ public class ProjectApiService {
         boolean canWrite = profilePermissionService.hasActionUnitWritePermission(
                 caller.person(), dto.getCreatedByInstitution(), dto.getId());
         boolean canManageSettings = dto.getCreatedByInstitution() != null
-                && profilePermissionService.hasProjectPermission(
-                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null),
-                        dto.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
+                && profilePermissionService.hasProjectSettingsPermission(
+                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());
         boolean canValidate = dto.getCreatedByInstitution() != null
                 && profilePermissionService.hasValidatePermission(
                         new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());

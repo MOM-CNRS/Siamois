@@ -205,6 +205,28 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Whether the user may open and edit the settings of a project: {@code PROJECT_MANAGE_SETTINGS} on the
+     * project itself, or an organisation/instance-wide manager of the institution's projects
+     * ({@code ORGANIZATION_MANAGE_ACTIONS} / {@code INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS}), consistently with
+     * {@link #hasActionUnitWritePermission(UserInfo, ActionUnitDTO)}.
+     */
+    public boolean hasProjectSettingsPermission(UserInfo user, Long actionUnitId) {
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+                PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /** Bulk version of {@link #hasProjectSettingsPermission}: which of the given action units the user may manage. */
+    public Set<Long> actionUnitIdsWithProjectSettingsPermission(UserInfo user, Collection<Long> actionUnitIds) {
+        if (hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)) {
+            return actionUnitIds == null ? Set.of() : actionUnitIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        }
+        return actionUnitIdsWithPermission(user, actionUnitIds,
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS, PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /**
      * The "validateur" right on a project's entities (recording units, finds, phases, containers, the
      * project itself): {@code PROJECT_VALIDATE}, or its organisation/instance-wide counterparts.
      */
