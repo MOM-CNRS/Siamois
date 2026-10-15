@@ -3,6 +3,7 @@ import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { scopeProjectId } from "../scope";
 import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUnit, getRecordingUnitStructure, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
@@ -41,6 +42,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   panelClass: "recording-unit-panel",
   api: {
     siblings: (id) => fetchSiblings("recording-units", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("recording-units", id),
     get: getRecordingUnit,
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),

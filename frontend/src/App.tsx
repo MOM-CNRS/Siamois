@@ -247,6 +247,9 @@ export function App({ options }: { options: MountOptions }) {
       // A click inside the overview pane's own fiche (e.g. a row in a relationTab, like a
       // project's UE list) retargets the OVERVIEW pane, not the main one.
       onOpenOverview={openOverview}
+      // A crumb of the overview's fil d'Ariane retargets the overview too: a fiche goes to the
+      // overview pane, a list (no id) to the main pane.
+      onNavigate={(entityType, id) => (id != null ? openOverview(entityType, id) : navigate(entityType))}
       // Deliberately NOT overviewEntityId={overview.entityId}: a relationTab embedded here renders
       // a DIFFERENT entity type than the overview's own, and EntityListPanel's row highlighting
       // compares raw ids with no entityType guard.

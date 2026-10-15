@@ -91,6 +91,20 @@ export interface EntitySiblings {
   next?: EntitySibling;
 }
 
+// One step of a fiche's fil d'Ariane: `type` is a registry key, so a click navigates with
+// onNavigate(type, id).
+export interface EntityBreadcrumb {
+  type: string;
+  id: string;
+  label: string;
+}
+
+// Every path from the fiche's project down to the fiche (both included); the first is the default one.
+export interface EntityBreadcrumbs {
+  paths: EntityBreadcrumb[][];
+  truncated: boolean;
+}
+
 export interface ColumnDef<TSummary> {
   key: string;
   header: string;
@@ -313,6 +327,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // an entity type that doesn't declare it renders no arrows at all — EntityDetailPanel checks
     // for its presence before even querying, matching how `patchAnswers` gates the edit overlay.
     siblings?(id: string | number, ctx: { organizationId?: number }): Promise<EntitySiblings>;
+    // The fil d'Ariane (project → parents → fiche). Optional: an entity type without it (project,
+    // place) keeps the home + « Tous les … » crumbs.
+    breadcrumbs?(id: string | number): Promise<EntityBreadcrumbs>;
     // The titlebar's "Dupliquer" (JSF's panelModel.canDuplicate() — recording units only today).
     // Resolves to the copy, which the panel then opens in the overview like JSF does.
     duplicate?(id: string | number): Promise<{ id: string | number }>;

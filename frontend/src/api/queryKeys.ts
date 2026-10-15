@@ -20,6 +20,8 @@ export const queryKeys = {
   entitySiblings: (entityType: string, id: string | number, organizationId: number | undefined, context: unknown) =>
     ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
 
+  entityBreadcrumbs: (entityType: string, id: string | number) => ["entity-breadcrumbs", entityType, id] as const,
+
   bookmarks: () => ["bookmark-status"] as const,
   bookmark: (resourceUri: string | undefined, organizationId: number | undefined) =>
     ["bookmark-status", resourceUri, organizationId] as const,

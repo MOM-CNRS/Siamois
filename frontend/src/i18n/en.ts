@@ -101,6 +101,8 @@ export const en: Record<MessageKey, string> = {
   "home.title": "Home",
   "home.databases": "Go to the databases",
   "detail.allOf": "All {plural}",
+  "breadcrumb.allPaths": "All paths",
+  "breadcrumb.truncated": "List truncated",
   "detail.tabError": "the “{label}” tab",
   "pane.main": "the main panel",
   "pane.overview": "the preview",
