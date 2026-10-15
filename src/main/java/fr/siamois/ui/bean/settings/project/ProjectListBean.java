@@ -230,8 +230,8 @@ public class ProjectListBean implements SettingsDatatableBean {
     private void loadDerivedData() {
         this.memberCountsByActionUnitId = institutionService.countMembersOf(actionUnits);
         List<Long> actionUnitIds = actionUnits.stream().map(ActionUnitDTO::getId).toList();
-        this.actionUnitIdsWithManageSettingsPermission = profilePermissionService.actionUnitIdsWithPermission(
-                sessionSettingsBean.getUserInfo(), actionUnitIds, PermissionConstants.PROJECT_MANAGE_SETTINGS);
+        this.actionUnitIdsWithManageSettingsPermission = profilePermissionService.actionUnitIdsWithProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo(), actionUnitIds);
     }
 
     /** Drops the person filter and reloads the current admin's own full editable project list. */
@@ -272,8 +272,8 @@ public class ProjectListBean implements SettingsDatatableBean {
     }
 
     public String redirectToProject(ActionUnitDTO actionUnit) {
-        if (!profilePermissionService.hasProjectPermission(
-                sessionSettingsBean.getUserInfo(), actionUnit.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+        if (!profilePermissionService.hasProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo(), actionUnit.getId())) {
             log.warn("Person {} tried to access settings of project {} without permission",
                     sessionSettingsBean.getUserInfo().getUser(), actionUnit.getId());
             MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");

@@ -331,4 +331,67 @@ class ProfilePermissionServiceTest {
         assertThat(grant.getInstitutionId()).isNull();
         assertThat(grant.getActionUnitId()).isNull();
     }
+
+    @Test
+    void hasProjectSettingsPermission_shouldBeGrantedToOrganizationProjectManager() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(true);
+
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(user, 7L));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_shouldFallBackToProjectProfile() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 7L, PermissionConstants.PROJECT_MANAGE_SETTINGS))
+                .thenReturn(true);
+
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(user, 7L));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(user, 8L));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_shouldBeDeniedWithoutUser() {
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(null, 7L));
+    }
+
+    @Test
+    void actionUnitIdsWithProjectSettingsPermission_shouldBeEmptyWithoutUser() {
+        assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(null, Set.of(7L))).isEmpty();
+    }
+
+    @Test
+    void actionUnitIdsWithProjectSettingsPermission_shouldReturnEveryProjectForInstanceManager() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS))
+                .thenReturn(true);
+
+        assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(user, java.util.Arrays.asList(7L, null, 8L)))
+                .containsExactlyInAnyOrder(7L, 8L);
+        assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(user, null)).isEmpty();
+    }
+
+    @Test
+    void actionUnitIdsWithProjectSettingsPermission_shouldReturnEveryProjectForOrganizationProjectManager() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(true);
+
+        assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(user, Set.of(7L, 8L)))
+                .containsExactlyInAnyOrder(7L, 8L);
+    }
+
+    @Test
+    void actionUnitIdsWithProjectSettingsPermission_shouldFallBackToProjectProfiles() {
+        UserInfo user = new UserInfo(institution, person, null);
+        when(assignmentRepository.findActionUnitIdsWithPermission(
+                eq(3L), org.mockito.ArgumentMatchers.<java.util.Collection<Long>>any(), eq(PermissionConstants.PROJECT_MANAGE_SETTINGS)))
+                .thenReturn(Set.of(7L));
+
+        assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(user, Set.of(7L, 8L)))
+                .containsExactly(7L);
+    }
 }
