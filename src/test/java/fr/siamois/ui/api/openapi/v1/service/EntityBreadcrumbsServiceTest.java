@@ -169,7 +169,8 @@ class EntityBreadcrumbsServiceTest {
 
     @Test
     void findBreadcrumbs_outOfScopeInstitution_isNotFound() {
-        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.RECORDING_UNIT, 5, Set.of(99L)))
+        Set<Long> otherInstitutions = Set.of(99L);
+        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.RECORDING_UNIT, 5, otherInstitutions))
                 .isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.RECORDING_UNIT, 5, null))
                 .isInstanceOf(ResponseStatusException.class);
