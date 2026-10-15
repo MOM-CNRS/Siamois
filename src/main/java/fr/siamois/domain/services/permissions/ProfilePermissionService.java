@@ -211,6 +211,9 @@ public class ProfilePermissionService {
      * {@link #hasActionUnitWritePermission(UserInfo, ActionUnitDTO)}.
      */
     public boolean hasProjectSettingsPermission(UserInfo user, Long actionUnitId) {
+        if (user == null) {
+            return false;
+        }
         return hasProjectPermission(user, actionUnitId,
                 PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
@@ -219,6 +222,9 @@ public class ProfilePermissionService {
 
     /** Bulk version of {@link #hasProjectSettingsPermission}: which of the given action units the user may manage. */
     public Set<Long> actionUnitIdsWithProjectSettingsPermission(UserInfo user, Collection<Long> actionUnitIds) {
+        if (user == null) {
+            return Set.of();
+        }
         if (hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)) {
             return actionUnitIds == null ? Set.of() : actionUnitIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
         }
