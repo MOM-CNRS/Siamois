@@ -99,57 +99,6 @@
                         </li>
                     </ul>
 
-                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm"
-                                   style="width:90%;margin:auto;">
-                        <article>
-                            <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
-                                <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
-                                    <i class="bi bi-buildings"/>
-                                </h:panelGroup>
-
-                                <p:selectOneMenu
-                                        id="selectOneMenuInstitution"
-                                        value="#{flowBean.selectedInstitution}"
-                                        filter="true"
-                                        disabled="true"
-                                        converter="#{institutionConverter}"
-                                        filterMatchMode="startsWith"
-                                        filterNormalize="true"
-                                        var="inst"
-                                >
-                                    <f:selectItems value="#{flowBean.institutions}"
-                                                   var="item"
-                                                   itemValue="#{item}"
-                                                   itemLabel="#{item.name}"
-                                    />
-
-                                    <p:column>
-                                        <h:outputText value="#{inst.name}"/>
-                                    </p:column>
-
-                                    <p:ajax event="change"
-                                            process="@this"
-                                            listener="#{flowBean.onFocusInstitutionChange}"
-                                    />
-
-                                </p:selectOneMenu>
-
-                            </h:panelGroup>
-                        </article>
-                    </form:csrfform>
-
-                    <form:csrfform formId="changeOrganisationForm" id="changeOrganisationCsrfForm">
-                        <small class="menu-text" style="
-                               margin-left: 5%;
-                        margin-right: 5%;">
-                            Pour changer d’organisation,
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings/organisation')}"
-                                           onclick="captureUrl()"
-                                           id="changeOrganisationLink">
-                                cliquez ici
-                            </h:commandLink>.
-                        </small>
-                    </form:csrfform>
 
                     <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
                         <ul class="nav flex-column">

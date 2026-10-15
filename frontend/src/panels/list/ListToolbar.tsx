@@ -5,6 +5,7 @@ import { Chip } from "primereact/chip";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { Skeleton } from "primereact/skeleton";
 import { Toolbar } from "primereact/toolbar";
+import { Tooltip } from "primereact/tooltip";
 import { queryKeys } from "../../api/queryKeys";
 import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/types";
 import { t } from "../../i18n";
@@ -57,24 +58,32 @@ export function ListToolbar({
 }: ListToolbarProps) {
   const queryClient = useQueryClient();
   const createOverlayRef = useRef<OverlayPanel>(null);
+  const blockedCreateRef = useRef<HTMLSpanElement>(null);
 
   function createButton(): ReactNode {
     if (creatable === false) return null;
     if (config.list.createForm && createBlocked) {
       // No project to create in: the button stays visible but disabled (JSF's ToolbarCreateConfig
       // "unavailable" state), saying why.
+      // The reason is a Tooltip targeting a wrapper, not the Button's own `tooltip` + showOnDisabled:
+      // that moves the disabled button into a wrapper of its own outside React's tree, and the
+      // toolbar's next re-render (the count skeleton becoming the count chip) then fails with
+      // "insertBefore … is not a child of this node", taking the whole panel down. The wrapper is
+      // never disabled, so the Tooltip leaves the DOM alone (the button itself ignores the pointer,
+      // see main-panel.css, so the wrapper is what gets hovered). Always rendered, only switched
+      // off while loading, so the toolbar's structure doesn't change when the answer arrives.
       return (
-        <Button
-          label={t("list.create")}
-          icon="bi bi-plus-square"
-          disabled
-          tooltip={
-            createBlocked.loading
-              ? undefined
-              : t("list.cannotCreate", { type: config.labels.singular.toLowerCase() })
-          }
-          tooltipOptions={{ showOnDisabled: true, position: "left" }}
-        />
+        <>
+          <span ref={blockedCreateRef} className="entity-list-panel-create-blocked">
+            <Button label={t("list.create")} icon="bi bi-plus-square" disabled />
+          </span>
+          <Tooltip
+            target={blockedCreateRef}
+            content={t("list.cannotCreate", { type: config.labels.singular.toLowerCase() })}
+            position="left"
+            disabled={createBlocked.loading}
+          />
+        </>
       );
     }
     if (config.list.createForm) {

@@ -1935,3 +1935,9 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   font-size: 12px;
   color: var(--text-light);
 }
+
+/* The disabled « Créer » swallows mouse events, so its wrapper (which carries the tooltip) would
+   never see the hover. */
+.entity-list-panel-create-blocked .p-button {
+  pointer-events: none;
+}
