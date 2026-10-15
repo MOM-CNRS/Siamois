@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -47,6 +48,23 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
     long countByFieldId(@Param("customFieldId") Long customFieldId);
 
     Optional<FieldFormConfig> findByFormConfigAndField(FormConfig formConfig, CustomField field);
+
+    /**
+     * Turns a plain {@link FieldFormConfig} row into a {@link ConceptFieldFormConfig} in place, by
+     * adding its row to the subtype table. The JOINED subtype of an existing row can't be changed
+     * through the entity API, and deleting then re-inserting the row in one transaction makes Envers
+     * write two audit rows under the same (id, revision) key. The persistence context is flushed
+     * before and cleared after, so the next read of the row instantiates the subtype.
+     *
+     * @param customFieldId the custom field of the row to promote
+     * @param formConfigId  the form configuration of the row to promote
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            INSERT INTO field_form_config_concept (fk_custom_field_id, fk_form_config_id)
+            VALUES (:customFieldId, :formConfigId)
+            """, nativeQuery = true)
+    void promoteToConceptConfig(@Param("customFieldId") Long customFieldId, @Param("formConfigId") Long formConfigId);
 
     /**
      * The field's own restriction (branch/collection) for one specific value of the entity's

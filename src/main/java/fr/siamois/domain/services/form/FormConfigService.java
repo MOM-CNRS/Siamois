@@ -143,10 +143,11 @@ public class FormConfigService {
      * branch or collection is configured on it. Converting one JOINED-inheritance subtype into another
      * for the same row can't be done by just building a new object with the same id and saving it: the
      * old instance is still managed in this session under that identity, and Hibernate refuses to
-     * insert a second, different object under the same key ({@code NonUniqueObjectException}). Deleting
-     * and flushing the old row first removes it from the session's identity map, so the new
-     * {@code ConceptFieldFormConfig} (same id, values copied from the old row) can be saved cleanly by
-     * the caller.
+     * insert a second, different object under the same key ({@code NonUniqueObjectException}).
+     * Deleting the old row and saving a new one in the same transaction doesn't work either: Envers
+     * then writes a deletion and an insertion audit row under the same (id, revision) key. So the row
+     * is promoted in place, by adding it to the subtype table, and read back as a
+     * {@code ConceptFieldFormConfig}, which keeps all its attributes.
      */
     private @NonNull ConceptFieldFormConfig createOrGetFieldConfig(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept) {
         Optional<FieldFormConfig> opt = fieldFormConfigRepository.findByFormConfigAndField(formConfig, customFieldConcept);
@@ -158,9 +159,12 @@ public class FormConfigService {
         } else if (opt.get() instanceof ConceptFieldFormConfig cffc) {
             conceptFieldFormConfig = cffc;
         } else {
-            conceptFieldFormConfig = new ConceptFieldFormConfig(opt.get());
-            fieldFormConfigRepository.delete(opt.get());
-            fieldFormConfigRepository.flush();
+            fieldFormConfigRepository.promoteToConceptConfig(customFieldConcept.getId(), formConfig.getId());
+            conceptFieldFormConfig = fieldFormConfigRepository.findByFormConfigAndField(formConfig, customFieldConcept)
+                    .filter(ConceptFieldFormConfig.class::isInstance)
+                    .map(ConceptFieldFormConfig.class::cast)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Field config of field " + customFieldConcept.getId() + " was not promoted to a concept config"));
         }
         return conceptFieldFormConfig;
     }
