@@ -5,6 +5,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import lombok.Getter;
 
 /**
@@ -17,10 +18,11 @@ import lombok.Getter;
 @Getter
 public enum ConfigurableTable {
     UE("UE", RecordingUnit.TYPE_FIELD_CODE, "{NUM_UE:000}"),
-    MOBILIER("Mobilier", Specimen.CAT_FIELD, "{NUM_MOBILIER:000}"),
+    MOBILIER("Mobilier", Specimen.TYPE_FIELD, "{NUM_MOBILIER:000}"),
     PHASE("Phase", Phase.TYPE_FIELD, "{NUM_PHASE:000}"),
     CONTENANT("Contenant", Container.TYPE_FIELD, "{NUM_CONTAINER:000}"),
-    DOCUMENT("Document", Document.TYPE_FIELD, "DOC{NUM_DOCUMENT:0000}");
+    DOCUMENT("Document", Document.TYPE_FIELD, "DOC{NUM_DOCUMENT:0000}"),
+    STUDY("Etude", Study.TYPE_FIELD, "ETU{NUM_ETUDE:0000}");
 
     private final String label;
     private final String fieldCode;

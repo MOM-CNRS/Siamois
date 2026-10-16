@@ -12,6 +12,7 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -145,8 +146,8 @@ public class Document extends TraceableEntity implements ArkEntity {
 
     /** The category (arrêté du 7 février 2022), which also selects the document's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_category")
-    protected Concept category;
+    @JoinColumn(name = "fk_type")
+    protected Concept type;
 
     /** The document type, restricted per category by the category's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)
@@ -346,6 +347,18 @@ public class Document extends TraceableEntity implements ArkEntity {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Container> containers = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "study_document",
+            joinColumns = @JoinColumn(name = "fk_document_id"),
+            inverseJoinColumns = @JoinColumn(name = "fk_study_id")
+    )
+    @NotAudited
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Study> studies = new HashSet<>();
 
     public static final int MAX_FILE_NAME_LENGTH = 255;
     public static final int FILE_INTERNAL_CODE_LENGTH = 10;

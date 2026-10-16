@@ -190,7 +190,7 @@ class PlaceOpenApiServiceTest {
         ArgumentCaptor<SpatialUnitDTO> dtoCaptor = ArgumentCaptor.forClass(SpatialUnitDTO.class);
         verify(spatialUnitService).save(any(UserInfo.class), dtoCaptor.capture());
         assertThat(dtoCaptor.getValue().getName()).isEqualTo("Rue du Temple");
-        assertThat(dtoCaptor.getValue().getCategory().getId()).isEqualTo(42L);
+        assertThat(dtoCaptor.getValue().getType().getId()).isEqualTo(42L);
         verify(projectApiService).assertOrganizationInCallerScope(10L, SCOPE);
     }
 
@@ -719,7 +719,7 @@ class PlaceOpenApiServiceTest {
         existing.setCreatedByInstitution(institution);
         ConceptDTO category = new ConceptDTO();
         category.setId(42L);
-        existing.setCategory(category);
+        existing.setType(category);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
 
         PlaceResource mapped = new PlaceResource();

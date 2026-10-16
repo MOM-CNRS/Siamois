@@ -27,6 +27,13 @@ export function createEntityApi<TSummary, TDetail, TCreate>(
     patchAnswers: async (id: string | number, answers: Record<string, AnswerInputBody>): Promise<TDetail> =>
       (await apiFetch<DataBody<TDetail>>(`${base}/${id}`, { method: "PATCH", body: { answers } })).data,
 
+    // The header's save: a new identifier (the server checks it is unique in the project) and/or
+    // answers, in one request.
+    patch: async (
+      id: string | number,
+      body: { identifier?: string; answers?: Record<string, AnswerInputBody> },
+    ): Promise<TDetail> => (await apiFetch<DataBody<TDetail>>(`${base}/${id}`, { method: "PATCH", body })).data,
+
     create: async (body: TCreate): Promise<TDetail> =>
       (await apiFetch<DataBody<TDetail>>(base, { method: "POST", body: options.toCreateBody ? options.toCreateBody(body) : body })).data,
 

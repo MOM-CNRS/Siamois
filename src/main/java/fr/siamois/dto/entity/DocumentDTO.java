@@ -23,7 +23,7 @@ public class DocumentDTO extends AbstractEntityDTO {
     private Integer generatedNumber;
     private String otherIdentifiers;
     private ActionUnitSummaryDTO actionUnit;
-    private ConceptDTO category;
+    private ConceptDTO type;
     private ConceptDTO documentType;
     private Set<ConceptDTO> supportNatures;
     private String format;
@@ -68,7 +68,7 @@ public class DocumentDTO extends AbstractEntityDTO {
                 "generatedNumber",
                 "otherIdentifiers",
                 "actionUnit",
-                "category",
+                "type",
                 "documentType",
                 "supportNatures",
                 "format",

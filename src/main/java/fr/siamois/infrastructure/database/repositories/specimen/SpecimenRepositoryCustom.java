@@ -9,11 +9,11 @@ import org.springframework.data.domain.Pageable;
  */
 public interface SpecimenRepositoryCustom {
 
-    Page<Specimen> findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    Page<Specimen> findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             String orderByClause,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { FallbackRenderer, TextRenderer } from "./renderers";
+import { BooleanRenderer, FallbackRenderer, MeasurementRenderer, TextRenderer } from "./renderers";
 import type { FieldResource } from "./types";
 
 function field(overrides: Partial<FieldResource> = {}): FieldResource {
@@ -71,5 +71,59 @@ describe("TextRenderer", () => {
   it("uses a single-line input otherwise, including when the flag is absent", () => {
     expect(renderText({ isTextArea: false })).toContain("<input");
     expect(renderText({})).toContain("<input");
+  });
+});
+
+describe("BooleanRenderer", () => {
+  function renderBoolean(value: unknown, constraints?: FieldResource["constraints"]): string {
+    return renderToStaticMarkup(
+      <BooleanRenderer
+        field={field({ answerType: "BOOLEAN", constraints })}
+        value={value}
+        readOnly={false}
+        required={false}
+        onChange={() => {}}
+      />,
+    );
+  }
+
+  it("is a single checkbox when the field does not allow 'no answer'", () => {
+    const html = renderBoolean(true);
+    expect(html).toContain("p-checkbox");
+    expect(html).not.toContain("Non spécifié");
+  });
+
+  it("is a tri-state checkbox (yes / no / not specified) when the field allows 'no answer'", () => {
+    const html = renderBoolean(null, { allowNoAnswer: true });
+    expect(html).toContain("boolean-renderer-tristate");
+    expect(html).toContain("Non renseigné");
+  });
+});
+
+describe("MeasurementRenderer", () => {
+  function renderMeasurement(constraints: FieldResource["constraints"], value: unknown = null): string {
+    return renderToStaticMarkup(
+      <MeasurementRenderer
+        field={field({ answerType: "MEASUREMENT", constraints })}
+        value={value}
+        readOnly={false}
+        required={false}
+        onChange={() => {}}
+      />,
+    );
+  }
+
+  it("shows a single unit in a disabled selector", () => {
+    const html = renderMeasurement({ unit: "m²" });
+    expect(html).toContain("p-dropdown");
+    expect(html).toMatch(/<div class="[^"]*p-dropdown[^"]*"[^>]*data-p-disabled="true"/);
+    expect(html).toContain("m²");
+  });
+
+  it("lets the user pick among several units, starting from the one the answer was entered in", () => {
+    const html = renderMeasurement({ unit: "m²", units: ["m²", "ha"] }, { numericValue: 3, symbol: "ha" });
+    expect(html).toContain("p-dropdown");
+    expect(html).toContain("ha");
+    expect(html).not.toMatch(/<div class="[^"]*p-dropdown[^"]*"[^>]*data-p-disabled="true"/);
   });
 });

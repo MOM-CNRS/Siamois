@@ -136,7 +136,8 @@ class ProfileServiceTest {
             PermissionConstants.INSTANCE_EDIT_PHASES,
             PermissionConstants.INSTANCE_EDIT_FINDS,
             PermissionConstants.INSTANCE_EDIT_CONTAINERS,
-            PermissionConstants.INSTANCE_EDIT_DOCUMENTS);
+            PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+            PermissionConstants.INSTANCE_EDIT_STUDIES);
 
     private void stubPermissionLookupByCode() {
         when(permissionRepository.findByCode(anyString()))
@@ -225,7 +226,8 @@ class ProfileServiceTest {
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_FINDS),
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_PHASES),
                 permissionWithCode(PermissionConstants.PROJECT_EDIT_CONTAINERS),
-                permissionWithCode(PermissionConstants.PROJECT_EDIT_DOCUMENTS)));
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+                permissionWithCode(PermissionConstants.PROJECT_EDIT_STUDIES)));
         stubPermissionLookupByCode();
         when(profileRepository.findByCodeAndInstitutionIdAndActionUnitId(
                 ProfileConstants.PROJECT_MEMBER, institutionDTO.getId(), actionUnitDTO.getId()))
@@ -291,6 +293,7 @@ class ProfileServiceTest {
         assertEquals(1, updated);
         Set<String> codes = member.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet());
         assertTrue(codes.contains(PermissionConstants.PROJECT_EDIT_DOCUMENTS));
+        assertTrue(codes.contains(PermissionConstants.PROJECT_EDIT_STUDIES));
         assertTrue(codes.contains("PROJECT_CUSTOM"));
         verify(profileRepository).save(member);
     }
@@ -304,7 +307,8 @@ class ProfileServiceTest {
                 permission(PermissionConstants.PROJECT_EDIT_FINDS),
                 permission(PermissionConstants.PROJECT_EDIT_PHASES),
                 permission(PermissionConstants.PROJECT_EDIT_CONTAINERS),
-                permission(PermissionConstants.PROJECT_EDIT_DOCUMENTS)))).build();
+                permission(PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+                permission(PermissionConstants.PROJECT_EDIT_STUDIES)))).build();
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of(manager));
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of());
 

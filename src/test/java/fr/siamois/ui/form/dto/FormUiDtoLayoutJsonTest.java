@@ -53,6 +53,22 @@ class FormUiDtoLayoutJsonTest {
     }
 
     @Test
+    void serialize_emitsTheUnitsAFormConfigurationOffersForAMeasurement() throws Exception {
+        JsonNode column = firstColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(field(42))
+                .units(new fr.siamois.domain.models.form.config.FieldUnits(2L, List.of(
+                        new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(1L, "m²"),
+                        new fr.siamois.domain.models.form.config.FieldUnits.UnitRef(2L, "ha")))).build());
+
+        assertThat(column.get("units").get("default").asText()).isEqualTo("ha");
+        assertThat(column.get("units").get("symbols")).extracting(JsonNode::asText).containsExactly("m²", "ha");
+    }
+
+    @Test
+    void serialize_leavesOutUnitsWhenThereAreNone() throws Exception {
+        assertThat(firstColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).field(field(42)).build()).has("units")).isFalse();
+    }
+
+    @Test
     void serialize_marksAHiddenColumn() throws Exception {
         JsonNode column = firstColumn(new CustomColUiDto.Builder().width(ColumnWidth.STANDARD).hidden(true).field(field(42)).build());
 

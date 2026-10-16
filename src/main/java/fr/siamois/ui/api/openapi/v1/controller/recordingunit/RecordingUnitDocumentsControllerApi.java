@@ -59,7 +59,7 @@ public class RecordingUnitDocumentsControllerApi {
     public ResponseEntity<DocumentResponse> createRecordingUnitDocument(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) .",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @RequestParam("title") String title,
@@ -101,7 +101,7 @@ public class RecordingUnitDocumentsControllerApi {
     public ResponseEntity<DocumentListResponse> getDocuments(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @RequestParam(defaultValue = "0") int offset,

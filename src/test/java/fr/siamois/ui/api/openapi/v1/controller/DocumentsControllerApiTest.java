@@ -197,7 +197,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(get("/api/v1/documents/100/file"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .andExpect(jsonPath("$.error").value("not_found"));
     }
 
     @Test
@@ -231,7 +231,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(delete("/api/v1/documents/99"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404));
+                .andExpect(jsonPath("$.error").value("not_found"));
     }
 
     @Test
@@ -315,7 +315,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(post("/api/v1/documents")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                        .content("{\"projectId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value("55"));
     }
@@ -329,7 +329,7 @@ class DocumentsControllerApiTest {
 
         mockMvc.perform(post("/api/v1/documents")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"projectId\":\"1\",\"categoryId\":\"2\"}"))
+                        .content("{\"projectId\":\"1\",\"typeId\":\"2\"}"))
                 .andExpect(status().isForbidden());
     }
 

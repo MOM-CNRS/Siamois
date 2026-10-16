@@ -37,6 +37,7 @@
         </script>
 
         <main class="container-lg">
+            <div class="settings-header">
             <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
@@ -44,6 +45,7 @@
                     <p:menuitem value="#{langBean.msg('common.label.thesaurus')}"/>
                 </p:breadCrumb>
             </form:csrfform>
+            </div>
 
             <settingscomp:fieldValue
                     title="#{langBean.msg('organisationSettings.thesaurus.title', institutionThesaurusSettingsBean.institution.name)}"

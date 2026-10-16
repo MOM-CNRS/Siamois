@@ -137,4 +137,9 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     @Query("UPDATE Person p SET p.password = :password, p.passToModify = false WHERE p.id = :id")
     int updatePasswordById(@Param("id") Long id,
                            @Param("password") String password);
+
+    @Modifying
+    @Query("UPDATE Person p SET p.email = :email WHERE p.id = :id")
+    int updateEmailById(@Param("id") Long id,
+                        @Param("email") String email);
 }

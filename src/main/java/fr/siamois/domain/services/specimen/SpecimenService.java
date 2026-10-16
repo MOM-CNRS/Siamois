@@ -174,14 +174,14 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setCollectionDate(specimen.getCollectionDate());
         managedSpecimen.setWeight(withResolvedUnit(specimen.getWeight()));
         managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
-        managedSpecimen.setValidated(specimen.getValidated());
+        managedSpecimen.setValidationStatus(specimen.getValidationStatus());
         managedSpecimen.setValidatedAt(specimen.getValidatedAt());
         managedSpecimen.setValidatedBy(specimen.getValidatedBy());
         managedSpecimen.setTaq(specimen.getTaq());
         managedSpecimen.setTpq(specimen.getTpq());
         managedSpecimen.setComments(specimen.getComments());
         managedSpecimen.setOtherIdentifier(specimen.getOtherIdentifier());
-        managedSpecimen.setCategory(specimen.getCategory());
+        managedSpecimen.setType(specimen.getType());
         managedSpecimen.setIsolationNumber(specimen.getIsolationNumber());
         managedSpecimen.setNumberOfElements(specimen.getNumberOfElements());
         managedSpecimen.setActionUnit(specimen.getActionUnit());
@@ -259,7 +259,7 @@ public class SpecimenService implements ArkEntityService {
                 .entityName("specimen")
                 .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
                 .actionUnit(this::resolveIdentifierActionUnit)
-                .typeId(specimen -> specimen.getCategory() == null ? null : specimen.getCategory().getId())
+                .typeId(specimen -> specimen.getType() == null ? null : specimen.getType().getId())
                 .displayValue("NUM_PARENT", specimen -> {
                     Specimen parent = deterministicParent(specimen);
                     return parent == null ? null : parent.getIdentifier();
@@ -316,7 +316,7 @@ public class SpecimenService implements ArkEntityService {
         attachPersonIfPresent(source.getCreatedBy(), managed::setCreatedBy);
         attachPersonIfPresent(source.getValidatedBy(), managed::setValidatedBy);
         attachInstitutionIfPresent(source.getCreatedByInstitution(), managed::setCreatedByInstitution);
-        attachConceptIfPresent(source.getCategory(), managed::setCategory);
+        attachConceptIfPresent(source.getType(), managed::setType);
         attachConceptIfPresent(source.getNormalizedInterpretation(), managed::setNormalizedInterpretation);
         attachConceptIfPresent(source.getChronologicalAttribution(), managed::setChronologicalAttribution);
     }
@@ -440,37 +440,23 @@ public class SpecimenService implements ArkEntityService {
     }
 
     /**
-     * Spécimen accessible par clé API : {@code specimen_id} numérique ou {@code full_identifier}.
+     * Spécimen accessible par son {@code specimen_id} (seule clé de l'API) ; vide si l'identifiant n'est pas
+     * numérique ou si le spécimen n'est pas dans une institution accessible.
      */
     @Transactional(readOnly = true)
-    public Optional<SpecimenDTO> findAccessibleByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+    public Optional<SpecimenDTO> findAccessibleByKey(String id, Set<Long> accessibleInstitutionIds) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return Optional.empty();
         }
-        String key = idOrKey == null ? "" : idOrKey.trim();
-        if (key.isEmpty()) {
+        String key = id == null ? "" : id.trim();
+        if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
             return Optional.empty();
         }
-
-        if (key.chars().allMatch(Character::isDigit)) {
-            try {
-                long numericId = Long.parseLong(key);
-                Optional<SpecimenDTO> byPk = resolveAccessibleById(numericId, accessibleInstitutionIds);
-                if (byPk.isPresent()) {
-                    return byPk;
-                }
-                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-            } catch (NumberFormatException e) {
-                return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-            }
+        try {
+            return resolveAccessibleById(Long.parseLong(key), accessibleInstitutionIds);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
         }
-        return findAccessibleByFullIdentifier(key, accessibleInstitutionIds);
-    }
-
-    private Optional<SpecimenDTO> findAccessibleByFullIdentifier(String fullIdentifier,
-                                                                 Set<Long> accessibleInstitutionIds) {
-        return specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
-                .map(specimenMapper::convert);
     }
 
     /**
@@ -478,23 +464,23 @@ public class SpecimenService implements ArkEntityService {
      *
      * @param institutionId  the ID of the institution to filter by
      * @param fullIdentifier the string to search for in the full identifier of the specimens
-     * @param categoryIds    the IDs of the categories to filter by
+     * @param typeIds    the IDs of the categories to filter by
      * @param global         the global search string to filter by
      * @param langCode       the language code for localization
      * @param pageable       the pagination information
      * @return a page of specimens matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpecimenDTO> findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long institutionId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, fullIdentifier, categoryIds, global, langCode, pageable
+        Page<Specimen> specimenPage = specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
+                institutionId, fullIdentifier, typeIds, global, langCode, pageable
         );
 
         return specimenPage.map(specimenMapper::convert);
@@ -507,46 +493,46 @@ public class SpecimenService implements ArkEntityService {
      * @param institutionId   the ID of the institution to filter by
      * @param recordingUnitId the ID of the recording unit to filter by
      * @param fullIdentifier  the string to search for in the full identifier of the specimens
-     * @param categoryIds     the IDs of the categories to filter by
+     * @param typeIds     the IDs of the categories to filter by
      * @param global          the global search string to filter by
      * @param langCode        the language code for localization
      * @param pageable        the pagination information
      * @return a page of specimens matching the criteria
      */
     @Transactional(readOnly = true)
-    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             Pageable pageable
     ) {
         return doFindAllByInstitutionAndRecordingUnit(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, null, pageable);
+                institutionId, recordingUnitId, fullIdentifier, typeIds, global, langCode, null, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             String apiSortParam,
             Pageable pageable
     ) {
         return doFindAllByInstitutionAndRecordingUnit(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, apiSortParam, pageable);
+                institutionId, recordingUnitId, fullIdentifier, typeIds, global, langCode, apiSortParam, pageable);
     }
 
     private Page<SpecimenDTO> doFindAllByInstitutionAndRecordingUnit(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             String apiSortParam,
@@ -557,24 +543,24 @@ public class SpecimenService implements ArkEntityService {
                 : SpecimenFindSortSql.fromSpringSort(pageable.getSort());
         Pageable pageWithoutSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return specimenRepository
-                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                        institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode, orderBy,
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
+                        institutionId, recordingUnitId, fullIdentifier, typeIds, global, langCode, orderBy,
                         pageWithoutSort)
                 .map(specimenMapper::convert);
     }
 
 
     @Transactional(readOnly = true)
-    public Page<SpecimenDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllBySpatialUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long spatialUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                spatialUnitId, fullIdentifier, categoryIds, global, langCode, pageable
+        Page<Specimen> specimenPage = specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
+                spatialUnitId, fullIdentifier, typeIds, global, langCode, pageable
         );
 
         return specimenPage.map(specimenMapper::convert);
@@ -582,16 +568,16 @@ public class SpecimenService implements ArkEntityService {
 
 
     @Transactional(readOnly = true)
-    public Page<SpecimenDTO> findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<SpecimenDTO> findAllByActionUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long actionUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             Pageable pageable
     ) {
-        Page<Specimen> specimenPage = specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                actionUnitId, fullIdentifier, categoryIds, global, langCode, pageable
+        Page<Specimen> specimenPage = specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
+                actionUnitId, fullIdentifier, typeIds, global, langCode, pageable
         );
 
         return specimenPage.map(specimenMapper::convert);
@@ -678,7 +664,7 @@ public class SpecimenService implements ArkEntityService {
         Specimen unit = specimenRepository.findById(id)
                 .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with id: " + id));
 
-        unit.setValidated(unit.getValidated().nextInCycle());
+        unit.setValidationStatus(unit.getValidationStatus().nextInCycle());
 
         return specimenMapper.convert(specimenRepository.save(unit));
     }

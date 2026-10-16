@@ -84,8 +84,8 @@ public class ProjectDocumentsControllerApi {
     @GetMapping()
     @Operation(
             summary = "Documents d'un projet",
-            description = "Documents du projet (colonne de rattachement). Même clé de projet que GET /api/v1/projects/{id} "
-                    + "(id numérique, fullIdentifier, identifiant court). Sans `limit` : tous les documents, sans pagination "
+            description = "Documents du projet (colonne de rattachement). Même identifiant de projet que GET /api/v1/projects/{id}. "
+                    + "Sans `limit` : tous les documents, sans pagination "
                     + "(contrat historique du mobile). Avec `limit` : liste paginée (offset, limit), tri (sort : identifier, "
                     + "title, creationTime, id ; défaut identifier:asc), recherche sur identifier (search), filtres f.<clé> par "
                     + "colonne et projection `fields` dans answers."

@@ -22,7 +22,7 @@ describe("recordingUnitEntityConfig", () => {
   it("loads the organization's aggregate catalog for the organization-wide list", async () => {
     mockedApiFetch.mockResolvedValueOnce({
       fields: { "12": { id: "12" } },
-      _default: { tableColumns: [{ columnId: "-306", fieldId: "-306", visible: true, order: 0 }] },
+      tableColumns: [{ columnId: "-306", fieldId: "-306", visible: true, order: 0 }],
       data: [],
     });
     const catalog = await recordingUnitEntityConfig.list.schema!.load({ organizationId: 7 });

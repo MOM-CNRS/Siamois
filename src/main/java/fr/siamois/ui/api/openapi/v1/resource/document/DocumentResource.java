@@ -83,7 +83,7 @@ public class DocumentResource extends DocumentResourceIdentifier implements Book
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "Statut de validation : INCOMPLETE, COMPLETE, VALIDATED, CANCELLED")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @Override
     public void setBookmarked(boolean bookmarked) {

@@ -48,7 +48,7 @@ public class ContainerAnswersProjector {
     public static final String FIELDS_ALL = "all";
 
     private static final String CONCEPTS = "concepts";
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String SPATIAL_UNITS = "places";
 
     private static final Map<String, CustomField> FIELDS_BY_ID = indexDetailsFormFields();
 

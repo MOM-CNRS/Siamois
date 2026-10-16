@@ -167,7 +167,7 @@ public abstract class ContainerForm {
     public static List<SystemFieldSpec> systemFields() {
         return List.of(
             SystemFieldSpec.hiddenReadOnly(identifierField),
-            SystemFieldSpec.of(typeField),
+            SystemFieldSpec.hidden(typeField),
             SystemFieldSpec.of(spatialUnitField),
             SystemFieldSpec.hiddenReadOnly(actionUnitField),
             SystemFieldSpec.readOnly(findsField),

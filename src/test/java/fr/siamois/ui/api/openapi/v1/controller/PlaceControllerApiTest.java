@@ -194,7 +194,7 @@ class PlaceControllerApiTest {
 
     @Test
     void getFinds_notImplemented_returns501() throws Exception {
-        mockMvc.perform(get("/api/v1/places/5/mobiliers")
+        mockMvc.perform(get("/api/v1/places/5/finds")
                         .param("offset", "0")
                         .param("limit", "10"))
                 .andExpect(status().isNotImplemented());

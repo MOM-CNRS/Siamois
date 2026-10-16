@@ -16,21 +16,13 @@ import { t } from "../../i18n";
 // one (it's already default-visible in ActionUnitTableColumnDefaults).
 export const projectColumns: ColumnDef<ProjectSummary>[] = [
   {
-    // JSF's merged statusIdActionsCol: EntityListPanel puts the row's validation state next to the
-    // navigation chip, in this one column. `render` returns the
-    // chip's LABEL — EntityListPanel wraps it in the chip itself, using the entity's own icon.
-    key: "fullIdentifier",
-    header: t("common.identifier"),
-    sortable: true,
-    filterable: true,
-    identifier: true,
-    render: (row) => row.fullIdentifier || row.identifier,
-  },
-  {
+    // The merged status | chip | actions column (frozen, the one that opens the fiche) shows the
+    // project's NAME in its chip, not its identifier (which stays available as a catalog column).
     key: "name",
     header: t("common.name"),
     sortable: true,
     filterable: true,
+    identifier: true,
     render: (row) => row.name,
   },
   {

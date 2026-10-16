@@ -39,7 +39,7 @@ public class RecordingUnitFindsControllerApi {
     private final FindListProjectionService findListProjectionService;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
-    @GetMapping("/{id}/mobiliers")
+    @GetMapping("/{id}/finds")
     @Operation(
             summary = "Liste des mobiliers d'une unité d'enregistrement",
             description = "Spécimens liés à l'UE (table specimen, fk_recording_unit_id). "
@@ -59,7 +59,7 @@ public class RecordingUnitFindsControllerApi {
     public ResponseEntity<FindListResponse> getFinds(
             @Parameter(
                     description = "Clé d'UE : identifiant numérique (recording_unit_id) ou full_identifier.",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @RequestParam(defaultValue = "0") int offset,
@@ -85,7 +85,7 @@ public class RecordingUnitFindsControllerApi {
         Page<FindResource> page = result.page();
         RecordingUnitDTO ru = result.recordingUnit();
 
-        // Same enrichment as GET /projects/{id}/mobiliers: one _permissions for the page (the RU's
+        // Same enrichment as GET /projects/{id}/finds: one _permissions for the page (the RU's
         // project), the navigation URI, one bookmark query.
         boolean canEdit = ru.getActionUnit() != null
                 && projectApiService.canEditFindsForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);

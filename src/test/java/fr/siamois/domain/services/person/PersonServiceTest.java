@@ -792,6 +792,53 @@ class PersonServiceTest {
         verifyNoInteractions(personRepository);
     }
 
+    @Test
+    void checkNewEmail_acceptsFreeValidAddress() {
+        when(personRepository.findByEmailIgnoreCase("free@mail.com")).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> personService.checkNewEmail("free@mail.com"));
+    }
+
+    @Test
+    void checkNewEmail_rejectsInvalidFormat() {
+        assertThrows(InvalidEmailException.class, () -> personService.checkNewEmail("not-an-email"));
+    }
+
+    @Test
+    void checkNewEmail_rejectsAddressAlreadyUsed() {
+        when(personRepository.findByEmailIgnoreCase("used@mail.com")).thenReturn(Optional.of(new Person()));
+
+        assertThrows(EmailAlreadyExistException.class, () -> personService.checkNewEmail("used@mail.com"));
+    }
+
+    @Test
+    void checkNewEmail_wrapsOtherVerifierFailures() throws Exception {
+        EmailVerifier failing = mock(EmailVerifier.class);
+        doThrow(new IllegalStateException("boom")).when(failing).verify(any());
+        PersonService service = new PersonService(
+                personRepository, passwordEncoder, List.of(failing), List.of(passwordVerifier),
+                personSettingsRepository, institutionService, langService,
+                conversionService, personMapper, pendingPersonRepository);
+
+        assertThrows(InvalidEmailException.class, () -> service.checkNewEmail("a@b.com"));
+    }
+
+    @Test
+    void updateEmail_savesNewAddress() throws InvalidEmailException {
+        when(personRepository.findByEmailIgnoreCase("free@mail.com")).thenReturn(Optional.empty());
+
+        personService.updateEmail(1L, "free@mail.com");
+
+        verify(personRepository).updateEmailById(1L, "free@mail.com");
+    }
+
+    @Test
+    void updateEmail_doesNotSaveInvalidAddress() {
+        assertThrows(InvalidEmailException.class, () -> personService.updateEmail(1L, "nope"));
+
+        verify(personRepository, never()).updateEmailById(anyLong(), any());
+    }
+
     /**
      * Stubs the {@code like(unaccent(lower(root.property)), pattern)} chain built by
      * {@link fr.siamois.infrastructure.database.repositories.specs.PersonSpec} and returns the resulting predicate.

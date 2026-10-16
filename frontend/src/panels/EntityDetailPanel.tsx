@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BreadCrumb } from "primereact/breadcrumb";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
 import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
@@ -9,9 +8,11 @@ import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
+import { EntityBreadcrumbTrail } from "../components/EntityBreadcrumbTrail";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
 import { useBridge } from "./bridge";
+import { PaneStateScope, usePaneState } from "./paneState";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
 import { DetailBodySkeleton } from "../components/DetailSkeleton";
@@ -99,7 +100,7 @@ export function EntityDetailPanel({
   // index would silently reset to 0 on the entity that follows the loading tick. This component
   // itself never unmounts across that tick (same type, same position in the tree), so this state
   // survives it — the fiche stays on whichever tab you were looking at, same as JSF's `?tab=N`.
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [activeTabIndex, setActiveTabIndex] = usePaneState("activeTab", 0);
   // ...but ONLY within the same entity type: retargeting the overview to a DIFFERENT entity type
   // (a relationTab row click — "recording units" inside a project's fiche — opening a recording
   // unit in the overview in its place) can change how many tabs even exist, so an index carried
@@ -128,6 +129,14 @@ export function EntityDetailPanel({
   const { data: siblings } = useQuery({
     ...siblingsQuery(config!, entityType, entityId, organizationId, listContext),
     enabled: config?.api.siblings != null,
+  });
+
+  // The fil d'Ariane (project → parents → fiche), apart from the detail for the same reason: a slow
+  // lookup leaves the home + « Tous les … » crumbs in place instead of blocking the fiche.
+  const { data: breadcrumbs } = useQuery({
+    queryKey: queryKeys.entityBreadcrumbs(entityType, entityId),
+    queryFn: () => config!.api.breadcrumbs!(entityId),
+    enabled: config?.api.breadcrumbs != null,
   });
 
   // The titlebar's entity actions (JSF: create/duplicate/settings) — computed from this entity's
@@ -249,6 +258,7 @@ export function EntityDetailPanel({
   const afterSave = () => {
     void refetch();
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.entityBreadcrumbs(entityType, entityId) });
   };
   const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId };
 
@@ -260,7 +270,7 @@ export function EntityDetailPanel({
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
   const settingsProjectId = config.detail.settingsProjectId?.(data);
   // Every entity resource carries its TraceableEntity status and the validator right.
-  const validation = data as { validated?: string | null; _permissions?: { canValidate?: boolean } };
+  const validation = data as { validationStatus?: string | null; _permissions?: { canValidate?: boolean } };
   const entityActions: PanelActions = {
     create: canEdit && config.list.createForm ? openCreate : undefined,
     duplicate:
@@ -287,12 +297,12 @@ export function EntityDetailPanel({
           title={
             <>
               {/* validationButton.xhtml's place in the JSF headers, now on every fiche that has a status. */}
-              {validation.validated !== undefined && (
+              {validation.validationStatus !== undefined && (
                 <ValidationStatusButton
                   entityType={entityType}
                   collectionPath={config.collectionPath}
                   entityId={entityId}
-                  status={validation.validated}
+                  status={validation.validationStatus}
                   canEdit={canEdit}
                   canValidate={writeMode && validation._permissions?.canValidate === true}
                 />
@@ -311,14 +321,13 @@ export function EntityDetailPanel({
           which the registry already knows, so this needs no endpoint. An entity whose panel
           overrides that method with real parents (Specimen, Phase, Container) will need its own
           crumbs from config; it gets this two-item base until then. */}
-      <BreadCrumb
-        className="panel-bc"
+      <EntityBreadcrumbTrail
         // createHomeItem: icon only, no label, and a real redirect to the dashboard
         // (FlowBean.redirectToDashboard → /focus/L3dlbGNvbWU=, the base64url of "/welcome"). Not
         // routed through onNavigate: there is no "home" entity type for the registry to resolve,
         // and the dashboard is a JSF page, not one of the three React panel kinds.
         home={{ icon: "bi bi-house", url: apiUrl("/focus/L3dlbGNvbWU=") }}
-        model={[
+        fallback={[
           {
             // ActionUnitPanel.createRootTypeItem: "Tous les projets", linking to the entity's list.
             label: config.labels.all ?? t("detail.allOf", { plural: config.labels.plural.toLowerCase() }),
@@ -326,6 +335,8 @@ export function EntityDetailPanel({
             command: onNavigate ? () => onNavigate(entityType) : undefined,
           },
         ]}
+        breadcrumbs={breadcrumbs}
+        onNavigate={onNavigate}
       />
       <CreateEntityOverlay
         entityType={entityType}
@@ -363,7 +374,7 @@ export function EntityDetailPanel({
               }
             >
               <PaneErrorBoundary label={t("detail.tabError", { label: tab.label })} resetKey={`${entityType}:${entityId}`}>
-                {tab.render(data, helpers)}
+                <PaneStateScope name={`tab:${tab.key}`}>{tab.render(data, helpers)}</PaneStateScope>
               </PaneErrorBoundary>
             </TabPanel>
           );

@@ -36,7 +36,7 @@ afterEach(() => {
 
 describe("ValidationStatusCell", () => {
   it("is the status picker in write mode for a row the user may edit", () => {
-    render(true, { id: 1, validated: "COMPLETE", _permissions: { canEdit: true } });
+    render(true, { id: 1, validationStatus: "COMPLETE", _permissions: { canEdit: true } });
     const button = container.querySelector("button.status-button");
     expect(button).not.toBeNull();
     expect(button!.classList.contains("status-button-compact")).toBe(true);
@@ -44,22 +44,22 @@ describe("ValidationStatusCell", () => {
   });
 
   it("is the read-only badge out of write mode", () => {
-    render(false, { id: 1, validated: "COMPLETE", _permissions: { canEdit: true, canValidate: true } });
+    render(false, { id: 1, validationStatus: "COMPLETE", _permissions: { canEdit: true, canValidate: true } });
     expect(container.querySelector("button")).toBeNull();
     expect(container.querySelector(".validation-status-badge.complete")).not.toBeNull();
   });
 
   it("shows each state's own icon, and falls back to en cours when the row has none", () => {
-    render(false, { id: 1, validated: "VALIDATED" });
+    render(false, { id: 1, validationStatus: "VALIDATED" });
     expect(container.querySelector(".validation-status-badge.bi-check-circle")).not.toBeNull();
-    render(false, { id: 1, validated: "CANCELLED" });
+    render(false, { id: 1, validationStatus: "CANCELLED" });
     expect(container.querySelector(".validation-status-badge.cancelled")).not.toBeNull();
-    render(false, { id: 1, validated: null });
+    render(false, { id: 1, validationStatus: null });
     expect(container.querySelector(".validation-status-badge.incomplete")).not.toBeNull();
   });
 
   it("is the read-only badge for a row the user has no right on", () => {
-    render(true, { id: 1, validated: "VALIDATED", _permissions: { canEdit: false } });
+    render(true, { id: 1, validationStatus: "VALIDATED", _permissions: { canEdit: false } });
     expect(container.querySelector("button")).toBeNull();
     expect(container.querySelector(".validation-status-badge.validated")).not.toBeNull();
   });

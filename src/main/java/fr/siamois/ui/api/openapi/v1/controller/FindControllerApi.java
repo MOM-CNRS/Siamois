@@ -73,7 +73,7 @@ public class FindControllerApi {
     public ResponseEntity<FindFormResponse> getById(
             @Parameter(
                     description = "Clé du mobilier : identifiant numérique",
-                    schema = @Schema(type = "string", example = "INST-PROJ-UE42-M1")
+                    schema = @Schema(type = "string", example = "42")
             )
             @PathVariable("id") String id,
             @Parameter(description = "Langue préférée pour les libellés de champs (première entrée utilisée).")
@@ -119,7 +119,7 @@ public class FindControllerApi {
     @Operation(
             summary = "Modifier partiellement un mobilier",
             description = "Met à jour les réponses de formulaire présentes dans `fieldAnswers` "
-                    + "(mêmes clés que sur GET /mobiliers/{id}). "
+                    + "(mêmes clés que sur GET /finds/{id}). "
                     + "Identifiant numérique du spécimen (`specimen_id`)."
     )
     @ApiResponses(value = {

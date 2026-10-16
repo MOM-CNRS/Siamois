@@ -25,7 +25,7 @@ const PLACE_TYPE_FIELD: FieldResource = {
   label: t("common.type"),
   answerType: "SELECT_ONE_FROM_FIELD_CODE",
   isSystemField: true,
-  valueBinding: "category",
+  valueBinding: "type",
   fieldCode: "SIASU.TYPE",
 };
 

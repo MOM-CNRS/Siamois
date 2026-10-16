@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    "category" is now "type" everywhere (finds, documents, places). Liquibase runs BEFORE Hibernate's
+    ddl-auto: update, which would otherwise add the new column next to the old one and leave the data behind.
+
+    1. The foreign-key columns of the three tables (and their Envers _aud tables) are renamed.
+    2. The persisted rows of the system fields keep the label and binding they were created with, and the
+       field configuration screen matches them by label + binding: they are brought up to date, by id.
+    On a fresh database none of this exists: every statement is guarded.
+    -->
+
+    <changeSet id="2026.10.09-2-category-to-type" author="Gregory Bliault" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                rename_spec text[];
+            BEGIN
+                FOREACH rename_spec SLICE 1 IN ARRAY ARRAY[
+                    ARRAY['specimen', 'fk_specimen_category', 'fk_specimen_type'],
+                    ARRAY['specimen_aud', 'fk_specimen_category', 'fk_specimen_type'],
+                    ARRAY['siamois_document', 'fk_category', 'fk_type'],
+                    ARRAY['siamois_document_aud', 'fk_category', 'fk_type'],
+                    ARRAY['spatial_unit', 'fk_concept_category_id', 'fk_concept_type_id'],
+                    ARRAY['spatial_unit_aud', 'fk_concept_category_id', 'fk_concept_type_id']
+                ]
+                LOOP
+                    IF EXISTS (SELECT 1 FROM information_schema.columns
+                               WHERE table_schema = 'public' AND table_name = rename_spec[1]
+                                 AND column_name = rename_spec[2])
+                       AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_schema = 'public' AND table_name = rename_spec[1]
+                                         AND column_name = rename_spec[3]) THEN
+                        EXECUTE format('ALTER TABLE %I RENAME COLUMN %I TO %I',
+                                       rename_spec[1], rename_spec[2], rename_spec[3]);
+                    END IF;
+                END LOOP;
+            END $$;
+
+            -- -409: find type, -201: place type, -101: project type (it shared the find label), -704: document type
+            UPDATE custom_field SET label = 'specimen.field.type', value_binding = 'type'
+            WHERE custom_field_id IN (-409, -201) AND is_system_field;
+            UPDATE custom_field SET label = 'specimen.field.type'
+            WHERE custom_field_id = -101 AND is_system_field;
+            UPDATE custom_field SET label = 'document.field.type', value_binding = 'type'
+            WHERE custom_field_id = -704 AND is_system_field;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

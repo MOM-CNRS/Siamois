@@ -1,10 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -28,11 +27,14 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
 import fr.siamois.domain.services.form.rules.RuleValues;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.domain.models.form.config.FieldUnits;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -85,8 +87,6 @@ public class FieldAnswerPatchService {
     private final PersonMapper personMapper;
     private final ActionUnitRepository actionUnitRepository;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final ActionCodeRepository actionCodeRepository;
-    private final ActionCodeMapper actionCodeMapper;
     private final SpatialUnitRepository spatialUnitRepository;
     private final SpatialUnitSummaryMapper spatialUnitSummaryMapper;
     private final RecordingUnitRepository recordingUnitRepository;
@@ -98,6 +98,7 @@ public class FieldAnswerPatchService {
     private final SpecimenRepository specimenRepository;
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final UnitDefinitionMapper unitDefinitionMapper;
+    private final UnitDefinitionRepository unitDefinitionRepository;
 
     /**
      * @param dto           the entity DTO to write system fields onto
@@ -250,7 +251,7 @@ public class FieldAnswerPatchService {
             return null;
         }
         try {
-            return new TypedValue(coerce(field, raw, patch.projectId));
+            return new TypedValue(coerce(field, raw, patch.projectId, unitsOfColumn(patch.effectiveForm, field)));
         } catch (InvalidAnswerValueException e) {
             if (patch.strict) throw e;
             log.warn("Valeur ignorée pour le champ {} : {}", field.getId(), e.getReason());
@@ -373,10 +374,10 @@ public class FieldAnswerPatchService {
         Object f = Hibernate.unproxy(field);
         return isMultiple(field)
                 || f instanceof CustomFieldText || f instanceof CustomFieldInteger || f instanceof CustomFieldDecimal
-                || f instanceof CustomFieldDateTime || f instanceof CustomFieldMeasurement
+                || f instanceof CustomFieldDateTime || f instanceof CustomFieldMeasurement || f instanceof CustomFieldBoolean
                 || f instanceof CustomFieldSelectOneFromFieldCode || f instanceof CustomFieldSelectOne
                 || f instanceof CustomFieldSelectOnePerson || f instanceof CustomFieldSelectOneActionUnit
-                || f instanceof CustomFieldSelectOneActionCode || f instanceof CustomFieldSelectOneSpatialUnit
+                || f instanceof CustomFieldSelectOneSpatialUnit
                 || f instanceof CustomFieldSelectOneRecordingUnit;
     }
 
@@ -447,9 +448,17 @@ public class FieldAnswerPatchService {
     private static final Object UNHANDLED = new Object();
 
     private Object coerce(CustomField field, Object raw, Long projectId) {
+        return coerce(field, raw, projectId, null);
+    }
+
+    /**
+     * @param columnUnits the units the form configuration offers a measurement, null for the
+     *                    field's own: see {@link #unitOf}
+     */
+    private Object coerce(CustomField field, Object raw, Long projectId, FieldUnits columnUnits) {
         Object f = Hibernate.unproxy(field);
         try {
-            Object value = coerceScalar(f, raw);
+            Object value = coerceScalar(f, raw, columnUnits);
             if (value == UNHANDLED) value = coerceReference(f, raw, projectId);
             if (value != UNHANDLED) return value;
         } catch (NumberFormatException | DateTimeParseException e) {
@@ -461,12 +470,13 @@ public class FieldAnswerPatchService {
     }
 
 
-    private Object coerceScalar(Object f, Object raw) {
+    private Object coerceScalar(Object f, Object raw, FieldUnits columnUnits) {
         if (f instanceof CustomFieldText) return String.valueOf(raw);
         if (f instanceof CustomFieldInteger) return raw instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(raw).trim());
         if (f instanceof CustomFieldDecimal) return toDouble(raw);
+        if (f instanceof CustomFieldBoolean) return toBoolean(raw);
         if (f instanceof CustomFieldDateTime) return toOffsetDateTime(raw);
-        if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement);
+        if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement, columnUnits);
         return UNHANDLED;
     }
 
@@ -484,7 +494,6 @@ public class FieldAnswerPatchService {
         if (f instanceof CustomFieldSelectOneActionUnit) {
             return one(raw, "Projet", actionUnitRepository::findById, actionUnitSummaryMapper::convert);
         }
-        if (f instanceof CustomFieldSelectOneActionCode) return actionCode(raw);
         if (f instanceof CustomFieldSelectOneSpatialUnit) {
             return one(raw, "Unité spatiale", spatialUnitRepository::findById, spatialUnitSummaryMapper::convert);
         }
@@ -535,13 +544,6 @@ public class FieldAnswerPatchService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Object actionCode(Object raw) {
-        String code = String.valueOf(raw instanceof Map<?, ?> m && m.get("id") != null ? m.get("id") : raw);
-        ActionCode actionCode = actionCodeRepository.findById(code)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code d'action introuvable : " + code));
-        return actionCodeMapper.convert(actionCode);
-    }
-
     private static Double toDouble(Object raw) {
         if (raw instanceof Number n) return n.doubleValue();
         return Double.parseDouble(String.valueOf(raw).trim().replace(',', '.'));
@@ -555,7 +557,7 @@ public class FieldAnswerPatchService {
         return OffsetDateTime.parse(s);
     }
 
-    private MeasurementAnswerDTO toMeasurement(Object raw, CustomFieldMeasurement field) {
+    private MeasurementAnswerDTO toMeasurement(Object raw, CustomFieldMeasurement field, FieldUnits columnUnits) {
         if (!(raw instanceof Map<?, ?>) && !(raw instanceof Number)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Mesure invalide : objet { numericValue, comment? } ou nombre attendu");
@@ -569,11 +571,69 @@ public class FieldAnswerPatchService {
         } else {
             dto.setNumericValue(toDouble(raw));
         }
-        // The unit is the field's own (zInf, zSup, …), never the client's.
-        if (field.getUnit() != null) {
-            dto.setUnit(unitDefinitionMapper.convert(field.getUnit()));
+        UnitDefinition unit = unitOf(raw, field, columnUnits);
+        if (unit != null) {
+            dto.setUnit(unitDefinitionMapper.convert(unit));
         }
         return dto;
+    }
+
+    /**
+     * The unit a measurement is entered in: the symbol the client sent when the field offers it,
+     * the field's own unit when it sent none. A symbol the field does not offer is refused, since
+     * the number would be stored under a unit nobody chose for this field.
+     */
+    private UnitDefinition unitOf(Object raw, CustomFieldMeasurement field, FieldUnits columnUnits) {
+        Object symbol = raw instanceof Map<?, ?> map ? map.get("symbol") : null;
+        boolean configured = columnUnits != null && !columnUnits.isEmpty();
+        if (!hasText(symbol)) {
+            return configured ? catalogueUnit(columnUnits.defaultSymbol(), field) : field.getUnit();
+        }
+        String wanted = String.valueOf(symbol).trim();
+        if (configured) {
+            if (!columnUnits.symbols().contains(wanted)) throw unitRefused(wanted, field);
+            return catalogueUnit(wanted, field);
+        }
+        return field.unitsToChooseFrom().stream()
+                .filter(u -> wanted.equals(u.getSymbol()))
+                .findFirst()
+                .orElseThrow(() -> unitRefused(wanted, field));
+    }
+
+    private static ResponseStatusException unitRefused(String symbol, CustomFieldMeasurement field) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Unité « " + symbol + " » non proposée par le champ " + field.getId());
+    }
+
+    /** The catalogue unit of a symbol: the field's own when it is that one, the one of its dimension otherwise. */
+    private UnitDefinition catalogueUnit(String symbol, CustomFieldMeasurement field) {
+        if (field.getUnit() != null && symbol.equals(field.getUnit().getSymbol())) return field.getUnit();
+        UnitDefinition.Dimension dimension = field.getUnit() == null ? null : field.getUnit().getDimension();
+        return unitDefinitionRepository.findAllByOrderByLabelAsc().stream()
+                .filter(u -> symbol.equals(u.getSymbol()) && (dimension == null || u.getDimension() == dimension))
+                .findFirst()
+                .orElseThrow(() -> unitRefused(symbol, field));
+    }
+
+    /** The units the form's column of this field offers, null when the form sets none. */
+    private static FieldUnits unitsOfColumn(FormUiDto form, CustomField field) {
+        if (form == null || form.getLayout() == null || field == null) return null;
+        return form.getLayout().stream()
+                .filter(Objects::nonNull)
+                .flatMap(panel -> panel.getRows() == null ? java.util.stream.Stream.empty() : panel.getRows().stream())
+                .flatMap(row -> row.getColumns() == null ? java.util.stream.Stream.empty() : row.getColumns().stream())
+                .filter(column -> column.getField() != null && Objects.equals(column.getField().getId(), field.getId()))
+                .map(CustomColUiDto::getUnits)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    private static Boolean toBoolean(Object raw) {
+        if (raw instanceof Boolean b) return b;
+        String text = String.valueOf(raw).trim();
+        if ("true".equalsIgnoreCase(text)) return Boolean.TRUE;
+        if ("false".equalsIgnoreCase(text)) return Boolean.FALSE;
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booléen invalide : true ou false attendu");
     }
 
     private static boolean hasText(Object value) {

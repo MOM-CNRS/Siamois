@@ -10,6 +10,7 @@ import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldValueSpec;
 import fr.siamois.domain.models.form.rules.OptionsFilter;
+import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.domain.models.form.rules.RuleFieldFamily;
 import fr.siamois.domain.models.settings.tableconfig.LayoutRow;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
@@ -103,6 +104,7 @@ public class FieldRulesEditorBean implements Serializable {
     private ConditionDraft requiredWhen = new ConditionDraft();
     private Long optionsFieldId;
     private OptionsFilter advancedOptions;
+    private List<PlaceSourceSpec> keptPlaceSources = List.of();
     private List<ConstraintDraft> constraints = new ArrayList<>();
     private String errorMessage;
     private final transient Map<Long, List<Choice>> conceptChoices = new HashMap<>();
@@ -128,6 +130,19 @@ public class FieldRulesEditorBean implements Serializable {
         otherFields = new ArrayList<>();
         errorMessage = null;
         conceptChoices.clear();
+        keptPlaceSources = List.of();
+    }
+
+    @EventListener(FieldOpenedEvent.class)
+    public void onFieldOpened(FieldOpenedEvent event) {
+        openFor(event.field());
+    }
+
+    /** The field's Save, after its definition: writes the rules when this field's are on screen. */
+    public void saveIfOpen() {
+        if (open) {
+            save();
+        }
     }
 
     public void openFor(TypeFieldFormConfig target) {
@@ -145,6 +160,8 @@ public class FieldRulesEditorBean implements Serializable {
         requiredWhen = draftOf(rules.requiredWhen());
         advancedOptions = null;
         optionsFieldId = null;
+        // The editor has no screen for the sources of a place field: it keeps them as they are.
+        keptPlaceSources = rules.placeSources();
         if (rules.options() instanceof OptionsFilter.RelatedConcepts related) {
             optionsFieldId = related.fieldId();
         } else if (rules.options() != null) {
@@ -197,7 +214,7 @@ public class FieldRulesEditorBean implements Serializable {
             case NUMBER, DATE -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.GT, ConditionOp.GTE,
                     ConditionOp.LT, ConditionOp.LTE, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
             case CONCEPT -> List.of(ConditionOp.IN, ConditionOp.NOT_IN, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
-            case TEXT -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
+            case TEXT, BOOLEAN -> List.of(ConditionOp.EQ, ConditionOp.NEQ, ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
             case OTHER -> List.of(ConditionOp.EMPTY, ConditionOp.NOT_EMPTY);
         };
     }
@@ -280,7 +297,7 @@ public class FieldRulesEditorBean implements Serializable {
         errorMessage = null;
         FieldRules rules;
         try {
-            rules = new FieldRules(conditionOf(enabledWhen), conditionOf(requiredWhen), optionsOf(), constraintsOf());
+            rules = new FieldRules(conditionOf(enabledWhen), conditionOf(requiredWhen), optionsOf(), constraintsOf(), keptPlaceSources);
         } catch (IllegalArgumentException e) {
             errorMessage = langBean.msg("rules.error.badValue");
             return;
@@ -294,7 +311,8 @@ public class FieldRulesEditorBean implements Serializable {
                     .collect(Collectors.joining(" "));
             return;
         }
-        close();
+        // the editor stays on the field: it is a section of the field's own screen now
+        errorMessage = null;
         settingsBean.reloadLayoutRows();
     }
 
@@ -364,6 +382,8 @@ public class FieldRulesEditorBean implements Serializable {
                     BigDecimal number = new BigDecimal(text.replace(',', '.'));
                     values.add(FieldValueSpec.literal(number.stripTrailingZeros().scale() <= 0
                             ? (Object) number.longValue() : (Object) number.doubleValue()));
+                } else if (family == RuleFieldFamily.BOOLEAN) {
+                    values.add(FieldValueSpec.literal(Boolean.parseBoolean(text)));
                 } else {
                     values.add(FieldValueSpec.literal(text));
                 }

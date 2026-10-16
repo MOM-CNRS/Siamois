@@ -27,7 +27,7 @@ export const findColumns: ColumnDef<FindSummary>[] = [
   {
     key: "type",
     fieldId: "-409",
-    header: t("common.category"),
+    header: t("common.type"),
     render: (row) => row.type?.resolvedLabel ?? "",
   },
   {

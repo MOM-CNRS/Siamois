@@ -2,10 +2,11 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { getContainer, listContainers, patchContainerAnswers } from "./api";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import { getContainer, listContainers, patchContainer, patchContainerAnswers } from "./api";
 import { containerColumns } from "./columns";
 import { ContainerCreateForm } from "./CreateForm";
-import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
@@ -27,6 +28,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   panelClass: "container-panel",
   api: {
     siblings: (id) => fetchSiblings("containers", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("containers", id),
     get: getContainer,
     list: listContainers,
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),
@@ -62,8 +64,16 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
         entityRef: (entity) => ({ id: entity.id, label: entity.identifier || String(entity.id) }),
       }),
     ],
-    header: (entity) => (
-      <IdentifierTypeHeader entityType="container" chipPrefix="container" label={entity.identifier} typeLabel={entity.type?.resolvedLabel} />
+    header: (entity, helpers) => (
+      <SchemaEntityHeader
+        entityType="container"
+        chipPrefix="container"
+        entity={entity}
+        identifier={entity.identifier ?? ""}
+        typesSegment="container-types"
+        patch={patchContainer}
+        onSaved={helpers.refetch}
+      />
     ),
     chrome: (entity) => bookmarkChrome(entity, entity.identifier),
     // The titlebar's "Créer" makes a sibling in the same project.
@@ -78,7 +88,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
       label: t("entity.container.plural"),
       description: t("home.container.description"),
       className: "sia-welcome-card sia-container",
-      chipClassName: "container-count-chip-alt",
+      chipClassName: "container-count-chip",
       order: 60,
     }),
   },

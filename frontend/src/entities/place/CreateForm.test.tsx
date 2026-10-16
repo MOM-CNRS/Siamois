@@ -85,7 +85,7 @@ describe("PlaceCreateForm", () => {
   });
 
   it("creates the place in the list's organization and hands its id to onCreated", async () => {
-    mockedCreatePlace.mockResolvedValue({ id: 42 });
+    mockedCreatePlace.mockResolvedValue({ id: "42" });
     const { onCreated } = render();
 
     typeName("  Cave A  ");
@@ -95,11 +95,11 @@ describe("PlaceCreateForm", () => {
     });
 
     expect(mockedCreatePlace).toHaveBeenCalledWith({ organizationId: 7, name: "Cave A", typeConceptId: "9" });
-    expect(onCreated).toHaveBeenCalledWith(42);
+    expect(onCreated).toHaveBeenCalledWith("42");
   });
 
   it("links the new place as the child of a row action's parent", async () => {
-    mockedCreatePlace.mockResolvedValue({ id: 43 });
+    mockedCreatePlace.mockResolvedValue({ id: "43" });
     render(vi.fn(), vi.fn(), { parent: { id: "8", label: "Site B" } });
 
     expect(container.textContent).toContain("Contenu dans");

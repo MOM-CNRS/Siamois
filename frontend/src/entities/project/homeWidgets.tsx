@@ -8,6 +8,7 @@ import type { HomeWidgetContext, HomeWidgetDef } from "../types";
 import { listProjects } from "./api";
 import { queryKeys } from "../../api/queryKeys";
 import { t } from "../../i18n";
+import { usePaneState } from "../../panels/paneState";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
@@ -44,9 +45,16 @@ function useRecentProjects(organizationId?: number) {
 function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext) {
   const { data, isLoading } = useRecentProjects(organizationId);
   const projects = data?.data ?? [];
+  const [folded, setFolded] = usePaneState("recentProjectsFolded", false);
 
   return (
-    <Panel header={t("home.recentProjects")} toggleable className="sia-form-panel">
+    <Panel
+      header={t("home.recentProjects")}
+      toggleable
+      collapsed={folded}
+      onToggle={(e) => setFolded(e.value)}
+      className="sia-form-panel"
+    >
       {isLoading && (
         <div className="loading-skeleton sia-card-grid">
           {Array.from({ length: 3 }, (_, i) => (
@@ -62,11 +70,11 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
               key={project.id}
               ariaLabel={project.name}
               onOpen={() => onNavigate?.("project", project.id)}
-              style={{ background: "var(--siamois-green-light-50)" }}
+              className="sia-welcome-card sia-action-unit"
             >
-              <div className="sia-row-gap">
+              <div className="sia-count-card-row">
                 <i className="bi bi-arrow-down-square sia-icon-context" />
-                <span>{project.name}</span>
+                <span className="sia-count-card-title">{project.name}</span>
               </div>
               <div className="sia-row-gap">
                 <i className="bi bi-geo-alt sia-icon-context" />
@@ -94,7 +102,7 @@ function ProjectCountCardWidget({ organizationId, onNavigate }: HomeWidgetContex
       description={t("home.project.description")}
       count={data?.projects}
       className="sia-welcome-card sia-action-unit"
-      chipClassName="action-unit-count-chip-alt"
+      chipClassName="action-unit-count-chip"
       // No id → App's client-side router switches to the React list, no page load.
       onOpen={() => onNavigate?.("project")}
     />

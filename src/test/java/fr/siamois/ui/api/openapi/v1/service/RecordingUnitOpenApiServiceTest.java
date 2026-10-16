@@ -5,12 +5,10 @@ import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
 import fr.siamois.mapper.ContainerMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
-import fr.siamois.mapper.ActionCodeMapper;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
@@ -24,7 +22,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.config.FormConfig;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -43,6 +40,9 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.VocabularyMode;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
@@ -77,6 +77,7 @@ import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
@@ -206,11 +207,10 @@ class RecordingUnitOpenApiServiceTest {
         // The real coercion, over this test's own mocks: the PATCH tests below exercise it end to end.
         ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService,
                 conceptRepository, conceptMapper, personRepository, personMapper, actionUnitRepository,
-                actionUnitSummaryMapper, mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
-                spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
+                actionUnitSummaryMapper,                 spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
                 mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
                 mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class),
-                mock(SpecimenSummaryMapper.class), unitDefinitionMapper));
+                mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class)));
         ReflectionTestUtils.setField(service, "fieldAnswerWireService", new FieldAnswerWireService(formService, labelService));
         // Catalogs are decorated with each field's list capability; not what these tests are about.
         FieldQueryService fieldQueryService = mock(FieldQueryService.class);
@@ -544,7 +544,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectTypes_returnsDefaultTypeWithFieldConfigsAndEmptyData() {
+    void buildProjectTypes_returnsTheFormWithFieldConfigsAndEmptyData() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         when(institutionService.findById(10L)).thenReturn(inst);
@@ -562,13 +562,13 @@ class RecordingUnitOpenApiServiceTest {
         ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
 
         assertThat(response.getData()).isEmpty();
-        assertThat(response.getDefaultType().getForm()).isNotNull();
+        assertThat(response.getForm()).isNotNull();
         assertThat(response.getFields()).containsKey("301");
         assertThat(response.getFields().get("301").label()).isEqualTo("Libellé projet");
-        assertThat(response.getDefaultType().getFieldConfigs()).hasSize(1);
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).field()).isEqualTo("301");
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).active()).isTrue();
-        assertThat(response.getDefaultType().getFieldConfigs().get(0).institutionLocked()).isTrue();
+        assertThat(response.getFieldConfigs()).hasSize(1);
+        assertThat(response.getFieldConfigs().get(0).field()).isEqualTo("301");
+        assertThat(response.getFieldConfigs().get(0).active()).isTrue();
+        assertThat(response.getFieldConfigs().get(0).institutionLocked()).isTrue();
     }
 
     /**
@@ -591,7 +591,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectTypeListResponse response = service.buildProjectTypes(10L, personDto, "fr");
 
-        List<ProjectTableColumnResource> tableColumns = response.getDefaultType().getTableColumns();
+        List<ProjectTableColumnResource> tableColumns = response.getTableColumns();
         assertThat(tableColumns).hasSize(ActionUnitTableColumnDefaults.columns().size());
         assertThat(tableColumns)
                 .filteredOn(ProjectTableColumnResource::visible)
@@ -1716,7 +1716,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildMobileDetail_resolvesSelectOneResourceRefs_forSpatialActionUnitActionCodeAndRecordingUnit() {
+    void buildMobileDetail_resolvesSelectOneResourceRefs_forSpatialActionUnitAndRecordingUnit() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ruDto.setCreatedByInstitution(inst);
@@ -1733,27 +1733,20 @@ class RecordingUnitOpenApiServiceTest {
         actionUnitField.setLabel("Operation");
         actionUnitField.setIsSystemField(false);
 
-        CustomFieldSelectOneActionCode actionCodeField = CustomFieldSelectOneActionCode.builder().build();
-        actionCodeField.setId(42L);
-        actionCodeField.setLabel("Code");
-        actionCodeField.setIsSystemField(false);
-
         CustomFieldSelectOneRecordingUnit recordingUnitField = new CustomFieldSelectOneRecordingUnit();
         recordingUnitField.setId(43L);
         recordingUnitField.setLabel("Related UE");
         recordingUnitField.setIsSystemField(false);
 
-        FormUiDto formUiDto = formUiDtoWithFields(spatialField, actionUnitField, actionCodeField, recordingUnitField);
+        FormUiDto formUiDto = formUiDtoWithFields(spatialField, actionUnitField, recordingUnitField);
 
         CustomFieldAnswerSelectOneSpatialUnitViewModel spatialVm = new CustomFieldAnswerSelectOneSpatialUnitViewModel();
         CustomFieldAnswerSelectOneActionUnitViewModel actionUnitVm = new CustomFieldAnswerSelectOneActionUnitViewModel();
-        CustomFieldAnswerSelectOneActionCodeViewModel actionCodeVm = new CustomFieldAnswerSelectOneActionCodeViewModel();
         CustomFieldAnswerSelectOneRecordingUnitViewModel recordingUnitVm = new CustomFieldAnswerSelectOneRecordingUnitViewModel();
 
         Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(spatialField, spatialVm);
         answers.put(actionUnitField, actionUnitVm);
-        answers.put(actionCodeField, actionCodeVm);
         answers.put(recordingUnitField, recordingUnitVm);
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(answers);
@@ -1766,10 +1759,6 @@ class RecordingUnitOpenApiServiceTest {
         actionUnitValue.setId(501L);
         actionUnitValue.setName("Op1");
 
-        ActionCodeDTO actionCodeValue = new ActionCodeDTO();
-        actionCodeValue.setId(502L);
-        actionCodeValue.setCode("C1");
-
         RecordingUnitSummaryDTO recordingUnitValue = new RecordingUnitSummaryDTO();
         recordingUnitValue.setId(503L);
         recordingUnitValue.setFullIdentifier("RU-503");
@@ -1781,26 +1770,19 @@ class RecordingUnitOpenApiServiceTest {
         when(formService.initOrReuseResponse(nullable(CustomFormResponseViewModel.class), any(), any(), eq(true))).thenReturn(responseVm);
         when(formService.readAnswerValueForApi(same(spatialVm))).thenReturn(spatialValue);
         when(formService.readAnswerValueForApi(same(actionUnitVm))).thenReturn(actionUnitValue);
-        when(formService.readAnswerValueForApi(same(actionCodeVm))).thenReturn(actionCodeValue);
         when(formService.readAnswerValueForApi(same(recordingUnitVm))).thenReturn(recordingUnitValue);
 
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
         SelectOneFieldAnswer spatialAnswer = (SelectOneFieldAnswer) data.getAnswers().get("40");
         assertThat(spatialAnswer.value().resourceId()).isEqualTo("500");
-        assertThat(spatialAnswer.value().resourceType()).isEqualTo("spatial-units");
+        assertThat(spatialAnswer.value().resourceType()).isEqualTo("places");
         assertThat(spatialAnswer.value().label()).isEqualTo("Locus 1");
 
         SelectOneFieldAnswer actionUnitAnswer = (SelectOneFieldAnswer) data.getAnswers().get("41");
         assertThat(actionUnitAnswer.value().resourceId()).isEqualTo("501");
-        assertThat(actionUnitAnswer.value().resourceType()).isEqualTo("action-units");
+        assertThat(actionUnitAnswer.value().resourceType()).isEqualTo("projects");
         assertThat(actionUnitAnswer.value().label()).isEqualTo("Op1");
-
-        SelectOneFieldAnswer actionCodeAnswer = (SelectOneFieldAnswer) data.getAnswers().get("42");
-        // An action code's key is its code (ActionCode's own @Id), which is also what a PATCH takes back.
-        assertThat(actionCodeAnswer.value().resourceId()).isEqualTo("C1");
-        assertThat(actionCodeAnswer.value().resourceType()).isEqualTo("action-codes");
-        assertThat(actionCodeAnswer.value().label()).isEqualTo("C1");
 
         SelectOneFieldAnswer recordingUnitAnswer = (SelectOneFieldAnswer) data.getAnswers().get("43");
         assertThat(recordingUnitAnswer.value().resourceId()).isEqualTo("503");
@@ -1917,26 +1899,21 @@ class RecordingUnitOpenApiServiceTest {
         recordingUnitItem.setId(605L);
         recordingUnitItem.setFullIdentifier("RU-605");
 
-        ActionCodeDTO actionCodeItem = new ActionCodeDTO();
-        actionCodeItem.setId(606L);
-        actionCodeItem.setCode("C606");
-
         when(formService.readAnswerValueForApi(same(personsVm))).thenReturn(
-                List.of(p1, p2, conceptItem, spatialItem, recordingUnitItem, actionCodeItem, "unsupported"));
+                List.of(p1, p2, conceptItem, spatialItem, recordingUnitItem, "unsupported"));
 
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
         fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer answer =
                 (fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer) data.getAnswers().get("60");
-        assertThat(answer.values()).hasSize(6);
+        assertThat(answer.values()).hasSize(5);
         assertThat(answer.values().get(0).resourceId()).isEqualTo("601");
         assertThat(answer.values().get(0).resourceType()).isEqualTo("persons");
         assertThat(answer.values().get(0).label()).isEqualTo("Jean Dupont");
         assertThat(answer.values().get(2).resourceType()).isEqualTo("concepts");
         assertThat(answer.values().get(2).label()).isEqualTo("stub-label");
-        assertThat(answer.values().get(3).resourceType()).isEqualTo("spatial-units");
+        assertThat(answer.values().get(3).resourceType()).isEqualTo("places");
         assertThat(answer.values().get(4).resourceType()).isEqualTo("recording-units");
-        assertThat(answer.values().get(5).resourceId()).isEqualTo("C606");
         assertThat(answer.values().get(1).resourceId()).isEqualTo("602");
     }
 
@@ -2399,7 +2376,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectRecordingUnitTypeSettings_returnsDefaultTypeAndConfiguredTypeWithForm() {
+    void buildProjectRecordingUnitTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2433,8 +2410,8 @@ class RecordingUnitOpenApiServiceTest {
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
+        // the catalog is the union of the types' fields
+        assertThat(response.getFields()).containsOnlyKeys("43");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
@@ -2443,7 +2420,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectRecordingUnitTypeSettings_defaultTypeWithForm_includesFields() {
+    void buildProjectRecordingUnitTypeSettings_baseFieldsAreInTheCatalog() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2464,8 +2441,7 @@ class RecordingUnitOpenApiServiceTest {
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFormBundle()).isNotNull();
-        assertThat(response.getDefaultType().getFields()).containsKey("45");
+        assertThat(response.getFields()).containsKey("45");
         assertThat(response.getData()).isEmpty();
     }
 
@@ -2486,7 +2462,7 @@ class RecordingUnitOpenApiServiceTest {
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
 
         List<fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource> tableColumns =
-                response.getDefaultType().getTableColumns();
+                response.getTableColumns();
         assertThat(tableColumns).hasSize(fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults.columns().size());
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
@@ -2547,6 +2523,47 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
+    void buildProjectRecordingUnitTypeSettings_vocabularyFieldSaysWhereItsListComesFromPerType_andNotInTheRootCatalog() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), isNull()))
+                .thenReturn(new FormUiDto());
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(43L);
+        field.setLabel("Matière");
+        field.setIsSystemField(false);
+        field.setFieldCode("SIARU.MATIERE");
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 42L))
+                .thenReturn(formUiDtoWithOneField(field));
+        when(fieldConfigurationService.describeVocabulary(field, 5L, 42L)).thenReturn(
+                new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 99L, null,
+                        VocabularyMode.FOLLOW, Map.of(101L, ConceptState.DISABLED)));
+
+        ProjectRecordingUnitTypeListResponse response =
+                service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
+
+        FieldResource.Vocabulary vocabulary = response.getData().get(0).getFields().get("43").vocabulary();
+        assertThat(vocabulary.source()).isEqualTo(new FieldResource.Source("BRANCH", null, "99", null));
+        assertThat(vocabulary.mode()).isEqualTo("FOLLOW");
+        assertThat(vocabulary.excludedConceptIds()).containsExactly("101");
+        // the root catalog is the union of the types: a vocabulary can differ per type, so it is left out
+        assertThat(response.getFields().get("43").vocabulary()).isNull();
+    }
+
+    @Test
     void buildProjectFindTypeSettings_projectWithoutOrganization_throws400() {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
@@ -2559,7 +2576,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectFindTypeSettings_returnsFindDefaultTypeWithFields() {
+    void buildProjectFindTypeSettings_catalogHoldsTheBaseFields() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2579,12 +2596,12 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).isEmpty();
     }
 
     @Test
-    void buildProjectFindTypeSettings_returnsDefaultTypeAndConfiguredTypeWithForm() {
+    void buildProjectFindTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2617,8 +2634,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectFindTypeListResponse response = service.buildProjectFindTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig().getIdentifierFormat()).isEqualTo("{NUM_UE}");
+        assertThat(response.getFields()).containsOnlyKeys("46");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
@@ -2639,7 +2655,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectPhaseTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+    void buildProjectPhaseTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2670,7 +2686,7 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectPhaseTypeListResponse response = service.buildProjectPhaseTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
@@ -2689,7 +2705,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectDocumentTypeSettings_returnsTheDefaultTypeAndEachCategoryWithItsForm() {
+    void buildProjectDocumentTypeSettings_returnsEachCategoryWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2721,7 +2737,7 @@ class RecordingUnitOpenApiServiceTest {
 
         var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
@@ -2749,8 +2765,7 @@ class RecordingUnitOpenApiServiceTest {
         var response = service.buildProjectDocumentTypeSettings("5", personDto, SCOPE, "fr");
 
         assertThat(response.getData()).isEmpty();
-        assertThat(response.getDefaultType().getIdentifierConfig()).isNull();
-        assertThat(response.getDefaultType().getFields()).containsKey("48");
+        assertThat(response.getFields()).containsKey("48");
         verify(tableFieldConfigService, never()).listConfiguredTypeConcepts(any(), eq(ConfigurableTable.DOCUMENT));
     }
 
@@ -2767,7 +2782,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectContainerTypeSettings_returnsTheDefaultTypeAndEachConfiguredTypeWithItsForm() {
+    void buildProjectContainerTypeSettings_returnsEachConfiguredTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2798,10 +2813,61 @@ class RecordingUnitOpenApiServiceTest {
 
         ProjectContainerTypeListResponse response = service.buildProjectContainerTypeSettings("5", personDto, SCOPE, "fr");
 
-        assertThat(response.getDefaultType().getFields()).containsKey("44");
+        assertThat(response.getFields()).containsKey("44");
         assertThat(response.getData()).hasSize(1);
         assertThat(response.getData().get(0).getId()).isEqualTo("42");
         assertThat(response.getData().get(0).getFields()).containsKey("46");
+    }
+
+    @Test
+    void buildProjectStudyTypeSettings_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.buildProjectStudyTypeSettings("5", personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void buildProjectStudyTypeSettings_returnsEachConfiguredTypeWithItsForm() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        CustomFieldText defaultField = new CustomFieldText();
+        defaultField.setId(-806L);
+        defaultField.setLabel("Champ par défaut");
+        defaultField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.STUDY), isNull()))
+                .thenReturn(formUiDtoWithOneField(defaultField));
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.STUDY)).thenReturn(List.of(concept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        CustomFieldText typeField = new CustomFieldText();
+        typeField.setId(-807L);
+        typeField.setLabel("Champ du type");
+        typeField.setIsSystemField(true);
+        when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.STUDY, 42L))
+                .thenReturn(formUiDtoWithOneField(typeField));
+
+        fr.siamois.ui.api.openapi.v1.response.project.type.ProjectStudyTypeListResponse response =
+                service.buildProjectStudyTypeSettings("5", personDto, SCOPE, "fr");
+
+        assertThat(response.getFields()).containsKey("-806");
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getId()).isEqualTo("42");
+        assertThat(response.getData().get(0).getFields()).containsKey("-807");
     }
 
     @Test
@@ -3350,4 +3416,35 @@ class RecordingUnitOpenApiServiceTest {
         verify(recordingUnitService, never()).addHierarchyChild(anyLong(), anyLong());
     }
 
+    @Test
+    void patchRecordingUnit_blankIdentifier_throws400() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+
+        var request = new RecordingUnitPatchRequest();
+        request.setIdentifier("  ");
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchRecordingUnit_identifierAlreadyUsedInTheProject_throws409() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity(eq("1026"), eq(SCOPE), isNull()))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(ruDto))).thenReturn(true);
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true);
+
+        var request = new RecordingUnitPatchRequest();
+        request.setIdentifier("NEW-1");
+        assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
 }

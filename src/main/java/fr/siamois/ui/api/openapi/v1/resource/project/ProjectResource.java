@@ -43,7 +43,7 @@ public class ProjectResource extends ProjectResourceIdentifier {
      * l'API ne propose pas encore d'endpoint pour la changer.
      */
     @Schema(description = "Statut de validation du projet")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     private ResolvedConceptResource type;
 

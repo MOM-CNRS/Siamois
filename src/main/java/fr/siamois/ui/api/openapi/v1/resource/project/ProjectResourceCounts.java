@@ -28,4 +28,7 @@ public class ProjectResourceCounts {
     @Schema(description = "Nombre de documents")
     private Long documents;
 
+    @Schema(description = "Nombre d'études")
+    private Long studies;
+
 }

@@ -17,7 +17,7 @@ public interface ConceptPrefLabelMapper extends Converter<ConceptPrefLabel, Conc
     @Mapping(target = "vocabulary", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdByInstitution", ignore = true)
-    @Mapping(target = "validated", ignore = true)
+    @Mapping(target = "validationStatus", ignore = true)
     @Mapping(target = "creationTime", ignore = true)
     @Mapping(target = "validatedBy", ignore = true)
     @Mapping(target = "validatedAt", ignore = true)

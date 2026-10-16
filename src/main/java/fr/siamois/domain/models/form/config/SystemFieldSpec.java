@@ -22,6 +22,11 @@ public record SystemFieldSpec(CustomField field, boolean hidden, boolean readOnl
         return new SystemFieldSpec(field, false, true);
     }
 
+    /** Carried by every form for the client's header (the type), never laid out in the body, still editable. */
+    public static SystemFieldSpec hidden(CustomField field) {
+        return new SystemFieldSpec(field, true, false);
+    }
+
     public static SystemFieldSpec hiddenReadOnly(CustomField field) {
         return new SystemFieldSpec(field, true, true);
     }

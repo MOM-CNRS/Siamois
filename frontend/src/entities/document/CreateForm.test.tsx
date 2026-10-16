@@ -5,12 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { DocumentCreateForm } from "./CreateForm";
-import { getEffectiveForm } from "../typeCatalog";
+import { fetchTypesCatalog, getEffectiveForm } from "../typeCatalog";
 import { createDocument, uploadDocumentFile } from "./api";
 import type { CreatePrefill } from "../types";
 
 
-vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
+vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
 vi.mock("./api", () => ({ createDocument: vi.fn(), uploadDocumentFile: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
 vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
@@ -24,6 +24,7 @@ vi.mock("../../fields/renderers", () => ({
 }));
 
 const mockedGetDocumentEffectiveForm = vi.mocked(getEffectiveForm);
+const mockedFetchTypesCatalog = vi.mocked(fetchTypesCatalog);
 const mockedCreateDocument = vi.mocked(createDocument);
 const mockedUploadFile = vi.mocked(uploadDocumentFile);
 
@@ -33,7 +34,7 @@ const typeField: FieldResource = {
   label: "Type",
   answerType: "SELECT_ONE_FROM_FIELD_CODE",
   isSystemField: true,
-  valueBinding: "category",
+  valueBinding: "type",
   fieldCode: "SIAD.CATEGORY",
 };
 
@@ -72,6 +73,8 @@ function submitButton(): HTMLButtonElement {
 beforeEach(() => {
   mockedGetDocumentEffectiveForm.mockReset();
   mockedGetDocumentEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-704": typeField } });
+  mockedFetchTypesCatalog.mockReset();
+  mockedFetchTypesCatalog.mockResolvedValue({ data: [{ id: "9", concept: { resolvedLabel: "Comblement" } }] });
   mockedCreateDocument.mockReset();
   mockedUploadFile.mockReset();
   container = document.createElement("div");
@@ -87,11 +90,21 @@ afterEach(() => {
 });
 
 describe("DocumentCreateForm", () => {
-  it("resolves the project's own document categories catalog from scope.id", async () => {
+  it("resolves the project's own document types catalog from scope.id", async () => {
     render();
     await flush();
 
     expect(mockedGetDocumentEffectiveForm).toHaveBeenCalledWith("document-types", "5", null);
+  });
+
+  it("points to the table's type configuration when the project declares no type", async () => {
+    mockedFetchTypesCatalog.mockResolvedValue({ data: [] });
+    render();
+    await flush();
+
+    expect(container.querySelector('[data-testid="pick-type"]')).toBeNull();
+    const link = container.querySelector<HTMLAnchorElement>("a[href*='/settings/project/5/tables']");
+    expect(link?.getAttribute("href")).toContain("table=DOCUMENT");
   });
 
   it("disables submit until a type is picked", async () => {
@@ -106,7 +119,7 @@ describe("DocumentCreateForm", () => {
     expect(submitButton().disabled).toBe(false);
   });
 
-  it("submits projectId (from scope) and the picked categoryId, and hands the created document's id to onCreated", async () => {
+  it("submits projectId (from scope) and the picked typeId, and hands the created document's id to onCreated", async () => {
     mockedCreateDocument.mockResolvedValue({ resourceType: "documents", id: "77", identifier: "DOC1" } as never);
     const { onCreated } = render();
     await flush();
@@ -119,7 +132,7 @@ describe("DocumentCreateForm", () => {
     });
     await flush();
 
-    expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "5", categoryId: "9" });
+    expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "5", typeId: "9" });
     expect(onCreated).toHaveBeenCalledWith("77");
   });
 
@@ -162,7 +175,7 @@ describe("DocumentCreateForm", () => {
     });
     await flush();
 
-    expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "7", categoryId: "9", phaseIds: [3] });
+    expect(mockedCreateDocument).toHaveBeenCalledWith({ projectId: "7", typeId: "9", phaseIds: [3] });
   });
 
   it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {

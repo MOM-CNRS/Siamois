@@ -18,10 +18,13 @@ import java.util.Map;
 @Schema(description = "Mise à jour partielle d'un mobilier (réponses formulaire)")
 public class FindPatchRequest {
 
+    @Schema(description = "Nouvel identifiant complet (texte libre, unique dans le projet) ; absent = inchangé.")
+    private String identifier;
+
     @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
             + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
             + "avec le droit validateur (_permissions.canValidate).")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();

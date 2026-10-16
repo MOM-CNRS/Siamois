@@ -86,7 +86,7 @@ class SpecimenSeederTest {
             )
     );
 
-    private void stubCategoryFound() {
+    private void stubTypeFound() {
         Concept c = new Concept();
         c.setExternalId("4286252");
         when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq(VOCABULARY_ID), anyCollection()))
@@ -122,7 +122,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_AuthorDoesNotExist() {
-        stubCategoryFound();
+        stubTypeFound();
         stubInstitutionFound();
         when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
                 .thenThrow(new IllegalStateException("Person introuvable"));
@@ -134,7 +134,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_InstitutionDoesNotExist() {
-        stubCategoryFound();
+        stubTypeFound();
         // institutionRepository left unstubbed -> empty -> institution not found
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(toInsert, 1L));
 
@@ -143,7 +143,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_RecordingUnitDoesNotExist() {
-        stubCategoryFound();
+        stubTypeFound();
         stubInstitutionFound();
         // recordingUnitSeeder bulk lookup left unstubbed -> empty -> recording unit not found
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(toInsert, 1L));
@@ -153,7 +153,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_AlreadyExists_updatesExistingInstead() {
-        stubCategoryFound();
+        stubTypeFound();
         stubInstitutionFound();
         RecordingUnit ru = stubRecordingUnitFound();
 
@@ -183,7 +183,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_Created() {
-        stubCategoryFound();
+        stubTypeFound();
         stubInstitutionFound();
         stubRecordingUnitFound();
         // specimenRepository bulk-existence lookup left unstubbed -> empty -> not already present
@@ -206,7 +206,7 @@ class SpecimenSeederTest {
 
     @Test
     void seed_Created_setsActionUnitFromRecordingUnit() {
-        stubCategoryFound();
+        stubTypeFound();
         stubInstitutionFound();
         RecordingUnit ru = stubRecordingUnitFound();
 

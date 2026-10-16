@@ -3,6 +3,7 @@ import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { scopeProjectId } from "../scope";
 import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUnit, getRecordingUnitStructure, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
 import { recordingUnitColumns } from "./columns";
@@ -28,7 +29,7 @@ function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
 // looked up by key ("recordingUnit") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// detail.tabs/header now built (fiche + identifier/category header, mirroring Project's own —
+// detail.tabs/header now built (fiche + identifier/type header, mirroring Project's own —
 // see FicheTab.tsx/DetailHeader.tsx for what's deliberately still absent and why). Prev/next is
 // scoped to the RU's own project (GET /recording-units/{id}/siblings), not an organization the way
 // Project's is.
@@ -41,6 +42,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   panelClass: "recording-unit-panel",
   api: {
     siblings: (id) => fetchSiblings("recording-units", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("recording-units", id),
     get: getRecordingUnit,
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),
@@ -117,13 +119,13 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         createPrefill: (entity) => ({ parent: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.children ?? 0,
       }),
-      // JSF's SpecimenTab. REST segment "mobiliers", not Find's own collectionPath.
+      // JSF's SpecimenTab. REST segment "finds" (same as Find's own collectionPath).
       relationTab<RecordingUnitDetail>({
         key: "finds",
         label: t("entity.find.plural"),
         target: "find",
         scopeEntityType: "recordingUnit",
-        path: "mobiliers",
+        path: "finds",
         projectId: (entity) => entity.projectId,
         createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.finds ?? 0,
@@ -151,7 +153,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
       label: t("entity.recordingUnit.plural"),
       description: t("home.recordingUnit.description"),
       className: "sia-welcome-card sia-recording-unit",
-      chipClassName: "recording-unit-count-chip-alt",
+      chipClassName: "recording-unit-count-chip",
       order: 30,
     }),
   },

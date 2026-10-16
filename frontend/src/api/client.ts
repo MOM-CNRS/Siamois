@@ -72,7 +72,7 @@ async function doFetch<T>(path: string, options: RequestOptions, allowRetry: boo
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-// OpenApiRestExceptionHandler always answers errors as JSON {error, message} — surface that
+// RestExceptionHandler always answers errors as JSON {error, message, details?} — surface that
 // human-readable message rather than the raw response body (previously shown verbatim, e.g. to
 // the identifier inline-edit error in the Project fiche).
 async function readError(response: Response): Promise<{ message: string; body?: unknown }> {

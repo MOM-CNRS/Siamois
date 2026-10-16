@@ -7,7 +7,7 @@ export interface ValidationStatusCellProps {
   collectionPath: string;
   row: {
     id: string | number;
-    validated?: string | null;
+    validationStatus?: string | null;
     _permissions?: { canEdit?: boolean; canValidate?: boolean };
   };
 }
@@ -19,7 +19,7 @@ export function ValidationStatusCell({ entityType, collectionPath, row }: Valida
   const canEdit = writeMode && row._permissions?.canEdit === true;
   const canValidate = writeMode && row._permissions?.canValidate === true;
   if (!canEdit && !canValidate) {
-    return <ValidationStatusBadge status={row.validated} />;
+    return <ValidationStatusBadge status={row.validationStatus} />;
   }
   return (
     // The row itself reacts to clicks (selection, overview); the picker's own click stays here.
@@ -28,7 +28,7 @@ export function ValidationStatusCell({ entityType, collectionPath, row }: Valida
         entityType={entityType}
         collectionPath={collectionPath}
         entityId={row.id}
-        status={row.validated}
+        status={row.validationStatus}
         canEdit={canEdit}
         canValidate={canValidate}
         compact

@@ -1,8 +1,11 @@
 import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
+import { PlaceOptionItem } from "./PlaceOptionItem";
 import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputNumber } from "primereact/inputnumber";
+import { Checkbox } from "primereact/checkbox";
+import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
 import { Button } from "primereact/button";
@@ -14,15 +17,20 @@ import type { Bound } from "../rules";
 import type { FieldRendererProps } from "./registry";
 import type { FieldEditContext } from "./editContext";
 import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
-import { refColor } from "./display";
+import { refColor, YesNoTriState } from "./display";
 import {
+  createPlaceFromSuggestion,
   entityRowLabel,
+  isExternalSuggestion,
   optionSourceFor,
   referenceTargetOf,
   type FilterOption,
+  type OptionList,
   type ReferenceTarget,
 } from "./optionSources";
 import { t } from "../i18n";
+import { useNotify } from "../notify/NotifyProvider";
+import { messageForError } from "../api/errors";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
 // generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,
@@ -102,24 +110,46 @@ export function DecimalRenderer({ field, value, readOnly, required, onChange }: 
 
 export function DateRenderer({ field, value, readOnly, required, onChange, bounds }: FieldRendererProps) {
   const showTime = field.constraints?.showTime === true;
+  // A date field saves the instant its value changes (commitsImmediately), but PrimeReact reports a
+  // valid partial parse on every keystroke ("12/03/20" is year 20): typed text is only held here
+  // and committed when the input is left or Enter is pressed. A pick in the panel still commits at once.
+  const typed = useRef<Date | null | undefined>(undefined);
+  const commitTyped = () => {
+    if (typed.current === undefined) return;
+    const date = typed.current;
+    typed.current = undefined;
+    onChange(date ? formatDateAnswer(date, showTime) : null);
+  };
   return (
-    <Calendar
-      value={parseDateAnswer(value, showTime)}
-      disabled={readOnly}
-      required={required}
-      // Days outside another field's date (closing before opening…) can't be picked; the overlay
-      // still refuses a typed-in one (CellEditOverlay's bound check).
-      minDate={dayBound(bounds?.min, showTime, +1)}
-      maxDate={dayBound(bounds?.max, showTime, -1)}
-      dateFormat="dd/mm/yy"
-      showTime={showTime}
-      hourFormat="24"
-      // The panel lives inside the edit overlay's own fixed box instead of being appended to
-      // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
-      // below the fold.
-      appendTo="self"
-      onChange={(e) => onChange(e.value ? formatDateAnswer(e.value as Date, showTime) : null)}
-    />
+    <span style={{ display: "contents" }} onKeyDown={(e) => e.key === "Enter" && commitTyped()}>
+      <Calendar
+        value={parseDateAnswer(value, showTime)}
+        disabled={readOnly}
+        required={required}
+        // Days outside another field's date (closing before opening…) can't be picked; the overlay
+        // still refuses a typed-in one (CellEditOverlay's bound check).
+        minDate={dayBound(bounds?.min, showTime, +1)}
+        maxDate={dayBound(bounds?.max, showTime, -1)}
+        dateFormat="dd/mm/yy"
+        showTime={showTime}
+        hourFormat="24"
+        // The panel lives inside the edit overlay's own fixed box instead of being appended to
+        // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
+        // below the fold.
+        appendTo="self"
+        onBlur={commitTyped}
+        onChange={(e) => {
+          const date = (e.value as Date | null) ?? null;
+          // React reports the typed-in text as an "input" event; a pick in the panel is a click/keydown.
+          if (e.originalEvent?.type === "input" || e.originalEvent?.type === "change") {
+            typed.current = date;
+            return;
+          }
+          typed.current = undefined;
+          onChange(date ? formatDateAnswer(date, showTime) : null);
+        }}
+      />
+    </span>
   );
 }
 
@@ -172,16 +202,25 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // whether a « Nouveau » footer can create the target — all derived from the field
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
+const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, multiple }: FieldRendererProps & { multiple: boolean }) {
+function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
+  // Sources of the last search that could not be narrowed because the field they depend on is empty.
+  const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const orgId = organizationId ?? context?.organizationId;
-  const loadOptions =
+  const sourceOptions =
     orgId != null
-      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext })
+      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext })
       : null;
+  const loadOptions = declaredOptions
+    ? async (q?: string) => {
+        const needle = (q ?? "").trim().toLowerCase();
+        return declaredOptions.filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
+      }
+    : sourceOptions;
   const autoCompleteRef = useRef<AutoComplete>(null);
   const { capTo, panelStyle } = useFieldWidthCap();
   const target = referenceTargetOf(field);
@@ -193,7 +232,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
     capTo(e);
-    setSuggestions(await loadOptions(e.query));
+    const found = (await loadOptions(e.query)) as OptionList;
+    setUnnarrowedSources(found.unnarrowedSources ?? []);
+    setSuggestions(found);
   }
 
   // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
@@ -232,6 +273,29 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     }
   }
 
+  // A suggestion from an external source (INSEE, GéoPlateforme) is not a place yet: it is created
+  // — once per organization, the server answers the existing one — before it can be picked.
+  const notify = useNotify();
+  const [creatingPlace, setCreatingPlace] = useState(false);
+  async function commitPicked(next: FilterOption[] | FilterOption | null) {
+    const picked = next == null ? [] : Array.isArray(next) ? next : [next];
+    if (orgId == null || !picked.some(isExternalSuggestion)) {
+      commit(next);
+      return;
+    }
+    setCreatingPlace(true);
+    try {
+      const resolved = await Promise.all(
+        picked.map((o) => (isExternalSuggestion(o) ? createPlaceFromSuggestion(orgId, o, context?.projectId) : o)),
+      );
+      commit(Array.isArray(next) ? resolved : resolved[0] ?? null);
+    } catch (error) {
+      notify.error(messageForError(error, t("field.placeCreateFailed")));
+    } finally {
+      setCreatingPlace(false);
+    }
+  }
+
   // « Nouveau » creates the target in the edited entity's project and picks it straight away — it
   // is added to a multi-valued answer, it replaces a single one.
   const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
@@ -249,20 +313,32 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     else commit(created);
   }
 
-  const footer = createConfig
+  // Some sources searched without their filter: say which field to fill (or what is wrong with its place).
+  const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
+  const parents = Object.entries(placeContext?.deps ?? {});
+  const emptyParents = parents.filter(([, placeId]) => placeId == null).map(([fieldId]) => fieldId);
+  const narrowHint =
+    emptyParents.length > 0
+      ? t("field.fillToNarrow", { field: named(emptyParents) })
+      : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
+
+  const footer = createConfig || unnarrowedSources.length > 0
     ? (_: unknown, hide: () => void) => (
         <div className="resource-ref-create-footer">
-          <Button
-            type="button"
-            text
-            size="small"
-            icon="bi bi-plus-lg"
-            label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
-            onClick={() => {
-              hide();
-              setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
-            }}
-          />
+          {unnarrowedSources.length > 0 && <small className="resource-ref-narrow-hint">{narrowHint}</small>}
+          {createConfig && (
+            <Button
+              type="button"
+              text
+              size="small"
+              icon="bi bi-plus-lg"
+              label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
+              onClick={() => {
+                hide();
+                setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
+              }}
+            />
+          )}
         </div>
       )
     : undefined;
@@ -308,7 +384,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         field="label"
         multiple={asTokens}
         dropdown={false}
-        disabled={readOnly}
+        disabled={readOnly || creatingPlace}
         required={required}
         onFocus={onFocus}
         // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
@@ -320,15 +396,15 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={target.resourceType === "concepts" ? conceptItem : undefined}
+        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (asTokens && !multiple) {
             // The last pick is the value; none left means cleared.
             const picked = (e.value as FilterOption[] | null) ?? [];
-            commit(picked.length > 0 ? picked[picked.length - 1] : null);
+            void commitPicked(picked.length > 0 ? picked[picked.length - 1] : null);
           } else {
-            commit(e.value as FilterOption[] | FilterOption | null);
+            void commitPicked(e.value as FilterOption[] | FilterOption | null);
           }
         }}
       />
@@ -373,6 +449,33 @@ export const SelectOneConceptRenderer = SelectOneRefRenderer;
 export const SelectManyConceptRenderer = SelectManyRefRenderer;
 export const SelectOneSpatialUnitRenderer = SelectOneRefRenderer;
 
+// BOOLEAN: a checkbox, where unchecked reads as "no". A field that allows "no answer" has a third
+// state, so it gets PrimeReact's TriStateCheckbox: not specified ("?"), yes (ticked), no (empty).
+export function BooleanRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+  const current = typeof value === "boolean" ? value : null;
+  if (field.constraints?.allowNoAnswer) {
+    // The renderer only lives in the editing overlay: the current state is named beside the box there,
+    // while a read-only display (fields/display.tsx) shows the bare disabled checkbox.
+    const label = current === true ? t("field.yes") : current === false ? t("field.no") : t("field.notSpecified");
+    return (
+      // The gap is inline, like the overlay's padding: it must not depend on a stylesheet being reloaded.
+      <span className="boolean-renderer boolean-renderer-tristate" style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}>
+        <YesNoTriState value={current} disabled={readOnly} onChange={onChange} />
+        <span className="boolean-renderer-label" style={{ marginLeft: "0.4rem" }}>{label}</span>
+      </span>
+    );
+  }
+  return (
+    <Checkbox
+      className="boolean-renderer"
+      checked={current === true}
+      disabled={readOnly}
+      required={required}
+      onChange={(e) => onChange(e.checked === true)}
+    />
+  );
+}
+
 interface MeasurementValue {
   numericValue?: number | null;
   symbol?: string | null;
@@ -380,41 +483,89 @@ interface MeasurementValue {
   comment?: string | null;
 }
 
-// MEASUREMENT: a number in the field's own unit (the server always applies that unit — the client
-// never picks one) plus an optional comment. Emits the MeasurementRef shape the PATCH accepts
-// ({ numericValue, comment }), or null once both are empty.
+// The measurement form's layout is inline: it must not depend on a stylesheet having been reloaded.
+// A label sits above its field (a column), the value and the unit side by side, the comment below.
+const MEASUREMENT_FORM: CSSProperties = { display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: "16rem" };
+const MEASUREMENT_ROW: CSSProperties = { display: "flex", gap: "0.75rem", alignItems: "flex-end" };
+const MEASUREMENT_FIELD: CSSProperties = { display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 };
+const MEASUREMENT_LABEL: CSSProperties = {
+  fontSize: "0.75rem",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "var(--text-color-secondary, #6b7280)",
+};
+
+// MEASUREMENT: a number in a unit plus an optional comment. The unit is a selector over the units the
+// field's configuration offers (constraints.units), disabled when there is only one; the picked symbol
+// travels with the number. Emits the MeasurementRef shape the PATCH accepts
+// ({ numericValue, symbol, comment }), or null once the number and the comment are both empty.
 export function MeasurementRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const current = (value != null && typeof value === "object" ? value : {}) as MeasurementValue;
-  const unit = field.constraints?.unit ?? current.symbol ?? null;
+  const units = field.constraints?.units ?? null;
+  // Before any number is entered there is no answer to carry the choice: keep it here until there is.
+  const [picked, setPicked] = useState<string | null>(null);
+  const unit = current.symbol ?? picked ?? field.constraints?.unit ?? null;
 
   function emit(next: MeasurementValue) {
     const empty = next.numericValue == null && !next.comment;
     onChange(empty ? null : { numericValue: next.numericValue ?? null, symbol: unit, comment: next.comment || null });
   }
 
+  const inputNumber = (
+    <InputNumber
+      value={current.numericValue ?? null}
+      disabled={readOnly}
+      required={required}
+      mode="decimal"
+      maxFractionDigits={6}
+      useGrouping={false}
+      min={field.constraints?.min ?? undefined}
+      max={field.constraints?.max ?? undefined}
+      // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
+      onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
+    />
+  );
+  // The unit is always a selector over the units the field's configuration offers; with a single one
+  // it is shown disabled.
+  const offered = units && units.length > 0 ? units : unit ? [unit] : [];
+  const onlyOne = offered.length <= 1;
+
+  // A small form: the value and its unit on the first line, the comment on the second.
   return (
-    <div className="measurement-renderer">
-      <div className="p-inputgroup">
-        <InputNumber
-          value={current.numericValue ?? null}
-          disabled={readOnly}
-          required={required}
-          mode="decimal"
-          maxFractionDigits={6}
-          useGrouping={false}
-          min={field.constraints?.min ?? undefined}
-          max={field.constraints?.max ?? undefined}
-          // See IntegerRenderer: onValueChange would only fire after the editor has already committed.
-          onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
-        />
-        {unit && <span className="p-inputgroup-addon">{unit}</span>}
+    <div className="measurement-renderer" style={MEASUREMENT_FORM}>
+      <div className="measurement-row" style={MEASUREMENT_ROW}>
+        <label className="measurement-field measurement-value" style={{ ...MEASUREMENT_FIELD, flex: "1 1 auto" }}>
+          <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.value")}</span>
+          {inputNumber}
+        </label>
+        {offered.length > 0 && (
+          <label className="measurement-field measurement-unit-field" style={{ ...MEASUREMENT_FIELD, flex: "0 0 8rem" }}>
+            <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.unit")}</span>
+            <Dropdown
+              className="measurement-unit"
+              value={unit}
+              options={offered}
+              disabled={readOnly || onlyOne}
+              aria-label={t("field.unit")}
+              onChange={(e) => {
+                const next = e.value as string;
+                setPicked(next);
+                if (current.numericValue != null || current.comment) {
+                  onChange({ numericValue: current.numericValue ?? null, symbol: next, comment: current.comment || null });
+                }
+              }}
+            />
+          </label>
+        )}
       </div>
-      <InputText
-        value={current.comment ?? ""}
-        disabled={readOnly}
-        placeholder={t("field.comment")}
-        onChange={(e) => emit({ ...current, comment: e.target.value })}
-      />
+      <label className="measurement-field" style={MEASUREMENT_FIELD}>
+        <span className="measurement-label" style={MEASUREMENT_LABEL}>{t("field.comment")}</span>
+        <InputText
+          value={current.comment ?? ""}
+          disabled={readOnly}
+          onChange={(e) => emit({ ...current, comment: e.target.value })}
+        />
+      </label>
     </div>
   );
 }

@@ -513,7 +513,7 @@ class DocumentServiceTest {
         verify(documentRepository).deleteSpecimenDocumentLinks(id);
         verify(documentRepository).deletePhaseDocumentLinks(id);
         verify(documentRepository).deleteContainerDocumentLinks(id);
-        verify(documentRepository).deleteSpecimenStudyDocumentLinks(id);
+        verify(documentRepository).deleteStudyDocumentLinks(id);
         verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(DocumentDTO.class));
         verify(documentStorage).deleteStoredFile(document);
         verify(documentRepository).delete(document);

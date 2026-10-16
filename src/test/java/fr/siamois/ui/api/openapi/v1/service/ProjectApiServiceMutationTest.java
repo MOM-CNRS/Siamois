@@ -87,6 +87,8 @@ class ProjectApiServiceMutationTest {
     @Mock
     private ContainerService containerService;
     @Mock
+    private fr.siamois.domain.services.study.StudyService studyService;
+    @Mock
     private BookmarkService bookmarkService;
     @Mock
     private HistoryAuditService historyAuditService;
@@ -112,7 +114,7 @@ class ProjectApiServiceMutationTest {
                 profilePermissionService,
                 conceptService,
                 conceptMapper,
-                recordingUnitOpenApiService, phaseService, containerService,
+                recordingUnitOpenApiService, phaseService, containerService, studyService,
                 bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
         personDto = new PersonDTO();
@@ -928,6 +930,74 @@ class ProjectApiServiceMutationTest {
                 .isInstanceOf(fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException.class);
 
         verifyNoInteractions(containerService);
+    }
+
+    @Test
+    void pageStudiesForProject_scopesToTheProjectAndBuildsTheSearchFilter() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        Page<fr.siamois.dto.entity.StudyDTO> expected = new PageImpl<>(List.of());
+        when(studyService.searchStudies(eq(institution), any(FilterDTO.class), any(Pageable.class))).thenReturn(expected);
+
+        Page<fr.siamois.dto.entity.StudyDTO> result = service.pageStudiesForProject(
+                caller, "7", 0, 10, null, "ETU", fr.siamois.dto.FieldQuery.NONE);
+
+        assertThat(result).isSameAs(expected);
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(studyService).searchStudies(eq(institution), filter.capture(), any(Pageable.class));
+        assertThat(filter.getValue().valueAsIdListOf("actionUnit")).containsExactly(7L);
+        assertThat(filter.getValue().valueOfAsString("identifier")).isEqualTo("ETU");
+    }
+
+    @Test
+    void pageStudiesForProject_withoutSearchDoesNotFilterOnTheIdentifier() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(studyService.searchStudies(eq(institution), any(FilterDTO.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.pageStudiesForProject(caller, "7", 0, 10, "id:desc", " ", fr.siamois.dto.FieldQuery.NONE);
+
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(studyService).searchStudies(eq(institution), filter.capture(), any(Pageable.class));
+        assertThat(filter.getValue().containsColumn("identifier")).isFalse();
+    }
+
+    @Test
+    void pageStudiesForProject_unknownSortField_throws400() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+
+        assertThatThrownBy(() -> service.pageStudiesForProject(
+                caller, "7", 0, 10, "unknownField:asc", null, fr.siamois.dto.FieldQuery.NONE))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
+
+        verifyNoInteractions(studyService);
+    }
+
+    @Test
+    void parseStudySort_defaultsToTheIdentifierAndEndsOnTheId() {
+        assertThat(ProjectApiService.parseStudySort(null)).hasToString("identifier: ASC,id: ASC");
+        assertThat(ProjectApiService.parseStudySort("creationTime:desc")).hasToString("creationTime: DESC,id: ASC");
+        assertThat(ProjectApiService.parseStudySort("id:desc")).hasToString("id: DESC");
+    }
+
+    @Test
+    void canEditStudiesForProject_checksTheStudyRightsOfTheProject() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(), eq(7L),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.INSTANCE_EDIT_STUDIES),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.ORGANIZATION_EDIT_STUDIES),
+                eq(fr.siamois.domain.models.permissions.PermissionConstants.PROJECT_EDIT_STUDIES)))
+                .thenReturn(true);
+
+        assertThat(service.canEditStudiesForProject(caller, "7", "fr")).isTrue();
     }
 
     @Test

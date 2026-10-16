@@ -12,7 +12,7 @@ export interface RecordingUnitTypesResult {
 // GET /api/v1/projects/{id}/recording-unit-types.
 export async function getRecordingUnitTypes(projectId: string | number): Promise<RecordingUnitTypesResult> {
   const body = await fetchTypesCatalog(`/api/v1/projects/${projectId}/recording-unit-types`);
-  return { tableColumns: body._default?.tableColumns ?? [], fields: body.fields ?? {} };
+  return { tableColumns: body.tableColumns ?? [], fields: body.fields ?? {} };
 }
 
 // GET /api/v1/organizations/{id}/recording-unit-types — the organization-wide list's catalog: the
@@ -20,5 +20,5 @@ export async function getRecordingUnitTypes(projectId: string | number): Promise
 // same default columns as a project's catalog. No per-type entries (`data` is always empty).
 export async function getOrganizationRecordingUnitTypes(organizationId: number): Promise<RecordingUnitTypesResult> {
   const body = await fetchTypesCatalog(`/api/v1/organizations/${organizationId}/recording-unit-types`);
-  return { tableColumns: body._default?.tableColumns ?? [], fields: body.fields ?? {} };
+  return { tableColumns: body.tableColumns ?? [], fields: body.fields ?? {} };
 }

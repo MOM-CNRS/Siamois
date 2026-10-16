@@ -62,14 +62,6 @@ public abstract class SpecimenForm {
     @JsonIgnore
     protected static Concept specimenTypeConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4282392")
-            .build();
-
-    // Specimen category
-    @Transient
-    @JsonIgnore
-    protected static Concept specimenCategoryConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
             .externalId("4286248")
             .build();
 
@@ -272,15 +264,15 @@ public abstract class SpecimenForm {
 
     @Transient
     @JsonIgnore
-    protected static CustomFieldSelectOneFromFieldCode specimenCategoryField =  CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
+    protected static CustomFieldSelectOneFromFieldCode specimenTypeField =  CustomFieldSelectOneFromFieldCode.builder()
+            .label("specimen.field.type")
             .isSystemField(true)
-            .valueBinding("category")
+            .valueBinding("type")
             .id(-409L)
             .styleClass("mr-2 specimen-type-chip")
             .iconClass("bi bi-bucket")
-            .fieldCode(Specimen.CAT_FIELD)
-            .concept(specimenCategoryConcept)
+            .fieldCode(Specimen.TYPE_FIELD)
+            .concept(specimenTypeConcept)
             .build();
 
     @Transient
@@ -468,7 +460,7 @@ public abstract class SpecimenForm {
             SystemFieldSpec.hiddenReadOnly(specimenIdField),
             SystemFieldSpec.readOnly(actionUnitField),
             SystemFieldSpec.of(specimenOtherIdField),
-            SystemFieldSpec.of(specimenCategoryField),
+            SystemFieldSpec.hidden(specimenTypeField),
             SystemFieldSpec.of(isolationNumberField),
             SystemFieldSpec.of(containerField),
             SystemFieldSpec.of(materialField),

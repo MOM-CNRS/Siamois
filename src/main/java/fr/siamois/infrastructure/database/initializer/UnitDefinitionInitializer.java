@@ -36,7 +36,19 @@ public class UnitDefinitionInitializer implements DatabaseInitializer {
     private static final List<UnitDefinitionDTO> UNITS = List.of(
             unit("4289327", "Mètres", "m", UnitDefinition.Dimension.LENGTH, 1.0, true),
             unit(null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false),
-            unit(null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false)
+            unit(null, "Millimètre", "mm", UnitDefinition.Dimension.LENGTH, 0.001, false),
+            unit(null, "Kilomètre", "km", UnitDefinition.Dimension.LENGTH, 1000.0, false),
+            unit(null, "Mètre carré", "m²", UnitDefinition.Dimension.AREA, 1.0, true),
+            unit(null, "Centimètre carré", "cm²", UnitDefinition.Dimension.AREA, 0.0001, false),
+            unit(null, "Are", "a", UnitDefinition.Dimension.AREA, 100.0, false),
+            unit(null, "Hectare", "ha", UnitDefinition.Dimension.AREA, 10_000.0, false),
+            unit(null, "Kilomètre carré", "km²", UnitDefinition.Dimension.AREA, 1_000_000.0, false),
+            unit(null, "Gramme", "g", UnitDefinition.Dimension.MASS, 1.0, true),
+            unit(null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false),
+            unit(null, "Tonne", "t", UnitDefinition.Dimension.MASS, 1_000_000.0, false),
+            unit(null, "Litre", "L", UnitDefinition.Dimension.VOLUME, 1.0, true),
+            unit(null, "Millilitre", "mL", UnitDefinition.Dimension.VOLUME, 0.001, false),
+            unit(null, "Mètre cube", "m³", UnitDefinition.Dimension.VOLUME, 1000.0, false)
     );
 
     @Override

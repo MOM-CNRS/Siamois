@@ -113,7 +113,7 @@ describe("relationTab", () => {
       identifierChip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-child-entity", "9", { label: "Child A", validated: undefined });
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-child-entity", "9", { label: "Child A", validationStatus: undefined });
   });
 
   it("exposes the tab's key/label/badge for EntityDetailPanel to render", () => {

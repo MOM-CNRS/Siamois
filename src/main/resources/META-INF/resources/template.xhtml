@@ -92,62 +92,13 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <h:graphicImage width="50px" style="padding-bottom:32px;"
-                                            library="img" name="siamois_logo.png" styleClass="logo"/>
+                            <a href="https://siamois.eu" target="_blank" rel="noopener noreferrer">
+                                <h:graphicImage width="50px" style="padding-bottom:32px;"
+                                                library="img" name="siamois_logo.png" styleClass="logo"/>
+                            </a>
                         </li>
                     </ul>
 
-                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm"
-                                   style="width:90%;margin:auto;">
-                        <article>
-                            <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
-                                <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
-                                    <i class="bi bi-buildings"/>
-                                </h:panelGroup>
-
-                                <p:selectOneMenu
-                                        id="selectOneMenuInstitution"
-                                        value="#{flowBean.selectedInstitution}"
-                                        filter="true"
-                                        disabled="true"
-                                        converter="#{institutionConverter}"
-                                        filterMatchMode="startsWith"
-                                        filterNormalize="true"
-                                        var="inst"
-                                >
-                                    <f:selectItems value="#{flowBean.institutions}"
-                                                   var="item"
-                                                   itemValue="#{item}"
-                                                   itemLabel="#{item.name}"
-                                    />
-
-                                    <p:column>
-                                        <h:outputText value="#{inst.name}"/>
-                                    </p:column>
-
-                                    <p:ajax event="change"
-                                            process="@this"
-                                            listener="#{flowBean.onFocusInstitutionChange}"
-                                    />
-
-                                </p:selectOneMenu>
-
-                            </h:panelGroup>
-                        </article>
-                    </form:csrfform>
-
-                    <form:csrfform formId="changeOrganisationForm" id="changeOrganisationCsrfForm">
-                        <small class="menu-text" style="
-                               margin-left: 5%;
-                        margin-right: 5%;">
-                            Pour changer d’organisation,
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings/organisation')}"
-                                           onclick="captureUrl()"
-                                           id="changeOrganisationLink">
-                                cliquez ici
-                            </h:commandLink>.
-                        </small>
-                    </form:csrfform>
 
                     <form:csrfform id="navBarCsrfForm" formId="siamoisNavForm">
                         <ul class="nav flex-column">
@@ -176,7 +127,7 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                <h:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="historyLinkNav"
@@ -185,10 +136,10 @@
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
                                     <p:tooltip for="historyLinkNav" value="Historique"/>
-                                </p:commandLink>
+                                </h:commandLink>
                             </li>
                             <li class="nav-item">
-                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                <h:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
@@ -197,7 +148,7 @@
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>
                                     <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
-                                </p:commandLink>
+                                </h:commandLink>
                             </li>
                             <p:divider/>
 
@@ -293,7 +244,7 @@
         <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
             <nav id="sidebarSettings" class="sidebar" aria-label="Settings sidebar">
                 <form:csrfform formId="settingsNavForm">
-                    <ul class="nav flex-column">
+                    <ul class="nav flex-column" style="margin-bottom: 1.25rem;">
                         <li class="nav-item">
                             <h:commandLink action="#{navBean.backFromSettings()}" styleClass="nav-link"
                                            id="backToDashboardLink">
@@ -306,11 +257,12 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <h:commandLink action="#{redirectBean.redirectTo('/settings/profile')}"
-                                           styleClass="nav-link" id="myProfileLink">
-                                <i class="bi bi-person"/>
-                                <span class="menu-text">#{langBean.msg('nav.myProfile')}</span>
-                                <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
+                            <h:commandLink action="#{navBean.goToProjectsSettings()}" styleClass="nav-link"
+                                           id="projectsManagementLink">
+                                <i class="bi bi-arrow-down-square"/>
+                                <span class="menu-text">#{langBean.msg('nav.projectsManagement')}</span>
+                                <p:tooltip for="projectsManagementLink"
+                                           value="#{langBean.msg('nav.projectsManagement.hint')}"/>
                             </h:commandLink>
                         </li>
                         <li class="nav-item">
@@ -323,21 +275,12 @@
                             </h:commandLink>
                         </li>
                         <li class="nav-item">
-                            <h:commandLink action="#{navBean.goToProjectsSettings()}" styleClass="nav-link"
-                                           id="projectsManagementLink">
-                                <i class="bi bi-arrow-down-square"/>
-                                <span class="menu-text">#{langBean.msg('nav.projectsManagement')}</span>
-                                <p:tooltip for="projectsManagementLink"
-                                           value="#{langBean.msg('nav.projectsManagement.hint')}"/>
-                            </h:commandLink>
-                        </li>
-                        <li class="nav-item">
-                            <h:commandLink action="#{navBean.goToExportTemplatesSettings()}" styleClass="nav-link"
-                                           id="exportTemplatesLink">
-                                <i class="bi bi-file-earmark-spreadsheet"/>
-                                <span class="menu-text">#{langBean.msg('nav.exportTemplates')}</span>
-                                <p:tooltip for="exportTemplatesLink"
-                                           value="#{langBean.msg('nav.exportTemplates.hint')}"/>
+                            <h:commandLink action="#{navBean.goToServicesSettings()}" styleClass="nav-link"
+                                           id="servicesLink">
+                                <i class="bi bi-grid"/>
+                                <span class="menu-text">#{langBean.msg('nav.services')}</span>
+                                <p:tooltip for="servicesLink"
+                                           value="#{langBean.msg('nav.services.hint')}"/>
                             </h:commandLink>
                         </li>
                         <ui:fragment rendered="#{navBean.administrationVisible}">
@@ -351,6 +294,14 @@
                                 </h:commandLink>
                             </li>
                         </ui:fragment>
+                        <li class="nav-item">
+                            <h:commandLink action="#{redirectBean.redirectTo('/settings/profile')}"
+                                           styleClass="nav-link" id="myProfileLink">
+                                <i class="bi bi-person"/>
+                                <span class="menu-text">#{langBean.msg('nav.myProfile')}</span>
+                                <p:tooltip for="myProfileLink" value="#{langBean.msg('nav.myProfile.hint')}"/>
+                            </h:commandLink>
+                        </li>
                     </ul>
 
 

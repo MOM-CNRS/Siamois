@@ -47,6 +47,8 @@ class FormConfigAnswerServiceTest {
     private ContainerMapper containerMapper;
     @Mock
     private DocumentMapper documentMapper;
+    @Mock
+    private fr.siamois.mapper.StudyMapper studyMapper;
 
     @InjectMocks
     private FormConfigAnswerService service;
@@ -312,6 +314,49 @@ class FormConfigAnswerServiceTest {
         assertThatItHasASingleOwner(created);
     }
 
+    // ========== Study ==========
+
+    @Test
+    void createOrGetFormConfigAnswer_shouldReturnTheAnswerItAlreadyHasOnAStudy() {
+        fr.siamois.dto.entity.StudyDTO studyDTO = new fr.siamois.dto.entity.StudyDTO();
+        fr.siamois.domain.models.study.Study study = new fr.siamois.domain.models.study.Study();
+        givenCurrentPerson();
+        when(studyMapper.invertConvert(studyDTO)).thenReturn(study);
+        when(formConfigAnswerRepository.findByFormConfigAndStudy(formConfig, study)).thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.save(stored)).thenReturn(stored);
+
+        assertThat(service.createOrGetFormConfigAnswer(formConfig, studyDTO)).isSameAs(stored);
+    }
+
+    @Test
+    void createOrGetFormConfigAnswer_shouldCreateTheAnswerOfAStudyThatHasNone() {
+        fr.siamois.dto.entity.StudyDTO studyDTO = new fr.siamois.dto.entity.StudyDTO();
+        fr.siamois.domain.models.study.Study study = new fr.siamois.domain.models.study.Study();
+        givenCurrentPerson();
+        when(studyMapper.invertConvert(studyDTO)).thenReturn(study);
+        when(formConfigAnswerRepository.findByFormConfigAndStudy(formConfig, study)).thenReturn(Optional.empty());
+        when(formConfigAnswerRepository.save(any(FormConfigAnswer.class))).thenReturn(stored);
+
+        service.createOrGetFormConfigAnswer(formConfig, studyDTO);
+
+        FormConfigAnswer created = capturedSavedAnswer();
+        assertThat(created.getStudy()).isSameAs(study);
+        assertThatItHasASingleOwner(created);
+    }
+
+    @Test
+    void findFormConfigAnswer_shouldReadTheAnswersOfAStudy() {
+        fr.siamois.dto.entity.StudyDTO studyDTO = new fr.siamois.dto.entity.StudyDTO();
+        fr.siamois.domain.models.study.Study study = new fr.siamois.domain.models.study.Study();
+        when(studyMapper.invertConvert(studyDTO)).thenReturn(study);
+        when(formConfigAnswerRepository.findByFormConfigAndStudy(formConfig, study)).thenReturn(Optional.of(stored));
+        when(formConfigAnswerRepository.findByStudy(study)).thenReturn(java.util.List.of(stored));
+
+        assertThat(service.findFormConfigAnswer(formConfig, studyDTO)).contains(stored);
+        assertThat(service.findAllFormConfigAnswers(studyDTO)).containsExactly(stored);
+        verify(formConfigAnswerRepository, never()).save(any());
+    }
+
     // ========== The last author is the user bound to the thread ==========
 
     @Test
@@ -354,7 +399,7 @@ class FormConfigAnswerServiceTest {
      * of one another, so this guards the paste error of also setting somebody else's.
      */
     private void assertThatItHasASingleOwner(FormConfigAnswer answer) {
-        assertThat(Stream.of(answer.getRecordingUnit(), answer.getSpecimen(), answer.getPhase(), answer.getContainer(), answer.getDocument())
+        assertThat(Stream.of(answer.getRecordingUnit(), answer.getSpecimen(), answer.getPhase(), answer.getContainer(), answer.getDocument(), answer.getStudy())
                 .filter(Objects::nonNull))
                 .hasSize(1);
     }

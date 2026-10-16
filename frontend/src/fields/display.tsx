@@ -1,6 +1,8 @@
 // Read-only cell formatting for a dynamic (schema-driven) list column. Deliberately separate from
 // fields/renderers.tsx: those are full PrimeReact edit-mode widgets meant for a form or an edit
 // overlay, which is far more machinery than a table cell needs. A cell just needs a string.
+import { Checkbox } from "primereact/checkbox";
+import { TriStateCheckbox } from "primereact/tristatecheckbox";
 import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
 import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
@@ -63,7 +65,7 @@ function asRef(value: unknown): { id: string; label: string; resourceType: strin
 }
 
 // Each entity type's colour — the theme's own (themed-panel in _panels.scss): context for places and
-// projects, ground for recording units, finds and phases, third for containers. A chip showing an
+// projects, ground for recording units, finds and phases, third for containers, documents and studies. A chip showing an
 // entity always takes its entity's colour, never the colour of the panel it sits in.
 const ENTITY_COLORS: Record<EntityKey, string> = {
   place: "var(--context-main-color, #068da9)",
@@ -73,6 +75,7 @@ const ENTITY_COLORS: Record<EntityKey, string> = {
   phase: "var(--ground-main-color, #7e1717)",
   container: "var(--third-main-color, #e55807)",
   document: "var(--third-main-color, #e55807)",
+  study: "var(--third-main-color, #e55807)",
 };
 
 /** An entity type's colour (registry key), or undefined for a type without one. */
@@ -99,15 +102,14 @@ const GREEN_BORDER = "var(--siamois-green-light-100, #e6f0e6)";
 // for concepts and persons, which have no fiche), its colour — its entity's, Siamois green for
 // vocabulary concepts — and the lighter one its read-only chip is outlined with.
 const REF_KINDS: Record<string, { entityType?: EntityKey; color: string; border: string }> = {
-  "spatial-units": { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
   places: { entityType: "place", color: ENTITY_COLORS.place, border: CONTEXT_BORDER },
-  "action-units": { entityType: "project", color: ENTITY_COLORS.project, border: CONTEXT_BORDER },
   projects: { entityType: "project", color: ENTITY_COLORS.project, border: CONTEXT_BORDER },
   "recording-units": { entityType: "recordingUnit", color: ENTITY_COLORS.recordingUnit, border: GROUND_BORDER },
   finds: { entityType: "find", color: ENTITY_COLORS.find, border: GROUND_BORDER },
   phases: { entityType: "phase", color: ENTITY_COLORS.phase, border: GROUND_BORDER },
   containers: { entityType: "container", color: ENTITY_COLORS.container, border: THIRD_BORDER },
   documents: { entityType: "document", color: ENTITY_COLORS.document, border: THIRD_BORDER },
+  studies: { entityType: "study", color: ENTITY_COLORS.study, border: THIRD_BORDER },
   concepts: { color: "var(--siamois-green, #80b480)", border: GREEN_BORDER },
   persons: { color: "var(--text-color-secondary, #6b7280)", border: "var(--surface-300, #e0e0e0)" },
 };
@@ -190,6 +192,9 @@ function formatOne(field: FieldResource, value: unknown): string {
   if (field.answerType === "DATETIME" && typeof value === "string") {
     return value.slice(0, 10);
   }
+  if (field.answerType === "BOOLEAN" && typeof value === "boolean") {
+    return value ? t("field.yes") : t("field.no");
+  }
   if (typeof value === "number") {
     return String(value);
   }
@@ -230,6 +235,10 @@ export function renderAnswerCell(
   options: { all?: boolean; onOpenLink?: () => void } = {},
 ): ReactNode {
   const value = unwrapAnswer(rawValue);
+  // A yes/no is a checkbox, not text: the editor's own, disabled.
+  if (field.answerType === "BOOLEAN" && (value == null || typeof value === "boolean")) {
+    return booleanMark(value as boolean | null | undefined, field.constraints?.allowNoAnswer === true);
+  }
   if (value == null) return "";
   // A document's external URL opens in a new tab; the click must not also open the cell's editor.
   if (field.valueBinding === "externalUrl" && typeof value === "string" && /^https?:\/\//i.test(value)) {
@@ -268,6 +277,45 @@ export function renderAnswerCell(
           +{hidden}
         </span>
       )}
+    </span>
+  );
+}
+
+/**
+ * The tri-state yes / no / not-specified box, shared by the editor and the read-only display.
+ * PrimeReact's three states are mapped on ours so the box reads the way the data does: its empty
+ * (unset) box is "no", its tick is "yes", and its remaining state, which it draws with the unchecked
+ * icon, is "not specified" and gets a "?" for that icon. Hence a click cycles no → yes → not specified.
+ * `value` and `onChange` are the answer's own (true, false, or null for not specified).
+ */
+export function YesNoTriState({ value, disabled, onChange }: {
+  value: boolean | null;
+  disabled?: boolean;
+  onChange?: (value: boolean | null) => void;
+}) {
+  const shown = value === null ? false : value ? true : null;
+  return (
+    <TriStateCheckbox
+      className={`yes-no-tristate yes-no-${value === null ? "unknown" : value ? "yes" : "no"}`}
+      value={shown}
+      disabled={disabled}
+      uncheckIcon={<span className="yes-no-unknown-mark">?</span>}
+      onChange={(e) => onChange?.(e.value === true ? true : e.value === false ? null : false)}
+    />
+  );
+}
+
+/** A read-only yes/no: the editor's own checkbox, disabled, with the name of its state beside it. */
+function booleanMark(value: boolean | null | undefined, allowNoAnswer: boolean): ReactNode {
+  const label = value === true ? t("field.yes") : value === false ? t("field.no") : allowNoAnswer ? t("field.notSpecified") : t("field.no");
+  return (
+    <span className="boolean-renderer boolean-renderer-tristate" style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}>
+      {allowNoAnswer ? (
+        <YesNoTriState value={value ?? null} disabled />
+      ) : (
+        <Checkbox checked={value === true} disabled />
+      )}
+      <span className="boolean-renderer-label" style={{ marginLeft: "0.4rem" }}>{label}</span>
     </span>
   );
 }

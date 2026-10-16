@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
-import type { FieldState, OptionsContext } from "../rules";
+import type { FieldState, OptionsContext, PlaceContext } from "../rules";
 import type { FieldEditContext } from "./editContext";
 import type { FieldResource } from "./types";
 
 // The "answerType → component" pattern validated on the RU branch's fieldRegistry.tsx (plan
 // §3), re-implemented fresh here (no dependency on that unmerged branch).
+import type { FilterOption } from "./optionSources";
+
 export interface FieldRendererProps {
   field: FieldResource;
   value: unknown;
@@ -23,6 +25,13 @@ export interface FieldRendererProps {
   // what the options source must filter by (the concepts related to another field's answer…).
   bounds?: FieldState["bounds"];
   optionsContext?: OptionsContext;
+  // The options of a type picker: the types the project declared for the table. When set, the picker
+  // offers exactly these (filtered by what is typed) instead of searching the type field's vocabulary.
+  declaredOptions?: readonly FilterOption[];
+  // A place field with sources (INSEE, GEOPLAT…): the places picked in the fields they read.
+  placeContext?: PlaceContext;
+  // The label of another field of the form, to name it in a hint ("fill X to narrow the search").
+  fieldLabelOf?: (fieldId: string) => string;
 }
 
 export type FieldRenderer = (props: FieldRendererProps) => ReactNode;

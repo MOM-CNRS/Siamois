@@ -2,10 +2,11 @@ import type { EntityTypeConfig } from "../types";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
-import { duplicateFind, getFind, listFinds, patchFindAnswers } from "./api";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import { duplicateFind, getFind, listFinds, patchFind, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
-import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
+import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
@@ -27,6 +28,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   panelClass: "specimen-panel",
   api: {
     siblings: (id) => fetchSiblings("finds", id),
+    breadcrumbs: (id) => fetchBreadcrumbs("finds", id),
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),
@@ -69,8 +71,16 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
         entityRef: (entity) => ({ id: entity.id, label: entity.fullIdentifier || String(entity.id) }),
       }),
     ],
-    header: (entity) => (
-      <IdentifierTypeHeader entityType="find" chipPrefix="specimen" label={entity.fullIdentifier} typeLabel={entity.type?.resolvedLabel} />
+    header: (entity, helpers) => (
+      <SchemaEntityHeader
+        entityType="find"
+        chipPrefix="specimen"
+        entity={entity}
+        identifier={entity.fullIdentifier}
+        typesSegment="find-types"
+        patch={patchFind}
+        onSaved={helpers.refetch}
+      />
     ),
     chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),
     // The titlebar's "Créer" makes a sibling in the same project.
@@ -85,7 +95,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
       label: t("entity.find.plural"),
       description: t("home.find.description"),
       className: "sia-welcome-card sia-specimen",
-      chipClassName: "specimen-count-chip-alt",
+      chipClassName: "specimen-count-chip",
       order: 40,
     }),
   },

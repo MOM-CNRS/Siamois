@@ -81,6 +81,13 @@
   padding: 0.5em;
 }
 
+/* Section titles (fiche sections and home panels): title-section level of the typographic scale */
+.siamois-panel .ui-panel.sia-form-panel .ui-panel-titlebar .ui-panel-title {
+  font-size: var(--font-size-title-section);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
+}
+
 /* Welcome cards */
 .sia-welcome-card.ui-card {
   display: flex;

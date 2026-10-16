@@ -25,13 +25,12 @@ function renderCell(key: string, row: ProjectSummary): string {
 }
 
 describe("projectColumns", () => {
-  it("is exactly the three pinned, non-form columns", () => {
-    expect(projectColumns.map((c) => c.key)).toEqual(["fullIdentifier", "name", "recordingUnitCount"]);
+  it("is exactly the two pinned, non-form columns", () => {
+    expect(projectColumns.map((c) => c.key)).toEqual(["name", "recordingUnitCount"]);
   });
 
-  it("falls back to identifier when fullIdentifier is blank", () => {
-    const row = project({ fullIdentifier: "", identifier: "FA" });
-    expect(renderCell("fullIdentifier", row)).toBe("FA");
+  it("makes the name column the identifier (chip) column", () => {
+    expect(findColumn("name").identifier).toBe(true);
   });
 
   it("renders the project name", () => {
@@ -50,7 +49,6 @@ describe("projectColumns", () => {
   });
 
   it("marks every pinned column as sortable, matching ALLOWED_PROJECT_SORT_FIELDS", () => {
-    expect(findColumn("fullIdentifier").sortable).toBe(true);
     expect(findColumn("name").sortable).toBe(true);
     expect(findColumn("recordingUnitCount").sortable).toBe(true);
   });

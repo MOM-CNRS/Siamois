@@ -1733,63 +1733,31 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        void findAccessibleRecordingUnitByKey_numericKey_notFoundById_fallsBackToFullIdentifier() {
+        void findAccessibleRecordingUnitByKey_numericKey_notFoundById_throws() {
+            Set<Long> institutionIds = Set.of(100L);
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.empty());
 
-            RecordingUnit found = new RecordingUnit();
-            found.setId(2L);
-            found.setFullIdentifier("1");
-            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("1", Set.of(100L)))
-                    .thenReturn(Optional.of(found));
-            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
-
-            RecordingUnitDTO result =
-                    recordingUnitService.findAccessibleRecordingUnitByKey("1", Set.of(100L), null);
-
-            assertNotNull(result);
-            verify(recordingUnitRepository).findFirstByFullIdentifierAndInstitutionIdIn("1", Set.of(100L));
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("1", institutionIds, null));
+            verify(recordingUnitRepository, never()).findFirstByFullIdentifierAndInstitutionIdIn(any(), any());
         }
 
         @Test
-        void findAccessibleRecordingUnitByKey_numericOverflow_fallsBackToFullIdentifier() {
-            String hugeKey = "99999999999999999999";
-            RecordingUnit found = new RecordingUnit();
-            found.setId(3L);
-            found.setFullIdentifier(hugeKey);
-            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn(hugeKey, Set.of(100L)))
-                    .thenReturn(Optional.of(found));
-            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
+        void findAccessibleRecordingUnitByKey_numericOverflow_throws() {
+            Set<Long> institutionIds = Set.of(100L);
 
-            RecordingUnitDTO result =
-                    recordingUnitService.findAccessibleRecordingUnitByKey(hugeKey, Set.of(100L), null);
-
-            assertNotNull(result);
+            assertThrows(RecordingUnitNotFoundException.class,
+                    () -> recordingUnitService.findAccessibleRecordingUnitByKey("99999999999999999999", institutionIds, null));
             verify(recordingUnitRepository, never()).findById(anyLong());
         }
 
         @Test
-        void findAccessibleRecordingUnitByKey_nonNumericKey_usesFullIdentifierLookup() {
-            RecordingUnit found = new RecordingUnit();
-            found.setId(4L);
-            found.setFullIdentifier("ABC-1");
-            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", Set.of(100L)))
-                    .thenReturn(Optional.of(found));
-            when(recordingUnitMapper.convert(found)).thenReturn(new RecordingUnitDTO());
-
-            RecordingUnitDTO result =
-                    recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", Set.of(100L), null);
-
-            assertNotNull(result);
-        }
-
-        @Test
-        void findAccessibleRecordingUnitByKey_fullIdentifierNotFound_throws() {
+        void findAccessibleRecordingUnitByKey_nonNumericKey_isNotAKey() {
             Set<Long> institutionIds = Set.of(100L);
-            when(recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn("ABC-1", institutionIds))
-                    .thenReturn(Optional.empty());
 
             assertThrows(RecordingUnitNotFoundException.class,
                     () -> recordingUnitService.findAccessibleRecordingUnitByKey("ABC-1", institutionIds, null));
+            verifyNoInteractions(recordingUnitRepository);
         }
 
         @Test
@@ -1962,7 +1930,7 @@ class RecordingUnitServiceTest {
             RecordingUnit unit = new RecordingUnit();
             unit.setId(1L);
             unit.setFullIdentifier("RU-1");
-            unit.setValidated(ValidationStatus.INCOMPLETE);
+            unit.setValidationStatus(ValidationStatus.INCOMPLETE);
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
             when(recordingUnitRepository.save(unit)).thenReturn(unit);
@@ -1970,7 +1938,7 @@ class RecordingUnitServiceTest {
 
             recordingUnitService.toggleValidated(1L);
 
-            assertEquals(ValidationStatus.COMPLETE, unit.getValidated());
+            assertEquals(ValidationStatus.COMPLETE, unit.getValidationStatus());
         }
 
         @Test
@@ -1978,7 +1946,7 @@ class RecordingUnitServiceTest {
             RecordingUnit unit = new RecordingUnit();
             unit.setId(1L);
             unit.setFullIdentifier("RU-1");
-            unit.setValidated(ValidationStatus.COMPLETE);
+            unit.setValidationStatus(ValidationStatus.COMPLETE);
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
             when(recordingUnitRepository.save(unit)).thenReturn(unit);
@@ -1986,7 +1954,7 @@ class RecordingUnitServiceTest {
 
             recordingUnitService.toggleValidated(1L);
 
-            assertEquals(ValidationStatus.VALIDATED, unit.getValidated());
+            assertEquals(ValidationStatus.VALIDATED, unit.getValidationStatus());
         }
 
         @Test
@@ -1994,7 +1962,7 @@ class RecordingUnitServiceTest {
             RecordingUnit unit = new RecordingUnit();
             unit.setId(1L);
             unit.setFullIdentifier("RU-1");
-            unit.setValidated(ValidationStatus.VALIDATED);
+            unit.setValidationStatus(ValidationStatus.VALIDATED);
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit));
             when(recordingUnitRepository.save(unit)).thenReturn(unit);
@@ -2002,7 +1970,7 @@ class RecordingUnitServiceTest {
 
             recordingUnitService.toggleValidated(1L);
 
-            assertEquals(ValidationStatus.INCOMPLETE, unit.getValidated());
+            assertEquals(ValidationStatus.INCOMPLETE, unit.getValidationStatus());
         }
 
         @Test

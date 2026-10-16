@@ -240,11 +240,6 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
 
     @Modifying
     @Transactional
-    @Query(nativeQuery = true, value = "DELETE FROM action_action_code WHERE fk_action_id = :actionUnitId")
-    void deleteSecondaryActionCodeLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
-
-    @Modifying
-    @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM action_hierarchy WHERE fk_parent_id = :actionUnitId OR fk_child_id = :actionUnitId")
     void deleteHierarchyLinksForActionUnit(@Param("actionUnitId") Long actionUnitId);
 

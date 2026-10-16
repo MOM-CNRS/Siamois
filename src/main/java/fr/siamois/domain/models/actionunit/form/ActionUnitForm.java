@@ -83,7 +83,7 @@ public abstract class ActionUnitForm {
     @Transient
     @JsonIgnore
     public static final CustomFieldSelectOneFromFieldCode ACTION_UNIT_TYPE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
-            .label("specimen.field.category")
+            .label("specimen.field.type")
             .isSystemField(true)
             .id(-101L)
             .valueBinding("type")
@@ -121,7 +121,6 @@ public abstract class ActionUnitForm {
             .isSystemField(true)
             .id(-104L)
             .valueBinding("spatialContext")
-            .source("GEOPLAT")
             .concept(SPATIAL_CONTEXT_CONCEPT)
             .build();
 
@@ -151,7 +150,6 @@ public abstract class ActionUnitForm {
             .label("common.label.mainLocation")
             .isSystemField(true)
             .id(-108L)
-            .source("INSEE")
             .valueBinding("mainLocation")
             .concept(MAIN_LOCATION_CONCEPT)
             .build();

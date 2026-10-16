@@ -131,6 +131,11 @@ class FormConfigServiceTest {
         field.setLabel("Type de mobilier");
     }
 
+    /** What the row reads back as once it has been promoted to the subtype table. */
+    private ConceptFieldFormConfig promotedFrom(FieldFormConfig plain) {
+        return new ConceptFieldFormConfig(plain);
+    }
+
     // --- Creation / reuse of the ConceptFieldFormConfig -----------------------------------------
 
     @Test
@@ -199,16 +204,19 @@ class FormConfigServiceTest {
     }
 
     @Test
-    void addConceptConfigFor_shouldConvertAndKeepAttributes_whenExistingConfigIsNotConceptTyped() throws Exception {
+    void addConceptConfigFor_shouldPromoteTheRowInPlaceAndKeepAttributes_whenExistingConfigIsNotConceptTyped() throws Exception {
         FieldFormConfig existing = new FieldFormConfig();
         existing.setFormConfig(formConfig);
         existing.setField(field);
-        existing.setActive(false);
-        existing.setMandatory(true);
-        existing.setInstitutionLocked(true);
-        existing.setPosition(7);
 
-        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        ConceptFieldFormConfig promoted = promotedFrom(existing);
+        promoted.setActive(false);
+        promoted.setMandatory(true);
+        promoted.setInstitutionLocked(true);
+        promoted.setPosition(7);
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field))
+                .thenReturn(Optional.of(existing), Optional.of(promoted));
         stubVocabularyResolution();
         when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
         when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
@@ -217,20 +225,31 @@ class FormConfigServiceTest {
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
         ConceptFieldFormConfig saved = captureSavedConfig();
-        assertThat(saved).isNotSameAs(existing);
-        assertThat(saved.getId()).isSameAs(existing.getId());
-        assertThat(saved.getFormConfig()).isSameAs(formConfig);
-        assertThat(saved.getField()).isSameAs(field);
+        assertThat(saved).isSameAs(promoted);
         assertThat(saved.isActive()).isFalse();
         assertThat(saved.isMandatory()).isTrue();
         assertThat(saved.isInstitutionLocked()).isTrue();
         assertThat(saved.getPosition()).isEqualTo(7);
         assertThat(saved.getBranchTopTerm()).isSameAs(branchTopConcept);
         assertThat(saved.getCollection()).isNull();
-        // the stale plain FieldFormConfig must be removed (and the removal flushed) before the new
-        // ConceptFieldFormConfig with the same id is saved, or Hibernate throws NonUniqueObjectException
-        verify(fieldFormConfigRepository).delete(existing);
-        verify(fieldFormConfigRepository).flush();
+        // the row is promoted in place: deleting it and saving a new one in the same transaction makes
+        // Envers write two audit rows under the same (id, revision) key
+        verify(fieldFormConfigRepository).promoteToConceptConfig(200L, 100L);
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
+    }
+
+    @Test
+    void addConceptConfigFor_shouldFail_whenThePromotedRowCannotBeReadBackAsAConceptConfig() {
+        FieldFormConfig existing = new FieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field))
+                .thenReturn(Optional.of(existing), Optional.of(existing));
+
+        assertThatThrownBy(() -> formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO))
+                .isInstanceOf(IllegalStateException.class);
+        verify(fieldFormConfigRepository, never()).save(any());
     }
 
     @Test
@@ -445,29 +464,31 @@ class FormConfigServiceTest {
     }
 
     @Test
-    void addConceptConfigFor_shouldConvertAndKeepAttributes_whenExistingCollectionConfigIsNotConceptTyped() {
+    void addConceptConfigFor_shouldPromoteTheRowInPlaceAndKeepAttributes_whenExistingCollectionConfigIsNotConceptTyped() {
         ConceptCollectionDTO collectionDTO = collectionDTO();
         ConceptCollection savedCollection = savedCollection();
 
         FieldFormConfig existing = new FieldFormConfig();
         existing.setFormConfig(formConfig);
         existing.setField(field);
-        existing.setActive(false);
-        existing.setPosition(7);
 
-        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        ConceptFieldFormConfig promoted = promotedFrom(existing);
+        promoted.setActive(false);
+        promoted.setPosition(7);
+
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field))
+                .thenReturn(Optional.of(existing), Optional.of(promoted));
         when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
 
         formConfigService.addConceptConfigFor(formConfig, field, collectionDTO);
 
         ConceptFieldFormConfig saved = captureSavedConfig();
-        assertThat(saved).isNotSameAs(existing);
-        assertThat(saved.getId()).isSameAs(existing.getId());
+        assertThat(saved).isSameAs(promoted);
         assertThat(saved.isActive()).isFalse();
         assertThat(saved.getPosition()).isEqualTo(7);
         assertThat(saved.getCollection()).isSameAs(savedCollection);
-        verify(fieldFormConfigRepository).delete(existing);
-        verify(fieldFormConfigRepository).flush();
+        verify(fieldFormConfigRepository).promoteToConceptConfig(200L, 100L);
+        verify(fieldFormConfigRepository, never()).delete(any(FieldFormConfig.class));
     }
 
     @Test

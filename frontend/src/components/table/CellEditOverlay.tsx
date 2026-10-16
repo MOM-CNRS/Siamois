@@ -265,6 +265,21 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     return () => ZIndexUtils.clear(box);
   }, [hasTarget]);
 
+  // The overlay opens on its cell, but a cell near the bottom (or the right edge) of the window would
+  // leave it cut off: after every render, shift it back inside the window, with a margin.
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box || !target) return;
+    const margin = 12;
+    box.style.top = `${target.anchor.top}px`;
+    box.style.left = `${target.anchor.left}px`;
+    const rect = box.getBoundingClientRect();
+    const overflowBottom = rect.bottom - (window.innerHeight - margin);
+    if (overflowBottom > 0) box.style.top = `${Math.max(margin, target.anchor.top - overflowBottom)}px`;
+    const overflowRight = rect.right - (window.innerWidth - margin);
+    if (overflowRight > 0) box.style.left = `${Math.max(margin, target.anchor.left - overflowRight)}px`;
+  });
+
   // Focus leaving the overlay (a click elsewhere, Tab) is what "the edit is finished" means for a
   // text/number widget. Mousedown rather than click: a click on another cell would otherwise open
   // that cell's editor before this one had a chance to commit.
@@ -330,6 +345,10 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         top: `${anchor.top}px`,
         left: `${anchor.left}px`,
         minWidth: `${Math.max(anchor.width, 12 * 16)}px`,
+        // A yes/no is a small box and its label: it needs room around it, and enough height to hide the cell below.
+        ...(field.answerType === "BOOLEAN" ? { padding: "0.5rem 1rem", minHeight: "2.75rem", display: "flex", alignItems: "center" } : {}),
+        // A measurement is a small form: room around its fields.
+        ...(field.answerType === "MEASUREMENT" ? { padding: "0.75rem 1rem" } : {}),
       }}
       onKeyDown={onKeyDown}
     >
@@ -367,6 +386,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           context={editContextOf(target.row, entityType, organizationId)}
           bounds={target.fieldState?.bounds}
           optionsContext={target.fieldState?.optionsContext}
+          placeContext={target.fieldState?.placeContext}
+          fieldLabelOf={target.fieldLabelOf}
           onChange={onValueChange}
         />
       )}

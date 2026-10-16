@@ -13,5 +13,4 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class TypeSummary implements Serializable {
     private String name;
-    private boolean isDefault;
 }

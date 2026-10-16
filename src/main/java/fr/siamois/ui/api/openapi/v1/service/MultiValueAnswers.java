@@ -4,6 +4,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
@@ -52,6 +53,7 @@ public class MultiValueAnswers {
             Phase.class, new Owner("phases", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.PHASE)),
             Container.class, new Owner("containers", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.CONTENANT)),
             Document.class, new Owner("documents", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.DOCUMENT)),
+            Study.class, new Owner("studies", SystemFieldCatalog.sharedFieldsOf(ConfigurableTable.STUDY)),
             ActionUnit.class, new Owner("projects", new PanelFieldSource(ActionUnit.DETAILS_FORM).getAllFields()));
 
     /** Each owner's relation fields, by field id. */

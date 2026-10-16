@@ -5,6 +5,7 @@ import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -76,8 +77,8 @@ public class RecordingUnitAnswersProjector {
 
     private static final String CONCEPTS = "concepts";
     private static final String PERSONS = "persons";
-    private static final String ACTION_UNITS = "action-units";
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String ACTION_UNITS = "projects";
+    private static final String SPATIAL_UNITS = "places";
     private static final String PHASES = "phases";
 
     private static final Map<String, CustomField> FIELDS_BY_ID = indexDetailsFormFields();
@@ -217,6 +218,9 @@ public class RecordingUnitAnswersProjector {
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
+        }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
         }
         if (field instanceof CustomFieldDateTime) {
             return raw;

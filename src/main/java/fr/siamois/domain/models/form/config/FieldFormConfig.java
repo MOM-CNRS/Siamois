@@ -83,6 +83,14 @@ public class FieldFormConfig {
     @Column(name = "rules", columnDefinition = "jsonb")
     protected String rules;
 
+    /**
+     * For a measurement: the units it can be entered in under this configuration, in the
+     * {@link FieldUnits} JSON format, or null to keep the field's own unit.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "units", columnDefinition = "jsonb")
+    protected String units;
+
     public FieldFormConfig(FieldFormConfig fieldFormConfig) {
         this.id = fieldFormConfig.getId();
         this.field = fieldFormConfig.getField();
@@ -94,6 +102,7 @@ public class FieldFormConfig {
         this.group = fieldFormConfig.getGroup();
         this.width = fieldFormConfig.getWidth();
         this.rules = fieldFormConfig.getRules();
+        this.units = fieldFormConfig.getUnits();
     }
 
     public void setField(@NonNull CustomField field) {

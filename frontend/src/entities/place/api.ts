@@ -77,10 +77,10 @@ export interface PlaceCreateBody {
 }
 
 interface PlaceCreatedResponseBody {
-  data: { id: number; name: string; code?: string | null };
+  data: { id: string; name: string; code?: string | null };
 }
 
-export async function createPlace(body: PlaceCreateBody): Promise<{ id: number }> {
+export async function createPlace(body: PlaceCreateBody): Promise<{ id: string }> {
   const response = await apiFetch<PlaceCreatedResponseBody>("/api/v1/places", {
     method: "POST",
     body: {
@@ -95,7 +95,22 @@ export async function createPlace(body: PlaceCreateBody): Promise<{ id: number }
 }
 
 // POST /api/v1/places/{id}/duplicate — same fields and parents, named "name (n)".
-export async function duplicatePlace(id: string | number): Promise<{ id: number }> {
+export async function duplicatePlace(id: string | number): Promise<{ id: string }> {
   const response = await apiFetch<PlaceCreatedResponseBody>(`/api/v1/places/${id}/duplicate`, { method: "POST" });
+  return response.data;
+}
+
+/**
+ * The header's save: a new name (a place's identifier is its name) and/or a new type, in one
+ * PATCH — the flat `name` / `typeConceptId` of PlacePatchRequest.
+ */
+export async function patchPlaceHeader(
+  id: string | number,
+  changes: { name?: string; typeId?: string | null },
+): Promise<PlaceDetail> {
+  const body: Record<string, unknown> = {};
+  if (changes.name !== undefined) body.name = changes.name;
+  if (changes.typeId !== undefined) body.typeConceptId = changes.typeId == null ? null : Number(changes.typeId);
+  const response = await apiFetch<PlaceResponseBody>(`/api/v1/places/${id}`, { method: "PATCH", body });
   return response.data;
 }

@@ -34,10 +34,10 @@ public class ValidationStatusService {
         if (entity == null) {
             throw new NoSuchElementException(type.getSimpleName() + " " + id + " not found");
         }
-        if (entity.getValidated() == status) {
+        if (entity.getValidationStatus() == status) {
             return;
         }
-        entity.setValidated(status);
+        entity.setValidationStatus(status);
         if (status == ValidationStatus.VALIDATED) {
             entity.setValidatedAt(OffsetDateTime.now(ZoneOffset.UTC));
             entity.setValidatedBy(personId != null ? entityManager.getReference(Person.class, personId) : null);

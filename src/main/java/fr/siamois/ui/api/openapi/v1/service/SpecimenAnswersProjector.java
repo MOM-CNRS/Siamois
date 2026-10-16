@@ -4,6 +4,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -170,6 +171,9 @@ public class SpecimenAnswersProjector {
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
         }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
+        }
         if (field instanceof CustomFieldDateTime) {
             return raw;
         }
@@ -206,7 +210,7 @@ public class SpecimenAnswersProjector {
         if (item instanceof PersonDTO p) return ref(p.getId(), "persons", p.displayName());
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof ActionUnitSummaryDTO a) {
-            return ref(a.getId(), "action-units", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
+            return ref(a.getId(), "projects", a.getFullIdentifier() != null ? a.getFullIdentifier() : a.getName());
         }
         if (item instanceof SpecimenSummaryDTO s) return ref(s.getId(), "finds", s.getFullIdentifier());
         if (item instanceof ContainerDTO c) return ref(c.getId(), "containers", c.getIdentifier());

@@ -348,7 +348,7 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setGeom(recordingUnit.getGeom());
         managedRecordingUnit.setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         managedRecordingUnit.setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
-        managedRecordingUnit.setValidated(recordingUnit.getValidated());
+        managedRecordingUnit.setValidationStatus(recordingUnit.getValidationStatus());
         managedRecordingUnit.setValidatedAt(recordingUnit.getValidatedAt());
         managedRecordingUnit.setValidatedBy(recordingUnit.getValidatedBy());
         managedRecordingUnit.setTaq(recordingUnit.getTaq());
@@ -495,9 +495,8 @@ public class RecordingUnitService implements ArkEntityService {
     /**
      * Résout une UE pour les institutions accessibles à l'utilisateur (API OpenAPI).
      * <ul>
-     *     <li>Si la clé est composée uniquement de chiffres : recherche par {@code recording_unit_id} ;
-     *     si aucune ligne, repli sur {@link #resolveRecordingUnitEntityByFullIdentifier(String, Set)}.</li>
-     *     <li>Sinon : recherche par {@code full_identifier} dans les institutions accessibles (ordre d'id croissant).</li>
+     *     <li>La clé est le {@code recording_unit_id}, en chiffres décimaux : c'est la seule clé de l'API
+     *     (pas d'identifiant métier).</li>
      * </ul>
      *
      * @param counts si la liste contient {@code "specimen"}, charge le nombre de spécimens associés.
@@ -540,7 +539,6 @@ public class RecordingUnitService implements ArkEntityService {
 
     /**
      * UE identifiée par sa clé primaire {@code recording_unit_id}, si l'institution de l'UE est dans le périmètre.
-     * (Contrairement à {@link #findAccessibleRecordingUnitByKey}, aucun repli sur un identifiant métier numérique.)
      */
     @Transactional(readOnly = true)
     public RecordingUnitDTO requireAccessibleRecordingUnitByPrimaryKey(long recordingUnitId,
@@ -754,44 +752,30 @@ public class RecordingUnitService implements ArkEntityService {
                 .toList();
     }
 
-    private RecordingUnit resolveRecordingUnitEntityByKey(String idOrKey, Set<Long> accessibleInstitutionIds) {
+    /** The recording unit of a database id, if it belongs to an accessible institution. */
+    private RecordingUnit resolveRecordingUnitEntityByKey(String id, Set<Long> accessibleInstitutionIds) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             throw new RecordingUnitNotFoundException("No institution scope for current user");
         }
-        String key = idOrKey == null ? "" : idOrKey.trim();
-        if (key.isEmpty()) {
-            throw new RecordingUnitNotFoundException("Recording unit key must not be empty");
+        String key = id == null ? "" : id.trim();
+        if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
+            throw new RecordingUnitNotFoundException("Recording unit not found with ID: " + key);
         }
-        if (key.chars().allMatch(Character::isDigit)) {
-            return resolveByNumericKey(key, accessibleInstitutionIds);
-        }
-        return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
-    }
-
-    private RecordingUnit resolveByNumericKey(String key, Set<Long> accessibleInstitutionIds) {
+        long numericId;
         try {
-            long numericId = Long.parseLong(key);
-            Optional<RecordingUnit> byPk = recordingUnitRepository.findById(numericId);
-            if (byPk.isEmpty()) {
-                return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
-            }
-            RecordingUnit entity = byPk.get();
-            RecordingUnitDTO converted = recordingUnitMapper.convert(entity);
-            Long instId = converted.getCreatedByInstitution() == null ? null
-                    : converted.getCreatedByInstitution().getId();
-            if (instId != null && accessibleInstitutionIds.contains(instId)) {
-                return entity;
-            }
-            throw new RecordingUnitNotFoundException("Recording unit not found with key: " + key);
+            numericId = Long.parseLong(key);
         } catch (NumberFormatException e) {
-            return resolveRecordingUnitEntityByFullIdentifier(key, accessibleInstitutionIds);
+            throw new RecordingUnitNotFoundException("Recording unit not found with ID: " + key);
         }
-    }
-
-    private RecordingUnit resolveRecordingUnitEntityByFullIdentifier(String fullIdentifier,
-                                                                     Set<Long> accessibleInstitutionIds) {
-        return recordingUnitRepository.findFirstByFullIdentifierAndInstitutionIdIn(fullIdentifier, accessibleInstitutionIds)
-                .orElseThrow(() -> new RecordingUnitNotFoundException("Recording unit not found with key: " + fullIdentifier));
+        RecordingUnit entity = recordingUnitRepository.findById(numericId)
+                .orElseThrow(() -> new RecordingUnitNotFoundException("Recording unit not found with ID: " + key));
+        RecordingUnitDTO converted = recordingUnitMapper.convert(entity);
+        Long instId = converted.getCreatedByInstitution() == null ? null
+                : converted.getCreatedByInstitution().getId();
+        if (instId != null && accessibleInstitutionIds.contains(instId)) {
+            return entity;
+        }
+        throw new RecordingUnitNotFoundException("Recording unit not found with ID: " + key);
     }
 
     @Override
@@ -1321,7 +1305,7 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnit unit = recordingUnitRepository.findById(id)
                 .orElseThrow(() -> new RecordingUnitNotFoundException("Recording not found with id: " + id));
 
-        unit.setValidated(unit.getValidated().nextInCycle());
+        unit.setValidationStatus(unit.getValidationStatus().nextInCycle());
 
         return recordingUnitMapper.convert(recordingUnitRepository.save(unit));
     }

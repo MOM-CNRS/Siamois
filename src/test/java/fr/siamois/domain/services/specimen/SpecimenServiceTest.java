@@ -222,7 +222,7 @@ class SpecimenServiceTest {
         category.setId(42L);
         Specimen specSubject = new Specimen();
         specSubject.setRecordingUnit(recordingUnit);
-        specSubject.setCategory(category);
+        specSubject.setType(category);
         specSubject.setParents(new HashSet<>(List.of(secondParent, firstParent)));
 
         assertTrue(spec.generationRequired().test(specSubject));
@@ -364,14 +364,14 @@ class SpecimenServiceTest {
 
 
     @Test
-    void testFindAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining() {
+    void testFindAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining() {
         // Préparation des données mockées
         Specimen mockSpecimen = new Specimen();
         SpecimenDTO mockSpecimenDTO = new SpecimenDTO();
         Page<Specimen> specimenPage = new PageImpl<>(List.of(mockSpecimen));
 
         // Mock du repository
-        when(specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenRepository.findAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(1L), eq("ABC"), eq(new Long[]{1L, 2L}), eq("filter"), eq("en"), any(Pageable.class)))
                 .thenReturn(specimenPage);
 
@@ -379,7 +379,7 @@ class SpecimenServiceTest {
         when(specimenMapper.convert(mockSpecimen)).thenReturn(mockSpecimenDTO);
 
         // Appel de la méthode
-        Page<SpecimenDTO> result = specimenService.findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpecimenDTO> result = specimenService.findAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 1L, "ABC", new Long[]{1L, 2L}, "filter", "en", PageRequest.of(0, 10));
 
         // Vérifications
@@ -388,18 +388,18 @@ class SpecimenServiceTest {
         assertEquals(mockSpecimenDTO, result.getContent().get(0));
 
         // Vérification des appels
-        verify(specimenRepository).findAllByInstitutionAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        verify(specimenRepository).findAllByInstitutionAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(1L), eq("ABC"), eq(new Long[]{1L, 2L}), eq("filter"), eq("en"), any(Pageable.class));
     }
 
 
     @Test
-    void testFindAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining() {
+    void testFindAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining() {
         // 1. Préparation des données
         final Long institutionId = 1L;
         final Long recordingUnitId = 10L;
         final String fullIdentifier = "DEF";
-        final Long[] categoryIds = new Long[]{3L};
+        final Long[] typeIds = new Long[]{3L};
         final String globalFilter = "global";
         final String langCode = "fr";
         final Pageable pageable = PageRequest.of(1, 5);
@@ -409,17 +409,17 @@ class SpecimenServiceTest {
         Page<Specimen> mockPage = new PageImpl<>(Collections.singletonList(mockSpecimen));
 
         // 2. Configuration des mocks
-        when(specimenRepository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenRepository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
-                eq(categoryIds), eq(globalFilter), eq(langCode), anyString(), any(Pageable.class)))
+                eq(typeIds), eq(globalFilter), eq(langCode), anyString(), any(Pageable.class)))
                 .thenReturn(mockPage);
 
         when(specimenMapper.convert(mockSpecimen))
                 .thenReturn(mockDto);
 
         // 3. Exécution du test
-        Page<SpecimenDTO> result = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
-                institutionId, recordingUnitId, fullIdentifier, categoryIds, globalFilter, langCode, pageable);
+        Page<SpecimenDTO> result = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
+                institutionId, recordingUnitId, fullIdentifier, typeIds, globalFilter, langCode, pageable);
 
         // 4. Assertions
         assertNotNull(result, "La page de résultats ne doit pas être null");
@@ -428,9 +428,9 @@ class SpecimenServiceTest {
 
         // 5. Vérification des interactions
         verify(specimenRepository, times(1))
-                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                .findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                         eq(institutionId), eq(recordingUnitId), eq(fullIdentifier),
-                        eq(categoryIds), eq(globalFilter), eq(langCode),
+                        eq(typeIds), eq(globalFilter), eq(langCode),
                         eq("s.creation_time DESC, s.specimen_id ASC"), any(Pageable.class));
 
         verify(specimenMapper, times(1))
@@ -483,14 +483,14 @@ class SpecimenServiceTest {
 
 
     @Test
-    void test_findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining() {
+    void test_findAllBySpatialUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining() {
         // 1. Préparation des données
         Specimen mockSpecimen = new Specimen();
         SpecimenDTO mockDto = new SpecimenDTO();
         Page<Specimen> mockPage = new PageImpl<>(List.of(mockSpecimen));
 
         // 2. Configuration des mocks
-        when(specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenRepository.findAllBySpatialUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(1L), eq("DEF"), eq(new Long[]{3L}), eq("global"), eq("fr"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
@@ -498,7 +498,7 @@ class SpecimenServiceTest {
                 .thenReturn(mockDto);
 
         // 3. Exécution du test
-        Page<SpecimenDTO> result = specimenService.findAllBySpatialUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpecimenDTO> result = specimenService.findAllBySpatialUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 1L, "DEF", new Long[]{3L}, "global", "fr", PageRequest.of(1, 5));
 
         // 4. Assertions
@@ -508,21 +508,21 @@ class SpecimenServiceTest {
 
         // 5. Vérification des interactions
         verify(specimenRepository, times(1))
-                .findAllBySpatialUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                .findAllBySpatialUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                         eq(1L), eq("DEF"), eq(new Long[]{3L}), eq("global"), eq("fr"), any(Pageable.class));
         verify(specimenMapper, times(1))
                 .convert(mockSpecimen);
     }
 
     @Test
-    void test_findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining() {
+    void test_findAllByActionUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining() {
         // 1. Préparation des données
         Specimen mockSpecimen = new Specimen();
         SpecimenDTO mockDto = new SpecimenDTO();
         Page<Specimen> mockPage = new PageImpl<>(List.of(mockSpecimen));
 
         // 2. Configuration des mocks
-        when(specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenRepository.findAllByActionUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(1L), eq("DEF"), eq(new Long[]{3L}), eq("global"), eq("fr"), any(Pageable.class)))
                 .thenReturn(mockPage);
 
@@ -530,7 +530,7 @@ class SpecimenServiceTest {
                 .thenReturn(mockDto);
 
         // 3. Exécution du test
-        Page<SpecimenDTO> result = specimenService.findAllByActionUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpecimenDTO> result = specimenService.findAllByActionUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 1L, "DEF", new Long[]{3L}, "global", "fr", PageRequest.of(1, 5));
 
         // 4. Assertions
@@ -540,7 +540,7 @@ class SpecimenServiceTest {
 
         // 5. Vérification des interactions
         verify(specimenRepository, times(1))
-                .findAllByActionUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                .findAllByActionUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                         eq(1L), eq("DEF"), eq(new Long[]{3L}), eq("global"), eq("fr"), any(Pageable.class));
         verify(specimenMapper, times(1))
                 .convert(mockSpecimen);
@@ -667,7 +667,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.INCOMPLETE);
+        specimen.setValidationStatus(ValidationStatus.INCOMPLETE);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -677,7 +677,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.COMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.COMPLETE, specimen.getValidationStatus());
         verify(specimenRepository).save(specimen);
     }
 
@@ -686,7 +686,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.COMPLETE);
+        specimen.setValidationStatus(ValidationStatus.COMPLETE);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -696,7 +696,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.VALIDATED, specimen.getValidated());
+        assertEquals(ValidationStatus.VALIDATED, specimen.getValidationStatus());
     }
 
     @Test
@@ -704,7 +704,7 @@ class SpecimenServiceTest {
         // Arrange
         Long id = 1L;
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.VALIDATED);
+        specimen.setValidationStatus(ValidationStatus.VALIDATED);
 
         when(specimenRepository.findById(id)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(any(Specimen.class))).thenAnswer(i -> i.getArguments()[0]);
@@ -714,7 +714,7 @@ class SpecimenServiceTest {
         specimenService.toggleValidated(id);
 
         // Assert
-        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidationStatus());
     }
 
     @Test
@@ -1064,32 +1064,17 @@ class SpecimenServiceTest {
     }
 
     @Test
-    void findAccessibleByKey_fullIdentifier_whenNumericMiss() {
-        Specimen specimen = new Specimen();
-        specimen.setId(1L);
-        SpecimenDTO dto = new SpecimenDTO();
+    void findAccessibleByKey_numericId_notFound_isEmpty() {
         when(specimenRepository.findById(123L, Specimen.class)).thenReturn(Optional.empty());
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn("123", Set.of(10L)))
-                .thenReturn(Optional.of(specimen));
-        when(specimenMapper.convert(specimen)).thenReturn(dto);
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        dto.setCreatedByInstitution(inst);
 
-        Optional<SpecimenDTO> result = specimenService.findAccessibleByKey("123", Set.of(10L));
-
-        assertTrue(result.isPresent());
+        assertTrue(specimenService.findAccessibleByKey("123", Set.of(10L)).isEmpty());
+        verify(specimenRepository, never()).findFirstByFullIdentifierAndInstitutionIdIn(any(), any());
     }
 
     @Test
-    void findAccessibleByKey_nonNumeric_usesFullIdentifier() {
-        Specimen specimen = new Specimen();
-        SpecimenDTO dto = new SpecimenDTO();
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn("RU-1_2", Set.of(10L)))
-                .thenReturn(Optional.of(specimen));
-        when(specimenMapper.convert(specimen)).thenReturn(dto);
-
-        assertTrue(specimenService.findAccessibleByKey("RU-1_2", Set.of(10L)).isPresent());
+    void findAccessibleByKey_nonNumeric_isNotAKey() {
+        assertTrue(specimenService.findAccessibleByKey("RU-1_2", Set.of(10L)).isEmpty());
+        verifyNoInteractions(specimenRepository);
     }
 
     @Test
@@ -1104,13 +1089,13 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         SpecimenDTO dto = new SpecimenDTO();
         Page<Specimen> page = new PageImpl<>(List.of(specimen));
-        when(specimenRepository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        when(specimenRepository.findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 eq(1L), eq(2L), eq("x"), eq(new Long[]{}), eq("g"), eq("fr"),
                 eq("s.specimen_id DESC"), any(Pageable.class))).thenReturn(page);
         when(specimenMapper.convert(specimen)).thenReturn(dto);
 
         Page<SpecimenDTO> result = specimenService
-                .findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+                .findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                         1L, 2L, "x", new Long[]{}, "g", "fr", "id:desc", PageRequest.of(0, 10));
 
         assertEquals(1, result.getTotalElements());
@@ -1791,7 +1776,7 @@ class SpecimenServiceTest {
         Specimen incoming = new Specimen();
         incoming.setId(1L);
         incoming.setCreatedByInstitution(instRef);
-        incoming.setCategory(category);
+        incoming.setType(category);
         incoming.setChronologicalAttribution(chrono);
         incoming.setNormalizedInterpretation(interpretation);
 
@@ -1807,7 +1792,7 @@ class SpecimenServiceTest {
 
         assertNotNull(managed.getCreatedByInstitution());
         assertEquals(77L, managed.getCreatedByInstitution().getId());
-        assertEquals(8L, managed.getCategory().getId());
+        assertEquals(8L, managed.getType().getId());
         assertEquals(9L, managed.getChronologicalAttribution().getId());
         assertEquals(10L, managed.getNormalizedInterpretation().getId());
         verify(institutionRepository).findById(77L);
@@ -1894,33 +1879,24 @@ class SpecimenServiceTest {
     }
 
     @Test
-    void findAccessibleByKey_digitOverflow_fallsBackToFullIdentifier() {
-        String overflowKey = "9223372036854775808";
-        Specimen entity = new Specimen();
-        SpecimenDTO dto = new SpecimenDTO();
+    void findAccessibleByKey_digitOverflow_isEmpty() {
         Set<Long> scope = Set.of(10L);
-        when(specimenRepository.findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope))
-                .thenReturn(Optional.of(entity));
-        when(specimenMapper.convert(entity)).thenReturn(dto);
 
-        Optional<SpecimenDTO> result = specimenService.findAccessibleByKey(overflowKey, scope);
-
-        assertTrue(result.isPresent());
-        assertSame(dto, result.get());
-        verify(specimenRepository).findFirstByFullIdentifierAndInstitutionIdIn(overflowKey, scope);
+        assertTrue(specimenService.findAccessibleByKey("9223372036854775808", scope).isEmpty());
+        verifyNoInteractions(specimenRepository);
     }
 
     @Test
     void toggleValidated_cancelled_reentersTheCycleAtIncomplete() {
         // The validated column is NOT NULL: the only status outside the JSF cycle is CANCELLED.
         Specimen specimen = new Specimen();
-        specimen.setValidated(ValidationStatus.CANCELLED);
+        specimen.setValidationStatus(ValidationStatus.CANCELLED);
         when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
         when(specimenRepository.save(specimen)).thenReturn(specimen);
 
         specimenService.toggleValidated(1L);
 
-        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidated());
+        assertEquals(ValidationStatus.INCOMPLETE, specimen.getValidationStatus());
     }
 
     @Test

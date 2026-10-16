@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -81,8 +80,8 @@ public class ProjectDetailsBean {
             redirectBean.redirectTo("/settings/project");
             return;
         }
-        if (!profilePermissionService.hasProjectPermission(
-                sessionSettingsBean.getUserInfo(), project.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS)) {
+        if (!profilePermissionService.hasProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo(), project.getId())) {
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
             return;
         }

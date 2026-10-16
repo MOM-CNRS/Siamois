@@ -1822,7 +1822,7 @@ describe("EntityListPanel read-only and project columns", () => {
         {
           id: "1",
           name: "Row A",
-          answers: { "-305": { resourceId: "7", resourceType: "action-units", label: "OA-7" } },
+          answers: { "-305": { resourceId: "7", resourceType: "projects", label: "OA-7" } },
           _permissions: { canEdit: true },
         },
       ],

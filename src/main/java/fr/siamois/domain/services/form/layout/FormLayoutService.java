@@ -3,6 +3,7 @@ package fr.siamois.domain.services.form.layout;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
@@ -37,15 +38,13 @@ import java.util.Set;
  * fields each one holds, in order. A configuration without any group has no layout yet (see
  * {@code EffectiveFormResolver} for what applies then).
  * <p>
- * Nothing is merged: the layout found is the layout. While the {@code _default} configuration
- * exists, a type without a layout of its own uses the default's, as a whole.
+ * Nothing is merged: the layout found is the layout.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FormLayoutService {
 
-    private static final String DEFAULT_TYPE = TableFieldConfigService.DEFAULT_TYPE;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final TableFieldConfigService tableFieldConfigService;
@@ -86,7 +85,8 @@ public class FormLayoutService {
                     ffc.isActive(),
                     ffc.isMandatory(),
                     ffc.isInstitutionLocked(),
-                    parseRules(ffc)));
+                    parseRules(ffc),
+                    FieldUnits.fromJson(ffc.getUnits())));
         }
         List<FormLayout.Group> out = groups.stream()
                 .map(g -> new FormLayout.Group(g.getId(), g.getLabel(), itemsByGroup.get(g.getId())))
@@ -111,7 +111,7 @@ public class FormLayoutService {
             rows.add(LayoutRow.header(group.id(), group.label()));
             for (FormLayout.Item item : group.items()) {
                 rows.add(LayoutRow.of(tableFieldConfigService.describe(item.field(), item.active(), item.mandatory(),
-                        item.institutionLocked()), item.width(), item.rules() != null && !item.rules().isEmpty()));
+                        item.institutionLocked(), item.units()), item.width(), item.rules() != null && !item.rules().isEmpty()));
             }
         }
         return rows;
@@ -161,15 +161,29 @@ public class FormLayoutService {
         fieldFormConfigRepository.save(target);
     }
 
+    /**
+     * Sets the units a measurement field is entered in under the type's configuration, replacing any
+     * it had; null (or none) goes back to the field's own unit. A field locked by the institution is
+     * left untouched.
+     */
+    @Transactional
+    public void saveUnits(Long projectId, ConfigurableTable table, String typeName, long fieldId, FieldUnits units) {
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
+        FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
+                .filter(r -> r.getField().getId() == fieldId).findFirst()
+                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+        if (target.isInstitutionLocked()) {
+            log.debug("Field {} is locked by the institution, its units cannot be changed", fieldId);
+            return;
+        }
+        target.setUnits(units == null ? null : units.toJson());
+        fieldFormConfigRepository.save(target);
+    }
+
     private FormLayout effectiveLayout(Long projectId, ConfigurableTable table, String typeName) {
         Optional<FormConfig> own = tableFieldConfigService.findFormConfig(projectId, table, typeName);
         Optional<FormLayout> stored = own.flatMap(this::layoutOf);
         if (stored.isPresent()) return stored.get();
-        if (own.isEmpty() && !DEFAULT_TYPE.equals(typeName)) {
-            Optional<FormLayout> inherited = tableFieldConfigService.findFormConfig(projectId, table, DEFAULT_TYPE)
-                    .flatMap(this::layoutOf);
-            if (inherited.isPresent()) return inherited.get();
-        }
         return tableFieldConfigService.legacyLayout(projectId, table, typeName);
     }
 
@@ -313,6 +327,7 @@ public class FormLayoutService {
                 row.setMandatory(item.mandatory());
                 row.setInstitutionLocked(item.institutionLocked());
                 row.setRules(rulesJson(item.rules()));
+                row.setUnits(item.units() == null ? null : item.units().toJson());
                 fieldFormConfigRepository.save(row);
             }
         }

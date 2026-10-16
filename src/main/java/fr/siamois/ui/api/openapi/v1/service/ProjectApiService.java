@@ -11,6 +11,7 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -22,6 +23,9 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.study.StudyService;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentLinkKind;
@@ -143,6 +147,7 @@ public class ProjectApiService {
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final PhaseService phaseService;
     private final ContainerService containerService;
+    private final StudyService studyService;
     private final BookmarkService bookmarkService;
     private final HistoryAuditService historyAuditService;
     private final ValidationOpenApiService validationOpenApiService;
@@ -275,7 +280,9 @@ public class ProjectApiService {
         CONTAINER("container", PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS, PermissionConstants.PROJECT_EDIT_CONTAINERS),
         DOCUMENT("document", PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
-                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+                PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS, PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+        STUDY("study", PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES, PermissionConstants.PROJECT_EDIT_STUDIES);
 
         private final String key;
         private final String instanceCode;
@@ -402,9 +409,8 @@ public class ProjectApiService {
         boolean canWrite = profilePermissionService.hasActionUnitWritePermission(
                 caller.person(), dto.getCreatedByInstitution(), dto.getId());
         boolean canManageSettings = dto.getCreatedByInstitution() != null
-                && profilePermissionService.hasProjectPermission(
-                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null),
-                        dto.getId(), PermissionConstants.PROJECT_MANAGE_SETTINGS);
+                && profilePermissionService.hasProjectSettingsPermission(
+                        new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());
         boolean canValidate = dto.getCreatedByInstitution() != null
                 && profilePermissionService.hasValidatePermission(
                         new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());
@@ -551,15 +557,15 @@ public class ProjectApiService {
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
         boolean canEdit = profilePermissionService.hasActionUnitWritePermission(userInfo, dto);
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidated(), patch.getValidated());
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), patch.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if (!(statusChange && patch.isStatusOnly()) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification du projet non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidated(), patch.getValidated(), canEdit,
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), patch.getValidationStatus(), canEdit,
                 profilePermissionService.hasValidatePermission(userInfo, dto.getId()));
         if (statusChange && patch.isStatusOnly()) {
-            validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
+            validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidationStatus(), caller.person());
             return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
         }
         applyProjectPatch(dto, patch);
@@ -591,7 +597,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
         // After the save: it writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidated(), caller.person());
+        validationOpenApiService.apply(ActionUnit.class, dto.getId(), patch.getValidationStatus(), caller.person());
         return actionUnitService.findAccessibleProjectByKey(String.valueOf(dto.getId()), caller.accessibleInstitutionIds());
     }
 
@@ -634,6 +640,10 @@ public class ProjectApiService {
             String identifier = patch.getIdentifier().trim();
             if (!identifier.isEmpty()) {
                 dto.setIdentifier(identifier);
+                // A project's full identifier is its identifier (set so at creation, see
+                // ActionUnitService#prepareActionUnitDtoForSave); the UI shows the full one, so
+                // leaving it stale made an identifier edit look unsaved.
+                dto.setFullIdentifier(identifier);
             }
         }
         if (patch.getBeginDate() != null) {
@@ -742,6 +752,7 @@ public class ProjectApiService {
         if (field instanceof CustomFieldInteger) return coerceIntegerAnswer(raw);
         if (field instanceof CustomFieldDecimal) return coerceDecimalAnswer(raw);
         if (field instanceof CustomFieldDateTime) return coerceDateTimeAnswer(raw);
+        if (field instanceof CustomFieldBoolean) return coerceBooleanAnswer(raw);
         if (field instanceof CustomFieldSelectOneFromFieldCode) return coerceConceptId(raw);
         if (field instanceof CustomFieldSelectOneSpatialUnit) return coerceSpatialUnitId(raw);
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -771,6 +782,14 @@ public class ProjectApiService {
         } catch (NumberFormatException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Entier attendu, reçu : " + raw);
         }
+    }
+
+    private static Boolean coerceBooleanAnswer(Object raw) {
+        if (raw instanceof Boolean b) return b;
+        String text = String.valueOf(raw).trim();
+        if ("true".equalsIgnoreCase(text)) return Boolean.TRUE;
+        if ("false".equalsIgnoreCase(text)) return Boolean.FALSE;
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booléen attendu (true ou false), reçu : " + raw);
     }
 
     private static Double coerceDecimalAnswer(Object raw) {
@@ -982,6 +1001,11 @@ public class ProjectApiService {
         return documentService.countByActionContext(row.actionUnit());
     }
 
+    /** Nombre d'études du projet — détail uniquement, même pattern que {@link #countDocumentsForProject}. */
+    public long countStudiesForProject(AccessibleProjectForApi row) {
+        return studyService.countByActionContext(row.actionUnit());
+    }
+
     private static final Set<String> ALLOWED_DOCUMENT_SORT_FIELDS =
             Set.of(DocumentSpec.IDENTIFIER_FILTER, "title", CREATION_TIME, "id");
 
@@ -1129,6 +1153,61 @@ public class ProjectApiService {
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
     }
 
+    private static final Set<String> ALLOWED_STUDY_SORT_FIELDS =
+            Set.of(StudySpec.IDENTIFIER_FILTER, CREATION_TIME, "id");
+
+    /**
+     * Same contract as {@link #parseContainerSort} — an unknown property is a 400.
+     */
+    static Sort parseStudySort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Direction.ASC, StudySpec.IDENTIFIER_FILTER).and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        String[] parts = sortParam.split(":", 2);
+        String property = parts[0].trim();
+        if (!ALLOWED_STUDY_SORT_FIELDS.contains(property)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de tri inconnu : " + property);
+        }
+        Sort primary = Sort.by(sortDirection(parts), property);
+        return "id".equals(property) ? primary : primary.and(Sort.by(Sort.Direction.ASC, "id"));
+    }
+
+    /**
+     * Page d'études d'un projet ({@code GET /api/v1/projects/{id}/studies}) : recherche libre sur
+     * {@code identifier} et tri sur une petite liste blanche, comme les contenants.
+     */
+    public Page<StudyDTO> pageStudiesForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            FieldQuery fieldQuery) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseStudySort);
+        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setFieldQuery(fieldQuery);
+        filterDTO.add(StudySpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
+        if (search != null && !search.isBlank()) {
+            filterDTO.add(StudySpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        return studyService.searchStudies(institution, filterDTO, pageable);
+    }
+
+    /** Whether the caller can write studies on this project: one boolean for the whole page. */
+    public boolean canEditStudiesForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
+        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return profilePermissionService.hasProjectPermission(userInfo, row.actionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES,
+                PermissionConstants.PROJECT_EDIT_STUDIES);
+    }
+
     private static final Set<String> ALLOWED_FIND_SORT_FIELDS =
             Set.of(SpecimenSpec.FULL_IDENTIFIER_FILTER, "collectionDate", CREATION_TIME, "id");
 
@@ -1151,7 +1230,7 @@ public class ProjectApiService {
     }
 
     /**
-     * Page de mobiliers d'un projet ({@code GET /api/v1/projects/{id}/mobiliers}) — pendant réduit
+     * Page de mobiliers d'un projet ({@code GET /api/v1/projects/{id}/finds}) — pendant réduit
      * de {@link #pageRecordingUnitsForProject} : recherche libre sur {@code fullIdentifier} et tri
      * sur une petite liste blanche, sans le contrat {@code f.<clé>} par colonne (pas encore
      * construit côté mobilier — voir le plan de migration React, lot Mobilier).
@@ -1448,7 +1527,7 @@ public class ProjectApiService {
             return new RecordingUnitFindsPage(page.map(findOpenApiMapper::toResource), ru, page.getContent());
         }
         Pageable pageable = PageRequest.of(pageNumber, limit);
-        Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+        Page<SpecimenDTO> page = specimenService.findAllByInstitutionAndByRecordingUnitAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
                 institution.getId(),
                 ru.getId(),
                 search != null && !search.isBlank() ? search : null,

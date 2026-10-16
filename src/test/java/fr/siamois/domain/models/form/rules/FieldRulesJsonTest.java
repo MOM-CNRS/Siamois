@@ -96,4 +96,38 @@ class FieldRulesJsonTest {
     void fromJson_nullIsNone() {
         assertThat(FieldRulesJson.fromJson(null)).isSameAs(FieldRules.NONE);
     }
+
+    @Test
+    void placeSources_roundTripAndAreWrittenCompactly() {
+        PlaceSourceSpec geoplat = new PlaceSourceSpec("GEOPLAT",
+                Map.of("citycode", new PlaceSourceSpec.ParamBinding(-108L, PlaceSourceSpec.PlaceAttribute.CODE)),
+                PlaceSourceSpec.OnMissing.SKIP);
+        FieldRules rules = FieldRules.NONE.withPlaceSources(PlaceSourceSpec.of("INSEE"), geoplat);
+
+        JsonNode json = wire(rules);
+
+        assertThat(json.get("placeSources").get(0)).hasToString("{\"source\":\"INSEE\"}");
+        JsonNode second = json.get("placeSources").get(1);
+        assertThat(second.get("params").get("citycode").get("fromField").asLong()).isEqualTo(-108L);
+        assertThat(second.get("params").get("citycode").get("attribute").asText()).isEqualTo("CODE");
+        assertThat(second.get("onMissing").asText()).isEqualTo("SKIP");
+        assertThat(FieldRulesJson.fromJson(json)).isEqualTo(rules);
+        assertThat(FieldRulesJson.fromJson(json).isEmpty()).isFalse();
+    }
+
+    @Test
+    void placeSources_countAsDependenciesOfTheField() {
+        FieldRules rules = FieldRules.NONE.withPlaceSources(new PlaceSourceSpec("GEOPLAT",
+                Map.of("citycode", new PlaceSourceSpec.ParamBinding(8L, PlaceSourceSpec.PlaceAttribute.CODE)),
+                PlaceSourceSpec.OnMissing.UNFILTERED));
+
+        assertThat(rules.dependencies()).containsExactly(8L);
+    }
+
+    @Test
+    void placeSources_rejectAMalformedSource() {
+        JsonNode bad = objectMapper.valueToTree(Map.of("placeSources", List.of(Map.of("params", Map.of()))));
+
+        assertThatThrownBy(() -> FieldRulesJson.fromJson(bad)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

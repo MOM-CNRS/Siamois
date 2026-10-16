@@ -80,7 +80,7 @@ Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
 - Stockage : `form_config_group` (`FormConfigGroup`) et, sur `field_form_config`, `fk_group_id`, `width`
   (`FieldWidth` : 1/4, 1/2, 3/4, pleine) et `rules` (jsonb). Une configuration « a une mise en page »
   dès qu'elle a un groupe. Les valeurs de concept des règles sont `{"conceptId":"<id interne>"}`.
-- `EffectiveFormResolver` : mise en page stockée du type, sinon celle de `_default` (en bloc), sinon
+- `EffectiveFormResolver` : mise en page stockée du type, sinon (type sans configuration) la mise en page de base de la table, sinon
   mise en page initiale + fusion historique des drapeaux actif/obligatoire. Un groupe sans champ actif
   n'est pas une section. Rien ne change pour un projet qui n'a pas de mise en page stockée.
 - Écriture (`FormLayoutService`) : `rowsOf`, `ensureLayouts`, `ensureOwnLayout`, `saveArrangement`,
@@ -115,7 +115,7 @@ Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
 - `EntityListPanel` charge, pour chaque projet présent dans les lignes déjà reçues, les formulaires par type
   de l'endpoint du projet (`recording-unit-types`, `find-types`, `phase-types`, `container-types` ; clé
   `list.rulesSegment` de la config d'entité) et évalue chaque ligne avec les règles du formulaire de son
-  projet et de son type (`_default` pour une ligne sans type) : `panels/useTypeRules.ts`, `useRowRules.ts`.
+  projet et de son type (le premier type de la table pour une ligne sans type) : `panels/useTypeRules.ts`, `useRowRules.ts`.
   Les champs lus par ces règles sont demandés (`fields=`) dès la deuxième requête, une fois les projets connus.
 - Audit : `FormConfig`, `FormConfigGroup`, `FieldFormConfig` et `ConceptFieldFormConfig` sont `@Audited`
   (relations vers champ, concept, projet et institution en `NOT_AUDITED`).
@@ -125,7 +125,7 @@ Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
 - Mobile (à discuter) : bundle hors ligne `relatedByConcept` et endpoint de synchronisation à confirmer ;
   pour l'instant l'endpoint des concepts par field code suffit.
 - Obligatoire par type dans la liste (seule la fiche l'applique).
-- Plus tard : supprimer `_default`, rendre Projet et Lieu configurables.
+- Fait : `_default` est supprimé (chaque table a au moins un type, les clés `_default` des réponses d'API aussi). Plus tard : rendre Projet et Lieu configurables.
 
 ### Conception d'origine (avant l'élargissement)
 

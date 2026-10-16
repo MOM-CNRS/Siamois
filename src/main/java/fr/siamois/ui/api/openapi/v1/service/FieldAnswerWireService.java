@@ -1,11 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.form.FormService;
@@ -36,7 +38,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FieldAnswerWireService {
 
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String SPATIAL_UNITS = "places";
 
     public static final String CONCEPTS = "concepts";
 
@@ -77,6 +79,21 @@ public class FieldAnswerWireService {
                 constraintsOf(f));
     }
 
+    /**
+     * The symbols a measurement can be entered in, the default unit first; empty when the field has
+     * a single unit, which the client then shows in a disabled selector.
+     */
+    private static List<String> unitsOf(CustomFieldMeasurement m) {
+        Set<UnitDefinition> choices = m.unitsToChooseFrom();
+        if (choices.size() < 2) return List.of();
+        String defaultSymbol = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+        return choices.stream()
+                .sorted(Comparator.comparing((UnitDefinition u) -> !Objects.equals(u.getSymbol(), defaultSymbol))
+                        .thenComparing(UnitDefinition::getFactorToBase, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(UnitDefinition::getSymbol)
+                .toList();
+    }
+
     /** A bound as a double, or null when it is absent or is the "unbounded" default. */
     private static Double boundOrNull(Number value, double unbounded) {
         return value == null || value.doubleValue() == unbounded ? null : value.doubleValue();
@@ -87,25 +104,39 @@ public class FieldAnswerWireService {
      * ±Double.MAX_VALUE) mean "unbounded" and are dropped rather than sent as bounds.
      */
     private static FieldResource.Constraints constraintsOf(Object f) {
-        Double min = null;
-        Double max = null;
-        Boolean showTime = null;
-        String unit = null;
         if (f instanceof CustomFieldInteger i) {
-            min = boundOrNull(i.getMinValue(), Integer.MIN_VALUE);
-            max = boundOrNull(i.getMaxValue(), Integer.MAX_VALUE);
-        } else if (f instanceof CustomFieldDecimal d) {
-            min = boundOrNull(d.getMinValue(), -Double.MAX_VALUE);
-            max = boundOrNull(d.getMaxValue(), Double.MAX_VALUE);
-        } else if (f instanceof CustomFieldMeasurement m) {
-            min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
-            max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
-            unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
-        } else if (f instanceof CustomFieldDateTime dt) {
-            showTime = dt.getShowTime();
+            return bounded(boundOrNull(i.getMinValue(), Integer.MIN_VALUE), boundOrNull(i.getMaxValue(), Integer.MAX_VALUE));
         }
-        if (min == null && max == null && showTime == null && unit == null) return null;
-        return new FieldResource.Constraints(min, max, showTime, unit);
+        if (f instanceof CustomFieldDecimal d) {
+            return bounded(boundOrNull(d.getMinValue(), -Double.MAX_VALUE), boundOrNull(d.getMaxValue(), Double.MAX_VALUE));
+        }
+        if (f instanceof CustomFieldMeasurement m) {
+            return measurementConstraints(m);
+        }
+        if (f instanceof CustomFieldDateTime dt) {
+            return dt.getShowTime() == null ? null : new FieldResource.Constraints(null, null, dt.getShowTime(), null, null, null);
+        }
+        if (f instanceof CustomFieldBoolean b && b.isNoAnswerAllowed()) {
+            return new FieldResource.Constraints(null, null, null, null, null, Boolean.TRUE);
+        }
+        return null;
+    }
+
+    /** Numeric bounds, or no constraints at all when both are open. */
+    private static FieldResource.Constraints bounded(Double min, Double max) {
+        return min == null && max == null ? null : new FieldResource.Constraints(min, max, null, null, null, null);
+    }
+
+    private static FieldResource.Constraints measurementConstraints(CustomFieldMeasurement m) {
+        Double min = m.getMinValue() != null ? m.getMinValue().doubleValue() : null;
+        Double max = m.getMaxValue() != null ? m.getMaxValue().doubleValue() : null;
+        String unit = m.getUnit() != null ? m.getUnit().getSymbol() : null;
+        List<String> offered = unitsOf(m);
+        List<String> units = offered.isEmpty() ? null : offered;
+        if (min == null && max == null && unit == null && units == null) {
+            return null;
+        }
+        return new FieldResource.Constraints(min, max, null, unit, units, null);
     }
 
     /**
@@ -128,9 +159,10 @@ public class FieldAnswerWireService {
             case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
             case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Number n ? n.intValue() : null);
             case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
+            case "BOOLEAN" -> new BooleanFieldAnswer(answerType, field, raw instanceof Boolean b ? b : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, toOffsetDateTime(raw));
             case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
-                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_ACTION_CODE", "SELECT_ONE_RECORDING_UNIT",
+                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT",
                  "SELECT_ADDRESS", "SELECT_ONE" ->
                     new SelectOneFieldAnswer(answerType, field, raw == null ? null : toResourceRef(answerType, first(raw), lang));
             case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
@@ -173,10 +205,8 @@ public class FieldAnswerWireService {
         if (item instanceof PlaceSuggestionDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
         if (item instanceof SpatialUnitDTO s) return ref(s.getId(), SPATIAL_UNITS, s.getName());
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
-        if (item instanceof ActionUnitSummaryDTO a) return ref(a.getId(), "action-units", a.getName());
-        if (item instanceof ActionUnitDTO a) return ref(a.getId(), "action-units", a.getName());
-        // An action code is keyed by its code: that is also what a PATCH sends back for it.
-        if (item instanceof ActionCodeDTO ac) return new ResourceRef(ac.getCode(), "action-codes", ac.getCode());
+        if (item instanceof ActionUnitSummaryDTO a) return ref(a.getId(), "projects", a.getName());
+        if (item instanceof ActionUnitDTO a) return ref(a.getId(), "projects", a.getName());
         return toExcavationRef(answerType, item);
     }
 

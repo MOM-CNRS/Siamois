@@ -22,11 +22,6 @@
       "binding" : "specimenList",
       "width" : "QUARTER"
     }, {
-      "fieldId" : -302,
-      "binding" : "type",
-      "width" : "QUARTER",
-      "required" : true
-    }, {
       "fieldId" : -307,
       "binding" : "geomorphologicalCycle",
       "width" : "QUARTER"

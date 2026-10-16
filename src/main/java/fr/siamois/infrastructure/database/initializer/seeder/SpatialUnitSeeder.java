@@ -117,7 +117,7 @@ public class SpatialUnitSeeder {
         toGetOrCreate.setName(s.name());
         toGetOrCreate.setCreatedByInstitution(institution);
         toGetOrCreate.setCreatedBy(author);
-        toGetOrCreate.setCategory(type);
+        toGetOrCreate.setType(type);
         return toGetOrCreate;
     }
 
@@ -158,7 +158,7 @@ public class SpatialUnitSeeder {
      * provenance (createdBy/creationTime) are left untouched.
      */
     private void mergeSpatialUnitInto(SpatialUnit built, SpatialUnit existing) {
-        existing.setCategory(built.getCategory());
+        existing.setType(built.getType());
     }
 
     private SpatialUnit findExistingSpatialUnit(SpatialUnitSpecs s, Map<String, Institution> institutionsByIdentifier,

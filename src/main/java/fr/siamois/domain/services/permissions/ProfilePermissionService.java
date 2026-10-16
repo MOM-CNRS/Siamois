@@ -1,12 +1,17 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +44,59 @@ public class ProfilePermissionService {
 
     public ProfilePermissionService(PersonProfileAssignmentRepository assignmentRepository) {
         this.assignmentRepository = assignmentRepository;
+    }
+
+    /** One line of the "my rights" dashboard: a profile held, where it applies, and what it grants. */
+    @lombok.Value
+    public static class ProfileGrant {
+        String profileName;
+        PermissionScopeType scope;
+        Long institutionId;
+        String institutionName;
+        Long actionUnitId;
+        String actionUnitName;
+        List<String> permissionCodes;
+
+        /** The project, organisation or instance the profile applies to, as the dashboard names it. */
+        public String getTargetName() {
+            if (actionUnitName != null) {
+                return actionUnitName;
+            }
+            return institutionName;
+        }
+
+        public boolean isProject() {
+            return scope == PermissionScopeType.PROJECT;
+        }
+
+        public boolean isOrganisation() {
+            return scope == PermissionScopeType.ORGANISATION;
+        }
+
+        public boolean isInstance() {
+            return scope == PermissionScopeType.INSTANCE;
+        }
+    }
+
+    /**
+     * The profiles the person holds, each with its scope target (instance, organisation or project) and
+     * permission codes — what the profile page lists as "my rights", organisation and project first.
+     */
+    @Transactional(readOnly = true)
+    public List<ProfileGrant> grantsOf(PersonDTO person) {
+        return assignmentRepository.findProfilesOfPerson(person.getId()).stream()
+                .map(profile -> new ProfileGrant(
+                        profile.getName() != null ? profile.getName() : profile.getCode(),
+                        profile.getScope(),
+                        profile.getInstitution() != null ? profile.getInstitution().getId() : null,
+                        profile.getInstitution() != null ? profile.getInstitution().getName() : null,
+                        profile.getActionUnit() != null ? profile.getActionUnit().getId() : null,
+                        profile.getActionUnit() != null ? profile.getActionUnit().getName() : null,
+                        profile.getPermissions().stream().map(Permission::getCode).sorted().toList()))
+                .sorted(Comparator.comparing((ProfileGrant g) -> -g.getScope().ordinal())
+                        .thenComparing(g -> Objects.toString(g.getTargetName(), ""),
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
     }
 
     /**
@@ -144,6 +202,34 @@ public class ProfilePermissionService {
         }
         return assignmentRepository.findInstitutionActionUnitIdsWithPermission(
                 person.getId(), user.getInstitution().getId(), projectCode);
+    }
+
+    /**
+     * Whether the user may open and edit the settings of a project: {@code PROJECT_MANAGE_SETTINGS} on the
+     * project itself, or an organisation/instance-wide manager of the institution's projects
+     * ({@code ORGANIZATION_MANAGE_ACTIONS} / {@code INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS}), consistently with
+     * {@link #hasActionUnitWritePermission(UserInfo, ActionUnitDTO)}.
+     */
+    public boolean hasProjectSettingsPermission(UserInfo user, Long actionUnitId) {
+        if (user == null) {
+            return false;
+        }
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
+                PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /** Bulk version of {@link #hasProjectSettingsPermission}: which of the given action units the user may manage. */
+    public Set<Long> actionUnitIdsWithProjectSettingsPermission(UserInfo user, Collection<Long> actionUnitIds) {
+        if (user == null) {
+            return Set.of();
+        }
+        if (hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)) {
+            return actionUnitIds == null ? Set.of() : actionUnitIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        }
+        return actionUnitIdsWithPermission(user, actionUnitIds,
+                PermissionConstants.ORGANIZATION_MANAGE_ACTIONS, PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
     /**
@@ -283,6 +369,22 @@ public class ProfilePermissionService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+    }
+
+    /**
+     * Checks if the user can write the given study, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_STUDIES} on the study's project.
+     *
+     * @param user  the user information
+     * @param study the study to write
+     * @return true if the user can write the study
+     */
+    public boolean hasStudyWritePermission(UserInfo user, StudyDTO study) {
+        Long actionUnitId = study.getActionUnit() != null ? study.getActionUnit().getId() : null;
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES,
+                PermissionConstants.PROJECT_EDIT_STUDIES);
     }
 
     /**

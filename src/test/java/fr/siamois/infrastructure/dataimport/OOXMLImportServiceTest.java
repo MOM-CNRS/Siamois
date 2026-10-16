@@ -148,30 +148,6 @@ class OOXMLImportServiceTest {
     }
 
     // -------------------------------------------------------------------------
-    // Action codes
-    // -------------------------------------------------------------------------
-
-    @Test
-    void parseActionCodes_basic() {
-        Workbook wb = workbook();
-        Sheet s = sheet(wb, "Code",
-                "Code",
-                "Type uri"
-        );
-
-        row(s, 1, "FOU", "uri?idt=th9&idc=99");
-
-        List<ImportError> errs = errors();
-        List<ActionCodeSeeder.ActionCodeSpec> specs = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
-
-        assertThat(specs).hasSize(1);
-        assertThat(errs).isEmpty();
-        assertThat(specs.get(0).code()).isEqualTo("FOU");
-        assertThat(specs.get(0).typeConceptExternalId()).isEqualTo("99");
-        assertThat(specs.get(0).typeVocabularyExternalId()).isEqualTo("th9");
-    }
-
-    // -------------------------------------------------------------------------
     // Recording unit relations
     // -------------------------------------------------------------------------
 
@@ -271,9 +247,6 @@ class OOXMLImportServiceTest {
         Sheet spatial = sheet(wb, "Unité spatiale", "Nom");
         row(spatial, 1, "Parcelle A");
 
-        sheet(wb, "Code", "Code", "Type uri");
-        row(wb.getSheet("Code"), 1, "FOU", "uri?idt=th9&idc=99");
-
         Sheet action = sheet(wb, "Unite action", "Nom", "Identifiant");
         row(action, 1, "Fouille", "UA-001");
 
@@ -298,7 +271,6 @@ class OOXMLImportServiceTest {
         assertThat(result.specs().institutions()).hasSize(1);
         assertThat(result.specs().persons()).hasSize(1);
         assertThat(result.specs().spatialUnits()).hasSize(2);
-        assertThat(result.specs().actionCodes()).hasSize(1);
         assertThat(result.specs().actionUnits()).hasSize(1);
         assertThat(result.specs().specimenSpecs()).hasSize(1);
         assertThat(result.specs().recordingUnitRelSpecs()).hasSize(1);
@@ -565,8 +537,6 @@ class OOXMLImportServiceTest {
         assertThat(au.identifier()).isEqualTo("UA-001");
         assertThat(au.name()).isEqualTo("Décapage zone nord");
 
-        assertThat(au.primaryActionCode()).isEqualTo("FOU");
-
         assertThat(au.typeVocabularyExtId()).isEqualTo("th9");
         assertThat(au.typeConceptExtId()).isEqualTo("99");
 
@@ -660,8 +630,8 @@ class OOXMLImportServiceTest {
         assertThat(sp.fullIdentifier()).isEqualTo("SP-001");
         assertThat(sp.material().vocabularyExtId()).isEqualTo("th12");
         assertThat(sp.material().conceptExtId()).isEqualTo("89");
-        assertThat(sp.category().vocabularyExtId()).isEqualTo("th12");
-        assertThat(sp.category().conceptExtId()).isEqualTo("88");
+        assertThat(sp.type().vocabularyExtId()).isEqualTo("th12");
+        assertThat(sp.type().conceptExtId()).isEqualTo("88");
         assertThat(sp.interpretation()).isNull();
         assertThat(sp.institutionIdentifier()).isEqualTo("INRAP");
         assertThat(sp.recordingUnitKey().fullIdentifier()).isEqualTo("US-001");
@@ -851,7 +821,7 @@ class OOXMLImportServiceTest {
     @Test
     void parseSpatialUnits_labelFallback_resolvesCategoryConceptViaConceptService() {
         var au = actionUnitWithInstitution(9L);
-        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.CATEGORY_FIELD_CODE, "Site"))
+        when(conceptService.resolveConceptByLabel(9L, SpatialUnit.TYPE_FIELD_CODE, "Site"))
                 .thenReturn(conceptWithKey("th2", "10"));
 
         Workbook wb = workbook();
@@ -1158,22 +1128,6 @@ class OOXMLImportServiceTest {
         assertThat(result).hasSize(1);
         assertThat(errs).hasSize(1);
         assertThat(errs.get(0).sheet()).isEqualTo("Strati");
-    }
-
-    @Test
-    void parseActionCodes_badUri_isSkippedAndErrorCollected() {
-        Workbook wb = workbook();
-        Sheet s = sheet(wb, "ActionCode", "Code", "Type uri");
-        row(s, 1, "FOU", "uri?idt=th9&idc=99");
-        row(s, 2, "BAD", BAD_URI);
-
-        List<ImportError> errs = errors();
-        List<ActionCodeSeeder.ActionCodeSpec> result = service.parseActionCodes(List.of(s), SheetMetadata.empty(), errs, new ImportProgress());
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).code()).isEqualTo("FOU");
-        assertThat(errs).hasSize(1);
-        assertThat(errs.get(0).sheet()).isEqualTo("ActionCode");
     }
 
     @Test

@@ -16,10 +16,13 @@ import java.util.Map;
 @Schema(description = "Mise à jour partielle d'une unité d'enregistrement")
 public class RecordingUnitPatchRequest {
 
+    @Schema(description = "Nouvel identifiant complet (texte libre, unique dans le projet) ; absent = inchangé.")
+    private String identifier;
+
     @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
             + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
             + "avec le droit validateur (_permissions.canValidate).")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 
     @Schema(
             description = "Révision attendue (valeur de syncRevision au moment du chargement client). "

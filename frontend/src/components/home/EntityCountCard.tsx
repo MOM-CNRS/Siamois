@@ -20,7 +20,7 @@ export function EntityCountCard({ icon, label, description, count, className, ch
     <ClickableCard onOpen={onOpen} className={className} ariaLabel={label}>
       <div className="sia-count-card-row">
         <i className={icon} aria-hidden="true" />
-        <span>{label}</span>
+        <span className="sia-count-card-title">{label}</span>
         <Chip label={count == null ? "…" : String(count)} className={chipClassName} />
       </div>
       <div>

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class SystemFieldInitializerTest {
 
     private static final String IDENTIFIER_FIELD = "common.label.identifier";
-    private static final String CATEGORY_FIELD = "specimen.field.category";
+    private static final String CATEGORY_FIELD = "specimen.field.type";
 
     @Mock
     private CustomFieldRepository customFieldRepository;
@@ -67,7 +67,7 @@ class SystemFieldInitializerTest {
         assertThat(category).isInstanceOf(CustomFieldSelectOneFromFieldCode.class);
         assertThat(((CustomFieldSelectOneFromFieldCode) category).getFieldCode()).isNotBlank();
         assertThat(category.getIsSystemField()).isTrue();
-        assertThat(category.getValueBinding()).isEqualTo("category");
+        assertThat(category.getValueBinding()).isEqualTo("type");
     }
 
     /**

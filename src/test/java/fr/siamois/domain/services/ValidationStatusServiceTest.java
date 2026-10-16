@@ -35,7 +35,7 @@ class ValidationStatusServiceTest {
 
         service.setStatus(Phase.class, 3L, ValidationStatus.VALIDATED, 7L);
 
-        assertThat(phase.getValidated()).isEqualTo(ValidationStatus.VALIDATED);
+        assertThat(phase.getValidationStatus()).isEqualTo(ValidationStatus.VALIDATED);
         assertThat(phase.getValidatedBy()).isSameAs(validator);
         assertThat(phase.getValidatedAt()).isNotNull();
     }
@@ -43,14 +43,14 @@ class ValidationStatusServiceTest {
     @Test
     void leavingValidated_clearsWhoAndWhen() {
         Phase phase = new Phase();
-        phase.setValidated(ValidationStatus.VALIDATED);
+        phase.setValidationStatus(ValidationStatus.VALIDATED);
         phase.setValidatedAt(OffsetDateTime.now());
         phase.setValidatedBy(new Person());
         when(entityManager.find(Phase.class, 3L)).thenReturn(phase);
 
         service.setStatus(Phase.class, 3L, ValidationStatus.CANCELLED, 7L);
 
-        assertThat(phase.getValidated()).isEqualTo(ValidationStatus.CANCELLED);
+        assertThat(phase.getValidationStatus()).isEqualTo(ValidationStatus.CANCELLED);
         assertThat(phase.getValidatedAt()).isNull();
         assertThat(phase.getValidatedBy()).isNull();
     }

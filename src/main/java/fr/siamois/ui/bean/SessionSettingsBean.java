@@ -5,6 +5,7 @@ import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LangageChangeEvent;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -60,6 +61,27 @@ public class SessionSettingsBean implements Serializable {
 
     public PersonDTO getAuthenticatedUser() {
         return conversionService.convert(AuthenticatedUserUtils.getAuthenticatedUser().orElse(null), PersonDTO.class);
+    }
+
+    /**
+     * Switches the current organisation and remembers it as the last opened one, so the next session
+     * starts on it (it is stored in {@link PersonSettings#getDefaultInstitution()}).
+     */
+    public void setSelectedInstitution(InstitutionDTO institution) {
+        this.selectedInstitution = institution;
+        rememberLastInstitution(institution);
+    }
+
+    private void rememberLastInstitution(InstitutionDTO institution) {
+        if (institution == null || institution.getId() == null || personSettings == null) {
+            return;
+        }
+        Institution last = personSettings.getDefaultInstitution();
+        if (last != null && institution.getId().equals(last.getId())) {
+            return;
+        }
+        personSettings.setDefaultInstitution(conversionService.convert(institution, Institution.class));
+        personSettings = personService.updatePersonSettings(personSettings);
     }
 
     public InstitutionDTO getSelectedInstitution() {

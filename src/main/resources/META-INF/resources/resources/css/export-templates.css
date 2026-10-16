@@ -155,11 +155,11 @@
 .xe-badge { background: color-mix(in srgb, var(--primary) 10%, var(--surface)); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--surface));
     border-radius: 5px; padding: 3px 9px; font-size: 11.5px; font-weight: 700; }
 
-.xe-refbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; background: var(--surface-hover);
-    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; }
-.xe-refbar-label { font-size: 12.5px; font-weight: 700; color: var(--text); }
-.xe-refbar-hint { font-size: 12px; color: var(--text-secondary); flex: 1 1 200px; min-width: 0; }
-.xe-select.ui-selectonemenu { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); min-width: 180px; }
+.xe-refbar { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 0; margin-bottom: 14px; }
+.xe-refbar-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.xe-refbar-hint { font-size: 11.5px; color: var(--text-secondary); opacity: .8; flex: 1 1 200px; min-width: 0; }
+.xe-select.ui-selectonemenu { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); min-width: 160px; font-size: 12px; }
+.xe-refbar .xe-select .ui-selectonemenu-label { padding: 3px 8px; font-size: 12px; }
 .xe-anchor { position: relative; flex-shrink: 0; margin-left: auto; }
 .xe-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); border-radius: 7px;
     padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; text-decoration: none; }
@@ -186,8 +186,8 @@
 .xe-textbtn { border: 0; background: transparent; color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none; }
 .xe-textbtn.danger { color: var(--danger, #b3412f); }
 
-.xe-tabsbar { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.xe-tabs { display: flex; gap: 4px; overflow-x: auto; align-items: center; flex: 1; min-width: 0; }
+.xe-tabsbar { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); margin: 0 -28px 20px; padding: 0; }
+.xe-tabs { display: flex; gap: 0; flex-wrap: wrap; align-items: center; flex: 1; min-width: 0; }
 .xe-tab { padding: 10px 18px; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-secondary); font-size: 14px; font-weight: 500;
     white-space: nowrap; text-decoration: none; cursor: pointer; }
 .xe-tab:hover { color: var(--text); }
@@ -199,16 +199,17 @@
 .xe-dashed.block { display: block; text-align: center; border-radius: 6px; padding: 8px 10px; font-size: 12.5px; font-weight: 600; margin-top: 10px; }
 .xe-dashed:hover, .xe-tab-add:hover { background: var(--surface-hover); }
 
-.xe-sources { margin-bottom: 22px; }
+.xe-sources { margin-bottom: 16px; flex: 0 0 auto; }
 .xe-sources-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .xe-sources-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.xe-sources-list > .xe-anchor { margin-left: auto; }
 .xe-source { display: flex; align-items: center; gap: 8px; background: var(--surface-hover); border: 1px solid var(--border); border-radius: 20px; padding: 6px 8px 6px 14px; font-size: 13px; }
 .xe-source-label { color: var(--text); text-decoration: none; cursor: pointer; }
 .xe-source .muted { color: var(--text-secondary); }
 .xe-x { border: 0; background: transparent; color: var(--danger, #b7413a); cursor: pointer; font-size: 13px; padding: 2px 6px; text-decoration: none; }
 
-.xe-pane { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; min-height: 440px; background: var(--surface); }
-.xe-list { flex: 3 1 420px; min-width: 0; box-shadow: 1px 1px 0 var(--border); display: flex; flex-direction: column; }
+.xe-pane { display: flex; flex-wrap: nowrap; flex: 1 1 auto; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; min-height: 0; background: var(--surface); }
+.xe-list { flex: 3 1 420px; min-width: 0; min-height: 0; overflow: auto; box-shadow: 1px 1px 0 var(--border); display: flex; flex-direction: column; }
 .xe-list-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface-hover); }
 .xe-filter { border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 5px 10px; font-size: 12.5px; font-weight: 600; color: var(--text); text-decoration: none; cursor: pointer; }
 .xe-filter.active { background: color-mix(in srgb, var(--primary) 12%, var(--surface)); border-color: var(--primary); color: var(--primary); }
@@ -232,7 +233,7 @@
 .xe-single { font-size: 12.5px; color: var(--text); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .xe-multi { background: color-mix(in srgb, var(--context, #5a5a8a) 12%, var(--surface)); color: var(--context, #5a5a8a); border-radius: 5px; padding: 2px 9px; font-size: 12px; font-weight: 700; text-decoration: none; }
 
-.xe-detail { flex: 1 1 380px; max-width: 100%; min-width: 0; padding: 18px; background: var(--bg, var(--surface)); overflow: auto; max-height: calc(60vh + 120px); }
+.xe-detail { flex: 1 1 380px; max-width: 100%; min-width: 0; padding: 18px; background: var(--bg, var(--surface)); overflow: auto; min-height: 0; }
 .xe-empty { color: var(--text-secondary); font-size: 13px; text-align: center; padding: 70px 10px; line-height: 1.6; }
 .xe-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
 .xe-detail-head input.ui-inputfield.xe-colname { font-weight: 800; font-size: 15px; border-color: transparent; background: transparent; padding: 2px 4px; }
@@ -264,7 +265,7 @@
 .xe-preview-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface-hover); }
 .xe-preview-title { font-weight: 700; font-size: 13.5px; color: var(--text); text-decoration: none; cursor: pointer; }
 .xe-preview-project { font-size: 12.5px; color: var(--text-secondary); }
-.xe-preview-scroll { overflow-x: auto; }
+.xe-preview-scroll { overflow: auto; flex: 1 1 auto; min-height: 0; }
 .xe-preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .xe-preview-table th { text-align: left; padding: 10px 16px; font-size: 12px; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); white-space: nowrap; }
 .xe-preview-table td { padding: 9px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 28rem; overflow: hidden; text-overflow: ellipsis; }
@@ -277,5 +278,34 @@
 .xe-splitter:hover { background: var(--primary); }
 @media (max-width: 900px) { .xe-splitter { display: none; } }
 a.xe-row { color: var(--text); text-decoration: none; cursor: pointer; }
-.xe-cols { margin-top: 0; margin-bottom: 22px; }
+.xe-cols { margin-top: 0; margin-bottom: 0; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .xe-cols .xe-pane { border: 0; border-radius: 0; border-top: 1px solid var(--border); }
+
+/* ---- liste : seul le fil d'Ariane (fond blanc) est propre à cette page, le reste reprend les listes des paramètres */
+.xt.xt-topbar-only { background: transparent; }
+.xt-row-actions { text-align: right; white-space: nowrap; }
+.xt-row-actions a { color: var(--text-secondary, #6B7280); margin-left: 12px; cursor: pointer; text-decoration: none; }
+.xt-row-actions a:hover { color: var(--text, #2A2C30); }
+.xt-row-actions a.danger:hover { color: #C0463D; }
+
+/* ---- bascule Mapping / Aperçu : p:selectOneButton, thème de l'application avec un gabarit plus compact */
+.xt .ui-selectonebutton.xe-viewswitch { display: inline-flex; }
+.xt .ui-selectonebutton.xe-viewswitch .ui-button { padding: 5px 16px; font-size: 13px; font-weight: 600; }
+.xt .xt-actions .xe-anchor { margin-left: 0; }
+
+/* L'éditeur remplit la hauteur de la page : pas de défilement de page, chaque panneau défile seul. */
+.xt.xt-editor { height: 100vh; overflow: hidden; }
+.xt-editor form { flex: 1 1 auto; min-height: 0; }
+.xt-editor .xe-page { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding-bottom: 16px; }
+.xt-editor .xe-page > * { flex: 0 0 auto; }
+.xt-editor .xe-page > .xe-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.xt-editor .xe-body > .xe-cols { flex: 1 1 auto; }
+.xt-editor .xe-preview.xe-body { margin-top: 0; }
+.xt-editor .xe-preview > .xe-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.xt-editor .xe-list-tools { position: sticky; top: 0; z-index: 2; }
+.xt-editor .xe-cols, .xt-editor .xe-preview.xe-body { margin-left: -28px; margin-right: -28px; border-left: 0; border-right: 0; border-radius: 0; }
+@media (max-width: 900px) { .xt-editor .xe-pane { flex-wrap: wrap; overflow: auto; } }
+.xe-list-tools .xe-grow { flex: 1 1 140px; min-width: 140px; }
+.xe-list-tools .xe-filter, .xe-list-tools .xe-dashed, .xe-list-tools .xe-list-count { white-space: nowrap; flex: 0 0 auto; }
+.xe-list-count { font-size: 12px; color: var(--text-secondary); }
+.xe-list-tools .xe-addcol { flex: 0 1 auto; flex-wrap: wrap; }

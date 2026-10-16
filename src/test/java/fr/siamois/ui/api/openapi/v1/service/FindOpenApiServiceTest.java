@@ -6,7 +6,6 @@ import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
@@ -115,13 +114,12 @@ class FindOpenApiServiceTest {
     void setUp() {
         fieldAnswerPatchService = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
                 personRepository, personMapper, actionUnitRepository, actionUnitSummaryMapper,
-                mock(ActionCodeRepository.class), mock(ActionCodeMapper.class),
-                spatialUnitRepository, spatialUnitSummaryMapper,
+                                spatialUnitRepository, spatialUnitSummaryMapper,
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
-                mock(UnitDefinitionMapper.class));
+                mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,
@@ -1030,5 +1028,34 @@ class FindOpenApiServiceTest {
         FormUiDto ui = new FormUiDto();
         ui.setLayout(List.of(panel));
         return ui;
+    }
+
+    @Test
+    void patchFind_blankIdentifier_throws400() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+
+        FindPatchRequest request = new FindPatchRequest();
+        request.setIdentifier("  ");
+        assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchFind_identifierAlreadyUsedInTheProject_throws409() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+        when(specimenService.fullIdentifierAlreadyExistInAction(any())).thenReturn(true);
+
+        FindPatchRequest request = new FindPatchRequest();
+        request.setIdentifier("NEW-1");
+        assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(specimenService, never()).save(any());
     }
 }

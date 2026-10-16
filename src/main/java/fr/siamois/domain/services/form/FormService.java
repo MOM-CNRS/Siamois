@@ -267,9 +267,9 @@ public class FormService {
                             a -> extractSpatialUnit((CustomFieldAnswerSelectOneSpatialUnitViewModel) a)),
                     Map.entry(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class,
                             a -> extractSpatialUnitSet((CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel) a)),
-                    Map.entry(CustomFieldAnswerSelectOneActionCodeViewModel.class,
-                            CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerIntegerViewModel.class,
+                            CustomFieldAnswerViewModel::getValue),
+                    Map.entry(CustomFieldAnswerBooleanViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
                     Map.entry(CustomFieldAnswerDecimalViewModel.class,
                             CustomFieldAnswerViewModel::getValue),
@@ -318,7 +318,7 @@ public class FormService {
         dto.setId(ans.getId());
         dto.setName(ans.getName());
         dto.setCode(ans.getCode());
-        dto.setCategory(ans.getCategory());
+        dto.setType(ans.getType());
         return dto;
     }
 
@@ -330,7 +330,7 @@ public class FormService {
                     dto.setId(place.getId());
                     dto.setName(place.getName());
                     dto.setCode(place.getCode());
-                    dto.setCategory(place.getCategory());
+                    dto.setType(place.getType());
                     return dto;
                 })
                 .collect(Collectors.toSet());
@@ -444,8 +444,8 @@ public class FormService {
         handlers.put(CustomFieldAnswerSelectOneFromFieldCodeViewModel.class, this::handleConcept);
         handlers.put(CustomFieldAnswerSelectOneActionUnitViewModel.class, this::handleActionUnit);
         handlers.put(CustomFieldAnswerSelectOneSpatialUnitViewModel.class, this::handleSpatialUnit);
-        handlers.put(CustomFieldAnswerSelectOneActionCodeViewModel.class, this::handleActionCode);
         handlers.put(CustomFieldAnswerIntegerViewModel.class, this::handleInteger);
+        handlers.put(CustomFieldAnswerBooleanViewModel.class, this::handleBoolean);
         handlers.put(CustomFieldAnswerDecimalViewModel.class, this::handleDecimal);
         handlers.put(CustomFieldAnswerSelectOneAddressViewModel.class, this::handleAddress);
         handlers.put(CustomFieldAnswerSelectMultipleSpatialUnitTreeViewModel.class, this::handleSpatialUnitSet);
@@ -543,15 +543,15 @@ public class FormService {
         }
     }
 
-    private void handleActionCode(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectOneActionCodeViewModel actionCodeAnswer) {
-            actionCodeAnswer.setValue((ActionCodeDTO) value);
-        }
-    }
-
     private void handleDecimal(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerDecimalViewModel decimalAnswer) {
             decimalAnswer.setValue(value instanceof Number n ? n.doubleValue() : null);
+        }
+    }
+
+    private void handleBoolean(CustomFieldAnswerViewModel answer, Object value) {
+        if (answer instanceof CustomFieldAnswerBooleanViewModel booleanAnswer) {
+            booleanAnswer.setValue(value instanceof Boolean b ? b : null);
         }
     }
 
@@ -593,7 +593,7 @@ public class FormService {
         dto.setName(val.getName());
         dto.setCode(val.getCode());
         dto.setSourceName("INTERNAL");
-        dto.setCategory(val.getCategory());
+        dto.setType(val.getType());
         return dto;
     }
 

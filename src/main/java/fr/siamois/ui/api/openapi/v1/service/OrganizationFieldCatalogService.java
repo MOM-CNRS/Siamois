@@ -7,6 +7,7 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
@@ -86,6 +87,7 @@ public class OrganizationFieldCatalogService {
             case PHASE -> Phase.class;
             case CONTENANT -> Container.class;
             case DOCUMENT -> Document.class;
+            case STUDY -> Study.class;
         };
     }
 

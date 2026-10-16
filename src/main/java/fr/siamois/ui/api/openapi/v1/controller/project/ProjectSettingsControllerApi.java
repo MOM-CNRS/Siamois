@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectStudyTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectDocumentTypeListResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
@@ -33,7 +34,7 @@ public class ProjectSettingsControllerApi {
 
     @GetMapping("/{id}/recording-unit-types")
     @Operation(summary = "Récupère tout les types d'UE d'un projet et leurs configurations (formulaires, settings, ..)",
-            description = "Retourne la configuration du type par défaut (_default) et la liste des types configurés pour l'institution du projet.")
+            description = "Retourne la liste des types configurés pour le projet.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "400", description = "Paramètres invalides"),
@@ -148,6 +149,30 @@ public class ProjectSettingsControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectContainerTypeListResponse response = recordingUnitOpenApiService
                 .buildProjectContainerTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/study-types")
+    @Operation(summary = "Récupère tous les types d'étude d'un projet et leurs configurations (formulaires, settings, ..)",
+            description = "")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de pagination invalides"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable ou non accessible"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectStudyTypeListResponse> getProjectStudySettings(
+            @PathVariable("id") String id,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "20") int limit,
+            @Parameter(description = "Tri, ex. name:asc")
+            @RequestParam(defaultValue = "name:asc") String sort,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        ProjectStudyTypeListResponse response = recordingUnitOpenApiService
+                .buildProjectStudyTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(response);
     }
 

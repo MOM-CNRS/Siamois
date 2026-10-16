@@ -212,6 +212,31 @@ class ProfilePermissionServiceTest {
     }
 
     @Test
+    void hasStudyWritePermission_usesTheStudyActionUnit() {
+        ActionUnitSummaryDTO actionUnit = new ActionUnitSummaryDTO();
+        actionUnit.setId(5L);
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setActionUnit(actionUnit);
+
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_STUDIES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_STUDIES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_STUDIES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(1L, 5L, PermissionConstants.PROJECT_EDIT_STUDIES)).thenReturn(true);
+
+        assertTrue(service.hasStudyWritePermission(userInfo, study));
+    }
+
+    @Test
+    void hasStudyWritePermission_returnsFalse_whenTheStudyHasNoActionUnitAndNoWiderGrant() {
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.INSTANCE_EDIT_STUDIES)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(1L, PermissionConstants.ORGANIZATION_EDIT_STUDIES)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(1L, 10L, PermissionConstants.ORGANIZATION_EDIT_STUDIES)).thenReturn(false);
+
+        assertFalse(service.hasStudyWritePermission(userInfo, new fr.siamois.dto.entity.StudyDTO()));
+        verify(assignmentRepository, never()).personHasPermissionInActionUnit(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
     void hasContainerWritePermission_returnsFalse_whenContainerHasNoActionUnitAndNoWiderGrant() {
         ContainerDTO container = new ContainerDTO();
 

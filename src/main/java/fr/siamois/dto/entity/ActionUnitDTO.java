@@ -25,7 +25,6 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private OffsetDateTime beginDate;
     private OffsetDateTime endDate;
-    private ActionCodeDTO primaryActionCode;
     private int recordingUnitCount;
 
     private String oaCode;
@@ -57,7 +56,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "primaryActionCode", "mainLocation",
+        return List.of("type", "name", "identifier", "spatialContext", "beginDate", "endDate", "mainLocation",
                 "oaCode", "prescriptionOrderNumber", "prescriptionOrderDate", "scientificManager", "hostStructure", "developer",
                 "periods", "subjects", "scientificNotice", "status", "comments", "system", "fieldStatus", "zmin", "zmax",
                 "designationOrderNumber", "designationOrderDate", "prescribedArea", "excavatedArea", "accessibleArea",

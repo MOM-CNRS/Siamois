@@ -20,7 +20,7 @@ public abstract class AbstractEntityDTO implements Serializable {
         id = dto.getId();
         createdBy = dto.getCreatedBy();
         createdByInstitution = dto.getCreatedByInstitution();
-        validated = dto.getValidated();
+        validationStatus = dto.getValidationStatus();
         creationTime = dto.getCreationTime();
         validatedBy = dto.getValidatedBy();
         validatedAt = dto.getValidatedAt();
@@ -30,7 +30,7 @@ public abstract class AbstractEntityDTO implements Serializable {
     protected Long id;
     protected PersonDTO createdBy;
     protected InstitutionDTO createdByInstitution;
-    protected ValidationStatus validated = ValidationStatus.INCOMPLETE;
+    protected ValidationStatus validationStatus = ValidationStatus.INCOMPLETE;
     protected OffsetDateTime creationTime = OffsetDateTime.now(ZoneId.systemDefault());
     protected OffsetDateTime validatedAt ;
     protected Person validatedBy ;

@@ -108,7 +108,8 @@ class FieldRulesEditorBeanTest {
         assertThat(rules.requiredWhen()).isEqualTo(new Condition.Leaf(3L, ConditionOp.GTE, List.of(FieldValueSpec.literal(2.5))));
         assertThat(rules.constraints()).containsExactly(new FieldConstraint(FieldConstraint.Op.LTE, 3L));
         assertThat(rules.enabledWhen()).isNull();
-        assertThat(bean.isOpen()).isFalse();
+        // the editor stays open on the field: it is a section of the field screen now
+        assertThat(bean.isOpen()).isTrue();
     }
 
     @Test
@@ -121,6 +122,22 @@ class FieldRulesEditorBeanTest {
 
         bean.save();
         assertThat(saved().enabledWhen()).isEqualTo(advanced);
+    }
+
+    @Test
+    void thePlaceSourcesOfAFieldSurviveAnEditOfItsOtherRules() {
+        fr.siamois.domain.models.form.rules.PlaceSourceSpec sources = new fr.siamois.domain.models.form.rules.PlaceSourceSpec(
+                "GEOPLAT",
+                java.util.Map.of("citycode", new fr.siamois.domain.models.form.rules.PlaceSourceSpec.ParamBinding(
+                        3L, fr.siamois.domain.models.form.rules.PlaceSourceSpec.PlaceAttribute.CODE)),
+                fr.siamois.domain.models.form.rules.PlaceSourceSpec.OnMissing.SKIP);
+        when(layout.rulesOf(42L, ConfigurableTable.UE, "Creusement", 1L))
+                .thenReturn(FieldRules.NONE.withPlaceSources(sources));
+        bean.openFor(own);
+
+        bean.save();
+
+        assertThat(saved().placeSources()).containsExactly(sources);
     }
 
     @Test

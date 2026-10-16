@@ -7,11 +7,14 @@ import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -67,9 +70,10 @@ class TableFieldConfigServiceImplTest {
     private static final Long PROJECT_ID = 7L;
     private static final Long FIELD_CONCEPT_ID = 100L;
     private static final Long CERAMIQUE_CONCEPT_ID = 200L;
+    private static final Long STANDARD_CONCEPT_ID = 210L;
     private static final Long PERSON_ID = 2L;
     private static final String IDENTIFIER_FIELD = "recordingunit.field.identifier";
-    private static final String CATEGORY_FIELD = "specimen.field.category";
+    private static final String CATEGORY_FIELD = "specimen.field.type";
     private static final String MATERIAL_FIELD = "specimen.field.material";
     private static final String RECORDING_UNIT_FIELD = "specimen.field.recordingUnit";
     private static final String AUTHORS_FIELD = "specimen.field.authors";
@@ -100,6 +104,8 @@ class TableFieldConfigServiceImplTest {
     private ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
     @Mock
     private fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository formConfigGroupRepository;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository unitDefinitionRepository;
 
     @org.mockito.Spy
     private fr.siamois.domain.services.form.layout.FormLayoutSeeds formLayoutSeeds = fr.siamois.utils.TestForms.seeds();
@@ -109,6 +115,7 @@ class TableFieldConfigServiceImplTest {
 
     private Concept fieldConcept;
     private Concept ceramiqueConcept;
+    private Concept standardConcept;
     private FormConfig defaultConfig;
     private FormConfig ceramiqueConfig;
     private InstitutionDTO institution;
@@ -125,17 +132,21 @@ class TableFieldConfigServiceImplTest {
 
         fieldConcept = concept(FIELD_CONCEPT_ID, "field");
         ceramiqueConcept = concept(CERAMIQUE_CONCEPT_ID, "ceramique");
+        standardConcept = concept(STANDARD_CONCEPT_ID, "standard");
 
         ConceptFieldConfig conceptFieldConfig = new ConceptFieldConfig();
         conceptFieldConfig.setConcept(fieldConcept);
         when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
                 .thenReturn(conceptFieldConfig);
 
-        defaultConfig = formConfig(10L, null);
+        // "Standard": the first type every table is given — an ordinary type, with a configuration of its own
+        defaultConfig = formConfig(10L, standardConcept);
         ceramiqueConfig = formConfig(11L, ceramiqueConcept);
 
-        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, STANDARD_CONCEPT_ID))
                 .thenReturn(Optional.of(defaultConfig));
+        when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Standard"))
+                .thenReturn(List.of(standardConcept));
         when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Céramique"))
@@ -150,31 +161,29 @@ class TableFieldConfigServiceImplTest {
     // ========== Existing Tests ==========
 
     @Test
-    void listTables_shouldExposeTheFiveTablesWithTheirTypeFieldCode() {
+    void listTables_shouldExposeTheSixTablesWithTheirTypeFieldCode() {
         assertThat(service.listTables()).containsExactly(
                 ConfigurableTable.UE, ConfigurableTable.MOBILIER, ConfigurableTable.PHASE, ConfigurableTable.CONTENANT,
-                ConfigurableTable.DOCUMENT);
+                ConfigurableTable.DOCUMENT, ConfigurableTable.STUDY);
         assertThat(ConfigurableTable.MOBILIER.getFieldCode()).isEqualTo("SIAS.CAT");
     }
 
     @Test
     void listTypes_shouldOnlyListTheTypesTheProjectConfigured() {
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(List.of(defaultConfig, ceramiqueConfig));
+                .thenReturn(List.of(ceramiqueConfig));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
 
         List<TypeSummary> types = service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER);
 
-        assertThat(types).extracting(TypeSummary::getName).containsExactly("_default", "Céramique");
-        assertThat(types.get(0).isDefault()).isTrue();
+        assertThat(types).extracting(TypeSummary::getName).containsExactly("Céramique");
     }
 
     @Test
-    void listTypes_shouldHoldOnlyTheDefaultTypeWhenNothingWasConfigured() {
+    void listTypes_shouldBeEmptyWhenNothingWasConfigured() {
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
 
-        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
-                .extracting(TypeSummary::getName).containsExactly("_default");
+        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER)).isEmpty();
     }
 
     @Test
@@ -222,17 +231,9 @@ class TableFieldConfigServiceImplTest {
         TypeSummary created = service.addConfiguration(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
 
         assertThat(created.getName()).isEqualTo("Céramique");
-        assertThat(created.isDefault()).isFalse();
         ArgumentCaptor<FormConfig> saved = ArgumentCaptor.forClass(FormConfig.class);
         verify(formConfigRepository).save(saved.capture());
         assertThat(saved.getValue().getValueConcept()).isEqualTo(ceramiqueConcept);
-    }
-
-    @Test
-    void addConfiguration_shouldRefuseTheDefaultType() {
-        assertThatThrownBy(() -> service.addConfiguration(PROJECT_ID, ConfigurableTable.MOBILIER, "_default"))
-                .isInstanceOf(IllegalArgumentException.class);
-        verify(formConfigRepository, never()).save(any(FormConfig.class));
     }
 
     @Test
@@ -241,7 +242,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<TypeFieldFormConfig> fields =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).extracting(TypeFieldFormConfig::getName)
                 .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD);
@@ -265,7 +266,7 @@ class TableFieldConfigServiceImplTest {
                 fields.get(MATERIAL_FIELD), fields.get(CATEGORY_FIELD), fields.get(IDENTIFIER_FIELD)));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getName)
                 .containsExactly(IDENTIFIER_FIELD, CATEGORY_FIELD, MATERIAL_FIELD);
     }
@@ -279,7 +280,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD);
     }
 
@@ -288,7 +289,7 @@ class TableFieldConfigServiceImplTest {
         when(customFieldRepository.findAllSystemFields()).thenReturn(List.of());
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .isEmpty();
     }
 
@@ -303,14 +304,14 @@ class TableFieldConfigServiceImplTest {
                 .filter(field -> ueIdentifierLabel.equals(field.getLabel()))
                 .findFirst().orElseThrow();
         ueIdentifier.setId(SYSTEM_FIELD_FIRST_ID);
-        CustomField mobilierCategory = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
+        CustomField mobilierType = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
                 .filter(field -> CATEGORY_FIELD.equals(field.getLabel()))
                 .findFirst().orElseThrow();
-        mobilierCategory.setId(SYSTEM_FIELD_FIRST_ID + 1);
-        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierCategory));
+        mobilierType.setId(SYSTEM_FIELD_FIRST_ID + 1);
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierType));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getName).containsExactly(ueIdentifierLabel);
     }
 
@@ -321,7 +322,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(defaultConfig, identifier, false, false)));
 
         List<TypeFieldFormConfig> fields =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).hasSize(1);
         assertThat(fields.get(0).isActive()).isFalse();
@@ -336,7 +337,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(defaultConfig, additional, true, false)));
 
         List<TypeFieldFormConfig> fields =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).extracting(TypeFieldFormConfig::getName).containsExactly(IDENTIFIER_FIELD, "Couleur");
         assertThat(fields.get(1).isSystemField()).isFalse();
@@ -353,7 +354,7 @@ class TableFieldConfigServiceImplTest {
         ));
 
         List<CustomField> fields =
-                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard");
 
         assertThat(fields).containsExactly(activeAdditional);
     }
@@ -364,7 +365,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<CustomField> fields =
-                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard");
 
         assertThat(fields).isEmpty();
     }
@@ -374,7 +375,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
 
-        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", IDENTIFIER_FIELD);
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", IDENTIFIER_FIELD);
 
         assertThat(field).isPresent();
         assertThat(field.get().getLabel()).isEqualTo(IDENTIFIER_FIELD);
@@ -387,7 +388,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, additional, true, false)));
 
-        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Couleur");
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", "Couleur");
 
         assertThat(field).contains(additional);
     }
@@ -397,7 +398,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
 
-        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Unknown");
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", "Unknown");
 
         assertThat(field).isEmpty();
     }
@@ -407,7 +408,7 @@ class TableFieldConfigServiceImplTest {
         CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", IDENTIFIER_FIELD, false);
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", IDENTIFIER_FIELD, false);
 
         ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
         verify(fieldFormConfigRepository).save(saved.capture());
@@ -442,7 +443,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(defaultConfig, ownField, true, true)));
 
         List<TypeFieldFormConfig> fields =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).hasSize(1);
         assertThat(fields.get(0).isSystemField()).isTrue();
@@ -451,7 +452,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void findFormConfig_shouldReturnTheDefaultConfig() {
-        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard");
 
         assertThat(result).contains(defaultConfig);
     }
@@ -479,12 +480,9 @@ class TableFieldConfigServiceImplTest {
     // never touch labelService/conceptRepository at all.
 
     @Test
-    void findFormConfig_byId_shouldReturnTheDefaultConfigWhenTypeConceptIdIsNull() {
-        Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
-
-        assertThat(result).contains(defaultConfig);
+    void findFormConfig_byId_shouldReturnNothingWhenTypeConceptIdIsNull() {
+        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null)).isEmpty();
         verifyNoInteractions(labelService);
-        verify(conceptRepository, never()).findAllByFieldContextAndExactLabel(any(), any(), any());
     }
 
     @Test
@@ -548,7 +546,7 @@ class TableFieldConfigServiceImplTest {
         ));
 
         List<CustomField> fields =
-                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
+                service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, STANDARD_CONCEPT_ID);
 
         assertThat(fields).containsExactly(activeAdditional);
         verifyNoInteractions(labelService);
@@ -631,41 +629,21 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void createOrGetFormConfig_shouldInheritTheIdentifierConfigurationOfTheProjectDefault() {
-        // Until it has a row of its own, a type is generated with the identifier configuration of the
-        // default one; materializing that row must not silently move it back onto the built-in bounds.
-        defaultConfig.setIdentifierFormat("MOB-{NUM_MOBILIER:000}");
-        defaultConfig.setMinCode(100);
-        defaultConfig.setMaxCode(500);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+    void createOrGetFormConfig_shouldStartANewTypeOnTheBuiltInIdentifierConfiguration() {
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 300L))
                 .thenReturn(Optional.empty());
+        Concept newType = concept(300L, "nouveau");
+        when(conceptRepository.findById(300L)).thenReturn(Optional.of(newType));
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
         project.setCreatedByInstitution(new Institution());
         when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
 
-        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
+        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, 300L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getIdentifierFormat()).isEqualTo("MOB-{NUM_MOBILIER:000}");
-        assertThat(result.get().getMinCode()).isEqualTo(100);
-        assertThat(result.get().getMaxCode()).isEqualTo(500);
-    }
-
-    @Test
-    void createOrGetFormConfig_shouldFallBackOnTheBuiltInIdentifierConfigurationWithoutADefaultToInheritFrom() {
-        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(Optional.empty());
-        ActionUnit project = new ActionUnit();
-        project.setId(PROJECT_ID);
-        project.setCreatedByInstitution(new Institution());
-        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
-        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
-
-        Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
-
-        assertThat(result).isPresent();
+        assertThat(result.get().getValueConcept()).isEqualTo(newType);
         assertThat(result.get().getIdentifierFormat())
                 .isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
         assertThat(result.get().getMinCode()).isOne();
@@ -753,21 +731,11 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void createOrGetFormConfig_byId_shouldMaterializeTheDefaultConfigurationWhenTypeConceptIdIsNull() {
-        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(Optional.empty());
-        ActionUnit project = new ActionUnit();
-        project.setId(PROJECT_ID);
-        project.setCreatedByInstitution(new Institution());
-        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
-        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
-
+    void createOrGetFormConfig_byId_shouldCreateNothingWhenTypeConceptIdIsNull() {
         Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null);
 
-        assertThat(result).isPresent();
-        assertThat(result.get().getValueConcept()).isNull();
-        verify(formConfigRepository).save(any(FormConfig.class));
-        verify(conceptRepository, never()).findById(any());
+        assertThat(result).isEmpty();
+        verify(formConfigRepository, never()).save(any(FormConfig.class));
     }
 
     @Test
@@ -825,7 +793,7 @@ class TableFieldConfigServiceImplTest {
                 .thenReturn(List.of(fieldConfig(defaultConfig, vocabularyField, true, false)));
 
         TypeFieldFormConfig field =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields().get(0);
 
         assertThat(field.getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(field.isConfigurable()).isTrue();
@@ -848,19 +816,54 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void setFieldMandatory_shouldCopyAnInheritedFieldOntoTheTypeInsteadOfEditingTheDefault() {
-        CustomField inherited = textField(1L, "Description", true);
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
-                .thenReturn(List.of(fieldConfig(defaultConfig, inherited, true, false)));
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
+    void setFieldActive_byConceptId_shouldWriteOnTheTypeOwnConfig() {
+        CustomField ownField = textField(1L, "Description", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
 
-        service.setFieldMandatory(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Description", true);
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Description", false);
 
         ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
         verify(fieldFormConfigRepository).save(saved.capture());
+        assertThat(saved.getValue().isActive()).isFalse();
         assertThat(saved.getValue().getFormConfig()).isEqualTo(ceramiqueConfig);
+    }
+
+    @Test
+    void setFieldMandatory_byConceptId_shouldWriteOnTheTypeOwnConfig() {
+        CustomField ownField = textField(1L, "Description", false);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
+
+        service.setFieldMandatory(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Description", true);
+
+        ArgumentCaptor<FieldFormConfig> saved = ArgumentCaptor.forClass(FieldFormConfig.class);
+        verify(fieldFormConfigRepository).save(saved.capture());
         assertThat(saved.getValue().isMandatory()).isTrue();
-        assertThat(saved.getValue().isActive()).isTrue();
+    }
+
+    @Test
+    void setFieldActive_byConceptId_shouldLeaveAnInstitutionLockedFieldUntouched() {
+        FieldFormConfig locked = fieldConfig(ceramiqueConfig, textField(1L, "Identifiant", true), true, true);
+        locked.setInstitutionLocked(true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(locked));
+
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Identifiant", false);
+
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
+        assertThat(locked.isActive()).isTrue();
+    }
+
+    @Test
+    void setFieldActive_byConceptId_shouldIgnoreAnUnknownField() {
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, "Inexistant", false);
+
+        verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
     }
 
     @Test
@@ -869,7 +872,7 @@ class TableFieldConfigServiceImplTest {
         locked.setInstitutionLocked(true);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(locked));
 
-        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", "Identifiant", false);
+        service.setFieldActive(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", "Identifiant", false);
 
         verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
         assertThat(locked.isActive()).isTrue();
@@ -895,39 +898,6 @@ class TableFieldConfigServiceImplTest {
         assertThat(deleted).isTrue();
         verify(fieldFormConfigRepository).delete(link);
         verify(customFieldRepository, never()).delete(any(CustomField.class));
-    }
-
-    /**
-     * The additional fields of a type include the ones it inherits from the default configuration:
-     * deleting one of those has to reach the default configuration, or the field would be read back
-     * — and displayed — right after being "deleted".
-     */
-    @Test
-    void deleteAdditionalField_shouldDropTheLinkAFieldIsInheritedThrough() {
-        CustomField additional = textField(5L, "Couleur", false);
-        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of());
-
-        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
-
-        assertThat(deleted).isTrue();
-        verify(fieldFormConfigRepository).delete(inherited);
-    }
-
-    @Test
-    void deleteAdditionalField_shouldDropBothTheTypesOwnLinkAndTheInheritedOne() {
-        CustomField additional = textField(5L, "Couleur", false);
-        FieldFormConfig inherited = fieldConfig(defaultConfig, additional, true, false);
-        FieldFormConfig own = fieldConfig(ceramiqueConfig, additional, true, true);
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(inherited));
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L)).thenReturn(List.of(own));
-
-        boolean deleted = service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Couleur");
-
-        assertThat(deleted).isTrue();
-        verify(fieldFormConfigRepository).delete(inherited);
-        verify(fieldFormConfigRepository).delete(own);
     }
 
     @Test
@@ -997,7 +967,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void getFormConfig_shouldLeaveTheDefaultTypeWithoutDefinition() {
-        var config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default");
+        var config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard");
 
         assertThat(config.getDefinition()).isEmpty();
     }
@@ -1020,8 +990,8 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getActionUnit()).isEqualTo(project);
         assertThat(saved.getValue().getFieldConcept()).isEqualTo(fieldConcept);
         assertThat(saved.getValue().getValueConcept()).isEqualTo(ceramiqueConcept);
-        assertThat(saved.getValue().getIdentifierFormat()).isEqualTo("{NUM_MOBILIER}");
-        assertThat(saved.getValue().getMinCode()).isZero();
+        assertThat(saved.getValue().getIdentifierFormat()).isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
+        assertThat(saved.getValue().getMinCode()).isOne();
         assertThat(saved.getValue().getMaxCode()).isEqualTo(999);
     }
 
@@ -1031,24 +1001,6 @@ class TableFieldConfigServiceImplTest {
                 TypeFormConfig.builder().typeName("Céramique").build());
 
         verify(formConfigRepository, never()).save(any(FormConfig.class));
-    }
-
-    @Test
-    void getFormConfig_shouldInheritIdentifierSettingsFromDefaultRow() {
-        FormConfig defaults = formConfig(12L, null);
-        defaults.setIdentifierFormat("M-{NUM_MOBILIER:0000}");
-        defaults.setMinCode(10);
-        defaults.setMaxCode(8000);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
-                .thenReturn(Optional.empty());
-        when(formConfigRepository.findDefaultByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(Optional.of(defaults));
-
-        TypeFormConfig result = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
-
-        assertThat(result.getIdentifierFormat()).isEqualTo("M-{NUM_MOBILIER:0000}");
-        assertThat(result.getMinCode()).isEqualTo(10);
-        assertThat(result.getMaxCode()).isEqualTo(8000);
     }
 
     @Test
@@ -1316,24 +1268,12 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void searchFieldCatalog_shouldNotOfferFieldsInheritedFromTheDefaultConfiguration() {
-        CustomField couleur = textField(1L, "Couleur", false);
-        when(customFieldRepository.findAllReusableByInstitution(1L))
-                .thenReturn(List.of(couleur));
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
-                .thenReturn(List.of(fieldConfig(defaultConfig, couleur, true, false)));
-
-        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", null))
-                .isEmpty();
-    }
-
-    @Test
     void searchFieldCatalog_shouldNotOfferFieldsTheTableAlreadyLaysOut() {
         CustomField identifier = givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD).get(IDENTIFIER_FIELD);
         when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of(identifier));
 
-        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "_default", null))
+        assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard", null))
                 .isEmpty();
     }
 
@@ -1482,11 +1422,11 @@ class TableFieldConfigServiceImplTest {
         ExecutionContextHolder.set(new UserInfo(institution, person, "en"));
         when(labelService.findLabelOf(ceramiqueConcept, "en")).thenReturn(prefLabel("Ceramic"));
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
-                .thenReturn(List.of(defaultConfig, ceramiqueConfig));
+                .thenReturn(List.of(ceramiqueConfig));
 
         List<TypeSummary> types = service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER);
 
-        assertThat(types).extracting(TypeSummary::getName).containsExactly("_default", "Ceramic");
+        assertThat(types).extracting(TypeSummary::getName).containsExactly("Ceramic");
     }
 
 
@@ -1496,11 +1436,11 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<TypeFieldFormConfig> fields = service.getFieldsConfig(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).hasSize(1);
         assertThat(fields.get(0).getType()).isEqualTo(FieldType.SELECT_ONE);
-        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.CAT_FIELD);
+        assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.TYPE_FIELD);
     }
 
     // --- createField ---
@@ -1540,12 +1480,92 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.INTEGER, "").getType()).isEqualTo(FieldType.INTEGER);
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
-                "Champ", FieldType.MEASUREMENT, "").getType()).isEqualTo(FieldType.MEASUREMENT);
+                "Champ", FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L))).getType())
+                .isEqualTo(FieldType.MEASUREMENT);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.DECIMAL, "").getType()).isEqualTo(FieldType.DECIMAL);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.DATETIME, "").getType()).isEqualTo(FieldType.DATETIME);
+        assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.BOOLEAN, "").getType()).isEqualTo(FieldType.BOOLEAN);
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.SELECT_ONE, "").getType()).isEqualTo(FieldType.SELECT_ONE);
         assertThat(service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
                 "Champ", FieldType.SELECT_MULTIPLE, "").getType()).isEqualTo(FieldType.SELECT_MULTIPLE);
+    }
+
+    @Test
+    void createField_shouldRefuseATypeThatIsNotCreatableFromTheScreen() {
+        givenCurrentPersonExists();
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Champ", FieldType.SELECT_MULTIPLE_PHASE, ""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void createField_shouldStoreWhetherABooleanAllowsNoAnswer() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
+
+        TypeFieldFormConfig created = service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Topo faite", FieldType.BOOLEAN, "", FieldOptions.noAnswer(true));
+
+        assertThat(created.getOptions().allowNoAnswer()).isTrue();
+        ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
+        verify(customFieldRepository).save(saved.capture());
+        assertThat(((CustomFieldBoolean) saved.getValue()).isNoAnswerAllowed()).isTrue();
+    }
+
+    @Test
+    void createField_shouldTakeTheDefaultUnitPickedAsTheMeasurementsOwnUnit() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(fieldFormConfigRepository.save(any(FieldFormConfig.class))).thenAnswer(call -> call.getArgument(0));
+        UnitDefinition squareMetre = unit(1L, "m²", UnitDefinition.Dimension.AREA, 1.0);
+        UnitDefinition hectare = unit(2L, "ha", UnitDefinition.Dimension.AREA, 10_000.0);
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(squareMetre, hectare));
+
+        service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Surface",
+                FieldType.MEASUREMENT, "", FieldOptions.units(2L, Set.of(1L, 2L)));
+
+        ArgumentCaptor<CustomField> saved = ArgumentCaptor.forClass(CustomField.class);
+        verify(customFieldRepository).save(saved.capture());
+        CustomFieldMeasurement measurement = (CustomFieldMeasurement) saved.getValue();
+        assertThat(measurement.getUnit()).isEqualTo(hectare);
+    }
+
+    @Test
+    void createField_shouldRefuseAMeasurementWithoutUnitOrWithUnitsOfDifferentDimensions() {
+        givenCurrentPersonExists();
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", FieldOptions.NONE))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(
+                unit(1L, "m²", UnitDefinition.Dimension.AREA, 1.0),
+                unit(2L, "kg", UnitDefinition.Dimension.MASS, 1000.0)));
+        FieldOptions mixedDimensions = FieldOptions.units(1L, Set.of(1L, 2L));
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", mixedDimensions))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("même grandeur");
+    }
+
+    private static UnitDefinition unit(Long id, String symbol, UnitDefinition.Dimension dimension, double factor) {
+        UnitDefinition unit = new UnitDefinition();
+        unit.setId(id);
+        unit.setSymbol(symbol);
+        unit.setLabel(symbol);
+        unit.setDimension(dimension);
+        unit.setFactorToBase(factor);
+        return unit;
     }
 
     // --- updateField ---
@@ -1668,7 +1688,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.MOBILIER, RECORDING_UNIT_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getType)
                 .containsExactly(FieldType.SELECT_ONE_RECORDING_UNIT);
     }
@@ -1678,7 +1698,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.CONTENANT, "container.field.spatialUnit");
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.CONTENANT, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.CONTENANT, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getType)
                 .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT);
     }
@@ -1689,7 +1709,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         List<TypeFieldFormConfig> fields = service.getFieldsConfig(
-                PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields.get(0).getType()).isEqualTo(FieldType.SELECT_MULTIPLE);
         assertThat(fields.get(0).getSourceLabel()).isEqualTo(Specimen.MATIERE_FIELD);
@@ -1701,7 +1721,7 @@ class TableFieldConfigServiceImplTest {
     void getFormConfig_shouldThrowWhenNoUserIsBoundToTheThread() {
         ExecutionContextHolder.clear();
 
-        assertThatThrownBy(() -> service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default"))
+        assertThatThrownBy(() -> service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard"))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -1808,28 +1828,145 @@ class TableFieldConfigServiceImplTest {
         verify(fieldFormConfigRepository, never()).save(any(FieldFormConfig.class));
     }
 
+    // --- yes/no and measurement options ---
+
+    @Test
+    void updateField_shouldChangeWhetherAYesNoFieldAllowsNoAnswerInPlace() {
+        CustomFieldBoolean existing = CustomFieldBoolean.builder().id(1L).label("Topo").isSystemField(false).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+
+        TypeFieldFormConfig result = service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Topo",
+                new FieldDefinition("Topo", FieldType.BOOLEAN, "", FieldOptions.noAnswer(true)));
+
+        assertThat(existing.isNoAnswerAllowed()).isTrue();
+        assertThat(result.getOptions().allowNoAnswer()).isTrue();
+    }
+
+    @Test
+    void updateField_shouldSetWhatAMeasurementMeasuresAndItsNature() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        Concept height = new Concept();
+        height.setId(50L);
+        Concept maximal = new Concept();
+        maximal.setId(51L);
+        CustomFieldMeasurement existing = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(customFieldRepository.save(any(CustomField.class))).thenAnswer(call -> call.getArgument(0));
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
+        when(conceptRepository.findById(50L)).thenReturn(Optional.of(height));
+        when(conceptRepository.findById(51L)).thenReturn(Optional.of(maximal));
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(prefLabel("Mesure"));
+
+        service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Hauteur", new FieldDefinition("Hauteur maximale",
+                FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L)).measuring(50L, 51L)));
+
+        assertThat(existing.getConcept()).isSameAs(height);
+        assertThat(existing.getMeasurementNature()).isSameAs(maximal);
+    }
+
+    @Test
+    void updateField_shouldRefuseAMeasureConceptThatDoesNotExist() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        CustomFieldMeasurement existing = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of(metre));
+        when(conceptRepository.findById(99L)).thenReturn(Optional.empty());
+        FieldDefinition definition = new FieldDefinition("Hauteur", FieldType.MEASUREMENT, "",
+                FieldOptions.units(1L, Set.of(1L)).measuring(99L, null));
+
+        assertThatThrownBy(() -> service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Hauteur", definition))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void createField_shouldRefuseAMeasurementWhoseUnitIsNotInTheCatalogue() {
+        givenCurrentPersonExists();
+        when(unitDefinitionRepository.findAllById(any())).thenReturn(List.of());
+        FieldOptions unknown = FieldOptions.units(7L, Set.of(7L));
+
+        assertThatThrownBy(() -> service.createField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique",
+                "Surface", FieldType.MEASUREMENT, "", unknown))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unité inconnue");
+    }
+
+    @Test
+    void aMeasurementOfAFormConfigurationListsTheUnitsThatConfigurationOffers() {
+        UnitDefinition metre = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("Hauteur").isSystemField(false).unit(metre).build();
+        FieldUnits configured = new FieldUnits(6L, List.of(new FieldUnits.UnitRef(5L, "cm"), new FieldUnits.UnitRef(6L, "mm")));
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false, configured);
+
+        assertThat(described.getOptions().allowedUnitIds()).containsExactlyInAnyOrder(5L, 6L);
+        assertThat(described.getOptions().defaultUnitId()).isEqualTo(6L);
+    }
+
+    @Test
+    void aMeasurementWithNoConfiguredUnitsListsItsOwnUnitFromTheCatalogue() {
+        UnitDefinition builtInCode = new UnitDefinition(null, null, "Mètre", "m", UnitDefinition.Dimension.LENGTH, 1.0, true);
+        UnitDefinition stored = unit(1L, "m", UnitDefinition.Dimension.LENGTH, 1.0);
+        when(unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc("m", UnitDefinition.Dimension.LENGTH))
+                .thenReturn(Optional.of(stored));
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("z").isSystemField(true).unit(builtInCode).build();
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false);
+
+        assertThat(described.getOptions().defaultUnitId()).isEqualTo(1L);
+        assertThat(described.getOptions().allowedUnitIds()).containsExactly(1L);
+    }
+
+    @Test
+    void aMeasurementIsDescribedByItsTypeAndNatureConcepts() {
+        Concept height = new Concept();
+        height.setId(50L);
+        CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("Hauteur").hint("depuis la base")
+                .isSystemField(false).concept(height).build();
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(prefLabel("Hauteur"));
+
+        TypeFieldFormConfig described = service.describe(field, true, false, false);
+
+        assertThat(described.getMeasureType().name()).isEqualTo("Hauteur");
+        assertThat(described.getMeasureType().id()).isEqualTo(50L);
+        assertThat(described.getMeasureNature()).isNull();
+        assertThat(described.getDescription()).isEqualTo("depuis la base");
+    }
+
+    @Test
+    void measureConceptsComeFromTheVocabularyOfTheirFieldCode() throws Exception {
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIAMD.TYPE"), eq("ha"), eq(PROJECT_ID)))
+                .thenReturn(List.of(autocomplete("Hauteur")));
+        when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIAMD.NATURE"), any(), eq(PROJECT_ID)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+
+        assertThat(service.measureConcepts(PROJECT_ID, "SIAMD.TYPE", "ha")).hasSize(1);
+        assertThat(service.measureConcepts(PROJECT_ID, "SIAMD.NATURE", "x")).isEmpty();
+    }
+
     // --- typeOf / toDto ---
 
     @Test
-    void getFieldsConfig_shouldMapActionUnitAndActionCodeFields() {
+    void getFieldsConfig_shouldMapActionUnitField() {
         CustomField projectField = CustomFieldSelectOneActionUnit.builder()
                 .id(1L).label("Projet").isSystemField(true).build();
-        CustomField actionCodeField = CustomFieldSelectOneActionCode.builder()
-                .id(2L).label("Code opération").isSystemField(true).build();
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(
-                fieldConfig(defaultConfig, projectField, true, false),
-                fieldConfig(defaultConfig, actionCodeField, true, false)));
+                fieldConfig(defaultConfig, projectField, true, false)));
 
         List<TypeFieldFormConfig> fields =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields();
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields();
 
         assertThat(fields).extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.PROJET, FieldType.SELECT_ONE);
+                .containsExactly(FieldType.SELECT_ONE_ACTION_UNIT);
         assertThat(fields).extracting(TypeFieldFormConfig::getSourceLabel).containsOnly("—");
     }
 
     @Test
-    void getFieldsConfig_shouldMapEveryFlavourOfSpatialUnitFieldToTheSameType() {
+    void getFieldsConfig_shouldMapEachFlavourOfSpatialUnitFieldToItsOwnType() {
         CustomField address = CustomFieldSelectOneAddress.builder()
                 .id(1L).label("Adresse").isSystemField(true).build();
         CustomField tree = CustomFieldSelectMultipleSpatialUnitTree.builder()
@@ -1838,26 +1975,23 @@ class TableFieldConfigServiceImplTest {
                 fieldConfig(defaultConfig, address, true, false),
                 fieldConfig(defaultConfig, tree, true, false)));
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getType)
-                .containsExactly(FieldType.SELECT_ONE_SPATIAL_UNIT, FieldType.SELECT_ONE_SPATIAL_UNIT);
+                .containsExactly(FieldType.SELECT_ADDRESS, FieldType.SELECT_MULTIPLE_SPATIAL_UNIT_TREE);
     }
 
-    /**
-     * The screen shows fewer types than the entity hierarchy expresses; one it has no type for falls
-     * back on text, and only the controlled-vocabulary types are announced as configurable.
-     */
+    /** A date is a date: it keeps its own type instead of reading as text; only vocabularies are configurable. */
     @Test
-    void getFieldsConfig_shouldFallBackOnTextForAFieldItHasNoTypeFor() {
+    void getFieldsConfig_shouldMapADateFieldToTheDateType() {
         CustomField dateField = CustomFieldDateTime.builder()
                 .id(1L).label("Date d'ouverture").isSystemField(true).build();
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, dateField, true, false)));
 
         TypeFieldFormConfig field =
-                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields().get(0);
+                service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields().get(0);
 
-        assertThat(field.getType()).isEqualTo(FieldType.TEXT);
+        assertThat(field.getType()).isEqualTo(FieldType.DATETIME);
         assertThat(field.isConfigurable()).isFalse();
     }
 
@@ -1872,7 +2006,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(10L))
                 .thenReturn(List.of(fieldConfig(defaultConfig, field, true, false)));
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getValueBinding)
                 .containsExactly("fullIdentifier");
     }
@@ -1883,25 +2017,12 @@ class TableFieldConfigServiceImplTest {
         locked.setInstitutionLocked(true);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of(locked));
 
-        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default").getFields())
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::isInstitutionLocked)
                 .containsExactly(true);
     }
 
     // --- getActiveAdditionalFields ---
-
-    @Test
-    void getActiveAdditionalFields_shouldIncludeTheOnesInheritedFromTheDefaultConfiguration() {
-        CustomField inherited = textField(1L, "Couleur", false);
-        CustomField ownField = textField(2L, "Poids", false);
-        when(fieldFormConfigRepository.findAllByFormConfigId(10L))
-                .thenReturn(List.of(fieldConfig(defaultConfig, inherited, true, false)));
-        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
-                .thenReturn(List.of(fieldConfig(ceramiqueConfig, ownField, true, false)));
-
-        assertThat(service.getActiveAdditionalFields(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique"))
-                .containsExactly(inherited, ownField);
-    }
 
     @Test
     void getActiveAdditionalFields_shouldDropAFieldTheTypeDeactivatedOnTopOfTheDefaultConfiguration() {
@@ -1918,7 +2039,7 @@ class TableFieldConfigServiceImplTest {
     // --- listTypes / getFormConfig / findFormConfig ---
 
     @Test
-    void listTypes_shouldSortTheConfiguredTypesCaseInsensitivelyAfterTheDefaultOne() {
+    void listTypes_shouldSortTheConfiguredTypesCaseInsensitively() {
         Concept metalConcept = concept(300L, "metal");
         Concept amphoreConcept = concept(400L, "amphore");
         when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
@@ -1929,16 +2050,15 @@ class TableFieldConfigServiceImplTest {
 
         assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
                 .extracting(TypeSummary::getName)
-                .containsExactly("_default", "amphore", "Céramique", "métal");
+                .containsExactly("amphore", "Céramique", "métal");
     }
 
     @Test
-    void listTypes_shouldHoldOnlyTheDefaultTypeWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
+    void listTypes_shouldBeEmptyWhenTheProjectHasNoVocabularyForTheTableField() throws Exception {
         when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CAT"), eq(PROJECT_ID)))
                 .thenThrow(new NoConfigForFieldException("no config"));
 
-        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER))
-                .extracting(TypeSummary::getName).containsExactly("_default");
+        assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER)).isEmpty();
     }
 
     @Test
@@ -1946,7 +2066,7 @@ class TableFieldConfigServiceImplTest {
         when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAS.CAT"), eq(PROJECT_ID)))
                 .thenThrow(new NoConfigForFieldException("no config"));
 
-        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "_default")).isEmpty();
+        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard")).isEmpty();
     }
 
     /**
@@ -1978,6 +2098,31 @@ class TableFieldConfigServiceImplTest {
         assertThat(service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "couleur"))
                 .extracting(FieldCatalogEntry::getName)
                 .containsExactly("Couleur");
+    }
+
+    // --- resolveIdentifierConfig ---
+
+    @Test
+    void resolveIdentifierConfig_shouldUseTheTypesOwnConfiguration() {
+        assertThat(service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID))
+                .isSameAs(ceramiqueConfig);
+    }
+
+    @Test
+    void resolveIdentifierConfig_shouldNumberAnUntypedEntityLikeTheFirstConfiguredType() {
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of(ceramiqueConfig, defaultConfig));
+
+        assertThat(service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, null))
+                .isSameAs(ceramiqueConfig);
+    }
+
+    @Test
+    void resolveIdentifierConfig_shouldRefuseAnUntypedEntityWhenTheTableHasNoType() {
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, null))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     // ========== Helper Methods ==========

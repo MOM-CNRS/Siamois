@@ -36,12 +36,12 @@ describe("registerDefaultFieldRenderers", () => {
     "SELECT_ONE",
     "SELECT_MULTIPLE",
     "MEASUREMENT",
+    "BOOLEAN",
   ])("registers the reference/measurement editor for %s", (answerType) => {
     expect(hasFieldRenderer(answerType)).toBe(true);
   });
 
-  it("leaves action codes and addresses read-only", () => {
-    expect(hasFieldRenderer("SELECT_ONE_ACTION_CODE")).toBe(false);
+  it("leaves addresses read-only", () => {
     expect(hasFieldRenderer("SELECT_ADDRESS")).toBe(false);
   });
 

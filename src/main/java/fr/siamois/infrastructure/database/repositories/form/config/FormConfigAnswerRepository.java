@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.repositories.form.config;
 
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.phase.Phase;
@@ -27,6 +28,8 @@ public interface FormConfigAnswerRepository extends CrudRepository<FormConfigAns
 
     Optional<FormConfigAnswer> findByFormConfigAndDocument(FormConfig formConfig, Document document);
 
+    Optional<FormConfigAnswer> findByFormConfigAndStudy(FormConfig formConfig, Study study);
+
     // Every answer set of an entity, whatever its form config: more than one only while answers
     // saved under a former type are still around (see CustomFieldAnswerService's type change).
     List<FormConfigAnswer> findByRecordingUnit(RecordingUnit recordingUnit);
@@ -38,4 +41,6 @@ public interface FormConfigAnswerRepository extends CrudRepository<FormConfigAns
     List<FormConfigAnswer> findByContainer(Container container);
 
     List<FormConfigAnswer> findByDocument(Document document);
+
+    List<FormConfigAnswer> findByStudy(Study study);
 }

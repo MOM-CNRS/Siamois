@@ -4,6 +4,7 @@ import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocom
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
+import { SelectButton } from "primereact/selectbutton";
 import type { FilterValue } from "../../panels/tableState";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
 import { t } from "../../i18n";
@@ -41,6 +42,8 @@ export function ColumnFilter({ label, kind, value, onChange, loadOptions, select
       return <RangeFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
     case "date-range":
       return <DateRangeFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
+    case "boolean":
+      return <BooleanFilter value={value} onChange={onChange} />;
     case "in":
     case "concept-one":
     case "concept-many":
@@ -157,6 +160,29 @@ function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilte
         onChange={(e) => commit(from, toIsoDate(e.value as Date | null))}
       />
     </span>
+  );
+}
+
+// A yes/no column filters on one answer at a time: the server takes it as f.<id>=true|false, which
+// is the "in" shape with a single id. Picking the chosen one again clears the filter.
+function BooleanFilter({ value, onChange }: Pick<ColumnFilterProps, "value" | "onChange">) {
+  const picked = value?.op === "in" ? value.v[0] : null;
+  const options = [
+    { id: "true", label: t("field.yes") },
+    { id: "false", label: t("field.no") },
+  ];
+  return (
+    <SelectButton
+      value={picked ?? null}
+      options={options}
+      optionLabel="label"
+      optionValue="id"
+      onChange={(e) => {
+        const next = e.value as string | null;
+        const option = options.find((o) => o.id === next);
+        onChange(option ? { op: "in", v: [option.id] } : undefined, option ? [option] : []);
+      }}
+    />
   );
 }
 

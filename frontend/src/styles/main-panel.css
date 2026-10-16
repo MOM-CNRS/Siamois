@@ -867,7 +867,7 @@
 
 .entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-text,
 .entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-icon {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-light);
 }
 
@@ -906,8 +906,8 @@
 
 .sia-create-form-header h4 {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
   color: inherit;
 }
 
@@ -1050,9 +1050,9 @@
   font-size: 0.85rem;
 }
 
-/* The row's own identifier chip opens the row in the overview; while its row is hovered it fills
-   in the entity's color (inverted). Only that chip — a linked entity's chip in another column
-   (the row's project…) keeps its outline. */
+/* The row's own chip (the name when the list has one, else the identifier) opens the row in the
+   overview; while its row is hovered it fills in the entity's color (inverted). Only that chip —
+   a linked entity's chip in another column keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
   background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
@@ -1061,6 +1061,12 @@
 
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
+}
+
+/* Selection checkboxes aligned to the left of their cell. */
+.entity-list-panel .p-datatable-thead > tr > th.p-selection-column,
+.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column {
+  text-align: left;
 }
 
 /* The gear's settings overlays (components/table/VisibilityChooser.tsx): a search box, then the
@@ -1561,7 +1567,9 @@ body button.p-button.status-button.status-button-compact {
   display: flex;
   gap: 0.2em;
   align-items: center;
-  font-weight: bold;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
 }
 .sia-card-grid {
   display: grid;
@@ -1587,7 +1595,39 @@ body button.p-button.status-button.status-button-compact {
   font-size: 2rem;
   color: var(--main-color);
 }
+/* Count-card title: title-card level, same weight as the counter chip next to it. It does not grow:
+   the chip sits right after it, on the same line. */
+.sia-count-card-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
+}
+/* Home cards' counter: outlined in the entity colour (the theme's <entity>-count-chip), as big as the
+   title, and see-through inside — the theme paints that chip white. */
+.sia-welcome-card .sia-count-card-row .p-chip {
+  background-color: transparent;
+  font-size: var(--font-size-title-card);
+  font-weight: var(--font-weight-title);
+  line-height: 1.2;
+  padding: 0 0.6rem;
+}
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+  margin: 0.15rem 0;
+  line-height: inherit;
+}
+/* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
+.sia-welcome-card .sia-count-card-row + div small {
+  color: var(--text-light);
+}
+.sia-welcome-card .sia-row-gap span {
+  color: var(--text-main);
+}
 .sia-list-title-text {
+  font-size: var(--font-size-title-page);
+  font-weight: var(--font-weight-title);
+  color: var(--title-color);
   padding-right: 0.5em;
 }
 .entity-list-panel.embedded {
@@ -1651,3 +1691,253 @@ body button.p-button.status-button.status-button-compact {
 .file-cell-inline-image { padding: 0; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; background: var(--surface-b, #f8f9fa); cursor: zoom-in; max-width: 100%; }
 .file-cell-inline-image img { display: block; max-width: 100%; max-height: 20rem; margin: 0 auto; }
 .file-cell-inline-pdf { width: 100%; height: 24rem; border: 1px solid var(--surface-border, #dee2e6); border-radius: 4px; }
+
+/* ----------------------------------------- project fiche header: one line
+
+   Primary chip (name), secondary chips (identifier, type, location), then ONE pencil pushed to the
+   far right of the header — before the toolbar buttons in the main layout, at the end in the
+   overview. It only shows while the header is hovered or holds focus, so a stray click can't start
+   an edit; in edit mode it is the one validate button and stays visible. */
+.sideview-titlebar > .sia-hstack {
+  flex: 1 1 auto;
+}
+
+.entity-detail-header {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  align-items: center;
+}
+
+.entity-detail-header-primary-input {
+  min-width: 12rem;
+}
+
+.entity-detail-header-secondary-input {
+  min-width: 8rem;
+}
+
+.entity-detail-header .entity-detail-header-edit.p-button {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.entity-detail-header:hover .entity-detail-header-edit.p-button,
+.entity-detail-header:focus-within .entity-detail-header-edit.p-button,
+.entity-detail-header-edit.p-button:has(.pi-check) {
+  opacity: 1;
+}
+
+/* ----------------------------------------- panel frame: the panels define the border, not the top bar
+
+   The top bar of a panel (its title bar) draws no line of its own: the panel's own border — the entity
+   coloured edge on top and its hairline around — is the only one. The main panel is flat, with square
+   corners (the side panel keeps its rounded edge). */
+.siamois-panel .sideview-titlebar,
+.entity-list-panel.p-panel > .p-panel-header,
+.entity-detail-panel.p-panel > .p-panel-header {
+  border: none;
+  box-shadow: none;
+}
+
+.panel-splitter-panel-l.siamois-panel,
+.siamois-panel.panel-docked {
+  border-radius: 0;
+}
+
+/* The JSF frame that hosts the React main panel (`.panel-docked`) draws no border of its own: the pane inside
+   it already has the entity-coloured edge. Both drew one, stacked — a second line (green wherever the frame did
+   not carry the entity's colour) and a coloured edge a few pixels short on each side, inset by the frame's own
+   side borders. */
+.panel-docked.siamois-panel:has(> .react-main-panel-mount) {
+  border: none;
+  border-radius: 0;
+/* A place suggestion in a picker: icon, name, type and code, and the source it comes from. */
+.place-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.place-item-icon {
+  flex: none;
+  opacity: 0.7;
+}
+
+.place-item-name {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-item-code {
+  opacity: 0.7;
+}
+
+.place-item-chip {
+  flex: none;
+  padding: 0 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.place-item-source {
+  margin-left: auto;
+}
+
+/* Footer line of a place picker whose sources wait for the field they depend on: a light red nudge. */
+.resource-ref-narrow-hint {
+  display: block;
+  padding: 0.25rem 0.75rem;
+  color: var(--red-500, #c0584d);
+}
+
+/* BOOLEAN in the editing overlay: the box and the name of its state, with room around them. The room
+   is on the overlay itself (it shows a widget edge to edge, and the widget's own padding would not
+   move it off the border), and the overlay is at least a form row tall so it hides the cell below. */
+.cell-edit-overlay:has(.boolean-renderer) {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+}
+
+.cell-edit-overlay .boolean-renderer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.boolean-renderer-label {
+  color: var(--text-color-secondary, #6b7280);
+  white-space: nowrap;
+}
+
+/* Yes / no / not specified (YesNoTriState): the "?" of the not-specified state sits on a plain box, not
+   the filled one PrimeReact draws for its unchecked state. */
+.yes-no-tristate.yes-no-unknown .p-checkbox-box {
+  background: var(--surface-0, #fff);
+  border-color: var(--surface-400, #bdbdbd);
+}
+
+.yes-no-unknown-mark {
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* The box and the name of its state, in the fiche and the lists as well as in the overlay. */
+.boolean-renderer-tristate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* MEASUREMENT editor, laid out as a small form: the value and its unit on one line, the comment below. */
+.measurement-renderer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 16rem;
+}
+
+.measurement-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.measurement-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.measurement-value {
+  flex: 1 1 auto;
+}
+
+.measurement-unit-field {
+  flex: 0 0 8rem;
+}
+
+.measurement-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* Fil d'Ariane des fiches (EntityBreadcrumbTrail): the "all paths" chevron sits in front of the trail. */
+.entity-detail-panel .panel-bc-row {
+  display: flex;
+  align-items: center;
+}
+
+/* The chevron is an inline SVG, so it is centred by the button's own flex box whatever the icon font does. */
+.entity-detail-panel .p-button.panel-bc-paths-button {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  color: var(--text-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-detail-panel .p-button.panel-bc-paths-button .panel-bc-paths-chevron {
+  width: 10px;
+  height: 10px;
+  display: block;
+  margin: 0;
+}
+
+/* Lighter, smaller separators between crumbs (PrimeReact draws them as an SVG chevron). */
+.entity-detail-panel .p-breadcrumb.panel-bc .p-menuitem-separator,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-separator {
+  color: var(--text-light);
+  opacity: 0.55;
+}
+
+.entity-detail-panel .p-breadcrumb.panel-bc .p-breadcrumb-chevron,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-breadcrumb-chevron {
+  width: 9px;
+  height: 9px;
+}
+
+/* The overlay's trails: same small, frameless look as the one in the panel. */
+body .p-overlaypanel.panel-bc-paths-overlay .p-overlaypanel-content {
+  padding: 0.3rem 0.5rem;
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0.2em 0.3em;
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-text,
+body .p-overlaypanel.panel-bc-paths-overlay .p-breadcrumb.panel-bc .p-menuitem-icon {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
+  padding: 0.2em 0.3em;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+/* The disabled « Créer » swallows mouse events, so its wrapper (which carries the tooltip) would
+   never see the hover. */
+.entity-list-panel-create-blocked .p-button {
+  pointer-events: none;
+}

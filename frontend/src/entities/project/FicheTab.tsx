@@ -119,7 +119,7 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
   return (
     <div className="project-fiche-tab sia-fiche-tab">
       {/* No edit/save toolbar: the app's own read/write switch decides, and each field persists
-          itself. The identifier and category chips keep their explicit pencil/apply/cancel, in
+          itself. The identifier and type chips keep their explicit pencil/apply/cancel, in
           ProjectDetailHeader — that is what JSF does too (headerEditControls.xhtml). */}
       {organizationIdRaw == null && (
         <Message severity="warn" text={t("fiche.unknownOrganization")} />
@@ -171,7 +171,7 @@ function FicheFooter({ entity, history }: { entity: ProjectDetail; history?: Pro
         <div className="project-fiche-tab-footer">
           <FooterLine label={t("fiche.createdOn")} date={created.revisionDate} author={authorName(created)} />
           <FooterLine label={t("fiche.modifiedOn")} date={latest.revisionDate} author={authorName(latest)} />
-          {entity.validated === "VALIDATED" && (
+          {entity.validationStatus === "VALIDATED" && (
             <small>
               <i>
                 {t("fiche.validated")} <span className="panel-history-colored-span">{t("fiche.yes")}</span>

@@ -140,16 +140,14 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
   [/^\/api\/v1\/organizations\/\d+\/counts$/, () => ({ data: { projects: projects.length, places: 9, recordingUnits: 240, finds: 1200, phases: 18, containers: 40 } })],
   [/^\/api\/v1\/organizations\/\d+\/project-types$/, () => ({
     data: [],
-    _default: {
-      form: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) },
-      fieldConfigs: [],
-      tableColumns: [
-        { columnId: "name", fieldId: "-1", visible: true, order: 0 },
-        { columnId: "fullIdentifier", fieldId: "-2", visible: true, order: 1 },
-        { columnId: "beginDate", fieldId: "-3", visible: true, order: 2 },
-        { columnId: "comment", fieldId: "10", visible: false, order: 3 },
-      ],
-    },
+    form: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) },
+    fieldConfigs: [],
+    tableColumns: [
+      { columnId: "name", fieldId: "-1", visible: true, order: 0 },
+      { columnId: "fullIdentifier", fieldId: "-2", visible: true, order: 1 },
+      { columnId: "beginDate", fieldId: "-3", visible: true, order: 2 },
+      { columnId: "comment", fieldId: "10", visible: false, order: 3 },
+    ],
     fields: FIELDS,
   })],
   [/^\/api\/v1\/bookmarks\/status$/, () => ({ bookmarked: false })],
@@ -161,7 +159,7 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
   }],
   [/^\/api\/v1\/projects\/(\d+)\/history$/, () => ({ data: [{ revisionDate: "2026-09-20T10:12:00Z", revisionType: "MOD", author: { id: 1, name: "Grégory", lastname: "B." } }], meta: { total: 1, limit: 50, offset: 0 } })],
   [/^\/api\/v1\/projects\/(\d+)\/recording-units$/, (_m, url) => list(recordingUnits, url)],
-  [/^\/api\/v1\/(?:projects|organizations)\/(\d+)\/recording-unit-types$/, () => ({ data: [], _default: { formBundle: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) }, tableColumns: RELATION_COLUMNS, fields: FIELDS }, fields: FIELDS })],
+  [/^\/api\/v1\/(?:projects|organizations)\/(\d+)\/recording-unit-types$/, () => ({ data: [{ id: "1", formBundle: { resourceType: "forms", layoutJson: JSON.stringify(LAYOUT) }, fields: FIELDS }], tableColumns: RELATION_COLUMNS, fields: FIELDS })],
   [/^\/api\/v1\/recording-units\/(\d+)\/fields\/(-?\d+)\/values$/, (m, url) => {
     const all = relationValues(Number(m[1]), m[2]);
     const offset = Number(url.searchParams.get("offset") ?? 0);

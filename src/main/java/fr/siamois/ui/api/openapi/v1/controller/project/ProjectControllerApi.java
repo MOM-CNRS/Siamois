@@ -164,6 +164,7 @@ public class ProjectControllerApi {
             resource.getCount().setPhases(projectApiService.countPhasesForProject(row));
             resource.getCount().setContainers(projectApiService.countContainersForProject(row));
             resource.getCount().setDocuments(projectApiService.countDocumentsForProject(row));
+            resource.getCount().setStudies(projectApiService.countStudiesForProject(row));
         }
         return ResponseEntity.ok(new ProjectResponse(resource));
     }

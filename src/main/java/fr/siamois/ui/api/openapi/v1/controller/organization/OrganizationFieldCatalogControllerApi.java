@@ -80,6 +80,17 @@ public class OrganizationFieldCatalogControllerApi {
         return catalog(id, ConfigurableTable.DOCUMENT, acceptLanguage);
     }
 
+    @GetMapping("/study-types")
+    @Operation(summary = "Catalogue de colonnes des études de l'organisation", description = DESCRIPTION)
+    @ApiResponse(responseCode = "200", description = "Ok")
+    @ApiResponse(responseCode = "401", description = "Non authentifié")
+    @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    public ResponseEntity<OrganizationFieldCatalogResponse> studyTypes(
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        return catalog(id, ConfigurableTable.STUDY, acceptLanguage);
+    }
+
     @GetMapping("/container-types")
     @Operation(summary = "Catalogue de colonnes des contenants de l'organisation", description = DESCRIPTION)
     @ApiResponse(responseCode = "200", description = "Ok")

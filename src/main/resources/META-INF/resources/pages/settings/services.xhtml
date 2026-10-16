@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:composition template="/template.xhtml"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:settings="http://java.sun.com/jsf/composite/pages/settings/components"
+                xmlns:f="http://java.sun.com/jsf/core">
+
+    <ui:define name="metadata">
+        <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
+        <f:event type="preRenderView" listener="#{servicesSettingsBean.checkAccessOrRedirect}"/>
+    </ui:define>
+
+    <ui:define name="head">
+        <h:outputStylesheet library="css" name="settings.css"/>
+    </ui:define>
+
+    <ui:define name="content">
+        <main class="container-lg">
+            <settings:settingsCategory
+                    title="#{langBean.msg('nav.services')}"
+                    formId="servicesForm"
+                    options="#{servicesSettingsBean.elements}"
+            />
+        </main>
+    </ui:define>
+
+</ui:composition>

@@ -34,11 +34,11 @@ describe("listFinds", () => {
     await listFinds({
       offset: 0,
       limit: 10,
-      scope: { entityType: "project", id: 5, path: "mobiliers" },
+      scope: { entityType: "project", id: 5, path: "finds" },
     });
 
     const [path] = mockedApiFetch.mock.calls[0];
-    expect(path).toContain("/api/v1/projects/5/mobiliers?");
+    expect(path).toContain("/api/v1/projects/5/finds?");
   });
 
   it("normalizes meta.total to totalCount like every other entity's list", async () => {
@@ -50,7 +50,7 @@ describe("listFinds", () => {
     const result = await listFinds({
       offset: 0,
       limit: 10,
-      scope: { entityType: "project", id: 5, path: "mobiliers" },
+      scope: { entityType: "project", id: 5, path: "finds" },
     });
 
     expect(result).toEqual({

@@ -25,7 +25,7 @@ export interface RowTypeRef {
   type?: { id: string } | null;
 }
 
-const DEFAULT_KEY = "_default";
+const DEFAULT_KEY = "_untyped";
 
 type FormRules = Map<string, FieldRules | null | undefined>;
 type ProjectRules = Map<string, FormRules>;
@@ -44,7 +44,8 @@ function rulesOfLayout(layoutJson: string | undefined): FormRules {
 
 function projectRulesOf(body: TypesCatalogBody): ProjectRules {
   const out: ProjectRules = new Map();
-  out.set(DEFAULT_KEY, rulesOfLayout(body._default?.formBundle?.layoutJson));
+  // an entity with no type reads the rules of the table's first type
+  out.set(DEFAULT_KEY, rulesOfLayout(body.data?.[0]?.formBundle?.layoutJson));
   for (const type of body.data ?? []) out.set(type.id, rulesOfLayout(type.formBundle?.layoutJson));
   return out;
 }

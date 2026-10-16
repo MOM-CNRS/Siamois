@@ -52,7 +52,7 @@ class MultiValueTest {
     @Test
     void resourceRef_hrefPointsAtTheResourceDetail_whenItHasOne() {
         assertThat(ref("12").href()).isEqualTo("/api/v1/recording-units/12");
-        assertThat(new ResourceRef("5", "action-units", "P").href()).isEqualTo("/api/v1/projects/5");
+        assertThat(new ResourceRef("5", "projects", "P").href()).isEqualTo("/api/v1/projects/5");
         assertThat(new ResourceRef("5", "persons", "Jean").href()).isNull();
     }
 

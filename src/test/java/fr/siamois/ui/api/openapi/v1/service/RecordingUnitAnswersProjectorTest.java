@@ -146,7 +146,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("actionUnit")), Map.of()).get(1L);
 
-        assertThat(answers).containsEntry(fieldId("actionUnit"), new ResourceRef("9", "action-units", "INST-PROJ"));
+        assertThat(answers).containsEntry(fieldId("actionUnit"), new ResourceRef("9", "projects", "INST-PROJ"));
     }
 
     @Test
@@ -159,7 +159,7 @@ class RecordingUnitAnswersProjectorTest {
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("spatialUnit")), Map.of()).get(1L);
 
-        assertThat(answers).containsEntry(fieldId("spatialUnit"), new ResourceRef("11", "spatial-units", "Zone A"));
+        assertThat(answers).containsEntry(fieldId("spatialUnit"), new ResourceRef("11", "places", "Zone A"));
     }
 
     @Test

@@ -8,19 +8,21 @@ import type { FieldCatalog, ListScope } from "./types";
 
 // One type's form in a types catalog (GET …/<x>-types): its layout and the fields it places.
 export interface TypeFormBody {
+  // The type's concept (a type's id is its concept's id): what a type picker shows.
+  concept?: { id?: string; resolvedLabel?: string | null } | null;
   formBundle?: { resourceType?: string; layoutJson: string } | null;
   fields?: Record<string, FieldResource>;
 }
 
 /**
  * The body of every types catalog — projects/{id}/<x>-types and organizations/{id}/<x>-types: one
- * form per configured type (`data`), the form of an untyped entity (`_default`, with the list's
- * default columns where the entity has some), and for some catalogs the union of every type's
- * fields (`fields`). An organization's catalog has no per-type entries.
+ * form per configured type (`data`), the union of every type's fields (`fields`) and, where the
+ * list has some, its default columns (`tableColumns`). An organization's catalog has no per-type
+ * entries.
  */
 export interface TypesCatalogBody {
   data?: (TypeFormBody & { id: string })[];
-  _default?: TypeFormBody & { tableColumns?: ProjectTableColumnDefault[] };
+  tableColumns?: ProjectTableColumnDefault[];
   fields?: Record<string, FieldResource>;
 }
 
@@ -42,10 +44,10 @@ export interface EffectiveForm {
   fields: Record<string, FieldResource>;
 }
 
-/** The form of an entity of type `typeId` — its type's own, else the untyped (`_default`) one. */
+/** The form of an entity of type `typeId` — its type's own, else the table's first type's (there is no "any type" form). */
 function effectiveFormOf(body: TypesCatalogBody, typeId: string | null | undefined): EffectiveForm {
   const match = typeId != null ? body.data?.find((t) => t.id === typeId) : undefined;
-  const effective = match ?? body._default;
+  const effective = match ?? body.data?.[0];
   return { layoutJson: effective?.formBundle?.layoutJson ?? "", fields: effective?.fields ?? {} };
 }
 
@@ -89,7 +91,7 @@ export async function loadTypeCatalog(
   // additional fields' positive ids) ahead of the rest whatever the server's order, hence the list
   // and the explicit (stable) sort.
   const order: string[] = [];
-  for (const source of [body._default?.fields, ...(body.data ?? []).map((t) => t.fields)]) {
+  for (const source of [body.fields, ...(body.data ?? []).map((t) => t.fields)]) {
     for (const field of Object.values(source ?? {})) {
       if (!(field.id in fields)) order.push(field.id);
       fields[field.id] = field;

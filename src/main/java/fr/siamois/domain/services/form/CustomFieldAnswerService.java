@@ -1,10 +1,8 @@
 package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionUnit;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
@@ -14,18 +12,16 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionCodeDTO;
 import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.mapper.ActionCodeMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.PlaceSuggestionMapper;
@@ -100,8 +96,6 @@ public class CustomFieldAnswerService {
     private final PlaceSuggestionMapper placeSuggestionMapper;
     private final ActionUnitRepository actionUnitRepository;
     private final ActionUnitSummaryMapper actionUnitSummaryMapper;
-    private final ActionCodeRepository actionCodeRepository;
-    private final ActionCodeMapper actionCodeMapper;
     private final RecordingUnitRepository recordingUnitRepository;
 
     // ========== Owners ==========
@@ -135,9 +129,9 @@ public class CustomFieldAnswerService {
         if (dto == null || dto.getId() == null) return null;
         Long projectId = specimenProjectId(dto);
         if (projectId == null) return null;
-        // A find's form config is keyed by its category (Specimen.CAT_FIELD), not by its type.
+        // A find's form config is keyed by its type (Specimen.TYPE_FIELD), not by its type.
         return new AnswerOwner("find " + dto.getId(), projectId, ConfigurableTable.MOBILIER,
-                idOf(dto.getCategory()),
+                idOf(dto.getType()),
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
@@ -166,9 +160,20 @@ public class CustomFieldAnswerService {
 
     private AnswerOwner ownerOf(DocumentDTO dto) {
         if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
-        // A document's form config is keyed by its category (Document.TYPE_FIELD).
+        // A document's form config is keyed by its type (Document.TYPE_FIELD).
         return new AnswerOwner("document " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.DOCUMENT,
-                idOf(dto.getCategory()),
+                idOf(dto.getType()),
+                config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
+                config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
+                () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
+                List::of);
+    }
+
+    private AnswerOwner ownerOf(StudyDTO dto) {
+        if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
+        // A study's form config is keyed by its type (Study.TYPE_FIELD).
+        return new AnswerOwner("study " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.STUDY,
+                idOf(dto.getType()),
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
@@ -231,6 +236,12 @@ public class CustomFieldAnswerService {
     @Transactional(rollbackFor = Exception.class)
     public void saveAdditionalFieldAnswers(DocumentDTO documentDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
         save(ownerOf(documentDTO), answers);
+    }
+
+    /** Same as {@link #saveAdditionalFieldAnswers(RecordingUnitDTO, Map)}, for a study. */
+    @Transactional(rollbackFor = Exception.class)
+    public void saveAdditionalFieldAnswers(StudyDTO studyDTO, Map<CustomField, CustomFieldAnswerViewModel> answers) {
+        save(ownerOf(studyDTO), answers);
     }
 
     private void save(AnswerOwner owner, Map<CustomField, CustomFieldAnswerViewModel> answers) {
@@ -398,8 +409,13 @@ public class CustomFieldAnswerService {
         return load(ownerOf(documentDTO));
     }
 
+    @Transactional(readOnly = true)
+    public Map<CustomField, CustomFieldAnswerViewModel> loadAdditionalFieldAnswers(StudyDTO studyDTO) {
+        return load(ownerOf(studyDTO));
+    }
+
     /** The entities a list can show additional-field answers for. */
-    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER, DOCUMENT }
+    public enum ListOwner { RECORDING_UNIT, SPECIMEN, PHASE, CONTAINER, DOCUMENT, STUDY }
 
     /**
      * The answers of a whole page of entities to some of their additional fields, in one query —
@@ -417,6 +433,7 @@ public class CustomFieldAnswerService {
             case PHASE -> customFieldAnswerRepository.findAnswersOfPhases(ownerIds, fieldIds);
             case CONTAINER -> customFieldAnswerRepository.findAnswersOfContainers(ownerIds, fieldIds);
             case DOCUMENT -> customFieldAnswerRepository.findAnswersOfDocuments(ownerIds, fieldIds);
+            case STUDY -> customFieldAnswerRepository.findAnswersOfStudies(ownerIds, fieldIds);
         };
         Map<Long, Map<CustomField, CustomFieldAnswerViewModel>> result = new HashMap<>();
         answers.stream()
@@ -438,16 +455,18 @@ public class CustomFieldAnswerService {
             case PHASE -> set.getPhase();
             case CONTAINER -> set.getContainer();
             case DOCUMENT -> set.getDocument();
+            case STUDY -> set.getStudy();
         };
         if (entity instanceof fr.siamois.domain.models.recordingunit.RecordingUnit ru) return ru.getId();
         if (entity instanceof fr.siamois.domain.models.specimen.Specimen sp) return sp.getId();
         if (entity instanceof fr.siamois.domain.models.phase.Phase ph) return ph.getId();
         if (entity instanceof fr.siamois.domain.models.container.Container c) return c.getId();
         if (entity instanceof fr.siamois.domain.models.document.Document d) return d.getId();
+        if (entity instanceof fr.siamois.domain.models.study.Study st) return st.getId();
         return null;
     }
 
-    /** Removes every additional-field answer a document holds, whatever category's form they were saved under. */
+    /** Removes every additional-field answer a document holds, whatever type's form they were saved under. */
     @Transactional(rollbackFor = Exception.class)
     public void deleteAdditionalFieldAnswers(DocumentDTO documentDTO) {
         for (FormConfigAnswer set : formConfigAnswerService.findAllFormConfigAnswers(documentDTO)) {
@@ -491,15 +510,30 @@ public class CustomFieldAnswerService {
 
     /** Fills a view-model whose value is held by the answer itself; false when it is not one of those. */
     private boolean fillScalar(CustomFieldAnswerViewModel viewModel, CustomFieldAnswer answer, Object value) {
+        return fillPlainScalar(viewModel, value) || fillStructuredScalar(viewModel, answer);
+    }
+
+    /** A text, number, yes/no or date: the value is the answer's own, whatever else it holds. */
+    private static boolean fillPlainScalar(CustomFieldAnswerViewModel viewModel, Object value) {
         if (viewModel instanceof CustomFieldAnswerTextViewModel v && value instanceof String s) {
             v.setValue(s);
         } else if (viewModel instanceof CustomFieldAnswerIntegerViewModel v && value instanceof Integer i) {
             v.setValue(i);
+        } else if (viewModel instanceof CustomFieldAnswerBooleanViewModel v && value instanceof Boolean b) {
+            v.setValue(b);
         } else if (viewModel instanceof CustomFieldAnswerDecimalViewModel v && value instanceof Number n) {
             v.setValue(n.doubleValue());
         } else if (viewModel instanceof CustomFieldAnswerDateTimeViewModel v && value instanceof LocalDateTime d) {
             v.setValue(d);
-        } else if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    /** A measurement or a vocabulary pick: what the view-model holds is built from several of the answer's parts. */
+    private boolean fillStructuredScalar(CustomFieldAnswerViewModel viewModel, CustomFieldAnswer answer) {
+        if (viewModel instanceof CustomFieldAnswerMeasurementViewModel v
                 && answer instanceof CustomFieldAnswerMeasurement stored) {
             v.setValue(MeasurementAnswerDTO.builder()
                     .numericValue(stored.getValue())
@@ -532,8 +566,6 @@ public class CustomFieldAnswerService {
                     .collect(Collectors.toCollection(ArrayList::new)));
         } else if (viewModel instanceof CustomFieldAnswerSelectOneActionUnitViewModel v) {
             v.setValue(storedEntities(value, ActionUnit.class).stream().map(actionUnitSummaryMapper::convert).findFirst().orElse(null));
-        } else if (viewModel instanceof CustomFieldAnswerSelectOneActionCodeViewModel v) {
-            v.setValue(storedEntities(value, ActionCode.class).stream().map(actionCodeMapper::convert).findFirst().orElse(null));
         } else {
             return false;
         }
@@ -650,9 +682,6 @@ public class CustomFieldAnswerService {
         if (answer instanceof CustomFieldAnswerActionUnit) {
             return shaped(references(raw, ActionUnit.class, CustomFieldAnswerService::idOfEntity, actionUnitRepository::findAllById, ActionUnit::getId), multiple);
         }
-        if (answer instanceof CustomFieldAnswerActionCode) {
-            return shaped(references(raw, ActionCode.class, CustomFieldAnswerService::codeOfActionCode, actionCodeRepository::findAllById, ActionCode::getCode), multiple);
-        }
         if (answer instanceof CustomFieldAnswerDateTime) {
             if (raw instanceof OffsetDateTime offset) return offset.toLocalDateTime();
             if (raw instanceof LocalDate date) return date.atStartOfDay();
@@ -725,12 +754,6 @@ public class CustomFieldAnswerService {
         if (picked instanceof SpatialUnitSummaryDTO summary) return summary.getId();
         if (picked instanceof SpatialUnit spatialUnit) return spatialUnit.getId();
         return idOfEntity(picked);
-    }
-
-    private static String codeOfActionCode(Object picked) {
-        if (picked instanceof ActionCodeDTO dto) return dto.getCode();
-        if (picked instanceof ActionCode code) return code.getCode();
-        return picked instanceof String code ? code : null;
     }
 
     private void createOrUpdateMeasurementAnswer(CustomFieldAnswerMeasurement answer,

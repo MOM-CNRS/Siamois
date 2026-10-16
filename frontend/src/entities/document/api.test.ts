@@ -79,14 +79,14 @@ describe("patchDocumentAnswers", () => {
 });
 
 describe("createDocument", () => {
-  it("sends a POST with projectId and categoryId, and unwraps the data envelope", async () => {
+  it("sends a POST with projectId and typeId, and unwraps the data envelope", async () => {
     mockedApiFetch.mockResolvedValueOnce({ data: { resourceType: "documents", id: "55" } });
 
-    const result = await createDocument({ projectId: "5", categoryId: "9" });
+    const result = await createDocument({ projectId: "5", typeId: "9" });
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/documents", {
       method: "POST",
-      body: { projectId: "5", categoryId: "9" },
+      body: { projectId: "5", typeId: "9" },
     });
     expect(result).toEqual({ resourceType: "documents", id: "55" });
   });

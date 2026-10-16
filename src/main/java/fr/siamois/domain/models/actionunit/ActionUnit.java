@@ -55,15 +55,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "action_unit_id", nullable = false)
     private Long id;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "action_action_code",
-            joinColumns = {@JoinColumn(name = "fk_action_id")},
-            inverseJoinColumns = {@JoinColumn(name = "fk_action_code_id")}
-    )
-    private Set<ActionCode> secondaryActionCodes = new HashSet<>();
-
-
     @ManyToMany
     @JoinTable(
             name = "action_hierarchy",
@@ -144,10 +135,6 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
 
-
-    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE})
-    @JoinColumn(name = "fk_primary_action_code")
-    protected ActionCode primaryActionCode;
 
     @NotNull
     @Column(name = "identifier")

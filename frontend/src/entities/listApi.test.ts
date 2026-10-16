@@ -92,17 +92,17 @@ describe("fetchList", () => {
   });
 
   it("uses scope.path to override the child segment when it differs from collectionPath", async () => {
-    registerEntityType(stubConfig("actionUnit", "action-units"));
+    registerEntityType(stubConfig("actionUnit", "projects"));
     mockedApiFetch.mockResolvedValueOnce({ data: [], meta: { total: 0, limit: 10, offset: 0 } });
 
     await fetchList("finds", {
       offset: 0,
       limit: 10,
-      scope: { entityType: "actionUnit", id: 7, path: "mobiliers" },
+      scope: { entityType: "actionUnit", id: 7, path: "finds" },
     });
 
     const [path] = mockedApiFetch.mock.calls[0];
-    expect(path).toContain("/api/v1/action-units/7/mobiliers?");
+    expect(path).toContain("/api/v1/projects/7/finds?");
   });
 
   it("falls back to the scope's raw entityType if it isn't registered", async () => {

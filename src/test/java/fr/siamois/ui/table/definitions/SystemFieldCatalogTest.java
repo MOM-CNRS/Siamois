@@ -90,7 +90,7 @@ class SystemFieldCatalogTest {
     @Test
     void identityOf_shouldNotDependOnTheIdsTheDefinitionsCarry() {
         Map<String, CustomField> fields = byLabel(ConfigurableTable.MOBILIER);
-        CustomField category = fields.get("specimen.field.category");
+        CustomField category = fields.get("specimen.field.type");
         String identity = SystemFieldCatalog.identityOf(category);
 
         category.setId(4321L);
@@ -105,10 +105,10 @@ class SystemFieldCatalogTest {
      */
     @Test
     void fieldsOf_shouldHandOutFreshFieldsSoACallerCannotAlterTheDefinition() {
-        CustomField first = byLabel(ConfigurableTable.MOBILIER).get("specimen.field.category");
+        CustomField first = byLabel(ConfigurableTable.MOBILIER).get("specimen.field.type");
         first.setLabel("Modifié");
 
-        assertThat(byLabel(ConfigurableTable.MOBILIER)).containsKey("specimen.field.category");
+        assertThat(byLabel(ConfigurableTable.MOBILIER)).containsKey("specimen.field.type");
     }
 
     @Test

@@ -84,7 +84,7 @@ public class DocumentOpenApiService {
     public DocumentResource createDocument(DocumentCreateRequest request, PersonDTO personDto,
                                      Set<Long> accessibleInstitutionIds, String lang) {
         String projectId = requireNonBlank(request.getProjectId(), "projectId");
-        String categoryId = requireNonBlank(request.getCategoryId(), "categoryId");
+        String typeId = requireNonBlank(request.getTypeId(), "typeId");
 
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
         ActionUnitDTO au = project.actionUnit();
@@ -100,7 +100,7 @@ public class DocumentOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur ce projet");
         }
 
-        Concept categoryConcept = conceptService.findById(parseLong(categoryId))
+        Concept typeConcept = conceptService.findById(parseLong(typeId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Catégorie de document introuvable"));
 
         DocumentDTO shell = new DocumentDTO();
@@ -109,7 +109,7 @@ public class DocumentOpenApiService {
         // find creation (FindOpenApiService): the caller, in the project's organization.
         shell.setCreatedBy(personDto);
         shell.setCreatedByInstitution(institution);
-        shell.setCategory(conceptMapper.convert(categoryConcept));
+        shell.setType(conceptMapper.convert(typeConcept));
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
@@ -152,19 +152,25 @@ public class DocumentOpenApiService {
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        boolean statusChange = ValidationOpenApiService.changes(document.getValidated(), request.getValidated());
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        boolean identifierChange = IdentifierPatch.changes(newIdentifier, document.getIdentifier());
+        boolean statusChange = ValidationOpenApiService.changes(document.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || !statusChange) && !canEdit) {
+        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(document.getValidated(), request.getValidated(), canEdit, canValidate);
+        validationOpenApiService.requireAllowed(document.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
-        if (answersChange || !statusChange) {
+        if (identifierChange) {
+            document.setIdentifier(newIdentifier);
+            IdentifierPatch.requireFree(documentService.identifierAlreadyExistInProject(document));
+        }
+        if (answersChange || identifierChange || !statusChange) {
             Long projectId = document.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the document-types catalog lays out (system + additional fields).
                 FormUiDto form = effectiveFormResolver.resolveEffectiveForm(projectId,
-                        ConfigurableTable.DOCUMENT, document.getCategory() != null ? document.getCategory().getId() : null);
+                        ConfigurableTable.DOCUMENT, document.getType() != null ? document.getType().getId() : null);
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(document, form, request.getAnswers(), projectId);
                 requireWebUrl(document.getExternalUrl());
@@ -172,7 +178,7 @@ public class DocumentOpenApiService {
             });
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(Document.class, id, request.getValidated(), personDto);
+        validationOpenApiService.apply(Document.class, id, request.getValidationStatus(), personDto);
         return loadDocument(id, personDto, accessibleInstitutionIds, lang);
     }
 

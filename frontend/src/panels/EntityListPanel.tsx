@@ -1,4 +1,5 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
+import { usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
@@ -133,8 +134,8 @@ export function EntityListPanel({
     scope,
   });
 
-  const [selectedRows, setSelectedRows] = useState<RowRecord[]>([]);
-  const clearSelection = useCallback(() => setSelectedRows([]), []);
+  const [selectedRows, setSelectedRows] = usePaneState<RowRecord[]>("selection", []);
+  const clearSelection = useCallback(() => setSelectedRows([]), [setSelectedRows]);
 
   // Created and duplicated entities open where a row's own identifier would (the overview).
   const rowActions = useRowActions({
@@ -159,7 +160,7 @@ export function EntityListPanel({
 
   // Labels for the ids an "in" filter carries — FilterValue itself is ids-only (the wire shape),
   // so the chip bar needs this to print "Statut: En cours" rather than "Statut: 4711".
-  const [filterOptionsByKey, setFilterOptionsByKey] = useState<Record<string, FilterOption[]>>({});
+  const [filterOptionsByKey, setFilterOptionsByKey] = usePaneState<Record<string, FilterOption[]>>("filterOptions", {});
   function onFilterChange(key: string, value: FilterValue | undefined, options?: FilterOption[]) {
     const next = { ...state.filters };
     if (value) next[key] = value;

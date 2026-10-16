@@ -9,7 +9,6 @@
 
         <p:dialog id="newConfigDialog" widgetVar="newConfigDialogWidget" modal="true" resizable="false"
                   header="#{langBean.msg('projectTables.tree.newConfig')}" width="460">
-            <p class="ptc-dialog-hint">#{langBean.msg('projectTables.tree.newConfigHint')}</p>
             <p:outputLabel for="newTypeName" value="#{langBean.msg('projectTables.tree.newConfigValue')}"/>
             <p:autoComplete id="newTypeName" value="#{projectTableFieldSettingsBean.newTypeName}"
                             completeMethod="#{projectTableFieldSettingsBean.completeConfigurableTypes}"
@@ -23,7 +22,7 @@
                                  onclick="PF('newConfigDialogWidget').hide()"/>
                 <p:commandButton id="addConfiguration" value="#{langBean.msg('common.action.create')}"
                                  actionListener="#{projectTableFieldSettingsBean.addConfiguration()}"
-                                 process="@this newTypeName" update="@form :projectTablesFormCC:projectTablesForm"
+                                 process="@this newTypeName" update="@form :ptcMain :treeFormCC:treeForm"
                                  oncomplete="PF('newConfigDialogWidget').hide()"/>
             </div>
         </p:dialog>

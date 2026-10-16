@@ -43,15 +43,21 @@ export function isOwningProjectField(field: FieldResource): boolean {
 
 export interface FieldQueryCapability {
   sortable: boolean;
-  // contains → f.<id>=text; range / date-range → f.<id>.from / .to; in → f.<id>=<id> (repeatable).
-  filterOp?: "contains" | "range" | "date-range" | "in" | null;
+  // contains → f.<id>=text; range / date-range → f.<id>.from / .to; equals → f.<id>=true|false
+  // (yes/no); in → f.<id>=<id> (repeatable).
+  filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | null;
 }
 
 export interface FieldConstraints {
   min?: number | null;
   max?: number | null;
   showTime?: boolean | null;
+  // MEASUREMENT: the field's default unit symbol, and every symbol an answer can be entered in
+  // (null when the field has a single unit).
   unit?: string | null;
+  units?: string[] | null;
+  // BOOLEAN: the answer may stay empty — a third state beside yes and no.
+  allowNoAnswer?: boolean | null;
 }
 
 /**

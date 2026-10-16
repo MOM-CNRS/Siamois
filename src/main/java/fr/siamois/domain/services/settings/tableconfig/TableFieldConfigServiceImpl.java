@@ -5,12 +5,15 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -26,7 +29,9 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.layout.FormLayout;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
@@ -40,11 +45,13 @@ import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepositor
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
+import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import jakarta.persistence.DiscriminatorValue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -68,18 +75,20 @@ import java.util.function.Consumer;
  * A table maps to the "type" field of its entity ({@link ConfigurableTable#getFieldCode()}); the
  * concept that field is configured on is the {@code fieldConcept} of every {@code FormConfig} of
  * that table. A type name is the label of a value of that field, which is the {@code valueConcept}
- * of the configuration; {@code _default} is the configuration carrying no value concept, the one
- * that applies whenever a value has none of its own.
+ * of the configuration. Every configuration belongs to a type: there is no configuration standing for
+ * "any type" — a table's types are the ones somebody configured, and a value that has no configuration
+ * yet is served by the table's built-in form until something is configured on it.
  * <p>
  * Configurations are created lazily: a type has no row until something is actually configured on
- * it. Reading a type that has no configuration therefore falls back on the default one rather than
- * writing to the database, and only the write operations materialize a row.
+ * it, and only the write operations materialize a row.
  */
 @Slf4j
 @Service
 @Primary
 @RequiredArgsConstructor
 public class TableFieldConfigServiceImpl implements TableFieldConfigService {
+
+    private static final String NO_CONFIG_FOR_FIELD = "No configuration for field {} in project {}";
 
     private static final String NO_SOURCE = "—";
     private static final int DEFAULT_MIN_CODE = 1;
@@ -100,6 +109,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final ObjectProvider<TableFieldConfigServiceImpl> selfProvider;
     private final FormLayoutSeeds formLayoutSeeds;
     private final FormConfigGroupRepository formConfigGroupRepository;
+    private final UnitDefinitionRepository unitDefinitionRepository;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -110,10 +120,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public List<TypeSummary> listTypes(Long projectId, ConfigurableTable table) {
         List<TypeSummary> types = new ArrayList<>();
-        types.add(new TypeSummary(DEFAULT_TYPE, true));
         configuredTypeNames(projectId, table).stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                .map(name -> new TypeSummary(name, false))
+                .map(TypeSummary::new)
                 .forEach(types::add);
         return types;
     }
@@ -132,11 +141,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeSummary addConfiguration(Long projectId, ConfigurableTable table, String typeName) {
-        if (DEFAULT_TYPE.equals(typeName)) {
-            throw new IllegalArgumentException("The default configuration always exists and cannot be added");
-        }
         requireFormConfig(projectId, table, typeName);
-        return new TypeSummary(typeName, false);
+        return new TypeSummary(typeName);
     }
 
     @Override
@@ -159,15 +165,14 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional(readOnly = true)
     public TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName) {
-        boolean isDefault = DEFAULT_TYPE.equals(typeName);
         Optional<FormConfig> stored = findFormConfig(projectId, table, typeName);
         Optional<Concept> valueConcept = stored
                 .map(FormConfig::getValueConcept);
-        if (valueConcept.isEmpty() && !isDefault) {
+        if (valueConcept.isEmpty()) {
             valueConcept = findFieldConcept(projectId, table)
                     .flatMap(fieldConcept -> findValueConcept(projectId, fieldConcept, typeName));
         }
-        FormConfig identifiers = stored.orElseGet(() -> findFormConfig(projectId, table, DEFAULT_TYPE).orElse(null));
+        FormConfig identifiers = stored.orElse(null);
         return TypeFormConfig.builder()
                 .typeName(typeName)
                 .definition(valueConcept.map(this::definitionOf).orElse(""))
@@ -220,11 +225,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional
     public FormConfig resolveIdentifierConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
         if (typeConceptId != null) {
-            Optional<FormConfig> typed = findFormConfig(projectId, table, typeConceptId);
-            if (typed.isPresent()) return typed.get();
+            // a type nobody configured yet gets its row now, with the table's built-in format
+            return createOrGetFormConfig(projectId, table, typeConceptId)
+                    .orElseThrow(() -> new IllegalStateException("No type field configured for " + table));
         }
-        return createOrGetFormConfig(projectId, table, (Long) null)
-                .orElseThrow(() -> new IllegalStateException("No type field configured for " + table));
+        // an entity without a type is numbered like the table's first configured type
+        return findFieldConcept(projectId, table)
+                .flatMap(fieldConcept -> formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.getId()).stream()
+                        .filter(config -> config.getValueConcept() != null)
+                        .findFirst())
+                .orElseThrow(() -> new IllegalStateException("No type configured for " + table));
     }
 
     @Override
@@ -300,6 +310,18 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     @Transactional
+    public void setFieldActive(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean active) {
+        applyFieldChange(projectId, table, typeConceptId, fieldName, config -> config.setActive(active));
+    }
+
+    @Override
+    @Transactional
+    public void setFieldMandatory(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean mandatory) {
+        applyFieldChange(projectId, table, typeConceptId, fieldName, config -> config.setMandatory(mandatory));
+    }
+
+    @Override
+    @Transactional
     public void reorderAdditionalFields(Long projectId, ConfigurableTable table, String typeName, List<String> orderedFieldNames) {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         List<FieldFormConfig> fieldConfigs = fieldFormConfigRepository.findAllByFormConfigId(owner.getId());
@@ -348,16 +370,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return true;
     }
 
-    /**
-     * The stored configurations that put an additional field on a type: the type's own and the one
-     * it inherits from the default configuration. {@link #storedFields} keeps only the winning one
-     * of the two, which is all reading a field needs, whereas removing it has to reach both.
-     */
+    /** The stored configurations that put an additional field on a type: the type's own. */
     private List<FieldFormConfig> linksOfAdditionalField(Long projectId, ConfigurableTable table, String typeName, String fieldName) {
         List<FieldFormConfig> links = new ArrayList<>();
-        if (!DEFAULT_TYPE.equals(typeName)) {
-            collectLinksOfAdditionalField(findFormConfig(projectId, table, DEFAULT_TYPE), fieldName, links);
-        }
         collectLinksOfAdditionalField(findFormConfig(projectId, table, typeName), fieldName, links);
         return links;
     }
@@ -410,8 +425,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
-                                           String name, FieldType type, String description) {
-        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description);
+                                           String name, FieldType type, String description, FieldOptions options) {
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description, options);
         return toDto(linkField(result.savedReplacement, result.owner, true, false));
     }
 
@@ -449,7 +464,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Override
     @Transactional
     public TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName,
-                                           String fieldName, String newName, FieldType newType, String description) {
+                                           String fieldName, FieldDefinition definition) {
+        String newName = definition.name();
+        FieldType newType = definition.type();
+        String description = definition.description();
+        FieldOptions options = definition.options();
         Optional<EffectiveField> target = effectiveFields(projectId, table, typeName).values().stream()
                 .filter(field -> fieldName.equals(field.field().getLabel()))
                 .findFirst();
@@ -467,11 +486,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (typeOf(current) == newType) {
             current.setLabel(newName);
             current.setHint(description);
+            applyOptions(current, options);
             customFieldRepository.save(current);
             return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
         }
 
-        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description);
+        SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description, options);
 
         boolean owned = ownedBy(effective, result.owner());
         if (owned) {
@@ -487,9 +507,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         return toDto(link);
     }
 
-    private @NonNull TableFieldConfigServiceImpl.SetupReplacementLabelResult configureReplacementLabel(Long projectId, ConfigurableTable table, String typeName, String newName, FieldType newType, String description) {
+    private @NonNull TableFieldConfigServiceImpl.SetupReplacementLabelResult configureReplacementLabel(Long projectId, ConfigurableTable table, String typeName, String newName, FieldType newType, String description, FieldOptions options) {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         CustomField replacement = newCustomFieldOfType(newType);
+        applyOptions(replacement, options);
         replacement.setLabel(newName);
         replacement.setIsSystemField(false);
         replacement.setHint(description);
@@ -543,6 +564,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         to.setWidth(from.getWidth());
         to.setPosition(from.getPosition());
         to.setRules(from.getRules());
+        to.setUnits(from.getUnits());
         fieldFormConfigRepository.save(to);
     }
 
@@ -558,12 +580,91 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private CustomField newCustomFieldOfType(FieldType type) {
         return switch (type) {
+            case TEXT -> CustomFieldText.builder().isTextArea(false).build();
             case INTEGER -> CustomFieldInteger.builder().build();
+            case DECIMAL -> CustomFieldDecimal.builder().build();
+            case DATETIME -> CustomFieldDateTime.builder().build();
+            case BOOLEAN -> CustomFieldBoolean.builder().build();
             case MEASUREMENT -> CustomFieldMeasurement.builder().build();
             case SELECT_ONE -> new CustomFieldSelectOne();
             case SELECT_MULTIPLE -> new CustomFieldSelectMultiple();
-            default -> CustomFieldText.builder().isTextArea(false).build();
+            default -> throw new IllegalArgumentException("Un champ de type " + type + " ne se crée pas depuis cet écran");
         };
+    }
+
+    /** Sets on a new or edited field the options its type carries; the other types have none. */
+    private void applyOptions(CustomField field, FieldOptions options) {
+        FieldOptions given = options == null ? FieldOptions.NONE : options;
+        if (field instanceof CustomFieldBoolean booleanField) {
+            booleanField.setAllowNoAnswer(given.allowNoAnswer());
+        } else if (field instanceof CustomFieldMeasurement measurement) {
+            applyUnits(measurement, given);
+            Long typeId = given.measureTypeConceptId();
+            if (typeId != null) {
+                measurement.setConcept(requireConcept(typeId));
+            }
+            Long natureId = given.measureNatureConceptId();
+            measurement.setMeasurementNature(natureId == null ? null : requireConcept(natureId));
+        }
+    }
+
+    private Concept requireConcept(Long id) {
+        return conceptRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Concept inconnu : " + id));
+    }
+
+    /**
+     * The units picked for a measurement all measure the same thing, and the default one is the
+     * field's own unit; a field with none picked as default takes the first.
+     */
+    private void applyUnits(CustomFieldMeasurement measurement, FieldOptions options) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (options.defaultUnitId() != null) ids.add(options.defaultUnitId());
+        ids.addAll(options.allowedUnitIds());
+        if (ids.isEmpty()) {
+            throw new IllegalArgumentException("Une mesure a besoin d'au moins une unité");
+        }
+        Map<Long, UnitDefinition> found = new HashMap<>();
+        unitDefinitionRepository.findAllById(ids).forEach(unit -> found.put(unit.getId(), unit));
+        if (!found.keySet().containsAll(ids)) {
+            throw new IllegalArgumentException("Unité inconnue parmi : " + ids);
+        }
+        List<UnitDefinition> units = ids.stream().map(found::get).toList();
+        if (units.stream().map(UnitDefinition::getDimension).distinct().count() > 1) {
+            throw new IllegalArgumentException("Les unités d'une mesure doivent mesurer la même grandeur");
+        }
+        // Only the default unit is the field's own: the list a user picks among belongs to the form
+        // configuration (FieldFormConfig#units), saved by FormLayoutService#saveUnits.
+        measurement.setUnit(units.get(0));
+    }
+
+    /**
+     * What the field carries besides its type. A measurement's units are the ones its form
+     * configuration offers when it set some, the field's own unit otherwise; a system field's unit is
+     * built in code with no id, so units are matched on the catalogue by symbol.
+     */
+    private FieldOptions optionsOf(CustomField field, @Nullable FieldUnits configured) {
+        if (field instanceof CustomFieldBoolean booleanField) {
+            return FieldOptions.noAnswer(booleanField.isNoAnswerAllowed());
+        }
+        if (field instanceof CustomFieldMeasurement measurement) {
+            if (configured != null) {
+                return FieldOptions.units(configured.defaultUnitId(), new LinkedHashSet<>(configured.ids()));
+            }
+            Set<Long> ids = new LinkedHashSet<>();
+            measurement.unitsToChooseFrom().forEach(u -> catalogueUnit(u.getSymbol(), u.getDimension()).ifPresent(c -> ids.add(c.getId())));
+            Long defaultId = measurement.getUnit() == null ? null
+                    : catalogueUnit(measurement.getUnit().getSymbol(), measurement.getUnit().getDimension()).map(UnitDefinition::getId).orElse(null);
+            return FieldOptions.units(defaultId, ids);
+        }
+        return FieldOptions.NONE;
+    }
+
+    private Optional<UnitDefinition> catalogueUnit(@Nullable String symbol, @Nullable UnitDefinition.Dimension dimension) {
+        if (symbol == null) return Optional.empty();
+        if (dimension != null) {
+            return unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc(symbol, dimension);
+        }
+        return unitDefinitionRepository.findAllByOrderByLabelAsc().stream().filter(u -> symbol.equals(u.getSymbol())).findFirst();
     }
 
     /**
@@ -612,9 +713,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     private Map<Long, FieldFormConfig> storedFields(Long projectId, ConfigurableTable table, String typeName) {
         Map<Long, FieldFormConfig> fields = new LinkedHashMap<>();
-        if (!DEFAULT_TYPE.equals(typeName)) {
-            collectFields(findFormConfig(projectId, table, DEFAULT_TYPE), fields);
-        }
         collectFields(findFormConfig(projectId, table, typeName), fields);
         return fields;
     }
@@ -622,9 +720,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     /** Concept-id-keyed equivalent of {@link #storedFields(Long, ConfigurableTable, String)}. */
     private Map<Long, FieldFormConfig> storedFields(Long projectId, ConfigurableTable table, Long typeConceptId) {
         Map<Long, FieldFormConfig> fields = new LinkedHashMap<>();
-        if (typeConceptId != null) {
-            collectFields(findFormConfig(projectId, table, (Long) null), fields);
-        }
         collectFields(findFormConfig(projectId, table, typeConceptId), fields);
         return fields;
     }
@@ -704,9 +799,6 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
         if (fieldConcept.isEmpty()) return Optional.empty();
 
-        if (DEFAULT_TYPE.equals(typeName)) {
-            return formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId());
-        }
         return findValueConcept(projectId, fieldConcept.get(), typeName)
                 .flatMap(value -> formConfigRepository.findByActionUnitAndFieldAndValue(
                         projectId, fieldConcept.get().getId(), value.getId()));
@@ -718,7 +810,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (fieldConcept.isEmpty()) return Optional.empty();
 
         if (typeConceptId == null) {
-            return formConfigRepository.findDefaultByActionUnitAndField(projectId, fieldConcept.get().getId());
+            return Optional.empty();
         }
         return formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
     }
@@ -740,8 +832,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
 
         Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty()
-                || !DEFAULT_TYPE.equals(typeName) && findValueConcept(projectId, fieldConcept.get(), typeName).isEmpty()) {
+        if (fieldConcept.isEmpty() || findValueConcept(projectId, fieldConcept.get(), typeName).isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(createOrRecoverFormConfig(projectId, table, typeName));
@@ -753,7 +844,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (existing.isPresent()) {
             return existing;
         }
-        if (findFieldConcept(projectId, table).isEmpty()) {
+        if (typeConceptId == null || findFieldConcept(projectId, table).isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(createOrRecoverFormConfig(projectId, table, typeConceptId));
@@ -776,6 +867,32 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
 
         FormConfig owner = requireFormConfig(projectId, table, typeName);
+        FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
+        change.accept(config);
+        assert config != null;
+        fieldFormConfigRepository.save(config);
+    }
+
+    /** Concept-id-keyed equivalent of {@link #applyFieldChange(Long, ConfigurableTable, String, String, Consumer)}. */
+    private void applyFieldChange(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName,
+                                  Consumer<FieldFormConfig> change) {
+        Optional<EffectiveField> target = effectiveFields(projectId, table, typeConceptId).values().stream()
+                .filter(field -> fieldName.equals(field.field().getLabel()))
+                .findFirst();
+
+        if (target.isEmpty()) {
+            warnNoFieldOnType(projectId, table, String.valueOf(typeConceptId), fieldName);
+            return;
+        }
+        EffectiveField field = target.get();
+        if (field.institutionLocked()) {
+            log.debug("Field '{}' is locked by the institution, project {} cannot change it", fieldName, projectId);
+            return;
+        }
+
+        FormConfig owner = createOrGetFormConfig(projectId, table, typeConceptId)
+                .orElseThrow(() -> new IllegalStateException(
+                        NO_VOCABULARY_CONFIGURED_FOR_FIELD + table.getFieldCode() + OF_PROJECT + projectId));
         FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
         change.accept(config);
         assert config != null;
@@ -873,12 +990,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
-        initializeIdentifierConfig(config, table, projectId, DEFAULT_TYPE.equals(typeName));
-        if (!DEFAULT_TYPE.equals(typeName)) {
-            config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
-                    .orElseThrow(() -> new NoSuchElementException(
-                            "Unknown type '" + typeName + "' for table " + table)));
-        }
+        initializeIdentifierConfig(config, table);
+        config.setValueConcept(findValueConcept(projectId, fieldConcept, typeName)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Unknown type '" + typeName + "' for table " + table)));
         return formConfigRepository.save(config);
     }
 
@@ -894,40 +1009,26 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setInstitution(project.getCreatedByInstitution());
         config.setFieldConcept(fieldConcept);
         config.setFieldConfigs(new ArrayList<>());
-        initializeIdentifierConfig(config, table, projectId, typeConceptId == null);
-        if (typeConceptId != null) {
-            config.setValueConcept(conceptRepository.findById(typeConceptId)
-                    .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
-        }
+        initializeIdentifierConfig(config, table);
+        config.setValueConcept(conceptRepository.findById(typeConceptId)
+                .orElseThrow(() -> new NoSuchElementException("Unknown concept id " + typeConceptId)));
         return formConfigRepository.save(config);
     }
 
-    /**
-     * Seeds the identifier configuration of a row being created. A type inherits the identifier
-     * configuration of the project's default configuration — the very one it was reading through
-     * {@link #getFormConfig(Long, ConfigurableTable, String)} until it got a row of its own — so
-     * materializing the row, whatever the change that triggers it, does not silently move the type
-     * back onto the built-in format and bounds.
-     */
-    private void initializeIdentifierConfig(FormConfig config, ConfigurableTable table, Long projectId,
-                                            boolean isDefault) {
-        Optional<FormConfig> inherited = isDefault
-                ? Optional.empty()
-                : findFormConfig(projectId, table, (Long) null);
-        config.setIdentifierFormat(inherited
-                .map(FormConfig::getIdentifierFormat)
-                .orElseGet(table::getDefaultIdentifierFormat));
-        config.setMinCode(inherited.map(FormConfig::getMinCode).orElse(DEFAULT_MIN_CODE));
-        config.setMaxCode(inherited.map(FormConfig::getMaxCode).orElse(DEFAULT_MAX_CODE));
+    /** Seeds the identifier configuration of a type being configured: the table's built-in format and bounds. */
+    private void initializeIdentifierConfig(FormConfig config, ConfigurableTable table) {
+        config.setIdentifierFormat(table.getDefaultIdentifierFormat());
+        config.setMinCode(DEFAULT_MIN_CODE);
+        config.setMaxCode(DEFAULT_MAX_CODE);
     }
 
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
         try {
-            return Optional.of(fieldConfigurationService
-                    .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId)
-                    .getConcept());
+            ConceptFieldConfig config = fieldConfigurationService
+                    .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId);
+            return config == null ? Optional.empty() : Optional.ofNullable(config.getConcept());
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
             return Optional.empty();
         }
     }
@@ -967,13 +1068,28 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             }
             return fieldConfigurationService.fetchAutocomplete(currentUser(), table.getFieldCode(), input, projectId);
         } catch (NoConfigForFieldException e) {
-            log.warn("No configuration for field {} in project {}", table.getFieldCode(), projectId, e);
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input) {
+        try {
+            return fieldConfigurationService.fetchAutocomplete(currentUser(), fieldCode, input, projectId);
+        } catch (NoConfigForFieldException e) {
+            log.warn(NO_CONFIG_FOR_FIELD, fieldCode, projectId, e);
             return List.of();
         }
     }
 
     private String labelOf(@Nullable Concept concept) {
         return concept == null ? "" : labelService.findLabelOf(concept, currentUser().getLang()).getLabel();
+    }
+
+    private @Nullable ConceptSummary summaryOf(@Nullable Concept concept) {
+        if (concept == null || concept.getId() == null) return null;
+        return new ConceptSummary(concept.getId(), labelOf(concept), definitionOf(concept));
     }
 
     private String definitionOf(@Nullable Concept concept) {
@@ -983,46 +1099,56 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private TypeFieldFormConfig toDto(EffectiveField effective) {
-        return describe(effective.field(), effective.active(), effective.mandatory(), effective.institutionLocked());
+        FieldFormConfig stored = effective.stored();
+        return describe(effective.field(), effective.active(), effective.mandatory(), effective.institutionLocked(),
+                stored == null ? null : FieldUnits.fromJson(stored.getUnits()));
     }
 
     @Override
     public TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked) {
+        return describe(field, active, mandatory, institutionLocked, null);
+    }
+
+    @Override
+    public TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked,
+                                        @Nullable FieldUnits units) {
         FieldType type = typeOf(field);
-        return TypeFieldFormConfig.builder()
+        TypeFieldFormConfig dto = TypeFieldFormConfig.builder()
                 .id(field.getId())
                 .ruleFamily(fr.siamois.domain.models.form.rules.RuleFieldFamily.of(field))
                 .name(field.getLabel())
+                .description(field.getHint())
                 .type(type)
                 .systemField(isSystemField(field))
                 .active(active)
                 .mandatory(mandatory)
                 .institutionLocked(institutionLocked)
                 .configurable(type.isConfigurable())
+                .options(optionsOf(field, units))
                 .sourceLabel(sourceOf(field))
                 .valueBinding(field.getValueBinding())
                 .build();
+        if (field instanceof CustomFieldMeasurement measurement) {
+            dto.setMeasureType(summaryOf(measurement.getConcept()));
+            dto.setMeasureNature(summaryOf(measurement.getMeasurementNature()));
+        }
+        return dto;
     }
 
     private TypeFieldFormConfig toDto(FieldFormConfig config) {
         return toDto(new EffectiveField(config.getField(), config, config.isMandatory()));
     }
 
+    /**
+     * The type of a field, read from the {@code answer_type} discriminator of its class so the two
+     * can never drift apart; a class without one is a programming error, not a text field.
+     */
     private FieldType typeOf(CustomField field) {
-        if (field instanceof CustomFieldInteger) return FieldType.INTEGER;
-        if (field instanceof CustomFieldMeasurement) return FieldType.MEASUREMENT;
-        if (field instanceof CustomFieldSelectOneFromFieldCode
-                || field instanceof CustomFieldSelectOneActionCode) return FieldType.SELECT_ONE;
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) return FieldType.SELECT_MULTIPLE;
-        if (field instanceof CustomFieldSelectOneSpatialUnit
-                || field instanceof CustomFieldSelectMultipleSpatialUnitTree
-                || field instanceof CustomFieldSelectOneAddress) return FieldType.SELECT_ONE_SPATIAL_UNIT;
-        if (field instanceof CustomFieldSelectOneActionUnit) return FieldType.PROJET;
-        if (field instanceof CustomFieldSelectOneRecordingUnit
-                || field instanceof CustomFieldSelectMultipleRecordingUnit) return FieldType.SELECT_ONE_RECORDING_UNIT;
-        if (field instanceof CustomFieldSelectOne) return FieldType.SELECT_ONE;
-        if (field instanceof CustomFieldSelectMultiple) return FieldType.SELECT_MULTIPLE;
-        return FieldType.TEXT;
+        DiscriminatorValue discriminator = Hibernate.getClass(field).getAnnotation(DiscriminatorValue.class);
+        if (discriminator == null) {
+            throw new IllegalStateException("No answer_type discriminator on " + Hibernate.getClass(field).getName());
+        }
+        return FieldType.fromDiscriminator(discriminator.value());
     }
 
     private String sourceOf(CustomField field) {

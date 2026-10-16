@@ -143,6 +143,11 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         return selectedProfile;
     }
 
+    /** Selection binding of the profiles table: a row click opens the detail panel, an unselect closes it. */
+    public final void setSelectedProfile(ProfileDTO profile) {
+        this.selectedProfile = profile;
+    }
+
     /** @return {@code true} when the read-only profile detail drawer should be shown. */
     public final boolean isProfileDetailOpen() {
         return selectedProfile != null;
@@ -184,6 +189,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.INSTANCE_EDIT_FINDS,
                     PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                     PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+                    PermissionConstants.INSTANCE_EDIT_STUDIES,
                     PermissionConstants.INSTANCE_VALIDATE))
     );
 
@@ -202,6 +208,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.ORGANIZATION_EDIT_FINDS,
                     PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
                     PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                    PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                     PermissionConstants.ORGANIZATION_VALIDATE))
     );
 
@@ -214,6 +221,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
                     PermissionConstants.PROJECT_EDIT_FINDS,
                     PermissionConstants.PROJECT_EDIT_CONTAINERS,
                     PermissionConstants.PROJECT_EDIT_DOCUMENTS,
+                    PermissionConstants.PROJECT_EDIT_STUDIES,
                     PermissionConstants.PROJECT_VALIDATE))
     );
 

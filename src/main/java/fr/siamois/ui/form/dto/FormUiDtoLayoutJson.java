@@ -93,6 +93,12 @@ public final class FormUiDtoLayoutJson {
         if (col.getRules() != null && !col.getRules().isEmpty()) {
             colMap.put("rules", FieldRulesJson.toWire(col.getRules()));
         }
+        if (col.getUnits() != null && !col.getUnits().isEmpty()) {
+            Map<String, Object> units = new HashMap<>();
+            units.put("default", col.getUnits().defaultSymbol());
+            units.put("symbols", col.getUnits().symbols());
+            colMap.put("units", units);
+        }
         return colMap;
     }
 }

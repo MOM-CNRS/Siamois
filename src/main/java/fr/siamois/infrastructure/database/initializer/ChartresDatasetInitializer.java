@@ -45,7 +45,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
     private final ConceptSeeder conceptSeeder;
     private final PersonSeeder personSeeder;
     private final ThesaurusSeeder thesaurusSeeder;
-    private final ActionCodeSeeder actionCodeSeeder;
     private final SpatialUnitSeeder spatialUnitSeeder;
     private final ActionUnitSeeder actionUnitSeeder;
     private final RecordingUnitSeeder recordingUnitSeeder;
@@ -101,7 +100,6 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
         institutionSeeder.seed(specs.institutions());
         Institution ch = institutionRepository.findInstitutionByIdentifier("chartres").orElseThrow(() -> new RuntimeException("CHARTRES NOT FOUND"));
         spatialUnitSeeder.seed(specs.spatialUnits());
-        actionCodeSeeder.seed(specs.actionCodes());
         actionUnitSeeder.seed(specs.actionUnits());
         recordingUnitSeeder.seed(specs.recordingUnits());
         specimenSeeder.seed(specs.specimenSpecs(), ch.getId());

@@ -55,7 +55,7 @@ class SpecimenAnswersProjectorTest {
 
     @Test
     void resolveRequestedFieldIds_allCoversTheDetailsForm_andUnknownIdsAreIgnored() {
-        assertThat(projector.resolveRequestedFieldIds("all")).contains(fieldId("category"), fieldId("material"), fieldId("taq"));
+        assertThat(projector.resolveRequestedFieldIds("all")).contains(fieldId("type"), fieldId("material"), fieldId("taq"));
         assertThat(projector.resolveRequestedFieldIds(fieldId("taq") + ",999999,")).containsExactly(fieldId("taq"));
     }
 
@@ -64,7 +64,7 @@ class SpecimenAnswersProjectorTest {
         SpecimenDTO dto = find(1L);
         dto.setDescription("Tesson");
         dto.setTaq(1200);
-        dto.setCategory(concept(5L));
+        dto.setType(concept(5L));
         RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
         ru.setId(42L);
         ru.setFullIdentifier("INST-P-UE42");
@@ -73,14 +73,14 @@ class SpecimenAnswersProjectorTest {
         author.setId(3L);
         dto.setAuthors(List.of(author));
 
-        Set<String> ids = new LinkedHashSet<>(List.of(fieldId("description"), fieldId("taq"), fieldId("category"),
+        Set<String> ids = new LinkedHashSet<>(List.of(fieldId("description"), fieldId("taq"), fieldId("type"),
                 fieldId("recordingUnit"), fieldId("authors")));
         Map<String, Object> answers = projector.project(List.of(dto), ids, Map.of(5L, "Céramique")).get(1L);
 
         assertThat(answers)
                 .containsEntry(fieldId("description"), "Tesson")
                 .containsEntry(fieldId("taq"), 1200)
-                .containsEntry(fieldId("category"), new ResourceRef("5", "concepts", "Céramique"))
+                .containsEntry(fieldId("type"), new ResourceRef("5", "concepts", "Céramique"))
                 .containsEntry(fieldId("recordingUnit"), new ResourceRef("42", "recording-units", "INST-P-UE42"));
         List<?> authors = (List<?>) answers.get(fieldId("authors"));
         assertThat(authors).hasSize(1);
@@ -108,11 +108,11 @@ class SpecimenAnswersProjectorTest {
     @Test
     void collectConcepts_includesConceptsInsideCollections() {
         SpecimenDTO dto = find(3L);
-        dto.setCategory(concept(1L));
+        dto.setType(concept(1L));
         dto.setMaterial(Set.of(concept(2L)));
 
         List<ConceptDTO> concepts = projector.collectConcepts(List.of(dto),
-                new LinkedHashSet<>(List.of(fieldId("category"), fieldId("material"))));
+                new LinkedHashSet<>(List.of(fieldId("type"), fieldId("material"))));
 
         assertThat(concepts).extracting(ConceptDTO::getId).containsExactlyInAnyOrder(1L, 2L);
     }

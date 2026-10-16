@@ -33,7 +33,7 @@ public class ProjectResourceLinks {
                 base,
                 base + "/recording-units",
                 base + "/children",
-                base + "/mobiliers",
+                base + "/finds",
                 base + "/phases",
                 base + "/containers"
         );

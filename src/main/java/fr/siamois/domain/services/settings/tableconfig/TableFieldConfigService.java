@@ -1,10 +1,13 @@
 package fr.siamois.domain.services.settings.tableconfig;
 
+import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +17,6 @@ import java.util.Optional;
  */
 public interface TableFieldConfigService {
 
-    String DEFAULT_TYPE = "_default";
 
     /**
      * Lists every table that can be configured (UE, Mobilier, Phase, Contenant).
@@ -24,24 +26,23 @@ public interface TableFieldConfigService {
     List<ConfigurableTable> listTables();
 
     /**
-     * Lists the types a table is configured for: {@code _default}, plus every type somebody
-     * explicitly created a configuration for through
-     * {@link #addConfiguration(Long, ConfigurableTable, String)}.
+     * Lists the types a table is configured for: every type somebody explicitly created a
+     * configuration for through {@link #addConfiguration(Long, ConfigurableTable, String)}, or that a
+     * new project was seeded with.
      * <p>
      * A type the project never configured is deliberately absent: every value of the type field
      * would otherwise need a configuration of its own in every project of every institution, for
-     * nothing — such a value is served by the {@code _default} configuration.
+     * nothing.
      *
      * @param projectId the project (action unit) these types are scoped to
      * @param table     the table whose types are listed
-     * @return the table's configured types, {@code _default} first
+     * @return the table's configured types
      */
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
 
     /**
      * Lists the {@link fr.siamois.domain.models.vocabulary.Concept}s a table is configured for —
-     * the concept-keyed equivalent of {@link #listTypes(Long, ConfigurableTable)}, minus the
-     * {@code _default} entry (which has no concept of its own).
+     * the concept-keyed equivalent of {@link #listTypes(Long, ConfigurableTable)}.
      *
      * @param projectId the project (action unit) these types are scoped to
      * @param table     the table whose configured types are listed
@@ -78,7 +79,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @return a copy of the type's general configuration
      */
     TypeFormConfig getFormConfig(Long projectId, ConfigurableTable table, String typeName);
@@ -123,7 +124,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @return a copy of the type's field configuration
      */
     TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, String typeName);
@@ -136,7 +137,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @return the active additional fields configured for the type, in display order
      */
     List<CustomField> getActiveAdditionalFields(Long projectId, ConfigurableTable table, String typeName);
@@ -149,7 +150,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @param fieldName the name of the field to resolve (system or additional)
      * @return the field's entity, empty if no field of that name exists on the type
      */
@@ -194,7 +195,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId         the project (action unit) this configuration is scoped to
      * @param table             the table the type belongs to
-     * @param typeName          the type's name, or {@code _default}
+     * @param typeName          the type's name
      * @param orderedFieldNames the names of the type's additional fields, in the order they must be
      *                          displayed in
      */
@@ -207,7 +208,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @return the type's form configuration, empty if none was ever materialized
      */
     Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName);
@@ -231,7 +232,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @return the type's form configuration, empty when the project has no vocabulary configured for
      * the table's type field, or the type is not one of that field's values — there is then nothing
      * to scope a configuration to
@@ -258,7 +259,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @param fieldName the name of the field to update (system or additional)
      * @param active    the new active state
      */
@@ -271,11 +272,26 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @param fieldName the name of the field to update (system or additional)
      * @param mandatory the new mandatory state
      */
     void setFieldMandatory(Long projectId, ConfigurableTable table, String typeName, String fieldName, boolean mandatory);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #setFieldActive(Long, ConfigurableTable, String, String, boolean)},
+     * for a caller that already holds the type's concept (the seeding of a new project's types).
+     *
+     * @param typeConceptId the type's concept id
+     */
+    void setFieldActive(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean active);
+
+    /**
+     * Concept-id-keyed equivalent of {@link #setFieldMandatory(Long, ConfigurableTable, String, String, boolean)}.
+     *
+     * @param typeConceptId the type's concept id
+     */
+    void setFieldMandatory(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName, boolean mandatory);
 
     /**
      * Removes an additional field from a type. No-op if the named field is a system field (system
@@ -291,7 +307,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) this configuration is scoped to
      * @param table     the table the type belongs to
-     * @param typeName  the type's name, or {@code _default}
+     * @param typeName  the type's name
      * @param fieldName the name of the additional field to remove
      * @return {@code false} when the field was kept because the project already holds answers for
      * it, {@code true} otherwise — including when there was nothing to remove
@@ -308,7 +324,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId the project (action unit) the catalog is scoped to
      * @param table     the table the fields would be added to
-     * @param typeName  the type's name, or {@code _default}; its fields are excluded from the result
+     * @param typeName  the type's name; its fields are excluded from the result
      * @param query     a free-text filter matched against field name and description,
      *                  case-insensitively; blank or {@code null} returns the full catalog
      * @return the matching catalog entries
@@ -316,18 +332,35 @@ public interface TableFieldConfigService {
     List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query);
 
     /**
+     * The concepts a measurement can be defined by, from the vocabulary of a field code (what is
+     * measured, or its nature).
+     */
+    List<ConceptAutocompleteDTO> measureConcepts(Long projectId, String fieldCode, @Nullable String input);
+
+    /**
      * Creates a new additional field on a type from user-provided name, type and description.
      * Name and description are saved in as label and definition of the concept
      *      * linked to the custom field.
      * @param projectId   the project (action unit) this configuration is scoped to
      * @param table       the table the type belongs to
-     * @param typeName    the type's name, or {@code _default}
+     * @param typeName    the type's name
      * @param name        the new field's name
      * @param type        the new field's type
      * @param description the new field's description
      * @return a copy of the newly created field
      */
-    TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description);
+    default TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name, FieldType type, String description) {
+        return createField(projectId, table, typeName, name, type, description, FieldOptions.NONE);
+    }
+
+    /**
+     * Same as above, with the options the type carries ({@link FieldOptions}).
+     *
+     * @throws IllegalArgumentException if the options are not valid for the type (a measurement
+     *                                  without a unit, or with units of different dimensions)
+     */
+    TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName, String name,
+                                    FieldType type, String description, FieldOptions options);
 
     /**
      * Adds a field from the reusable catalog to a type as an additional field. No-op (returns the
@@ -335,7 +368,7 @@ public interface TableFieldConfigService {
      *
      * @param projectId       the project (action unit) this configuration is scoped to
      * @param table           the table the type belongs to
-     * @param typeName        the type's name, or {@code _default}
+     * @param typeName        the type's name
      * @param catalogFieldName the name of the catalog entry to reuse
      * @return a copy of the field now configured on the type
      */
@@ -348,14 +381,24 @@ public interface TableFieldConfigService {
      *
      * @param projectId   the project (action unit) this configuration is scoped to
      * @param table       the table the type belongs to
-     * @param typeName    the type's name, or {@code _default}
+     * @param typeName    the type's name
      * @param fieldName   the current name of the additional field to update
      * @param newName     the field's new name
      * @param newType     the field's new type
      * @param description the field's new description
      * @return a copy of the updated field
      */
-    TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description);
+    default TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName, String newName, FieldType newType, String description) {
+        return updateField(projectId, table, typeName, fieldName, new FieldDefinition(newName, newType, description, FieldOptions.NONE));
+    }
+
+    /**
+     * Same as above, from a whole definition, with the options the type carries ({@link FieldOptions}).
+     *
+     * @throws IllegalArgumentException if the options are not valid for the type
+     */
+    TypeFieldFormConfig updateField(Long projectId, ConfigurableTable table, String typeName, String fieldName,
+                                    FieldDefinition definition);
 
     /**
      * The layout a configuration without a stored layout effectively has: the table's initial layout
@@ -366,4 +409,8 @@ public interface TableFieldConfigService {
 
     /** The display model of a field in a given state, as the configuration screen lists it. */
     TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked);
+
+    /** The same, for a measurement whose form configuration offers {@code units} (null: the field's own). */
+    TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked,
+                                 @Nullable FieldUnits units);
 }

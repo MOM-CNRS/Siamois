@@ -3,6 +3,7 @@ import { Panel } from "primereact/panel";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { t } from "../i18n";
+import { usePaneState } from "./paneState";
 
 // Widget-slot design (plan §3/§8 phase 2): HomePanel itself never knows about "recent projects"
 // or "Project card" — those are widgets each entity's config.tsx contributes via its optional
@@ -18,6 +19,7 @@ export interface HomePanelProps {
 }
 
 export function HomePanel({ widgets, toolbar }: HomePanelProps) {
+  const [databasesFolded, setDatabasesFolded] = usePaneState("databasesFolded", false);
   if (widgets.length === 0) {
     return <div className="home-panel home-panel-empty" />;
   }
@@ -47,7 +49,13 @@ export function HomePanel({ widgets, toolbar }: HomePanelProps) {
         ))}
 
         {cardWidgets.length > 0 && (
-          <Panel header={t("home.databases")} toggleable className="sia-form-panel">
+          <Panel
+            header={t("home.databases")}
+            toggleable
+            collapsed={databasesFolded}
+            onToggle={(e) => setDatabasesFolded(e.value)}
+            className="sia-form-panel"
+          >
             <div className="home-panel-database-grid sia-card-grid">
               {cardWidgets.map((widget) => (
                 <div key={widget.key} className="home-panel-widget">

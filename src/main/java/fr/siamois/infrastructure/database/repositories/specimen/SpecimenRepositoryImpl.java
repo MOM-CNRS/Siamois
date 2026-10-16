@@ -30,12 +30,12 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
             + ") ";
 
     private static final String FROM_WHERE = "FROM specimen s "
-            + "LEFT JOIN concept c ON s.fk_specimen_category = c.concept_id "
+            + "LEFT JOIN concept c ON s.fk_specimen_type = c.concept_id "
             + "LEFT JOIN ranked_labels rl ON c.concept_id = rl.fk_concept_id AND rl.rank = 1 "
             + "WHERE s.fk_institution_id = :institutionId "
             + "  AND s.fk_recording_unit_id = :recordingUnitId "
             + "  AND (CAST(:fullIdentifier AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:fullIdentifier AS TEXT), '%'))) "
-            + "  AND (CAST(:categoryIds AS BIGINT[]) IS NULL OR s.fk_specimen_category IN (:categoryIds)) "
+            + "  AND (CAST(:typeIds AS BIGINT[]) IS NULL OR s.fk_specimen_type IN (:typeIds)) "
             + "  AND (CAST(:global AS TEXT) IS NULL OR LOWER(s.full_identifier) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))  "
             + "                                     OR LOWER(rl.label_value) LIKE LOWER(CONCAT('%', CAST(:global AS TEXT), '%'))) ";
     public static final String SELECT_S_RL_LABEL_VALUE_AS_C_LABEL = "SELECT s.*, rl.label_value AS c_label ";
@@ -44,11 +44,11 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
     private EntityManager entityManager;
 
     @Override
-    public Page<Specimen> findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByCategoriesAndByGlobalContaining(
+    public Page<Specimen> findAllByInstitutionAndRecordingUnitIdAndByFullIdentifierContainingAndByTypesAndByGlobalContaining(
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode,
             String orderByClause,
@@ -57,11 +57,11 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
 
         Query countQuery = entityManager.createNativeQuery(
                 RANKED_LABELS_CTE + "SELECT count(s) " + FROM_WHERE);
-        bindFilterParams(countQuery, institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode);
+        bindFilterParams(countQuery, institutionId, recordingUnitId, fullIdentifier, typeIds, global, langCode);
         long total = ((Number) countQuery.getSingleResult()).longValue();
 
         Query dataQuery = entityManager.createNativeQuery(buildRankedSpecimenSelectSql(sort), Specimen.class);
-        bindFilterParams(dataQuery, institutionId, recordingUnitId, fullIdentifier, categoryIds, global, langCode);
+        bindFilterParams(dataQuery, institutionId, recordingUnitId, fullIdentifier, typeIds, global, langCode);
         dataQuery.setFirstResult((int) pageable.getOffset());
         dataQuery.setMaxResults(pageable.getPageSize());
 
@@ -115,13 +115,13 @@ public class SpecimenRepositoryImpl implements SpecimenRepositoryCustom {
             Long institutionId,
             Long recordingUnitId,
             String fullIdentifier,
-            Long[] categoryIds,
+            Long[] typeIds,
             String global,
             String langCode) {
         query.setParameter("institutionId", institutionId);
         query.setParameter("recordingUnitId", recordingUnitId);
         query.setParameter("fullIdentifier", fullIdentifier);
-        query.setParameter("categoryIds", categoryIds);
+        query.setParameter("typeIds", typeIds);
         query.setParameter("global", global);
         query.setParameter("langCode", langCode);
     }

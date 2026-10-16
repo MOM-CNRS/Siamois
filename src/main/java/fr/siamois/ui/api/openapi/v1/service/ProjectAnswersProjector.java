@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
@@ -55,7 +56,7 @@ public class ProjectAnswersProjector {
     public static final String FIELDS_DEFAULT = "default";
 
     private static final String CONCEPTS = "concepts";
-    private static final String SPATIAL_UNITS = "spatial-units";
+    private static final String SPATIAL_UNITS = "places";
 
     /**
      * Champs du formulaire de détail projet, indexés par id sous forme de chaîne. Le formulaire est une
@@ -222,6 +223,9 @@ public class ProjectAnswersProjector {
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
+        }
+        if (field instanceof CustomFieldBoolean) {
+            return raw instanceof Boolean b ? b : null;
         }
         if (field instanceof CustomFieldDecimal) {
             return raw instanceof Number n ? n.doubleValue() : null;

@@ -13,14 +13,12 @@ beforeEach(() => {
 });
 
 describe("getProjectTypes", () => {
-  it("fetches the organization's project types and flattens _default into layoutJson/fieldConfigs/fields", async () => {
+  it("fetches the organization's project types and reads layoutJson/fieldConfigs/fields from the root", async () => {
     mockedApiFetch.mockResolvedValueOnce({
       data: [],
-      _default: {
-        form: { resourceType: "forms", layoutJson: "[]" },
-        fieldConfigs: [{ field: "-102", active: true, institutionLocked: true }],
-        tableColumns: [{ columnId: "status", fieldId: "-118", visible: true, order: 0 }],
-      },
+      form: { resourceType: "forms", layoutJson: "[]" },
+      fieldConfigs: [{ field: "-102", active: true, institutionLocked: true }],
+      tableColumns: [{ columnId: "status", fieldId: "-118", visible: true, order: 0 }],
       fields: {
         "-102": {
           id: "-102",

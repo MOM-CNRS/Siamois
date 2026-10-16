@@ -6,7 +6,7 @@ import type { CreateFormContext } from "../types";
 import { createDocument, uploadDocumentFile } from "./api";
 import { t } from "../../i18n";
 
-// A document is created in a project with its category, and optionally its file (sent once the
+// A document is created in a project with its type, and optionally its file (sent once the
 // document exists); everything else (title, links, URL…) is edited afterwards on the fiche.
 export function DocumentCreateForm(ctx: CreateFormContext) {
   const [file, setFile] = useState<File | null>(null);
@@ -18,11 +18,10 @@ export function DocumentCreateForm(ctx: CreateFormContext) {
       entityType="document"
       title={t("create.newDocument")}
       typesSegment="document-types"
-      typeBinding="category"
       create={async (projectId, typeId) => {
         const created = await createDocument({
           projectId,
-          categoryId: typeId,
+          typeId,
           ...(link ? { [link.field]: [link.ref.id] } : {}),
         });
         if (file) await uploadDocumentFile(created.id, file);

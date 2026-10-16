@@ -5,6 +5,9 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.study.StudyService;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
@@ -68,6 +71,7 @@ public class OrganizationListService {
     private final SpecimenService specimenService;
     private final PhaseService phaseService;
     private final DocumentService documentService;
+    private final StudyService studyService;
     private final ContainerService containerService;
 
     /** The permission triple checked for writing one entity type on a project. */
@@ -84,6 +88,10 @@ public class OrganizationListService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+        public static final EditPermissions STUDIES = new EditPermissions(
+                PermissionConstants.INSTANCE_EDIT_STUDIES,
+                PermissionConstants.ORGANIZATION_EDIT_STUDIES,
+                PermissionConstants.PROJECT_EDIT_STUDIES);
         public static final EditPermissions PHASES = new EditPermissions(
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
@@ -167,6 +175,21 @@ public class OrganizationListService {
         return specimenService.searchSpecimen(institution, filter, pageable);
         }
 
+
+    @Transactional(readOnly = true)
+    public Page<StudyDTO> pageStudies(ProjectApiCaller caller, InstitutionDTO institution,
+                                      int offset, int limit, String sortParam, String search, FieldQuery fieldQuery) {
+        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseStudySort));
+        FilterDTO filter = new FilterDTO();
+        filter.setFieldQuery(fieldQuery);
+        if (search != null && !search.isBlank()) {
+            filter.add(StudySpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
+        }
+        if (!restrictToVisibleProjects(caller, institution, filter, StudySpec.ACTION_UNIT_FILTER)) {
+            return Page.empty(pageable);
+        }
+        return studyService.searchStudies(institution, filter, pageable);
+    }
 
     @Transactional(readOnly = true)
     public Page<DocumentDTO> pageDocuments(ProjectApiCaller caller, InstitutionDTO institution,

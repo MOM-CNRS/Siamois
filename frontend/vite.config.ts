@@ -16,6 +16,12 @@ export default defineConfig({
     rollupOptions: {
       input: "src/mount.ts",
       output: {
+        // JSF loads this as a plain classic script next to jQuery/PrimeFaces: as an ES module body its
+        // top-level declarations would be globals, and the minifier names some of them `$`, which
+        // silently replaced jQuery's (PrimeFaces widgets then threw "$(...).remove is not a function").
+        // An IIFE keeps every name private; the bundle only exports window.SiamoisMainPanel.
+        format: "iife",
+        inlineDynamicImports: true,
         entryFileNames: "main-panel.js",
         chunkFileNames: "main-panel-[hash].js",
         assetFileNames: "main-panel[extname]",

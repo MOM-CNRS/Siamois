@@ -7,6 +7,46 @@
                 xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form">
 
     <div style="display: flex; flex-direction: row; flex-shrink: 0">
+        <div id="organisation-select" class="hide-small-screen"
+             style="flex-shrink:0; display:flex; align-items:center; background: var(--siamois-green-light-100); padding: 0.5em;">
+                    <form:csrfform formId="institutionSelectForm" id="institutionCsrfSelectForm"
+                                   style="width:13em; max-width:13em; margin:0;">
+                        <article style="margin:0; padding:0;">
+                            <h:panelGroup styleClass="ui-inputgroup change-instit ui-fluid">
+                                <h:panelGroup id="iconInstit" styleClass="ui-inputgroup-addon">
+                                    <i class="bi bi-buildings"/>
+                                </h:panelGroup>
+
+                                <p:selectOneMenu
+                                        id="selectOneMenuInstitution"
+                                        value="#{flowBean.selectedInstitution}"
+                                        filter="true"
+                                        converter="#{institutionConverter}"
+                                        filterMatchMode="startsWith"
+                                        filterNormalize="true"
+                                        var="inst"
+                                >
+                                    <f:selectItems value="#{flowBean.institutions}"
+                                                   var="item"
+                                                   itemValue="#{item}"
+                                                   itemLabel="#{item.name}"
+                                    />
+
+                                    <p:column>
+                                        <h:outputText value="#{inst.name}"/>
+                                    </p:column>
+
+                                    <p:ajax event="change"
+                                            process="@this"
+                                            listener="#{flowBean.onFocusInstitutionChange}"
+                                    />
+
+                                </p:selectOneMenu>
+
+                            </h:panelGroup>
+                        </article>
+                    </form:csrfform>
+        </div>
         <div id="search-bar" class="hide-small-screen" style="flex:8">
             <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
                 <article>

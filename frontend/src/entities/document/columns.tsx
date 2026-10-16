@@ -21,9 +21,9 @@ export const documentColumns: ColumnDef<DocumentSummary>[] = [
     render: (row) => row.title ?? "",
   },
   {
-    key: "category",
+    key: "type",
     fieldId: "-704",
-    header: t("entity.document.category"),
+    header: t("entity.document.type"),
     render: (row) => row.type?.resolvedLabel ?? "",
   },
 ];

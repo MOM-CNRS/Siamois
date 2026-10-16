@@ -81,7 +81,7 @@ class ContainerAnswersProjectorTest {
 
         assertThat(answers).containsEntry(idOf("identifier"), "C-1")
                 .containsEntry(idOf("type"), new ResourceRef("5", "concepts", "Boîte"))
-                .containsEntry(idOf("spatialUnit"), new ResourceRef("9", "spatial-units", "Lieu"))
+                .containsEntry(idOf("spatialUnit"), new ResourceRef("9", "places", "Lieu"))
                 .containsEntry(idOf("length"), new MeasurementRef(2.5, "cm", 0.025, "ok"));
         assertThat(((MeasurementRef) answers.get(idOf("width"))).symbol()).isNull();
     }

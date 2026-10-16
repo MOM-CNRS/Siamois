@@ -8,13 +8,11 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.actionunit.ActionCode;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionCode;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
@@ -32,7 +30,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
-import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionCode;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
@@ -120,15 +117,11 @@ class CustomFieldAnswerServiceTest {
     @Mock
     private fr.siamois.mapper.ActionUnitSummaryMapper actionUnitSummaryMapper;
     @Mock
-    private fr.siamois.mapper.ActionCodeMapper actionCodeMapper;
-    @Mock
     private RecordingUnitRepository recordingUnitRepository;
     @Mock
     private fr.siamois.infrastructure.database.repositories.SpatialUnitRepository spatialUnitRepository;
     @Mock
     private fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository actionUnitRepository;
-    @Mock
-    private fr.siamois.infrastructure.database.repositories.actionunit.ActionCodeRepository actionCodeRepository;
 
     @InjectMocks
     private CustomFieldAnswerService service;
@@ -168,7 +161,6 @@ class CustomFieldAnswerServiceTest {
         Person person = person(20L);
         SpatialUnit spatialUnit = spatialUnit(30L);
         ActionUnit actionUnit = actionUnit(40L);
-        ActionCode actionCode = actionCode("FOUILLE");
         LocalDateTime moment = LocalDateTime.of(2026, Month.JULY, 28, 14, 30);
 
         return Stream.of(
@@ -178,6 +170,8 @@ class CustomFieldAnswerServiceTest {
                         42, CustomFieldAnswerInteger.class, 42),
                 arguments(CustomFieldDateTime.builder().id(3L).build(),
                         moment, CustomFieldAnswerDateTime.class, moment),
+                arguments(fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.builder().id(12L).build(),
+                        false, fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean.class, false),
                 arguments(CustomFieldSelectOneFromFieldCode.builder().id(4L).build(),
                         concept, CustomFieldAnswerSelectOneFromFieldAnswerCode.class, concept),
                 arguments(CustomFieldSelectMultipleFromFieldCode.builder().id(5L).build(),
@@ -190,8 +184,6 @@ class CustomFieldAnswerServiceTest {
                         spatialUnit, CustomFieldAnswerSelectOneSpatialUnit.class, spatialUnit),
                 arguments(CustomFieldSelectMultipleSpatialUnitTree.builder().id(9L).build(),
                         List.of(spatialUnit), CustomFieldAnswerSelectMultipleSpatialUnitTree.class, List.of(spatialUnit)),
-                arguments(CustomFieldSelectOneActionCode.builder().id(10L).build(),
-                        actionCode, CustomFieldAnswerSelectOneActionCode.class, actionCode),
                 arguments(CustomFieldSelectOneActionUnit.builder().id(11L).build(),
                         actionUnit, CustomFieldAnswerSelectOneActionUnit.class, actionUnit)
         );
@@ -740,6 +732,28 @@ class CustomFieldAnswerServiceTest {
     }
 
     @Test
+    void loadAdditionalFieldAnswers_readsBackAYesNoAnswer_falseIncluded() {
+        RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
+        FormConfig formConfig = new FormConfig();
+        formConfig.setId(9L);
+        when(tableFieldConfigService.findFormConfig(7L, ConfigurableTable.UE, (Long) null))
+                .thenReturn(Optional.of(formConfig));
+        fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean doneField =
+                fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.builder().id(3L).build();
+        fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean doneAnswer =
+                new fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean();
+        doneAnswer.setCustomField(doneField);
+        doneAnswer.setValue(false);
+        formConfigAnswer.setAnswers(Set.of(doneAnswer));
+        when(formConfigAnswerService.findFormConfigAnswer(formConfig, unit)).thenReturn(Optional.of(formConfigAnswer));
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.loadAdditionalFieldAnswers(unit);
+
+        assertThat(result.get(doneField)).isInstanceOfSatisfying(CustomFieldAnswerBooleanViewModel.class,
+                v -> assertThat(v.getValue()).isFalse());
+    }
+
+    @Test
     void loadAdditionalFieldAnswers_readsBackAMeasurementNumberCommentAndUnit() {
         RecordingUnitDTO unit = recordingUnitDto(100L, 7L, null);
         FormConfig formConfig = new FormConfig();
@@ -870,13 +884,13 @@ class CustomFieldAnswerServiceTest {
         assertThat(saved.getValue().getValue()).isEqualTo("Phase ancienne");
     }
 
-    private static fr.siamois.dto.entity.DocumentDTO documentDto(long id, long projectId, Long categoryId) {
+    private static fr.siamois.dto.entity.DocumentDTO documentDto(long id, long projectId, Long typeId) {
         fr.siamois.dto.entity.DocumentDTO document = new fr.siamois.dto.entity.DocumentDTO();
         document.setId(id);
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
         project.setId(projectId);
         document.setActionUnit(project);
-        if (categoryId != null) document.setCategory(conceptDto(categoryId));
+        if (typeId != null) document.setType(conceptDto(typeId));
         return document;
     }
 
@@ -924,7 +938,7 @@ class CustomFieldAnswerServiceTest {
         category.setId(70L);
         SpecimenDTO find = new SpecimenDTO();
         find.setId(400L);
-        find.setCategory(category);
+        find.setType(category);
         RecordingUnitSummaryDTO unitSummary = new RecordingUnitSummaryDTO();
         unitSummary.setId(100L);
         find.setRecordingUnit(unitSummary);
@@ -976,6 +990,22 @@ class CustomFieldAnswerServiceTest {
         SpecimenDTO orphan = new SpecimenDTO();
         orphan.setId(9L);
         service.saveAdditionalFieldAnswers(orphan, Map.of(CustomFieldText.builder().id(1L).build(), viewModelOf("x")));
+        verify(customFieldAnswerRepository, never()).save(any());
+    }
+
+    @Test
+    void additionalAnswersOfAStudy_areSavedAndLoadedOnItsTableAndType() {
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(302L);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(7L);
+        study.setActionUnit(project);
+
+        service.saveAdditionalFieldAnswers(study, Map.of());
+        assertThat(service.loadAdditionalFieldAnswers(study)).isEmpty();
+        assertThat(service.loadAdditionalFieldAnswers(new fr.siamois.dto.entity.StudyDTO())).isEmpty();
+
+        verify(tableFieldConfigService).findFormConfig(7L, ConfigurableTable.STUDY, (Long) null);
         verify(customFieldAnswerRepository, never()).save(any());
     }
 
@@ -1044,17 +1074,14 @@ class CustomFieldAnswerServiceTest {
         Person person = person(20L);
         SpatialUnit place = spatialUnit(30L);
         ActionUnit project = actionUnit(40L);
-        ActionCode code = actionCode("FOUILLE");
         PersonDTO personDto = new PersonDTO();
         SpatialUnitDTO placeDto = new SpatialUnitDTO();
         PlaceSuggestionDTO suggestion = new PlaceSuggestionDTO();
         ActionUnitSummaryDTO projectDto = new ActionUnitSummaryDTO();
-        ActionCodeDTO codeDto = new ActionCodeDTO();
         when(personMapper.convert(any(Person.class))).thenReturn(personDto);
         when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(placeDto);
         when(placeSuggestionMapper.convert(any(SpatialUnitDTO.class))).thenReturn(suggestion);
         when(actionUnitSummaryMapper.convert(any(ActionUnit.class))).thenReturn(projectDto);
-        when(actionCodeMapper.convert(any(ActionCode.class))).thenReturn(codeDto);
 
         List<CustomFieldAnswer> answers = new ArrayList<>();
         Map<Long, CustomField> fields = new HashMap<>();
@@ -1066,14 +1093,13 @@ class CustomFieldAnswerServiceTest {
         answers.add(withField(fields, 6L, CustomFieldSelectOneSpatialUnit.builder().id(6L).build(), new CustomFieldAnswerSelectOneSpatialUnit(), set, place));
         answers.add(withField(fields, 7L, CustomFieldSelectMultipleSpatialUnitTree.builder().id(7L).build(), new CustomFieldAnswerSelectMultipleSpatialUnitTree(), set, new ArrayList<>(List.of(place))));
         answers.add(withField(fields, 8L, CustomFieldSelectOneActionUnit.builder().id(8L).build(), new CustomFieldAnswerSelectOneActionUnit(), set, project));
-        answers.add(withField(fields, 9L, CustomFieldSelectOneActionCode.builder().id(9L).build(), new CustomFieldAnswerSelectOneActionCode(), set, code));
-        when(customFieldAnswerRepository.findAnswersOfPhases(List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))).thenReturn(answers);
+        when(customFieldAnswerRepository.findAnswersOfPhases(List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L))).thenReturn(answers);
 
         Map<CustomField, CustomFieldAnswerViewModel> read = service
-                .loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L))
+                .loadAdditionalFieldAnswers(CustomFieldAnswerService.ListOwner.PHASE, List.of(5L), List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L))
                 .get(5L);
 
-        assertThat(read).hasSize(9);
+        assertThat(read).hasSize(8);
         assertThat(read.get(fields.get(2L)).getValue()).isEqualTo(1.5);
         assertThat(read.get(fields.get(3L)).getValue()).isEqualTo(LocalDateTime.of(2026, java.time.Month.JANUARY, 2, 3, 4));
         assertThat(read.get(fields.get(4L)).getValue()).isSameAs(personDto);
@@ -1081,7 +1107,6 @@ class CustomFieldAnswerServiceTest {
         assertThat(read.get(fields.get(6L)).getValue()).isSameAs(suggestion);
         assertThat((List<Object>) read.get(fields.get(7L)).getValue()).containsExactly(suggestion);
         assertThat(read.get(fields.get(8L)).getValue()).isSameAs(projectDto);
-        assertThat(read.get(fields.get(9L)).getValue()).isSameAs(codeDto);
     }
 
     private static CustomFieldAnswer withField(Map<Long, CustomField> fields, long id, CustomField field,
@@ -1118,7 +1143,11 @@ class CustomFieldAnswerServiceTest {
         container.setId(5L);
         fr.siamois.domain.models.document.Document document = new fr.siamois.domain.models.document.Document();
         document.setId(5L);
+        fr.siamois.domain.models.study.Study study = new fr.siamois.domain.models.study.Study();
+        study.setId(5L);
         return List.of(
+                new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.STUDY, set -> set.setStudy(study),
+                        (repo, ids) -> repo.findAnswersOfStudies(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.DOCUMENT, set -> set.setDocument(document),
                         (repo, ids) -> repo.findAnswersOfDocuments(ids, List.of(1L))),
                 new CustomerOwnerCase(CustomFieldAnswerService.ListOwner.RECORDING_UNIT, set -> set.setRecordingUnit(unit),
@@ -1285,12 +1314,6 @@ class CustomFieldAnswerServiceTest {
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setId(id);
         return actionUnit;
-    }
-
-    private static ActionCode actionCode(String code) {
-        ActionCode actionCode = new ActionCode();
-        actionCode.setCode(code);
-        return actionCode;
     }
 
     private static RecordingUnitDTO recordingUnitDto(Long id, Long actionUnitId, ConceptDTO type) {

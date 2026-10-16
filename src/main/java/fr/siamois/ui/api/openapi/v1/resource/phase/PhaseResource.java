@@ -73,5 +73,5 @@ public class PhaseResource implements BookmarkableResource {
     private boolean bookmarked;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
-    private ValidationStatus validated;
+    private ValidationStatus validationStatus;
 }

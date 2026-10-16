@@ -8,13 +8,11 @@ const mockedApiFetch = vi.mocked(apiFetch);
 const field = (id: string, label: string) => ({ id, resourceType: "fields", label, answerType: "TEXT", isSystemField: true });
 
 const CATALOG = {
-  _default: {
-    fields: {
-      "-201": field("-201", "Catégorie"),
-      "-202": field("-202", "Nom"),
-      "-203": field("-203", "Code"),
-      "-205": field("-205", "N° de regroupement"),
-    },
+  fields: {
+    "-201": field("-201", "Catégorie"),
+    "-202": field("-202", "Nom"),
+    "-203": field("-203", "Code"),
+    "-205": field("-205", "N° de regroupement"),
   },
   data: [],
 };

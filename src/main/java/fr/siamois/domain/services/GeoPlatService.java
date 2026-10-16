@@ -3,6 +3,7 @@ package fr.siamois.domain.services;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.infrastructure.api.dto.GeoPlatResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -10,6 +11,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+@Slf4j
 @AllArgsConstructor
 @Service
 public class GeoPlatService {
@@ -17,20 +21,29 @@ public class GeoPlatService {
     private static final String BASE_URL =
             "https://data.geopf.fr/geocodage/completion";
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-
+    /** The service's own filters a caller may narrow the search with (INSEE code, postcode, département). */
+    public static final Set<String> FILTERS = Set.of("citycode", "zipcode", "depcode");
 
     public List<FullAddress> search(String query) {
+        return search(query, Map.of());
+    }
+
+    /** {@code filters}: any of {@link #FILTERS}, anything else is ignored. */
+    public List<FullAddress> search(String query, Map<String, String> filters) {
         try {
-            URI uri = UriComponentsBuilder
+            UriComponentsBuilder builder = UriComponentsBuilder
                     .fromHttpUrl(BASE_URL)
                     .queryParam("text", query)
                     .queryParam("maximumResponses", 7)
-                    .queryParam("type", "StreetAddress")
-                    .build()
-                    .encode()
-                    .toUri();
+                    .queryParam("type", "StreetAddress");
+            filters.forEach((name, value) -> {
+                if (FILTERS.contains(name) && value != null && !value.isBlank()) {
+                    builder.queryParam(name, value);
+                }
+            });
+            URI uri = builder.build().encode().toUri();
 
             GeoPlatResponse response = restTemplate.getForObject(uri, GeoPlatResponse.class);
 
@@ -51,6 +64,7 @@ public class GeoPlatService {
                     })
                     .toList();
         } catch (Exception e) {
+            log.warn("GéoPlateforme address search failed: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

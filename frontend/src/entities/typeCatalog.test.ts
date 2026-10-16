@@ -18,7 +18,7 @@ const field = (id: string, label: string) => ({
 describe("loadTypeCatalog", () => {
   it("offers every field of every type as a hidden column, additional ones included", async () => {
     mockedApiFetch.mockResolvedValueOnce({
-      _default: { fields: { "-503": field("-503", "Titre") } },
+      fields: { "-503": field("-503", "Titre") },
       data: [{ fields: { "-503": field("-503", "Titre"), "12": field("12", "Note") } }],
     });
 
@@ -33,7 +33,7 @@ describe("loadTypeCatalog", () => {
   });
 
   it("reads the organization's aggregate catalog for an organization-wide list", async () => {
-    mockedApiFetch.mockResolvedValueOnce({ _default: { fields: { "12": field("12", "Note") } }, data: [] });
+    mockedApiFetch.mockResolvedValueOnce({ fields: { "12": field("12", "Note") }, data: [] });
 
     const catalog = await loadTypeCatalog({ organizationId: 7 }, "phase-types");
 
@@ -60,7 +60,6 @@ describe("getEffectiveForm", () => {
           fields: { "2": { id: "2" } },
         },
       ],
-      _default: { formBundle: { resourceType: "forms", layoutJson: '[{"name":"default"}]' }, tableColumns: [], fields: {} },
       fields: {},
     });
 
@@ -70,35 +69,35 @@ describe("getEffectiveForm", () => {
     expect(result.fields).toEqual({ "2": { id: "2" } });
   });
 
-  it("falls back to _default when the RU has no type", async () => {
+  it("falls back to the table's first type when the entity has no type", async () => {
     mockedApiFetch.mockResolvedValueOnce({
-      data: [],
-      _default: { formBundle: { resourceType: "forms", layoutJson: '[{"name":"default"}]' }, tableColumns: [], fields: { "9": { id: "9" } } },
+      data: [
+        { id: "77", formBundle: { resourceType: "forms", layoutJson: '[{"name":"first"}]' }, fields: { "9": { id: "9" } } },
+        { id: "88", formBundle: { resourceType: "forms", layoutJson: '[{"name":"second"}]' }, fields: {} },
+      ],
       fields: {},
     });
 
     const result = await getEffectiveForm("recording-unit-types", "5", null);
 
-    expect(result.layoutJson).toBe('[{"name":"default"}]');
+    expect(result.layoutJson).toBe('[{"name":"first"}]');
     expect(result.fields).toEqual({ "9": { id: "9" } });
   });
 
-  it("falls back to _default when the RU's type id matches no configured type", async () => {
+  it("falls back to the table's first type when the entity's type matches no configured type", async () => {
     mockedApiFetch.mockResolvedValueOnce({
-      data: [{ id: "77", formBundle: { resourceType: "forms", layoutJson: "[]" }, fields: {} }],
-      _default: { formBundle: { resourceType: "forms", layoutJson: '[{"name":"default"}]' }, tableColumns: [], fields: {} },
+      data: [{ id: "77", formBundle: { resourceType: "forms", layoutJson: '[{"name":"first"}]' }, fields: {} }],
       fields: {},
     });
 
     const result = await getEffectiveForm("recording-unit-types", "5", "unknown-type-id");
 
-    expect(result.layoutJson).toBe('[{"name":"default"}]');
+    expect(result.layoutJson).toBe('[{"name":"first"}]');
   });
 
-  it("returns an empty layout and fields when the matched entry has no formBundle", async () => {
+  it("returns an empty layout and fields when the table has no type at all", async () => {
     mockedApiFetch.mockResolvedValueOnce({
       data: [],
-      _default: { formBundle: null, tableColumns: [] },
       fields: {},
     });
 
@@ -111,7 +110,7 @@ describe("getEffectiveForm", () => {
 
 describe("fetchTypesCatalog", () => {
   it("fetches a catalog once for every reader of the same path", async () => {
-    mockedApiFetch.mockResolvedValue({ data: [], _default: { formBundle: { layoutJson: "[]" }, fields: {} } });
+    mockedApiFetch.mockResolvedValue({ data: [], fields: {} });
 
     await getEffectiveForm("phase-types", "5", null);
     await getEffectiveForm("phase-types", "5", "9");

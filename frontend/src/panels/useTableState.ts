@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+import { usePaneState } from "./paneState";
 import { createTableState, type FilterValue, type TableState } from "./tableState";
 import { loadListPrefs, saveListPrefs } from "./listPreferences";
 
@@ -15,17 +16,17 @@ export interface UseTableStateOptions {
  * shape usable from tests, saved views, and URL encode/decode alike.
  */
 export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
-  const [state, setState] = useState<TableState>(() => createTableState({ sort: defaultSort }));
+  const [state, setState] = usePaneState<TableState>("table", () => createTableState({ sort: defaultSort }));
 
   // A new result set (sort, search, filters) starts back at the first page; the page the user was
   // on belonged to the previous one. Showing or hiding columns keeps the page.
   const setPage = useCallback((offset: number, limit: number) => {
     setState((s) => ({ ...s, offset, limit }));
-  }, []);
+  }, [setState]);
 
   const setSort = useCallback((sort: string | undefined) => {
     setState((s) => ({ ...s, sort, offset: 0 }));
-  }, []);
+  }, [setState]);
 
   const setSearch = useCallback((search: string) => {
     setState((s) => {
@@ -35,28 +36,29 @@ export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
       if (next === s.search) return s;
       return { ...s, search: next, offset: 0 };
     });
-  }, []);
+  }, [setState]);
 
   const setVisibleColumns = useCallback(
     (visibleColumns: string[]) => {
       setState((s) => ({ ...s, visibleColumns }));
       if (prefsKey) saveListPrefs(prefsKey, { visibleColumns });
     },
-    [prefsKey],
+    [prefsKey, setState],
   );
 
   const setFilters = useCallback((filters: Record<string, FilterValue>) => {
     setState((s) => ({ ...s, filters, offset: 0 }));
-  }, []);
+  }, [setState]);
 
   // Seeds visibleColumns once — never overwrites a set the user (or a restored view) already
   // populated, including an explicit "hide everything" (`[]` is not empty in the sense this guards
   // against; only "never touched" is). A saved arrangement wins over the schema's own defaults,
   // minus any column the catalog no longer has (`knownFieldIds`).
-  const seededRef = useRef(false);
   // Also exposed as state: a list with a schema holds its first request until the columns are
-  // known, so it doesn't fetch once without them and again with them.
-  const [columnsSeeded, setColumnsSeeded] = useState(false);
+  // known, so it doesn't fetch once without them and again with them. Remembered with the table
+  // state, so a list mounting again (focus mode) keeps its columns instead of re-seeding them.
+  const [columnsSeeded, setColumnsSeeded] = usePaneState("columnsSeeded", false);
+  const seededRef = useRef(columnsSeeded);
   const seedVisibleColumns = useCallback(
     (fieldIds: string[], knownFieldIds?: string[]) => {
       if (seededRef.current) return;
@@ -67,7 +69,7 @@ export function useTableState({ defaultSort, prefsKey }: UseTableStateOptions) {
       setState((s) => ({ ...s, visibleColumns }));
       setColumnsSeeded(true);
     },
-    [prefsKey],
+    [prefsKey, setState, setColumnsSeeded],
   );
 
   return { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, seedVisibleColumns, columnsSeeded };

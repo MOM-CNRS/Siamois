@@ -35,31 +35,45 @@
                          never fires when its form is nested inside another <form> (invalid
                          HTML - the browser breaks the inner form on parse). -->
                     <form:csrfform formId="memberFilterForm" styleClass="member-filter-row">
-                        <p:autoComplete id="memberFilter"
-                                        value="#{institutionListSettingsBean.filterPerson}"
-                                        completeMethod="#{institutionListSettingsBean.completePerson}"
-                                        queryDelay="300"
-                                        var="u"
-                                        itemLabel="#{u.displayName()}"
-                                        itemValue="#{u}"
-                                        converter="#{personDTOConverter}"
-                                        placeholder="#{langBean.msg('organisationManagement.filterByMember.placeholder')}"
-                                        forceSelection="true"
-                                        appendTo="@(body)"
-                                        dropdown="false">
-                            <p:ajax event="itemSelect" listener="#{institutionListSettingsBean.initFilteredByPerson(institutionListSettingsBean.filterPerson)}" process="@this" update="@form :institutionManagerDatatable:formCC:institutionManagerForm"/>
-                        </p:autoComplete>
-                        <p:commandLink action="#{institutionListSettingsBean.toggleFilterByMe()}"
-                                       process="@this"
-                                       update="@form :institutionManagerDatatable:formCC:institutionManagerForm"
-                                       styleClass="member-filter-chip member-filter-me#{institutionListSettingsBean.isFilteredByMe() ? ' member-filter-me-active' : ''}">
-                            #{langBean.msg('organisationManagement.filterByMember.me')}
-                        </p:commandLink>
-                        <h:panelGroup rendered="#{not empty institutionListSettingsBean.filterPerson}">
-                            <span class="member-filter-chip">
-                                #{langBean.msg('organisationManagement.filterByMember.active', institutionListSettingsBean.filterPerson.displayName())}
-                                <p:commandLink action="#{institutionListSettingsBean.clearPersonFilter()}" update="@form :institutionManagerDatatable:formCC:institutionManagerForm" styleClass="member-filter-clear">✕</p:commandLink>
+                        <!-- Member filter: one chip, click to change the person, ✕ to drop it. -->
+                        <h:panelGroup rendered="#{institutionListSettingsBean.memberFilterActive}">
+                            <span class="member-filter-chip filter-chip-member">
+                                <p:commandButton id="memberChipLabel" type="button" text="true" styleClass="filter-chip-label"
+                                                 value="#{langBean.msg('common.members').concat(' : ').concat(not empty institutionListSettingsBean.filterPerson ? institutionListSettingsBean.filterPerson.displayName() : '…')}"/>
+                                <p:commandLink action="#{institutionListSettingsBean.clearMemberFilter()}" process="@this"
+                                               update="@form :institutionManagerDatatable:formCC:institutionManagerForm" styleClass="member-filter-clear">✕</p:commandLink>
                             </span>
+                            <p:overlayPanel for="memberChipLabel" showCloseIcon="false" styleClass="filter-overlay">
+                                <p:autoComplete id="memberFilter"
+                                                value="#{institutionListSettingsBean.filterPerson}"
+                                                completeMethod="#{institutionListSettingsBean.completePerson}"
+                                                queryDelay="300"
+                                                var="u"
+                                                itemLabel="#{u.displayName()}"
+                                                itemValue="#{u}"
+                                                converter="#{personDTOConverter}"
+                                                placeholder="#{langBean.msg('organisationManagement.filterByMember.placeholder')}"
+                                                forceSelection="true"
+                                                appendTo="@(body)"
+                                                dropdown="false">
+                                    <p:ajax event="itemSelect" listener="#{institutionListSettingsBean.initFilteredByPerson(institutionListSettingsBean.filterPerson)}" process="@this" update="@form :institutionManagerDatatable:formCC:institutionManagerForm"/>
+                                </p:autoComplete>
+                            </p:overlayPanel>
+                        </h:panelGroup>
+
+                        <!-- The quick preset, as a ghost chip: one click makes it the member filter. -->
+                        <p:commandLink action="#{institutionListSettingsBean.toggleFilterByMe()}" process="@this" update="@form :institutionManagerDatatable:formCC:institutionManagerForm"
+                                       rendered="#{not institutionListSettingsBean.filteredByMe}"
+                                       styleClass="member-filter-chip filter-chip-ghost">
+                            <i class="bi bi-person"/> #{langBean.msg('organisationManagement.filterByMember.me')}
+                        </p:commandLink>
+
+                        <h:panelGroup rendered="#{not institutionListSettingsBean.memberFilterActive}">
+                            <p:commandLink action="#{institutionListSettingsBean.addFilter('member')}" process="@this" update="@form :institutionManagerDatatable:formCC:institutionManagerForm"
+                                           styleClass="member-filter-chip filter-chip-add"
+                                           oncomplete="document.querySelector('.filter-chip-member .filter-chip-label').click()">
+                                <i class="bi bi-plus"/> #{langBean.msg('common.filters.add')}
+                            </p:commandLink>
                         </h:panelGroup>
                     </form:csrfform>
                 </f:facet>
@@ -67,10 +81,27 @@
                         id="organisationDatatable"
                         value="#{institutionListSettingsBean.filteredInstitutions}"
                         var="organisation"
-                        sortMode="single"
                         widgetVar="institutionManagerDatatable"
                         rowKey="#{organisation.id}"
+                        selectionMode="single"
+                        selection="#{institutionListSettingsBean.selectedInstitution}"
+                        rowSelectable="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation)}"
+                        rowStyleClass="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation) ? 'row-clickable' : 'row-no-access'}"
                 >
+                    <!-- The whole row opens the organisation's settings; a row without the right
+                         has neither hover nor click (rowSelectable). -->
+                    <p:ajax event="rowSelect" listener="#{institutionListSettingsBean.onRowSelect}"/>
+
+                    <p:column styleClass="row-rights-cell">
+                        <f:facet name="header">
+                            <p:commandLink action="#{institutionListSettingsBean.sortBy('rights')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('organisationManagement.rights.header')}</span>
+                                <i class="bi #{institutionListSettingsBean.sort.iconOf('rights')} sort-header-icon #{institutionListSettingsBean.sort.isSorted('rights') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
+                        <i class="bi #{institutionListSettingsBean.canAccessInstitutionSettings(organisation) ? 'bi-gear' : 'bi-lock'} row-rights-icon"
+                           title="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation) ? langBean.msg('organisationManagement.rights.manage') : langBean.msg('organisationManagement.rights.view')}"/>
+                    </p:column>
 
                     <p:column headerText="#{langBean.msg('organisationManagement.orgActive')}" rendered="#{institutionListSettingsBean.hasAnyActivatableInstitution()}">
                         <p:toggleSwitch value="#{institutionListSettingsBean.toggleSwitchState[organisation.id]}"
@@ -79,10 +110,22 @@
                         </p:toggleSwitch>
                     </p:column>
 
-                    <p:column headerText="#{langBean.msg('organisationManagement.orgName')}">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{institutionListSettingsBean.sortBy('name')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('organisationManagement.orgName')}</span>
+                                <i class="bi #{institutionListSettingsBean.sort.iconOf('name')} sort-header-icon #{institutionListSettingsBean.sort.isSorted('name') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{organisation.name}"/>
                     </p:column>
-                    <p:column headerText="#{langBean.msg('organisationManagement.orgMembers')}">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{institutionListSettingsBean.sortBy('members')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('organisationManagement.orgMembers')}</span>
+                                <i class="bi #{institutionListSettingsBean.sort.iconOf('members')} sort-header-icon #{institutionListSettingsBean.sort.isSorted('members') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:commandLink action="#{institutionListSettingsBean.redirectToInstitutionMembers(organisation)}" styleClass="chip-nav-link"
                                        rendered="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation)}"
                                        immediate="true" process="@this">
@@ -96,18 +139,23 @@
                             </span>
                         </h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{langBean.msg('organisationManagement.orgRecording')}">
+                    <p:column>
+                        <f:facet name="header">
+                            <p:commandLink action="#{institutionListSettingsBean.sortBy('recordings')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('organisationManagement.orgRecording')}</span>
+                                <i class="bi #{institutionListSettingsBean.sort.iconOf('recordings')} sort-header-icon #{institutionListSettingsBean.sort.isSorted('recordings') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{institutionListSettingsBean.numberOfRecordingUnitInInstitution(organisation)}"/>
                     </p:column>
-                    <p:column headerText="#{langBean.msg('common.label.creationdate')}" >
+                    <p:column >
+                        <f:facet name="header">
+                            <p:commandLink action="#{institutionListSettingsBean.sortBy('creationDate')}" process="@this" update="@form" styleClass="sort-header">
+                                <span>#{langBean.msg('common.label.creationdate')}</span>
+                                <i class="bi #{institutionListSettingsBean.sort.iconOf('creationDate')} sort-header-icon #{institutionListSettingsBean.sort.isSorted('creationDate') ? 'sort-header-active' : ''}"/>
+                            </p:commandLink>
+                        </f:facet>
                         <p:outputLabel value="#{institutionListSettingsBean.displayDate(organisation.creationDate)}"/>
-                    </p:column>
-                    <p:column>
-                        <p:commandButton
-                                icon="bi bi-three-dots"
-                                action="#{institutionListSettingsBean.redirectToInstitution(organisation)}"
-                                rendered="#{institutionListSettingsBean.canAccessInstitutionSettings(organisation)}"
-                        />
                     </p:column>
                 </p:dataTable>
             </comp:datatable>

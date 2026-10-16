@@ -37,6 +37,18 @@
     margin-right: 8px;
 }
 
+/* The settings sidebar: tighter rows, so the menu takes less room. */
+#sidebarSettings .nav-link {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+
+#sidebarSettings .nav-link i {
+    font-size: 1.15rem;
+}
+
 .sidebar .menu-text {
     transition: opacity 0.3s;
 }

@@ -19,7 +19,7 @@ vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockRe
 // Same reduction as the other CreateForm test files: the concept picker is exercised elsewhere.
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (
-    <button type="button" data-testid="pick-category" onClick={() => onChange({ resourceId: "12", resourceType: "concepts", label: "Lot" })}>
+    <button type="button" data-testid="pick-type" onClick={() => onChange({ resourceId: "12", resourceType: "concepts", label: "Lot" })}>
       Choisir une catégorie
     </button>
   ),
@@ -27,7 +27,7 @@ vi.mock("../../fields/renderers", () => ({
 
 // PrimeReact's AutoComplete (dropdown, keyboard nav, portalled suggestion list) is exercised
 // nowhere else in this codebase's own tests either — mocked here to a plain clickable stand-in so
-// this file stays a test of CreateForm's own logic (which UE/category actually get submitted),
+// this file stays a test of CreateForm's own logic (which UE/type actually get submitted),
 // not of AutoComplete's internals.
 vi.mock("primereact/autocomplete", async () => ({
   // forwardRef: CreateFormField hands the picker a ref, like the real AutoComplete takes.
@@ -46,13 +46,13 @@ const mockedGetFindEffectiveForm = vi.mocked(getEffectiveForm);
 const mockedCreateFind = vi.mocked(createFind);
 const mockedListRecordingUnits = vi.mocked(fetchList);
 
-const categoryField: FieldResource = {
+const typeField: FieldResource = {
   id: "-201",
   resourceType: "fields",
   label: "Catégorie",
   answerType: "SELECT_ONE_FROM_FIELD_CODE",
   isSystemField: true,
-  valueBinding: "category",
+  valueBinding: "type",
   fieldCode: "SIAS.CAT",
 };
 
@@ -85,7 +85,7 @@ function submitButton(): HTMLButtonElement {
 
 beforeEach(() => {
   mockedGetFindEffectiveForm.mockReset();
-  mockedGetFindEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-201": categoryField } });
+  mockedGetFindEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-201": typeField } });
   mockedCreateFind.mockReset();
   mockedListRecordingUnits.mockReset();
   mockedListRecordingUnits.mockResolvedValue({ data: [], totalCount: 0, limit: 20, offset: 0 });
@@ -102,14 +102,14 @@ afterEach(() => {
 });
 
 describe("FindCreateForm", () => {
-  it("resolves the project's own _default category field (valueBinding 'category', not 'type')", async () => {
+  it("resolves the project's own _default type field (valueBinding 'type')", async () => {
     render();
     await flush();
 
     expect(mockedGetFindEffectiveForm).toHaveBeenCalledWith("find-types", "5", null);
   });
 
-  it("disables submit until both a recording unit and a category are picked", async () => {
+  it("disables submit until both a recording unit and a type are picked", async () => {
     render();
     await flush();
 
@@ -121,12 +121,12 @@ describe("FindCreateForm", () => {
     expect(submitButton().disabled).toBe(true);
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-testid="pick-category"]')!.click();
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
     });
     expect(submitButton().disabled).toBe(false);
   });
 
-  it("submits the picked recording unit's id and the picked category's id, and hands the created mobilier's id to onCreated", async () => {
+  it("submits the picked recording unit's id and the picked type's id, and hands the created mobilier's id to onCreated", async () => {
     mockedCreateFind.mockResolvedValue({ resourceType: "finds", id: "88", fullIdentifier: "INST-PROJ-M1" } as never);
     const { onCreated } = render();
     await flush();
@@ -135,7 +135,7 @@ describe("FindCreateForm", () => {
       container.querySelector<HTMLButtonElement>('[data-testid="pick-recording-unit"]')!.click();
     });
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-testid="pick-category"]')!.click();
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
     });
     await act(async () => {
       submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -167,7 +167,7 @@ describe("FindCreateForm", () => {
     expect(container.querySelector('[data-testid="pick-recording-unit"]')).toBeNull();
     expect(container.textContent).toContain("INST-PROJ-UE31");
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[data-testid="pick-category"]')!.click();
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
     });
     await act(async () => {
       submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
@@ -177,7 +177,7 @@ describe("FindCreateForm", () => {
     expect(mockedCreateFind).toHaveBeenCalledWith({ recordingUnitId: "31", typeId: "12" });
   });
 
-  it("asks for the project first (no category catalog yet) when the list has no project of its own", async () => {
+  it("asks for the project first (no type catalog yet) when the list has no project of its own", async () => {
     render(vi.fn(), vi.fn(), null);
     await flush();
 

@@ -309,6 +309,27 @@ class ProjectApiServiceTest {
     }
 
     @Test
+    void patchProject_identifierProvided_updatesFullIdentifierToo() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setIdentifier("OLD");
+        au.setFullIdentifier("OLD");
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        var patch = new ProjectPatchRequest();
+        patch.setIdentifier(" NEW ");
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getIdentifier()).isEqualTo("NEW");
+        assertThat(au.getFullIdentifier()).isEqualTo("NEW");
+    }
+
+    @Test
     void patchProject_duplicateIdentifier_throws409() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

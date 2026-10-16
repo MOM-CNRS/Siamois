@@ -24,7 +24,7 @@ public class DocumentOpenApiMapper {
         DocumentResource r = new DocumentResource();
         r.setResourceType("documents");
         r.setId(document.getId() != null ? String.valueOf(document.getId()) : null);
-        r.setValidated(document.getValidated());
+        r.setValidationStatus(document.getValidationStatus());
         r.setIdentifier(document.getIdentifier());
         r.setTitle(document.getTitle());
         r.setDescription(document.getDescription());
@@ -45,8 +45,8 @@ public class DocumentOpenApiMapper {
                 r.setOrganization(org);
             }
         }
-        if (document.getCategory() != null) {
-            r.setType(projectResponseMapper.toConceptFieldValue(document.getCategory(), lang, resolvedLabels));
+        if (document.getType() != null) {
+            r.setType(projectResponseMapper.toConceptFieldValue(document.getType(), lang, resolvedLabels));
         }
         if (document.getId() != null) {
             r.setResourceUri("/document/" + document.getId());

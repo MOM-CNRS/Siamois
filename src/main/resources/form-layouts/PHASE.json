@@ -2,10 +2,6 @@
   "groups" : [ {
     "label" : "common.header.general",
     "fields" : [ {
-      "fieldId" : -502,
-      "binding" : "type",
-      "width" : "QUARTER"
-    }, {
       "fieldId" : -503,
       "binding" : "title",
       "width" : "QUARTER"

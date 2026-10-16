@@ -179,7 +179,7 @@ class DocumentOpenApiServiceTest {
     void createDocument_blankProjectId_throws400() {
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId(" ");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -199,7 +199,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -220,7 +220,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
 
         var arg3 = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, arg3, "fr"))
@@ -239,7 +239,7 @@ class DocumentOpenApiServiceTest {
         when(documentService.save(any(DocumentDTO.class))).thenReturn(documentOn(au));
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
         return req;
     }
 
@@ -319,7 +319,7 @@ class DocumentOpenApiServiceTest {
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
-        req.setCategoryId("2");
+        req.setTypeId("2");
         req.setTitle("Document 1");
 
         DocumentResource result = service.createDocument(req, personDto, Set.of(10L), "fr");
@@ -327,7 +327,7 @@ class DocumentOpenApiServiceTest {
         ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
         verify(documentService).save(captor.capture());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
-        assertThat(captor.getValue().getCategory()).isEqualTo(typeDto);
+        assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(captor.getValue().getTitle()).isEqualTo("Document 1");
         // TraceableEntity's NOT NULL author and organization: the caller, in the project's organization.
         assertThat(captor.getValue().getCreatedBy()).isSameAs(personDto);
@@ -356,7 +356,7 @@ class DocumentOpenApiServiceTest {
         verify(documentService, never()).save(any(DocumentDTO.class));
     }
 
-    // `validated` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
+    // `validationStatus` rides the same PATCH: the edit right covers en cours/terminé/annulé, the validator
     // right covers validé — alone, a validator without the edit right may change the status only.
     @Test
     void patchDocument_validatorWithoutEditRight_mayChangeOnlyTheStatus() {
@@ -369,7 +369,7 @@ class DocumentOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(true);
 
         DocumentPatchRequest statusOnly = new DocumentPatchRequest();
-        statusOnly.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        statusOnly.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         service.patchDocument(5L, statusOnly, personDto, Set.of(10L), "fr");
 
         verify(validationStatusService).setStatus(fr.siamois.domain.models.document.Document.class, 5L,
@@ -377,7 +377,7 @@ class DocumentOpenApiServiceTest {
         verify(documentService, never()).save(any(DocumentDTO.class));
 
         DocumentPatchRequest withAnswers = new DocumentPatchRequest();
-        withAnswers.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        withAnswers.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
         withAnswers.setAnswers(Map.of("-503", new AnswerInput("Titre", null)));
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, withAnswers, personDto, arg4, "fr"))
@@ -394,7 +394,7 @@ class DocumentOpenApiServiceTest {
         when(profilePermissionService.hasValidatePermission(any(UserInfo.class), eq(7L))).thenReturn(false);
 
         DocumentPatchRequest req = new DocumentPatchRequest();
-        req.setValidated(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+        req.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
 
         var arg4 = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, req, personDto, arg4, "fr"))
@@ -409,7 +409,7 @@ class DocumentOpenApiServiceTest {
         DocumentDTO document = documentOn(projectWithInstitution());
         ConceptDTO type = new ConceptDTO();
         type.setId(40L);
-        document.setCategory(type);
+        document.setType(type);
         when(documentService.findDtoById(5L)).thenReturn(document);
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
@@ -482,4 +482,37 @@ class DocumentOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
+
+    @Test
+    void patchDocument_blankIdentifier_throws400() {
+        DocumentDTO document = documentOn(projectWithInstitution());
+        when(documentService.findDtoById(5L)).thenReturn(document);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        var request = new DocumentPatchRequest();
+        request.setIdentifier("   ");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void patchDocument_identifierAlreadyUsedInTheProject_throws409() {
+        DocumentDTO document = documentOn(projectWithInstitution());
+        when(documentService.findDtoById(5L)).thenReturn(document);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        when(documentService.identifierAlreadyExistInProject(any())).thenReturn(true);
+        var request = new DocumentPatchRequest();
+        request.setIdentifier("NEW-1");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(documentService, never()).save(any(DocumentDTO.class));
+    }
+
 }

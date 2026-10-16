@@ -5,7 +5,7 @@ import { apiBlob, apiFetch } from "../../api/client";
 // Mirrors DocumentCreateRequest's required pair (the title is editable afterwards, on the fiche).
 export interface DocumentCreateBody {
   projectId: string;
-  categoryId: string;
+  typeId: string;
   // What a Documents tab creates it linked to (the one entity's id, under its own list).
   recordingUnitIds?: Array<string | number>;
   findIds?: Array<string | number>;
@@ -19,6 +19,7 @@ const api = createEntityApi<DocumentSummary, DocumentDetail, DocumentCreateBody>
 export const listDocuments = api.list;
 export const getDocument = api.get;
 export const patchDocumentAnswers = api.patchAnswers;
+export const patchDocument = api.patch;
 export const createDocument = api.create;
 
 // The stored file: sent and removed apart from the form's answers (its bytes cannot travel in a PATCH).

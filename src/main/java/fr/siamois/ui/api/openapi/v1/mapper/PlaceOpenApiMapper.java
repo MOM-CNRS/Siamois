@@ -22,7 +22,7 @@ public class PlaceOpenApiMapper {
         }
         PlaceResource resource = new PlaceResource();
         resource.setResourceType("places");
-        resource.setValidated(dto.getValidated());
+        resource.setValidationStatus(dto.getValidationStatus());
         if (dto.getId() != null) {
             resource.setId(String.valueOf(dto.getId()));
         }
@@ -30,7 +30,7 @@ public class PlaceOpenApiMapper {
         resource.setPlaceNumber(dto.getPlaceNumber());
         resource.setGeom(dto.getGeom());
 
-        ConceptDTO category = dto.getCategory();
+        ConceptDTO category = dto.getType();
         if (category != null) {
             ResolvedConceptResource typeRef = new ResolvedConceptResource();
             typeRef.setResourceType("concepts");
