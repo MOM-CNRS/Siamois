@@ -14,8 +14,16 @@
       "binding" : "children",
       "width" : "QUARTER"
     }, {
-      "fieldId" : -327,
-      "binding" : "stratigraphicRelationships",
+      "fieldId" : -328,
+      "binding" : "relation:SIAMOIS.RELATION.ORDER:SOURCE:RECORDING_UNIT",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -329,
+      "binding" : "relation:SIAMOIS.RELATION.ORDER:TARGET:RECORDING_UNIT",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -330,
+      "binding" : "relation:SIAMOIS.RELATION.SYNCHRONOUS:BOTH:RECORDING_UNIT",
       "width" : "QUARTER"
     }, {
       "fieldId" : -326,

@@ -15,7 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Reads a {@link RelationField}'s values without ever loading a whole collection: the first few
+ * Reads a {@link RelationSource}'s values without ever loading a whole collection: the first few
  * of each owner of a page, with each owner's total, in one query; or one owner's values, a page at
  * a time. Values are always in the order of their label (then id, so paging is stable).
  */
@@ -40,7 +40,7 @@ public class RelationFieldRepository {
      * is absent from the result. {@code limit} 0 still counts: only the totals come back.
      */
     @Transactional(readOnly = true)
-    public Map<Long, Preview> previews(RelationField relation, Collection<Long> ownerIds, int limit) {
+    public Map<Long, Preview> previews(RelationSource relation, Collection<Long> ownerIds, int limit) {
         Map<Long, Preview> out = new LinkedHashMap<>();
         if (ownerIds == null || ownerIds.isEmpty()) return out;
         String sql = "SELECT owner_id, target_id, label, role, concept_id, concept_external_id, asynchronous, "
@@ -49,7 +49,7 @@ public class RelationFieldRepository {
                 + "count(*) OVER (PARTITION BY v.owner_id) AS total FROM (" + valuesSql(relation) + ") v "
                 + "WHERE v.owner_id IN (:owners)) ranked "
                 + "WHERE rn <= :limit ORDER BY owner_id, rn";
-        Query query = entityManager.createNativeQuery(sql) // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
+        Query query = entityManager.createNativeQuery(sql) // NOSONAR S2077: SQL fragments are the constants of the RelationSource implementations; values are bound
                 .setParameter("owners", ownerIds)
                 // One row per owner even for limit 0: that row is where its total is read from.
                 .setParameter("limit", Math.max(limit, 1));
@@ -67,10 +67,10 @@ public class RelationFieldRepository {
 
     /** One owner's values from {@code offset}, at most {@code limit}, those whose label contains {@code search}. */
     @Transactional(readOnly = true)
-    public List<Row> page(RelationField relation, long ownerId, int offset, int limit,
+    public List<Row> page(RelationSource relation, long ownerId, int offset, int limit,
                           @Nullable String search, boolean ascending) {
         String direction = ascending ? "ASC" : "DESC";
-        Query query = entityManager.createNativeQuery("SELECT v.* FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
+        Query query = entityManager.createNativeQuery("SELECT v.* FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationSource implementations; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search)
                         + " ORDER BY lower(v.label) " + direction + " NULLS LAST, v.target_id " + direction)
                 .setParameter("owner", ownerId)
@@ -84,8 +84,8 @@ public class RelationFieldRepository {
 
     /** How many values an owner has, those whose label contains {@code search}. */
     @Transactional(readOnly = true)
-    public long count(RelationField relation, long ownerId, @Nullable String search) {
-        Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
+    public long count(RelationSource relation, long ownerId, @Nullable String search) {
+        Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationSource implementations; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search))
                 .setParameter("owner", ownerId);
         bindSearch(query, search);
@@ -93,7 +93,7 @@ public class RelationFieldRepository {
     }
 
     /** Every (owner, target) pair of the relation, with its target's label and the relation's own columns. */
-    private static String valuesSql(RelationField relation) {
+    private static String valuesSql(RelationSource relation) {
         return "SELECT p.owner_id, p.target_id, " + relation.targetLabel() + " AS label, p.role, p.concept_id, "
                 + "c.external_id AS concept_external_id, p.asynchronous, p.concept_direction, p.uncertain "
                 + "FROM (" + relation.pairsSql() + ") p "

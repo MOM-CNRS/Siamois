@@ -168,7 +168,7 @@ public class FieldAnswerWireService {
             case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
                  "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPATIAL_UNIT",
                  "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
-                 "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE", "SELECT_MULTIPLE_STRATIGRAPHY" ->
+                 "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE", "SELECT_MULTIPLE_RELATION" ->
                     new SelectManyFieldAnswer(answerType, field, toResourceRefList(answerType, raw, lang));
             case "MEASUREMENT" -> new MeasurementFieldAnswer(answerType, field, toMeasurementRef(raw));
             default -> new TextFieldAnswer(answerType, field, raw != null ? raw.toString() : null);

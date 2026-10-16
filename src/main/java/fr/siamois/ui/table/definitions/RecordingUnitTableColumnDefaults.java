@@ -1,7 +1,10 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.models.relation.SystemRelations;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 
 import java.util.LinkedHashSet;
@@ -20,7 +23,7 @@ import static fr.siamois.ui.table.definitions.SystemFieldCatalog.fieldBoundTo;
  *
  * <p>Ne contient <strong>pas</strong> la chip identifiant ({@code identifierCol}) : elle ne vient
  * pas du catalogue de champs et est construite à la main (React la fabrique depuis
- * {@code fullIdentifier}). Les relations — parents, enfants, relations stratigraphiques, mobilier —
+ * {@code fullIdentifier}). Les relations — parents, enfants, antérieur/postérieur/synchrone, mobilier —
  * sont, elles, des champs comme les autres : chaque ligne en porte un aperçu et le total.</p>
  */
 public final class RecordingUnitTableColumnDefaults {
@@ -48,6 +51,13 @@ public final class RecordingUnitTableColumnDefaults {
         }
     }
 
+    private static final String ANTERIOR_BINDING = DefinitionRelation.bindingOf(SystemRelations.ORDER_CODE,
+            DefinitionRelation.Reading.SOURCE, RelationEntityKind.RECORDING_UNIT);
+    private static final String POSTERIOR_BINDING = DefinitionRelation.bindingOf(SystemRelations.ORDER_CODE,
+            DefinitionRelation.Reading.TARGET, RelationEntityKind.RECORDING_UNIT);
+    private static final String SYNCHRONOUS_BINDING = DefinitionRelation.bindingOf(SystemRelations.SYNCHRONOUS_CODE,
+            DefinitionRelation.Reading.BOTH, RelationEntityKind.RECORDING_UNIT);
+
     private static final List<ColumnDefault> COLUMNS = List.of(
             new ColumnDefault("action", "recordingunit.field.actionUnit", fieldBoundTo(ConfigurableTable.UE, "actionUnit"),
                     true, true, true, null, true, true),
@@ -57,9 +67,14 @@ public final class RecordingUnitTableColumnDefaults {
                     true, true, true, RecordingUnitSpec.PARENTS_COUNT_SORT, false, false),
             new ColumnDefault("contains", "common.field.children", fieldBoundTo(ConfigurableTable.UE, "children"),
                     true, true, true, RecordingUnitSpec.CHILDREN_COUNT_SORT, false, false),
-            new ColumnDefault("relationships", "recordingunit.field.stratigraphicRelationships",
-                    fieldBoundTo(ConfigurableTable.UE, "stratigraphicRelationships"),
-                    true, true, true, RecordingUnitSpec.RELATIONSHIP_COUNT_SORT, false, true),
+            // The stratigraphic order and synchronism: one column per side of the relations (see SystemRelations), sorted
+            // by their number of links and filtered by the units they link to, like any other relation column.
+            new ColumnDefault("anterior", "recordingunit.field.anterior", fieldBoundTo(ConfigurableTable.UE, ANTERIOR_BINDING),
+                    true, true, true, null, false, true),
+            new ColumnDefault("posterior", "recordingunit.field.posterior", fieldBoundTo(ConfigurableTable.UE, POSTERIOR_BINDING),
+                    true, true, true, null, false, true),
+            new ColumnDefault("synchronous", "recordingunit.field.synchronous", fieldBoundTo(ConfigurableTable.UE, SYNCHRONOUS_BINDING),
+                    false, true, true, null, false, true),
             new ColumnDefault("specimen", "recordingunit.field.finds", fieldBoundTo(ConfigurableTable.UE, "specimenList"),
                     true, true, true, RecordingUnitSpec.SPECIMEN_COUNT_SORT, false, true),
             new ColumnDefault("phases", "recordingunit.field.phases", fieldBoundTo(ConfigurableTable.UE, "phases"),

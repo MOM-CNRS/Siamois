@@ -47,7 +47,7 @@ class RelationFieldRepositoryTest {
         when(query.getResultList()).thenReturn(List.of(row(1, 10, "A", 3L), row(1, 11, "B", 3L), row(2, 20, "C", 1L)));
 
         Map<Long, RelationFieldRepository.Preview> out =
-                repository.previews(RelationField.RECORDING_UNIT_STRATIGRAPHY, List.of(1L, 2L), 2);
+                repository.previews(RelationField.RECORDING_UNIT_PARENTS, List.of(1L, 2L), 2);
 
         assertThat(out.get(1L).total()).isEqualTo(3);
         assertThat(out.get(1L).rows()).extracting(RelationFieldRepository.Row::label).containsExactly("A", "B");
@@ -130,7 +130,6 @@ class RelationFieldRepositoryTest {
         assertThat(finds.resourceType()).isEqualTo("finds");
         assertThat(finds.readOnly()).isTrue();
         assertThat(finds.qualified()).isFalse();
-        assertThat(RelationField.RECORDING_UNIT_STRATIGRAPHY.qualified()).isTrue();
         assertThat(RelationField.RECORDING_UNIT_PARENTS.resourceType()).isEqualTo("recording-units");
     }
 }

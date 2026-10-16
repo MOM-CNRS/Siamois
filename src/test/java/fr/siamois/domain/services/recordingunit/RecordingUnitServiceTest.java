@@ -13,7 +13,8 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.services.relation.RelationLinkService;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -24,7 +25,6 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
@@ -32,7 +32,6 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.mapper.RecordingUnitMapper;
@@ -87,7 +86,7 @@ class RecordingUnitServiceTest {
     private ConversionService conversionService;
 
     @Mock
-    private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    private RelationLinkService relationLinkService;
 
     @Mock
     private RecordingUnitSummaryMapper recordingUnitSummaryMapper;
@@ -338,114 +337,6 @@ class RecordingUnitServiceTest {
     }
 
     @Test
-    void save_SyncsStratigraphicRelationshipsAsUnit1() {
-        // Arrange
-
-        // DTO of recording unit with one relationship
-        RecordingUnitSummaryDTO summary1 = new RecordingUnitSummaryDTO();
-        summary1.setId(1L);
-        summary1.setFullIdentifier("1");
-        RecordingUnitSummaryDTO summary2 = new RecordingUnitSummaryDTO();
-        summary2.setId(2L);
-        summary2.setFullIdentifier("2");
-        StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO();
-        relDto.setUnit1(summary1);
-        relDto.setUnit2(summary2);
-        RecordingUnitDTO toInsertDto = new RecordingUnitDTO();
-        toInsertDto.setId(1L);
-        toInsertDto.setFullIdentifier("1");
-        toInsertDto.setRelationshipsAsUnit1(new HashSet<>());
-        toInsertDto.getRelationshipsAsUnit1().add(relDto);
-
-        // Entity to insert
-        RecordingUnit toInsert = new RecordingUnit();
-        toInsert.setId(1L);
-        toInsert.setFullIdentifier("1");
-        RecordingUnit managed = new RecordingUnit();
-        toInsert.setId(1L);
-        toInsert.setFullIdentifier("1");
-        RecordingUnit unit2 = new RecordingUnit();
-        unit2.setId(2L);
-        unit2.setFullIdentifier("2");
-        StratigraphicRelationship rel = new StratigraphicRelationship();
-        rel.setUnit1(toInsert);
-        rel.setUnit2(unit2);
-        Set<StratigraphicRelationship> rels = new HashSet<>();
-        rels.add(rel);
-        toInsert.setRelationshipsAsUnit1(rels);
-
-        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(toInsert);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
-        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(toInsertDto);
-
-        // Act
-        RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getRelationshipsAsUnit1().size());
-        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit1().iterator().next();
-        assertEquals(summary2, savedRel.getUnit2());
-        assertEquals(summary1, savedRel.getUnit1());
-    }
-
-    @Test
-    void save_SyncsStratigraphicRelationshipsAsUnit2() {
-        // Arrange
-
-        // DTO of recording unit with one relationship
-        RecordingUnitSummaryDTO summary1 = new RecordingUnitSummaryDTO();
-        summary1.setId(1L);
-        summary1.setFullIdentifier("1");
-        RecordingUnitSummaryDTO summary2 = new RecordingUnitSummaryDTO();
-        summary2.setId(2L);
-        summary2.setFullIdentifier("2");
-        StratigraphicRelationshipDTO relDto = new StratigraphicRelationshipDTO();
-        relDto.setUnit1(summary2);
-        relDto.setUnit2(summary1);
-        RecordingUnitDTO toInsertDto = new RecordingUnitDTO();
-        toInsertDto.setId(1L);
-        toInsertDto.setFullIdentifier("1");
-        toInsertDto.setRelationshipsAsUnit2(new HashSet<>());
-        toInsertDto.getRelationshipsAsUnit2().add(relDto);
-
-        // Entity to insert
-        RecordingUnit toInsert = new RecordingUnit();
-        toInsert.setId(1L);
-        toInsert.setFullIdentifier("1");
-        RecordingUnit managed = new RecordingUnit();
-        toInsert.setId(1L);
-        toInsert.setFullIdentifier("1");
-        RecordingUnit unit2 = new RecordingUnit();
-        unit2.setId(2L);
-        unit2.setFullIdentifier("2");
-        StratigraphicRelationship rel = new StratigraphicRelationship();
-        rel.setUnit1(unit2);
-        rel.setUnit2(toInsert);
-        Set<StratigraphicRelationship> rels = new HashSet<>();
-        rels.add(rel);
-        toInsert.setRelationshipsAsUnit2(rels);
-
-        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(toInsert);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
-        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(toInsertDto);
-
-        // Act
-        RecordingUnitDTO result = recordingUnitService.save(toInsertDto);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getRelationshipsAsUnit2().size());
-        StratigraphicRelationshipDTO savedRel = result.getRelationshipsAsUnit2().iterator().next();
-        assertEquals(summary2, savedRel.getUnit1());
-        assertEquals(summary1, savedRel.getUnit2());
-    }
-
-    @Test
     void existsChildrenByParentAndInstitution_shouldReturnTrue_whenChildrenExist() {
         // Arrange
         Long parentId = 1L;
@@ -474,40 +365,6 @@ class RecordingUnitServiceTest {
 
         // Assert
         assertTrue(result);
-    }
-
-    @Test
-    void updateStratigraphicRel() {
-        // Arrange
-        RecordingUnitDTO recordingUnitDTO = new RecordingUnitDTO();
-        recordingUnitDTO.setId(1L);
-        recordingUnitDTO.setRelationshipsAsUnit1(new HashSet<>());
-        recordingUnitDTO.setRelationshipsAsUnit2(new HashSet<>());
-
-        RecordingUnit recordingUnit = new RecordingUnit();
-        recordingUnit.setId(1L);
-        recordingUnit.setRelationshipsAsUnit1(new HashSet<>());
-        recordingUnit.setRelationshipsAsUnit2(new HashSet<>());
-
-        RecordingUnit managedRecordingUnit = new RecordingUnit();
-        managedRecordingUnit.setId(1L);
-        managedRecordingUnit.setRelationshipsAsUnit1(new HashSet<>());
-        managedRecordingUnit.setRelationshipsAsUnit2(new HashSet<>());
-
-        when(recordingUnitMapper.invertConvert(recordingUnitDTO)).thenReturn(recordingUnit);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managedRecordingUnit));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(recordingUnitDTO);
-
-        // Assert
-        verify(recordingUnitMapper).invertConvert(recordingUnitDTO);
-        verify(recordingUnitRepository).findById(1L);
-        
-        // Ensure no exception is thrown and relationships are synced properly
-        // Specifically testing that the setupStratigraphicRelationships doesn't crash 
-        // when valid RecordingUnit objects are passed
-        assertNotNull(managedRecordingUnit);
     }
 
     @Test
@@ -597,8 +454,6 @@ class RecordingUnitServiceTest {
         parentEntitySource.setId(2L);
         sourceEntity.setParents(Collections.singleton(parentEntitySource));
         sourceEntity.setChildren(new HashSet<>());
-        sourceEntity.setRelationshipsAsUnit1(new HashSet<>());
-        sourceEntity.setRelationshipsAsUnit2(new HashSet<>());
         sourceEntity.setContributors(new ArrayList<>());
 
         // Entité managée (existante en base) qui sera mise à jour
@@ -632,155 +487,6 @@ class RecordingUnitServiceTest {
         verify(recordingUnitRepository, times(1)).saveAll(anyList());
 
         assertEquals("Nouvelle Description", managedEntity.getDescription());
-    }
-
-    @Test
-    void syncRelationships_updateExistingRelationship_asUnit1() {
-        // Arrange
-        RecordingUnit managed = new RecordingUnit();
-        managed.setId(1L);
-        RecordingUnit unit2 = new RecordingUnit();
-        unit2.setId(2L);
-
-        Concept oldConcept = new Concept();
-        oldConcept.setId(10L);
-        Concept newConcept = new Concept();
-        newConcept.setId(20L);
-
-        StratigraphicRelationship existingRel = new StratigraphicRelationship();
-        existingRel.setUnit1(managed);
-        existingRel.setUnit2(unit2);
-        existingRel.setConcept(oldConcept);
-        managed.addRelationshipAsUnit1(existingRel);
-
-        StratigraphicRelationship updatedRelSource = new StratigraphicRelationship();
-        updatedRelSource.setUnit1(new RecordingUnit() {{ setId(1L); }});
-        updatedRelSource.setUnit2(new RecordingUnit() {{ setId(2L); }});
-        updatedRelSource.setConcept(newConcept);
-
-        RecordingUnit sourceEntity = new RecordingUnit();
-        sourceEntity.setId(1L);
-        sourceEntity.setRelationshipsAsUnit1(Set.of(updatedRelSource));
-
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(1L);
-
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(unit2));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(dto);
-
-        // Assert
-        assertEquals(1, managed.getRelationshipsAsUnit1().size());
-        StratigraphicRelationship finalRel = managed.getRelationshipsAsUnit1().iterator().next();
-        assertEquals(newConcept, finalRel.getConcept());
-    }
-
-    @Test
-    void syncRelationships_addNewRelationship_asUnit2() {
-        // Arrange
-        RecordingUnit managed = new RecordingUnit();
-        managed.setId(2L);
-        RecordingUnit unit1 = new RecordingUnit();
-        unit1.setId(1L);
-
-        StratigraphicRelationship newRel = new StratigraphicRelationship();
-        newRel.setUnit1(unit1);
-        newRel.setUnit2(managed);
-
-        RecordingUnit sourceEntity = new RecordingUnit();
-        sourceEntity.setId(2L);
-        sourceEntity.setRelationshipsAsUnit2(Set.of(newRel));
-
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(2L);
-
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit1));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(dto);
-
-        // Assert
-        assertEquals(1, managed.getRelationshipsAsUnit2().size());
-        assertTrue(managed.getRelationshipsAsUnit2().contains(newRel));
-    }
-
-    @Test
-    void syncRelationships_updateExistingRelationship_asUnit2() {
-        // Arrange
-        RecordingUnit managed = new RecordingUnit();
-        managed.setId(2L);
-        RecordingUnit unit1 = new RecordingUnit();
-        unit1.setId(1L);
-
-        Concept oldConcept = new Concept();
-        oldConcept.setId(10L);
-        Concept newConcept = new Concept();
-        newConcept.setId(20L);
-
-        StratigraphicRelationship existingRel = new StratigraphicRelationship();
-        existingRel.setUnit1(unit1);
-        existingRel.setUnit2(managed);
-        existingRel.setConcept(oldConcept);
-        managed.addRelationshipAsUnit2(existingRel);
-
-        StratigraphicRelationship updatedRelSource = new StratigraphicRelationship();
-        updatedRelSource.setUnit1(new RecordingUnit() {{ setId(1L); }});
-        updatedRelSource.setUnit2(new RecordingUnit() {{ setId(2L); }});
-        updatedRelSource.setConcept(newConcept);
-
-        RecordingUnit sourceEntity = new RecordingUnit();
-        sourceEntity.setId(2L);
-        sourceEntity.setRelationshipsAsUnit2(Set.of(updatedRelSource));
-
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(2L);
-
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
-        when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(managed));
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit1));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(dto);
-
-        // Assert
-        assertEquals(1, managed.getRelationshipsAsUnit2().size());
-        StratigraphicRelationship finalRel = managed.getRelationshipsAsUnit2().iterator().next();
-        assertEquals(newConcept, finalRel.getConcept());
-    }
-
-    @Test
-    void syncRelationships_removeRelationship() {
-        // Arrange
-        RecordingUnit managed = new RecordingUnit();
-        managed.setId(1L);
-        RecordingUnit unit2 = new RecordingUnit();
-        unit2.setId(2L);
-
-        StratigraphicRelationship relToRemove = new StratigraphicRelationship();
-        relToRemove.setUnit1(managed);
-        relToRemove.setUnit2(unit2);
-        managed.addRelationshipAsUnit1(relToRemove);
-
-        // La source n'a aucune relation, ce qui doit entraîner la suppression de celle existante
-        RecordingUnit sourceEntity = new RecordingUnit();
-        sourceEntity.setId(1L);
-
-        RecordingUnitDTO dto = new RecordingUnitDTO();
-        dto.setId(1L);
-
-        when(recordingUnitMapper.invertConvert(dto)).thenReturn(sourceEntity);
-        when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(managed));
-
-        // Act
-        recordingUnitService.updateStratigraphicRel(dto);
-
-        // Assert
-        assertTrue(managed.getRelationshipsAsUnit1().isEmpty());
     }
 
     @Test
@@ -1399,24 +1105,19 @@ class RecordingUnitServiceTest {
             parent.setChildren(new HashSet<>(Set.of(ru)));
             ru.setParents(new HashSet<>(Set.of(parent)));
 
-            StratigraphicRelationship rel = new StratigraphicRelationship();
-            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
-
             Ark ark = new Ark();
             ark.setInternalId(99L);
             ru.setArk(ark);
 
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(1L);
 
             assertFalse(parent.getChildren().contains(ru));
             assertTrue(ru.getParents().isEmpty());
-            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
-            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
+            verify(relationLinkService).deleteAllLinksOf(RelationEntityKind.RECORDING_UNIT, 1L);
             verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
             verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
             verify(recordingUnitRepository).delete(ru);
@@ -1431,12 +1132,12 @@ class RecordingUnitServiceTest {
 
             when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
             when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
             when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(5L);
 
-            verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
+            // the links of the unit are always cleaned, whether it has any or not
+            verify(relationLinkService).deleteAllLinksOf(RelationEntityKind.RECORDING_UNIT, 5L);
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }
@@ -2182,7 +1883,6 @@ class RecordingUnitServiceTest {
             assertEquals(2L, dto.getRelationshipCount());
             verify(recordingUnitMapper, never()).convert(any(RecordingUnit.class));
             verify(recordingUnitRepository, never()).countSpecimensByRecordingUnitId(any());
-            verify(recordingUnitRepository, never()).countStratigraphicRelationshipsByRecordingUnitId(any());
         }
 
         @Test

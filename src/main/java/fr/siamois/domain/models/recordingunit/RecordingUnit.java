@@ -77,14 +77,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     protected MultiPolygon geom;
 
-    @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private Set<StratigraphicRelationship> relationshipsAsUnit1 = new HashSet<>();
-
-    @OneToMany(mappedBy = "unit2", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private Set<StratigraphicRelationship> relationshipsAsUnit2 = new HashSet<>();
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
     @JoinTable(
@@ -338,26 +330,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @Override
     public int hashCode() {
         return super.hashCode();
-    }
-
-    // --- helpers ---
-    @JsonIgnore
-    public void addRelationshipAsUnit1(StratigraphicRelationship rel) {
-        relationshipsAsUnit1.add(rel);
-        rel.setUnit1(this); // owning side
-    }
-    @JsonIgnore
-    public void removeRelationshipAsUnit1(StratigraphicRelationship rel) {
-        relationshipsAsUnit1.remove(rel);
-    }
-    @JsonIgnore
-    public void addRelationshipAsUnit2(StratigraphicRelationship rel) {
-        relationshipsAsUnit2.add(rel);
-        rel.setUnit2(this);
-    }
-    @JsonIgnore
-    public void removeRelationshipAsUnit2(StratigraphicRelationship rel) {
-        relationshipsAsUnit2.remove(rel);
     }
 
 }

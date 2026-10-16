@@ -4,7 +4,6 @@ package fr.siamois.domain.services.form;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.dto.PlaceSuggestionDTO;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -194,11 +193,7 @@ public class FormService {
             CustomField field = entry.getKey();
             CustomFieldAnswerViewModel answer = entry.getValue();
 
-            if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer &&
-                    jpaEntity instanceof RecordingUnitDTO ru) {
-                // Special case
-                setStratigraphyFieldValue(stratiAnswer, ru);
-            } else if (isBindableSystemField(field, answer, bindableFields)) {
+            if (isBindableSystemField(field, answer, bindableFields)) {
                 Object value = extractValueFromAnswer(answer);
                 if (value != null) {
                     setFieldValue(jpaEntity, field.getValueBinding(), value);
@@ -368,16 +363,6 @@ public class FormService {
         if (answer == null) {
             return null;
         }
-        if (answer instanceof CustomFieldAnswerStratigraphyViewModel s) {
-            Map<String, Object> out = new LinkedHashMap<>();
-            out.put("anterior", s.getAnteriorRelationships() != null
-                    ? new ArrayList<>(s.getAnteriorRelationships()) : List.of());
-            out.put("posterior", s.getPosteriorRelationships() != null
-                    ? new ArrayList<>(s.getPosteriorRelationships()) : List.of());
-            out.put("synchronous", s.getSynchronousRelationships() != null
-                    ? new ArrayList<>(s.getSynchronousRelationships()) : List.of());
-            return out;
-        }
         return extractValueFromAnswer(answer);
     }
 
@@ -389,13 +374,6 @@ public class FormService {
                                   List<String> bindableFields) {
 
         answer.setHasBeenModified(false);
-
-        if (answer instanceof CustomFieldAnswerStratigraphyViewModel stratiAnswer
-                && jpaEntity instanceof RecordingUnitDTO ru) {
-            // Special case
-            handleStratigraphyRelationships(stratiAnswer, ru);
-            return;
-        }
 
         if (Boolean.TRUE.equals(field.getIsSystemField())
                 && field.getValueBinding() != null
@@ -637,39 +615,6 @@ public class FormService {
         }
     }
 
-    public void handleStratigraphyRelationships(CustomFieldAnswerStratigraphyViewModel answer, RecordingUnitDTO unit) {
-        // Set the source unit for the answer
-        answer.setSourceToAdd(new RecordingUnitSummaryDTO(unit));
-
-        // Clear existing lists to avoid duplicates
-        answer.getAnteriorRelationships().clear();
-        answer.getPosteriorRelationships().clear();
-        answer.getSynchronousRelationships().clear();
-
-        // Process relationships where unit is unit1
-        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit1()) {
-            if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
-                // Synchronous
-                answer.getSynchronousRelationships().add(rel);
-            } else {
-                // Asynchronous → current unit is unit1, goes to posterior
-                answer.getPosteriorRelationships().add(rel);
-            }
-        }
-
-        // Process relationships where unit is unit2
-        for (StratigraphicRelationshipDTO rel : unit.getRelationshipsAsUnit2()) {
-            if (Boolean.FALSE.equals(rel.getIsAsynchronous())) {
-                // Synchronous
-                answer.getSynchronousRelationships().add(rel);
-            } else {
-                // Asynchronous → current unit is unit2, goes to anterior
-                answer.getAnteriorRelationships().add(rel);
-            }
-        }
-    }
-
-
     @SuppressWarnings("unchecked")
     private static List<String> getBindableFieldNames(Object entity) {
         if (entity == null) return Collections.emptyList();
@@ -702,39 +647,4 @@ public class FormService {
         }
     }
 
-    public void setStratigraphyFieldValue(
-            CustomFieldAnswerStratigraphyViewModel stratiAnswer,
-            RecordingUnitDTO entity) {
-        // Clear existing relationships to avoid duplicates
-        entity.getRelationshipsAsUnit1().clear();
-        entity.getRelationshipsAsUnit2().clear();
-
-        // Helper method to add relationships to the correct set
-        for (StratigraphicRelationshipDTO rel : stratiAnswer.getAnteriorRelationships()) {
-            if (rel.getUnit1().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit2().add(rel);
-            }
-        }
-
-        for (StratigraphicRelationshipDTO rel : stratiAnswer.getPosteriorRelationships()) {
-            if (rel.getUnit1().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit2().add(rel);
-            }
-        }
-
-        for (StratigraphicRelationshipDTO rel : stratiAnswer.getSynchronousRelationships()) {
-            if (rel.getUnit1().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit1().add(rel);
-            } else if (rel.getUnit2().getId().equals(entity.getId())) {
-                entity.getRelationshipsAsUnit2().add(rel);
-            }
-        }
-    }
-
-
 }
-

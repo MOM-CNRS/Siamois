@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 import java.util.function.LongFunction;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository.Row;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link RelationField}'s values in their API shape: {@link ResourceRef}s, each stratigraphic one
+ * A {@link RelationSource}'s values in their API shape: {@link ResourceRef}s, each stratigraphic one
  * qualified with what the relationship says ({@link ResourceRef.StratigraphicQualifier}).
  */
 @Service
@@ -41,7 +41,7 @@ public class RelationFieldService {
      * @param valuesHref the URL of an owner's full list, for a preview that isn't complete
      */
     @Transactional(readOnly = true)
-    public Map<Long, MultiValue> previews(RelationField relation, Collection<Long> ownerIds, int limit, String lang,
+    public Map<Long, MultiValue> previews(RelationSource relation, Collection<Long> ownerIds, int limit, String lang,
                                           LongFunction<String> valuesHref) {
         Map<Long, RelationFieldRepository.Preview> previews = relationFieldRepository.previews(relation, ownerIds, limit);
         Map<Long, String> conceptLabels = conceptLabels(previews.values().stream()
@@ -61,7 +61,7 @@ public class RelationFieldService {
 
     /** One owner's values from {@code offset}, at most {@code limit}, those whose label contains {@code search}. */
     @Transactional(readOnly = true)
-    public ValuesPage page(RelationField relation, long ownerId, int offset, int limit,
+    public ValuesPage page(RelationSource relation, long ownerId, int offset, int limit,
                            @Nullable String search, boolean ascending, String lang) {
         List<Row> rows = relationFieldRepository.page(relation, ownerId, offset, limit, search, ascending);
         long total = relationFieldRepository.count(relation, ownerId, search);
@@ -77,7 +77,7 @@ public class RelationFieldService {
         return concepts.isEmpty() ? Map.of() : conceptLabelBatchResolver.resolveLabels(concepts, lang);
     }
 
-    private static ResourceRef toRef(RelationField relation, Row row, Map<Long, String> conceptLabels) {
+    private static ResourceRef toRef(RelationSource relation, Row row, Map<Long, String> conceptLabels) {
         String id = String.valueOf(row.targetId());
         if (!relation.qualified()) {
             return new ResourceRef(id, relation.resourceType(), row.label());
@@ -86,17 +86,6 @@ public class RelationFieldService {
                 String.valueOf(row.conceptId()), FieldAnswerWireService.CONCEPTS,
                 Objects.requireNonNullElseGet(conceptLabels.get(row.conceptId()), () -> "[" + row.conceptExternalId() + "]"));
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
-                concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
-    }
-
-    /**
-     * Where the other unit stands relative to the owner — the rule the fiche has always sorted a
-     * unit's relationships by ({@code FormService#handleStratigraphyRelationships}): a synchronous
-     * relationship is synchronous from both sides; an asynchronous one lists its second unit among
-     * its first unit's posterior relationships, and the other way round.
-     */
-    private static String positionOf(Row row) {
-        if (Boolean.FALSE.equals(row.asynchronous())) return "synchronous";
-        return "unit1".equals(row.role()) ? "posterior" : "anterior";
+                concept, row.role(), null, row.conceptDirection(), row.asynchronous(), row.uncertain()));
     }
 }

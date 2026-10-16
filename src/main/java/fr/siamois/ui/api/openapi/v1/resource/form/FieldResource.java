@@ -24,7 +24,7 @@ public record FieldResource(
                         "SELECT_MULTIPLE", "SELECT_MULTIPLE_FROM_FIELD_CODE", "SELECT_MULTIPLE_PERSON",
                         "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT",
                         "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
-                        "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE_STRATIGRAPHY"})
+                        "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE_RELATION"})
         String answerType,
 
         @Schema(description = "Texte d'aide, résolu selon Accept-Language")

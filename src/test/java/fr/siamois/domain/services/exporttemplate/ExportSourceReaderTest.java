@@ -9,7 +9,10 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ProjectS
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.domain.models.relation.SystemRelations;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -19,7 +22,7 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkQueries;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,12 +32,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.*;
 
@@ -49,7 +54,7 @@ class ExportSourceReaderTest {
     @Mock private PhaseRepository phaseRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private ContainerRepository containerRepository;
-    @Mock private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    @Mock private RelationLinkQueries relationLinkQueries;
 
     private ExportSourceReader reader;
     private ActionUnit project;
@@ -57,7 +62,7 @@ class ExportSourceReaderTest {
     @BeforeEach
     void setUp() {
         reader = new ExportSourceReader(actionUnitRepository, recordingUnitRepository, specimenRepository,
-                phaseRepository, documentRepository, containerRepository, stratigraphicRelationshipRepository);
+                phaseRepository, documentRepository, containerRepository, relationLinkQueries);
         project = new ActionUnit();
         project.setId(PROJECT_ID);
     }
@@ -190,26 +195,58 @@ class ExportSourceReaderTest {
         assertThat(rows).extracting(r -> r.ends().get("child").entity()).containsExactlyInAnyOrder(c1, c2);
     }
 
+    private static RelationLink link(String code, long id, RecordingUnit source, RecordingUnit target) {
+        RelationDefinition definition = new RelationDefinition();
+        definition.setCode(code);
+        RelationLink link = new RelationLink();
+        link.setId(id);
+        link.setDefinition(definition);
+        link.attachSource(source);
+        link.attachTarget(target);
+        return link;
+    }
+
+    private static final List<String> STRATI_CODES = List.of(SystemRelations.ORDER_CODE, SystemRelations.SYNCHRONOUS_CODE);
+
     @Test
-    void read_stratigraphy_exposesEndsAndValues() {
-        RecordingUnit u1 = unit(1L, null);
-        RecordingUnit u2 = unit(2L, null);
-        Concept relation = concept("th", "sur");
-        StratigraphicRelationship rel = new StratigraphicRelationship();
-        rel.setUnit1(u1);
-        rel.setUnit2(u2);
-        rel.setConcept(relation);
-        rel.setUncertain(true);
-        when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of(u1, u2));
-        when(stratigraphicRelationshipRepository.findAllByUnit1IdIn(List.of(1L, 2L))).thenReturn(List.of(rel));
+    void read_stratigraphy_ofAnOrderLink_putsTheAnteriorUnitFirst() {
+        RecordingUnit posterior = unit(1L, null);
+        RecordingUnit anterior = unit(2L, null);
+        Concept cuts = concept("th", "recoupe");
+        RelationLink order = link(SystemRelations.ORDER_CODE, 10L, posterior, anterior);
+        order.setSourceType(cuts);
+        when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of(posterior, anterior));
+        when(relationLinkQueries.linksFromSources(STRATI_CODES, RelationEntityKind.RECORDING_UNIT, List.of(1L, 2L))).thenReturn(List.of(order));
+        when(relationLinkQueries.booleanAnswers(List.of(10L), SystemRelations.UNCERTAIN_FIELD_ID)).thenReturn(Map.of(10L, true));
 
         List<ExportRow> rows = reader.read(new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP"), PROJECT_ID);
 
         assertThat(rows).singleElement().satisfies(r -> {
-            assertThat(r.ends().get("unit1").entity()).isSameAs(u1);
-            assertThat(r.ends().get("unit2").entity()).isSameAs(u2);
-            assertThat(r.values()).containsEntry("relationType", relation).containsEntry("uncertain", true)
-                    .doesNotContainKey("asynchronous");
+            assertThat(r.ends().get("unit1").entity()).isSameAs(anterior);
+            assertThat(r.ends().get("unit2").entity()).isSameAs(posterior);
+            assertThat(r.values()).containsEntry("relationType", cuts).containsEntry("uncertain", true)
+                    .containsEntry("asynchronous", true);
+        });
+    }
+
+    @Test
+    void read_stratigraphy_ofASynchronousLink_isNotAsynchronous_andFallsBackToTheTargetsType() {
+        RecordingUnit a = unit(1L, null);
+        RecordingUnit b = unit(2L, null);
+        Concept equal = concept("th", "egal");
+        RelationLink sync = link(SystemRelations.SYNCHRONOUS_CODE, 11L, a, b);
+        sync.setTargetType(equal);
+        when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of(a, b));
+        when(relationLinkQueries.linksFromSources(STRATI_CODES, RelationEntityKind.RECORDING_UNIT, List.of(1L, 2L))).thenReturn(List.of(sync));
+        when(relationLinkQueries.booleanAnswers(List.of(11L), SystemRelations.UNCERTAIN_FIELD_ID)).thenReturn(Map.of());
+
+        List<ExportRow> rows = reader.read(new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP"), PROJECT_ID);
+
+        assertThat(rows).singleElement().satisfies(r -> {
+            assertThat(r.ends().get("unit1").entity()).isSameAs(a);
+            assertThat(r.ends().get("unit2").entity()).isSameAs(b);
+            assertThat(r.values()).containsEntry("relationType", equal).containsEntry("asynchronous", false)
+                    .doesNotContainKey("uncertain");
         });
     }
 
@@ -218,6 +255,6 @@ class ExportSourceReaderTest {
         when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of());
 
         assertThat(reader.read(new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP"), PROJECT_ID)).isEmpty();
-        verify(stratigraphicRelationshipRepository, never()).findAllByUnit1IdIn(anyCollection());
+        verify(relationLinkQueries, never()).linksFromSources(any(), any(), any());
     }
 }

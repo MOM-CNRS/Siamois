@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller.relation;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.relation.RelationLinkCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.relation.RelationLinkUpdateRequest;
+import fr.siamois.ui.api.openapi.v1.response.relation.RelationDefinitionResponse;
 import fr.siamois.ui.api.openapi.v1.response.relation.RelationLinkResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -20,7 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/relation-links")
+@RequestMapping("/api/v1")
 @Tag(name = OpenApiTags.RELATION)
 @RequiredArgsConstructor
 public class RelationLinksControllerApi {
@@ -28,7 +29,26 @@ public class RelationLinksControllerApi {
     private final ProjectApiService projectApiService;
     private final RelationLinkOpenApiService relationLinkOpenApiService;
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("/relation-definitions/{code}")
+    @Operation(
+            summary = "Lire une relation",
+            description = "Ce que la relation accepte de chaque côté (genre d'entité et type de configuration) et la correspondance "
+                    + "de ses types (imposée ou suggérée) : de quoi proposer et préremplir le type d'un lien avant de le créer."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Relation"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Relation inconnue"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<RelationDefinitionResponse> definition(
+            @Parameter(description = "Code de la relation", schema = @Schema(type = "string", example = "SIAMOIS.RELATION.ORDER"))
+            @PathVariable("code") String code) {
+        projectApiService.requireCaller();
+        return ResponseEntity.ok(relationLinkOpenApiService.definition(code));
+    }
+
+    @PostMapping(value = "/relation-links", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un lien",
             description = "Relie deux entités par une relation configurable (stratigraphie, relation d'institution). Le lien est "
@@ -51,7 +71,7 @@ public class RelationLinksControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(relationLinkOpenApiService.create(body, caller));
     }
 
-    @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PatchMapping(value = "/relation-links/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Modifier un lien",
             description = "Change les types du lien (changeTypes = true) et/ou écrit ses attributs. Ses extrémités ne changent pas : "
@@ -73,7 +93,7 @@ public class RelationLinksControllerApi {
         return ResponseEntity.ok(relationLinkOpenApiService.update(id, body, caller));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/relation-links/{id}")
     @Operation(
             summary = "Supprimer un lien",
             description = "Supprime le lien et ses attributs, vu des deux côtés."

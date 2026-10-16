@@ -33,8 +33,11 @@ import fr.siamois.dto.FieldQuery;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.Attribute;
@@ -317,9 +320,12 @@ public class FieldQueryService {
     @Nullable
     private Target resolveSystem(Class<?> entityType, String formBinding) {
         String binding = entityAttribute(entityType, formBinding);
-        if (isStratigraphy(entityType, binding)) {
-            // Not a property: a unit's relationships are split over relationshipsAsUnit1/2.
-            return new Target(true, binding, Kind.REFERENCES, RecordingUnit.class, null, false, "fullIdentifier", true);
+        if (DefinitionRelation.isBinding(binding)) {
+            // The links of a configurable relation: not a property either, rows of relation_link.
+            return RelationSources.kindOf(entityType)
+                    .flatMap(kind -> DefinitionRelation.parse(kind, binding))
+                    .map(relation -> new Target(true, binding, Kind.REFERENCES, Object.class, null, false, null, true))
+                    .orElse(null);
         }
         ManagedType<?> type = managedType(entityType);
         if (type == null) return null;
@@ -438,9 +444,30 @@ public class FieldQueryService {
         return type;
     }
 
-    /** A recording unit's stratigraphic relationships: one field, two JPA collections. */
-    private static boolean isStratigraphy(Class<?> entityType, String binding) {
-        return RelationField.of(entityType, binding).filter(r -> r == RelationField.RECORDING_UNIT_STRATIGRAPHY).isPresent();
+    /**
+     * The condition under which {@code link} is one of {@code owner}'s links of the relation a field's binding describes:
+     * the definition, and the owner at the end the field reads — either end for a symmetric relation. With {@code farIds},
+     * the entity at the other end is one of them. The property names come from {@link RelationEntityKind}, never a request.
+     */
+    private static Predicate linkedTo(Root<RelationLink> link, Root<?> owner, String binding,
+                                      @Nullable List<Long> farIds, CriteriaBuilder cb) {
+        RelationEntityKind ownerKind = RelationSources.kindOf(owner.getJavaType()).orElseThrow();
+        DefinitionRelation relation = DefinitionRelation.parse(ownerKind, binding).orElseThrow();
+        Predicate ofDefinition = cb.equal(link.get("definition").get("code"), relation.code());
+        Predicate readFromSource = ownerAt(link, owner, "source", ownerKind, "target", relation.farKind(), farIds, cb);
+        Predicate readFromTarget = ownerAt(link, owner, "target", ownerKind, "source", relation.farKind(), farIds, cb);
+        return switch (relation.reading()) {
+            case SOURCE -> cb.and(ofDefinition, readFromSource);
+            case TARGET -> cb.and(ofDefinition, readFromTarget);
+            case BOTH -> cb.and(ofDefinition, cb.or(readFromSource, readFromTarget));
+        };
+    }
+
+    private static Predicate ownerAt(Root<RelationLink> link, Root<?> owner, String ownerSide, RelationEntityKind ownerKind,
+                                     String farSide, RelationEntityKind farKind, @Nullable List<Long> farIds, CriteriaBuilder cb) {
+        Predicate isOwner = cb.equal(link.get(ownerSide + ownerKind.propertySuffix()), owner);
+        if (farIds == null) return isOwner;
+        return cb.and(isOwner, link.get(farSide + farKind.propertySuffix()).get("id").in(farIds));
     }
 
     // ========== Filter ==========
@@ -474,14 +501,12 @@ public class FieldQueryService {
         List<Boolean> flags = target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
 
         return (root, query, cb) -> {
-            if (isStratigraphy(root.getJavaType(), target.attribute)) {
-                // Related to at least one of them, from either side of the relationship.
-                Subquery<Integer> related = query.subquery(Integer.class);
-                Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
-                related.select(cb.literal(1)).where(cb.or(
-                        cb.and(cb.equal(rel.get("unit1"), root), rel.get("unit2").get("id").in(ids)),
-                        cb.and(cb.equal(rel.get("unit2"), root), rel.get("unit1").get("id").in(ids))));
-                return cb.exists(related);
+            if (DefinitionRelation.isBinding(target.attribute)) {
+                // Linked, under the relation, to at least one of them.
+                Subquery<Integer> links = query.subquery(Integer.class);
+                Root<RelationLink> link = links.from(RelationLink.class);
+                links.select(cb.literal(1)).where(linkedTo(link, root, target.attribute, ids, cb));
+                return cb.exists(links);
             }
             if (target.system && target.kind == Kind.REFERENCES) {
                 // Has at least one of them: an EXISTS over the collection, since a join would
@@ -567,9 +592,12 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> sortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query,
                                   CriteriaBuilder cb, String lang) {
-        if (isStratigraphy(root.getJavaType(), target.attribute)) {
-            return cb.sum(cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit1")),
-                    cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit2")));
+        if (DefinitionRelation.isBinding(target.attribute)) {
+            // How many links the unit has under the relation, from the end its field reads.
+            Subquery<Long> links = query.subquery(Long.class);
+            Root<RelationLink> link = links.from(RelationLink.class);
+            links.select(cb.count(link)).where(linkedTo(link, root, target.attribute, null, cb));
+            return links;
         }
         if (target.system) {
             return systemSortKey(target, root, query, cb, lang);

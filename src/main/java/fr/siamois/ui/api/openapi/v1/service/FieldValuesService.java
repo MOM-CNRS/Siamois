@@ -16,6 +16,7 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -83,7 +84,7 @@ public class FieldValuesService {
         Owner owner = requireOwner(caller, ownerType, ownerKey, lang);
 
         requireMultiValued(ownerType, fieldId);
-        Optional<RelationField> relation = MultiValueAnswers.relationFieldOf(ownerType, fieldId);
+        Optional<RelationSource> relation = MultiValueAnswers.relationFieldOf(ownerType, fieldId);
         if (relation.isPresent()) {
             return relationFieldService.page(relation.get(), owner.id(), offset, limit, search, ascending, lang);
         }

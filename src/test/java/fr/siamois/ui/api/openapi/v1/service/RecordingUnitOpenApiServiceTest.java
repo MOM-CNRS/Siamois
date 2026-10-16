@@ -2467,7 +2467,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("isPartOf", "contains", "relationships", "specimen", "action", "type", "phases",
+                .containsExactlyInAnyOrder("isPartOf", "contains", "anterior", "posterior", "specimen", "action", "type", "phases",
                         "spatial", "author");
         assertThat(tableColumns)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)

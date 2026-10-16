@@ -10,7 +10,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.PlaceSuggestionDTO;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
@@ -781,17 +780,7 @@ class FormServiceTest {
     private RecordingUnitDTO createRecordingUnitDTO(Long id) {
         RecordingUnitDTO unit = new RecordingUnitDTO();
         unit.setId(id);
-        unit.setRelationshipsAsUnit1(new HashSet<>());
-        unit.setRelationshipsAsUnit2(new HashSet<>());
         return unit;
-    }
-
-    // Helper method to create a StratigraphicRelationshipDTO with specific units
-    private StratigraphicRelationshipDTO createStratigraphicRelationshipDTO(RecordingUnitDTO unit1, RecordingUnitDTO unit2) {
-        StratigraphicRelationshipDTO rel = new StratigraphicRelationshipDTO();
-        rel.setUnit1(new RecordingUnitSummaryDTO(unit1));
-        rel.setUnit2(new RecordingUnitSummaryDTO(unit2));
-        return rel;
     }
 
     // =====================================================================
@@ -931,24 +920,6 @@ class FormServiceTest {
         @Test
         void returnsNullForNullAnswer() {
             assertNull(formService.readAnswerValueForApi(null));
-        }
-
-        @Test
-        void returnsMapForStratigraphyAnswer() {
-            CustomFieldAnswerStratigraphyViewModel answer = new CustomFieldAnswerStratigraphyViewModel();
-            RecordingUnitDTO u1 = createRecordingUnitDTO(1L);
-            RecordingUnitDTO u2 = createRecordingUnitDTO(2L);
-            StratigraphicRelationshipDTO rel = createStratigraphicRelationshipDTO(u1, u2);
-            answer.getAnteriorRelationships().add(rel);
-
-            Object result = formService.readAnswerValueForApi(answer);
-
-            assertInstanceOf(Map.class, result);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) result;
-            assertTrue(((List<?>) map.get("anterior")).contains(rel));
-            assertTrue(((List<?>) map.get("posterior")).isEmpty());
-            assertTrue(((List<?>) map.get("synchronous")).isEmpty());
         }
 
         @Test
@@ -1340,23 +1311,6 @@ class FormServiceTest {
             answer.setValue(null);
 
             assertNull(formService.readAnswerValueForApi(answer));
-        }
-
-        @Test
-        void readAnswerValueForApi_stratigraphyWithNullRelationshipCollections_returnsEmptyLists() {
-            CustomFieldAnswerStratigraphyViewModel answer = new CustomFieldAnswerStratigraphyViewModel();
-            answer.setAnteriorRelationships(null);
-            answer.setPosteriorRelationships(null);
-            answer.setSynchronousRelationships(null);
-
-            Object result = formService.readAnswerValueForApi(answer);
-
-            assertInstanceOf(Map.class, result);
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) result;
-            assertEquals(List.of(), map.get("anterior"));
-            assertEquals(List.of(), map.get("posterior"));
-            assertEquals(List.of(), map.get("synchronous"));
         }
     }
 

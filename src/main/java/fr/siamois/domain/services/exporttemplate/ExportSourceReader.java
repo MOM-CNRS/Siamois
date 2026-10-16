@@ -12,7 +12,9 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.domain.models.relation.SystemRelations;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -21,7 +23,7 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkQueries;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
@@ -51,7 +53,7 @@ public class ExportSourceReader {
     private final PhaseRepository phaseRepository;
     private final DocumentRepository documentRepository;
     private final ContainerRepository containerRepository;
-    private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    private final RelationLinkQueries relationLinkQueries;
 
     /**
      * @throws NoSuchElementException   si le projet n'existe pas
@@ -152,24 +154,38 @@ public class ExportSourceReader {
                 .toList();
     }
 
+    /**
+     * The stratigraphic links of a project's units, as the rows the national model's {@code relation} sheet reads: for an
+     * order link {@code unit1} is the anterior unit (its target) and {@code unit2} the posterior one (its source); a
+     * synchronous link keeps its two ends. {@code relationType} is the type seen from the posterior end, else the other.
+     */
     private List<ExportRow> stratigraphicRows(List<RecordingUnit> units) {
         List<Long> ids = units.stream().map(RecordingUnit::getId).toList();
         if (ids.isEmpty()) {
             return List.of();
         }
-        return stratigraphicRelationshipRepository.findAllByUnit1IdIn(ids).stream()
-                .map(ExportSourceReader::toRow)
+        List<RelationLink> links = relationLinkQueries.linksFromSources(
+                List.of(SystemRelations.ORDER_CODE, SystemRelations.SYNCHRONOUS_CODE), RelationEntityKind.RECORDING_UNIT, ids);
+        Map<Long, Boolean> uncertain = relationLinkQueries.booleanAnswers(
+                links.stream().map(RelationLink::getId).toList(), SystemRelations.UNCERTAIN_FIELD_ID);
+        return links.stream()
+                .filter(link -> link.getSourceRecordingUnit() != null && link.getTargetRecordingUnit() != null)
+                .map(link -> toRow(link, uncertain.get(link.getId())))
                 .toList();
     }
 
-    private static ExportRow toRow(StratigraphicRelationship rel) {
+    private static ExportRow toRow(RelationLink link, @Nullable Boolean uncertain) {
+        boolean order = SystemRelations.ORDER_CODE.equals(link.getDefinition().getCode());
         Map<String, Object> values = new HashMap<>();
-        if (rel.getConcept() != null) values.put("relationType", rel.getConcept());
-        if (rel.getIsAsynchronous() != null) values.put("asynchronous", rel.getIsAsynchronous());
-        if (rel.getUncertain() != null) values.put("uncertain", rel.getUncertain());
+        Concept type = link.getSourceType() != null ? link.getSourceType() : link.getTargetType();
+        if (type != null) values.put("relationType", type);
+        values.put("asynchronous", order);
+        if (uncertain != null) values.put("uncertain", uncertain);
+        RecordingUnit anterior = order ? link.getTargetRecordingUnit() : link.getSourceRecordingUnit();
+        RecordingUnit posterior = order ? link.getSourceRecordingUnit() : link.getTargetRecordingUnit();
         return ExportRow.technical(
-                Map.of("unit1", ExportRow.of(ExportSubject.RECORDING_UNIT, rel.getUnit1()),
-                        "unit2", ExportRow.of(ExportSubject.RECORDING_UNIT, rel.getUnit2())),
+                Map.of("unit1", ExportRow.of(ExportSubject.RECORDING_UNIT, anterior),
+                        "unit2", ExportRow.of(ExportSubject.RECORDING_UNIT, posterior)),
                 values);
     }
 

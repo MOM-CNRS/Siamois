@@ -18,6 +18,7 @@ import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.extern.slf4j.Slf4j;
@@ -148,7 +149,7 @@ public abstract class ReflectiveAnswersProjector<D extends AbstractEntityDTO> {
     private Object readBinding(D row, CustomField field) {
         String binding = field.getValueBinding();
         // A relation field is never on the DTO: MultiValueAnswers reads it, a preview and a count.
-        if (binding == null || binding.isBlank() || RelationField.isRelation(entityClass, binding)) {
+        if (binding == null || binding.isBlank() || RelationSources.isRelation(entityClass, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(dtoClass, binding);

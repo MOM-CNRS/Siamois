@@ -15,7 +15,8 @@ import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.services.relation.RelationLinkService;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
@@ -26,7 +27,6 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
@@ -34,7 +34,6 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -83,8 +82,7 @@ public class RecordingUnitService implements ArkEntityService {
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
     private final RecordingUnitMapper recordingUnitMapper;
-    private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
-    private final StatigraphicRelationshipMapper stratigraphicRelationshipMapper;
+    private final RelationLinkService relationLinkService;
     private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
     private final RecordingUnitSortFilterService recordingUnitSortFilterService;
     private final ConversionService conversionService;
@@ -200,15 +198,6 @@ public class RecordingUnitService implements ArkEntityService {
         recordingUnitRepository.save(recordingUnit);
     }
 
-    @Transactional
-    public void updateStratigraphicRel(RecordingUnitDTO recordingUnitDTO) {
-        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
-        assert recordingUnit != null;
-        RecordingUnit managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
-        setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
-    }
-
-
     protected RecordingUnit save(RecordingUnit recordingUnit) {
         try {
             RecordingUnit managedRecordingUnit;
@@ -216,7 +205,6 @@ public class RecordingUnitService implements ArkEntityService {
             assert recordingUnit != null;
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
-            setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
             setupSpatialUnit(recordingUnit, managedRecordingUnit);
             managedRecordingUnit.setActionUnit(recordingUnit.getActionUnit());
             managedRecordingUnit.setCreatedByInstitution(recordingUnit.getCreatedByInstitution());
@@ -391,59 +379,6 @@ public class RecordingUnitService implements ArkEntityService {
         return target;
     }
 
-    private void setupStratigraphicRelationships(RecordingUnit source, RecordingUnit target) {
-        syncRelationships(target, source.getRelationshipsAsUnit1(), true);
-        syncRelationships(target, source.getRelationshipsAsUnit2(), false);
-    }
-
-    void syncRelationships(
-            RecordingUnit managed,
-            Set<StratigraphicRelationship> relationships,
-            boolean isUnit1
-    ) {
-        Map<StratigraphicRelationship.StratRelKey, StratigraphicRelationship> existing =
-                (isUnit1 ? managed.getRelationshipsAsUnit1() : managed.getRelationshipsAsUnit2()).stream()
-                        .collect(Collectors.toMap(StratigraphicRelationship::keyOf, Function.identity()));
-
-        for (StratigraphicRelationship rel : relationships) {
-            if (isUnit1) {
-                rel.setUnit1(managed);
-                rel.setUnit2(recordingUnitRepository.findById(rel.getUnit2().getId()).orElse(null));
-            } else {
-                rel.setUnit2(managed);
-                rel.setUnit1(recordingUnitRepository.findById(rel.getUnit1().getId()).orElse(null));
-            }
-
-            StratigraphicRelationship.StratRelKey key = StratigraphicRelationship.keyOf(rel);
-            StratigraphicRelationship managedRel = existing.remove(key);
-
-            if (managedRel != null) {
-                // Update existing
-                managedRel.setConcept(rel.getConcept());
-                managedRel.setUncertain(rel.getUncertain());
-                managedRel.setIsAsynchronous(rel.getIsAsynchronous());
-                managedRel.setConceptDirection(rel.getConceptDirection());
-            } else {
-                // Add new
-                if (isUnit1) {
-                    managed.addRelationshipAsUnit1(rel);
-                } else {
-                    managed.addRelationshipAsUnit2(rel);
-                }
-            }
-        }
-
-        // Remove deleted
-        existing.values().forEach(rel -> {
-            if (isUnit1) {
-                managed.removeRelationshipAsUnit1(rel);
-            } else {
-                managed.removeRelationshipAsUnit2(rel);
-            }
-        });
-    }
-
-
     private void setupSpatialUnit(RecordingUnit recordingUnit, RecordingUnit managedRecordingUnit) {
         managedRecordingUnit.setSpatialUnit(recordingUnit.getSpatialUnit());
 
@@ -482,14 +417,6 @@ public class RecordingUnitService implements ArkEntityService {
      * UE résolue avec l'entité JPA (réponses formulaire persistées) et le DTO métier.
      */
     public record AccessibleRecordingUnit(RecordingUnit entity, RecordingUnitDTO dto) {
-    }
-
-    /**
-     * Relations exposées pour l'API (stratigraphie + hiérarchie parent/enfant).
-     */
-    public record RecordingUnitRelationsBundle(List<StratigraphicRelationshipDTO> stratigraphicRelationships,
-                                               List<RecordingUnitSummaryDTO> parents,
-                                               List<RecordingUnitSummaryDTO> children) {
     }
 
     /**
@@ -581,7 +508,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         validateDeletable(ru, recordingUnitId);
         unlinkParentChildRelations(ru);
-        clearStratigraphicRelationships(ru, recordingUnitId);
+        relationLinkService.deleteAllLinksOf(RelationEntityKind.RECORDING_UNIT, recordingUnitId);
         deleteLinkedData(recordingUnitId, ru);
 
         Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
@@ -618,19 +545,6 @@ public class RecordingUnitService implements ArkEntityService {
         }
     }
 
-    private void clearStratigraphicRelationships(RecordingUnit ru, long recordingUnitId) {
-        List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(recordingUnitId);
-        if (!rels.isEmpty()) {
-            stratigraphicRelationshipRepository.deleteAll(rels);
-        }
-        if (ru.getRelationshipsAsUnit1() != null) {
-            ru.getRelationshipsAsUnit1().clear();
-        }
-        if (ru.getRelationshipsAsUnit2() != null) {
-            ru.getRelationshipsAsUnit2().clear();
-        }
-    }
-
     private void deleteLinkedData(long recordingUnitId, RecordingUnit ru) {
         recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
         documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
@@ -640,27 +554,8 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Relations liées à une UE : stratigraphie (unit1 ou unit2) et liens hiérarchiques
-     * ({@link RecordingUnit#getParents()} / {@link RecordingUnit#getChildren()}), dans le périmètre
-     * d'institutions accessibles pour la résolution de l'UE cible.
-     */
-    @Transactional(readOnly = true)
-    public RecordingUnitRelationsBundle findRelationsForAccessibleRecordingUnit(String idOrKey,
-                                                                                Set<Long> accessibleInstitutionIds) {
-        RecordingUnit unit = resolveAccessibleRecordingUnit(idOrKey, accessibleInstitutionIds, null).entity();
-        Long id = unit.getId();
-        List<StratigraphicRelationshipDTO> stratigraphic = stratigraphicRelationshipRepository
-                .findAllInvolvingRecordingUnitId(id).stream()
-                .map(stratigraphicRelationshipMapper::convert)
-                .toList();
-        List<RecordingUnitSummaryDTO> parents = toAdjacentUnitSummaries(unit.getParents());
-        List<RecordingUnitSummaryDTO> children = toAdjacentUnitSummaries(unit.getChildren());
-        return new RecordingUnitRelationsBundle(stratigraphic, parents, children);
-    }
-
-    /**
      * Unités d'enregistrement filles directes (table {@code recording_unit_hierarchy}) pour une UE accessible.
-     * Même résolution de clé et périmètre institutionnel que {@link #findRelationsForAccessibleRecordingUnit(String, Set)}.
+     * Même résolution de clé et périmètre institutionnel que {@link #findAccessibleRecordingUnitWithEntity(String, Set, String)}.
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitSummaryDTO> findChildrenForAccessibleRecordingUnit(String idOrKey,

@@ -27,19 +27,27 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
-    @Query("SELECT COUNT(r) FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
-    long countStratigraphicRelationshipsByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
     @Query("SELECT r.id as id, COUNT(s) as cnt FROM RecordingUnit r LEFT JOIN r.specimenList s WHERE r.id IN :ids GROUP BY r.id")
     List<Object[]> countSpecimensByIds(@Param("ids") List<Long> ids);
 
     @Query("SELECT r.spatialUnit.id as id, COUNT(r) as cnt FROM RecordingUnit r WHERE r.spatialUnit.id IN :ids GROUP BY r.spatialUnit.id")
     List<Object[]> countBySpatialUnitIds(@Param("ids") List<Long> ids);
 
+    /**
+     * How many stratigraphic links (order and synchronism) each unit has, from either end: a link counts once for
+     * each of its two units.
+     */
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
-            SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)
+            SELECT l.fk_source_recording_unit_id AS ru_id FROM relation_link l
+              JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id
+             WHERE d.code IN ('SIAMOIS.RELATION.ORDER', 'SIAMOIS.RELATION.SYNCHRONOUS')
+               AND l.fk_source_recording_unit_id IN (:ids) AND l.fk_target_recording_unit_id IS NOT NULL
             UNION ALL
-            SELECT fk_recording_unit_2_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_2_id IN (:ids)
+            SELECT l.fk_target_recording_unit_id AS ru_id FROM relation_link l
+              JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id
+             WHERE d.code IN ('SIAMOIS.RELATION.ORDER', 'SIAMOIS.RELATION.SYNCHRONOUS')
+               AND l.fk_target_recording_unit_id IN (:ids) AND l.fk_source_recording_unit_id IS NOT NULL
         ) sub GROUP BY ru_id
         """, nativeQuery = true)
     List<Object[]> countRelationshipsByIds(@Param("ids") List<Long> ids);
@@ -99,15 +107,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     void deleteContributorLinksForRecordingUnit(@Param("recordingUnitId") Long recordingUnitId);
 
     List<RecordingUnit> findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(Long actionUnitId, String query, org.springframework.data.domain.Pageable pageable);
-
-    @Transactional
-    @Modifying
-    @Query(
-            nativeQuery = true,
-            value = "INSERT INTO stratigraphic_relationship(fk_recording_unit_1_id, fk_recording_unit_2_id, fk_relationship_concept_id) " +
-                    "VALUES (:recordingUnitId1, :recordingUnitId2, :conceptId)"
-    )
-    void saveStratigraphicRelationship(Long recordingUnitId1, Long recordingUnitId2, Long conceptId);
 
     /**
      * Returns the maximum identifier given to a recording unit in the context of an action unit

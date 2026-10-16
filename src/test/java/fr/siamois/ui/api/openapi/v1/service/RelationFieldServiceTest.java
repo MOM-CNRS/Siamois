@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository.Row;
@@ -38,25 +39,21 @@ class RelationFieldServiceTest {
     }
 
     @Test
-    void aStratigraphicValueIsQualifiedByItsRelationship() {
-        when(repository.page(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, 0, 50, null, true)).thenReturn(List.of(
-                row(1L, 2L, "US 2", "unit1", true, 77L),
-                row(1L, 3L, "US 3", "unit2", true, null),
-                row(1L, 4L, "US 4", "unit1", false, null)));
-        when(repository.count(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, null)).thenReturn(3L);
-        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "coupe"));
+    void aConfigurableRelationsValueCarriesItsTypeAndCertainty_butNoPosition() {
+        DefinitionRelation relation = DefinitionRelation.parse(fr.siamois.domain.models.relation.RelationEntityKind.RECORDING_UNIT,
+                "relation:SIAMOIS.RELATION.ORDER:SOURCE:RECORDING_UNIT").orElseThrow();
+        when(repository.page(relation, 1L, 0, 50, null, true)).thenReturn(List.of(
+                new RelationFieldRepository.Row(1L, 2L, "US 2", "source", 77L, "ext", null, null, true)));
+        when(repository.count(relation, 1L, null)).thenReturn(1L);
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "recoupe"));
 
-        RelationFieldService.ValuesPage page = service.page(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, 0, 50, null, true, "fr");
+        ResourceRef value = service.page(relation, 1L, 0, 50, null, true, "fr").values().get(0);
 
-        assertThat(page.total()).isEqualTo(3);
-        ResourceRef first = page.values().get(0);
-        assertThat(first.resourceType()).isEqualTo("recording-units");
-        assertThat(first.qualifier().concept().label()).isEqualTo("coupe");
-        assertThat(first.qualifier().role()).isEqualTo("unit1");
-        assertThat(first.qualifier().position()).isEqualTo("posterior");
-        assertThat(page.values().get(1).qualifier().position()).isEqualTo("anterior");
-        assertThat(page.values().get(1).qualifier().concept()).isNull();
-        assertThat(page.values().get(2).qualifier().position()).isEqualTo("synchronous");
+        assertThat(value.qualifier().concept().label()).isEqualTo("recoupe");
+        assertThat(value.qualifier().uncertain()).isTrue();
+        assertThat(value.qualifier().role()).isEqualTo("source");
+        // the field is named by the side it lists: nothing to sort the values into
+        assertThat(value.qualifier().position()).isNull();
     }
 
     private static Row row(long owner, long target, String label, String role, Boolean asynchronous, Long conceptId) {

@@ -45,6 +45,8 @@ class RelationLinkOpenApiServiceTest {
 
     @Mock RelationLinkService relationLinkService;
     @Mock RelationLinkAttributesService attributesService;
+    @Mock fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository definitionRepository;
+    @Mock fr.siamois.infrastructure.database.repositories.relation.RelationTypeMappingRepository mappingRepository;
 
     private RelationLinkOpenApiService service;
     private final PersonDTO person = new PersonDTO();
@@ -52,7 +54,7 @@ class RelationLinkOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RelationLinkOpenApiService(relationLinkService, attributesService);
+        service = new RelationLinkOpenApiService(relationLinkService, attributesService, definitionRepository, mappingRepository);
         caller = new ProjectApiCaller(person, Set.of(1L), List.of());
     }
 
@@ -202,5 +204,41 @@ class RelationLinkOpenApiServiceTest {
 
     private static HttpStatus status(RestExceptionHandler handler, RelationLinkException.Reason reason) {
         return HttpStatus.valueOf(handler.relationLink(new RelationLinkException(reason, "x")).getStatusCode().value());
+    }
+
+    @Test
+    void definition_describesSidesAndTypeMappings() {
+        RelationDefinition definition = new RelationDefinition();
+        definition.setCode("SIAMOIS.RELATION.ORDER");
+        definition.setMirror(fr.siamois.domain.models.relation.RelationMirror.OTHER);
+        Concept fact = new Concept();
+        fact.setId(5L);
+        definition.addKind(RelationSide.SOURCE, RelationEntityKind.RECORDING_UNIT, fact);
+        definition.addKind(RelationSide.TARGET, RelationEntityKind.RECORDING_UNIT, null);
+        Concept cuts = new Concept();
+        cuts.setId(1L);
+        Concept cutBy = new Concept();
+        cutBy.setId(2L);
+        fr.siamois.domain.models.relation.RelationTypeMapping mapping = new fr.siamois.domain.models.relation.RelationTypeMapping();
+        mapping.setSourceType(cuts);
+        mapping.setTargetType(cutBy);
+        when(definitionRepository.findByCode("SIAMOIS.RELATION.ORDER")).thenReturn(java.util.Optional.of(definition));
+        when(mappingRepository.findByDefinition(definition)).thenReturn(List.of(mapping));
+
+        var response = service.definition("SIAMOIS.RELATION.ORDER");
+
+        assertThat(response.mirror()).isEqualTo("other");
+        assertThat(response.source()).extracting("resourceType", "type").containsExactly(
+                org.assertj.core.groups.Tuple.tuple("recording-units", 5L));
+        assertThat(response.target()).extracting("type").containsExactly((Object) null);
+        assertThat(response.typeMappings()).extracting("sourceType", "targetType", "mode").containsExactly(
+                org.assertj.core.groups.Tuple.tuple(1L, 2L, "imposed"));
+    }
+
+    @Test
+    void definition_unknownCodeIsNotFound() {
+        when(definitionRepository.findByCode("NOPE")).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.definition("NOPE")).isInstanceOf(RelationLinkException.class);
     }
 }

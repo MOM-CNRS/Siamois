@@ -24,6 +24,7 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
@@ -191,7 +192,7 @@ public class RecordingUnitAnswersProjector {
      */
     private static Object readBinding(RecordingUnitDTO row, CustomField field) {
         String binding = field.getValueBinding();
-        if (binding == null || binding.isBlank() || RelationField.isRelation(RecordingUnit.class, binding)) {
+        if (binding == null || binding.isBlank() || RelationSources.isRelation(RecordingUnit.class, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(RecordingUnitDTO.class, binding);

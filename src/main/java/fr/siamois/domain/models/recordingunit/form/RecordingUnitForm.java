@@ -13,7 +13,10 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePers
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphicRelationships;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.models.relation.SystemRelations;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -242,9 +245,23 @@ public abstract class RecordingUnitForm {
 
     @Transient
     @JsonIgnore
-    protected static final Concept STRATIGRAPHIC_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+    protected static final Concept ANTERIOR_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("recordingunit.stratigraphicRelationships")
+            .externalId("recordingunit.anterior")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept POSTERIOR_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.posterior")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept SYNCHRONOUS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.synchronous")
             .build();
 
     @Transient
@@ -516,16 +533,40 @@ public abstract class RecordingUnitForm {
             .concept(FINDS_CONCEPT)
             .build();
 
-    // Not a JPA property: the unit's relationships are split between relationshipsAsUnit1 and
-    // relationshipsAsUnit2, and read as one by RelationField.RECORDING_UNIT_STRATIGRAPHY.
+    // The stratigraphic order and synchronism, as relations of the configurable model (SystemRelations). The units a
+    // unit is posterior to are read where it is the source of an order link, the ones posterior to it where it is the
+    // target (the mirror, read-only): the field is named by the role of the units it lists.
     @Transient
     @JsonIgnore
-    protected static final CustomFieldStratigraphicRelationships STRATIGRAPHIC_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
-            .label("recordingunit.field.stratigraphicRelationships")
+    protected static final CustomFieldRelation ANTERIOR_FIELD = CustomFieldRelation.builder()
+            .label("recordingunit.field.anterior")
             .isSystemField(true)
-            .id(-327L)
-            .valueBinding("stratigraphicRelationships")
-            .concept(STRATIGRAPHIC_RELATIONSHIPS_CONCEPT)
+            .id(-328L)
+            .valueBinding(DefinitionRelation.bindingOf(SystemRelations.ORDER_CODE, DefinitionRelation.Reading.SOURCE,
+                    RelationEntityKind.RECORDING_UNIT))
+            .concept(ANTERIOR_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldRelation POSTERIOR_FIELD = CustomFieldRelation.builder()
+            .label("recordingunit.field.posterior")
+            .isSystemField(true)
+            .id(-329L)
+            .valueBinding(DefinitionRelation.bindingOf(SystemRelations.ORDER_CODE, DefinitionRelation.Reading.TARGET,
+                    RelationEntityKind.RECORDING_UNIT))
+            .concept(POSTERIOR_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldRelation SYNCHRONOUS_FIELD = CustomFieldRelation.builder()
+            .label("recordingunit.field.synchronous")
+            .isSystemField(true)
+            .id(-330L)
+            .valueBinding(DefinitionRelation.bindingOf(SystemRelations.SYNCHRONOUS_CODE, DefinitionRelation.Reading.BOTH,
+                    RelationEntityKind.RECORDING_UNIT))
+            .concept(SYNCHRONOUS_CONCEPT)
             .build();
 
     /**
@@ -537,7 +578,9 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(SPATIAL_UNIT_FIELD),
             SystemFieldSpec.of(PARENTS_FIELD),
             SystemFieldSpec.of(CHILDREN_FIELD),
-            SystemFieldSpec.readOnly(STRATIGRAPHIC_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(ANTERIOR_FIELD),
+            SystemFieldSpec.readOnly(POSTERIOR_FIELD),
+            SystemFieldSpec.readOnly(SYNCHRONOUS_FIELD),
             SystemFieldSpec.readOnly(FINDS_FIELD),
             SystemFieldSpec.hidden(RECORDING_UNIT_TYPE_FIELD),
             SystemFieldSpec.of(NATURE_FIELD),

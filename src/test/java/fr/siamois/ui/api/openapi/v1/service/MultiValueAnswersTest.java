@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
@@ -31,7 +32,8 @@ class MultiValueAnswersTest {
     private final MultiValueAnswers answers = new MultiValueAnswers(relations);
 
     private static final String PARENTS = id("parents");
-    private static final String STRATIGRAPHY = id("stratigraphicRelationships");
+    // the "Anterior" field: one side of the configurable stratigraphic order
+    private static final String ANTERIOR = "-328";
 
     @Test
     void cutsEveryListOfReferences_andLeavesOtherValuesAlone() {
@@ -79,21 +81,21 @@ class MultiValueAnswersTest {
         assertThat(shaped.get(1L)).containsEntry(PARENTS, preview);
         assertThat(shaped.get(2L)).containsEntry(PARENTS, MultiValue.complete(List.of()));
         // Not requested: not read.
-        verify(relations, never()).previews(eq(RelationField.RECORDING_UNIT_STRATIGRAPHY), any(), anyInt(), any(), any());
+        verify(relations, never()).previews(any(DefinitionRelation.class), any(), anyInt(), any(), any());
     }
 
     @Test
     void aRelationFieldKeepsItsEnvelope_onADetail() {
-        SelectManyFieldAnswer envelope = new SelectManyFieldAnswer("SELECT_MULTIPLE_STRATIGRAPHY", null, List.of());
+        SelectManyFieldAnswer envelope = new SelectManyFieldAnswer("SELECT_MULTIPLE_RELATION", null, List.of());
         MultiValue preview = MultiValue.complete(List.of(ref("3")));
-        when(relations.previews(eq(RelationField.RECORDING_UNIT_STRATIGRAPHY), any(), eq(50), eq("fr"), any()))
+        when(relations.previews(any(DefinitionRelation.class), any(), eq(50), eq("fr"), any()))
                 .thenReturn(Map.of(42L, preview));
 
-        Object shaped = answers.shapeOne(RecordingUnit.class, 42L, Map.of(STRATIGRAPHY, envelope),
-                Set.of(STRATIGRAPHY), 50, "fr").get(STRATIGRAPHY);
+        Object shaped = answers.shapeOne(RecordingUnit.class, 42L, Map.of(ANTERIOR, envelope),
+                Set.of(ANTERIOR), 50, "fr").get(ANTERIOR);
 
         assertThat(shaped).isInstanceOfSatisfying(SelectManyFieldAnswer.class, answer -> {
-            assertThat(answer.answerType()).isEqualTo("SELECT_MULTIPLE_STRATIGRAPHY");
+            assertThat(answer.answerType()).isEqualTo("SELECT_MULTIPLE_RELATION");
             assertThat(answer.values()).containsExactly(ref("3"));
         });
     }
@@ -102,7 +104,10 @@ class MultiValueAnswersTest {
     void knowsEveryRelationFieldOfTheDetailsForms() {
         assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, PARENTS)).contains(RelationField.RECORDING_UNIT_PARENTS);
         assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, id("specimenList"))).contains(RelationField.RECORDING_UNIT_FINDS);
-        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, STRATIGRAPHY)).contains(RelationField.RECORDING_UNIT_STRATIGRAPHY);
+        // the configurable relations' sides are relation fields too, read from the links of their definition
+        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, ANTERIOR)).get().isInstanceOf(DefinitionRelation.class);
+        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, "-329")).get().isInstanceOf(DefinitionRelation.class);
+        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, "-330")).get().isInstanceOf(DefinitionRelation.class);
         assertThat(MultiValueAnswers.relationFieldOf(Phase.class, idOf(ConfigurableTable.PHASE, "recordingUnits")))
                 .contains(RelationField.PHASE_RECORDING_UNITS);
         assertThat(MultiValueAnswers.relationFieldOf(fr.siamois.domain.models.container.Container.class,

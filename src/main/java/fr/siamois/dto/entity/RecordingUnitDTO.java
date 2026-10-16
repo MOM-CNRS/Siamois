@@ -1,7 +1,6 @@
 package fr.siamois.dto.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import jakarta.persistence.Transient;
@@ -43,8 +42,6 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected List<PersonDTO> contributors = new ArrayList<>();
     protected SpatialUnitSummaryDTO spatialUnit;
     protected String comments;
-    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
-    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
     protected Integer taq;
     protected Integer tpq;
     protected ConceptDTO chronologicalPhase;

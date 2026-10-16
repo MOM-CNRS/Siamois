@@ -138,6 +138,17 @@ n'existait pas en base, a été retiré du code.
 
 > **Statut : conception arrêtée (14/10/2026), non implémentée.** Les points encore ouverts sont en §4.9.
 
+### État d'implémentation (16/10/2026, branche `feat/relation-link`)
+
+Fait : modèle et schéma (lot 1) ; concepts, définitions `Ordre` et `Synchrone`, formulaire du lien avec « incertain » (lot 2) ;
+service d'écriture, règles, attributs, API `/relation-links` (lot 3) ; lecture, tri par nombre de liens et filtre sur l'entité liée
+des champs de relation `-328` Antérieur / `-329` Postérieur / `-330` Synchrone (lot 4, partie lecture) ; remplacement de la
+stratigraphie : `stratigraphic_relationship`, son trigger, le champ `-327` et tout le code associé sont supprimés, la reprise
+Excel et l'export lisent `relation_link` (lot 5). Reste : écriture par le PATCH des champs, bascule des réponses personne / lieu /
+projet (lot 4), types par côté dans l'écran, écran de configuration (lots 6–7), React (lot 8), export générique (lot 9).
+Convention de l'import Excel : pour une ligne asynchrone, `us1` est l'unité antérieure (cible du lien) et `us2` la postérieure (source) ;
+le concept de la feuille est le type du lien du côté qu'il décrit (`concept_direction`).
+
 ### Décisions du 15/10/2026 (cadrage de l'implémentation)
 
 - **Besoins moteurs** : (1) contrainte de **type accepté** sur un côté (une UE de type Fait comme parent, par

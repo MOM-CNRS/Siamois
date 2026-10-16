@@ -85,6 +85,14 @@ public class RelationLinkAttributesService {
     @Transactional(rollbackFor = Exception.class)
     public void save(RelationLink link, Map<Long, Object> values, PersonDTO author) {
         if (values == null || values.isEmpty()) return;
+        save(link, values, personRepository.findById(author.getId())
+                .orElseThrow(() -> new IllegalStateException("Person " + author.getId() + " not found")));
+    }
+
+    /** {@link #save(RelationLink, Map, PersonDTO)} for an author already loaded (an import writes on behalf of a unit's creator). */
+    @Transactional(rollbackFor = Exception.class)
+    public void save(RelationLink link, Map<Long, Object> values, Person author) {
+        if (values == null || values.isEmpty()) return;
         Map<Long, CustomField> fields = activeFields(link);
         for (Map.Entry<Long, Object> entry : values.entrySet()) {
             CustomField field = fields.get(entry.getKey());
@@ -126,13 +134,11 @@ public class RelationLinkAttributesService {
         }
     }
 
-    private FormConfigAnswer answerSetOf(RelationLink link, PersonDTO author) {
+    private FormConfigAnswer answerSetOf(RelationLink link, Person author) {
         FormConfig config = link.getDefinition().getLinkFormConfig();
         return formConfigAnswerRepository.findByFormConfigAndRelationLink(config, link).orElseGet(() -> {
-            Person person = personRepository.findById(author.getId())
-                    .orElseThrow(() -> new IllegalStateException("Person " + author.getId() + " not found"));
             FormConfigAnswer set = new FormConfigAnswer();
-            set.setPerson(person);
+            set.setPerson(author);
             set.setFormConfig(config);
             set.setRelationLink(link);
             set.setAnswers(new HashSet<>());

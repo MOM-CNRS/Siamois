@@ -162,6 +162,19 @@ public class RelationLinkService {
     }
 
     /**
+     * Deletes every link of an entity, with its attributes, before the entity itself is deleted: the answers of a link
+     * hang on it, so the database cannot cascade the deletion alone. No permission check: the caller is deleting the
+     * entity, which is the stronger right.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAllLinksOf(RelationEntityKind kind, Long id) {
+        for (RelationLink link : linkQueries.linksOfEntity(kind, id)) {
+            attributesService.deleteAll(link);
+            linkRepository.delete(link);
+        }
+    }
+
+    /**
      * What an existing link no longer satisfies — a kind or a config type its definition stopped accepting, an end
      * in another project. A link that breaks a rule or a restriction added after the fact is flagged here, never
      * deleted.

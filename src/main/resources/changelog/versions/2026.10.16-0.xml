@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The stratigraphic relationships are links of the configurable relations now (relation_definition / relation_link,
+    created by Hibernate): the stratigraphic_relationship table, its trigger and its read-only field (-327) are gone.
+    There is no data to carry over (nothing was in production). Liquibase runs BEFORE Hibernate's ddl-auto: update,
+    which never drops anything, so the schema is removed here:
+
+    1. The custom field(s) of type SELECT_MULTIPLE_STRATIGRAPHY, with every row that points at them (form
+       configurations…): every foreign key onto custom_field is followed, on the single-column ones.
+    2. The trigger and function that kept the table's pairs ordered, then the table and its Envers _aud table.
+    On a fresh database none of this exists: every statement is guarded.
+    -->
+
+    <changeSet id="2026.10.16-0-drop-stratigraphic-relationship" author="Gregory Bliault" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                field_ids bigint[];
+                fk record;
+                t text;
+            BEGIN
+                IF to_regclass('custom_field') IS NOT NULL THEN
+                    SELECT coalesce(array_agg(custom_field_id), ARRAY[]::bigint[]) INTO field_ids
+                    FROM custom_field WHERE answer_type = 'SELECT_MULTIPLE_STRATIGRAPHY';
+
+                    IF array_length(field_ids, 1) IS NOT NULL THEN
+                        FOR fk IN
+                            SELECT c.conrelid::regclass::text AS tbl, a.attname AS col
+                            FROM pg_constraint c
+                                     JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+                            WHERE c.contype = 'f'
+                              AND c.confrelid = 'custom_field'::regclass
+                              AND c.conrelid != 'custom_field'::regclass
+                              AND array_length(c.conkey, 1) = 1
+                        LOOP
+                            EXECUTE format('DELETE FROM %s WHERE %I = ANY ($1)', fk.tbl, fk.col) USING field_ids;
+                        END LOOP;
+                        DELETE FROM custom_field WHERE custom_field_id = ANY (field_ids);
+                    END IF;
+                END IF;
+
+                IF to_regclass('stratigraphic_relationship') IS NOT NULL THEN
+                    DROP TRIGGER IF EXISTS prevent_reverse_relationship ON stratigraphic_relationship;
+                END IF;
+                DROP FUNCTION IF EXISTS order_strat_relationship();
+
+                FOREACH t IN ARRAY ARRAY['stratigraphic_relationship', 'stratigraphic_relationship_aud'] LOOP
+                    IF to_regclass(t) IS NOT NULL THEN
+                        EXECUTE format('DROP TABLE %I CASCADE', t);
+                    END IF;
+                END LOOP;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

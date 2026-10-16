@@ -186,7 +186,7 @@ describe("a stratigraphic relationship", () => {
       label: "US 12",
       qualifier: { concept: { label: "coupe" }, position: "posterior", uncertain: true },
     };
-    expect(renderAnswerValue(field({ answerType: "SELECT_MULTIPLE_STRATIGRAPHY" }), [relation]))
+    expect(renderAnswerValue(field({ answerType: "SELECT_MULTIPLE_RELATION" }), [relation]))
       .toBe("coupe US 12 ?");
   });
 });

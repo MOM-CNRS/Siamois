@@ -1,7 +1,8 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.domain.models.relation.SystemRelations;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
@@ -126,23 +127,23 @@ public class RecordingUnitSpec {
     }
 
     /**
-     * Orders by the number of stratigraphic relationships involving the recording unit, as either
-     * {@code unit1} or {@code unit2} — unlike {@link #orderBySpecimenCount(Sort.Direction)}, there is
-     * no single mapped collection for this relation (two FK columns matched with OR), so a genuine
-     * correlated {@link Subquery} with {@code COUNT} is required. Same caveats otherwise: neutral
-     * conjunction predicate, ordering applied as a side effect, synthetic sort key must be stripped
-     * from the {@code Pageable}/{@code Sort} passed to the repository.
+     * Orders by the number of stratigraphic links (order and synchronism) the recording unit has, at either end —
+     * unlike {@link #orderBySpecimenCount(Sort.Direction)}, there is no single mapped collection for this (the two
+     * ends are two columns of {@code relation_link}), so a genuine correlated {@link Subquery} with {@code COUNT} is
+     * required. Same caveats otherwise: neutral conjunction predicate, ordering applied as a side effect, synthetic
+     * sort key must be stripped from the {@code Pageable}/{@code Sort} passed to the repository.
      */
     @NonNull
     public static Specification<RecordingUnit> orderByRelationshipCount(Sort.Direction direction) {
         return (root, query, cb) -> {
             Subquery<Long> subquery = query.subquery(Long.class);
-            Root<StratigraphicRelationship> rel = subquery.from(StratigraphicRelationship.class);
-            subquery.select(cb.count(rel));
-            subquery.where(cb.or(
-                    cb.equal(rel.get("unit1"), root),
-                    cb.equal(rel.get("unit2"), root)
-            ));
+            Root<RelationLink> link = subquery.from(RelationLink.class);
+            subquery.select(cb.count(link));
+            subquery.where(
+                    link.get("definition").get("code").in(SystemRelations.ORDER_CODE, SystemRelations.SYNCHRONOUS_CODE),
+                    cb.or(
+                            cb.equal(link.get("sourceRecordingUnit"), root),
+                            cb.equal(link.get("targetRecordingUnit"), root)));
             query.orderBy(direction == Sort.Direction.ASC ? cb.asc(subquery) : cb.desc(subquery));
             return cb.conjunction();
         };

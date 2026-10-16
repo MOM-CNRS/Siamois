@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
@@ -351,14 +352,42 @@ class FieldQueryServiceQueryTest {
     }
 
     @Test
-    void stratigraphyIsRelatedThroughEitherSide() {
-        field(new CustomFieldSelectOneActionUnit(), true, "stratigraphicRelationships");
+    void aConfigurableRelationIsFilteredOnItsLinkedEntitiesAndSortedByHowManyLinks() {
+        field(new CustomFieldRelation(), true, "relation:SIAMOIS.RELATION.ORDER:SOURCE:RECORDING_UNIT");
 
-        run(build(RecordingUnit.class, filter(values("3"))));
+        run(build(RecordingUnit.class, filter(values("3", "4"))));
         run(build(RecordingUnit.class, sort(true)));
 
+        // an EXISTS over relation_link for the filter, a count of the links for the sort — never a join that repeats a row
         verify(cb, atLeastOnce()).exists(any());
-        verify(cb, atLeastOnce()).sum(any(jakarta.persistence.criteria.Expression.class), any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).count(any());
+    }
+
+    @Test
+    void aSymmetricConfigurableRelationIsReadFromEitherEnd() {
+        field(new CustomFieldRelation(), true, "relation:SIAMOIS.RELATION.SYNCHRONOUS:BOTH:RECORDING_UNIT");
+
+        run(build(RecordingUnit.class, filter(values("3"))));
+
+        verify(cb, atLeastOnce()).exists(any());
+        verify(cb, atLeastOnce()).or(any(jakarta.persistence.criteria.Predicate.class), any(jakarta.persistence.criteria.Predicate.class));
+    }
+
+    @Test
+    void aConfigurableRelationsColumnSortsAndFiltersByIds() {
+        CustomField relation = field(new CustomFieldRelation(), true, "relation:SIAMOIS.RELATION.ORDER:TARGET:RECORDING_UNIT");
+
+        fr.siamois.ui.api.openapi.v1.resource.form.FieldResource.Query capability = service.capabilityOf(RecordingUnit.class, relation);
+
+        assertThat(capability.sortable()).isTrue();
+        assertThat(capability.filterOp()).isEqualTo("in");
+    }
+
+    @Test
+    void aMalformedRelationBindingIsNotQueryable() {
+        CustomField relation = field(new CustomFieldRelation(), true, "relation:ORDER:SOURCE");
+
+        assertThat(service.capabilityOf(RecordingUnit.class, relation)).isNull();
     }
 
     @Test

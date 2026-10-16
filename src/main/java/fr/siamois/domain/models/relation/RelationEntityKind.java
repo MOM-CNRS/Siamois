@@ -22,6 +22,11 @@ public enum RelationEntityKind {
         this.propertySuffix = propertySuffix;
     }
 
+    /** What follows {@code fk_source_} / {@code fk_target_} in the column of {@code relation_link} of this kind (before {@code _id}). */
+    public String columnSuffix() {
+        return name().toLowerCase(java.util.Locale.ROOT);
+    }
+
     /** What follows {@code source} / {@code target} in the name of the {@link RelationLink} property of this kind. */
     public String propertySuffix() {
         return propertySuffix;

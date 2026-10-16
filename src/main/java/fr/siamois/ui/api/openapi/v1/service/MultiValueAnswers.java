@@ -11,6 +11,8 @@ import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer;
@@ -57,20 +59,20 @@ public class MultiValueAnswers {
             ActionUnit.class, new Owner("projects", new PanelFieldSource(ActionUnit.DETAILS_FORM).getAllFields()));
 
     /** Each owner's relation fields, by field id. */
-    private static final Map<Class<?>, Map<String, RelationField>> RELATION_FIELDS = indexRelationFields();
+    private static final Map<Class<?>, Map<String, RelationSource>> RELATION_FIELDS = indexRelationFields();
 
     /** Each owner's system fields, by field id. */
     private static final Map<Class<?>, Map<String, CustomField>> SYSTEM_FIELDS = indexSystemFields();
 
     private final RelationFieldService relationFieldService;
 
-    private static Map<Class<?>, Map<String, RelationField>> indexRelationFields() {
-        Map<Class<?>, Map<String, RelationField>> out = new LinkedHashMap<>();
+    private static Map<Class<?>, Map<String, RelationSource>> indexRelationFields() {
+        Map<Class<?>, Map<String, RelationSource>> out = new LinkedHashMap<>();
         OWNERS.forEach((type, owner) -> {
-            Map<String, RelationField> byId = new LinkedHashMap<>();
+            Map<String, RelationSource> byId = new LinkedHashMap<>();
             for (CustomField field : owner.fields()) {
                 if (field == null || field.getId() == null) continue;
-                RelationField.of(type, field.getValueBinding())
+                RelationSources.of(type, field.getValueBinding())
                         .ifPresent(relation -> byId.put(String.valueOf(field.getId()), relation));
             }
             out.put(type, Map.copyOf(byId));
@@ -96,7 +98,7 @@ public class MultiValueAnswers {
     }
 
     /** The relation field {@code fieldId} is on {@code ownerType}, if it is one. */
-    public static Optional<RelationField> relationFieldOf(Class<?> ownerType, String fieldId) {
+    public static Optional<RelationSource> relationFieldOf(Class<?> ownerType, String fieldId) {
         return Optional.ofNullable(RELATION_FIELDS.getOrDefault(ownerType, Map.of()).get(fieldId));
     }
 
@@ -128,7 +130,7 @@ public class MultiValueAnswers {
         if (fieldIds == null) return out;
 
         Set<Long> ownerIds = answersByOwner.keySet();
-        for (Map.Entry<String, RelationField> e : RELATION_FIELDS.getOrDefault(ownerType, Map.of()).entrySet()) {
+        for (Map.Entry<String, RelationSource> e : RELATION_FIELDS.getOrDefault(ownerType, Map.of()).entrySet()) {
             String fieldId = e.getKey();
             if (!fieldIds.contains(fieldId)) continue;
             Map<Long, MultiValue> previews = relationFieldService.previews(e.getValue(), ownerIds, limit, lang,
