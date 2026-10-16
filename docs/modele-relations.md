@@ -140,23 +140,46 @@ n'existait pas en base, a été retiré du code.
 
 ### État d'implémentation (16/10/2026, branche `feat/relation-link`)
 
-Fait : modèle et schéma (lot 1) ; concepts, définitions `Ordre` et `Synchrone`, formulaire du lien avec « incertain » (lot 2) ;
-service d'écriture, règles, attributs, API `/relation-links` (lot 3) ; lecture, tri par nombre de liens et filtre sur l'entité liée
-des champs de relation `-328` Antérieur / `-329` Postérieur / `-330` Synchrone (lot 4, partie lecture) ; remplacement de la
-stratigraphie : `stratigraphic_relationship`, son trigger, le champ `-327` et tout le code associé sont supprimés, la reprise
-Excel et l'export lisent `relation_link` (lot 5). Configuration (lots 6–7) : **tout se fait depuis « Tables & champs »**, il n'y a
-pas d'écran « Relations » à part. Un champ de type **Relation** se crée comme les autres (« Ajouter un champ » → « Nouveau champ »)
-et son détail s'affiche dans le panneau du champ : entité reliée, types acceptés de chaque côté (contrainte de type), miroir (aucun,
-symétrique, autre champ), indicateur « incertain » sur les liens. Créer le champ crée la définition (`INST<institution>.<nom>`) et,
-si elle a un miroir, le champ miroir, qu'on ajoute ensuite aux formulaires de l'entité reliée depuis le catalogue « Ajouter un champ »
-(proposé seulement sur les tables qui peuvent le porter). Le genre d'entité, le miroir et l'indicateur sont fixés à la création, les types
-acceptés et les noms restent modifiables. Retirer le dernier champ d'une relation sans lien la supprime ; avec des liens elle est
-conservée. Les champs de relation d'une institution se lisent, se trient et se filtrent comme ceux de la plateforme (par leur
-`valueBinding`). `GET /api/v1/relation-definitions/{code}` donne à un client les côtés acceptés et la correspondance des types. Reste :
-écriture par le PATCH des champs, bascule des réponses personne / lieu / projet (lot 4), règle de préremplissage (lot 6, à faire dans la
-boîte de dialogue du lien), React (lot 8), export générique (lot 9).
-Convention de l'import Excel : pour une ligne asynchrone, `us1` est l'unité antérieure (cible du lien) et `us2` la postérieure (source) ;
-le concept de la feuille est le type du lien du côté qu'il décrit (`concept_direction`).
+**Fait**
+
+- Modèle et schéma (lot 1) ; concepts, définitions `Ordre` et `Synchrone`, formulaire du lien avec « incertain » (lot 2) ; service
+  d'écriture, règles, attributs, API `/relation-links` (lot 3).
+- Lecture, tri par nombre de liens et filtre sur l'entité liée, pour les champs système `-328` Antérieur / `-329` Postérieur /
+  `-330` Synchrone **et** pour les champs de relation d'une institution (retrouvés par leur `valueBinding`) (lot 4, partie lecture).
+- Stratigraphie remplacée (lot 5) : `stratigraphic_relationship`, son trigger, le champ `-327` et le code associé sont supprimés ;
+  la reprise Excel et l'export lisent `relation_link`. Convention de l'import : pour une ligne asynchrone, `us1` est l'unité
+  antérieure (cible du lien) et `us2` la postérieure (source) ; le concept de la feuille est le type du lien du côté qu'il décrit.
+- Configuration (lots 6–7) : **tout se fait depuis « Tables & champs »**, pas d'écran « Relations » à part. Un champ de type
+  **Relation** se crée comme les autres (« Ajouter un champ » → « Nouveau champ ») et son détail s'affiche dans le panneau du champ :
+  - *Définition du champ* : entité reliée, puis **type de l'entité reliée, obligatoire et unique** (le modèle en admet plusieurs, l'écran
+    n'en propose qu'un), choisi parmi les types configurés **du même projet**.
+  - *Valeurs possibles* : miroir (aucun, symétrique, autre champ) et « incertain ». « Autre champ » n'est proposé que si l'entité reliée
+    a un formulaire configurable (UE, mobilier, phase, contenant, document, étude). Le champ miroir se **choisit** parmi les champs
+    existants de l'entité reliée qui n'ont ni miroir ni lien (la relation vide est alors remplacée), ou se **crée** automatiquement
+    (« <nom> (miroir) »).
+  - Créer le champ crée la définition (`INST<institution>.<nom>`) et, si besoin, le champ miroir, qu'on ajoute ensuite aux formulaires
+    de l'entité reliée depuis « Ajouter un champ ». L'entité, le miroir et « incertain » sont fixés à la création ; les types et les noms
+    restent modifiables. Retirer le dernier champ d'une relation sans lien la supprime ; avec des liens elle est conservée.
+  - `GET /api/v1/relation-definitions/{code}` donne à un client les côtés acceptés et la correspondance des types.
+  - Le serveur refuse (400) un lien vers une entité d'un autre type que celui imposé.
+  - Les types acceptés du côté porteur du champ ne sont plus proposés à l'écran (le formulaire se place déjà type par type) ; la
+    colonne reste dans le modèle.
+
+**Priorités restantes (ordre décidé le 16/10/2026)**
+
+1. **Édition dans les écrans liste et fiche** (lot 8, React) : renderers des champs de relation, sélection filtrée par entité et par type
+   imposé, boîte de dialogue du lien (type, « incertain »), affichage qualifié (« recoupe UE 12 »), champs miroirs en lecture seule,
+   retrait des maquettes stratigraphiques de `display.tsx` et du `mockApi`. Le « préremplir Y quand X » (correspondance des types, lot 6)
+   se fait dans cette boîte de dialogue à partir de `typeMappings`. L'écriture reste sur `/relation-links` (pas par le PATCH des champs).
+2. **Export** (lot 9) : source générique `RELATION` paramétrée par la définition, colonne de champ de relation et miroir, référence
+   portable par concept du côté, éditeur JSF des modèles d'export.
+3. **Import** : importer les liens des relations configurables (au-delà de la stratigraphie Excel, déjà faite) ; à cadrer.
+4. Ensuite : bascule des réponses personne / lieu / projet sur `relation_link` et suppression des anciennes tables (fin du lot 4,
+   surtout du code mort : ces types ne sont pas créables), lot 10 (docs, non-régression), grille de scénarios (lot 0, à fournir).
+
+**Points ouverts** : la base de dev perd ses 38 lignes de stratigraphie au prochain démarrage (à réimporter depuis Excel) ; un côté ne
+porte qu'un genre d'entité (v1) ; pas d'écran d'édition des règles (cycle, cardinalité) ; `deleteAllLinksOf` n'est câblé que sur les
+suppressions déjà couvertes.
 
 ### Décisions du 15/10/2026 (cadrage de l'implémentation)
 
