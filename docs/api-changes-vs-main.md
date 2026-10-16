@@ -13,7 +13,7 @@
 |---|---|
 | Endpoints **removed** | 3 |
 | Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks, and B8–B13 of 2026-10-09) |
-| Endpoints **added** | 45 |
+| Endpoints **added** | 49 |
 | Existing endpoints with **additive** changes (new params/fields) | ~17 |
 
 Things most likely to break an existing client, in order:
@@ -66,6 +66,10 @@ These are also breaking for clients that sent sloppy parameters:
 ## 3. Additive changes
 
 ### 3.1 New endpoints
+
+**Stratigraphic relationships of a recording unit (write).** `POST /api/v1/recording-units/{id}/stratigraphic-relationships` (`relatedRecordingUnitId`, `position` = `anterior` | `posterior` | `synchronous` — where the other unit stands relative to `{id}` —, optional `typeConceptId` and `uncertain`), `PUT …/{relatedId}` (replaces `typeConceptId` and `uncertain`) and `DELETE …/{relatedId}`, all `204`. Same write permission as the hierarchy links; `400` for units of two operations, `404` for an unknown relationship, `409` for an existing pair (either order) or a stratigraphic cycle. This replaces the `GET …/stratigraphic-relationships` stub, which answered `501`. The type concept is read from `{id}` toward the other unit.
+
+**Relation graph of a recording unit.** `GET /api/v1/recording-units/{id}/relation-graph` returns the unit (`center`) and its relations grouped by graph zone — `parents`, `children`, `anterior` (older units), `synchronous`, `posterior` (more recent units), `others` (always empty until configurable relations exist). Each zone is a bounded preview `{values, total, complete}` (30 units at most); stratigraphic references carry their `qualifier`. Same unit key and access scope as `GET /api/v1/recording-units/{id}` (`401`, `404`). The zones are the contract: how each relation is stored stays behind it.
 
 **Organisation-scoped lists.** These replace B1/B2 and add three entity types. All take `organizationId` (required; `400` if missing, `403` if outside the caller's scope), `offset`, `limit` (default 10), `search`, `sort` and `f.*` filters.
 

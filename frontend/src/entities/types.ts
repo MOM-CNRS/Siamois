@@ -84,6 +84,8 @@ export interface EntitySibling {
 export interface EntityPreview {
   label: string;
   validationStatus?: string | null;
+  // The key of the detail tab the fiche opens on (a DetailTabDef.key); the fiche's own tab when absent.
+  tab?: string;
 }
 
 export interface EntitySiblings {
