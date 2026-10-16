@@ -5,6 +5,7 @@ import { fetchSiblings } from "../siblingsApi";
 import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
+import { BulkImportDocument } from "./BulkImportDocument";
 import { DocumentCreateForm } from "./CreateForm";
 import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
@@ -42,6 +43,8 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
     createForm: (ctx) => <DocumentCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "document",
+    // Same Import massif as on a fiche Documents tab, but no project pre-selected.
+    toolbarExtra: <BulkImportDocument />,
   },
   detail: {
     tabs: [

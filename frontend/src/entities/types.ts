@@ -374,6 +374,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     createPrefillFrom?: (edited: { entityType?: string; entityId?: string | number; entityLabel?: string }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
+    // Extra controls next to « Créer » on this entity's own list toolbar (e.g. Documents → Import massif).
+    // Relation tabs pass their own `toolbarExtra` prop to EntityListPanel instead.
+    toolbarExtra?: ReactNode;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

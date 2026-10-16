@@ -30,11 +30,14 @@ import java.util.Set;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,6 +55,8 @@ class DocumentsControllerApiTest {
     private DocumentWriteOpenApiService documentWriteOpenApiService;
     @Mock
     private DocumentOpenApiService documentOpenApiService;
+    @Mock
+    private DocumentBulkOpenApiService documentBulkOpenApiService;
 
     private MockMvc mockMvc;
 
@@ -65,7 +70,8 @@ class DocumentsControllerApiTest {
                 documentContentOpenApiService,
                 documentFormOpenApiService,
                 documentWriteOpenApiService,
-                documentOpenApiService);
+                documentOpenApiService,
+                documentBulkOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .build();
@@ -368,5 +374,43 @@ class DocumentsControllerApiTest {
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource(null, null));
 
         mockMvc.perform(get("/api/v1/documents/3/siblings")).andExpect(status().isOk());
+    }
+
+    @Test
+    void batchUpload_withoutAuth_returns401() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+
+        mockMvc.perform(multipart("/api/v1/documents/batch")
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "manifest", "", "application/json", "{\"items\":[]}".getBytes()))
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void batchUpload_success_returns200() throws Exception {
+        login();
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchManifestRequest manifest =
+                new fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchManifestRequest();
+        when(documentBulkOpenApiService.parseManifest(anyString())).thenReturn(manifest);
+
+        fr.siamois.ui.api.openapi.v1.response.document.DocumentBatchResponse body =
+                new fr.siamois.ui.api.openapi.v1.response.document.DocumentBatchResponse();
+        when(documentBulkOpenApiService.processBatch(any(), eq(manifest), anyMap(), anyString()))
+                .thenReturn(body);
+
+        mockMvc.perform(multipart("/api/v1/documents/batch")
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "manifest", "", "application/json", "{\"items\":[]}".getBytes()))
+                        .file(new org.springframework.mock.web.MockMultipartFile(
+                                "file_0", "a.pdf", "application/pdf", "x".getBytes()))
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isOk());
+
+        verify(documentBulkOpenApiService).processBatch(any(), eq(manifest), anyMap(), anyString());
     }
 }

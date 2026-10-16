@@ -1,3 +1,4 @@
+import { BulkImportDocument } from "../document/BulkImportDocument";
 import { relationTab } from "../../panels/relationTab";
 import type { EntityTypeConfig } from "../types";
 import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
@@ -71,13 +72,17 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
       },
       // actionUnitTabView.xhtml's order: détails, documents, UE, contenants, phases. The project is
-      // the document's own attachment, not a link: the tab lists, creates, and has nothing to link.
+      // the document's own attachment, not a link: the tab lists, creates, and has nothing to link —
+      // but bulk import still targets this project via action_unit_document.
       relationTab<ProjectDetail>({
         key: "documents",
         label: t("entity.document.plural"),
         target: "document",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.documents ?? 0,
+        toolbarExtra: (entity) => (
+          <BulkImportDocument segment="projects" entityId={entity.id} />
+        ),
       }),
       relationTab<ProjectDetail>({
         key: "studies",
