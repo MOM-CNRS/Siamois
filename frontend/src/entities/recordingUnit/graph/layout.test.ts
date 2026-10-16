@@ -13,7 +13,7 @@ const zone = (values: GraphUnitRef[], total = values.length): GraphZone => ({ va
 const empty = zone([]);
 
 function graph(over: Partial<RelationGraph>): RelationGraph {
-  return { center: ref("42"), parents: empty, children: empty, anterior: empty, synchronous: empty, posterior: empty, others: empty, ...over };
+  return { center: ref("42"), parents: empty, children: empty, anterior: empty, synchronous: empty, posterior: empty, others: empty, fields: { anterior: "-328", synchronous: "-330", posterior: "-329" }, ...over };
 }
 
 describe("layoutGraph", () => {

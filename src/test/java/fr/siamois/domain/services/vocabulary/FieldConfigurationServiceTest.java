@@ -14,6 +14,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -599,6 +600,46 @@ class FieldConfigurationServiceTest {
 
         assertThat(result)
                 .isEqualTo(cfc);
+    }
+
+    // Each side of the stratigraphy has a field code of its own; until the thesaurus defines it, the
+    // list they shared before the split (SIARU.STRATI) stands in for it.
+    @Test
+    void findConfigurationForFieldCode_readsASideOfTheStratigraphyThroughTheSharedList_whenTheThesaurusHasNoneOfItsOwn() throws NoConfigForFieldException {
+        ConceptFieldConfig shared = new ConceptFieldConfig();
+        shared.setFieldCode(RecordingUnit.STRATI_FIELD_CODE);
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(anyLong(), anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), RecordingUnit.STRATI_FIELD_CODE))
+                .thenReturn(Optional.of(shared));
+
+        assertThat(service.findConfigurationForFieldCode(userInfo, RecordingUnit.ANTERIOR_FIELD_CODE)).isEqualTo(shared);
+        assertThat(service.findConfigurationForFieldCode(userInfo, RecordingUnit.POSTERIOR_FIELD_CODE)).isEqualTo(shared);
+        assertThat(service.findConfigurationForFieldCode(userInfo, RecordingUnit.SYNCHRONOUS_FIELD_CODE)).isEqualTo(shared);
+    }
+
+    @Test
+    void findConfigurationForFieldCode_prefersTheListOfASideOfTheStratigraphy_whenTheThesaurusDefinesIt() throws NoConfigForFieldException {
+        ConceptFieldConfig own = new ConceptFieldConfig();
+        own.setFieldCode(RecordingUnit.ANTERIOR_FIELD_CODE);
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(userInfo.getInstitution().getId(), RecordingUnit.ANTERIOR_FIELD_CODE))
+                .thenReturn(Optional.of(own));
+
+        assertThat(service.findConfigurationForFieldCode(userInfo, RecordingUnit.ANTERIOR_FIELD_CODE)).isEqualTo(own);
+        verify(conceptFieldConfigRepository, never()).findOneByFieldCodeForInstitution(anyLong(), org.mockito.ArgumentMatchers.eq(RecordingUnit.STRATI_FIELD_CODE));
+    }
+
+    @Test
+    void findConfigurationForFieldCodeWithActionUnit_readsTheProjectsSharedList_forASideOfTheStratigraphy() throws NoConfigForFieldException {
+        ActionUnitDTO actionUnit = new ActionUnitDTO();
+        actionUnit.setId(42L);
+        ConceptFieldConfig projectShared = new ConceptFieldConfig();
+        projectShared.setFieldCode(RecordingUnit.STRATI_FIELD_CODE);
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(anyString(), anyLong())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeForInstitution(anyLong(), anyString())).thenReturn(Optional.empty());
+        when(conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(RecordingUnit.STRATI_FIELD_CODE, 42L))
+                .thenReturn(Optional.of(projectShared));
+
+        assertThat(service.findConfigurationForFieldCode(userInfo, RecordingUnit.POSTERIOR_FIELD_CODE, actionUnit)).isEqualTo(projectShared);
     }
 
     @Test

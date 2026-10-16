@@ -31,6 +31,17 @@ public record RecordingUnitRelationGraphResource(
         MultiValue posterior,
 
         @Schema(description = "Autres relations (relations configurables) ; toujours vide tant qu'elles n'existent pas")
-        MultiValue others
+        MultiValue others,
+
+        @Schema(description = "Champ de la fiche qui porte chaque zone stratigraphique : c'est lui qui donne la liste "
+                + "des types de relation (GET /organizations/{id}/concepts?fieldId=)")
+        Fields fields
 ) {
+
+    /** The ids of the fields that hold the stratigraphic zones, as strings like every field id of the API. */
+    public record Fields(
+            @Schema(description = "Champ des UE antérieures") String anterior,
+            @Schema(description = "Champ des UE synchrones") String synchronous,
+            @Schema(description = "Champ des UE postérieures") String posterior) {
+    }
 }

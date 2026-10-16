@@ -34,9 +34,10 @@ class RecordingUnitTableColumnDefaultsTest {
     @Test
     void theRelationColumnsAreFieldsOfTheirOwn() {
         assertThat(RecordingUnitTableColumnDefaults.columns())
-                .filteredOn(column -> Set.of("isPartOf", "contains", "relationships", "specimen").contains(column.columnId()))
+                .filteredOn(column -> Set.of("isPartOf", "contains", "anterior", "posterior", "synchronous", "specimen").contains(column.columnId()))
                 .extracting(column -> column.field().getValueBinding())
-                .containsExactly("parents", "children", "stratigraphicRelationships", "specimenList");
+                .containsExactly("parents", "children", "anteriorRelationships", "posteriorRelationships",
+                        "synchronousRelationships", "specimenList");
     }
 
     // The project and the type come first; the relations right after them.
@@ -44,7 +45,7 @@ class RecordingUnitTableColumnDefaultsTest {
     void theRelationColumnsComeRightAfterTheProjectAndTheType() {
         assertThat(RecordingUnitTableColumnDefaults.columns())
                 .extracting(RecordingUnitTableColumnDefaults.ColumnDefault::columnId)
-                .startsWith("action", "type", "isPartOf", "contains", "relationships", "specimen");
+                .startsWith("action", "type", "isPartOf", "contains", "anterior", "posterior", "synchronous", "specimen");
     }
 
     @Test

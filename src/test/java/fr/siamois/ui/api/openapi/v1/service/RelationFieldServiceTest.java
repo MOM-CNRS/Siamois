@@ -39,14 +39,14 @@ class RelationFieldServiceTest {
 
     @Test
     void aStratigraphicValueIsQualifiedByItsRelationship() {
-        when(repository.page(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, 0, 50, null, true)).thenReturn(List.of(
+        when(repository.page(RelationField.RECORDING_UNIT_POSTERIOR, 1L, 0, 50, null, true)).thenReturn(List.of(
                 row(1L, 2L, "US 2", "unit1", true, 77L),
                 row(1L, 3L, "US 3", "unit2", true, null),
                 row(1L, 4L, "US 4", "unit1", false, null)));
-        when(repository.count(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, null)).thenReturn(3L);
+        when(repository.count(RelationField.RECORDING_UNIT_POSTERIOR, 1L, null)).thenReturn(3L);
         when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "coupe"));
 
-        RelationFieldService.ValuesPage page = service.page(RelationField.RECORDING_UNIT_STRATIGRAPHY, 1L, 0, 50, null, true, "fr");
+        RelationFieldService.ValuesPage page = service.page(RelationField.RECORDING_UNIT_POSTERIOR, 1L, 0, 50, null, true, "fr");
 
         assertThat(page.total()).isEqualTo(3);
         ResourceRef first = page.values().get(0);
@@ -57,6 +57,26 @@ class RelationFieldServiceTest {
         assertThat(page.values().get(1).qualifier().position()).isEqualTo("anterior");
         assertThat(page.values().get(1).qualifier().concept()).isNull();
         assertThat(page.values().get(2).qualifier().position()).isEqualTo("synchronous");
+    }
+
+    @Test
+    void valuesAcrossRelations_areQualifiedOnlyWhereTheirRelationIs() {
+        Map<String, RelationField> kinds = new java.util.LinkedHashMap<>();
+        kinds.put("parents", RelationField.RECORDING_UNIT_PARENTS);
+        kinds.put("anterior", RelationField.RECORDING_UNIT_ANTERIOR);
+        when(repository.pageAcross(kinds, 1L, 0, 50, null, false, true)).thenReturn(List.of(
+                new RelationFieldRepository.KindedRow("parents", row(1L, 2L, "US 2", null, null, null)),
+                new RelationFieldRepository.KindedRow("anterior", row(1L, 3L, "US 3", "unit2", true, 77L))));
+        when(repository.countAcross(kinds, 1L, null)).thenReturn(2L);
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "coupe"));
+
+        RelationFieldService.KindedPage page = service.pageAcross(kinds, 1L, 0, 50, null, false, true, "fr");
+
+        assertThat(page.total()).isEqualTo(2);
+        assertThat(page.values()).extracting(RelationFieldService.KindedValue::kind).containsExactly("parents", "anterior");
+        assertThat(page.values().get(0).value().qualifier()).isNull();
+        assertThat(page.values().get(1).value().qualifier().position()).isEqualTo("anterior");
+        assertThat(page.values().get(1).value().qualifier().concept().label()).isEqualTo("coupe");
     }
 
     private static Row row(long owner, long target, String label, String role, Boolean asynchronous, Long conceptId) {

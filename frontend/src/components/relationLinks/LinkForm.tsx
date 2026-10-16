@@ -1,29 +1,31 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "primereact/checkbox";
-import { SelectButton } from "primereact/selectbutton";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
 import { getEntityType } from "../../entities/registry";
-import { fetchConceptOptions } from "../../fields/optionSources";
+import { fetchFieldConceptOptions } from "../../fields/optionSources";
 import { t } from "../../i18n";
 import { CreateFormField, CreateFormShell } from "../CreateFormShell";
-import { searchProjectUnits, type StratigraphyZone, type UnitOption } from "./api";
+import { searchProjectUnits, type UnitOption } from "./api";
 import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";
 
-// The field code of the stratigraphic relationship types' vocabulary.
-const STRATIGRAPHY_FIELD_CODE = "SIARU.STRATI";
 // The icon of the relation graph, on every form that adds to it.
 export const GRAPH_ICON = "bi bi-diagram-3";
 
 export interface LinkFormValue {
   // The unit to link — only when adding.
   unit?: UnitOption;
-  // Where the unit stands relative to this one — only when adding with a choice of positions.
-  position?: StratigraphyZone;
   typeConceptId?: string | null;
   uncertain: boolean;
+}
+
+// Where the types of a stratigraphic link come from: the list of the field that holds the link (its
+// field code, or the branch or collection the project restricts it to), narrowed by the unit's type.
+export interface TypeVocabulary {
+  fieldId: string;
+  valueConceptId?: string;
 }
 
 export interface LinkFormProps {
@@ -32,10 +34,10 @@ export interface LinkFormProps {
   mode: "add" | "edit";
   // Whether the link has a type and an uncertainty to set — a stratigraphic one does, a hierarchy link doesn't.
   qualified: boolean;
-  // The positions to choose from when adding a stratigraphic link whose position isn't known yet.
-  positions?: StratigraphyZone[];
   projectId?: string | number | null;
   organizationId?: number;
+  // The list the type is picked from — only a qualified link has one.
+  vocabulary?: TypeVocabulary;
   initial?: { typeConceptId?: string | null; uncertain?: boolean };
   // The unit being edited, so a search never offers it back.
   excludeUnitId?: string;
@@ -44,18 +46,11 @@ export interface LinkFormProps {
   onSubmit: (value: LinkFormValue) => Promise<void>;
 }
 
-const POSITION_LABELS: Record<StratigraphyZone, () => string> = {
-  posterior: () => t("recordingUnit.graph.posterior"),
-  synchronous: () => t("recordingUnit.graph.synchronous"),
-  anterior: () => t("recordingUnit.graph.anterior"),
-};
-
 // The form that adds or edits one link: the unit to link (picked among the project's, or created on
 // the spot) and, for a stratigraphic link, its position, type and whether it is uncertain. Mounted
 // fresh for each use, so it starts empty.
-export function LinkForm({ title, mode, qualified, positions, projectId, organizationId, initial, excludeUnitId, onCancel, onSubmit }: LinkFormProps) {
+export function LinkForm({ title, mode, qualified, projectId, organizationId, vocabulary, initial, excludeUnitId, onCancel, onSubmit }: LinkFormProps) {
   const [unit, setUnit] = useState<PickerOption | null>(null);
-  const [position, setPosition] = useState<StratigraphyZone | undefined>(positions?.[0]);
   const [typeOption, setTypeOption] = useState<PickerOption | null>(null);
   const [uncertain, setUncertain] = useState(!!initial?.uncertain);
   const [creating, setCreating] = useState(false);
@@ -63,9 +58,12 @@ export function LinkForm({ title, mode, qualified, positions, projectId, organiz
   const [error, setError] = useState<string | null>(null);
 
   const types = useQuery({
-    queryKey: queryKeys.stratigraphyTypes(organizationId),
-    queryFn: () => fetchConceptOptions(organizationId!, STRATIGRAPHY_FIELD_CODE),
-    enabled: qualified && organizationId != null,
+    queryKey: queryKeys.stratigraphyTypes(organizationId, vocabulary?.fieldId ?? "", projectId == null ? null : String(projectId), vocabulary?.valueConceptId),
+    queryFn: () =>
+      fetchFieldConceptOptions(organizationId!, vocabulary!.fieldId, projectId == null ? undefined : String(projectId), undefined, {
+        valueConceptId: vocabulary!.valueConceptId,
+      }),
+    enabled: qualified && organizationId != null && vocabulary != null,
   });
 
   // The type being edited is known by id; its label comes with the vocabulary.
@@ -78,7 +76,7 @@ export function LinkForm({ title, mode, qualified, positions, projectId, organiz
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [types.data]);
 
-  const canSave = !busy && (mode === "edit" || (unit != null && (positions == null || position != null)));
+  const canSave = !busy && (mode === "edit" || unit != null);
 
   const loadUnits = async (query: string): Promise<PickerOption[]> => {
     if (projectId == null) return [];
@@ -94,7 +92,7 @@ export function LinkForm({ title, mode, qualified, positions, projectId, organiz
     setBusy(true);
     setError(null);
     try {
-      await onSubmit({ unit: picked, position, typeConceptId: typeOption?.id ?? null, uncertain });
+      await onSubmit({ unit: picked, typeConceptId: typeOption?.id ?? null, uncertain });
     } catch (e) {
       setError(messageForError(e, t("recordingUnit.graph.failed")));
     }
@@ -138,16 +136,6 @@ export function LinkForm({ title, mode, qualified, positions, projectId, organiz
         onSubmit={() => void link(unit ? { id: unit.id, label: unit.label } : undefined)}
         onCancel={onCancel}
       >
-        {mode === "add" && positions && (
-          <CreateFormField label={t("recordingUnit.graph.dialog.position")} required>
-            <SelectButton
-              value={position}
-              options={positions.map((value) => ({ value, label: POSITION_LABELS[value]() }))}
-              onChange={(e) => e.value && setPosition(e.value)}
-              allowEmpty={false}
-            />
-          </CreateFormField>
-        )}
         {mode === "add" && (
           <CreateFormField label={t("recordingUnit.graph.dialog.unit")} required>
             <InlinePicker value={unit} onChange={setUnit} load={loadUnits} placeholder={t("recordingUnit.graph.dialog.unitPlaceholder")} autoFocus footer={createLink} />

@@ -24,8 +24,12 @@ export const queryKeys = {
   relationGraph: (id: string | number) => ["relation-graph", id] as const,
   // Every stratigraphic relationship of a unit (a field's values endpoint), for the fiche's editor.
   stratigraphyValues: (id: string | number, fieldId?: string) => (fieldId === undefined ? ["stratigraphy-values", id] : ["stratigraphy-values", id, fieldId]) as readonly unknown[],
-  // The vocabulary of stratigraphic relationship types.
-  stratigraphyTypes: (organizationId: number | undefined) => ["stratigraphy-types", organizationId] as const,
+  // The relations of a recording unit as a paged list (one entry per set of list parameters).
+  relationList: (id: string | number, params?: unknown) =>
+    (params === undefined ? ["relation-list", id] : ["relation-list", id, params]) as readonly unknown[],
+  // The types of one stratigraphic field: its list depends on the project and on the unit's type.
+  stratigraphyTypes: (organizationId: number | undefined, fieldId: string, projectId?: string | null, valueConceptId?: string) =>
+    ["stratigraphy-types", organizationId, fieldId, projectId ?? null, valueConceptId ?? null] as const,
 
   entityBreadcrumbs: (entityType: string, id: string | number) => ["entity-breadcrumbs", entityType, id] as const,
 

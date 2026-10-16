@@ -14,8 +14,16 @@
       "binding" : "children",
       "width" : "QUARTER"
     }, {
-      "fieldId" : -327,
-      "binding" : "stratigraphicRelationships",
+      "fieldId" : -328,
+      "binding" : "anteriorRelationships",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -329,
+      "binding" : "posteriorRelationships",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -330,
+      "binding" : "synchronousRelationships",
       "width" : "QUARTER"
     }, {
       "fieldId" : -326,

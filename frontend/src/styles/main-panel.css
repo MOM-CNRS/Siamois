@@ -1753,6 +1753,8 @@ body button.p-button.status-button.status-button-compact {
 .panel-docked.siamois-panel:has(> .react-main-panel-mount) {
   border: none;
   border-radius: 0;
+}
+
 /* A place suggestion in a picker: icon, name, type and code, and the source it comes from. */
 .place-item {
   display: flex;
@@ -2056,6 +2058,22 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+}
+
+/* The display settings stack: the view (graph or list), then the graph's own options. */
+.sia-graph-setting-title {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.sia-graph-setting + .sia-graph-setting,
+.sia-graph-setting-group + .sia-graph-setting {
+  margin-top: 8px;
+}
+
+.sia-relation-uncertain {
+  margin-left: 0.4rem;
+  opacity: 0.7;
 }
 
 .sia-graph-fit {

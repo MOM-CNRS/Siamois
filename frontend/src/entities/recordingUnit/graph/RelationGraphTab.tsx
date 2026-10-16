@@ -1,24 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
-import { queryKeys } from "../../../api/queryKeys";
-import { messageForError } from "../../../api/errors";
 import { usePaneState } from "../../../panels/paneState";
 import { useCanEdit } from "../../../panels/writeMode";
 import { entityChipStyle } from "../../../fields/display";
+import { editContextOf } from "../../../fields/editContext";
 import { t } from "../../../i18n";
 import type { EntityPreview } from "../../types";
-import {
-  addHierarchyLink, addStratigraphyLink, removeHierarchyLink, removeStratigraphyLink, updateStratigraphyLink,
-  type HierarchyZone, type StratigraphyZone,
-} from "../../../components/relationLinks/api";
 import { layoutGraph, type LayoutLabels, type LayoutNode } from "./layout";
-import { GraphToolbar, type GraphOptions } from "./GraphToolbar";
-import { LinkOverlay } from "../../../components/relationLinks/LinkOverlay";
-import type { LinkFormValue } from "../../../components/relationLinks/LinkForm";
+import { zoneTitle } from "./labels";
+import { RelationsList, RelationsListControls, RelationsListEnd } from "./RelationsList";
+import { RelationsToolbar, type RelationsMode } from "./RelationsToolbar";
+import { isHierarchy, isStratigraphy, useRelationLinkEditor } from "./useRelationLinkEditor";
 import { useRelationGraph } from "./useRelationGraph";
+import { useRelationList } from "./useRelationList";
 import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
 
 // What a node can do. Absent when the caller cannot write (a read-only graph still opens units).
@@ -41,9 +36,6 @@ interface GraphNodeData extends Record<string, unknown> {
 }
 
 const SIDES: Array<[string, Position]> = [["top", Position.Top], ["bottom", Position.Bottom], ["left", Position.Left], ["right", Position.Right]];
-const STRATIGRAPHY_ZONES: ZoneKey[] = ["anterior", "synchronous", "posterior"];
-const isStratigraphy = (zone?: ZoneKey) => zone != null && STRATIGRAPHY_ZONES.includes(zone);
-const isHierarchy = (zone?: ZoneKey): zone is HierarchyZone => zone === "parents" || zone === "children";
 
 // The side of the center an edge leaves from and the side of the unit it reaches, by zone: hierarchy
 // runs vertically, stratigraphy goes out to the right.
@@ -118,15 +110,9 @@ function GraphNode({ data }: NodeProps<Node<GraphNodeData>>) {
 const nodeTypes = { graph: GraphNode };
 
 function labelsFor(): LayoutLabels {
+  const zones: ZoneKey[] = ["parents", "children", "anterior", "synchronous", "posterior", "others"];
   return {
-    zone: {
-      parents: t("recordingUnit.graph.parents"),
-      children: t("recordingUnit.graph.children"),
-      anterior: t("recordingUnit.graph.anterior"),
-      synchronous: t("recordingUnit.graph.synchronous"),
-      posterior: t("recordingUnit.graph.posterior"),
-      others: t("recordingUnit.graph.others"),
-    },
+    zone: Object.fromEntries(zones.map((zone) => [zone, zoneTitle(zone)])) as LayoutLabels["zone"],
     notApplicable: t("recordingUnit.graph.notApplicable"),
     more: (count) => t("recordingUnit.graph.more", { count }),
   };
@@ -161,7 +147,7 @@ export function toFlow(graph: RelationGraph, actions: NodeActions, editable: boo
 }
 
 interface Props {
-  entity: { id: string | number; projectId?: string | null; _permissions?: { canEdit?: boolean } };
+  entity: { id: string | number; projectId?: string | null; type?: { id?: string | number; resourceId?: string | number } | null; _permissions?: { canEdit?: boolean } };
   organizationId?: number;
   onNavigate?: (entityType: string, id?: string | number) => void;
   // A unit opens in the overview panel when the fiche has one (it is in the main panel), else in place.
@@ -170,81 +156,73 @@ interface Props {
   onChanged?: () => void;
 }
 
-type OverlayState = { mode: "add"; zone: ZoneKey; anchor: HTMLElement } | { mode: "edit"; zone: ZoneKey; ref: GraphUnitRef; anchor: HTMLElement };
-
-// The relation graph of a recording unit: the unit in the middle, its parents above, its children
-// below, its stratigraphic relations on the right (the more recent above its level, the synchronous
-// ones on it, the older below), and the rest (not applicable yet) on the left. Reads one
-// zone-grouped resource, so it doesn't know how a relation is stored; every zone can be added to,
-// and every unit opened, edited or unlinked from the graph.
+// The relations of a recording unit, as a graph or as a list. The graph has the unit in the middle,
+// its parents above, its children below, its stratigraphic relations on the right (the more recent
+// above its level, the synchronous ones on it, the older below), and the rest (not applicable yet)
+// on the left; the list has them all in one table, each saying what kind of relation it is. Both
+// read zone-grouped resources, so they don't know how a relation is stored; every unit can be
+// opened, edited or unlinked, and added to, from either.
 export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOverview, onChanged }: Props) {
   const recordingUnitId = entity.id;
-  const queryClient = useQueryClient();
   const canEdit = useCanEdit(entity);
   const { data, isLoading, isError } = useRelationGraph(recordingUnitId);
-  const [overlay, setOverlay] = useState<OverlayState | null>(null);
+  const list = useRelationList(recordingUnitId);
+  const [mode, setMode] = usePaneState<RelationsMode>("relationsMode", "graph");
   const [showLinks, setShowLinks] = usePaneState("showLinks", true);
-  const options: GraphOptions = { showLinks };
-  const [failure, setFailure] = useState<string | null>(null);
+  const typeConceptId = editContextOf(entity, "recordingUnit", organizationId).typeConceptId;
+  const editor = useRelationLinkEditor({
+    unitId: recordingUnitId,
+    projectId: entity.projectId,
+    organizationId,
+    typeConceptId,
+    fields: data?.fields,
+    onChanged,
+  });
+  const { add, edit, remove } = editor;
 
-  const changed = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.relationGraph(recordingUnitId) });
-    onChanged?.();
-  }, [queryClient, recordingUnitId, onChanged]);
-
+  const open = useMemo(
+    () => (unitId: string, label: string) => (onOpenOverview ?? onNavigate)?.("recordingUnit", unitId, { label, tab: "graph" }),
+    [onNavigate, onOpenOverview],
+  );
   const actions = useMemo<NodeActions>(() => ({
-    open: (unitId, label) => (onOpenOverview ?? onNavigate)?.("recordingUnit", unitId, { label, tab: "graph" }),
-    ...(canEdit ? {
-      add: (zone: ZoneKey, anchor: HTMLElement) => setOverlay({ mode: "add", zone, anchor }),
-      edit: (zone: ZoneKey, ref: GraphUnitRef, anchor: HTMLElement) => setOverlay({ mode: "edit", zone, ref, anchor }),
-      remove: (zone: ZoneKey, ref: GraphUnitRef, anchor: HTMLElement) => confirmPopup({
-        target: anchor,
-        message: t("recordingUnit.graph.deleteConfirm", { label: ref.label ?? ref.resourceId }),
-        acceptLabel: t("common.confirm"),
-        rejectLabel: t("common.cancel"),
-        accept: async () => {
-          setFailure(null);
-          try {
-            if (isHierarchy(zone)) await removeHierarchyLink(recordingUnitId, zone, ref.resourceId);
-            else await removeStratigraphyLink(recordingUnitId, ref.resourceId);
-            await changed();
-          } catch (e) {
-            setFailure(messageForError(e, t("recordingUnit.graph.failed")));
-          }
-        },
-      }),
-    } : {}),
-  }), [canEdit, onNavigate, onOpenOverview, recordingUnitId, changed]);
+    open,
+    ...(canEdit ? { add, edit, remove } : {}),
+  }), [canEdit, open, add, edit, remove]);
 
   const flow = useMemo(() => (data ? toFlow(data, actions, canEdit, showLinks) : null), [data, actions, canEdit, showLinks]);
+
+  const toolbar = (
+    <RelationsToolbar
+      mode={mode}
+      onModeChange={setMode}
+      showLinks={showLinks}
+      onShowLinksChange={setShowLinks}
+      start={mode === "list" ? <RelationsListControls list={list} /> : undefined}
+      end={mode === "list" ? <RelationsListEnd list={list} editor={canEdit && data ? editor : undefined} /> : undefined}
+    />
+  );
+
+  if (mode === "list") {
+    return (
+      <div className="sia-relation-graph" style={entityChipStyle("recordingUnit")}>
+        {toolbar}
+        <div className="entity-list-panel embedded">
+          {list.error != null && <div className="entity-list-panel-error">{t("recordingUnit.relations.error")}</div>}
+          <RelationsList list={list} onOpen={open} editor={canEdit ? editor : undefined} />
+        </div>
+        {editor.overlays}
+      </div>
+    );
+  }
 
   if (isLoading) return <p className="sia-relation-graph-message">{t("recordingUnit.graph.loading")}</p>;
   if (isError || !flow) return <p className="sia-relation-graph-message">{t("recordingUnit.graph.error")}</p>;
 
-  const submit = async (value: LinkFormValue) => {
-    if (!overlay) return;
-    const typeConceptId = value.typeConceptId != null ? Number(value.typeConceptId) : null;
-    if (overlay.mode === "edit") {
-      await updateStratigraphyLink(recordingUnitId, overlay.ref.resourceId, { typeConceptId, uncertain: value.uncertain });
-    } else if (value.unit) {
-      if (isHierarchy(overlay.zone)) await addHierarchyLink(recordingUnitId, overlay.zone, value.unit.id);
-      else await addStratigraphyLink(recordingUnitId, overlay.zone as StratigraphyZone, value.unit.id, { typeConceptId, uncertain: value.uncertain });
-    }
-    setOverlay(null);
-    await changed();
-  };
-
-  const labels = labelsFor();
-  const overlayZone = overlay?.zone;
-  const title = overlay?.mode === "edit"
-    ? t("recordingUnit.graph.dialog.editTitle", { label: overlay.ref.label ?? overlay.ref.resourceId })
-    : t("recordingUnit.graph.dialog.addTitle", { zone: overlayZone ? labels.zone[overlayZone] : "" });
-
   return (
     <div className="sia-relation-graph" style={entityChipStyle("recordingUnit")}>
-      <GraphToolbar options={options} onChange={(next) => setShowLinks(next.showLinks)} />
+      {toolbar}
       <div className="sia-relation-graph-canvas">
-      {failure && <small role="alert" className="sia-relation-graph-failure">{failure}</small>}
+      {editor.failure && <small role="alert" className="sia-relation-graph-failure">{editor.failure}</small>}
       <ReactFlow
         // Remounted with the display mode, so the view fits the new layout.
         key={showLinks ? "links" : "grid"}
@@ -266,21 +244,7 @@ export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOve
         <Controls showInteractive={false} />
       </ReactFlow>
       </div>
-      <ConfirmPopup />
-      <LinkOverlay
-        anchor={overlay?.anchor ?? null}
-        title={title}
-        mode={overlay?.mode ?? "add"}
-        qualified={isStratigraphy(overlayZone)}
-        projectId={entity.projectId}
-        organizationId={organizationId}
-        initial={overlay?.mode === "edit"
-          ? { typeConceptId: overlay.ref.qualifier?.concept?.resourceId ?? null, uncertain: !!overlay.ref.qualifier?.uncertain }
-          : undefined}
-        excludeUnitId={String(recordingUnitId)}
-        onHide={() => setOverlay(null)}
-        onSubmit={submit}
-      />
+      {editor.overlays}
     </div>
   );
 }

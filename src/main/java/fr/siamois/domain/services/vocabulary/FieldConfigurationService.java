@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.config.ConceptState;
 import fr.siamois.domain.models.form.config.VocabularyMode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
@@ -56,6 +57,16 @@ public class FieldConfigurationService {
 
     private static final IllegalStateException FIELD_CODE_NOT_FOUND = new IllegalStateException("Field code not found");
     public static final int LIMIT_RESULTS = 200;
+
+    /**
+     * The field codes that stand in for another until the thesaurus defines them: each side of a unit's
+     * stratigraphic relationships has a vocabulary of its own, which starts as the single list they
+     * shared before the split.
+     */
+    private static final Map<String, String> FALLBACK_FIELD_CODES = Map.of(
+            RecordingUnit.ANTERIOR_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE,
+            RecordingUnit.POSTERIOR_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE,
+            RecordingUnit.SYNCHRONOUS_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE);
     /**
      * How many candidates a frozen list reads from its source before keeping the enabled ones: the
      * enabled concepts are not necessarily among the first {@link #LIMIT_RESULTS} the source returns.
@@ -477,11 +488,7 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> institutionConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode);
-        if (institutionConfig.isEmpty()) {
-            throw new NoConfigForFieldException(fieldCode);
-        }
-        return institutionConfig.get();
+        return findConfigurationForFieldCode(info, fieldCode, (Long) null);
     }
 
     /**
@@ -499,6 +506,7 @@ public class FieldConfigurationService {
 
     /**
      * Searchs the configuration for a specific field for a project. If none set, falls back to the institution configuration.
+     * A field code the thesaurus doesn't define yet but that has a {@link #FALLBACK_FIELD_CODES fallback} is read through it.
      *
      * @param info         the user information containing institution and user details
      * @param fieldCode    the field code for which to find the configuration
@@ -508,14 +516,26 @@ public class FieldConfigurationService {
      */
     @NonNull
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        if (actionUnitId == null) {
-            return findConfigurationForFieldCode(info, fieldCode);
+        try {
+            return findOwnConfiguration(info, fieldCode, actionUnitId);
+        } catch (NoConfigForFieldException e) {
+            String fallback = FALLBACK_FIELD_CODES.get(fieldCode);
+            if (fallback == null) {
+                throw e;
+            }
+            return findOwnConfiguration(info, fallback, actionUnitId);
         }
-        Optional<ConceptFieldConfig> projectConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitId);
-        if (projectConfig.isEmpty()) {
-            return findConfigurationForFieldCode(info, fieldCode);
+    }
+
+    private ConceptFieldConfig findOwnConfiguration(UserInfo info, String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
+        Optional<ConceptFieldConfig> projectConfig = actionUnitId == null
+                ? Optional.empty()
+                : conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitId);
+        if (projectConfig.isPresent()) {
+            return projectConfig.get();
         }
-        return projectConfig.get();
+        return conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode)
+                .orElseThrow(() -> new NoConfigForFieldException(fieldCode));
     }
 
         /**

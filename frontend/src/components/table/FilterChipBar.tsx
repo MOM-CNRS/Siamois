@@ -1,4 +1,5 @@
 import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { flushSync } from "react-dom";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { ColumnFilter, describeFilterValue } from "./ColumnFilter";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
@@ -57,8 +58,16 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function addFilter(e: ReactMouseEvent, spec: FilterSpec, anchor: HTMLElement) {
     addPanel.current?.hide();
-    setPendingKeys((keys) => (keys.includes(spec.key) ? keys : [...keys, spec.key]));
-    openEditor(e, spec.key, anchor);
+    const addKey = (keys: string[]) => (keys.includes(spec.key) ? keys : [...keys, spec.key]);
+    if (availableSpecs.length > 1) {
+      setPendingKeys(addKey);
+      openEditor(e, spec.key, anchor);
+      return;
+    }
+    // The last filter on offer: the « add » chip it was picked from goes with it, so the editor is
+    // anchored on the chip that takes its place — rendered now, not on the next update.
+    flushSync(() => setPendingKeys(addKey));
+    openEditor(e, spec.key, barRef.current?.querySelector<HTMLElement>(`[data-chip-key="${spec.key}"]`) ?? anchor);
   }
 
   function removeFilter(key: string) {
@@ -72,14 +81,15 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   const editingSpec = specs.find((s) => s.key === editingKey);
   const addChipRef = useRef<HTMLButtonElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="entity-list-panel-filter-chips">
+    <div className="entity-list-panel-filter-chips" ref={barRef}>
       {activeKeys.map((key) => {
         const spec = specs.find((s) => s.key === key)!;
         const summary = describeFilterValue(filters[key], optionsByKey[key]);
         return (
-          <span key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
+          <span key={key} data-chip-key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
             <button
               type="button"
               className="filter-chip-body"
