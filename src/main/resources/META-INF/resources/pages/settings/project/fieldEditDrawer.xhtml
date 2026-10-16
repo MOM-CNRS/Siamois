@@ -126,6 +126,37 @@
                         </h:panelGroup>
                     </div>
 
+                    <!-- A relation: the entity it links to, what each side accepts, its mirror. Always present so ajax can reach it. -->
+                    <h:panelGroup id="relationBlock" layout="block">
+                      <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelation}" layout="block">
+                        <div class="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftRelTargetKind">#{langBean.msg('projectTables.drawer.relation.targetKind')}</label>
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelationFixed}">
+                                <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.relationKindLabel(projectTableFieldSettingsBean.draftRelTargetKind)}</div>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftRelationFixed}">
+                                <h:selectOneMenu id="draftRelTargetKind" value="#{projectTableFieldSettingsBean.draftRelTargetKind}" styleClass="ptc-native-select"
+                                                 disabled="#{projectTableFieldSettingsBean.draftRelMirror == 'SELF'}">
+                                    <f:selectItems value="#{projectTableFieldSettingsBean.relationKinds}" var="k"
+                                                   itemValue="#{k}" itemLabel="#{projectTableFieldSettingsBean.relationKindLabel(k)}"/>
+                                    <p:ajax event="change" process="@this" listener="#{projectTableFieldSettingsBean.onRelationTargetKindChange()}"
+                                            update=":fieldEditForm:relationBlock :fieldEditForm:relationValues"/>
+                                </h:selectOneMenu>
+                            </h:panelGroup>
+                        </div>
+
+                        <div class="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftRelTargetType">#{langBean.msg('projectTables.drawer.relation.targetTypes')}</label>
+                            <h:selectOneMenu id="draftRelTargetType" value="#{projectTableFieldSettingsBean.draftRelTargetType}" styleClass="ptc-native-select"
+                                             disabled="#{projectTableFieldSettingsBean.draftIsSystem}">
+                                <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.relation.pickType')}" itemValue="" noSelectionOption="true"/>
+                                <f:selectItems value="#{projectTableFieldSettingsBean.relTargetTypeItems}"/>
+                            </h:selectOneMenu>
+                        </div>
+
+                      </h:panelGroup>
+                    </h:panelGroup>
+
                     <!-- A measure added by the project: what it measures and its nature are picked in the thesaurus; its name is both. -->
                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasureSelectable}" layout="block">
                         <div class="ptc-drawer-field">
@@ -223,8 +254,54 @@
 
                   <!-- 2. Its possible values: the vocabulary list, the units of a measurement, the order with other fields. -->
                   <h:panelGroup id="valuesBlock" layout="block">
-                  <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable or projectTableFieldSettingsBean.draftMeasurement or (fieldRulesEditorBean.open and fieldRulesEditorBean.ownOrdered and projectTableFieldSettingsBean.draftOriginalName ne null)}" layout="block" styleClass="ptc-drawer-section">
+                  <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable or projectTableFieldSettingsBean.draftMeasurement or projectTableFieldSettingsBean.draftRelation or (fieldRulesEditorBean.open and fieldRulesEditorBean.ownOrdered and projectTableFieldSettingsBean.draftOriginalName ne null)}" layout="block" styleClass="ptc-drawer-section">
                     <h3 class="ptc-drawer-section-title">#{langBean.msg('projectTables.drawer.section.values')}</h3>
+
+                    <h:panelGroup id="relationValues" layout="block">
+                      <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelation}" layout="block">
+                        <div class="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftRelMirror">#{langBean.msg('projectTables.drawer.relation.mirror')}</label>
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelationFixed}">
+                                <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.relationMirrorLabel(projectTableFieldSettingsBean.draftRelMirror)}</div>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftRelationFixed}">
+                                <h:selectOneMenu id="draftRelMirror" value="#{projectTableFieldSettingsBean.draftRelMirror}" styleClass="ptc-native-select">
+                                    <f:selectItems value="#{projectTableFieldSettingsBean.relationMirrors}" var="m"
+                                                   itemValue="#{m}" itemLabel="#{projectTableFieldSettingsBean.relationMirrorLabel(m)}"/>
+                                    <p:ajax event="change" process="@this" listener="#{projectTableFieldSettingsBean.onRelationMirrorChange()}"
+                                            update=":fieldEditForm:relationBlock :fieldEditForm:relationValues"/>
+                                </h:selectOneMenu>
+                            </h:panelGroup>
+                        </div>
+
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelationMirrorOther}" layout="block" styleClass="ptc-drawer-field">
+                            <label class="ptc-drawer-label" for="fieldEditForm:draftRelMirrorField">#{langBean.msg('projectTables.drawer.relation.mirrorField')}</label>
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftRelationFixed}">
+                                <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftRelMirrorLabel}</div>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftRelationFixed}">
+                                <p:selectOneMenu id="draftRelMirrorField" value="#{projectTableFieldSettingsBean.draftRelMirrorField}" style="width:100%">
+                                    <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.relation.mirrorFieldNew')}" itemValue="" noSelectionOption="true"/>
+                                    <f:selectItems value="#{projectTableFieldSettingsBean.relMirrorFieldItems}"/>
+                                    <f:facet name="footer">
+                                        <p:commandLink value="#{langBean.msg('projectTables.drawer.relation.mirrorFieldCreate')}" process="@this"
+                                                       actionListener="#{projectTableFieldSettingsBean.newMirrorField()}"
+                                                       update=":fieldEditForm:relationValues" style="display:block;padding:.5rem .75rem"/>
+                                    </f:facet>
+                                </p:selectOneMenu>
+                            </h:panelGroup>
+                        </h:panelGroup>
+
+                        <div class="ptc-drawer-field">
+                            <div class="ptc-checkbox-row">
+                                <p:selectBooleanCheckbox id="draftRelUncertain" value="#{projectTableFieldSettingsBean.draftRelUncertain}"
+                                                         disabled="#{projectTableFieldSettingsBean.draftRelationFixed}"/>
+                                <p:outputLabel for="draftRelUncertain" value="#{langBean.msg('projectTables.drawer.relation.uncertain')}"/>
+                            </div>
+                        </div>
+                      </h:panelGroup>
+                    </h:panelGroup>
+
                     <p class="ptc-drawer-section-hint" style="#{projectTableFieldSettingsBean.draftConfigurable ? '' : 'display:none'}">#{langBean.msg('projectTables.drawer.section.valuesHint')}</p>
 
                     <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMeasurement}" layout="block" styleClass="ptc-drawer-field">

@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface RelationLinkRepository extends JpaRepository<RelationLink, Long> {
 
     long countByDefinition(RelationDefinition definition);
+
+    java.util.List<fr.siamois.domain.models.relation.RelationLink> findByDefinition(RelationDefinition definition);
 }

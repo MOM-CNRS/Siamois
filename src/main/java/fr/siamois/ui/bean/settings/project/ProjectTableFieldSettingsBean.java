@@ -146,6 +146,19 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private List<String> draftUnitIds = new ArrayList<>();
     private String draftDefaultUnitId;
 
+    /** RELATION: the entity it links to, the types each side accepts, the mirror and the link form. */
+    private fr.siamois.domain.models.relation.RelationEntityKind draftRelTargetKind;
+    private List<String> draftRelSourceTypes = new ArrayList<>();
+    private List<String> draftRelTargetTypes = new ArrayList<>();
+    private fr.siamois.domain.models.relation.RelationMirror draftRelMirror = fr.siamois.domain.models.relation.RelationMirror.NONE;
+    private String draftRelMirrorLabel;
+    /** An existing field to use as the mirror; null = a new one is created and named automatically. */
+    private String draftRelMirrorField;
+    private transient List<jakarta.faces.model.SelectItem> relMirrorFieldItems = new ArrayList<>();
+    private boolean draftRelUncertain;
+    private transient List<jakarta.faces.model.SelectItem> relSourceTypeItems = new ArrayList<>();
+    private transient List<jakarta.faces.model.SelectItem> relTargetTypeItems = new ArrayList<>();
+
     private boolean draftIsSystem;
     private String draftFieldCode;
     private String draftSource;
@@ -1173,6 +1186,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             }
             draftName = measureName();
         }
+        if (!draftIsSystem && draftType == FieldType.SELECT_MULTIPLE_RELATION) {
+            String relationError = relationError();
+            if (relationError != null) {
+                showDrawerError(relationError);
+                return;
+            }
+        }
         FieldOptions options = draftOptions();
         if (!draftIsSystem && draftType == FieldType.MEASUREMENT && options.allowedUnitIds().isEmpty()) {
             showDrawerError("projectTables.drawer.units.required");
@@ -1331,7 +1351,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * beside the type, not a type of its own.
      */
     public List<FieldType> getFieldTypeOptions() {
-        return FieldType.userCreatableTypes().stream().filter(t -> !t.isMultiple()).toList();
+        return FieldType.userCreatableTypes().stream()
+                .filter(t -> !t.isMultiple() || t == FieldType.SELECT_MULTIPLE_RELATION).toList();
     }
 
     /** The family the type menu shows for the open field (a multiple-valued type shows as its single sibling). */
@@ -1457,6 +1478,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     private void loadDraftOptions(FieldOptions options) {
+        loadRelationOptions(options.relation());
         draftAllowNoAnswer = options.allowNoAnswer();
         draftUnitIds = options.allowedUnitIds().stream().map(String::valueOf).collect(Collectors.toCollection(ArrayList::new));
         draftDefaultUnitId = options.defaultUnitId() == null ? null : String.valueOf(options.defaultUnitId());
@@ -1497,7 +1519,160 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                     measureConceptIdOf(draftMeasureTypeLabel, lastMeasureTypeResults, draftMeasureType),
                     measureConceptIdOf(draftMeasureNatureLabel, lastMeasureNatureResults, draftMeasureNature));
         }
+        if (draftType == FieldType.SELECT_MULTIPLE_RELATION) {
+            return FieldOptions.relation(new fr.siamois.domain.models.settings.tableconfig.RelationOptions(
+                    draftRelTargetKind, ids(draftRelSourceTypes), ids(draftRelTargetTypes), draftRelMirror,
+                    mirrorLabelToSave(), draftRelUncertain,
+                    draftRelMirrorField == null || draftRelMirrorField.isBlank() ? null : Long.valueOf(draftRelMirrorField)));
+        }
         return FieldOptions.NONE;
+    }
+
+    // ------------------------------------------------------------------ relation
+
+    /** What is missing for a relation to be saved, as a message code; null when it can be. */
+    private String relationError() {
+        if (draftName == null || draftName.isBlank()) return "projectTables.drawer.relation.nameRequired";
+        if (draftRelTargetKind == null) return "projectTables.drawer.relation.kindRequired";
+        if (!relTargetTypeItems.isEmpty() && getDraftRelTargetType() == null) return "projectTables.drawer.relation.typeRequired";
+        return null;
+    }
+
+    /** A new mirror field is named after the relation, unless one of the target's fields is used. */
+    private String mirrorLabelToSave() {
+        if (draftRelMirror != fr.siamois.domain.models.relation.RelationMirror.OTHER
+                || (draftRelMirrorField != null && !draftRelMirrorField.isBlank())) {
+            return draftRelMirrorLabel;
+        }
+        return langBean.msg("projectTables.drawer.relation.mirrorAutoName", draftName);
+    }
+
+    public List<jakarta.faces.model.SelectItem> getRelMirrorFieldItems() {
+        return relMirrorFieldItems;
+    }
+
+    /** The footer of the mirror picker: back to a new field, created and named automatically. */
+    public void newMirrorField() {
+        draftRelMirrorField = null;
+    }
+
+    private List<jakarta.faces.model.SelectItem> mirrorFieldItemsOf(fr.siamois.domain.models.relation.RelationEntityKind kind) {
+        if (kind == null || tableFieldConfigService == null) return new ArrayList<>();
+        try {
+            return tableFieldConfigService.relationMirrorCandidates(kind).stream()
+                    .map(f -> new jakarta.faces.model.SelectItem(String.valueOf(f.id()), f.label()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } catch (RuntimeException e) {
+            log.warn("Could not list the mirror candidates of {}", kind, e);
+            return new ArrayList<>();
+        }
+    }
+
+    public boolean isDraftRelation() {
+        return draftType == FieldType.SELECT_MULTIPLE_RELATION;
+    }
+
+    /** The kind, the mirror and the link form are chosen when the relation is created, then fixed. */
+    public boolean isDraftRelationFixed() {
+        return draftOriginalName != null;
+    }
+
+    public boolean isDraftRelationMirrorOther() {
+        return draftRelMirror == fr.siamois.domain.models.relation.RelationMirror.OTHER;
+    }
+
+    public List<fr.siamois.domain.models.relation.RelationEntityKind> getRelationKinds() {
+        return Arrays.asList(fr.siamois.domain.models.relation.RelationEntityKind.values());
+    }
+
+    /** A mirror field needs a form to be added to: only the kinds with a configurable table can have one. */
+    public List<fr.siamois.domain.models.relation.RelationMirror> getRelationMirrors() {
+        boolean placeable = draftRelTargetKind != null
+                && fr.siamois.domain.services.relation.RelationDefinitionService.isPlaceable(draftRelTargetKind);
+        return Arrays.stream(fr.siamois.domain.models.relation.RelationMirror.values())
+                .filter(m -> placeable || m != fr.siamois.domain.models.relation.RelationMirror.OTHER)
+                .toList();
+    }
+
+    /** One accepted type for the linked entity (the model takes several, the screen only one). */
+    public String getDraftRelTargetType() {
+        return draftRelTargetTypes == null || draftRelTargetTypes.isEmpty() ? null : String.valueOf(draftRelTargetTypes.get(0));
+    }
+
+    public void setDraftRelTargetType(String type) {
+        draftRelTargetTypes = type == null || type.isBlank() ? new ArrayList<>() : new ArrayList<>(List.of(type));
+    }
+
+    public String relationKindLabel(fr.siamois.domain.models.relation.RelationEntityKind kind) {
+        return kind == null ? "" : langBean.msg("projectTables.drawer.relation.kind." + kind.name());
+    }
+
+    public String relationMirrorLabel(fr.siamois.domain.models.relation.RelationMirror mirror) {
+        return langBean.msg("projectTables.drawer.relation.mirror." + mirror.name());
+    }
+
+    /** The types of the entity that carries the field, when its table has some. */
+    public List<jakarta.faces.model.SelectItem> getRelSourceTypeItems() {
+        return relSourceTypeItems;
+    }
+
+    public List<jakarta.faces.model.SelectItem> getRelTargetTypeItems() {
+        return relTargetTypeItems;
+    }
+
+    public void onRelationTargetKindChange() {
+        draftRelTargetTypes = new ArrayList<>();
+        relTargetTypeItems = typeItemsOf(draftRelTargetKind);
+        draftRelMirrorField = null;
+        relMirrorFieldItems = mirrorFieldItemsOf(draftRelTargetKind);
+        if (!getRelationMirrors().contains(draftRelMirror)) {
+            draftRelMirror = fr.siamois.domain.models.relation.RelationMirror.NONE;
+        }
+    }
+
+    public void onRelationMirrorChange() {
+        if (draftRelMirror == fr.siamois.domain.models.relation.RelationMirror.SELF && selectedTable != null) {
+            draftRelTargetKind = selectedTable.relationKind();
+            onRelationTargetKindChange();
+        }
+    }
+
+    private void loadRelationOptions(fr.siamois.domain.models.settings.tableconfig.RelationOptions relation) {
+        fr.siamois.domain.models.relation.RelationEntityKind own = selectedTable == null ? null : selectedTable.relationKind();
+        draftRelTargetKind = relation != null ? relation.targetKind() : own;
+        draftRelMirror = relation != null ? relation.mirror() : fr.siamois.domain.models.relation.RelationMirror.NONE;
+        draftRelMirrorLabel = relation != null ? mirrorLabelToShow(relation.mirrorLabel()) : null;
+        draftRelUncertain = relation != null && relation.uncertain();
+        draftRelSourceTypes = relation == null ? new ArrayList<>()
+                : relation.sourceTypes().stream().map(String::valueOf).collect(Collectors.toCollection(ArrayList::new));
+        draftRelTargetTypes = relation == null ? new ArrayList<>()
+                : relation.targetTypes().stream().map(String::valueOf).collect(Collectors.toCollection(ArrayList::new));
+        relSourceTypeItems = typeItemsOf(own);
+        relTargetTypeItems = typeItemsOf(draftRelTargetKind);
+        draftRelMirrorField = null;
+        relMirrorFieldItems = relation == null ? mirrorFieldItemsOf(draftRelTargetKind) : new ArrayList<>();
+    }
+
+    /** A platform field's name is a message key; an institution's is what it typed. */
+    private String mirrorLabelToShow(String label) {
+        return draftIsSystem && label != null ? langBean.msg(label) : label;
+    }
+
+    private List<jakarta.faces.model.SelectItem> typeItemsOf(fr.siamois.domain.models.relation.RelationEntityKind kind) {
+        if (kind == null || tableFieldConfigService == null) return new ArrayList<>();
+        try {
+            return tableFieldConfigService.relationTypeOptions(project.getId(), kind).stream()
+                    .map(t -> new jakarta.faces.model.SelectItem(String.valueOf(t.id()), t.label()))
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } catch (RuntimeException e) {
+            log.warn("Could not list the types of {} for a relation", kind, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private static List<Long> ids(List<String> values) {
+        List<?> raw = values; // JSF may fill the list with Longs
+        return raw == null ? List.of() : raw.stream().map(v -> Long.valueOf(String.valueOf(v))).toList();
     }
 
     private List<UnitDefinitionDTO> unitCatalogue() {

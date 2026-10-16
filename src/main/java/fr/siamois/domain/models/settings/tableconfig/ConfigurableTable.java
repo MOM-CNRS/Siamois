@@ -33,4 +33,16 @@ public enum ConfigurableTable {
         this.fieldCode = fieldCode;
         this.defaultIdentifierFormat = defaultIdentifierFormat;
     }
+
+    /** The kind of entity a relation sees this table's rows as. */
+    public fr.siamois.domain.models.relation.RelationEntityKind relationKind() {
+        return switch (this) {
+            case UE -> fr.siamois.domain.models.relation.RelationEntityKind.RECORDING_UNIT;
+            case MOBILIER -> fr.siamois.domain.models.relation.RelationEntityKind.SPECIMEN;
+            case PHASE -> fr.siamois.domain.models.relation.RelationEntityKind.PHASE;
+            case CONTENANT -> fr.siamois.domain.models.relation.RelationEntityKind.CONTAINER;
+            case DOCUMENT -> fr.siamois.domain.models.relation.RelationEntityKind.DOCUMENT;
+            case STUDY -> fr.siamois.domain.models.relation.RelationEntityKind.STUDY;
+        };
+    }
 }

@@ -15,28 +15,35 @@ import java.util.Set;
  * @param allowedUnitIds      MEASUREMENT: the units an answer can be entered in, all of the same dimension
  * @param measureTypeConceptId   MEASUREMENT: the concept of what is measured (null to leave it as it is)
  * @param measureNatureConceptId MEASUREMENT: the concept of the nature of the measure (null for none)
+ * @param relation            RELATION: what the relation accepts and how it is mirrored (null for any other type)
  */
 public record FieldOptions(boolean allowNoAnswer, @Nullable Long defaultUnitId, Set<Long> allowedUnitIds,
-                           @Nullable Long measureTypeConceptId, @Nullable Long measureNatureConceptId)
+                           @Nullable Long measureTypeConceptId, @Nullable Long measureNatureConceptId,
+                           @Nullable RelationOptions relation)
         implements Serializable {
 
     /** No option: the state a field has when its type has none. */
-    public static final FieldOptions NONE = new FieldOptions(false, null, Set.of(), null, null);
+    public static final FieldOptions NONE = new FieldOptions(false, null, Set.of(), null, null, null);
 
     public FieldOptions {
         allowedUnitIds = allowedUnitIds == null ? Set.of() : Set.copyOf(allowedUnitIds);
     }
 
     public static FieldOptions noAnswer(boolean allowNoAnswer) {
-        return new FieldOptions(allowNoAnswer, null, Set.of(), null, null);
+        return new FieldOptions(allowNoAnswer, null, Set.of(), null, null, null);
     }
 
     public static FieldOptions units(@Nullable Long defaultUnitId, Set<Long> allowedUnitIds) {
-        return new FieldOptions(false, defaultUnitId, allowedUnitIds, null, null);
+        return new FieldOptions(false, defaultUnitId, allowedUnitIds, null, null, null);
+    }
+
+    /** The options of a relation field. */
+    public static FieldOptions relation(RelationOptions relation) {
+        return new FieldOptions(false, null, Set.of(), null, null, relation);
     }
 
     /** The same options for a measurement that also says what it measures. */
     public FieldOptions measuring(@Nullable Long typeConceptId, @Nullable Long natureConceptId) {
-        return new FieldOptions(allowNoAnswer, defaultUnitId, allowedUnitIds, typeConceptId, natureConceptId);
+        return new FieldOptions(allowNoAnswer, defaultUnitId, allowedUnitIds, typeConceptId, natureConceptId, relation);
     }
 }

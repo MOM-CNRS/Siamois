@@ -47,6 +47,8 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
             """)
     long countByFieldId(@Param("customFieldId") Long customFieldId);
 
+    List<FieldFormConfig> findAllByField(CustomField field);
+
     Optional<FieldFormConfig> findByFormConfigAndField(FormConfig formConfig, CustomField field);
 
     /**

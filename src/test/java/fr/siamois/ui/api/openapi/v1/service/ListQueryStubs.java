@@ -33,7 +33,7 @@ public final class ListQueryStubs {
      * over relation fields that have no value.
      */
     public static MultiValueAnswers multiValueAnswers() {
-        return new MultiValueAnswers(noRelationValues());
+        return new MultiValueAnswers(noRelationValues(), org.mockito.Mockito.mock(fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository.class));
     }
 
     /** A {@link RelationFieldService} whose relations are all empty. */

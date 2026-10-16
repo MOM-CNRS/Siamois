@@ -164,6 +164,13 @@ public class RelationDefinitionSeeder {
         return definitionRepository.save(definition);
     }
 
+    /** Gives a definition created by an institution the same link form as the platform's: one optional "uncertain" boolean. */
+    @Transactional
+    public void addUncertainLinkForm(RelationDefinition definition) {
+        Concept uncertain = conceptSeeder.findConceptOrThrow(new ConceptSeeder.ConceptKey(VOCABULARY_ID, FIELD_UNCERTAIN));
+        seedLinkForm(definition, Map.of(FIELD_UNCERTAIN, uncertain));
+    }
+
     /** The platform definitions' link form: one optional boolean, "uncertain". Created once, kept as configured. */
     private void seedLinkForm(RelationDefinition definition, Map<String, Concept> concepts) {
         if (definition.getLinkFormConfig() != null) return;

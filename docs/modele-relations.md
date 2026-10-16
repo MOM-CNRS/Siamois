@@ -144,8 +144,17 @@ Fait : modèle et schéma (lot 1) ; concepts, définitions `Ordre` et `Synchrone
 service d'écriture, règles, attributs, API `/relation-links` (lot 3) ; lecture, tri par nombre de liens et filtre sur l'entité liée
 des champs de relation `-328` Antérieur / `-329` Postérieur / `-330` Synchrone (lot 4, partie lecture) ; remplacement de la
 stratigraphie : `stratigraphic_relationship`, son trigger, le champ `-327` et tout le code associé sont supprimés, la reprise
-Excel et l'export lisent `relation_link` (lot 5). Reste : écriture par le PATCH des champs, bascule des réponses personne / lieu /
-projet (lot 4), types par côté dans l'écran, écran de configuration (lots 6–7), React (lot 8), export générique (lot 9).
+Excel et l'export lisent `relation_link` (lot 5). Configuration (lots 6–7) : **tout se fait depuis « Tables & champs »**, il n'y a
+pas d'écran « Relations » à part. Un champ de type **Relation** se crée comme les autres (« Ajouter un champ » → « Nouveau champ »)
+et son détail s'affiche dans le panneau du champ : entité reliée, types acceptés de chaque côté (contrainte de type), miroir (aucun,
+symétrique, autre champ), indicateur « incertain » sur les liens. Créer le champ crée la définition (`INST<institution>.<nom>`) et,
+si elle a un miroir, le champ miroir, qu'on ajoute ensuite aux formulaires de l'entité reliée depuis le catalogue « Ajouter un champ »
+(proposé seulement sur les tables qui peuvent le porter). Le genre d'entité, le miroir et l'indicateur sont fixés à la création, les types
+acceptés et les noms restent modifiables. Retirer le dernier champ d'une relation sans lien la supprime ; avec des liens elle est
+conservée. Les champs de relation d'une institution se lisent, se trient et se filtrent comme ceux de la plateforme (par leur
+`valueBinding`). `GET /api/v1/relation-definitions/{code}` donne à un client les côtés acceptés et la correspondance des types. Reste :
+écriture par le PATCH des champs, bascule des réponses personne / lieu / projet (lot 4), règle de préremplissage (lot 6, à faire dans la
+boîte de dialogue du lien), React (lot 8), export générique (lot 9).
 Convention de l'import Excel : pour une ligne asynchrone, `us1` est l'unité antérieure (cible du lien) et `us2` la postérieure (source) ;
 le concept de la feuille est le type du lien du côté qu'il décrit (`concept_direction`).
 

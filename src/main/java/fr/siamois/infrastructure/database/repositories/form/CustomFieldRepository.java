@@ -103,4 +103,7 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             """)
     List<CustomField> findActiveAdditionalByInstitutionAndTable(@Param("institutionId") Long institutionId,
                                                                @Param("fieldCode") String fieldCode);
+
+    /** The fields whose {@code valueBinding} starts with {@code prefix} (the fields of one relation definition). */
+    List<CustomField> findByValueBindingStartingWith(String prefix);
 }

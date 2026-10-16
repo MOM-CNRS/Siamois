@@ -31,6 +31,10 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationEntityKind;
+import fr.siamois.domain.services.relation.RelationDefinitionService;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -110,6 +114,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final FormLayoutSeeds formLayoutSeeds;
     private final FormConfigGroupRepository formConfigGroupRepository;
     private final UnitDefinitionRepository unitDefinitionRepository;
+    private final RelationDefinitionService relationDefinitionService;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -367,6 +372,10 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         }
 
         links.forEach(fieldFormConfigRepository::delete);
+        if (field instanceof CustomFieldRelation && relationDefinitionService != null) {
+            fieldFormConfigRepository.flush();
+            relationDefinitionService.deleteIfUnused(currentUser(), field);
+        }
         return true;
     }
 
@@ -396,7 +405,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     public List<FieldCatalogEntry> searchFieldCatalog(Long projectId, ConfigurableTable table, String typeName, String query) {
         String needle = query == null ? "" : query.toLowerCase().trim();
         Set<String> configured = configuredFieldNames(projectId, table, typeName);
-        return reusableCatalogFields().stream()
+        return reusableCatalogFields(table).stream()
                 .filter(field -> !configured.contains(field.getLabel()))
                 .filter(field -> needle.isBlank()
                         || matches(field.getLabel(), needle)
@@ -426,8 +435,43 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
                                            String name, FieldType type, String description, FieldOptions options) {
+        if (type == FieldType.SELECT_MULTIPLE_RELATION) {
+            return createRelationField(projectId, table, typeName, name, options);
+        }
         SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description, options);
         return toDto(linkField(result.savedReplacement, result.owner, true, false));
+    }
+
+    /**
+     * A relation field is the field of a relation definition made for it: the field is created with its definition (and the
+     * mirror field, to add to the forms of the linked entity), then added to this type.
+     */
+    private TypeFieldFormConfig createRelationField(Long projectId, ConfigurableTable table, String typeName,
+                                                    String name, FieldOptions options) {
+        RelationOptions relation = options == null ? null : options.relation();
+        if (relation == null || relation.targetKind() == null || relation.mirror() == null) {
+            throw new IllegalArgumentException("Une relation a besoin de l'entité qu'elle relie");
+        }
+        FormConfig owner = requireFormConfig(projectId, table, typeName);
+        RelationDefinition definition = relationDefinitionService.create(currentUser(), new RelationDefinitionService.Draft(
+                name, relation.mirrorLabel(), relation.mirror(), table.relationKind(), relation.sourceTypes(),
+                relation.targetKind(), relation.targetTypes(), relation.uncertain(), relation.mirrorFieldId()));
+        return toDto(linkField(relationDefinitionService.sourceFieldOf(definition), owner, true, false));
+    }
+
+    /** The fields of {@code kind} that can serve as the mirror of a new relation, as (id, name) options. */
+    @Override
+    @Transactional(readOnly = true)
+    public List<RelationDefinitionService.TypeOption> relationMirrorCandidates(RelationEntityKind kind) {
+        return relationDefinitionService.mirrorCandidates(currentUser(), kind).stream()
+                .map(f -> new RelationDefinitionService.TypeOption(f.getId(), f.getLabel())).toList();
+    }
+
+    /** The config types of {@code kind} the project configures, for a relation to restrict a side to. */
+    @Override
+    @Transactional(readOnly = true)
+    public List<RelationDefinitionService.TypeOption> relationTypeOptions(Long projectId, RelationEntityKind kind) {
+        return relationDefinitionService.typesOf(currentUser(), projectId, kind);
     }
 
     /**
@@ -445,7 +489,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (present.isPresent()) {
             return toDto(present.get());
         }
-        CustomField field = reusableCatalogFields().stream()
+        CustomField field = reusableCatalogFields(table).stream()
                 .filter(candidate -> catalogFieldName.equals(candidate.getLabel()))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException("Unknown catalog field: " + catalogFieldName));
@@ -483,6 +527,12 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             return null;
         }
 
+        if (current instanceof CustomFieldRelation && typeOf(current) == newType) {
+            if (options != null && options.relation() != null) {
+                relationDefinitionService.update(currentUser(), current, newName, options.relation());
+            }
+            return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
+        }
         if (typeOf(current) == newType) {
             current.setLabel(newName);
             current.setHint(description);
@@ -568,9 +618,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         fieldFormConfigRepository.save(to);
     }
 
-    private List<CustomField> reusableCatalogFields() {
+    private List<CustomField> reusableCatalogFields(ConfigurableTable table) {
         Map<String, CustomField> byLabel = new LinkedHashMap<>();
-        for (CustomField field : customFieldRepository.findAllReusableByInstitution(currentUser().getInstitution().getId())) {
+        Long institutionId = currentUser().getInstitution().getId();
+        List<CustomField> candidates = new ArrayList<>(customFieldRepository.findAllReusableByInstitution(institutionId));
+        // The fields of the institution's relations, offered only on the tables that can hold them.
+        if (relationDefinitionService != null) {
+            candidates.addAll(relationDefinitionService.fieldsFor(institutionId, table.relationKind()));
+        }
+        for (CustomField field : candidates) {
             if (field.getLabel() != null) {
                 byLabel.putIfAbsent(field.getLabel(), field);
             }
@@ -655,6 +711,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             Long defaultId = measurement.getUnit() == null ? null
                     : catalogueUnit(measurement.getUnit().getSymbol(), measurement.getUnit().getDimension()).map(UnitDefinition::getId).orElse(null);
             return FieldOptions.units(defaultId, ids);
+        }
+        if (field instanceof CustomFieldRelation && relationDefinitionService != null) {
+            return relationDefinitionService.describe(field).map(FieldOptions::relation).orElse(FieldOptions.NONE);
         }
         return FieldOptions.NONE;
     }

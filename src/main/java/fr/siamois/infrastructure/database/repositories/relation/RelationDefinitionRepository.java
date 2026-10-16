@@ -10,4 +10,8 @@ import java.util.Optional;
 public interface RelationDefinitionRepository extends JpaRepository<RelationDefinition, Long> {
 
     Optional<RelationDefinition> findByCode(String code);
+
+    /** The platform's definitions (no institution) and those of {@code institutionId}, system ones first. */
+    @org.springframework.data.jpa.repository.Query("select d from RelationDefinition d where d.institution is null or d.institution.id = :institutionId order by d.system desc, d.code")
+    java.util.List<RelationDefinition> findVisibleTo(@org.springframework.data.repository.query.Param("institutionId") Long institutionId);
 }

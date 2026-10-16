@@ -29,7 +29,9 @@ import static org.mockito.Mockito.when;
 class MultiValueAnswersTest {
 
     private final RelationFieldService relations = mock(RelationFieldService.class);
-    private final MultiValueAnswers answers = new MultiValueAnswers(relations);
+    private final fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository customFields =
+            mock(fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository.class);
+    private final MultiValueAnswers answers = new MultiValueAnswers(relations, customFields);
 
     private static final String PARENTS = id("parents");
     // the "Anterior" field: one side of the configurable stratigraphic order
@@ -98,6 +100,20 @@ class MultiValueAnswersTest {
             assertThat(answer.answerType()).isEqualTo("SELECT_MULTIPLE_RELATION");
             assertThat(answer.values()).containsExactly(ref("3"));
         });
+    }
+
+    @Test
+    void readsAnInstitutionsOwnRelationField_foundByItsBinding() {
+        fr.siamois.domain.models.form.customfield.CustomFieldRelation parent = fr.siamois.domain.models.form.customfield.CustomFieldRelation.builder()
+                .id(402L).valueBinding("relation:INST4.parent:SOURCE:RECORDING_UNIT").build();
+        when(customFields.findAllById(List.of(402L))).thenReturn(List.of(parent));
+        MultiValue preview = MultiValue.complete(List.of(ref("241")));
+        when(relations.previews(any(DefinitionRelation.class), eq(Set.of(240L)), eq(50), eq("fr"), any()))
+                .thenReturn(Map.of(240L, preview));
+
+        Object shaped = answers.shapeOne(RecordingUnit.class, 240L, new LinkedHashMap<>(), Set.of("402", "-324"), 50, "fr").get("402");
+
+        assertThat(shaped).isEqualTo(preview);
     }
 
     @Test

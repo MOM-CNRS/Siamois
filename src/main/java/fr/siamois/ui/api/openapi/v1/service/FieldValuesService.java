@@ -17,6 +17,7 @@ import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -83,8 +84,9 @@ public class FieldValuesService {
         boolean ascending = parseSort(sort);
         Owner owner = requireOwner(caller, ownerType, ownerKey, lang);
 
-        requireMultiValued(ownerType, fieldId);
-        Optional<RelationSource> relation = MultiValueAnswers.relationFieldOf(ownerType, fieldId);
+        CustomField field = requireMultiValued(ownerType, fieldId);
+        Optional<RelationSource> relation = MultiValueAnswers.relationFieldOf(ownerType, fieldId)
+                .or(() -> RelationSources.of(ownerType, field.getValueBinding()));
         if (relation.isPresent()) {
             return relationFieldService.page(relation.get(), owner.id(), offset, limit, search, ascending, lang);
         }
@@ -92,13 +94,14 @@ public class FieldValuesService {
     }
 
     /** 404 for a field the owner has no such field, 400 for one that isn't multi-valued. */
-    private void requireMultiValued(Class<?> ownerType, String fieldId) {
+    private CustomField requireMultiValued(Class<?> ownerType, String fieldId) {
         CustomField field = MultiValueAnswers.systemFieldOf(ownerType, fieldId)
                 .or(() -> parseFieldId(fieldId).flatMap(customFieldRepository::findById))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ inconnu : " + fieldId));
         if (!FieldAnswerWireService.answerTypeOf(field).startsWith("SELECT_MULTIPLE")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce champ n'est pas multivalué : " + fieldId);
         }
+        return field;
     }
 
     private static Optional<Long> parseFieldId(String fieldId) {

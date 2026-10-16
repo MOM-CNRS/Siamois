@@ -68,6 +68,6 @@ class FieldTypeTest {
     void theCreatableTypesAreTheOnesTheScreenCanBuild() {
         assertThat(FieldType.userCreatableTypes()).containsExactly(FieldType.TEXT, FieldType.INTEGER,
                 FieldType.DECIMAL, FieldType.DATETIME, FieldType.BOOLEAN, FieldType.MEASUREMENT,
-                FieldType.SELECT_ONE, FieldType.SELECT_MULTIPLE);
+                FieldType.SELECT_ONE, FieldType.SELECT_MULTIPLE, FieldType.SELECT_MULTIPLE_RELATION);
     }
 }

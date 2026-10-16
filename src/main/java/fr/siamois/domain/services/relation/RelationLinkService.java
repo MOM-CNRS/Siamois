@@ -174,6 +174,15 @@ public class RelationLinkService {
         }
     }
 
+    /** Deletes every link of a definition, with its attributes, before the definition itself is deleted. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAllLinksOf(RelationDefinition definition) {
+        for (RelationLink link : linkRepository.findByDefinition(definition)) {
+            attributesService.deleteAll(link);
+            linkRepository.delete(link);
+        }
+    }
+
     /**
      * What an existing link no longer satisfies — a kind or a config type its definition stopped accepting, an end
      * in another project. A link that breaks a rule or a restriction added after the fact is flagged here, never

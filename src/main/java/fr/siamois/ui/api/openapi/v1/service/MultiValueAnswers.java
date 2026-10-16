@@ -12,6 +12,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationSources;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -65,6 +66,7 @@ public class MultiValueAnswers {
     private static final Map<Class<?>, Map<String, CustomField>> SYSTEM_FIELDS = indexSystemFields();
 
     private final RelationFieldService relationFieldService;
+    private final CustomFieldRepository customFieldRepository;
 
     private static Map<Class<?>, Map<String, RelationSource>> indexRelationFields() {
         Map<Class<?>, Map<String, RelationSource>> out = new LinkedHashMap<>();
@@ -130,9 +132,8 @@ public class MultiValueAnswers {
         if (fieldIds == null) return out;
 
         Set<Long> ownerIds = answersByOwner.keySet();
-        for (Map.Entry<String, RelationSource> e : RELATION_FIELDS.getOrDefault(ownerType, Map.of()).entrySet()) {
+        for (Map.Entry<String, RelationSource> e : relationFieldsAmong(ownerType, fieldIds).entrySet()) {
             String fieldId = e.getKey();
-            if (!fieldIds.contains(fieldId)) continue;
             Map<Long, MultiValue> previews = relationFieldService.previews(e.getValue(), ownerIds, limit, lang,
                     ownerId -> valuesHref(ownerType, ownerId, fieldId));
             previews.forEach((ownerId, preview) -> {
@@ -141,6 +142,40 @@ public class MultiValueAnswers {
             });
         }
         return out;
+    }
+
+    /**
+     * The relation fields among {@code fieldIds}: the owner's system ones, and the institution's own, which are
+     * fields of the database whose binding names a relation definition.
+     */
+    private Map<String, RelationSource> relationFieldsAmong(Class<?> ownerType, Collection<String> fieldIds) {
+        Map<String, RelationSource> system = RELATION_FIELDS.getOrDefault(ownerType, Map.of());
+        Map<String, RelationSource> out = new LinkedHashMap<>();
+        List<Long> custom = new java.util.ArrayList<>();
+        for (String fieldId : fieldIds) {
+            if (system.containsKey(fieldId)) {
+                out.put(fieldId, system.get(fieldId));
+            } else {
+                positiveId(fieldId).ifPresent(custom::add);
+            }
+        }
+        if (!custom.isEmpty()) {
+            for (CustomField field : customFieldRepository.findAllById(custom)) {
+                RelationSources.of(ownerType, field.getValueBinding())
+                        .ifPresent(relation -> out.put(String.valueOf(field.getId()), relation));
+            }
+        }
+        return out;
+    }
+
+    /** A field of the database has a positive id; system fields have negative ones. */
+    private static Optional<Long> positiveId(String fieldId) {
+        try {
+            long id = Long.parseLong(fieldId.trim());
+            return id > 0 ? Optional.of(id) : Optional.empty();
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
     }
 
     /** {@link #shape} for a single owner — a detail. */

@@ -314,18 +314,27 @@ public class FieldQueryService {
         if (Boolean.TRUE.equals(field.getIsSystemField())) {
             return field.getValueBinding() == null ? null : resolveSystem(entityType, field.getValueBinding());
         }
+        if (DefinitionRelation.isBinding(field.getValueBinding())) {
+            // An institution's own relation field: its links are rows of relation_link, whoever made the field.
+            return relationTarget(entityType, field.getValueBinding());
+        }
         return resolveAdditional(entityType, field);
+    }
+
+    /** The links of a configurable relation: not a property of the entity, rows of {@code relation_link}. */
+    @Nullable
+    private static Target relationTarget(Class<?> entityType, String binding) {
+        return RelationSources.kindOf(entityType)
+                .flatMap(kind -> DefinitionRelation.parse(kind, binding))
+                .map(relation -> new Target(true, binding, Kind.REFERENCES, Object.class, null, false, null, true))
+                .orElse(null);
     }
 
     @Nullable
     private Target resolveSystem(Class<?> entityType, String formBinding) {
         String binding = entityAttribute(entityType, formBinding);
         if (DefinitionRelation.isBinding(binding)) {
-            // The links of a configurable relation: not a property either, rows of relation_link.
-            return RelationSources.kindOf(entityType)
-                    .flatMap(kind -> DefinitionRelation.parse(kind, binding))
-                    .map(relation -> new Target(true, binding, Kind.REFERENCES, Object.class, null, false, null, true))
-                    .orElse(null);
+            return relationTarget(entityType, binding);
         }
         ManagedType<?> type = managedType(entityType);
         if (type == null) return null;

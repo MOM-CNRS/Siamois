@@ -42,7 +42,7 @@ public enum FieldType {
     SELECT_MULTIPLE_SPECIMEN("Mobilier", "bi bi-box", false),
     SELECT_MULTIPLE_CONTAINER("Contenants", "bi bi-archive", false),
     SELECT_MULTIPLE_PHASE("Phases", "bi bi-layers", false),
-    SELECT_MULTIPLE_RELATION("Relation", "bi bi-diagram-2", false);
+    SELECT_MULTIPLE_RELATION("Relation", "bi bi-diagram-2", true);
 
     private final String label;
     /** The CSS classes of the icon that stands for this type of field, in front of its name (Bootstrap, or the OpenTheso "O" for a vocabulary). */

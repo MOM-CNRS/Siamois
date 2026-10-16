@@ -364,6 +364,17 @@ class FieldQueryServiceQueryTest {
     }
 
     @Test
+    void anInstitutionsOwnRelationFieldIsQueriedLikeAPlatformOne() {
+        field(new CustomFieldRelation(), false, "relation:INST4.parent:SOURCE:RECORDING_UNIT");
+
+        run(build(RecordingUnit.class, filter(values("3"))));
+        run(build(RecordingUnit.class, sort(true)));
+
+        verify(cb, atLeastOnce()).exists(any());
+        verify(cb, atLeastOnce()).count(any());
+    }
+
+    @Test
     void aSymmetricConfigurableRelationIsReadFromEitherEnd() {
         field(new CustomFieldRelation(), true, "relation:SIAMOIS.RELATION.SYNCHRONOUS:BOTH:RECORDING_UNIT");
 

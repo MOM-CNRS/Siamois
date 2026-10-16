@@ -69,4 +69,26 @@ public interface FormConfigRepository extends CrudRepository<FormConfig, Long> {
     Optional<FormConfig> findByActionUnitAndFieldAndValue(@Param("actionUnitId") Long actionUnitId,
                                                           @Param("fieldConceptId") Long fieldConceptId,
                                                           @Param("valueConceptId") Long valueConceptId);
+
+    /** The types (value concepts) the institution's projects configured for a field, each once. */
+    @Query("""
+            select distinct fc.valueConcept
+            from FormConfig fc
+            where fc.institution.id = :institutionId
+              and fc.fieldConcept.id = :fieldConceptId
+              and fc.valueConcept is not null
+            """)
+    List<fr.siamois.domain.models.vocabulary.Concept> findTypesOfInstitution(@Param("institutionId") Long institutionId,
+                                                                             @Param("fieldConceptId") Long fieldConceptId);
+
+    /** The types a project configures for a field concept (its own form configs). */
+    @Query("""
+            select distinct fc.valueConcept
+            from FormConfig fc
+            where fc.actionUnit.id = :projectId
+              and fc.fieldConcept.id = :fieldConceptId
+              and fc.valueConcept is not null
+            """)
+    List<fr.siamois.domain.models.vocabulary.Concept> findTypesOfProject(@Param("projectId") Long projectId,
+                                                                         @Param("fieldConceptId") Long fieldConceptId);
 }

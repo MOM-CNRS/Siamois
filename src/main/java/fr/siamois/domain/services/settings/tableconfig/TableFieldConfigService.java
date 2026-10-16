@@ -413,4 +413,12 @@ public interface TableFieldConfigService {
     /** The same, for a measurement whose form configuration offers {@code units} (null: the field's own). */
     TypeFieldFormConfig describe(CustomField field, boolean active, boolean mandatory, boolean institutionLocked,
                                  @Nullable FieldUnits units);
+
+    /** The config types of {@code kind} the project configures: what a relation can restrict a side to. */
+    java.util.List<fr.siamois.domain.services.relation.RelationDefinitionService.TypeOption> relationTypeOptions(
+            Long projectId, fr.siamois.domain.models.relation.RelationEntityKind kind);
+
+    /** The existing fields of {@code kind} that can serve as the mirror of a new relation. */
+    java.util.List<fr.siamois.domain.services.relation.RelationDefinitionService.TypeOption> relationMirrorCandidates(
+            fr.siamois.domain.models.relation.RelationEntityKind kind);
 }
