@@ -41,7 +41,8 @@ import org.springframework.context.annotation.Configuration;
                 @Tag(name = OpenApiTags.STUDY, description = "Etudes et traitements : fiches, types et liens aux UE et au mobilier."),
                 @Tag(name = OpenApiTags.SPATIAL_UNIT, description = "Recherche de lieux pour l'autocomplétion (contexte spatial des projets)."),
                 @Tag(name = OpenApiTags.USER, description = "Utilisateurs rattachés à une organisation (équipes, gestionnaires)."),
-                @Tag(name = OpenApiTags.BOOKMARK, description = "Favoris de l'utilisateur, génériques pour tout type de ressource.")
+                @Tag(name = OpenApiTags.BOOKMARK, description = "Favoris de l'utilisateur, génériques pour tout type de ressource."),
+                @Tag(name = OpenApiTags.RELATION, description = "Liens des relations configurables (stratigraphie, relations d'institution) : création, mise à jour, suppression.")
         },
         security = @SecurityRequirement(name = "bearer-jwt")
 )

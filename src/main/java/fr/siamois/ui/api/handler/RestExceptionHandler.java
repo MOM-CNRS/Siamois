@@ -2,6 +2,7 @@ package fr.siamois.ui.api.handler;
 
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
+import fr.siamois.domain.services.relation.RelationLinkException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -81,6 +82,21 @@ public class RestExceptionHandler {
     @ExceptionHandler({RecordingUnitNotFoundException.class, ActionUnitNotFoundException.class})
     public ResponseEntity<ApiError> notFound(RuntimeException ex) {
         return answer(HttpStatus.NOT_FOUND, ApiError.of(NOT_FOUND, ex.getMessage()));
+    }
+
+    /** A refused write on a relation link: the reason picks the status, the rules it breaks come back as details. */
+    @ExceptionHandler(RelationLinkException.class)
+    public ResponseEntity<ApiError> relationLink(RelationLinkException ex) {
+        HttpStatus status = switch (ex.getReason()) {
+            case DEFINITION_NOT_FOUND, LINK_NOT_FOUND, ENDPOINT_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case FORBIDDEN, MIRROR_READ_ONLY -> HttpStatus.FORBIDDEN;
+            case DUPLICATE, RULE_VIOLATION -> HttpStatus.CONFLICT;
+            case KIND_NOT_ALLOWED, TYPE_NOT_ALLOWED, TYPE_MISMATCH, CROSS_PROJECT, INVALID_ATTRIBUTE -> HttpStatus.BAD_REQUEST;
+        };
+        List<ApiError.Detail> details = ex.getViolations().isEmpty() ? null : ex.getViolations().stream()
+                .map(v -> new ApiError.Detail(v.rule().name(), v.message()))
+                .toList();
+        return answer(status, new ApiError(codeOf(status), ex.getMessage(), details, null));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

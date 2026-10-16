@@ -138,6 +138,38 @@ n'existait pas en base, a été retiré du code.
 
 > **Statut : conception arrêtée (14/10/2026), non implémentée.** Les points encore ouverts sont en §4.9.
 
+### Décisions du 15/10/2026 (cadrage de l'implémentation)
+
+- **Besoins moteurs** : (1) contrainte de **type accepté** sur un côté (une UE de type Fait comme parent, par
+  exemple) ; (2) **champs miroirs** dans la configuration des formulaires ; (3) **relations typées**, pour faire
+  la stratigraphie.
+- **Pas d'option hiérarchique** dans cette étape : aucune vérification de cycle de hiérarchie, aucune vue en
+  arbre sur `relation_link`. Les hiérarchies système (famille A) ne changent pas. La règle « pas de cycle »
+  reste prévue pour l'ordre stratigraphique (§4.6).
+- **Tout champ additionnel de lien passe par `relation_link`** : personne, lieu, projet, UE, mobilier,
+  contenant, phase (étude et document au besoin). Les extrémités sont des **entités** : un lien vers un
+  **concept** n'existe pas. Les concepts restent du vocabulaire contrôlé (`SELECT_ONE` / `SELECT_MULTIPLE`,
+  tables `custom_field_answer_concept_answers`, inchangées) et ne servent à la relation que pour nommer les
+  côtés et les types.
+- **Aucune reprise de données** : l'application n'est pas en production. `stratigraphic_relationship` et les
+  tables de réponses personne, lieu et projet sont supprimées avec leurs entités et view models JSF ; les
+  seeders et jeux d'essai sont réécrits pour la nouvelle table. La stratigraphie est donc le **premier cas
+  d'usage** de la famille C et non le dernier lot.
+- **Stratigraphie, forme retenue** : un champ par côté (Antérieur, Postérieur, Synchrone), le type étant
+  facultatif. La variante « un seul champ Relations dont le type donne le sens », lecture en union de
+  plusieurs définitions à type obligatoire, est reportée (surcoût estimé à 2–3 jours).
+- **Formulaire du lien retenu** : les relations complexes (§4.4) sont dans le périmètre, au moins pour un
+  **petit formulaire** de quelques champs (« incertain », éventuellement un commentaire). Réponses ordinaires
+  dans `form_config_answer.fk_relation_link_id`, édition du lien dans un dialogue. La stratigraphie l'utilise
+  pour `uncertain` (feuille `relation` de l'export). Tri et filtre sur ces attributs : non requis dans une
+  première version (tri par nombre de liens et filtre sur l'entité liée seulement, §4.5).
+- **Contrainte de type : forme v1** : un seul **genre** d'entité par côté, mais **un ou plusieurs types de
+  configuration** (Fait et Sondage, deux types d'UE). La liste est portée par des lignes (`relation_definition_kind`),
+  jamais par une colonne : passer à plusieurs genres d'entité par côté reste un ajout (sélecteur multi-listes, lecture),
+  pas une réécriture du modèle.
+- **Contrainte de type** : si le type d'une entité liée change ensuite, le lien n'est pas supprimé, il est
+  signalé (même principe que les règles de relation, §4.6).
+
 Une relation configurable relie deux types d'entités quelconques, sans migration. Elle est décrite par une
 **définition de relation** (objet de configuration), et ses liens sont stockés dans une table commune.
 
@@ -219,15 +251,16 @@ du formulaire du lien sont des réponses ordinaires : `form_config_answer` reço
 `fk_relation_link_id`, avec la même contrainte d'unicité `(fk_relation_link_id, fk_form_config_id)` que les
 autres types d'entité, soit un seul jeu de réponses par lien, partagé par les deux côtés. Conséquence : le
 tri et le filtre génériques de `FieldQueryService`, qui lisent les réponses, ne couvrent pas ces relations ;
-il faut écrire l'équivalent (filtrer par « a un lien vers X », trier par identifiant de l'entité liée).
+il faut écrire l'équivalent. **Décision du 15/10/2026** : tri par **nombre de liens** (comme les
+valeurs multiples actuelles, par exemple les contributeurs) et filtre sur **l'entité liée** (« a un lien vers X »,
+plusieurs entités possibles) ; rien sur les attributs du lien ni sur le type pour l'instant.
 
 Tables ajoutées : `relation_definition`, `relation_definition_kind` (types source et cible autorisés),
 `relation_link`, `relation_type_mapping` (correspondance entre types des deux côtés, suggérée ou imposée),
 `relation_rule` et sa liaison aux définitions. Le formulaire du lien est une configuration de formulaire
 rattachée à la définition (à vérifier : comment `FormConfig` se rattache à un type d'entité).
 
-Les relations simples vers des concepts et des personnes peuvent rester dans les tables de réponses
-`custom_field_answer_*_answers` existantes ; la bascule de ces tables vers `relation_link` est à trancher (§4.9).
+Les champs de lien vers des **entités** (personnes comprises) passent tous par `relation_link`. Les champs vers des **concepts** restent des réponses de vocabulaire (`custom_field_answer_concept_answers`), hors de ce modèle.
 
 Hiérarchies système (`*_hierarchy`, `container.parent`) : inchangées (famille A), lues par le même
 mécanisme de `RelationFieldRepository`. Une relation **configurée** déclarée hiérarchique, elle, stocke ses
@@ -267,8 +300,9 @@ Le type est facultatif : le champ où l'on saisit donne déjà l'ordre. Un conce
 sur ») figure dans les deux vocabulaires. L'ordre porte la règle « pas de cycle ». Les anciennes colonnes
 `concept_direction`, `asynchronous`, `uncertain` sont reprises ainsi : le concept avec sa direction va dans le
 type du côté actif et son réciproque dans l'autre ; « incertain » devient un champ du formulaire du lien ;
-`asynchronous` est à clarifier (§4.9). La migration est faite **en dernier**, pour que la définition
-prédéfinie serve de cas de test ; d'ici là l'ancienne table continue de fonctionner (champ `-327`, lecture seule).
+`asynchronous` est à clarifier (§4.9). Pas de reprise de données (décision du 15/10/2026) : l'ancienne table est supprimée avec ses entités, et
+les définitions prédéfinies servent de premier cas d'usage. La colonne `uncertain` devient un champ « incertain »
+du formulaire du lien (feuille `relation` du modèle national).
 
 ### 4.8 Affichage
 
@@ -285,6 +319,15 @@ corrélés, avec les deux libellés affichés. Feuilles d'export : une forme cen
 lien, forme active) et une forme centrée sur l'entité (colonne « Relations » concaténée, libellés du côté
 de la ligne) ; le module d'export gagne un `EntityKind` « Relation ».
 
+**Export (cadrage du 15/10/2026).** Le registre fermé `ExportTechnicalSource` ne contient aujourd'hui que
+`STRATIGRAPHIC_RELATIONSHIP` (lue dans l'ancienne table) et `RECORDING_UNIT_HIERARCHY`. À prévoir : une
+source générique `RELATION` paramétrée par la définition, dont les extrémités viennent des types autorisés de
+la définition (plus fixes UE ↔ UE), avec un filtre par type de relation ; la lecture d'un champ de relation
+et de son miroir en colonne d'une feuille d'entité (liste terminale concaténée) ; une référence portable à la
+définition dans le JSON (par concept du côté, ou code stable pour les définitions système, jamais un
+identifiant de base) ; la mise à jour du modèle national (feuille `relation`). Les droits de lecture
+filtrent les liens comme dans la fiche. Estimation : 3–5 jours, plus 1–2 pour les choix dans l'éditeur JSF.
+
 **Écran graphe d'UE (plus tard).** Écran propre aux UE, centré sur une UE, profondeur 1 : parent en haut,
 enfant en bas, antérieur et postérieur de part et d'autre, synchrone, et une zone « reste » bornée (compteur
 et lien vers la liste). Les zones sont identifiées par les concepts système (§4.2) ; lecture unifiée des liens
@@ -300,8 +343,7 @@ couches, qui s'appuie sur l'absence de cycle de l'ordre).
 - Une relation complexe peut-elle être hiérarchique ? (retenu : non, mais la règle « pas de cycle » existe.)
 - Zone « reste » du graphe : UE seulement (recommandé) ou aussi mobilier, phases, documents.
 - Liste autonome des liens dès le départ, ou listes intégrées seulement (recommandé).
-- Les relations simples vers concepts et personnes restent-elles dans les tables de réponses ou passent-elles
-  dans `relation_link` ?
+- ~~Les relations simples vers concepts et personnes restent-elles dans les tables de réponses ?~~ **Tranché (15/10/2026)** : les entités (personnes comprises) vont dans `relation_link`, les concepts restent du vocabulaire.
 - Droits d'édition du miroir et visibilité d'un lien dont la cible est hors du périmètre de l'utilisateur.
 - Vocabulaire des définitions créées par une institution : qui peut créer une définition (institution ou
   administrateur de la plateforme).
@@ -333,8 +375,10 @@ Pour mémoire — vocabulaires, droits et configuration, non concernés par ce m
    « études » des fiches UE et mobilier, la liste d'organisation et la feuille `traitement` de l'export.
 3. **Mouvements** : décider si un mouvement concerne un seul mobilier (colonne actuelle) ou plusieurs
    (`movement_specimen`).
-4. **Relations configurables** (famille C, §4) : définition de relation, `relation_link`, concepts système
-   (antérieur, postérieur, synchrone, parent, enfant), miroir, type par côté et correspondance, règles de
-   relation, catégorie de table « Relation » ; en dernier, migration de `stratigraphic_relationship`.
+4. **Relations configurables** (famille C, §4), cadrage du 15/10/2026, environ 16–20 jours ouvrés avec Claude et
+   une grille de scénarios, export et formulaire du lien compris : définition de relation, `relation_link`, contrainte de type,
+   miroir dans la configuration des formulaires, type par côté et correspondance, stratigraphie comme premier
+   cas d'usage (champs Antérieur, Postérieur, Synchrone, règle « pas de cycle »), écran de configuration des
+   définitions, petit formulaire du lien (« incertain »), composants React, export (§4.8). Sans option hiérarchique et sans reprise de données.
 5. **Thésaurus** : les concepts `TBL_*_Document` restent (une table de liaison par type) ; ajouter
    `TBL_concept` et `TBL_vocabulaire`.

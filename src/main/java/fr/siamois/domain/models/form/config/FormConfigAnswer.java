@@ -6,6 +6,7 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import jakarta.persistence.*;
@@ -22,14 +23,16 @@ import java.util.Set;
 // One answer set per (entity, form config): answers belong to the entity, not to whoever typed them
 // (fk_person_id is only the last author). Each constraint leads with the entity column so it also
 // serves the list sort/filter subqueries that correlate on it; NULLs are distinct in Postgres, so
-// the rows of the other three entity kinds never collide.
+// the rows of the other entity kinds never collide. A relation link owns one answer set too
+// (its shared attributes, e.g. "uncertain"), seen identically from both sides of the relation.
 @Table(name = "form_config_answer", uniqueConstraints = {
         @UniqueConstraint(name = "uk_form_config_answer_recording_unit", columnNames = {"fk_recording_unit_id", "fk_form_config_id"}),
         @UniqueConstraint(name = "uk_form_config_answer_specimen", columnNames = {"fk_specimen_id", "fk_form_config_id"}),
         @UniqueConstraint(name = "uk_form_config_answer_phase", columnNames = {"fk_phase_id", "fk_form_config_id"}),
         @UniqueConstraint(name = "uk_form_config_answer_container", columnNames = {"fk_container_id", "fk_form_config_id"}),
         @UniqueConstraint(name = "uk_form_config_answer_document", columnNames = {"fk_document_id", "fk_form_config_id"}),
-        @UniqueConstraint(name = "uk_form_config_answer_study", columnNames = {"fk_study_id", "fk_form_config_id"})
+        @UniqueConstraint(name = "uk_form_config_answer_study", columnNames = {"fk_study_id", "fk_form_config_id"}),
+        @UniqueConstraint(name = "uk_form_config_answer_relation_link", columnNames = {"fk_relation_link_id", "fk_form_config_id"})
 })
 @NoArgsConstructor
 @AllArgsConstructor
@@ -84,5 +87,10 @@ public class FormConfigAnswer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_study_id")
     private Study study;
+
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_relation_link_id")
+    private RelationLink relationLink;
 
 }

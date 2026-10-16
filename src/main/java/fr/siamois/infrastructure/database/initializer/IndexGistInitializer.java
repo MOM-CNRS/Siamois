@@ -15,6 +15,9 @@ import java.sql.Statement;
 @Order(7)
 public class IndexGistInitializer implements DatabaseInitializer {
 
+    private static final String[] SOURCE_END_KINDS = {"recording_unit", "specimen", "phase", "container", "spatial_unit", "action_unit", "document", "study"};
+    private static final String[] TARGET_END_KINDS = {"recording_unit", "specimen", "phase", "container", "spatial_unit", "action_unit", "person", "document", "study"};
+
     private final HikariDataSource hikariDataSource;
 
     public IndexGistInitializer(HikariDataSource hikariDataSource) {
@@ -31,11 +34,24 @@ public class IndexGistInitializer implements DatabaseInitializer {
             // Sort/filter on a TEXT additional field. An expression index, not @Index: a plain btree
             // on unbounded value_as_text makes any insert past ~2.7 kB fail.
             statement.addBatch("CREATE INDEX IF NOT EXISTS idx_custom_field_answer_text ON custom_field_answer (fk_custom_field_id, lower(left(value_as_text, 200)))");
+            // One link per definition and pair of ends. An expression index, not @UniqueConstraint: each end is
+            // spread over one nullable FK per entity kind, and NULLs never collide in a plain unique constraint.
+            statement.addBatch("CREATE UNIQUE INDEX IF NOT EXISTS uk_relation_link_pair ON relation_link (fk_relation_definition_id, "
+                    + relationEnd("source", SOURCE_END_KINDS) + ", " + relationEnd("target", TARGET_END_KINDS) + ")");
             statement.executeBatch();
             log.info("GIST indexes created successfully");
         } catch (SQLException e) {
             log.error("Error while creating GIST indexes", e);
             throw new DatabaseDataInitException("Error while creating GIST indexes", e);
         }
+    }
+
+    private static String relationEnd(String side, String[] kinds) {
+        StringBuilder sb = new StringBuilder();
+        for (String kind : kinds) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append("COALESCE(fk_").append(side).append('_').append(kind).append("_id, 0)");
+        }
+        return sb.toString();
     }
 }

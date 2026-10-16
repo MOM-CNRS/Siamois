@@ -6,6 +6,7 @@ import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigAnswer;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import org.springframework.data.repository.CrudRepository;
@@ -30,6 +31,8 @@ public interface FormConfigAnswerRepository extends CrudRepository<FormConfigAns
 
     Optional<FormConfigAnswer> findByFormConfigAndStudy(FormConfig formConfig, Study study);
 
+    Optional<FormConfigAnswer> findByFormConfigAndRelationLink(FormConfig formConfig, RelationLink relationLink);
+
     // Every answer set of an entity, whatever its form config: more than one only while answers
     // saved under a former type are still around (see CustomFieldAnswerService's type change).
     List<FormConfigAnswer> findByRecordingUnit(RecordingUnit recordingUnit);
@@ -43,4 +46,6 @@ public interface FormConfigAnswerRepository extends CrudRepository<FormConfigAns
     List<FormConfigAnswer> findByDocument(Document document);
 
     List<FormConfigAnswer> findByStudy(Study study);
+
+    List<FormConfigAnswer> findByRelationLink(RelationLink relationLink);
 }
