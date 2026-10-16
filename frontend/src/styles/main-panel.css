@@ -2176,3 +2176,165 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   font: inherit;
   cursor: pointer;
 }
+
+/* ── Header search bar (src/search/GlobalSearchBar.tsx) ───────────────────────────────────────── */
+.sia-search {
+  position: relative;
+  width: 100%;
+}
+
+.sia-search-field {
+  display: block;
+  width: 100%;
+}
+
+.sia-search-input {
+  width: 100%;
+  padding-left: 2.25rem;
+  padding-right: 2.25rem;
+}
+
+.sia-search-clear {
+  right: 0.75rem;
+  cursor: pointer;
+}
+
+.sia-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 10px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+}
+
+.sia-search-scope,
+.sia-search-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.sia-search-keywords {
+  border-top: 1px solid var(--surface-200, #eee);
+}
+
+.sia-search-keywords-title {
+  margin-right: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--main-color);
+}
+
+.sia-search-chip,
+.sia-search-keyword {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 999px;
+  background: var(--siamois-green-light-100, #eef5f0);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.sia-search-keyword {
+  font-family: monospace;
+  cursor: pointer;
+}
+
+.sia-search-chip.is-off {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.sia-search-chip-toggle {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sia-search-status {
+  padding: 10px 12px;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.9rem;
+}
+
+.sia-search-status.is-error {
+  color: var(--red-600, #c0392b);
+}
+
+.sia-search-section + .sia-search-section {
+  border-top: 1px solid var(--surface-200, #eee);
+}
+
+.sia-search-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--main-color);
+}
+
+.sia-search-count {
+  margin-left: auto;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-100, #f3f4f6);
+  color: var(--text-color-secondary, #6b7280);
+  font-weight: 500;
+}
+
+.sia-search-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px 6px 28px;
+  cursor: pointer;
+}
+
+.sia-search-row.is-active,
+.sia-search-row:hover {
+  background: var(--siamois-green-light-100, #eef5f0);
+}
+
+.sia-search-row-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.sia-search-row-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
+.sia-search-all {
+  justify-content: space-between;
+  color: var(--main-color);
+  font-weight: 600;
+}
+
+.sia-search-mark {
+  padding: 0;
+  border-radius: 3px;
+  background: var(--siamois-green-light-100, #dcebe1);
+  color: inherit;
+}

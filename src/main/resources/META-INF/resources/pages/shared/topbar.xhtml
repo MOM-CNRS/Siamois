@@ -48,46 +48,16 @@
                     </form:csrfform>
         </div>
         <div id="search-bar" class="hide-small-screen" style="flex:8">
-            <form:csrfform formId="searchBarForm" id="searchBarCsrfForm">
-                <article>
-                <span class="ui-input-icon-right">
-                    <p:autoComplete id="searchAutocomplete"
-                                    styleClass="searchInput"
-                                    style="width: 100%"
-                                    value="#{searchBean.selected}"
-                                    var="result"
-                                    itemLabel="#{result.matchingTerm}"
-                                    itemValue="#{result}"
-                                    completeMethod="#{searchBean.completeText}"
-                                    converter="#{searchResultConverter}"
-                                    scrollHeight="250"
-                                    forceSelection="true">
-
-                        <p:column>
-                            <div style="display:flex; align-items:center; gap:0.5em;">
-                                <i class="#{not empty result.recordingUnitId ? 'bi bi-pencil-square' :
-                                            not empty result.spatialUnitId   ? 'bi bi-geo-alt' :
-                                            not empty result.actionUnitId    ? 'bi bi-arrow-down-square' :
-                                                                               'bi bi-bucket'}"/>
-                                <span style="flex:1">#{result.matchingTerm}</span>
-                                <small style="color:var(--text-secondary,#6c757d); flex-shrink:0">
-                                    #{not empty result.recordingUnitId ? 'UE' :
-                                      not empty result.spatialUnitId   ? 'Lieu' :
-                                      not empty result.actionUnitId    ? 'Projet' :
-                                                                         'Mobilier'}
-                                </small>
-                            </div>
-                        </p:column>
-
-                        <p:ajax event="itemSelect"
-                                listener="#{searchBean.onResultSelect}"
-                                process="@this"
-                                update="@none"/>
-
-                    </p:autoComplete>
-                </span>
-                </article>
-            </form:csrfform>
+            <!--
+            The search bar is React (frontend/src/search), mounted by main-panel.js when it loads: this
+            div only carries what the API client needs, like panel/reactPanelMount.xhtml.
+            -->
+            <div class="react-search-bar-mount"
+                 data-organization-id="#{flowBean.selectedInstitution.id}"
+                 data-base-path="#{request.contextPath}"
+                 data-locale="#{langBean.languageCode}"
+                 data-csrf-header="${_csrf.headerName}"
+                 data-csrf-token="${_csrf.token}"/>
         </div>
         <div id="smallScreenToolbar" class="show-small-screen" style="align-content: center; flex:1;
         text-align:left; background: var(--siamois-green-light-100);padding: 0.5em">

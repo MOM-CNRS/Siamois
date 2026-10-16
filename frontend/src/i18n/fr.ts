@@ -284,6 +284,19 @@ export const fr = {
   "toolbar.settings": "Paramètres",
   "common.loadingValues": "Chargement des valeurs…",
   "chooser.empty": "Aucun élément",
+  "search.placeholder": "Rechercher une UE, un mobilier, un projet, un lieu…",
+  "search.ariaLabel": "Recherche globale",
+  "search.clear": "Effacer la recherche",
+  "search.loading": "Recherche…",
+  "search.empty": "Aucun résultat pour « {q} »",
+  "search.error": "La recherche a échoué",
+  "search.viewAll": "Voir les {n} {label}",
+  "search.projectScope": "Projet : {label}",
+  "search.projectScopeCurrent": "Projet courant",
+  "search.projectScopeRemove": "Chercher dans tous les projets",
+  "search.keywords": "Mots-clés",
+  "search.keyword.projet": "Restreindre à un projet (identifiant ou nom)",
+  "search.hint": "Tapez pour rechercher. Exemple : projet:identifiant ma recherche",
 } as const;
 
 export type MessageKey = keyof typeof fr;
