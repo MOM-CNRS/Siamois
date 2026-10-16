@@ -28,6 +28,11 @@ describe("documentEntityConfig", () => {
     expect(documentEntityConfig.list.createForm).toBeDefined();
   });
 
+  // Organization-wide list: Import massif with no project pre-selected.
+  it("offers Import massif on the organization-wide list toolbar", () => {
+    expect(documentEntityConfig.list.toolbarExtra).toBeDefined();
+  });
+
   // Created in a project: from the organization-wide list, the create form picks it.
   it("is created in a project picked by the form on the unscoped list", () => {
     expect(documentEntityConfig.list.createProjectKind).toBe("document");

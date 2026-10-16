@@ -11,6 +11,8 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -50,6 +52,10 @@ class DocumentWriteOpenApiServiceTest {
     @Mock
     private RecordingUnitService recordingUnitService;
     @Mock
+    private SpecimenService specimenService;
+    @Mock
+    private SpatialUnitService spatialUnitService;
+    @Mock
     private DocumentContentOpenApiService documentContentOpenApiService;
     @Mock
     private DocumentService documentService;
@@ -77,6 +83,8 @@ class DocumentWriteOpenApiServiceTest {
         service = new DocumentWriteOpenApiService(
                 projectApiService,
                 recordingUnitService,
+                specimenService,
+                spatialUnitService,
                 documentContentOpenApiService,
                 documentService,
                 conceptService,

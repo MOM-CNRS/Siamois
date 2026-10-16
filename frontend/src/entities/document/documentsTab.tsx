@@ -2,6 +2,7 @@ import { relationTab } from "../../panels/relationTab";
 import { t } from "../../i18n";
 import type { DetailTabDef, DocumentLinkField, EntityRef } from "../types";
 import { AssociateDocument } from "./AssociateDocument";
+import { BulkImportDocument } from "./BulkImportDocument";
 import { unlinkDocument } from "./api";
 
 export interface DocumentsTabSpec<TDetail extends { id: string | number }> {
@@ -32,12 +33,15 @@ export function documentsTab<TDetail extends { id: string | number }>(spec: Docu
     projectId: spec.projectId,
     createPrefill: (entity) => ({ document: { field: spec.linkField, entityType: spec.scopeEntityType, ref: spec.entityRef(entity) } }),
     toolbarExtra: (entity, helpers) => (
-      <AssociateDocument
-        segment={spec.segment}
-        entityId={entity.id}
-        organizationId={helpers.organizationId}
-        projectId={spec.projectId?.(entity)}
-      />
+      <>
+        <BulkImportDocument segment={spec.segment} entityId={entity.id} />
+        <AssociateDocument
+          segment={spec.segment}
+          entityId={entity.id}
+          organizationId={helpers.organizationId}
+          projectId={spec.projectId?.(entity)}
+        />
+      </>
     ),
     extraRowActions: (entity) => [
       {

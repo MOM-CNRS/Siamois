@@ -182,10 +182,12 @@ export function EntityListPanel({
 
   const hasActionBarSettings = rowActions.items.length > 0;
   const hasGear = hasSchema || hasActionBarSettings;
+  // Relation tabs pass `toolbarExtra`; the entity's own list may declare `config.list.toolbarExtra`.
+  const resolvedToolbarExtra = toolbarExtra ?? config.list.toolbarExtra;
 
   const body = (
     <>
-      {(config.list.searchable || onCreate || config.list.createForm || hasGear || filterSpecs.length > 0) && (
+      {(config.list.searchable || onCreate || config.list.createForm || hasGear || filterSpecs.length > 0 || resolvedToolbarExtra) && (
         <ListToolbar
           entityType={entityType}
           config={config}
@@ -197,7 +199,7 @@ export function EntityListPanel({
           onClearSelection={clearSelection}
           creatable={creatable}
           createPrefill={createPrefill}
-          endExtra={toolbarExtra}
+          endExtra={resolvedToolbarExtra}
           createBlocked={
             createNeedsPickedProject && !canCreateInSomeProject ? { loading: creatableProjects.isLoading } : null
           }

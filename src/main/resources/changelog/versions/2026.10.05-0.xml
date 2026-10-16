@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="2026.10.05-0-document-import-draft" author="siamois" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="document_import_draft"/>
+            </not>
+        </preConditions>
+        <sql splitStatements="false">
+            CREATE TABLE document_import_draft (
+                draft_id            bigserial PRIMARY KEY,
+                fk_person_id        bigint NOT NULL REFERENCES person (person_id),
+                fk_institution_id   bigint NOT NULL REFERENCES institution (institution_id),
+                default_target_type varchar(64),
+                default_target_id   bigint,
+                created_at          timestamptz NOT NULL DEFAULT now(),
+                updated_at          timestamptz NOT NULL DEFAULT now(),
+                CONSTRAINT uk_document_import_draft_person_institution
+                    UNIQUE (fk_person_id, fk_institution_id)
+            );
+
+            CREATE TABLE document_import_item (
+                item_id               bigserial PRIMARY KEY,
+                fk_draft_id           bigint NOT NULL REFERENCES document_import_draft (draft_id) ON DELETE CASCADE,
+                client_key            varchar(64) NOT NULL,
+                original_file_name    varchar(1024) NOT NULL,
+                content_type          varchar(255),
+                file_size             bigint,
+                md5_sum               varchar(64),
+                stored_file_name      varchar(255) NOT NULL,
+                title                 varchar(1024),
+                description           varchar(5000),
+                fk_nature_concept_id  bigint REFERENCES concept (concept_id),
+                fk_format_concept_id  bigint REFERENCES concept (concept_id),
+                fk_scale_concept_id   bigint REFERENCES concept (concept_id),
+                status                varchar(32) NOT NULL DEFAULT 'DRAFT',
+                error_message         varchar(2000),
+                created_at            timestamptz NOT NULL DEFAULT now(),
+                updated_at            timestamptz NOT NULL DEFAULT now(),
+                CONSTRAINT uk_document_import_item_client_key UNIQUE (fk_draft_id, client_key)
+            );
+
+            CREATE INDEX idx_document_import_item_draft ON document_import_item (fk_draft_id);
+
+            CREATE TABLE document_import_item_project (
+                fk_item_id        bigint NOT NULL REFERENCES document_import_item (item_id) ON DELETE CASCADE,
+                fk_action_unit_id bigint NOT NULL REFERENCES action_unit (action_unit_id),
+                PRIMARY KEY (fk_item_id, fk_action_unit_id)
+            );
+
+            CREATE TABLE document_import_item_recording_unit (
+                fk_item_id           bigint NOT NULL REFERENCES document_import_item (item_id) ON DELETE CASCADE,
+                fk_recording_unit_id bigint NOT NULL REFERENCES recording_unit (recording_unit_id),
+                PRIMARY KEY (fk_item_id, fk_recording_unit_id)
+            );
+
+            CREATE TABLE document_import_item_specimen (
+                fk_item_id     bigint NOT NULL REFERENCES document_import_item (item_id) ON DELETE CASCADE,
+                fk_specimen_id bigint NOT NULL REFERENCES specimen (specimen_id),
+                PRIMARY KEY (fk_item_id, fk_specimen_id)
+            );
+
+            CREATE TABLE document_import_item_spatial_unit (
+                fk_item_id         bigint NOT NULL REFERENCES document_import_item (item_id) ON DELETE CASCADE,
+                fk_spatial_unit_id bigint NOT NULL REFERENCES spatial_unit (spatial_unit_id),
+                PRIMARY KEY (fk_item_id, fk_spatial_unit_id)
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

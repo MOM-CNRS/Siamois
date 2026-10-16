@@ -4,6 +4,7 @@ import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { getDocument, listDocuments, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
+import { BulkImportDocument } from "./BulkImportDocument";
 import { DocumentCreateForm } from "./CreateForm";
 import { IdentifierTypeHeader } from "../../components/IdentifierTypeHeader";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
@@ -40,6 +41,8 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
     createForm: (ctx) => <DocumentCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "document",
+    // Same Import massif as on a fiche Documents tab, but no project pre-selected.
+    toolbarExtra: <BulkImportDocument />,
   },
   detail: {
     tabs: [

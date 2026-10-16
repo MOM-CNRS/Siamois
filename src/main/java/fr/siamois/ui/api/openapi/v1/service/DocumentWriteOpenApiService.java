@@ -5,6 +5,8 @@ import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.InstitutionService;
@@ -12,10 +14,15 @@ import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.spatialunit.SpatialUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.dto.entity.SpatialUnitDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ActionUnitSummaryMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
@@ -45,6 +52,8 @@ public class DocumentWriteOpenApiService {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitService recordingUnitService;
+    private final SpecimenService specimenService;
+    private final SpatialUnitService spatialUnitService;
     private final DocumentContentOpenApiService documentContentOpenApiService;
     private final DocumentService documentService;
     private final ConceptService conceptService;
@@ -129,6 +138,77 @@ public class DocumentWriteOpenApiService {
     }
 
     @Transactional
+    public DocumentResource createForFind(
+            ProjectApiCaller caller,
+            String findIdOrKey,
+            String title,
+            String description,
+            Long natureConceptId,
+            Long scaleConceptId,
+            Long formatConceptId,
+            MultipartFile file,
+            String lang) {
+
+        SpecimenDTO specimen = specimenService.findAccessibleByKey(findIdOrKey, caller.accessibleInstitutionIds())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+        InstitutionDTO institution = specimen.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!profilePermissionService.hasSpecimenWritePermission(userInfo, specimen)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur ce mobilier");
+        }
+
+        Document document = buildDocumentShell(
+                title, description, natureConceptId, scaleConceptId, formatConceptId, institution, file);
+
+        try (InputStream inputStream = file.getInputStream()) {
+            Document saved = saveFileInContext(userInfo, document, inputStream);
+            documentService.addToSpecimen(saved, specimen);
+            return projectDocumentOpenApiMapper.toResource(saved);
+        } catch (InvalidFileTypeException | InvalidFileSizeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lecture fichier", e);
+        }
+    }
+
+    @Transactional
+    public DocumentResource createForPlace(
+            ProjectApiCaller caller,
+            long placeId,
+            String title,
+            String description,
+            Long natureConceptId,
+            Long scaleConceptId,
+            Long formatConceptId,
+            MultipartFile file,
+            String lang) {
+
+        SpatialUnitDTO place = requireAccessiblePlace(caller, placeId);
+        InstitutionDTO institution = place.getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de document non autorisée sur ce lieu");
+        }
+
+        Document document = buildDocumentShell(
+                title, description, natureConceptId, scaleConceptId, formatConceptId, institution, file);
+
+        try (InputStream inputStream = file.getInputStream()) {
+            Document saved = saveFileInContext(userInfo, document, inputStream);
+            documentService.addToSpatialUnit(saved, place);
+            return projectDocumentOpenApiMapper.toResource(saved);
+        } catch (InvalidFileTypeException | InvalidFileSizeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lecture fichier", e);
+        }
+    }
+
+    @Transactional
     public DocumentResource updateDocument(
             ProjectApiCaller caller,
             long documentId,
@@ -158,6 +238,135 @@ public class DocumentWriteOpenApiService {
 
         Document saved = (Document) documentService.save(doc);
         return projectDocumentOpenApiMapper.toResource(saved);
+    }
+
+    Document saveUploadedDocument(
+            UserInfo userInfo,
+            String title,
+            String description,
+            Long natureConceptId,
+            Long scaleConceptId,
+            Long formatConceptId,
+            InstitutionDTO institution,
+            MultipartFile file) {
+
+        Document document = buildDocumentShell(
+                title, description, natureConceptId, scaleConceptId, formatConceptId, institution, file);
+        try (InputStream inputStream = file.getInputStream()) {
+            return saveFileInContext(userInfo, document, inputStream);
+        } catch (InvalidFileTypeException | InvalidFileSizeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur lecture fichier", e);
+        }
+    }
+
+    DocumentResource toResource(Document document) {
+        return projectDocumentOpenApiMapper.toResource(document);
+    }
+
+    AccessibleProjectForApi requireAccessibleProject(ProjectApiCaller caller, String projectIdOrKey) {
+        return projectApiService.requireAccessibleProject(caller, projectIdOrKey);
+    }
+
+    RecordingUnitDTO requireWritableRecordingUnit(ProjectApiCaller caller, String key, String lang) {
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                key, caller.accessibleInstitutionIds(), null);
+        InstitutionDTO institution = ru.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Écriture non autorisée sur cette UE");
+        }
+        return ru;
+    }
+
+    SpecimenDTO requireWritableFind(ProjectApiCaller caller, String key, String lang) {
+        SpecimenDTO specimen = specimenService.findAccessibleByKey(key, caller.accessibleInstitutionIds())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mobilier introuvable ou hors périmètre"));
+        InstitutionDTO institution = specimen.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!profilePermissionService.hasSpecimenWritePermission(userInfo, specimen)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Écriture non autorisée sur ce mobilier");
+        }
+        return specimen;
+    }
+
+    SpatialUnitDTO requireWritablePlace(ProjectApiCaller caller, long placeId, String lang) {
+        SpatialUnitDTO place = requireAccessiblePlace(caller, placeId);
+        UserInfo userInfo = new UserInfo(place.getCreatedByInstitution(), caller.person(), lang);
+        if (!profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Écriture non autorisée sur ce lieu");
+        }
+        return place;
+    }
+
+    boolean linkIfAbsent(Document document, ActionUnitDTO actionUnit) {
+        if (document.getMd5Sum() != null && documentService.existInActionUnitByHash(actionUnit, document.getMd5Sum())) {
+            return false;
+        }
+        documentService.addToActionUnit(document, actionUnit);
+        return true;
+    }
+
+    boolean linkIfAbsent(Document document, RecordingUnitDTO recordingUnit) {
+        if (document.getMd5Sum() != null && documentService.existInRecordingUnitByHash(recordingUnit, document.getMd5Sum())) {
+            return false;
+        }
+        documentService.addToRecordingUnit(document, recordingUnit);
+        return true;
+    }
+
+    boolean linkIfAbsent(Document document, SpecimenDTO specimen) {
+        if (document.getMd5Sum() != null && documentService.existInSpecimenByHash(specimen, document.getMd5Sum())) {
+            return false;
+        }
+        documentService.addToSpecimen(document, specimen);
+        return true;
+    }
+
+    boolean linkIfAbsent(Document document, SpatialUnitDTO place) {
+        if (document.getMd5Sum() != null && documentService.existInSpatialUnitByHash(place, document.getMd5Sum())) {
+            return false;
+        }
+        documentService.addToSpatialUnit(document, place);
+        return true;
+    }
+
+    boolean existsByHash(ActionUnitDTO actionUnit, String hash) {
+        return hash != null && documentService.existInActionUnitByHash(actionUnit, hash);
+    }
+
+    boolean existsByHash(RecordingUnitDTO recordingUnit, String hash) {
+        return hash != null && documentService.existInRecordingUnitByHash(recordingUnit, hash);
+    }
+
+    boolean existsByHash(SpecimenDTO specimen, String hash) {
+        return hash != null && documentService.existInSpecimenByHash(specimen, hash);
+    }
+
+    boolean existsByHash(SpatialUnitDTO place, String hash) {
+        return hash != null && documentService.existInSpatialUnitByHash(place, hash);
+    }
+
+    private SpatialUnitDTO requireAccessiblePlace(ProjectApiCaller caller, long placeId) {
+        SpatialUnitDTO dto;
+        try {
+            dto = spatialUnitService.findById(placeId);
+        } catch (SpatialUnitNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lieu introuvable");
+        }
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lieu sans organisation de rattachement");
+        }
+        projectApiService.assertOrganizationInCallerScope(institution.getId(), caller.accessibleInstitutionIds());
+        return dto;
     }
 
     private Document buildDocumentShell(

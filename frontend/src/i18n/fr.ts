@@ -20,6 +20,7 @@ export const fr = {
   "docs.unlinkConfirm": "Retirer le lien avec ce document ? Le document n'est pas supprimé.",
   "docs.linkFailed": "L'association du document a échoué.",
   "docs.unlinkFailed": "Le retrait du lien a échoué.",
+  "docs.bulkImport": "Import massif",
   "create.linkedTo": "Lié à",
   "common.project": "Projet",
   "common.type": "Type",

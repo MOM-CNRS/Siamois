@@ -3,6 +3,7 @@ package fr.siamois.dto.entity;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class SpatialUnitDTO extends AbstractEntityDTO {
 
     public SpatialUnitDTO (SpatialUnitDTO spatialUnitDTO) {
