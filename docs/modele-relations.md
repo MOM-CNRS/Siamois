@@ -291,6 +291,24 @@ et lien vers la liste). Les zones sont identifiées par les concepts système (�
 d'une UE par union sur les deux côtés. Il se distingue de la matrice de Harris (graphe d'un site entier, en
 couches, qui s'appuie sur l'absence de cycle de l'ordre).
 
+### 4.8 bis Graphe des relations d'une UE (livré sur le modèle actuel)
+
+L'onglet « Graphe » de la fiche UE dessine l'UE au centre : parentes en haut, enfants en bas, relations
+stratigraphiques à droite (postérieures au-dessus, synchrones à la hauteur de l'UE, antérieures en dessous),
+« autres relations » à gauche (vide : réservé aux relations configurables). Il lit **un seul contrat** :
+`GET /api/v1/recording-units/{id}/relation-graph`, des zones `parents`, `children`, `anterior`, `synchronous`,
+`posterior`, `others`, chacune un aperçu borné (`values`, `total`, `complete`). Le contrat ne cite ni table ni
+identifiant de champ : le back lit chaque zone par `RelationFieldService`, donc **à la bascule sur `relation_link`
+seul le branchement de `RelationField` change** (la zone `others` se remplira alors des relations configurables).
+
+L'écriture de la stratigraphie existe, sur l'ancienne table, pour que le graphe et le champ « Relations
+stratigraphiques » de la fiche soient éditables dès maintenant : `POST`, `PUT` et `DELETE` sur
+`/api/v1/recording-units/{id}/stratigraphic-relationships` (position, type facultatif, incertain ; doublon, cycle
+et unités de deux opérations refusés). Ces endpoints et `RecordingUnitStratigraphyWriteService` sont **à remplacer**
+par `/relation-links` à la bascule ; le front (`components/relationLinks`) n'en dépend que par `api.ts`.
+Convention posée : le type est lu de l'UE de l'URL vers l'autre UE (`concept_direction` vrai quand l'UE de l'URL
+est la première du lien) ; à confirmer avec le point ouvert sur `concept_direction` ci-dessous.
+
 ### 4.9 Points ouverts
 
 - Sens exact de l'ancienne colonne `asynchronous` (ordre inconnu ?) et nom définitif de la définition d'ordre

@@ -113,6 +113,14 @@ export function EntityDetailPanel({
     setRenderedForType(entityType);
     setActiveTabIndex(0);
   }
+  // A preview naming a tab (the relation graph opens a unit on its own graph) opens the fiche on it —
+  // each time a preview arrives, not only on the first mount; same render-time adjustment.
+  const [appliedPreview, setAppliedPreview] = useState<EntityPreview | undefined>(undefined);
+  if (preview !== appliedPreview) {
+    setAppliedPreview(preview);
+    const tabIndex = preview?.tab ? (config?.detail.tabs.findIndex((tab) => tab.key === preview.tab) ?? -1) : -1;
+    if (tabIndex >= 0) setActiveTabIndex(tabIndex);
+  }
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.entityDetail(entityType, entityId),

@@ -20,6 +20,13 @@ export const queryKeys = {
   entitySiblings: (entityType: string, id: string | number, organizationId: number | undefined, context: unknown) =>
     ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
 
+  // The relations of a recording unit, grouped by graph zone.
+  relationGraph: (id: string | number) => ["relation-graph", id] as const,
+  // Every stratigraphic relationship of a unit (a field's values endpoint), for the fiche's editor.
+  stratigraphyValues: (id: string | number, fieldId?: string) => (fieldId === undefined ? ["stratigraphy-values", id] : ["stratigraphy-values", id, fieldId]) as readonly unknown[],
+  // The vocabulary of stratigraphic relationship types.
+  stratigraphyTypes: (organizationId: number | undefined) => ["stratigraphy-types", organizationId] as const,
+
   entityBreadcrumbs: (entityType: string, id: string | number) => ["entity-breadcrumbs", entityType, id] as const,
 
   bookmarks: () => ["bookmark-status"] as const,

@@ -1,8 +1,10 @@
 import { useState, type SyntheticEvent } from "react";
+import { StratigraphyCell } from "../components/relationLinks/StratigraphyCell";
 import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
 import type { FieldState } from "../rules";
 import { renderAnswerCell, renderAnswerValue } from "./display";
 import { FileCell, type StoredFile } from "./FileCell";
+import { useCanEdit } from "../panels/writeMode";
 import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
@@ -53,6 +55,8 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   onSaved,
 }: FieldEditCellProps<TRow>) {
   const [editTarget, setEditTarget] = useState<CellEditTarget<TRow> | null>(null);
+  // The form lays stratigraphy out read-only (it isn't an answer to patch); writing it is the unit's own right.
+  const canEditEntity = useCanEdit(row as { _permissions?: { canEdit?: boolean } });
   // A field with no editor (action code, address) is shown, never offered for editing.
   // Nor is a read-only one (the entity's project, a generated identifier).
   const editable = !readOnlyProp && field.readOnly !== true && hasFieldRenderer(field.answerType);
@@ -72,6 +76,22 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   // A file is sent, downloaded and removed in place, by its own endpoints (FileCell).
   if (field.answerType === "FILE" && row.id != null) {
     return <FileCell documentId={row.id} file={(stored ?? null) as StoredFile | null} editable={!readOnlyProp && field.readOnly !== true} onChanged={onSaved} />;
+  }
+
+  // Stratigraphic relationships are added, edited and removed in place, by their own endpoints (StratigraphyCell).
+  if (field.answerType === "SELECT_MULTIPLE_STRATIGRAPHY" && row.id != null) {
+    const unit = row as { projectId?: string | null };
+    return (
+      <StratigraphyCell
+        field={field}
+        unitId={row.id}
+        stored={stored}
+        projectId={unit.projectId}
+        organizationId={organizationId}
+        editable={canEditEntity && !disabled}
+        onChanged={onSaved}
+      />
+    );
   }
 
   const content = renderAnswerCell(field, stored, { all: true });

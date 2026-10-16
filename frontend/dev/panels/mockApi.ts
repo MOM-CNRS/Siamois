@@ -30,7 +30,7 @@ const usRef = (n: number) => ({ resourceId: String(100 + n), resourceType: "reco
 const findRef = (n: number) => ({ resourceId: String(500 + n), resourceType: "finds", label: `2026-OA1000-M${n + 1}` });
 const stratiRef = (n: number) => ({
   ...usRef(n),
-  qualifier: { concept: { resourceId: "164", resourceType: "concepts", label: ["coupe", "recouvre", "synchrone de"][n % 3] }, role: "unit1", position: n % 3 === 2 ? "synchronous" : "posterior", asynchronous: n % 3 !== 2, uncertain: n % 4 === 3 },
+  qualifier: { concept: { resourceId: "164", resourceType: "concepts", label: ["coupe", "recouvre", "synchrone de"][n % 3] }, role: "unit1", position: n % 3 === 2 ? "synchronous" : n % 3 === 1 ? "anterior" : "posterior", asynchronous: n % 3 !== 2, uncertain: n % 4 === 3 },
 });
 // MultiValue as the list serves it (valuesLimit=1): the first value, the total, and the link to the rest.
 function preview(unitId: number, fieldId: string, all: unknown[]) {
@@ -53,6 +53,22 @@ function relationValues(unitId: number, fieldId: string): unknown[] {
   }
 }
 
+// The relation graph of a unit, grouped by zone as GET /recording-units/{id}/relation-graph serves it.
+function relationGraph(unitId: number) {
+  const zone = (values: unknown[], total = values.length) => ({ values, total, complete: values.length >= total });
+  const strati = relationValues(unitId, "-327") as ReturnType<typeof stratiRef>[];
+  const at = (position: string) => zone(strati.filter((r) => r.qualifier.position === position).map((r) => ({ ...r, qualifier: { ...r.qualifier, position } })));
+  return {
+    center: usRef(unitId - 100),
+    parents: zone(relationValues(unitId, "-319")),
+    children: unitId === 107 ? zone(Array.from({ length: 30 }, (_, j) => usRef(j)), 45) : zone(relationValues(unitId, "-320")),
+    anterior: at("anterior"),
+    synchronous: at("synchronous"),
+    posterior: at("posterior"),
+    others: zone([]),
+  };
+}
+
 const LAYOUT = [
   {
     name: "common.header.general",
@@ -73,6 +89,11 @@ const LAYOUT = [
       { fieldId: 10, width: { span: 12 }, isRequired: false, isReadOnly: false },
       { fieldId: 11, width: { span: 12, md: 4 }, isRequired: false, isReadOnly: false },
     ] }],
+  },
+  // A recording unit's stratigraphy, read-only in the form the way the server serves it: the fiche edits it in place.
+  {
+    name: "common.header.relations",
+    rows: [{ columns: [{ fieldId: -327, width: { span: 12 }, isRequired: false, isReadOnly: true }] }],
   },
 ];
 
@@ -136,6 +157,10 @@ function list(data: unknown[], url: URL) {
 }
 
 const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => unknown][] = [
+  // Writes of the relation graph: accepted, not applied (the harness has no store behind it).
+  [/^\/api\/v1\/recording-units\/\d+\/(parents|children|stratigraphic-relationships)(\/\d+)?$/, (_m, _u, init) => (init?.method && init.method !== "GET" ? undefined : { data: [] })],
+  [/^\/api\/v1\/organizations\/\d+\/concepts$/, () => ({ data: ["coupe", "recouvre", "s'appuie sur", "égal à"].map((label, i) => ({ id: String(160 + i), resolvedLabel: label })) })],
+  [/^\/api\/v1\/recording-units\/(\d+)\/relation-graph$/, (m) => relationGraph(Number(m[1]))],
   [/^\/api\/auth\/session-token$/, () => ({ accessToken: "dev-harness", expiresIn: 3600, tokenType: "Bearer" })],
   [/^\/api\/v1\/organizations\/\d+\/counts$/, () => ({ data: { projects: projects.length, places: 9, recordingUnits: 240, finds: 1200, phases: 18, containers: 40 } })],
   [/^\/api\/v1\/organizations\/\d+\/project-types$/, () => ({
@@ -169,7 +194,7 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
   [/^\/api\/v1\/recording-units$/, (_m, url) => list(recordingUnits, url)],
   [/^\/api\/v1\/recording-units\/(\d+)\/siblings$/, () => ({ data: { previous: { id: "100", label: "US1", resourceUri: "/recording-unit/100" }, next: { id: "101", label: "US2", resourceUri: "/recording-unit/101" } } })],
   [/^\/api\/v1\/recording-units\/(\d+)\/(children|parents)$/, (_m, url) => list(recordingUnits.slice(0, 2), url)],
-  [/^\/api\/v1\/recording-units\/(\d+)$/, (m) => ({ data: { ...(recordingUnits.find((r) => r.id === m[1]) ?? recordingUnits[0]), name: "Couche d'occupation", answers: { "10": "Sol damé, charbons." } } })],
+  [/^\/api\/v1\/recording-units\/(\d+)$/, (m) => ({ data: { ...(recordingUnits.find((r) => r.id === m[1]) ?? recordingUnits[0]), name: "Couche d'occupation", answers: { "10": "Sol damé, charbons.", "-327": preview(Number(m[1]), "-327", relationValues(Number(m[1]), "-327")) } } })],
   [/^\/api\/v1\/projects\/(\d+)$/, (m, _url, init) => {
     const p = projects.find((x) => x.id === m[1]) ?? projects[0];
     if (init?.method === "PATCH" && init.body) Object.assign(p, JSON.parse(String(init.body)));

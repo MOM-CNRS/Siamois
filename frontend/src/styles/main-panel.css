@@ -1941,3 +1941,220 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
 .entity-list-panel-create-blocked .p-button {
   pointer-events: none;
 }
+
+/* ---- Relation graph of a recording unit (entities/recordingUnit/graph) and the link forms
+   (components/relationLinks) ---- */
+.sia-relation-graph {
+  display: flex;
+  flex-direction: column;
+  /* The fiche scrolls inside its own box (no page scroll): the graph takes what is left of the window. */
+  height: calc(100vh - 230px);
+  min-height: 420px;
+}
+
+.sia-relation-graph-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.sia-relation-graph-message {
+  padding: 16px;
+}
+
+.sia-relation-graph-failure {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 10;
+  color: var(--red-500, #c0392b);
+}
+
+.sia-graph-node-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.sia-graph-node {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 6px;
+  background: var(--surface-card, #fff);
+  color: var(--text-color, #212529);
+  font-size: 13px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sia-graph-node-unit {
+  cursor: pointer;
+}
+
+/* The unit the graph is drawn around, framed in the recording unit's colour. */
+.sia-graph-node-center {
+  border: 2px solid var(--entity-chip-color, var(--primary-color, #1976d2));
+  font-weight: 600;
+}
+
+.sia-graph-node-zone {
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.sia-graph-node-more {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.sia-graph-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Touches the node, so the pointer has no gap to cross between the node and its buttons. */
+.sia-graph-node-actions {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 4px;
+  background: var(--surface-card, #fff);
+  color: var(--text-color, #212529);
+}
+
+.sia-graph-icon-button {
+  padding: 2px 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sia-graph-icon-button i {
+  font-size: 12px;
+}
+
+.sia-graph-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sia-graph-fit {
+  overflow-y: auto;
+}
+
+.sia-inline-picker input {
+  width: 100%;
+}
+
+.sia-inline-picker-list {
+  max-height: 152px;
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 6px;
+  list-style: none;
+}
+
+.sia-inline-picker-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sia-inline-picker-item:hover,
+.sia-inline-picker-item:focus-visible {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+.sia-inline-picker-item-selected {
+  font-weight: 600;
+}
+
+.sia-inline-picker-empty {
+  padding: 7px 10px;
+  opacity: 0.6;
+}
+
+.sia-inline-picker-footer {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--surface-border, #ced4da);
+  background: var(--surface-card, #fff);
+}
+
+.sia-create-form-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.sia-link-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.sia-link-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sia-link-editor-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sia-link-editor-position {
+  margin-right: 6px;
+  opacity: 0.65;
+}
+
+.sia-link-editor-type {
+  margin-left: 6px;
+}
+
+.sia-link-editor-empty {
+  opacity: 0.6;
+}
+
+.sia-link-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}

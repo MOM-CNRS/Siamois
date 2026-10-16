@@ -51,6 +51,21 @@ const fakeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
 
 registerEntityType(fakeConfig);
 
+// A second entity with two tabs, to see which one a preview opens the fiche on.
+const tabbedConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+  ...fakeConfig,
+  key: "fake-tabbed-entity",
+  collectionPath: "fake-tabbed-entities",
+  detail: {
+    tabs: [
+      { key: "fiche", label: "Fiche", render: () => <span data-testid="fiche-body">fiche body</span> },
+      { key: "graph", label: "Graph", render: () => <span data-testid="graph-body">graph body</span> },
+    ],
+  },
+  routes: { list: "/tabbed", detail: (id) => `/tabbed/${id}` },
+};
+registerEntityType(tabbedConfig);
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -767,5 +782,24 @@ describe("EntityDetailPanel titlebar creation", () => {
 
     expect(document.body.querySelector(".p-overlaypanel .fake-create-form")).toBeTruthy();
     expect(document.body.querySelector(".p-dialog")).toBeNull();
+  });
+
+  it("opens the fiche on the tab its preview names, and on its first one otherwise", async () => {
+    getMock.mockResolvedValue({ id: "1", name: "First" });
+    const renderPanel = (preview?: { label: string; tab?: string }) => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityDetailPanel entityType="fake-tabbed-entity" entityId="1" preview={preview} />
+          </QueryClientProvider>,
+        );
+      });
+    };
+
+    renderPanel({ label: "First", tab: "graph" });
+    await flush();
+    expect(container.querySelector("[data-testid=graph-body]")).not.toBeNull();
+    expect(container.querySelector("[data-testid=fiche-body]")).toBeNull();
   });
 });
