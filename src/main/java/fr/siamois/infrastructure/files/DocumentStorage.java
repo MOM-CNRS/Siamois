@@ -66,29 +66,36 @@ public class DocumentStorage {
         byte[] bytes = compressAndSetStoredName(document, content);
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 
-        Path path = Paths.get(
-                documentsPath,
-                userInfo.getInstitution().getId().toString(),
-                document.getStoredFileName()
-        );
+        Path path = resolveStoredPath(userInfo.getInstitution().getId(), document.getStoredFileName());
 
         Files.createDirectories(path.getParent());
 
-        File file = path.toFile();
-        if (file.createNewFile()) {
-            log.info("File created: {}", file.getAbsolutePath());
+        try (OutputStream outputStream = Files.newOutputStream(path)) {
+            bais.transferTo(outputStream);
         }
-
-        try (FileOutputStream outputStream = new FileOutputStream(file)) {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = bais.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-        }
+        log.info("File saved: {}", path);
 
         content.close();
 
+    }
+
+    /**
+     * Resolves a stored file inside the folder of its institution, refusing any name that would
+     * leave it (path separators, {@code ..}).
+     *
+     * @throws IOException if the file name is not a plain file name
+     */
+    private Path resolveStoredPath(Long institutionId, String storedFileName) throws IOException {
+        if (storedFileName == null || storedFileName.isBlank()
+                || !storedFileName.equals(Paths.get(storedFileName).getFileName().toString())) {
+            throw new IOException("Invalid stored file name");
+        }
+        Path base = Paths.get(documentsPath, institutionId.toString()).toAbsolutePath().normalize();
+        Path path = base.resolve(storedFileName).normalize();
+        if (!path.startsWith(base)) {
+            throw new IOException("Invalid stored file name");
+        }
+        return path;
     }
 
     private byte[] compressAndSetStoredName(Document document, InputStream content) throws IOException {
@@ -113,13 +120,13 @@ public class DocumentStorage {
      * @return Optional containing the File if found, otherwise empty.
      */
     public Optional<File> find(Document document) {
-        Path filePath = Paths.get(
-                documentsPath,
-                document.getCreatedByInstitution().getId().toString(),
-                document.getStoredFileName()
-        );
-
-        File file = filePath.toFile();
+        File file;
+        try {
+            file = resolveStoredPath(document.getCreatedByInstitution().getId(), document.getStoredFileName()).toFile();
+        } catch (IOException e) {
+            log.warn("Refusing to read document {}: {}", document.getId(), e.getMessage());
+            return Optional.empty();
+        }
 
         if (file.exists()) {
             return Optional.of(file);
