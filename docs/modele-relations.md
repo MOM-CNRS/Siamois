@@ -268,7 +268,7 @@ sur ») figure dans les deux vocabulaires. L'ordre porte la règle « pas de cyc
 `concept_direction`, `asynchronous`, `uncertain` sont reprises ainsi : le concept avec sa direction va dans le
 type du côté actif et son réciproque dans l'autre ; « incertain » devient un champ du formulaire du lien ;
 `asynchronous` est à clarifier (§4.9). La migration est faite **en dernier**, pour que la définition
-prédéfinie serve de cas de test ; d'ici là l'ancienne table continue de fonctionner (champ `-327`, lecture seule).
+prédéfinie serve de cas de test ; d'ici là l'ancienne table continue de fonctionner (champs `-328` à `-330`, un par côté, voir §4.8 bis).
 
 ### 4.8 Affichage
 
@@ -309,12 +309,25 @@ par `/relation-links` à la bascule ; le front (`components/relationLinks`) n'en
 Convention posée : le type est lu de l'UE de l'URL vers l'autre UE (`concept_direction` vrai quand l'UE de l'URL
 est la première du lien) ; à confirmer avec le point ouvert sur `concept_direction` ci-dessous.
 
+**Trois champs, un par côté.** La fiche UE porte maintenant trois champs système (`-328` Antérieur, `-329` Postérieur,
+`-330` Synchrone, qui remplacent `-327`), chacun lu par son propre `RelationField` (`RECORDING_UNIT_ANTERIOR`,
+`_POSTERIOR`, `_SYNCHRONOUS`) : c'est exactement la forme « un champ par côté » du §4.7, déjà servie sur l'ancienne
+table. Chaque champ est aussi un champ de vocabulaire (`CustomFieldConceptFromFieldCode`) : sa liste de types est celle
+de son field code (`SIARU.STRATI.ANTERIOR`, `.POSTERIOR`, `.SYNCHRONOUS`, lus à travers `SIARU.STRATI` tant que le
+thésaurus ne les définit pas), ou la branche ou la collection que le projet lui impose, comme tout champ de vocabulaire
+(tiroir de configuration, `GET /organizations/{id}/concepts?fieldId=`). La migration Liquibase `2026.10.16-0` reporte la
+configuration de `-327` (actif, obligatoire, groupe, position, largeur) sur les trois nouveaux champs.
+
+**Liste.** La même fiche a une vue en liste des relations (`GET /recording-units/{id}/relations`, §api-changes) : une
+ligne par relation, avec le type de relation (parent, enfant, antérieur, postérieur, synchrone) comme colonne
+filtrable. Comme le graphe, elle lit des `RelationField` : elle ne change pas à la bascule sur `relation_link`.
+
 ### 4.9 Points ouverts
 
 - Sens exact de l'ancienne colonne `asynchronous` (ordre inconnu ?) et nom définitif de la définition d'ordre
   (« Asynchrone » ou « Antériorité »).
 - Comment les concepts système sont référencés (identifiant externe stable ou identifiant de base) : reprendre
-  la convention des champs système, dont `-327`.
+  la convention des champs système, dont `-328` à `-330`.
 - Une relation complexe peut-elle être hiérarchique ? (retenu : non, mais la règle « pas de cycle » existe.)
 - Zone « reste » du graphe : UE seulement (recommandé) ou aussi mobilier, phases, documents.
 - Liste autonome des liens dès le départ, ou listes intégrées seulement (recommandé).

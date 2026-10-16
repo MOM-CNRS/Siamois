@@ -31,7 +31,7 @@ class MultiValueAnswersTest {
     private final MultiValueAnswers answers = new MultiValueAnswers(relations);
 
     private static final String PARENTS = id("parents");
-    private static final String STRATIGRAPHY = id("stratigraphicRelationships");
+    private static final String STRATIGRAPHY = id("posteriorRelationships");
 
     @Test
     void cutsEveryListOfReferences_andLeavesOtherValuesAlone() {
@@ -79,14 +79,14 @@ class MultiValueAnswersTest {
         assertThat(shaped.get(1L)).containsEntry(PARENTS, preview);
         assertThat(shaped.get(2L)).containsEntry(PARENTS, MultiValue.complete(List.of()));
         // Not requested: not read.
-        verify(relations, never()).previews(eq(RelationField.RECORDING_UNIT_STRATIGRAPHY), any(), anyInt(), any(), any());
+        verify(relations, never()).previews(eq(RelationField.RECORDING_UNIT_POSTERIOR), any(), anyInt(), any(), any());
     }
 
     @Test
     void aRelationFieldKeepsItsEnvelope_onADetail() {
         SelectManyFieldAnswer envelope = new SelectManyFieldAnswer("SELECT_MULTIPLE_STRATIGRAPHY", null, List.of());
         MultiValue preview = MultiValue.complete(List.of(ref("3")));
-        when(relations.previews(eq(RelationField.RECORDING_UNIT_STRATIGRAPHY), any(), eq(50), eq("fr"), any()))
+        when(relations.previews(eq(RelationField.RECORDING_UNIT_POSTERIOR), any(), eq(50), eq("fr"), any()))
                 .thenReturn(Map.of(42L, preview));
 
         Object shaped = answers.shapeOne(RecordingUnit.class, 42L, Map.of(STRATIGRAPHY, envelope),
@@ -102,7 +102,7 @@ class MultiValueAnswersTest {
     void knowsEveryRelationFieldOfTheDetailsForms() {
         assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, PARENTS)).contains(RelationField.RECORDING_UNIT_PARENTS);
         assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, id("specimenList"))).contains(RelationField.RECORDING_UNIT_FINDS);
-        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, STRATIGRAPHY)).contains(RelationField.RECORDING_UNIT_STRATIGRAPHY);
+        assertThat(MultiValueAnswers.relationFieldOf(RecordingUnit.class, STRATIGRAPHY)).contains(RelationField.RECORDING_UNIT_POSTERIOR);
         assertThat(MultiValueAnswers.relationFieldOf(Phase.class, idOf(ConfigurableTable.PHASE, "recordingUnits")))
                 .contains(RelationField.PHASE_RECORDING_UNITS);
         assertThat(MultiValueAnswers.relationFieldOf(fr.siamois.domain.models.container.Container.class,

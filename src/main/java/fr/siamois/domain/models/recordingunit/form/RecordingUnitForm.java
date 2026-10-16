@@ -242,9 +242,23 @@ public abstract class RecordingUnitForm {
 
     @Transient
     @JsonIgnore
-    protected static final Concept STRATIGRAPHIC_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+    protected static final Concept ANTERIOR_RELATIONSHIPS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("recordingunit.stratigraphicRelationships")
+            .externalId("recordingunit.anteriorRelationships")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept POSTERIOR_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.posteriorRelationships")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept SYNCHRONOUS_RELATIONSHIPS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("recordingunit.synchronousRelationships")
             .build();
 
     @Transient
@@ -516,16 +530,40 @@ public abstract class RecordingUnitForm {
             .concept(FINDS_CONCEPT)
             .build();
 
-    // Not a JPA property: the unit's relationships are split between relationshipsAsUnit1 and
-    // relationshipsAsUnit2, and read as one by RelationField.RECORDING_UNIT_STRATIGRAPHY.
+    // Not JPA properties: a unit's relationships are stored once, in stratigraphic_relationship, and
+    // read from there as three fields, one per side (RelationField.RECORDING_UNIT_*_RELATIONSHIPS).
+    // Each has the vocabulary of its own relationship types, named by its field code.
     @Transient
     @JsonIgnore
-    protected static final CustomFieldStratigraphicRelationships STRATIGRAPHIC_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
-            .label("recordingunit.field.stratigraphicRelationships")
+    protected static final CustomFieldStratigraphicRelationships ANTERIOR_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
+            .label("recordingunit.field.anteriorRelationships")
             .isSystemField(true)
-            .id(-327L)
-            .valueBinding("stratigraphicRelationships")
-            .concept(STRATIGRAPHIC_RELATIONSHIPS_CONCEPT)
+            .id(-328L)
+            .valueBinding("anteriorRelationships")
+            .fieldCode(RecordingUnit.ANTERIOR_FIELD_CODE)
+            .concept(ANTERIOR_RELATIONSHIPS_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldStratigraphicRelationships POSTERIOR_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
+            .label("recordingunit.field.posteriorRelationships")
+            .isSystemField(true)
+            .id(-329L)
+            .valueBinding("posteriorRelationships")
+            .fieldCode(RecordingUnit.POSTERIOR_FIELD_CODE)
+            .concept(POSTERIOR_RELATIONSHIPS_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldStratigraphicRelationships SYNCHRONOUS_RELATIONSHIPS_FIELD = CustomFieldStratigraphicRelationships.builder()
+            .label("recordingunit.field.synchronousRelationships")
+            .isSystemField(true)
+            .id(-330L)
+            .valueBinding("synchronousRelationships")
+            .fieldCode(RecordingUnit.SYNCHRONOUS_FIELD_CODE)
+            .concept(SYNCHRONOUS_RELATIONSHIPS_CONCEPT)
             .build();
 
     /**
@@ -537,7 +575,9 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(SPATIAL_UNIT_FIELD),
             SystemFieldSpec.of(PARENTS_FIELD),
             SystemFieldSpec.of(CHILDREN_FIELD),
-            SystemFieldSpec.readOnly(STRATIGRAPHIC_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(ANTERIOR_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(POSTERIOR_RELATIONSHIPS_FIELD),
+            SystemFieldSpec.readOnly(SYNCHRONOUS_RELATIONSHIPS_FIELD),
             SystemFieldSpec.readOnly(FINDS_FIELD),
             SystemFieldSpec.hidden(RECORDING_UNIT_TYPE_FIELD),
             SystemFieldSpec.of(NATURE_FIELD),

@@ -8,7 +8,7 @@ import { StratigraphyCell } from "./StratigraphyCell";
 const apiFetch = vi.fn();
 vi.mock("../../api/client", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
 
-const field = { id: "-327", resourceType: "fields", label: "Relations stratigraphiques", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true } as FieldResource;
+const field = { id: "-329", resourceType: "fields", label: "Postérieur", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "posteriorRelationships" } as FieldResource;
 const stored = { values: [{ resourceId: "5", resourceType: "recording-units", label: "US 5" }], total: 1, complete: true };
 
 let container: HTMLDivElement;
@@ -40,7 +40,7 @@ function render(editable: boolean) {
   act(() => {
     root.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <StratigraphyCell field={field} unitId="42" stored={stored} projectId="7" organizationId={1} editable={editable} onChanged={onChanged} />
+        <StratigraphyCell field={field} unitId="42" stored={stored} projectId="7" organizationId={1} typeConceptId="900" editable={editable} onChanged={onChanged} />
       </QueryClientProvider>,
     );
   });
@@ -55,18 +55,46 @@ describe("StratigraphyCell", () => {
     expect(container.querySelector("[role=button]")).toBeNull();
   });
 
-  it("opens an editor listing every relationship of the unit, to a writer", async () => {
+  it("opens an editor listing the relationships of its side of the unit, to a writer", async () => {
     render(true);
     await act(async () => {
       (container.querySelector("[role=button]") as HTMLElement).click();
     });
     await flush();
 
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/fields/-327/values?offset=0&limit=200");
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/fields/-329/values?offset=0&limit=200");
     const editor = document.querySelector(".p-overlaypanel")!;
     expect(editor.textContent).toContain("US 5");
     expect(editor.textContent).toContain("coupe");
     expect(editor.querySelectorAll("button[aria-label]").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("offers the relationship types of its own field's list, narrowed by the unit's type", async () => {
+    render(true);
+    await act(async () => {
+      (container.querySelector("[role=button]") as HTMLElement).click();
+    });
+    await flush();
+
+    await act(async () => {
+      (document.querySelector(".sia-link-button") as HTMLElement).click();
+    });
+    await flush();
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/organizations/1/concepts?fieldId=-329&projectId=7&valueConceptId=900");
+  });
+
+  it("shows a field that is not a side of the stratigraphy without editing", () => {
+    act(() => {
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <StratigraphyCell field={{ ...field, valueBinding: "other" }} unitId="42" stored={stored} editable onChanged={vi.fn()} />
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain("US 5");
+    expect(container.querySelector("[role=button]")).toBeNull();
   });
 
   it("removes a relationship only after a confirmation, then tells the fiche", async () => {

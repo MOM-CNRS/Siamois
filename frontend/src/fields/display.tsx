@@ -120,6 +120,14 @@ export function refColor(resourceType: string): string {
   return REF_KINDS[resourceType]?.color ?? DEFAULT_REF_COLOR;
 }
 
+/** The custom properties a `.ref-chip` takes its colours from, by what it points at. */
+export function refChipStyle(resourceType: string): CSSProperties {
+  return {
+    "--ref-chip-color": refColor(resourceType),
+    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
+  } as CSSProperties;
+}
+
 /**
  * A read-only reference: a light outlined chip in its type's colour — the same token the
  * reference picker shows in edit mode, minus the remove button. With `onOpen`, a reference to an
@@ -141,10 +149,7 @@ function RefChip({
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
   const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
-  const style = {
-    "--ref-chip-color": refColor(resourceType),
-    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
-  } as CSSProperties;
+  const style = refChipStyle(resourceType);
 
   function open(e: SyntheticEvent) {
     e.stopPropagation();

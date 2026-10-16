@@ -49,8 +49,9 @@ class RecordingUnitRelationGraphServiceTest {
     void groupsTheRelationsByZone() {
         stub(RelationField.RECORDING_UNIT_PARENTS, List.of(plain("1")), 1);
         stub(RelationField.RECORDING_UNIT_CHILDREN, List.of(plain("2"), plain("3")), 2);
-        stub(RelationField.RECORDING_UNIT_STRATIGRAPHY,
-                List.of(strati("4", "anterior"), strati("5", "synchronous"), strati("6", "posterior"), strati("7", "anterior")), 4);
+        stub(RelationField.RECORDING_UNIT_ANTERIOR, List.of(strati("4", "anterior"), strati("7", "anterior")), 2);
+        stub(RelationField.RECORDING_UNIT_SYNCHRONOUS, List.of(strati("5", "synchronous")), 1);
+        stub(RelationField.RECORDING_UNIT_POSTERIOR, List.of(strati("6", "posterior")), 1);
 
         RecordingUnitRelationGraphResource graph = service.graphOf(unit(), "fr");
 
@@ -63,6 +64,40 @@ class RecordingUnitRelationGraphServiceTest {
         assertThat(graph.posterior().values()).extracting(ResourceRef::resourceId).containsExactly("6");
         assertThat(graph.others().values()).isEmpty();
         assertThat(graph.others().complete()).isTrue();
+        // Each stratigraphic zone is a field of its own, the one that gives the vocabulary of its types.
+        assertThat(graph.fields().anterior()).isEqualTo("-328");
+        assertThat(graph.fields().posterior()).isEqualTo("-329");
+        assertThat(graph.fields().synchronous()).isEqualTo("-330");
+    }
+
+    @Test
+    void listsTheRelationsOfTheKindsAskedFor_inTheOrderOfTheKinds() {
+        RelationFieldService.KindedPage page = new RelationFieldService.KindedPage(List.of(), 0);
+        when(relations.pageAcross(any(), eq(42L), eq(10), eq(20), eq("us"), eq(true), eq(false), eq("fr"))).thenReturn(page);
+
+        RelationFieldService.KindedPage result = service.relationsOf(unit(),
+                List.of(RecordingUnitRelationKind.SYNCHRONOUS, RecordingUnitRelationKind.PARENTS), "us", true, false, 10, 20, "fr");
+
+        assertThat(result).isSameAs(page);
+        org.mockito.ArgumentCaptor<java.util.Map<String, RelationField>> kinds = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), eq(42L), eq(10), eq(20), eq("us"), eq(true), eq(false), eq("fr"));
+        // The enum's own order, whatever order they were asked in.
+        assertThat(kinds.getValue()).containsOnlyKeys("parents", "synchronous")
+                .containsEntry("parents", RelationField.RECORDING_UNIT_PARENTS)
+                .containsEntry("synchronous", RelationField.RECORDING_UNIT_SYNCHRONOUS);
+        assertThat(kinds.getValue().keySet()).containsExactly("parents", "synchronous");
+    }
+
+    @Test
+    void listsEveryKind_whenNoneIsAskedFor() {
+        when(relations.pageAcross(any(), anyLong(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(new RelationFieldService.KindedPage(List.of(), 0));
+
+        service.relationsOf(unit(), List.of(), null, false, true, 0, 50, "fr");
+
+        org.mockito.ArgumentCaptor<java.util.Map<String, RelationField>> kinds = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
+        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), anyLong(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean(), any());
+        assertThat(kinds.getValue().keySet()).containsExactly("parents", "children", "anterior", "posterior", "synchronous");
     }
 
     @Test
@@ -70,7 +105,9 @@ class RecordingUnitRelationGraphServiceTest {
         List<ResourceRef> many = new ArrayList<>(IntStream.range(0, 40).mapToObj(i -> strati("a" + i, "anterior")).toList());
         stub(RelationField.RECORDING_UNIT_PARENTS, List.of(), 0);
         stub(RelationField.RECORDING_UNIT_CHILDREN, List.of(), 0);
-        stub(RelationField.RECORDING_UNIT_STRATIGRAPHY, many, 40);
+        stub(RelationField.RECORDING_UNIT_ANTERIOR, many, 40);
+        stub(RelationField.RECORDING_UNIT_SYNCHRONOUS, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_POSTERIOR, List.of(), 0);
 
         RecordingUnitRelationGraphResource graph = service.graphOf(unit(), "fr");
 

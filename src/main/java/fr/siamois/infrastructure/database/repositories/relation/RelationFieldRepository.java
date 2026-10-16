@@ -28,6 +28,10 @@ public class RelationFieldRepository {
                       @Nullable Boolean asynchronous, @Nullable Boolean conceptDirection, @Nullable Boolean uncertain) {
     }
 
+    /** A value of one of several relations read together, with the name its relation goes by there. */
+    public record KindedRow(String kind, Row row) {
+    }
+
     /** An owner's first values, and how many it has in all. */
     public record Preview(List<Row> rows, long total) {
     }
@@ -92,6 +96,59 @@ public class RelationFieldRepository {
         return ((Number) query.getSingleResult()).longValue();
     }
 
+    /**
+     * One owner's values across several relations at once — each value says which relation it comes
+     * from — from {@code offset}, at most {@code limit}, those whose label contains {@code search}.
+     *
+     * @param kinds     the relations to read, by the name each goes by; their order is the order of the
+     *                  {@code kind} sort
+     * @param byLabel   sorted by label (then relation) rather than by relation (then label)
+     */
+    @Transactional(readOnly = true)
+    public List<KindedRow> pageAcross(Map<String, RelationField> kinds, long ownerId, int offset, int limit,
+                                      @Nullable String search, boolean byLabel, boolean ascending) {
+        if (kinds.isEmpty()) return List.of();
+        String direction = ascending ? "ASC" : "DESC";
+        String order = byLabel
+                ? "lower(k.label) " + direction + " NULLS LAST, k.kind_order, k.target_id"
+                : "k.kind_order " + direction + ", lower(k.label) NULLS LAST, k.target_id";
+        Query query = entityManager.createNativeQuery("SELECT k.* FROM (" + acrossSql(kinds) + ") k " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum and the kinds' fixed names; values are bound
+                        + "WHERE k.owner_id = :owner" + searchClause(search, "k")
+                        + " ORDER BY " + order)
+                .setParameter("owner", ownerId)
+                .setFirstResult(offset)
+                .setMaxResults(limit);
+        bindSearch(query, search);
+        return new ArrayList<>(((List<?>) query.getResultList()).stream()
+                .map(result -> {
+                    Object[] cols = (Object[]) result;
+                    return new KindedRow((String) cols[0], toRow(cols, 2));
+                })
+                .toList());
+    }
+
+    /** How many values an owner has across several relations, those whose label contains {@code search}. */
+    @Transactional(readOnly = true)
+    public long countAcross(Map<String, RelationField> kinds, long ownerId, @Nullable String search) {
+        if (kinds.isEmpty()) return 0;
+        Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + acrossSql(kinds) + ") k " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum and the kinds' fixed names; values are bound
+                        + "WHERE k.owner_id = :owner" + searchClause(search, "k"))
+                .setParameter("owner", ownerId);
+        bindSearch(query, search);
+        return ((Number) query.getSingleResult()).longValue();
+    }
+
+    /** The values of each relation, side by side: the kind's name and rank, then the usual columns. */
+    private static String acrossSql(Map<String, RelationField> kinds) {
+        List<String> selects = new ArrayList<>();
+        int rank = 0;
+        for (Map.Entry<String, RelationField> kind : kinds.entrySet()) {
+            selects.add("SELECT '" + kind.getKey().replace("'", "''") + "' AS kind, " + rank++ + " AS kind_order, v.* FROM ("
+                    + valuesSql(kind.getValue()) + ") v");
+        }
+        return String.join(" UNION ALL ", selects);
+    }
+
     /** Every (owner, target) pair of the relation, with its target's label and the relation's own columns. */
     private static String valuesSql(RelationField relation) {
         return "SELECT p.owner_id, p.target_id, " + relation.targetLabel() + " AS label, p.role, p.concept_id, "
@@ -102,7 +159,11 @@ public class RelationFieldRepository {
     }
 
     private static String searchClause(@Nullable String search) {
-        return search == null || search.isBlank() ? "" : " AND lower(v.label) LIKE :search";
+        return searchClause(search, "v");
+    }
+
+    private static String searchClause(@Nullable String search, String alias) {
+        return search == null || search.isBlank() ? "" : " AND lower(" + alias + ".label) LIKE :search";
     }
 
     private static void bindSearch(Query query, @Nullable String search) {
@@ -112,15 +173,20 @@ public class RelationFieldRepository {
     }
 
     private static Row toRow(Object[] cols) {
+        return toRow(cols, 0);
+    }
+
+    /** The row held by the nine columns that start at {@code from}. */
+    private static Row toRow(Object[] cols, int from) {
         return new Row(
-                ((Number) cols[0]).longValue(),
-                ((Number) cols[1]).longValue(),
-                (String) cols[2],
-                (String) cols[3],
-                cols[4] == null ? null : ((Number) cols[4]).longValue(),
-                (String) cols[5],
-                (Boolean) cols[6],
-                (Boolean) cols[7],
-                (Boolean) cols[8]);
+                ((Number) cols[from]).longValue(),
+                ((Number) cols[from + 1]).longValue(),
+                (String) cols[from + 2],
+                (String) cols[from + 3],
+                cols[from + 4] == null ? null : ((Number) cols[from + 4]).longValue(),
+                (String) cols[from + 5],
+                (Boolean) cols[from + 6],
+                (Boolean) cols[from + 7],
+                (Boolean) cols[from + 8]);
     }
 }

@@ -5,6 +5,7 @@ import type { FieldState } from "../rules";
 import { renderAnswerCell, renderAnswerValue } from "./display";
 import { FileCell, type StoredFile } from "./FileCell";
 import { useCanEdit } from "../panels/writeMode";
+import { editContextOf } from "./editContext";
 import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import type { AnswerInputBody, FieldResource } from "./types";
@@ -80,14 +81,15 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
 
   // Stratigraphic relationships are added, edited and removed in place, by their own endpoints (StratigraphyCell).
   if (field.answerType === "SELECT_MULTIPLE_STRATIGRAPHY" && row.id != null) {
-    const unit = row as { projectId?: string | null };
+    const context = editContextOf(row, entityType, organizationId);
     return (
       <StratigraphyCell
         field={field}
         unitId={row.id}
         stored={stored}
-        projectId={unit.projectId}
+        projectId={context.projectId}
         organizationId={organizationId}
+        typeConceptId={context.typeConceptId}
         editable={canEditEntity && !disabled}
         onChanged={onSaved}
       />

@@ -13,6 +13,7 @@ const graph: RelationGraph = {
   synchronous: zone(),
   posterior: zone("4"),
   others: zone(),
+  fields: { anterior: "-328", synchronous: "-330", posterior: "-329" },
 };
 const actions = { open: vi.fn() };
 
