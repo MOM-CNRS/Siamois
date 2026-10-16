@@ -1,0 +1,27 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:shared="http://java.sun.com/jsf/composite/pages/shared/form">
+
+    <cc:interface>
+        <cc:attribute name="bean" required="true"/>
+        <cc:attribute name="update" type="java.lang.String" required="true"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:dialog widgetVar="addThesaurusDialog" modal="true" width="520"
+                  header="#{langBean.msg('thesaurusAdd.title')}">
+            <shared:csrfform formId="addThesaurusForm">
+                <p style="font-style: italic">#{langBean.msg('thesaurusAdd.hint')}</p>
+                <p:inputText id="newThesaurusUrl" value="#{cc.attrs.bean.newThesaurusUrl}" style="width: 100%"/>
+                <div class="mt-3">
+                    <p:commandButton value="#{langBean.msg('common.action.add')}"
+                                     action="#{cc.attrs.bean.addThesaurus()}"
+                                     update="#{cc.attrs.update}"
+                                     oncomplete="if (!args.validationFailed) PF('addThesaurusDialog').hide()"/>
+                </div>
+            </shared:csrfform>
+        </p:dialog>
+    </cc:implementation>
+</ui:composition>

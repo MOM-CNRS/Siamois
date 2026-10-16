@@ -4,13 +4,14 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
-import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.domain.services.vocabulary.ThesaurusUsageService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
-import fr.siamois.utils.MessageUtils;
+import fr.siamois.ui.bean.settings.AbstractThesaurusSettingsBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,27 +31,26 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Getter
 @Setter
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
-public class ProjectThesaurusSettingsBean implements Serializable {
+public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean implements Serializable {
 
     private final transient FieldConfigurationService fieldConfigurationService;
-    private final transient VocabularyService vocabularyService;
-    private final LangBean langBean;
-    private String thesaurusUrl;
+    private final transient ThesaurusUsageService thesaurusUsageService;
+    private final ProjectTableFieldSettingsBean projectTableFieldSettingsBean;
     private ActionUnitDTO project;
 
-    private ProgressWrapper progressWrapper = new ProgressWrapper();
-
-    public ProjectThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, VocabularyService vocabularyService, LangBean langBean) {
+    public ProjectThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, VocabularyService vocabularyService,
+                                        LabelService labelService, ThesaurusUsageService thesaurusUsageService, LangBean langBean,
+                                        ProjectTableFieldSettingsBean projectTableFieldSettingsBean) {
+        super(vocabularyService, labelService, langBean);
+        this.projectTableFieldSettingsBean = projectTableFieldSettingsBean;
         this.fieldConfigurationService = fieldConfigurationService;
-        this.vocabularyService = vocabularyService;
-        this.langBean = langBean;
+        this.thesaurusUsageService = thesaurusUsageService;
     }
 
     @EventListener(LoginEvent.class)
     public void reset() {
-        thesaurusUrl = null;
+        resetState();
         project = null;
-        progressWrapper.reset();
     }
 
     public void init(ActionUnitDTO project) {
@@ -58,7 +58,14 @@ public class ProjectThesaurusSettingsBean implements Serializable {
         this.project = project;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
-        progressWrapper.reset();
+        loadOptions();
+        usages = thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode());
+    }
+
+    /** Opens the field configuration of the project, where other thesauri (PACTOLS...) can be used. */
+    public String goToFieldsConfig() {
+        projectTableFieldSettingsBean.init(project);
+        return "/pages/settings/project/projectTablesSettings.xhtml?faces-redirect=true";
     }
 
     public void saveConfig() {
@@ -67,7 +74,8 @@ public class ProjectThesaurusSettingsBean implements Serializable {
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper);
-            MessageUtils.displayInfoMessage(langBean, "myProfile.thesaurus.message.success");
+            notifySaved();
+            usages = thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode());
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

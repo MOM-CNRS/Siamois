@@ -6,6 +6,8 @@
     <!-- Single-use tokens sent by e-mail to reset a password or confirm a new e-mail address. -->
     <changeSet id="2026.10.13-0-person-action-token" author="Gregory Bliault">
         <preConditions onFail="MARK_RAN">
+            <!-- On a fresh database "person" does not exist yet: Hibernate's ddl-auto creates everything. -->
+            <tableExists tableName="person"/>
             <not>
                 <tableExists tableName="person_action_token"/>
             </not>
