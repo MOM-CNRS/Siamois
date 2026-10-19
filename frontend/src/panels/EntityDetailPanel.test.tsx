@@ -10,6 +10,10 @@ import { recallListContext, rememberListContext } from "./listContext";
 import { WriteModeProvider } from "./writeMode";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
+import { openProjectSettings } from "./projectSettings";
+
+vi.mock("./projectSettings", () => ({ openProjectSettings: vi.fn() }));
+const mockedOpenProjectSettings = vi.mocked(openProjectSettings);
 
 // Generic-component test (plan §8 phase 6), registered against a throwaway fake entity type —
 // entities/project/config.tsx and FicheTab.tsx already have their own coverage. This exercises
@@ -683,22 +687,21 @@ describe("EntityDetailPanel entity actions", () => {
     expect(container.querySelector("button.status-button.complete")).toBeTruthy();
   });
 
-  it("shows settings only when allowed, and opens them through the bridge with the entity's id", async () => {
-    const openProjectSettings = vi.fn();
-    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+  it("shows settings only when allowed, and opens them with the entity's id", async () => {
+    renderPanel({ writeMode: false });
     await flush();
     expect(container.querySelector(".bi-gear")).toBeNull();
 
     actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false, canManageSettings: true } });
     act(() => root.unmount());
     root = createRoot(container);
-    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+    renderPanel({ writeMode: false });
     await flush();
 
     await act(async () => {
       container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(openProjectSettings).toHaveBeenCalledWith("7");
+    expect(mockedOpenProjectSettings).toHaveBeenCalledWith("7");
   });
 });
 

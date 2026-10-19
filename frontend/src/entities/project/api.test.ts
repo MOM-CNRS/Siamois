@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
-import { getProject, getProjectSiblings, listProjects, patchProject } from "./api";
+import { duplicateProject, getProject, getProjectSiblings, listProjects, patchProject } from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),
@@ -153,6 +153,18 @@ describe("patchProject", () => {
       method: "PATCH",
       body: { answers: { "-118": { value: "12" }, "-115": { values: ["1", "2"] } } },
     });
+  });
+});
+
+describe("duplicateProject", () => {
+  it("POSTs to /duplicate and unwraps the copy", async () => {
+    const copy = { resourceType: "projects", id: "9", name: "Alpha (1)" };
+    mockedApiFetch.mockResolvedValueOnce({ data: copy });
+
+    const result = await duplicateProject(4);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/4/duplicate", { method: "POST" });
+    expect(result).toEqual(copy);
   });
 });
 

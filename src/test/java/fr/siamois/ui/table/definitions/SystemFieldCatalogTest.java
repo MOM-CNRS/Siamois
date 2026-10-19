@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SystemFieldCatalogTest {
 
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void specsOf_shouldHoldTheSystemFieldsOfEveryConfigurableTable(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.specsOf(table))
                 .as("%s has no system field to configure", table)
@@ -33,7 +33,7 @@ class SystemFieldCatalogTest {
     }
 
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void theInitialLayoutLaysOutEveryVisibleSystemFieldExactlyOnce(ConfigurableTable table) {
         List<Long> laidOut = TestForms.layoutOf(table).groups().stream()
                 .flatMap(group -> group.items().stream())
@@ -52,7 +52,7 @@ class SystemFieldCatalogTest {
      * definition has none of.
      */
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void fieldsOf_shouldHoldTheFieldsOfTheSpecs(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.fieldsOf(table))
                 .extracting(CustomField::getLabel)
@@ -67,7 +67,7 @@ class SystemFieldCatalogTest {
      * they would all collapse onto a single row.
      */
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void identityOf_shouldBeBuiltOnALabelAndABindingEveryDefinedFieldCarries(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.fieldsOf(table)).allSatisfy(field -> {
             assertThat(field.getLabel()).as("label of a system field of %s", table).isNotBlank();
@@ -76,7 +76,7 @@ class SystemFieldCatalogTest {
     }
 
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void identityOf_shouldTellTheFieldsOfATableApart(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.fieldsOf(table))
                 .extracting(SystemFieldCatalog::identityOf)

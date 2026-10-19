@@ -116,4 +116,41 @@ describe("layoutGraph", () => {
     const ys = nodes.filter((n) => n.zone === "synchronous" && n.kind === "unit").map((n) => n.y + NODE_HEIGHT / 2);
     expect(Math.min(...ys) + Math.max(...ys)).toBeCloseTo(0);
   });
+
+  describe("zone frames", () => {
+    it("draws one frame per filled zone, behind the tiles, never around the center", () => {
+      const { nodes } = layoutGraph(graph({ parents: zone([ref("1")]), posterior: zone([ref("2")]) }), labels);
+      const frames = nodes.filter((n) => n.kind === "frame");
+      expect(frames.map((f) => f.zone).sort()).toEqual(["others", "parents", "posterior"]);
+      // the frames come first, so they sit under everything else
+      expect(nodes.slice(0, frames.length).every((n) => n.kind === "frame")).toBe(true);
+    });
+
+    it("contains the title, the units and the +N tile of its zone", () => {
+      const { nodes } = layoutGraph(graph({ anterior: zone([ref("1"), ref("2")], 5) }), labels);
+      const frame = nodes.find((n) => n.id === "frame:anterior")!;
+      const members = nodes.filter((n) => n.zone === "anterior" && n.kind !== "frame");
+      expect(members.length).toBe(4); // title, two units, "+3"
+      for (const m of members) {
+        expect(m.x).toBeGreaterThan(frame.x);
+        expect(m.y).toBeGreaterThan(frame.y);
+        expect(m.x + m.width).toBeLessThan(frame.x + frame.width);
+        expect(m.y + m.height).toBeLessThan(frame.y + frame.height);
+      }
+    });
+
+    it("frames an empty zone only for an editor, and fainter", () => {
+      const readOnly = layoutGraph(graph({}), labels).nodes.filter((n) => n.kind === "frame");
+      expect(readOnly.map((f) => f.zone)).toEqual(["others"]);
+      const editable = layoutGraph(graph({}), labels, { editable: true }).nodes.filter((n) => n.kind === "frame");
+      expect(editable.length).toBe(6);
+      expect(editable.every((f) => f.muted)).toBe(true);
+    });
+
+    it("does not change where the tiles are", () => {
+      const g = graph({ parents: zone([ref("1")]), synchronous: zone([ref("2")]) });
+      const withFrames = layoutGraph(g, labels).nodes.find((n) => n.id === "parents:1")!;
+      expect(withFrames.y).toBe(-190 - NODE_HEIGHT / 2);
+    });
+  });
 });

@@ -30,4 +30,6 @@ public interface ConceptFieldStateRepository extends JpaRepository<ConceptFieldS
             """)
     List<ConceptFieldState> findAllByFieldAndFormConfig(@Param("field") CustomField field,
                                                         @Param("formConfig") FormConfig formConfig);
+
+    List<ConceptFieldState> findAllByFormConfigId(Long formConfigId);
 }

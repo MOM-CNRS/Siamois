@@ -64,6 +64,8 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectSiblingsResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectHistoryEntryResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.utils.AuthenticatedUserUtils;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplate;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.*;
@@ -482,6 +484,12 @@ public class ProjectApiService {
      */
     @Transactional
     public AccessibleProjectForApi createProject(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
+        return create(caller, request, lang);
+    }
+
+    // Shared by createProject and duplicateProject: both are transactional entry points, and a call through
+    // `this` to the other would skip the proxy.
+    private AccessibleProjectForApi create(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
         if (request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -501,10 +509,8 @@ public class ProjectApiService {
         if (name.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name est obligatoire");
         }
+        // empty = numbered automatically by ActionUnitService.save
         String identifier = request.getIdentifier() == null ? "" : request.getIdentifier().trim();
-        if (identifier.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "identifier est obligatoire");
-        }
         if (request.getTypeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "typeConceptId est obligatoire");
         }
@@ -519,7 +525,7 @@ public class ProjectApiService {
         shell.setCreatedByInstitution(institution);
         shell.setCreatedBy(caller.person());
         shell.setName(name);
-        shell.setIdentifier(identifier);
+        shell.setIdentifier(identifier.isEmpty() ? null : identifier);
         shell.setBeginDate(request.getBeginDate());
         shell.setEndDate(request.getEndDate());
         shell.setType(typeDto);
@@ -529,8 +535,10 @@ public class ProjectApiService {
         recordingUnitOpenApiService.applySystemProjectFormFieldAnswers(
                 shell, null, caller.person(), lang);
 
+        String templateId = resolveTemplate(caller, request.getOrganizationId(), request.getTemplateId());
+
         try {
-            ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto);
+            ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto, templateId);
             return actionUnitService.findAccessibleProjectByKey(
                     String.valueOf(saved.getId()), caller.accessibleInstitutionIds());
         } catch (ActionUnitAlreadyExistsException e) {
@@ -538,6 +546,97 @@ public class ProjectApiService {
         } catch (NullActionUnitIdentifierException | FailedActionUnitSaveException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
+    }
+
+    private static final int MAX_DUPLICATE_NAME_ATTEMPTS = 100;
+
+    /**
+     * {@code POST /projects/{id}/duplicate}: a new project of the same organization and type (not its places), named
+     * « name (n) », numbered automatically and configured from the source (types, fields, rules; no data, members
+     * or counters). A name taken meanwhile surfaces as a 409.
+     */
+    @Transactional
+    public AccessibleProjectForApi duplicateProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        ActionUnitDTO source = requireAccessibleProject(caller, projectIdOrKey).actionUnit();
+        InstitutionDTO institution = source.getCreatedByInstitution();
+        if (institution == null || source.getType() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation ou sans type");
+        }
+
+        ProjectCreateRequest request = new ProjectCreateRequest();
+        request.setOrganizationId(String.valueOf(institution.getId()));
+        request.setTypeId(String.valueOf(source.getType().getId()));
+        request.setTemplateId(ProjectTemplate.projectId(source.getId()));
+        request.setName(freeCopyName(institution.getId(), source.getName()));
+        return create(caller, request, lang);
+    }
+
+    private String freeCopyName(Long institutionId, String sourceName) {
+        for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {
+            String candidate = sourceName + " (" + i + ")";
+            if (!actionUnitService.projectNameExists(institutionId, candidate)) {
+                return candidate;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Aucun nom libre pour la copie de « " + sourceName + " »");
+    }
+
+    /**
+     * Validates the template chosen at creation: a project template must be a project the caller can view.
+     *
+     * @return the normalized template id, null for none
+     */
+    private String resolveTemplate(ProjectApiCaller caller, String organizationId, String templateId) {
+        if (templateId == null || templateId.isBlank() || ProjectTemplate.EMPTY_ID.equals(templateId)) {
+            return null;
+        }
+        if (!templateId.startsWith(ProjectTemplate.PROJECT_PREFIX)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Modèle de projet inconnu");
+        }
+        String sourceId = templateId.substring(ProjectTemplate.PROJECT_PREFIX.length());
+        AccessibleProjectForApi source;
+        try {
+            source = requireAccessibleProject(caller, sourceId);
+        } catch (ActionUnitNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Modèle de projet introuvable", e);
+        }
+        InstitutionDTO sourceInstitution = source.actionUnit().getCreatedByInstitution();
+        if (sourceInstitution == null || !Long.valueOf(parseLong(organizationId)).equals(sourceInstitution.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le modèle doit appartenir à la même organisation");
+        }
+        return templateId;
+    }
+
+    /** The starting points offered when creating a project of the organization: empty, then the projects it can copy. */
+    @Transactional(readOnly = true)
+    public List<ProjectTemplate> listProjectTemplates(ProjectApiCaller caller, String organizationId) {
+        long orgId = parseLong(organizationId);
+        assertOrganizationInCallerScope(orgId, caller.accessibleInstitutionIds());
+        List<ProjectTemplate> templates = new ArrayList<>();
+        templates.add(new ProjectTemplate(ProjectTemplate.EMPTY_ID, "", ProjectTemplate.Kind.EMPTY));
+        actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(), orgId,
+                        null, PageRequest.of(0, 200, Sort.by("name")))
+                .forEach(row -> templates.add(new ProjectTemplate(
+                        ProjectTemplate.projectId(row.actionUnit().getId()), row.actionUnit().getName(),
+                        ProjectTemplate.Kind.PROJECT)));
+        return templates;
+    }
+
+    /** The identifier the next project of the organization would get; empty when it cannot be numbered. */
+    @Transactional(readOnly = true)
+    public Optional<String> previewNextProjectIdentifier(ProjectApiCaller caller, String organizationId, String lang) {
+        long orgId = parseLong(organizationId);
+        assertOrganizationInCallerScope(orgId, caller.accessibleInstitutionIds());
+        InstitutionDTO institution = institutionService.findById(orgId);
+        if (institution == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
+        }
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        if (!profilePermissionService.hasActionUnitCreatePermission(userInfo)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de projet non autorisée");
+        }
+        return actionUnitService.previewNextProjectIdentifier(userInfo);
     }
 
     /**

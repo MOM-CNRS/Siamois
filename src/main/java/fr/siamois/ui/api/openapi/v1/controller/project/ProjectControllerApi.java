@@ -14,6 +14,8 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectNextIdentifierResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectTemplatesResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectSiblingsResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
@@ -202,6 +204,48 @@ public class ProjectControllerApi {
                 projectApiService.findSiblings(caller, id, organizationId, search, sort, filter)));
     }
 
+    @GetMapping("/templates")
+    @Operation(
+            summary = "Modèles de départ d'un projet",
+            description = "Les modèles proposés à la création d'un projet de l'organisation : vide, "
+                    + "ou la configuration d'un projet existant accessible."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    })
+    public ResponseEntity<ProjectTemplatesResponse> templates(
+            @Parameter(description = "Organisation dans laquelle le projet sera créé", required = true)
+            @RequestParam("organizationId") String organizationId) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return ResponseEntity.ok(new ProjectTemplatesResponse(
+                projectApiService.listProjectTemplates(caller, organizationId).stream()
+                        .map(t -> new ProjectTemplatesResponse.Template(
+                                t.id(), t.label(), t.kind().name().toLowerCase(java.util.Locale.ROOT)))
+                        .toList()));
+    }
+
+    @GetMapping("/next-identifier")
+    @Operation(
+            summary = "Prochain identifiant de projet",
+            description = "Aperçu, sans le réserver, de l'identifiant automatique du prochain projet de l'organisation."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée ou organisation hors périmètre")
+    })
+    public ResponseEntity<ProjectNextIdentifierResponse> nextIdentifier(
+            @Parameter(description = "Organisation dans laquelle le projet sera créé", required = true)
+            @RequestParam("organizationId") String organizationId,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new ProjectNextIdentifierResponse(
+                projectApiService.previewNextProjectIdentifier(caller, organizationId, lang).orElse(null)));
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un projet",
@@ -225,6 +269,32 @@ public class ProjectControllerApi {
         AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang);
         ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
         // A just-created project is never already bookmarked.
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer un projet",
+            description = "Crée un projet de même organisation et type (sans ses lieux), nommé « nom (n) », numéroté automatiquement "
+                    + "et configuré comme le projet source (types, champs, règles) — sans ses données, membres ni compteurs. "
+                    + "Droit requis : celui de la création d'un projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Copie créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable"),
+            @ApiResponse(responseCode = "409", description = "Aucun nom libre pour la copie"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectResponse> duplicate(
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        AccessibleProjectForApi row = projectApiService.duplicateProject(caller, id, lang);
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
     }

@@ -2,6 +2,10 @@ package fr.siamois.domain.services;
 
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
+import fr.siamois.domain.services.actionunit.template.EmptyProjectTemplateApplier;
+import fr.siamois.domain.services.actionunit.ProjectIdentifierService;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -43,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -86,6 +91,9 @@ class ActionUnitServiceTest {
     @Mock private ProfilePermissionService profilePermissionService;
     @Mock private InstitutionService institutionService;
     @Mock private DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    @Mock private ProjectIdentifierService projectIdentifierService;
+    @Spy private List<ProjectTemplateApplier> templateAppliers = new ArrayList<>();
+
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -104,6 +112,8 @@ class ActionUnitServiceTest {
 
     @BeforeEach
     void setUp() {
+        // the "empty" template seeds the default configuration, as before templates existed
+        templateAppliers.add(new EmptyProjectTemplateApplier(defaultProjectIdentifierConfigSeeder));
 
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
@@ -327,6 +337,54 @@ class ActionUnitServiceTest {
         } finally {
             TransactionSynchronizationManager.clear();
         }
+    }
+
+    @Test
+    void save_creationWithoutIdentifier_numbersTheProjectAutomatically() throws Exception {
+        Creation creation = stubCreation();
+        // the generated value is the one stubCreation already knows, so the uniqueness lookups stay stubbed
+        String generated = creation.actionUnit().getIdentifier();
+        creation.actionUnit().setIdentifier("  ");
+        when(projectIdentifierService.generate(creation.userInfo()))
+                .thenReturn(new GeneratedIdentifier(4, generated));
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verify(projectIdentifierService).generate(creation.userInfo());
+        assertEquals(generated, creation.actionUnit().getIdentifier());
+    }
+
+    @Test
+    void save_creationWithAnIdentifier_doesNotConsumeTheCounter() throws Exception {
+        Creation creation = stubCreation();
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verifyNoInteractions(projectIdentifierService);
+    }
+
+    @Test
+    void save_creationFromATransactionalTemplate_copiesInTheSameTransactionAndSkipsTheDefaultSeed() throws Exception {
+        Creation creation = stubCreation();
+        var copier = mock(ProjectTemplateApplier.class);
+        when(copier.supports("project:3")).thenReturn(true);
+        when(copier.transactional()).thenReturn(true);
+        templateAppliers.add(0, copier);
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type(), "project:3");
+
+        verify(copier).apply(creation.userInfo(), "project:3", creation.expected().getId());
+        verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
+    }
+
+    @Test
+    void save_creationWithAnUnknownTemplate_fails() throws Exception {
+        Creation creation = stubCreation();
+        UserInfo creator = creation.userInfo();
+        ActionUnitDTO unit = creation.actionUnit();
+        ConceptDTO type = creation.type();
+
+        assertThrows(IllegalArgumentException.class, () -> actionUnitService.save(creator, unit, type, "store:1"));
     }
 
     @Test

@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FormLayoutSeedsTest {
 
     @ParameterizedTest
-    @EnumSource(ConfigurableTable.class)
+    @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void everyTableHasAnInitialLayoutOfNonEmptyGroups(ConfigurableTable table) {
         FormLayout layout = TestForms.layoutOf(table);
 

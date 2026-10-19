@@ -61,6 +61,7 @@ public final class SystemFieldCatalog {
             case CONTENANT -> ContainerForm.systemFields();
             case DOCUMENT -> DocumentForm.systemFields();
             case STUDY -> StudyForm.systemFields();
+            case PROJECT -> List.of();
         };
     }
 

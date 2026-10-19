@@ -49,6 +49,8 @@ export const queryKeys = {
     ["effective-form", segment, projectId, typeId ?? null] as const,
   typeRules: (segment: string | undefined, projectId: string) => ["type-rules", segment, projectId] as const,
   recordingUnitTypes: (projectId: string | number | null | undefined) => ["recording-unit-types", projectId] as const,
+  projectTemplates: (organizationId: string | number | null | undefined) => ["project-templates", organizationId] as const,
+  nextProjectIdentifier: (organizationId: string | number | null | undefined) => ["next-project-identifier", organizationId] as const,
   projectTypes: (organizationId: string | number | null | undefined) => ["project-types", organizationId] as const,
 
   projectHistory: (projectId: string | number | undefined) => ["project-history", projectId] as const,
