@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -86,6 +87,15 @@ class ActionUnitServiceTest {
     @Mock private ProfilePermissionService profilePermissionService;
     @Mock private InstitutionService institutionService;
     @Mock private DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    @Mock private fr.siamois.domain.services.actionunit.ProjectIdentifierService projectIdentifierService;
+    @Spy private java.util.List<fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier> templateAppliers = new java.util.ArrayList<>();
+
+    @org.junit.jupiter.api.BeforeEach
+    void registerTemplateAppliers() {
+        // the "empty" template seeds the default configuration, as before templates existed
+        templateAppliers.add(new fr.siamois.domain.services.actionunit.template.EmptyProjectTemplateApplier(
+                defaultProjectIdentifierConfigSeeder));
+    }
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -327,6 +337,52 @@ class ActionUnitServiceTest {
         } finally {
             TransactionSynchronizationManager.clear();
         }
+    }
+
+    @Test
+    void save_creationWithoutIdentifier_numbersTheProjectAutomatically() throws Exception {
+        Creation creation = stubCreation();
+        // the generated value is the one stubCreation already knows, so the uniqueness lookups stay stubbed
+        String generated = creation.actionUnit().getIdentifier();
+        creation.actionUnit().setIdentifier("  ");
+        when(projectIdentifierService.generate(creation.userInfo()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(4, generated));
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verify(projectIdentifierService).generate(creation.userInfo());
+        assertEquals(generated, creation.actionUnit().getIdentifier());
+    }
+
+    @Test
+    void save_creationWithAnIdentifier_doesNotConsumeTheCounter() throws Exception {
+        Creation creation = stubCreation();
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verifyNoInteractions(projectIdentifierService);
+    }
+
+    @Test
+    void save_creationFromATransactionalTemplate_copiesInTheSameTransactionAndSkipsTheDefaultSeed() throws Exception {
+        Creation creation = stubCreation();
+        var copier = org.mockito.Mockito.mock(fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier.class);
+        when(copier.supports("project:3")).thenReturn(true);
+        when(copier.transactional()).thenReturn(true);
+        templateAppliers.add(0, copier);
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type(), "project:3");
+
+        verify(copier).apply(creation.userInfo(), "project:3", creation.expected().getId());
+        verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
+    }
+
+    @Test
+    void save_creationWithAnUnknownTemplate_fails() throws Exception {
+        Creation creation = stubCreation();
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+                actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type(), "store:1"));
     }
 
     @Test

@@ -167,16 +167,22 @@ class ProjectApiServiceTest {
     }
 
     @Test
-    void createProject_blankIdentifier_throws400() {
+    void createProject_blankIdentifier_isLeftToTheAutomaticNumbering() throws Exception {
         ProjectCreateRequest request = validCreateRequest();
         request.setIdentifier("   ");
         when(institutionService.findById(10L)).thenReturn(institution);
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
+        when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
+        when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
+        when(actionUnitService.save(any(), any(), any(), any()))
+                .thenThrow(new FailedActionUnitSaveException("stop here"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
-                .isEqualTo("identifier est obligatoire");
+                .isInstanceOf(ResponseStatusException.class);
+
+        org.mockito.ArgumentCaptor<ActionUnitDTO> shell = org.mockito.ArgumentCaptor.forClass(ActionUnitDTO.class);
+        org.mockito.Mockito.verify(actionUnitService).save(any(), shell.capture(), any(), any());
+        assertThat(shell.getValue().getIdentifier()).isNull();
     }
 
     @Test
@@ -211,7 +217,7 @@ class ProjectApiServiceTest {
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
-        when(actionUnitService.save(any(), any(), any()))
+        when(actionUnitService.save(any(), any(), any(), any()))
                 .thenThrow(new NullActionUnitIdentifierException("identifier is null"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
@@ -226,12 +232,132 @@ class ProjectApiServiceTest {
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
-        when(actionUnitService.save(any(), any(), any()))
+        when(actionUnitService.save(any(), any(), any(), any()))
                 .thenThrow(new FailedActionUnitSaveException("save failed"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    // ---- project templates --------------------------------------------------
+
+    private void stubCreationUpToSave() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
+        when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
+        when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
+    }
+
+    private ActionUnitDTO viewableProject(long id, InstitutionDTO owner) {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(id);
+        au.setName("Modèle " + id);
+        au.setCreatedByInstitution(owner);
+        when(actionUnitService.findAccessibleProjectByKey(String.valueOf(id), SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.canViewProject(caller.person(), owner, id)).thenReturn(true);
+        return au;
+    }
+
+    @Test
+    void createProject_withAProjectTemplate_handsItToTheSave() throws Exception {
+        stubCreationUpToSave();
+        viewableProject(5L, institution);
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("project:5");
+        when(actionUnitService.save(any(), any(), any(), any())).thenThrow(new FailedActionUnitSaveException("stop"));
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr")).isInstanceOf(ResponseStatusException.class);
+
+        org.mockito.Mockito.verify(actionUnitService).save(any(), any(), any(), org.mockito.ArgumentMatchers.eq("project:5"));
+    }
+
+    @Test
+    void createProject_emptyTemplate_isNormalizedToNone() throws Exception {
+        stubCreationUpToSave();
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("empty");
+        when(actionUnitService.save(any(), any(), any(), any())).thenThrow(new FailedActionUnitSaveException("stop"));
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr")).isInstanceOf(ResponseStatusException.class);
+
+        org.mockito.Mockito.verify(actionUnitService).save(any(), any(), any(), org.mockito.ArgumentMatchers.isNull());
+    }
+
+    @Test
+    void createProject_unknownTemplateKind_throws400() throws Exception {
+        stubCreationUpToSave();
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("store:1");
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        org.mockito.Mockito.verify(actionUnitService, org.mockito.Mockito.never()).save(any(), any(), any(), any());
+    }
+
+    @Test
+    void createProject_templateOfAnotherOrganization_throws400() throws Exception {
+        stubCreationUpToSave();
+        InstitutionDTO other = new InstitutionDTO();
+        other.setId(11L);
+        viewableProject(6L, other);
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("project:6");
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        org.mockito.Mockito.verify(actionUnitService, org.mockito.Mockito.never()).save(any(), any(), any(), any());
+    }
+
+    @Test
+    void createProject_templateNotViewable_throws404() throws Exception {
+        stubCreationUpToSave();
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE))
+                .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("nope"));
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("project:7");
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void listProjectTemplates_offersEmptyFirstThenTheAccessibleProjects() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setName("Fouille A");
+        when(actionUnitService.findAccessibleProjects(eq(1L), eq(SCOPE), eq(10L), any(), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(new AccessibleProjectForApi(au, 0L, 0L))));
+
+        var templates = service.listProjectTemplates(caller, "10");
+
+        assertThat(templates).extracting(t -> t.id()).containsExactly("empty", "project:5");
+        assertThat(templates.get(1).label()).isEqualTo("Fouille A");
+    }
+
+    @Test
+    void listProjectTemplates_outsideTheCallerScope_throws403() {
+        assertThatThrownBy(() -> service.listProjectTemplates(caller, "999"))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void previewNextProjectIdentifier_requiresTheCreatePermission() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> service.previewNextProjectIdentifier(caller, "10", "fr"))
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void previewNextProjectIdentifier_returnsTheServicePreview() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
+        when(actionUnitService.previewNextProjectIdentifier(any())).thenReturn(Optional.of("PROJ7"));
+
+        assertThat(service.previewNextProjectIdentifier(caller, "10", "fr")).contains("PROJ7");
     }
 
     // ---- patchProject -------------------------------------------------------

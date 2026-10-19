@@ -1043,7 +1043,7 @@ class ProjectControllerApiTest {
         saved.setName("Nouveau");
         saved.setIdentifier("NOU");
         saved.setCreatedByInstitution(institutionDto);
-        when(actionUnitService.save(any(), any(), any())).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), any(), any())).thenReturn(saved);
         when(actionUnitService.findAccessibleProjectByKey("77", Set.of(100L)))
                 .thenReturn(new AccessibleProjectForApi(saved, 0L, 0L));
 
@@ -1060,7 +1060,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Nouveau"));
 
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
-                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto));
+                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto), any());
         verify(recordingUnitOpenApiService).applySystemProjectFormFieldAnswers(any(), any(), same(personDto), anyString());
     }
 

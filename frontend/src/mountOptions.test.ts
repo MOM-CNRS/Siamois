@@ -29,7 +29,6 @@ const dataset: MountDataset = {
   actionSetMain: "reactAction_setMain_7",
   overviewActionCloseOverview: "reactAction_overview_closeOverview_7",
   actionRefreshBookmarks: "reactAction_refreshBookmarks_7",
-  actionOpenProjectSettings: "reactAction_openProjectSettings_7",
 };
 
 const noActions = () => undefined;
@@ -65,7 +64,7 @@ describe("parseMountOptions", () => {
   it("turns the remoteCommands' named params into the bridge's positional arguments", () => {
     const called: Record<string, unknown> = {};
     const fns = Object.fromEntries(
-      ["setOverview", "setMain", "closeOverview", "refreshBookmarks", "openProjectSettings"].map((name) => [
+      ["setOverview", "setMain", "closeOverview", "refreshBookmarks"].map((name) => [
         `reactAction_${name}`,
         vi.fn((params) => void (called[name] = params)),
       ]),
@@ -81,18 +80,15 @@ describe("parseMountOptions", () => {
         actionSetMain: "reactAction_setMain_7",
         overviewActionCloseOverview: "reactAction_closeOverview_7",
         actionRefreshBookmarks: "reactAction_refreshBookmarks_7",
-        actionOpenProjectSettings: "reactAction_openProjectSettings_7",
       },
       resolve,
     );
 
     bridge!.setOverview!("recordingUnit", 40);
     bridge!.setMain!("/action-unit/12");
-    bridge!.openProjectSettings!(12);
     bridge!.closeOverview!();
     expect(called.setOverview).toEqual({ entityType: "recordingUnit", id: 40 });
     expect(called.setMain).toEqual({ path: "/action-unit/12" });
-    expect(called.openProjectSettings).toEqual({ projectId: 12 });
     expect(fns.reactAction_closeOverview).toHaveBeenCalled();
   });
 
@@ -103,7 +99,6 @@ describe("parseMountOptions", () => {
       setMain: undefined,
       closeOverview: undefined,
       refreshBookmarks: undefined,
-      openProjectSettings: undefined,
     });
   });
 

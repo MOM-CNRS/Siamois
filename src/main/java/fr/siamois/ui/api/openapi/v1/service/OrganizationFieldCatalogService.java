@@ -88,6 +88,7 @@ public class OrganizationFieldCatalogService {
             case CONTENANT -> Container.class;
             case DOCUMENT -> Document.class;
             case STUDY -> Study.class;
+            case PROJECT -> fr.siamois.domain.models.actionunit.ActionUnit.class;
         };
     }
 

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
@@ -7,7 +8,7 @@ import { SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRe
 import type { FieldResource } from "../../fields/types";
 import { placeContextOf as placeContextFrom } from "../../rules";
 import type { CreateFormContext } from "../types";
-import { createProject } from "./api";
+import { createProject, getNextProjectIdentifier, listProjectTemplates } from "./api";
 import { getProjectTypes } from "./projectTypes";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
@@ -36,10 +37,34 @@ interface ConceptPick {
 export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel }: CreateFormContext) {
   const [name, setName] = useState("");
   const [identifier, setIdentifier] = useState("");
+  const [identifierEdited, setIdentifierEdited] = useState(false);
+  const [templateId, setTemplateId] = useState("empty");
   const [type, setType] = useState<ConceptPick | null>(null);
   const [mainLocation, setMainLocation] = useState<ConceptPick | null>(null);
   const [spatialContext, setSpatialContext] = useState<ConceptPick[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const templatesQuery = useQuery({
+    queryKey: queryKeys.projectTemplates(organizationId),
+    queryFn: () => listProjectTemplates(organizationId as number),
+    enabled: organizationId != null,
+  });
+  const templateOptions = (templatesQuery.data ?? [{ id: "empty", label: "", kind: "empty" as const }]).map((tpl) => ({
+    value: tpl.id,
+    label: tpl.kind === "empty" ? t("create.projectTemplate.empty") : tpl.label,
+  }));
+
+  // The identifier the server would give the project: shown pre-filled, kept as is unless the user types
+  // another one, in which case it is sent. A never-edited value is not sent, so the server allocates it.
+  const nextIdentifierQuery = useQuery({
+    queryKey: queryKeys.nextProjectIdentifier(organizationId),
+    queryFn: () => getNextProjectIdentifier(organizationId as number),
+    enabled: organizationId != null,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const nextIdentifier = nextIdentifierQuery.data ?? "";
+  const shownIdentifier = identifierEdited ? identifier : nextIdentifier;
 
   const typesQuery = useQuery({
     queryKey: queryKeys.projectTypes(organizationId),
@@ -78,7 +103,8 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
       createProject({
         organizationId: String(organizationId),
         name: name.trim(),
-        identifier: identifier.trim(),
+        identifier: identifierEdited && identifier.trim() !== "" ? identifier.trim() : undefined,
+        templateId,
         typeId: type!.resourceId,
         mainLocationId: mainLocation?.resourceId,
         spatialContextSpatialUnitIds: spatialContextIds(prefill?.spatialContext?.id, spatialContext),
@@ -90,7 +116,12 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   });
 
   const canSubmit =
-    organizationId != null && name.trim() !== "" && identifier.trim() !== "" && type != null && !mutation.isPending;
+    organizationId != null &&
+    name.trim() !== "" &&
+    // an organization that can't number its projects still needs one typed
+    (shownIdentifier.trim() !== "" || nextIdentifierQuery.isPending) &&
+    type != null &&
+    !mutation.isPending;
 
   return (
     <CreateFormShell
@@ -108,9 +139,27 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
         <InputText value={name} onChange={(e) => setName(e.target.value)} required />
       </CreateFormField>
 
-      <CreateFormField label={t("common.identifier")} required>
-        <InputText value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
+      <CreateFormField label={t("common.identifier")}>
+        <InputText
+          value={shownIdentifier}
+          placeholder={t("create.identifier.auto")}
+          onChange={(e) => {
+            setIdentifier(e.target.value);
+            setIdentifierEdited(true);
+          }}
+        />
       </CreateFormField>
+
+      {templateOptions.length > 1 && (
+        <CreateFormField label={t("create.projectTemplate")}>
+          <Dropdown
+            value={templateId}
+            options={templateOptions}
+            onChange={(e) => setTemplateId(e.value as string)}
+            filter={templateOptions.length > 8}
+          />
+        </CreateFormField>
+      )}
 
       <CreateFormField label={t("common.type")} required>
         {typeField ? (

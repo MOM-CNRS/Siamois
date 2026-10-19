@@ -5,13 +5,13 @@ import { TabView, TabPanel } from "primereact/tabview";
 import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
 import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
+import { openProjectSettings } from "./projectSettings";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
 import { EntityBreadcrumbTrail } from "../components/EntityBreadcrumbTrail";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
-import { useBridge } from "./bridge";
 import { PaneStateScope, usePaneState } from "./paneState";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
@@ -152,7 +152,6 @@ export function EntityDetailPanel({
   // stay above the early returns below.
   const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
   const writeMode = useWriteMode();
-  const bridge = useBridge();
   const queryClient = useQueryClient();
   // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
   // cache, so the jump usually lands on data that is already there — no skeleton at all.
@@ -284,9 +283,7 @@ export function EntityDetailPanel({
     duplicate:
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
-      settingsProjectId != null && bridge.openProjectSettings
-        ? () => bridge.openProjectSettings!(settingsProjectId)
-        : undefined,
+      settingsProjectId != null ? () => openProjectSettings(settingsProjectId) : undefined,
   };
   const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
     ...toolbar,

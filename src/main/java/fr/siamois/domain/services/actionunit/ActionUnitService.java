@@ -15,6 +15,7 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -85,7 +86,8 @@ public class ActionUnitService implements ArkEntityService {
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
     private final InstitutionService institutionService;
-    private final DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    private final ProjectIdentifierService projectIdentifierService;
+    private final List<ProjectTemplateApplier> templateAppliers;
 
 
     /**
@@ -243,25 +245,57 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        return save(info, actionUnit, typeConcept, null);
+    }
+
+    /**
+     * Save an ActionUnit with a transaction. A new project with no identifier is numbered automatically
+     * ({@link ProjectIdentifierService}), and is configured from the given template.
+     *
+     * @param templateId the project template to configure a new project from, null or {@code empty} for none
+     */
+    @Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
+    public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId)
+            throws ActionUnitAlreadyExistsException {
         boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
+        if (isCreation && (actionUnit.getIdentifier() == null || actionUnit.getIdentifier().isBlank())) {
+            actionUnit.setIdentifier(projectIdentifierService.generate(info).value());
+            actionUnit.setFullIdentifier(null);
+        }
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         if (isCreation) {
             assignRoles(info, savedDTO);
-            seedIdentifierConfigAfterCommit(info, savedDTO.getId());
+            applyTemplate(info, templateId, savedDTO.getId());
         }
         return savedDTO;
     }
 
-    private void seedIdentifierConfigAfterCommit(UserInfo info, Long projectId) {
+    /** The identifier the next project of the institution would get, without reserving it. */
+    @Transactional(readOnly = true)
+    public Optional<String> previewNextProjectIdentifier(UserInfo info) {
+        return projectIdentifierService.preview(info);
+    }
+
+    private void applyTemplate(UserInfo info, String templateId, Long projectId) {
+        ProjectTemplateApplier applier = templateAppliers.stream()
+                .filter(candidate -> candidate.supports(templateId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown project template: " + templateId));
+        if (applier.transactional()) {
+            applier.apply(info, templateId, projectId);
+            return;
+        }
+        // the default configuration is seeded after commit and never cancels the creation
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+            applier.apply(info, templateId, projectId);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+                applier.apply(info, templateId, projectId);
             }
         });
     }

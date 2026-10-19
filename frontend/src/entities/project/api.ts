@@ -19,8 +19,11 @@ export async function listProjects(params: ListParams): Promise<PagedResult<Proj
 export interface ProjectCreateBody {
   organizationId: string;
   name: string;
-  identifier: string;
+  // Omitted: the server numbers the project (PROJ1, PROJ2...) per the organization's configuration.
+  identifier?: string;
   typeId: string;
+  // "empty" (default) or "project:<id>": the starting configuration (see ProjectCreateRequest.templateId).
+  templateId?: string;
   // The project's main location / the places it is attached to (ActionUnit.mainLocation / .spatialContext).
   mainLocationId?: string;
   spatialContextSpatialUnitIds?: string[];
@@ -33,12 +36,35 @@ export async function createProject(body: ProjectCreateBody): Promise<ProjectDet
       organizationId: body.organizationId,
       name: body.name,
       identifier: body.identifier,
+      templateId: body.templateId,
       typeConceptId: body.typeId,
       mainLocationId: body.mainLocationId,
       spatialContextSpatialUnitIds: body.spatialContextSpatialUnitIds,
     },
   });
   return response.data;
+}
+
+export interface ProjectTemplateOption {
+  id: string;
+  label: string;
+  kind: "empty" | "project";
+}
+
+/** The starting points offered when creating a project: empty, then the projects whose configuration can be copied. */
+export async function listProjectTemplates(organizationId: string | number): Promise<ProjectTemplateOption[]> {
+  const body = await apiFetch<{ templates: ProjectTemplateOption[] }>(
+    `/api/v1/projects/templates?organizationId=${encodeURIComponent(String(organizationId))}`,
+  );
+  return body.templates;
+}
+
+/** Preview (not a reservation) of the identifier the next project would get; null when it can't be numbered. */
+export async function getNextProjectIdentifier(organizationId: string | number): Promise<string | null> {
+  const body = await apiFetch<{ identifier: string | null }>(
+    `/api/v1/projects/next-identifier?organizationId=${encodeURIComponent(String(organizationId))}`,
+  );
+  return body.identifier;
 }
 
 /**

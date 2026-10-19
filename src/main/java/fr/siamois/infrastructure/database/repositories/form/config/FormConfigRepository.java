@@ -69,4 +69,29 @@ public interface FormConfigRepository extends CrudRepository<FormConfig, Long> {
     Optional<FormConfig> findByActionUnitAndFieldAndValue(@Param("actionUnitId") Long actionUnitId,
                                                           @Param("fieldConceptId") Long fieldConceptId,
                                                           @Param("valueConceptId") Long valueConceptId);
+
+    /**
+     * The institution-level default configuration of a field, i.e. the one that belongs to no project
+     * and carries no value concept (used to number the projects themselves).
+     *
+     * @param institutionId  the institution the configuration is scoped to
+     * @param fieldConceptId the concept of the configured field
+     * @return the default configuration, or empty when the institution has none yet
+     */
+    @Query("""
+            select fc
+            from FormConfig fc
+            where fc.institution.id = :institutionId
+              and fc.actionUnit is null
+              and fc.fieldConcept.id = :fieldConceptId
+              and fc.valueConcept is null
+            """)
+    List<FormConfig> findInstitutionDefaults(@Param("institutionId") Long institutionId,
+                                             @Param("fieldConceptId") Long fieldConceptId);
+
+    /** Serializes the lazy creation of an institution-level configuration (see {@code uk_form_config_scope}). */
+    @Query(nativeQuery = true, value = "SELECT pg_advisory_xact_lock(:key) IS NOT NULL")
+    boolean lockTransaction(@Param("key") long key);
+
+    List<FormConfig> findAllByActionUnitId(Long actionUnitId);
 }
