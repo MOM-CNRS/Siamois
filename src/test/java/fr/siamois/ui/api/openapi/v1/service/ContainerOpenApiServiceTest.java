@@ -357,4 +357,46 @@ class ContainerOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
+
+    // --- deleteContainer ---
+
+    @Test
+    void deleteContainer_notDeleter_throws403_andDeletesNothing() {
+        ContainerDTO target = containerOn(projectWithInstitution());
+        when(containerService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(false);
+
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deleteContainer(5L, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(containerService, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteContainer_deleter_deletes() {
+        ContainerDTO target = containerOn(projectWithInstitution());
+        when(containerService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+
+        service.deleteContainer(5L, personDto, Set.of(10L), "fr");
+
+        verify(containerService).deleteById(5L);
+    }
+
+    @Test
+    void deleteContainer_withRelationships_throws409() {
+        ContainerDTO target = containerOn(projectWithInstitution());
+        when(containerService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+        doThrow(new IllegalStateException("liens")).when(containerService).deleteById(5L);
+
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deleteContainer(5L, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
 }

@@ -1426,4 +1426,44 @@ class ProjectApiServiceMutationTest {
 
         assertThat(result).isEqualTo(5L);
     }
+
+    @Test
+    void canDeleteEntitiesForProject_followsTheDeleteEntitiesRight() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(true);
+
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isTrue();
+
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(false);
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isFalse();
+    }
+
+    @Test
+    void permissionsFor_oneProject_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(profilePermissionService.hasActionUnitWritePermission(any(PersonDTO.class), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(PersonDTO.class), any(), any())).thenReturn(false);
+
+        var permissions = service.permissionsFor(caller, row);
+
+        assertThat(permissions.canEdit()).isTrue();
+        assertThat(permissions.canDelete()).isFalse();
+    }
+
+    @Test
+    void permissionsFor_aPage_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(profilePermissionService.actionUnitIdsWithWritePermission(any(), any())).thenReturn(java.util.Set.of(7L));
+        when(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(any(), any())).thenReturn(java.util.Set.of());
+
+        var permissions = service.permissionsFor(caller, List.of(new AccessibleProjectForApi(au, 0L, 0L)));
+
+        assertThat(permissions.get(7L).canEdit()).isTrue();
+        assertThat(permissions.get(7L).canDelete()).isFalse();
+    }
 }

@@ -6,6 +6,8 @@ import { registerEntityType } from "../entities/registry";
 import type { CreateFormContext, EntityTypeConfig, PagedResult } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 import { WriteModeProvider } from "./writeMode";
+import { onEntityDeleted } from "./entityDeleted";
+import { ApiError } from "../api/client";
 
 vi.mock("../api/bookmarks", () => ({
   createBookmark: vi.fn().mockResolvedValue(undefined),
@@ -23,11 +25,12 @@ interface FakeRow {
   name: string;
   resourceUri?: string;
   bookmarked?: boolean;
-  _permissions?: { canEdit: boolean };
+  _permissions?: { canEdit: boolean; canDelete?: boolean };
 }
 
 const listMock = vi.fn<(params: unknown) => Promise<PagedResult<FakeRow>>>();
 const duplicateMock = vi.fn<(id: string | number) => Promise<{ id: string | number }>>();
+const deleteMock = vi.fn<(id: string | number) => Promise<void>>();
 const createFormMock = vi.fn<(ctx: CreateFormContext) => void>();
 
 const config: EntityTypeConfig<FakeRow, FakeRow> = {
@@ -64,6 +67,15 @@ const config: EntityTypeConfig<FakeRow, FakeRow> = {
   routes: { list: "/choses", detail: (id) => `/chose/${id}` },
 };
 registerEntityType(config);
+// The same entity type, deletable: apart so the shared action bar of the tests above stays what it was.
+const deletableConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+  ...config,
+  key: "row-delete-entity",
+  collectionPath: "row-delete-entities",
+  api: { list: listMock, get: vi.fn(), delete: deleteMock },
+  list: { ...config.list, rowActions: [] },
+};
+registerEntityType(deletableConfig);
 
 let container: HTMLDivElement;
 let root: Root;
@@ -72,14 +84,14 @@ function row(overrides: Partial<FakeRow> = {}): FakeRow {
   return { id: "1", name: "Row A", resourceUri: "/chose/1", bookmarked: false, _permissions: { canEdit: true }, ...overrides };
 }
 
-async function render(rows: FakeRow[], options: { writeMode?: boolean; onOpenOverview?: (t: string, id: string | number) => void } = {}) {
+async function render(rows: FakeRow[], options: { writeMode?: boolean; onOpenOverview?: (t: string, id: string | number) => void; entityType?: string } = {}) {
   listMock.mockResolvedValue({ data: rows, totalCount: rows.length, limit: 20, offset: 0 });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(
       <QueryClientProvider client={queryClient}>
         <WriteModeProvider value={options.writeMode ?? true}>
-          <EntityListPanel entityType="row-action-entity" organizationId={3} onOpenOverview={options.onOpenOverview} />
+          <EntityListPanel entityType={options.entityType ?? "row-action-entity"} organizationId={3} onOpenOverview={options.onOpenOverview} />
         </WriteModeProvider>
       </QueryClientProvider>,
     );
@@ -267,5 +279,64 @@ describe("list row actions", () => {
     expect(actionButton("Plus d'actions")).not.toBeNull();
     const saved = JSON.parse(window.localStorage.getItem("siamois.list.org3.row-action-entity.global")!);
     expect(saved.actionBar).toEqual({ order: ["new-child", "duplicate"], inline: ["new-child"] });
+  });
+
+  it("shows the bin only on a row the caller may delete, whatever the edit right", async () => {
+    await render([row({ id: "1" }), row({ id: "2", name: "Row B", _permissions: { canEdit: false, canDelete: true } })], { entityType: "row-delete-entity" });
+
+    expect(container.querySelectorAll('.entity-list-panel-row-actions button[aria-label="Supprimer"]').length).toBe(1);
+    // The row that can only be deleted carries no editing action.
+    const rows = container.querySelectorAll("tbody tr");
+    expect(rows[1].querySelectorAll(".entity-list-panel-row-actions button").length).toBe(2);
+    expect(rows[1].querySelector('button[aria-label="Supprimer"]')).not.toBeNull();
+  });
+
+  it("hides the bin outside write mode", async () => {
+    await render([row({ _permissions: { canEdit: true, canDelete: true } })], { writeMode: false, entityType: "row-delete-entity" });
+
+    expect(actionButton("Supprimer")).toBeNull();
+  });
+
+  it("deletes after the confirmation, refreshes the list and announces the deletion", async () => {
+    deleteMock.mockResolvedValue(undefined);
+    const announced = vi.fn();
+    const stop = onEntityDeleted(announced);
+    await render([row({ _permissions: { canEdit: true, canDelete: true } })], { entityType: "row-delete-entity" });
+
+    await click(actionButton("Supprimer")!);
+    expect(deleteMock).not.toHaveBeenCalled();
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
+      .find((b) => b.textContent?.includes("Supprimer définitivement"))!;
+    await click(confirm);
+
+    expect(deleteMock).toHaveBeenCalledWith("1");
+    expect(announced).toHaveBeenCalledWith("row-delete-entity", "1");
+    stop();
+  });
+
+  it("keeps the dialog open with the server's refusal when the entity still has relationships", async () => {
+    deleteMock.mockRejectedValue(new ApiError(409, "Impossible de supprimer : lié à des documents. Retirez d'abord ces relations."));
+    const announced = vi.fn();
+    const stop = onEntityDeleted(announced);
+    await render([row({ _permissions: { canEdit: true, canDelete: true } })], { entityType: "row-delete-entity" });
+
+    await click(actionButton("Supprimer")!);
+    await click([...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
+      .find((b) => b.textContent?.includes("Supprimer définitivement"))!);
+
+    expect(document.querySelector(".delete-entity-dialog-error")?.textContent).toContain("Retirez d'abord");
+    expect(announced).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it("reports any other failure in the dialog", async () => {
+    deleteMock.mockRejectedValue(new ApiError(500, "boom"));
+    await render([row({ _permissions: { canEdit: true, canDelete: true } })], { entityType: "row-delete-entity" });
+
+    await click(actionButton("Supprimer")!);
+    await click([...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
+      .find((b) => b.textContent?.includes("Supprimer définitivement"))!);
+
+    expect(document.querySelector(".delete-entity-dialog-error")).not.toBeNull();
   });
 });
