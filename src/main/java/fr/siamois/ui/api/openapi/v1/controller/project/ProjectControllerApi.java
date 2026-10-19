@@ -273,6 +273,32 @@ public class ProjectControllerApi {
                 .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer un projet",
+            description = "Crée un projet de même organisation et type (sans ses lieux), nommé « nom (n) », numéroté automatiquement "
+                    + "et configuré comme le projet source (types, champs, règles) — sans ses données, membres ni compteurs. "
+                    + "Droit requis : celui de la création d'un projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Copie créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable"),
+            @ApiResponse(responseCode = "409", description = "Aucun nom libre pour la copie"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectResponse> duplicate(
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        AccessibleProjectForApi row = projectApiService.duplicateProject(caller, id, lang);
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
+    }
+
     @PatchMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Mise à jour partielle d'un projet",
             description = "Champs modifiables : nom, catégorie (type d'opération, "

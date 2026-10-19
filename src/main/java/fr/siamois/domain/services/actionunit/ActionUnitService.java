@@ -272,6 +272,12 @@ public class ActionUnitService implements ArkEntityService {
         return savedDTO;
     }
 
+    /** Whether a project of the institution already carries this name (names are unique per institution). */
+    @Transactional(readOnly = true)
+    public boolean projectNameExists(Long institutionId, String name) {
+        return actionUnitRepository.findByNameAndCreatedByInstitutionId(name, institutionId).isPresent();
+    }
+
     /** The identifier the next project of the institution would get, without reserving it. */
     @Transactional(readOnly = true)
     public Optional<String> previewNextProjectIdentifier(UserInfo info) {

@@ -542,6 +542,38 @@ public class ProjectApiService {
         }
     }
 
+    private static final int MAX_DUPLICATE_NAME_ATTEMPTS = 100;
+
+    /**
+     * {@code POST /projects/{id}/duplicate}: a new project of the same organization and type (not its places), named
+     * « name (n) », numbered automatically and configured from the source (types, fields, rules; no data, members
+     * or counters). Not transactional itself: the creation is, and a name taken meanwhile surfaces as a 409.
+     */
+    public AccessibleProjectForApi duplicateProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        ActionUnitDTO source = requireAccessibleProject(caller, projectIdOrKey).actionUnit();
+        InstitutionDTO institution = source.getCreatedByInstitution();
+        if (institution == null || source.getType() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation ou sans type");
+        }
+
+        ProjectCreateRequest request = new ProjectCreateRequest();
+        request.setOrganizationId(String.valueOf(institution.getId()));
+        request.setTypeId(String.valueOf(source.getType().getId()));
+        request.setTemplateId(ProjectTemplate.projectId(source.getId()));
+        request.setName(freeCopyName(institution.getId(), source.getName()));
+        return createProject(caller, request, lang);
+    }
+
+    private String freeCopyName(Long institutionId, String sourceName) {
+        for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {
+            String candidate = sourceName + " (" + i + ")";
+            if (!actionUnitService.projectNameExists(institutionId, candidate)) {
+                return candidate;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Aucun nom libre pour la copie de « " + sourceName + " »");
+    }
+
     /**
      * Validates the template chosen at creation: a project template must be a project the caller can view.
      *

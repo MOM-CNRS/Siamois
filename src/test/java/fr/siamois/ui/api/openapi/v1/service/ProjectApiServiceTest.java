@@ -240,6 +240,52 @@ class ProjectApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
+    // ---- duplicateProject ---------------------------------------------------
+
+    @Test
+    void duplicateProject_createsACopyConfiguredFromTheSourceUnderTheFirstFreeName() throws Exception {
+        ActionUnitDTO source = viewableProject(5L, institution);
+        source.setName("Fouille");
+        ConceptDTO type = new ConceptDTO();
+        type.setId(42L);
+        source.setType(type);
+        // the places are not carried over to the copy
+        fr.siamois.dto.entity.SpatialUnitSummaryDTO place = new fr.siamois.dto.entity.SpatialUnitSummaryDTO();
+        place.setId(31L);
+        source.setMainLocation(place);
+        source.setSpatialContext(java.util.Set.of(place));
+        stubCreationUpToSave();
+        when(actionUnitService.projectNameExists(10L, "Fouille (1)")).thenReturn(true);
+        when(actionUnitService.projectNameExists(10L, "Fouille (2)")).thenReturn(false);
+        ActionUnitDTO saved = new ActionUnitDTO();
+        saved.setId(77L);
+        when(actionUnitService.save(any(), any(), any(), any())).thenReturn(saved);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(saved, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("77", SCOPE)).thenReturn(row);
+
+        assertThat(service.duplicateProject(caller, "5", "fr")).isSameAs(row);
+
+        org.mockito.ArgumentCaptor<ActionUnitDTO> shell = org.mockito.ArgumentCaptor.forClass(ActionUnitDTO.class);
+        org.mockito.Mockito.verify(actionUnitService).save(any(), shell.capture(), any(), org.mockito.ArgumentMatchers.eq("project:5"));
+        assertThat(shell.getValue().getName()).isEqualTo("Fouille (2)");
+        assertThat(shell.getValue().getIdentifier()).isNull();
+        assertThat(shell.getValue().getMainLocation()).isNull();
+        assertThat(shell.getValue().getSpatialContext()).isNullOrEmpty();
+    }
+
+    @Test
+    void duplicateProject_withoutAFreeName_throws409() {
+        ActionUnitDTO source = viewableProject(5L, institution);
+        source.setName("Fouille");
+        ConceptDTO type = new ConceptDTO();
+        type.setId(42L);
+        source.setType(type);
+        when(actionUnitService.projectNameExists(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.duplicateProject(caller, "5", "fr"))
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
     // ---- project templates --------------------------------------------------
 
     private void stubCreationUpToSave() throws Exception {

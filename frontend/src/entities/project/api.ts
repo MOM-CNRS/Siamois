@@ -45,6 +45,13 @@ export async function createProject(body: ProjectCreateBody): Promise<ProjectDet
   return response.data;
 }
 
+// POST /api/v1/projects/{id}/duplicate — same type and configuration (not the places), named "name (n)",
+// numbered automatically; no data, members or counters.
+export async function duplicateProject(id: string | number): Promise<ProjectDetail> {
+  const response = await apiFetch<ProjectResponseBody>(`/api/v1/projects/${id}/duplicate`, { method: "POST" });
+  return response.data;
+}
+
 export interface ProjectTemplateOption {
   id: string;
   label: string;
