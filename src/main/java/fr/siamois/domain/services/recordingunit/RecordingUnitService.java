@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.recordingunit;
 
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -76,6 +77,8 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 @Service
 @RequiredArgsConstructor
 public class RecordingUnitService implements ArkEntityService {
+
+    private final EntityLinkGuard entityLinkGuard;
 
     static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
@@ -558,10 +561,10 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une UE sans mobiliers, sans études liées et sans UE filles en hiérarchie.
-     * Nettoie les liaisons (stratigraphie, documents, identifiants, formulaire, ARK).
+     * Supprime une UE qui n'a aucune relation avec une autre entité (hiérarchie, stratigraphie,
+     * mobiliers, documents, phases, études).
      *
-     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     * @throws IllegalStateException si l'UE a encore des relations
      */
     @Transactional
     @CacheEvict({
@@ -575,67 +578,21 @@ public class RecordingUnitService implements ArkEntityService {
 
         UserInfo info = ExecutionContextHolder.get();
         Long actionUnitId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
-        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
             throw new ForbiddenOperationException("You are not allowed to delete this recording unit");
         }
 
-        validateDeletable(ru, recordingUnitId);
-        unlinkParentChildRelations(ru);
-        clearStratigraphicRelationships(ru, recordingUnitId);
-        deleteLinkedData(recordingUnitId, ru);
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.RECORDING_UNIT, recordingUnitId, "l'unité d'enregistrement");
+
+        recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
+        if (ru.getContributors() != null) {
+            ru.getContributors().clear();
+        }
 
         Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
-
-        recordingUnitRepository.save(ru);
-
         recordingUnitRepository.delete(ru);
         if (arkId != null) {
             arkRepository.deleteById(arkId);
-        }
-    }
-
-    private void validateDeletable(RecordingUnit ru, long recordingUnitId) {
-        Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnitId);
-        if (specimenCount != null && specimenCount > 0) {
-            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement contient des mobiliers");
-        }
-        if (ru.getChildren() != null && !ru.getChildren().isEmpty()) {
-            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement possède des unités filles");
-        }
-    }
-
-    private void unlinkParentChildRelations(RecordingUnit ru) {
-        if (ru.getParents() != null) {
-            for (RecordingUnit parent : new HashSet<>(ru.getParents())) {
-                if (parent.getChildren() != null) {
-                    parent.getChildren().remove(ru);
-                }
-            }
-            ru.getParents().clear();
-        }
-        if (ru.getChildren() != null) {
-            ru.getChildren().clear();
-        }
-    }
-
-    private void clearStratigraphicRelationships(RecordingUnit ru, long recordingUnitId) {
-        List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(recordingUnitId);
-        if (!rels.isEmpty()) {
-            stratigraphicRelationshipRepository.deleteAll(rels);
-        }
-        if (ru.getRelationshipsAsUnit1() != null) {
-            ru.getRelationshipsAsUnit1().clear();
-        }
-        if (ru.getRelationshipsAsUnit2() != null) {
-            ru.getRelationshipsAsUnit2().clear();
-        }
-    }
-
-    private void deleteLinkedData(long recordingUnitId, RecordingUnit ru) {
-        recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
-        documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
-        if (ru.getContributors() != null) {
-            ru.getContributors().clear();
         }
     }
 

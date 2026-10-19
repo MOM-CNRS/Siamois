@@ -577,13 +577,13 @@ class ProjectApiServiceTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
         when(profilePermissionService.canViewProject(any(), any(), any())).thenReturn(true);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
 
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
     }
 
     // ---- deleteRecordingUnit ----------------------------------------------

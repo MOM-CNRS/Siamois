@@ -143,7 +143,8 @@ public class RecordingUnitsControllerApi {
             summary = "Supprimer une unité d'enregistrement",
             description = "Identifiant numérique obligatoire : clé primaire recording_unit_id. "
                     + "L'UE doit être dans une institution accessible (JWT). Droit d'écriture requis. "
-                    + "Refus (409) si l'UE contient des mobiliers, des études ou des unités filles en hiérarchie."
+                    + "Refus (409) si l'UE a encore des relations avec d'autres entités (hiérarchie, stratigraphie, mobiliers, "
+                    + "documents, phases, études) : les retirer d'abord."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Supprimée"),

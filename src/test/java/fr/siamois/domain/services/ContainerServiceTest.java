@@ -63,6 +63,12 @@ class ContainerServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
+    @Mock
+    private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
+
     @InjectMocks
     private ContainerService containerService;
 
@@ -86,6 +92,7 @@ class ContainerServiceTest {
 
         ExecutionContextHolder.set(new UserInfo(institutionDTO, new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString(), anyString(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
     }
 
     @AfterEach
@@ -487,5 +494,56 @@ class ContainerServiceTest {
         ContainerDTO result = containerService.findPreviousByActionUnit(action, containerDTO);
 
         assertSame(mostRecentDto, result);
+    }
+
+    @Test
+    void deleteById_unlinked_deletesEntityAndAnswers() {
+        Container target = new Container();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(containerRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+
+        containerService.deleteById(4L);
+
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant");
+        verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(ContainerDTO.class));
+        verify(containerRepository).delete(target);
+    }
+
+    @Test
+    void deleteById_linked_throwsAndDeletesNothing() {
+        Container target = new Container();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(containerRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+        doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant");
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> containerService.deleteById(4L));
+
+        verify(containerRepository, never()).delete(any(Container.class));
+    }
+
+    @Test
+    void deleteById_withoutPermission_throwsForbidden() {
+        Container target = new Container();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(containerRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(false);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> containerService.deleteById(4L));
+
+        verify(containerRepository, never()).delete(any(Container.class));
     }
 }

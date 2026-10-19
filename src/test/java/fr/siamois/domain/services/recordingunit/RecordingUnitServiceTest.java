@@ -119,6 +119,9 @@ class RecordingUnitServiceTest {
     @Mock
     private RecordingUnitSortFilterService recordingUnitSortFilterService;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -127,6 +130,7 @@ class RecordingUnitServiceTest {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
         // @InjectMocks uses constructor injection here, which skips leftover fields like the
         // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
         org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
@@ -1349,7 +1353,7 @@ class RecordingUnitServiceTest {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+            when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
 
             assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
@@ -1358,85 +1362,47 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        void deleteRecordingUnitById_hasSpecimens_throwsIllegalState() {
+        void deleteRecordingUnitById_withLinks_throwsIllegalStateAndDeletesNothing() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             ru.setFullIdentifier("RU-1");
-
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(3L);
+            doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                    .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.RECORDING_UNIT, 1L,
+                            "l'unité d'enregistrement");
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
         }
 
         @Test
-        void deleteRecordingUnitById_hasChildren_throwsIllegalState() {
+        void deleteRecordingUnitById_unlinked_deletesTheUnitAndItsArk() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             ru.setFullIdentifier("RU-1");
-            RecordingUnit child = new RecordingUnit();
-            child.setId(2L);
-            child.setFullIdentifier("RU-2");
-            ru.setChildren(new HashSet<>(Set.of(child)));
-
-            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
-
-            assertThrows(IllegalStateException.class,
-                    () -> recordingUnitService.deleteRecordingUnitById(1L));
-        }
-
-        @Test
-        void deleteRecordingUnitById_happyPath_deletesAllLinkedDataAndTheUnit() {
-            RecordingUnit ru = new RecordingUnit();
-            ru.setId(1L);
-            ru.setFullIdentifier("RU-1");
-
-            RecordingUnit parent = new RecordingUnit();
-            parent.setId(2L);
-            parent.setFullIdentifier("RU-2");
-            parent.setChildren(new HashSet<>(Set.of(ru)));
-            ru.setParents(new HashSet<>(Set.of(parent)));
-
-            StratigraphicRelationship rel = new StratigraphicRelationship();
-            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
-
             Ark ark = new Ark();
             ark.setInternalId(99L);
             ru.setArk(ark);
-
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
-            when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(1L);
 
-            assertFalse(parent.getChildren().contains(ru));
-            assertTrue(ru.getParents().isEmpty());
-            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
-            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
             verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
-            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
 
         @Test
-        void deleteRecordingUnitById_noArkNoIdInfo_skipsOptionalDeletes() {
+        void deleteRecordingUnitById_noArk_skipsArkDeletion() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(5L);
             ru.setFullIdentifier("RU-5");
-
             when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
-            when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(5L);
 
-            verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }

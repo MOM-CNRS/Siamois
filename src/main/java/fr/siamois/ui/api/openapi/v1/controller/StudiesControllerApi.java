@@ -120,4 +120,27 @@ public class StudiesControllerApi {
                 id, body, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new StudyResponse(resource));
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Supprimer l'étude",
+            description = "Supprime l'étude. Refus (409) si elle a encore des relations avec d'autres entités "
+                    + "(à retirer d'abord). Droit d'édition requis sur le projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Supprimé"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Interdit"),
+            @ApiResponse(responseCode = "404", description = "Étude introuvable ou hors périmètre"),
+            @ApiResponse(responseCode = "409", description = "Suppression impossible (relations existantes)"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<Void> deleteStudy(
+            @PathVariable("id") long id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        studyOpenApiService.deleteStudy(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.noContent().build();
+    }
 }

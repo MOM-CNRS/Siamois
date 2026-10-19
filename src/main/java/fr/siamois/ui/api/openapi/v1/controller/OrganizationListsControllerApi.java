@@ -138,6 +138,8 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, RecordingUnitDTO::getActionUnit, lang, EditPermissions.RECORDING_UNITS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(RecordingUnitDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(RecordingUnitDTO::getActionUnit).toList(), lang);
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =
                 recordingUnitListProjectionService.build(page.getContent(), fields, lang);
 
@@ -145,7 +147,7 @@ public class OrganizationListsControllerApi {
                 .map(dto -> {
                     RecordingUnitResource resource = recordingUnitResourceMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -184,13 +186,15 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, SpecimenDTO::getActionUnit, lang, EditPermissions.FINDS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(SpecimenDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(SpecimenDTO::getActionUnit).toList(), lang);
         FindListProjectionService.FindListProjection projection = findListProjectionService.build(page.getContent(), fields, lang);
 
         List<FindResource> resources = page.getContent().stream()
                 .map(dto -> {
                     FindResource resource = findOpenApiMapper.toResource(dto);
                     if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     if (dto.getId() != null) {
                         resource.setResourceUri("/specimen/" + dto.getId());
@@ -232,13 +236,15 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, PhaseDTO::getActionUnit, lang, EditPermissions.PHASES);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(PhaseDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(PhaseDTO::getActionUnit).toList(), lang);
         PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.build(page.getContent(), fields, lang);
 
         List<PhaseResource> resources = page.getContent().stream()
                 .map(dto -> {
                     PhaseResource resource = phaseOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
                     if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -277,13 +283,15 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, DocumentDTO::getActionUnit, lang, EditPermissions.DOCUMENTS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(DocumentDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(DocumentDTO::getActionUnit).toList(), lang);
         DocumentListProjectionService.DocumentListProjection projection = documentListProjectionService.build(page.getContent(), fields, lang);
 
         List<DocumentResource> resources = page.getContent().stream()
                 .map(dto -> {
                     DocumentResource resource = documentOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
                     if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -322,13 +330,15 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, StudyDTO::getActionUnit, lang, EditPermissions.STUDIES);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(StudyDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(StudyDTO::getActionUnit).toList(), lang);
         StudyListProjectionService.StudyListProjection projection = studyListProjectionService.build(page.getContent(), fields, lang);
 
         List<StudyResource> resources = page.getContent().stream()
                 .map(dto -> {
                     StudyResource resource = studyOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
                     if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -367,6 +377,8 @@ public class OrganizationListsControllerApi {
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, ContainerDTO::getActionUnit, lang, EditPermissions.CONTAINERS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(ContainerDTO::getActionUnit).toList(), lang);
+        Map<Long, Boolean> canDelete = organizationListService.canDeleteByProject(caller, institution,
+                page.getContent().stream().map(ContainerDTO::getActionUnit).toList(), lang);
         ContainerListProjectionService.ContainerListProjection projection =
                 containerListProjectionService.build(page.getContent(), fields, lang);
 
@@ -374,7 +386,7 @@ public class OrganizationListsControllerApi {
                 .map(dto -> {
                     ContainerResource resource = containerOpenApiMapper.toResource(dto, lang, projection.resolvedLabels());
                     if (fields != null) resource.setAnswers(projection.answersFor(dto.getId()));
-                    resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
+                    resource.setPermissions(permissionsFor(canEdit, canValidate, canDelete, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
                     return resource;
                 })
@@ -420,10 +432,12 @@ public class OrganizationListsControllerApi {
     }
 
     private static ProjectResourcePermissions permissionsFor(Map<Long, Boolean> canEdit, Map<Long, Boolean> canValidate,
+                                                             Map<Long, Boolean> canDelete,
                                                              ActionUnitSummaryDTO project) {
         boolean editable = project != null && Boolean.TRUE.equals(canEdit.get(project.getId()));
         boolean validator = project != null && Boolean.TRUE.equals(canValidate.get(project.getId()));
-        return ProjectResourcePermissions.of(editable).withValidate(validator);
+        boolean deletable = project != null && Boolean.TRUE.equals(canDelete.get(project.getId()));
+        return ProjectResourcePermissions.of(editable).withValidate(validator).withDelete(deletable);
     }
 
     private static ListMeta meta(Page<?> page, int limit, int offset) {

@@ -179,7 +179,8 @@ public class PhaseOpenApiService {
         resource.setAnswers(multiValueAnswers.shapeOne(Phase.class, phase.getId(), answers, null,
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
-                .withValidate(profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId())));
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId()))
+                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, phase.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
@@ -233,5 +234,23 @@ public class PhaseOpenApiService {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.PHASE,
                 phase.getActionUnit().getId(), phase.getId());
+    }
+
+    /**
+     * Supprime la phase sans relation avec une autre entité (409 sinon). Droit d'édition requis sur le projet.
+     */
+    @Transactional
+    public void deletePhase(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        PhaseDTO dto = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
+        InstitutionDTO institution = dto.getActionUnit().getCreatedByInstitution();
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo, dto.getActionUnit().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
+        }
+        try {
+            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> phaseService.deleteById(id));
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
     }
 }
