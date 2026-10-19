@@ -1,4 +1,5 @@
 import type { EntityRef, EntityTypeConfig, ListScope } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
@@ -42,6 +43,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   icon: "bi bi-pencil-square",
   panelClass: "recording-unit-panel",
   api: {
+    delete: (id) => deleteEntity("recording-units", id),
     siblings: (id) => fetchSiblings("recording-units", id),
     breadcrumbs: (id) => fetchBreadcrumbs("recording-units", id),
     get: getRecordingUnit,

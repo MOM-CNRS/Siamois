@@ -67,6 +67,9 @@ class SpecimenServiceTest {
     @Mock
     private SpecimenMapper specimenMapper;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
     @InjectMocks
     private SpecimenService specimenService;
 
@@ -101,6 +104,7 @@ class SpecimenServiceTest {
     void stubManagedAssociationLookups() {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
         lenient().when(recordingUnitRepository.findById(anyLong())).thenAnswer(inv -> {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(inv.getArgument(0));
@@ -1140,12 +1144,10 @@ class SpecimenServiceTest {
         ark.setInternalId(88L);
         specimen.setArk(ark);
         when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-        when(specimenRepository.countMovementsBySpecimenId(5L)).thenReturn(0L);
-        when(specimenRepository.countGroupAttributionsBySpecimenId(5L)).thenReturn(0L);
 
         specimenService.deleteSpecimenById(5L);
 
-        verify(documentRepository).deleteAllSpecimenDocumentLinksBySpecimenId(5L);
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPECIMEN, 5L, "le mobilier");
         verify(specimenRepository).delete(specimen);
         verify(arkRepository).deleteById(88L);
     }
@@ -1155,8 +1157,6 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         specimen.setId(6L);
         when(specimenRepository.findById(6L)).thenReturn(Optional.of(specimen));
-        when(specimenRepository.countMovementsBySpecimenId(6L)).thenReturn(0L);
-        when(specimenRepository.countGroupAttributionsBySpecimenId(6L)).thenReturn(0L);
 
         specimenService.deleteSpecimenById(6L);
 
@@ -1187,7 +1187,7 @@ class SpecimenServiceTest {
         Specimen specimen = new Specimen();
         specimen.setId(5L);
         when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-        when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
 
         assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
                 () -> specimenService.deleteSpecimenById(5L));
@@ -1207,33 +1207,23 @@ class SpecimenServiceTest {
         specimen.setId(5L);
         specimen.setRecordingUnit(recordingUnit);
         when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-        when(specimenRepository.countMovementsBySpecimenId(5L)).thenReturn(0L);
-        when(specimenRepository.countGroupAttributionsBySpecimenId(5L)).thenReturn(0L);
 
         specimenService.deleteSpecimenById(5L);
 
-        verify(profilePermissionService).hasProjectPermission(any(), eq(9L), eq(PermissionConstants.PROJECT_EDIT_FINDS));
+        verify(profilePermissionService).hasDeleteEntitiesPermission(any(), eq(9L));
     }
 
     @Test
-    void deleteSpecimenById_withMovements_throws() {
+    void deleteSpecimenById_withLinks_throwsAndDeletesNothing() {
         Specimen specimen = new Specimen();
         specimen.setId(1L);
         when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
-        when(specimenRepository.countMovementsBySpecimenId(1L)).thenReturn(1L);
+        org.mockito.Mockito.doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPECIMEN, 1L, "le mobilier");
 
         assertThrows(IllegalStateException.class, () -> specimenService.deleteSpecimenById(1L));
-    }
 
-    @Test
-    void deleteSpecimenById_inGroup_throws() {
-        Specimen specimen = new Specimen();
-        specimen.setId(1L);
-        when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
-        when(specimenRepository.countMovementsBySpecimenId(1L)).thenReturn(0L);
-        when(specimenRepository.countGroupAttributionsBySpecimenId(1L)).thenReturn(2L);
-
-        assertThrows(IllegalStateException.class, () -> specimenService.deleteSpecimenById(1L));
+        verify(specimenRepository, never()).delete(any(Specimen.class));
     }
 
     @Test

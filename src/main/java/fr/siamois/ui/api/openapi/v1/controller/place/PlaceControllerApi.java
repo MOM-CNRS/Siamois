@@ -132,7 +132,7 @@ public class PlaceControllerApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un lieu",
-            description = "Uniquement si le lieu n'est pas référencé (enfants, UE, projets, contenants). "
+            description = "Uniquement si le lieu n'a aucune relation (lieux parents/enfants, UE, projets, contenants, documents). "
                     + "Droit requis : gestionnaire d'institution ou gestionnaire d'action."
     )
     @ApiResponses(value = {

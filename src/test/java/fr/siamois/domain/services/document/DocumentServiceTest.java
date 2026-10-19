@@ -78,11 +78,13 @@ class DocumentServiceTest {
 
     private final List<MimeType> mimeTypes = List.of(MimeType.valueOf("application/pdf"), MimeType.valueOf("image/png"));
 
+    private final fr.siamois.domain.services.EntityLinkGuard entityLinkGuard = mock(fr.siamois.domain.services.EntityLinkGuard.class);
+
     @BeforeEach
     void setUp() {
         documentService = new DocumentService(documentRepository, personMapper, institutionMapper, documentMapper,
                 identifierGenerator, profilePermissionService, customFieldAnswerService, tableFieldConfigService,
-                documentStorage, List.of(fileCompressor));
+                documentStorage, List.of(fileCompressor), entityLinkGuard);
     }
 
     @Test
@@ -498,7 +500,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void deleteDocument_removesLinksStorageAndEntity() {
+    void deleteDocument_removesStorageAndEntity_whenUnlinked() {
         long id = 12L;
         Document document = new Document();
         document.setId(id);
@@ -508,15 +510,23 @@ class DocumentServiceTest {
 
         documentService.deleteDocument(document);
 
-        verify(documentRepository).deleteSpatialUnitDocumentLinks(id);
-        verify(documentRepository).deleteRecordingUnitDocumentLinks(id);
-        verify(documentRepository).deleteSpecimenDocumentLinks(id);
-        verify(documentRepository).deletePhaseDocumentLinks(id);
-        verify(documentRepository).deleteContainerDocumentLinks(id);
-        verify(documentRepository).deleteStudyDocumentLinks(id);
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.DOCUMENT, id, "le document");
         verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(DocumentDTO.class));
         verify(documentStorage).deleteStoredFile(document);
         verify(documentRepository).delete(document);
+    }
+
+    @Test
+    void deleteDocument_linked_throwsAndDeletesNothing() {
+        Document document = new Document();
+        document.setId(12L);
+        doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.DOCUMENT, 12L, "le document");
+
+        assertThrows(IllegalStateException.class, () -> documentService.deleteDocument(document));
+
+        verify(documentRepository, never()).delete(any(Document.class));
+        verify(documentStorage, never()).deleteStoredFile(any());
     }
 
     @Test

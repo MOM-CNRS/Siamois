@@ -12,6 +12,8 @@ export interface PanelActions {
   // Receives the click, so the creation form can open in an overlay next to what was clicked.
   create?: (event?: SyntheticEvent) => void;
   duplicate?: () => void;
+  // Permanently deletes the displayed entity (opens the confirmation first).
+  delete?: () => void;
   // Project only: opens its settings page (a navigation to the JSF settings route).
   settings?: () => void;
   // Main panel titlebar only, and only in focus mode (an overview entity promoted to main):

@@ -1142,25 +1142,6 @@ class ProjectControllerApiTest {
     }
 
     @Test
-    void deleteProject_whenProjectHasRecordingUnits_returns409() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(3L);
-        au.setCreatedByInstitution(institutionDto);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-
-        mockMvc.perform(delete("/api/v1/projects/3"))
-                .andExpect(status().isConflict());
-
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
-    }
-
-    @Test
     void deleteProject_whenProjectHasChildProjects_returns409() throws Exception {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
@@ -1171,12 +1152,12 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
         when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
                 .andExpect(status().isConflict());
 
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
     }
 
     @Test
@@ -1190,11 +1171,11 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))
                 .andExpect(status().isNoContent());
 
-        verify(actionUnitService).deleteProjectWhenEmpty(9L);
+        verify(actionUnitService).deleteProjectWithContent(9L);
     }
 }
