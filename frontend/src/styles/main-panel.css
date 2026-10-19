@@ -2023,6 +2023,21 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   color: var(--text-color-secondary, #6c757d);
 }
 
+/* The frame around a zone: a quiet background so where one relation kind ends reads at a glance. */
+.sia-graph-frame {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--surface-border, #ced4da);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-ground, #f8f9fa) 60%, transparent);
+  pointer-events: none;
+}
+
+.sia-graph-frame-muted {
+  opacity: 0.55;
+}
+
 .sia-graph-handle {
   opacity: 0;
   pointer-events: none;

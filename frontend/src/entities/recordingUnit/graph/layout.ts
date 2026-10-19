@@ -14,10 +14,12 @@ const RIGHT_X = 330;
 const LEFT_X = -330;
 const LABEL_HEIGHT = 26;
 const TITLE_GAP = 6;
-const BAND_GAP = 28;
+const BAND_GAP = 40;
 const PER_ROW = 3;
 // Without their lines the stratigraphic units needn't be stacked: each zone becomes a grid, at most this wide.
 const MAX_GRID_COLUMNS = 4;
+// The frame drawn around each zone: this much room between it and the zone's outermost tiles.
+const FRAME_PADDING = 12;
 
 export interface LayoutLabels {
   zone: Record<ZoneKey, string>;
@@ -28,7 +30,7 @@ export interface LayoutLabels {
 
 export interface LayoutNode {
   id: string;
-  kind: "unit" | "center" | "zone" | "more";
+  kind: "unit" | "center" | "zone" | "more" | "frame";
   x: number;
   y: number;
   width: number;
@@ -173,8 +175,32 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
     addUnits("others", graph.others, (index) => ({ x: LEFT_X, y: index * STEP }));
   }
 
-  if (!showLinks) return { nodes, edges: zoneEdges(nodes, centerId) };
-  return { nodes, edges };
+  // The frames go first: they are the background the zones' tiles sit on.
+  const all = [...zoneFrames(nodes), ...nodes];
+  if (!showLinks) return { nodes: all, edges: zoneEdges(nodes, centerId) };
+  return { nodes: all, edges };
+}
+
+// A frame around each zone — its title, its units and its "+N" tile — so that where one relation kind ends and
+// the next begins reads at a glance, whatever the display mode.
+function zoneFrames(nodes: LayoutNode[]): LayoutNode[] {
+  const zones = new Map<ZoneKey, LayoutNode[]>();
+  for (const node of nodes) {
+    if (!node.zone || node.kind === "center") continue;
+    zones.set(node.zone, [...(zones.get(node.zone) ?? []), node]);
+  }
+  return [...zones.entries()].map(([zone, members]) => {
+    const left = Math.min(...members.map((n) => n.x)) - FRAME_PADDING;
+    const top = Math.min(...members.map((n) => n.y)) - FRAME_PADDING;
+    const right = Math.max(...members.map((n) => n.x + n.width)) + FRAME_PADDING;
+    const bottom = Math.max(...members.map((n) => n.y + n.height)) + FRAME_PADDING;
+    return {
+      id: `frame:${zone}`, kind: "frame" as const, zone, label: "",
+      x: left, y: top, width: right - left, height: bottom - top,
+      // A zone with nothing in it (an empty one an editor can fill) gets a fainter frame.
+      muted: members.every((n) => n.kind === "zone" || n.muted),
+    };
+  });
 }
 
 // One arrow from the center to the title of each zone that has units.

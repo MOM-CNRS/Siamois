@@ -107,7 +107,12 @@ function GraphNode({ data }: NodeProps<Node<GraphNodeData>>) {
   );
 }
 
-const nodeTypes = { graph: GraphNode };
+// The frame around a zone: pure background, nothing in it reacts.
+function FrameNode({ data }: NodeProps<Node<GraphNodeData>>) {
+  return <div className={`sia-graph-frame sia-graph-frame-${data.zone ?? "none"}${data.muted ? " sia-graph-frame-muted" : ""}`} />;
+}
+
+const nodeTypes = { graph: GraphNode, frame: FrameNode };
 
 function labelsFor(): LayoutLabels {
   const zones: ZoneKey[] = ["parents", "children", "anterior", "synchronous", "posterior", "others"];
@@ -122,15 +127,17 @@ export function toFlow(graph: RelationGraph, actions: NodeActions, editable: boo
   const layout = layoutGraph(graph, labelsFor(), { editable, showLinks });
   const nodes = layout.nodes.map<Node<GraphNodeData>>((n) => ({
     id: n.id,
-    type: "graph",
+    type: n.kind === "frame" ? "frame" : "graph",
     position: { x: n.x, y: n.y },
     width: n.width,
     height: n.height,
     data: { label: n.label, kind: n.kind, muted: n.muted, zone: n.zone, unitId: n.unitId, addable: n.addable, ref: n.ref, actions },
     draggable: false,
     // React Flow switches pointer events off on a node that can't be dragged or selected, and ours hold buttons.
-    selectable: true,
+    selectable: n.kind !== "frame",
     connectable: false,
+    // Behind the tiles and the arrows.
+    zIndex: n.kind === "frame" ? -1 : undefined,
   }));
   const edges = layout.edges.map<Edge>((e) => ({
     id: e.id,
