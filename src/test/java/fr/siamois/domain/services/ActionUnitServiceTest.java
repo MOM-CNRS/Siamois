@@ -380,11 +380,11 @@ class ActionUnitServiceTest {
     @Test
     void save_creationWithAnUnknownTemplate_fails() throws Exception {
         Creation creation = stubCreation();
-        UserInfo info = creation.userInfo();
+        UserInfo creator = creation.userInfo();
         ActionUnitDTO unit = creation.actionUnit();
         ConceptDTO type = creation.type();
 
-        assertThrows(IllegalArgumentException.class, () -> actionUnitService.save(info, unit, type, "store:1"));
+        assertThrows(IllegalArgumentException.class, () -> actionUnitService.save(creator, unit, type, "store:1"));
     }
 
     @Test

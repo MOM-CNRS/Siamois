@@ -357,7 +357,7 @@ class ProjectApiServiceTest {
     }
 
     @Test
-    void createProject_templateNotViewable_throws404() throws Exception {
+    void createProject_templateNotViewable_throws404() {
         stubCreationUpToSave();
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE))
                 .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("nope"));
