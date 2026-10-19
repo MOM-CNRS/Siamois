@@ -8,6 +8,7 @@ import type { EntityTypeConfig } from "../entities/types";
 import { EntityDetailPanel } from "./EntityDetailPanel";
 import { recallListContext, rememberListContext } from "./listContext";
 import { WriteModeProvider } from "./writeMode";
+import { onEntityDeleted } from "./entityDeleted";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
 import { openProjectSettings } from "./projectSettings";
@@ -583,16 +584,17 @@ describe("EntityDetailPanel entity actions", () => {
   interface ActionEntity {
     id: string;
     name: string;
-    _permissions?: { canEdit: boolean; canManageSettings?: boolean };
+    _permissions?: { canEdit: boolean; canManageSettings?: boolean; canDelete?: boolean };
   }
   const actionGet = vi.fn<(id: string | number) => Promise<ActionEntity>>();
   const duplicateMock = vi.fn<(id: string | number) => Promise<ActionEntity>>();
+  const deleteMock = vi.fn<(id: string | number) => Promise<void>>();
   const actionConfig: EntityTypeConfig<ActionEntity, ActionEntity> = {
     key: "fake-action-entity",
     labels: { singular: "Action", plural: "Actions" },
     collectionPath: "fake-action-entities",
     icon: "bi bi-question",
-    api: { list: vi.fn(), get: actionGet, duplicate: duplicateMock },
+    api: { list: vi.fn(), get: actionGet, duplicate: duplicateMock, delete: deleteMock },
     list: {
       columns: [],
       searchable: false,
@@ -630,6 +632,47 @@ describe("EntityDetailPanel entity actions", () => {
   beforeEach(() => {
     actionGet.mockReset().mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } });
     duplicateMock.mockReset().mockResolvedValue({ id: "8", name: "Seven (copie)" });
+    deleteMock.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("offers the bin only with the delete right, in write mode — not with the edit right alone", async () => {
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeNull();
+
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false, canDelete: true } });
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: false });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeNull();
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeTruthy();
+  });
+
+  it("deletes the fiche after the confirmation and announces it", async () => {
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true, canDelete: true } });
+    const announced = vi.fn();
+    const stop = onEntityDeleted(announced);
+    renderPanel({ writeMode: true });
+    await flush();
+
+    await act(async () => {
+      container.querySelector(".bi-trash")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
+      .find((b) => b.textContent?.includes("Supprimer définitivement"))!;
+    await act(async () => confirm.click());
+    await flush();
+
+    expect(deleteMock).toHaveBeenCalledWith("7");
+    expect(announced).toHaveBeenCalledWith("fake-action-entity", "7");
+    stop();
   });
 
   it("offers create and duplicate only in write mode with edit rights", async () => {

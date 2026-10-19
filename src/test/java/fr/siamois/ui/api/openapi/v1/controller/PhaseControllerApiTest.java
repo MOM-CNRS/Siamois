@@ -192,4 +192,26 @@ class PhaseControllerApiTest {
 
         verify(recordingUnitListAssembler).assemble(caller, page, 6L, null, "fr", 10, 0);
     }
+
+    @Test
+    void delete_returns204() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+
+        mockMvc.perform(delete("/api/v1/phases/3"))
+                .andExpect(status().isNoContent());
+
+        verify(phaseOpenApiService).deletePhase(eq(3L), eq(personDto), eq(Set.of(10L)), eq("fr"));
+    }
+
+    @Test
+    void delete_whenDomainRefuses_returnsTheServiceStatus() throws Exception {
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "liens"))
+                .when(phaseOpenApiService).deletePhase(eq(3L), any(), any(), any());
+
+        mockMvc.perform(delete("/api/v1/phases/3"))
+                .andExpect(status().isConflict());
+    }
 }

@@ -417,4 +417,44 @@ class StudyOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
+
+    // --- deleteStudy ---
+
+    @Test
+    void deleteStudy_notDeleter_throws403_andDeletesNothing() {
+        StudyDTO target = studyOn(projectWithInstitution());
+        when(studyService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(studyService, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteStudy_deleter_deletes() {
+        StudyDTO target = studyOn(projectWithInstitution());
+        when(studyService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+
+        service.deleteStudy(5L, personDto, Set.of(10L), "fr");
+
+        verify(studyService).deleteById(5L);
+    }
+
+    @Test
+    void deleteStudy_withRelationships_throws409() {
+        StudyDTO target = studyOn(projectWithInstitution());
+        when(studyService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+        doThrow(new IllegalStateException("liens")).when(studyService).deleteById(5L);
+
+        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
 }

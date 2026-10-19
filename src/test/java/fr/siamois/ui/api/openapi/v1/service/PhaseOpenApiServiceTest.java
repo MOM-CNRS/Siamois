@@ -392,4 +392,43 @@ class PhaseOpenApiServiceTest {
         verify(phaseService, never()).save(any());
     }
 
+    // --- deletePhase ---
+
+    @Test
+    void deletePhase_notDeleter_throws403_andDeletesNothing() {
+        PhaseDTO target = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deletePhase(5L, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+        verify(phaseService, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deletePhase_deleter_deletes() {
+        PhaseDTO target = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+
+        service.deletePhase(5L, personDto, Set.of(10L), "fr");
+
+        verify(phaseService).deleteById(5L);
+    }
+
+    @Test
+    void deletePhase_withRelationships_throws409() {
+        PhaseDTO target = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
+        doThrow(new IllegalStateException("liens")).when(phaseService).deleteById(5L);
+
+        assertThatThrownBy(() -> service.deletePhase(5L, personDto, Set.of(10L), "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
 }
