@@ -201,7 +201,7 @@ class PhaseControllerApiTest {
         mockMvc.perform(delete("/api/v1/phases/3"))
                 .andExpect(status().isNoContent());
 
-        verify(phaseOpenApiService).deletePhase(eq(3L), eq(personDto), eq(Set.of(10L)), eq("fr"));
+        verify(phaseOpenApiService).deletePhase(3L, personDto, Set.of(10L), "fr");
     }
 
     @Test

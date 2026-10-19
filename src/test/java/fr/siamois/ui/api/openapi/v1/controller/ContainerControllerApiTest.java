@@ -170,7 +170,7 @@ class ContainerControllerApiTest {
         mockMvc.perform(delete("/api/v1/containers/3"))
                 .andExpect(status().isNoContent());
 
-        verify(containerOpenApiService).deleteContainer(eq(3L), eq(personDto), eq(Set.of(10L)), eq("fr"));
+        verify(containerOpenApiService).deleteContainer(3L, personDto, Set.of(10L), "fr");
     }
 
     @Test

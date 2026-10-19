@@ -427,7 +427,8 @@ class StudyOpenApiServiceTest {
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, Set.of(10L), "fr"))
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, scope, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
         verify(studyService, never()).deleteById(anyLong());
@@ -453,7 +454,8 @@ class StudyOpenApiServiceTest {
         when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
         doThrow(new IllegalStateException("liens")).when(studyService).deleteById(5L);
 
-        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, Set.of(10L), "fr"))
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deleteStudy(5L, personDto, scope, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }

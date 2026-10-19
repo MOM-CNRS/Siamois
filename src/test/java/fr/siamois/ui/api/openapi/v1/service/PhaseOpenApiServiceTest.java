@@ -401,7 +401,8 @@ class PhaseOpenApiServiceTest {
         when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
         when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(false);
 
-        assertThatThrownBy(() -> service.deletePhase(5L, personDto, Set.of(10L), "fr"))
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deletePhase(5L, personDto, scope, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
         verify(phaseService, never()).deleteById(anyLong());
@@ -427,7 +428,8 @@ class PhaseOpenApiServiceTest {
         when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), eq(7L))).thenReturn(true);
         doThrow(new IllegalStateException("liens")).when(phaseService).deleteById(5L);
 
-        assertThatThrownBy(() -> service.deletePhase(5L, personDto, Set.of(10L), "fr"))
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.deletePhase(5L, personDto, scope, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }
