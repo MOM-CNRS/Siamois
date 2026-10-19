@@ -151,23 +151,12 @@ public class DocumentContentOpenApiService {
     }
 
     /**
-     * Supprime le document et son fichier (409 s'il est encore lié à une entité) : l'institution de création doit être dans le périmètre JWT et
-     * l'appelant doit pouvoir supprimer les fiches du projet.
+     * Supprime le document et son fichier : l'institution de création doit être dans le périmètre JWT et
+     * l'appelant doit pouvoir éditer les documents du projet.
      */
     @Transactional
     public void deleteAccessibleDocument(long documentId, ProjectApiCaller caller) {
-        Document doc = resolveAccessibleDocument(documentId, caller.accessibleInstitutionIds());
-        InstitutionDTO institution = new InstitutionDTO();
-        institution.setId(doc.getCreatedByInstitution().getId());
-        UserInfo info = new UserInfo(institution, caller.person(), null);
-        Long projectId = doc.getActionUnit() == null ? null : doc.getActionUnit().getId();
-        if (!profilePermissionService.hasDeleteEntitiesPermission(info, projectId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de document non autorisée");
-        }
-        try {
-            documentService.deleteDocument(doc);
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
-        }
+        Document doc = resolveWritableDocument(documentId, caller);
+        documentService.deleteDocument(doc);
     }
 }

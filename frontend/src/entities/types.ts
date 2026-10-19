@@ -335,13 +335,7 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // The titlebar's "Dupliquer" (JSF's panelModel.canDuplicate() — recording units only today).
     // Resolves to the copy, which the panel then opens in the overview like JSF does.
     duplicate?(id: string | number): Promise<{ id: string | number }>;
-    // Deletes the entity (a red bin in the list's actions column and in the fiche's titlebar).
-    // Rejects with a 409 ApiError, and nothing is deleted, while the entity has relationships.
-    delete?(id: string | number): Promise<void>;
   };
-  // Present: deleting needs the user to type the entity's name first (a project takes its whole
-  // content with it), instead of a plain "are you sure?".
-  deleteRequiresName?: boolean;
   // Present: a list row's "Dupliquer" opens the structure overlay (see DuplicationConfig).
   duplication?: DuplicationConfig;
   list: {

@@ -67,8 +67,6 @@ import fr.siamois.utils.AuthenticatedUserUtils;
 import fr.siamois.domain.services.actionunit.template.ProjectTemplate;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import lombok.RequiredArgsConstructor;
-import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -418,10 +416,7 @@ public class ProjectApiService {
         boolean canValidate = dto.getCreatedByInstitution() != null
                 && profilePermissionService.hasValidatePermission(
                         new UserInfo(dto.getCreatedByInstitution(), caller.person(), null), dto.getId());
-        boolean canDelete = profilePermissionService.hasDeleteProjectPermission(
-                caller.person(), dto.getCreatedByInstitution(), dto.getId());
-        return ProjectResourcePermissions.of(canWrite).withManageSettings(canManageSettings).withValidate(canValidate)
-                .withDelete(canDelete);
+        return ProjectResourcePermissions.of(canWrite).withManageSettings(canManageSettings).withValidate(canValidate);
     }
 
     /**
@@ -438,10 +433,9 @@ public class ProjectApiService {
             }
         }
         Set<Long> canWriteIds = profilePermissionService.actionUnitIdsWithWritePermission(caller.person(), institutionByActionUnitId);
-        Set<Long> canDeleteIds = profilePermissionService.actionUnitIdsWithDeleteProjectPermission(caller.person(), institutionByActionUnitId);
         Map<Long, ProjectResourcePermissions> result = new LinkedHashMap<>();
         for (Long id : institutionByActionUnitId.keySet()) {
-            result.put(id, ProjectResourcePermissions.of(canWriteIds.contains(id)).withDelete(canDeleteIds.contains(id)));
+            result.put(id, ProjectResourcePermissions.of(canWriteIds.contains(id)));
         }
         return result;
     }
@@ -707,7 +701,7 @@ public class ProjectApiService {
     }
 
     /**
-     * Supprime un projet et tout son contenu (409 s'il a des sous-projets ou si son contenu est lié à un autre projet).
+     * Supprime un projet sans unité d'enregistrement ni projet enfant (sinon 409).
      */
     @Transactional
     public void deleteProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
@@ -721,20 +715,19 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation de rattachement");
         }
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasDeleteProjectPermission(userInfo, dto.getId())) {
+        if (!profilePermissionService.hasActionUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression du projet non autorisée");
+        }
+        if (row.recordingUnitCount() > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de supprimer : le projet contient des unités d'enregistrement");
         }
         if (row.childActionUnitCount() > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de supprimer : le projet contient des sous-projets");
         }
         try {
-            // The domain check reads the execution context, which a token-authenticated call has no session for.
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> actionUnitService.deleteProjectWithContent(dto.getId()));
+            actionUnitService.deleteProjectWhenEmpty(dto.getId());
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
-        } catch (DataIntegrityViolationException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Impossible de supprimer : le projet est encore référencé ailleurs", e);
         }
     }
 
@@ -1385,14 +1378,6 @@ public class ProjectApiService {
                 PermissionConstants.PROJECT_EDIT_FINDS);
     }
 
-    /** The right to delete this project's records — one answer for a whole project-scoped list page. */
-    public boolean canDeleteEntitiesForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
-        AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
-        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
-        return profilePermissionService.hasDeleteEntitiesPermission(userInfo, row.actionUnit().getId());
-    }
-
     /** The "validateur" right on this project's entities — one answer for a whole project-scoped list page. */
     public boolean canValidateForProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
@@ -1530,12 +1515,11 @@ public class ProjectApiService {
         }
         String lang = primaryAcceptLanguage(acceptLanguage);
         UserInfo userInfo = new UserInfo(inst, caller.person(), lang);
-        if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo,
-                dto.getActionUnit() != null ? dto.getActionUnit().getId() : null)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de l'unité non autorisée");
         }
         try {
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> recordingUnitService.deleteRecordingUnitById(recordingUnitId));
+            recordingUnitService.deleteRecordingUnitById(recordingUnitId);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }

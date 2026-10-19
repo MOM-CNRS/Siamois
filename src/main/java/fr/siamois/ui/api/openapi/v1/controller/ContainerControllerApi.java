@@ -120,27 +120,4 @@ public class ContainerControllerApi {
                 id, body, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new ContainerResponse(resource));
     }
-
-    @DeleteMapping("/{id}")
-    @Operation(
-            summary = "Supprimer le contenant",
-            description = "Supprime le contenant. Refus (409) si elle a encore des relations avec d'autres entités "
-                    + "(à retirer d'abord). Droit d'édition requis sur le projet."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Supprimé"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié"),
-            @ApiResponse(responseCode = "403", description = "Interdit"),
-            @ApiResponse(responseCode = "404", description = "Contenant introuvable ou hors périmètre"),
-            @ApiResponse(responseCode = "409", description = "Suppression impossible (relations existantes)"),
-            @ApiResponse(responseCode = "500", description = "Erreur interne")
-    })
-    public ResponseEntity<Void> deleteContainer(
-            @PathVariable("id") long id,
-            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        containerOpenApiService.deleteContainer(id, caller.person(), caller.accessibleInstitutionIds(), lang);
-        return ResponseEntity.noContent().build();
-    }
 }

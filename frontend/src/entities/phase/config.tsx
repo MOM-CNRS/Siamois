@@ -1,5 +1,4 @@
 import type { EntityTypeConfig } from "../types";
-import { deleteEntity } from "../deleteApi";
 import { loadTypeCatalog } from "../typeCatalog";
 import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
@@ -29,7 +28,6 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   icon: "bi bi-layers",
   panelClass: "phase-panel",
   api: {
-    delete: (id) => deleteEntity("phases", id),
     siblings: (id) => fetchSiblings("phases", id),
     breadcrumbs: (id) => fetchBreadcrumbs("phases", id),
     get: getPhase,

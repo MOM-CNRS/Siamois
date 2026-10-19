@@ -149,7 +149,6 @@ class FindOpenApiServiceTest {
         lenient().when(findOpenApiMapper.toResource(any(SpecimenDTO.class))).thenReturn(findResource);
         lenient().when(findOpenApiMapper.toResource(isNull())).thenReturn(findResource);
         lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
-        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
     }
 
     // --- createFind ---
@@ -888,11 +887,11 @@ class FindOpenApiServiceTest {
     }
 
     @Test
-    void deleteFind_withoutDeletePermission_throws403() {
+    void deleteFind_withoutWritePermission_throws403() {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteFind(7L, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)

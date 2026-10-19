@@ -18,7 +18,6 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -76,11 +75,6 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> accessDenied(AccessDeniedException ex) {
-        return answer(HttpStatus.FORBIDDEN, ApiError.of(FORBIDDEN, "Accès refusé"));
-    }
-
-    @ExceptionHandler(ForbiddenOperationException.class)
-    public ResponseEntity<ApiError> forbiddenOperation(ForbiddenOperationException ex) {
         return answer(HttpStatus.FORBIDDEN, ApiError.of(FORBIDDEN, "Accès refusé"));
     }
 

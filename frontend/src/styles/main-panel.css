@@ -2416,22 +2416,3 @@ div#search-bar .sia-search {
   color: var(--text-color-secondary, #6b7280);
   font-size: 0.8rem;
 }
-
-/* The permanent-deletion confirmation (components/DeleteEntityDialog.tsx). */
-.delete-entity-dialog .delete-entity-dialog-message {
-  margin: 0 0 1rem;
-}
-
-.delete-entity-dialog .delete-entity-dialog-confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.delete-entity-dialog .delete-entity-dialog-error {
-  margin: 1rem 0 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  background: var(--red-50, #fdecea);
-  color: var(--red-700, #b3261e);
-}

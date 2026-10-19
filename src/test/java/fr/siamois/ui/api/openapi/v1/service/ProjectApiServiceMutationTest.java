@@ -643,16 +643,29 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void deleteProject_success_deletesWithContent() {
+    void deleteProject_withRecordingUnits_throws409() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void deleteProject_success_deletesWhenEmpty() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
 
         service.deleteProject(caller, "7", "fr");
 
-        verify(actionUnitService).deleteProjectWithContent(7L);
+        verify(actionUnitService).deleteProjectWhenEmpty(7L);
     }
 
     @Test
@@ -661,8 +674,8 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
-        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWithContent(7L);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWhenEmpty(7L);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1033,7 +1046,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1046,7 +1059,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
         doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
@@ -1300,14 +1313,14 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasDeleteProjectPermission(any(), any()))
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
 
-        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
+        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
     }
 
     @Test
@@ -1316,7 +1329,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
 
         service.deleteRecordingUnit(caller, 5L, "fr");
 

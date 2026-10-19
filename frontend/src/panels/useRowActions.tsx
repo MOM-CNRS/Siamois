@@ -10,7 +10,6 @@ import { DuplicateStructureOverlay } from "../components/DuplicateStructureOverl
 import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext, RowActionDef } from "../entities/types";
 import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
 import { useBridge } from "./bridge";
-import { useDeleteEntity } from "./useDeleteEntity";
 import { queryKeys } from "../api/queryKeys";
 import { messageForError } from "../api/errors";
 import { useNotify } from "../notify/NotifyProvider";
@@ -20,7 +19,7 @@ type Row = Record<string, unknown> & {
   id?: string | number;
   resourceUri?: string | null;
   bookmarked?: boolean;
-  _permissions?: { canEdit?: boolean; canDelete?: boolean };
+  _permissions?: { canEdit?: boolean };
 };
 
 interface PendingCreate {
@@ -55,14 +54,11 @@ export interface RowActionItem {
 }
 
 interface RowActionDescriptor extends RowActionItem {
-  // False hides the action on that row (the deletion needs the row's own canDelete).
-  visible?: (row: Row) => boolean;
   pending: (row: Row) => boolean;
   run: (row: Row) => void;
 }
 
 const DUPLICATE_KEY = "duplicate";
-const DELETE_KEY = "delete";
 
 /**
  * A list row's action buttons — JSF's *TableViewModel.getRowActions(). Two generic ones, for every
@@ -107,8 +103,6 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
   }
-
-  const deletion = useDeleteEntity(entityType, config, organizationId);
 
   const bridge = useBridge();
   const bookmarkMutation = useMutation({
@@ -181,23 +175,6 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
       pending: () => false,
       run: (row: Row) => action.run(row, ctx),
     })),
-    // Last: the permanent deletion (a fiche's titlebar has the same bin).
-    ...(deletion.canDelete
-      ? [
-          {
-            key: DELETE_KEY,
-            icon: "bi bi-trash",
-            label: t("row.delete"),
-            visible: (row: Row) => row._permissions?.canDelete === true,
-            pending: () => false,
-            run: (row: Row) =>
-              deletion.requestDelete({
-                id: row.id as string | number,
-                name: String(row.name ?? row.fullIdentifier ?? row.identifier ?? row.id ?? ""),
-              }),
-          },
-        ]
-      : []),
   ];
   const keysSignature = descriptors.map((d) => d.key).join(",");
   const items = useMemo<RowActionItem[]>(
@@ -230,13 +207,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     menuRef.current?.toggle(e);
   }
 
-  // An action with its own `visible` (the deletion) follows its own permission, not the edit right.
-  function isShown(action: RowActionDescriptor, row: Row): boolean {
-    return writeMode && (action.visible ? action.visible(row) : row._permissions?.canEdit === true);
-  }
-
   function render(row: Row): ReactNode {
-    const shown = (action: RowActionDescriptor) => isShown(action, row);
+    const canEdit = writeMode && row._permissions?.canEdit === true;
     const canBookmark = organizationId != null && !!row.resourceUri;
     return (
       <span className="entity-list-panel-row-actions">
@@ -256,7 +228,8 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             }}
           />
         )}
-        {inline.filter(shown).map((action) => (
+        {canEdit &&
+          inline.map((action) => (
             <Button
               key={action.key}
               icon={action.icon}
@@ -275,7 +248,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
               }}
             />
           ))}
-        {inMenu.some(shown) && (
+        {canEdit && inMenu.length > 0 && (
           <Button
             icon="bi bi-three-dots"
             text
@@ -294,7 +267,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   }
 
   const menuModel: MenuItem[] = menuRow
-    ? inMenu.filter((action) => isShown(action, menuRow)).map((action) => ({
+    ? inMenu.map((action) => ({
         label: action.label,
         icon: action.icon,
         disabled: action.pending(menuRow),
@@ -348,7 +321,6 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     <>
       {dialog}
       {duplicateDialog}
-      {deletion.dialog}
       <ConfirmPopup />
       <Menu ref={menuRef} popup model={menuModel} className="entity-list-panel-row-actions-menu" onHide={() => setMenuRow(null)} />
     </>

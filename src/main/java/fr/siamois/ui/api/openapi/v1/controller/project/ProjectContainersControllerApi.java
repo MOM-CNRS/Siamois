@@ -83,8 +83,7 @@ public class ProjectContainersControllerApi {
 
         boolean canEdit = projectApiService.canEditContainersForProject(caller, id, lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
-                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
 
         ContainerListProjectionService.ContainerListProjection projection =
                 containerListProjectionService.build(page.getContent(), fields, lang);

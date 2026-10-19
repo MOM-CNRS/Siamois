@@ -71,7 +71,6 @@ import java.util.stream.Collectors;
 public class ActionUnitService implements ArkEntityService {
 
     private final ActionUnitRepository actionUnitRepository;
-    private final ProjectDeletionService projectDeletionService;
     private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
     private final ActionUnitMapper actionUnitMapper;
@@ -1028,9 +1027,8 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une unité d'action (projet) et tout son contenu (unités d'enregistrement, mobiliers, documents,
-     * phases, contenants, études, configuration du projet, membres).
-     * Refuse s'il existe des sous-projets ou si du contenu est lié à un autre projet.
+     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun document, aucun enfant dans la hiérarchie.
+     * Nettoie les lignes dépendantes pour respecter les contraintes de clés étrangères.
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
      */
@@ -1042,33 +1040,31 @@ public class ActionUnitService implements ArkEntityService {
             }),
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
-    @Transactional
-    public void deleteProjectWithContent(long actionUnitId) {
+    public void deleteProjectWhenEmpty(long actionUnitId) {
         UserInfo info = ExecutionContextHolder.get();
-        if (!profilePermissionService.hasDeleteProjectPermission(info, actionUnitId)) {
+        boolean allowed = info != null
+                && (profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
+                || profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
+        if (!allowed) {
             throw new ForbiddenOperationException("You are not allowed to delete this action unit");
+        }
+        if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
+        }
+        if (documentRepository.countByActionUnitId(actionUnitId) > 0) {
+            throw new IllegalStateException("Impossible de supprimer : le projet contient des documents");
         }
         Map<Long, Long> childrenByProject = countingMap(
                 actionUnitRepository.countChildActionUnitsByParentIds(List.of(actionUnitId)));
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
-        ActionUnit project = actionUnitRepository.findById(actionUnitId)
-                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + actionUnitId));
-        Long projectArkId = project.getArk() != null ? project.getArk().getInternalId() : null;
-
-        List<Long> arkIds = new ArrayList<>(projectDeletionService.deleteContent(actionUnitId));
-        if (projectArkId != null) {
-            arkIds.add(projectArkId);
-        }
-
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);
-        projectDeletionService.deleteArks(arkIds);
     }
 
     /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */

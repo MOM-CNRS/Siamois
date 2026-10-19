@@ -178,7 +178,7 @@ class DocumentContentOpenApiServiceTest {
         when(documentService.findById(4L)).thenReturn(Optional.of(doc));
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), any())).thenReturn(true);
+        allowEditing(true);
 
         service.deleteAccessibleDocument(4L, callerWithScope(SCOPE));
 
@@ -186,13 +186,13 @@ class DocumentContentOpenApiServiceTest {
     }
 
     @Test
-    void deleteAccessibleDocument_withoutDeleteRightOnTheProject_throws403() {
+    void deleteAccessibleDocument_withoutEditRightOnTheProject_throws403() {
         Document doc = mock(Document.class);
         Institution inst = mock(Institution.class);
         when(documentService.findById(4L)).thenReturn(Optional.of(doc));
         when(doc.getCreatedByInstitution()).thenReturn(inst);
         when(inst.getId()).thenReturn(10L);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), any())).thenReturn(false);
+        allowEditing(false);
 
         ProjectApiCaller caller = callerWithScope(SCOPE);
         assertThatThrownBy(() -> service.deleteAccessibleDocument(4L, caller))
