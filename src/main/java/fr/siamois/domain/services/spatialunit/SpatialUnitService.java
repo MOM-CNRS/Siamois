@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.spatialunit;
 
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -60,6 +61,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SpatialUnitService implements ArkEntityService {
+
+    private final EntityLinkGuard entityLinkGuard;
 
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptService conceptService;
@@ -796,30 +799,8 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnitRepository.findById(spatialUnitId)
                 .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + spatialUnitId));
 
-        if (spatialUnitRepository.countChildrenByParentId(spatialUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le lieu possède des lieux enfants");
-        }
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPATIAL_UNIT, spatialUnitId, "le lieu");
 
-        Integer recordingUnitCount = recordingUnitRepository.countBySpatialContext(spatialUnitId);
-        if (recordingUnitCount != null && recordingUnitCount > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le lieu est utilisé par des unités d'enregistrement");
-        }
-
-        Integer projectContextCount = actionUnitRepository.countBySpatialContext(spatialUnitId);
-        if (projectContextCount != null && projectContextCount > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le lieu est dans le contexte spatial d'un projet");
-        }
-
-        if (spatialUnitRepository.countAsMainLocation(spatialUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le lieu est le lieu principal d'un projet");
-        }
-        if (spatialUnitRepository.countContainersBySpatialUnit(spatialUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le lieu est utilisé par un contenant");
-        }
-
-        spatialUnitRepository.deleteHierarchyLinksForSpatialUnit(spatialUnitId);
-        actionUnitRepository.deleteSpatialContextLinksForSpatialUnit(spatialUnitId);
-        documentRepository.deleteAllSpatialUnitDocumentLinksBySpatialUnitId(spatialUnitId);
         spatialUnitRepository.deleteById(spatialUnitId);
     }
 }

@@ -85,7 +85,8 @@ public class ProjectPhasesControllerApi {
 
         boolean canEdit = projectApiService.canEditPhasesForProject(caller, id, lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
+                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
 
         PhaseListProjectionService.PhaseListProjection projection =
                 phaseListProjectionService.build(page.getContent(), fields, lang);

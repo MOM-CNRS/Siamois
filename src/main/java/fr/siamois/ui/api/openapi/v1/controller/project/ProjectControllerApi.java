@@ -327,7 +327,8 @@ public class ProjectControllerApi {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Supprimer un projet",
-            description = "Uniquement si le projet n'a ni unité d'enregistrement ni sous-projet. "
+            description = "Supprime le projet et tout son contenu (UE, mobiliers, documents, phases, contenants, études). Refus (409) "
+                    + "s'il a des sous-projets ou si son contenu est lié à un autre projet. "
                     + "Même clé de projet que GET /api/v1/projects/{id}. Droit de suppression requis.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Supprimé"),

@@ -285,6 +285,16 @@ public class OrganizationListService {
                 PermissionConstants.PROJECT_VALIDATE));
     }
 
+    /** Same shape as {@link #canEditByProject}, for the right to delete the records of each project. */
+    public Map<Long, Boolean> canDeleteByProject(ProjectApiCaller caller, InstitutionDTO institution,
+                                                 Collection<ActionUnitSummaryDTO> projects, String lang) {
+        UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        return grantedByProject(projects, profilePermissionService.actionUnitIdsGranting(userInfo,
+                PermissionConstants.INSTANCE_DELETE_ENTITIES,
+                PermissionConstants.ORGANIZATION_DELETE_ENTITIES,
+                PermissionConstants.PROJECT_DELETE_ENTITIES));
+    }
+
     /** {@code granting} is {@code null} when the right covers every project (see actionUnitIdsGranting). */
     private static Map<Long, Boolean> grantedByProject(Collection<ActionUnitSummaryDTO> projects, Set<Long> granting) {
         Map<Long, Boolean> result = new HashMap<>();

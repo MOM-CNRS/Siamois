@@ -80,6 +80,7 @@ public class DocumentService implements ArkEntityService {
     private static final BigDecimal BYTES_PER_MB = BigDecimal.valueOf(1024L * 1024L);
     private final DocumentStorage documentStorage;
     private final Collection<FileCompressor> fileCompressors;
+    private final fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
 
 
 
@@ -595,7 +596,7 @@ public class DocumentService implements ArkEntityService {
     }
 
     /**
-     * Supprime un document : liens de liaison (UE, mobilier, lieux, phases, contenants, études), réponses aux champs
+     * Supprime un document qui n'est lié à aucune entité (UE, mobilier, lieu, phase, contenant, étude) : réponses aux champs
      * additionnels, fichier sur disque, ligne {@code siamois_document}.
      */
     @Transactional
@@ -604,12 +605,7 @@ public class DocumentService implements ArkEntityService {
             throw new IllegalArgumentException("Document id is required");
         }
         Long id = document.getId();
-        documentRepository.deleteSpatialUnitDocumentLinks(id);
-        documentRepository.deleteRecordingUnitDocumentLinks(id);
-        documentRepository.deleteSpecimenDocumentLinks(id);
-        documentRepository.deletePhaseDocumentLinks(id);
-        documentRepository.deleteContainerDocumentLinks(id);
-        documentRepository.deleteStudyDocumentLinks(id);
+        entityLinkGuard.requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.DOCUMENT, id, "le document");
         // answers to the type's additional fields hold a foreign key to the document
         DocumentDTO idOnly = new DocumentDTO();
         idOnly.setId(id);

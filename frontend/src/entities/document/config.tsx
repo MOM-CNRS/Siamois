@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
@@ -25,6 +26,7 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
   icon: "bi bi-file-earmark-text",
   panelClass: "document-panel",
   api: {
+    delete: (id) => deleteEntity("documents", id),
     siblings: (id) => fetchSiblings("documents", id),
     breadcrumbs: (id) => fetchBreadcrumbs("documents", id),
     get: getDocument,

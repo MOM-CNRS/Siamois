@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
@@ -26,6 +27,7 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   icon: "bi bi-clipboard-data",
   panelClass: "study-panel",
   api: {
+    delete: (id) => deleteEntity("studies", id),
     siblings: (id) => fetchSiblings("studies", id),
     breadcrumbs: (id) => fetchBreadcrumbs("studies", id),
     get: getStudy,

@@ -41,6 +41,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class PhaseService {
 
+    private final EntityLinkGuard entityLinkGuard;
+
     private final PhaseRepository phaseRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
     private final PhaseMapper phaseMapper;
@@ -227,5 +229,29 @@ public class PhaseService {
                         .map(phaseMapper::convert)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No ActionUnit found for institution " + actionUnit.getId()))
                 );
+    }
+
+    /**
+     * Supprime la phase qui n'a aucune relation avec une autre entité.
+     *
+     * @throws IllegalStateException si la phase a encore des relations
+     */
+    public void deleteById(long id) {
+        Phase entity = phaseRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Phase introuvable: " + id));
+
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
+            throw new ForbiddenOperationException("You are not allowed to delete this phase");
+        }
+
+        EntityLinkGuard.Kind kind = EntityLinkGuard.Kind.PHASE;
+        entityLinkGuard.requireNoLinks(kind, id, "la phase");
+
+        PhaseDTO idOnly = new PhaseDTO();
+        idOnly.setId(id);
+        customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);
+        phaseRepository.delete(entity);
     }
 }

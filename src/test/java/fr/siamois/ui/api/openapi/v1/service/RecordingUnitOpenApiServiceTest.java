@@ -278,6 +278,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto)))
                 .thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), any())).thenReturn(true);
 
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 

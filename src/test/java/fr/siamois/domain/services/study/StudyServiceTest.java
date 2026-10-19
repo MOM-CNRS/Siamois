@@ -73,6 +73,9 @@ class StudyServiceTest {
     @Mock private EntityIdentifierGenerator identifierGenerator;
     @Mock private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
     @InjectMocks
     private StudyService studyService;
 
@@ -367,5 +370,56 @@ class StudyServiceTest {
         when(studyRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertNull(studyService.findById(5L));
+    }
+
+    @Test
+    void deleteById_unlinked_deletesEntityAndAnswers() {
+        Study target = new Study();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(studyRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+
+        studyService.deleteById(4L);
+
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.STUDY, 4L, "l'étude");
+        verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(StudyDTO.class));
+        verify(studyRepository).delete(target);
+    }
+
+    @Test
+    void deleteById_linked_throwsAndDeletesNothing() {
+        Study target = new Study();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(studyRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.STUDY, 4L, "l'étude");
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> studyService.deleteById(4L));
+
+        verify(studyRepository, never()).delete(any(Study.class));
+    }
+
+    @Test
+    void deleteById_withoutPermission_throwsForbidden() {
+        Study target = new Study();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(studyRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(false);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> studyService.deleteById(4L));
+
+        verify(studyRepository, never()).delete(any(Study.class));
     }
 }
