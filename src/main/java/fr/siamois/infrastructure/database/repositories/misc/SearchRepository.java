@@ -1,9 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.misc;
 
 import com.zaxxer.hikari.HikariDataSource;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.SearchResultDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -15,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.sql.Array;
 import java.util.List;
 
 @Slf4j
@@ -24,51 +22,66 @@ public class SearchRepository {
 
     private final HikariDataSource dataSource;
 
+    /**
+     * Recherche sectionnée ({@code global_search}) : au plus {@code limit} lignes par type, chacune portant le
+     * total des correspondances de son type.
+     *
+     * @param projectIds        restreint à ces projets ({@code null} = pas de restriction)
+     * @param visibleProjectIds projets visibles de l'appelant ({@code null} = toute l'institution)
+     * @param types             types demandés ({@code null} = tous)
+     */
     @NonNull
-    public List<SearchResultDTO> findResultsFor(@Nullable String input, @NonNull InstitutionDTO institution, @NonNull PersonDTO personDTO) {
+    public List<GlobalSearchRow> searchSections(@NonNull String input, long institutionId, @Nullable List<Long> projectIds,
+                                                @Nullable List<Long> visibleProjectIds, @Nullable List<String> types, int limit) {
+        String sql = "SELECT gs.* FROM global_search(?, ?, ?, ?, ?, ?) gs";
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT bs.* FROM basic_search(?, ?, ?) bs")) {
-
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, input);
-            statement.setLong(2, institution.getId());
-            statement.setLong(3, personDTO.getId());
-
-            log.trace("Executing basic search with params {} {} {}", input, institution.getId(), personDTO.getId());
-            return processResultSet(statement);
-        } catch (SQLException e) {
-            log.error("Error while fetching search results for params {} {} {}", input, institution, personDTO, e);
-            return List.of();
-        }
-
-    }
-
-    private List<SearchResultDTO> processResultSet(PreparedStatement statement) {
-        List<SearchResultDTO> results = new ArrayList<>();
-        try (ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                SearchResultDTO dto = rowToDTO(resultSet);
-                results.add(dto);
+            statement.setLong(2, institutionId);
+            statement.setArray(3, bigintArray(connection, projectIds));
+            statement.setArray(4, bigintArray(connection, visibleProjectIds));
+            statement.setArray(5, types == null ? null : connection.createArrayOf("varchar", types.toArray()));
+            statement.setInt(6, limit);
+            List<GlobalSearchRow> rows = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new GlobalSearchRow(rs.getString("entity_type"), rs.getObject("entity_id", Long.class),
+                            rs.getString("label"), rs.getString("subtitle"), rs.getObject("project_id", Long.class),
+                            rs.getLong("total")));
+                }
             }
-            return results;
+            return rows;
         } catch (SQLException e) {
-            log.error("Error while processing search results for params", e);
+            log.error("Error while running global search for '{}'", input, e);
             return List.of();
         }
     }
 
-    private SearchResultDTO rowToDTO(ResultSet resultSet) {
-        try {
-            return new SearchResultDTO(
-                    resultSet.getString("matching_term"),
-                    resultSet.getObject("action_unit_id", Long.class),
-                    resultSet.getObject("spatial_unit_id", Long.class),
-                    resultSet.getObject("recording_unit_id", Long.class),
-                    resultSet.getObject("specimen_id", Long.class)
-            );
+    /** Ids des projets de l'institution dont l'identifiant ou le nom vaut {@code ref} (sans tenir compte de la casse). */
+    @NonNull
+    public List<Long> findProjectIdsByRef(@NonNull String ref, long institutionId) {
+        String sql = "SELECT action_unit_id FROM action_unit WHERE fk_institution_id = ? "
+                + "AND (lower(full_identifier) = lower(?) OR lower(name) = lower(?))";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, institutionId);
+            statement.setString(2, ref);
+            statement.setString(3, ref);
+            List<Long> ids = new ArrayList<>();
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    ids.add(rs.getLong(1));
+                }
+            }
+            return ids;
         } catch (SQLException e) {
-            log.error("Error while processing search results for params", e);
-            return null;
+            log.error("Error while resolving project reference '{}'", ref, e);
+            return List.of();
         }
+    }
+
+    private static Array bigintArray(Connection connection, @Nullable List<Long> ids) throws SQLException {
+        return ids == null ? null : connection.createArrayOf("bigint", ids.toArray());
     }
 
 }

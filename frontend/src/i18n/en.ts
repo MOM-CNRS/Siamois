@@ -284,4 +284,13 @@ export const en: Record<MessageKey, string> = {
   "toolbar.settings": "Settings",
   "common.loadingValues": "Loading values…",
   "chooser.empty": "No items",
+  "search.placeholder": "Search a recording unit, a find, a project, a place…",
+  "search.ariaLabel": "Global search",
+  "search.clear": "Clear the search",
+  "search.autocomplete": "Autocomplete",
+  "search.loading": "Searching…",
+  "search.empty": "No result for “{q}”",
+  "search.error": "The search failed",
+  "search.viewAll": "View the {n} {label}",
+  "search.keyword.projet": "Restrict to a project (identifier or name)",
 };

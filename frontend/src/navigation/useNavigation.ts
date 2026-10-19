@@ -4,6 +4,7 @@ import { getEntityType } from "../entities/registry";
 import type { MountOptions } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
 import { withPanelTransition } from "../panels/panelTransition";
+import type { ListSeed } from "./externalBus";
 import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 
 export interface Navigation {
@@ -11,6 +12,8 @@ export interface Navigation {
   // Stable identities: panels receive them, and must not re-render on every navigation.
   navigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   openOverview: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // The entity type's list in the overview pane, started on this search (the search bar's « Voir tout »).
+  openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
   closeOverview: () => void;
   enterFocus: () => void;
   closeFocus: () => void;
@@ -49,6 +52,11 @@ export function useNavigation(options: MountOptions): Navigation {
   );
   const openOverview = useCallback<Navigation["openOverview"]>(
     (entityType, id, preview) => send({ type: "openOverview", overview: { entityType, entityId: id, preview } }),
+    [send],
+  );
+  const seedNonce = useRef(0);
+  const openList = useCallback<Navigation["openList"]>(
+    (entityType, seed) => send({ type: "openOverview", overview: { entityType, seed: { ...seed, nonce: ++seedNonce.current } } }),
     [send],
   );
   const closeOverview = useCallback(() => send({ type: "closeOverview" }), [send]);
@@ -92,5 +100,5 @@ export function useNavigation(options: MountOptions): Navigation {
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, openOverview, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, openOverview, openList, closeOverview, enterFocus, closeFocus };
 }

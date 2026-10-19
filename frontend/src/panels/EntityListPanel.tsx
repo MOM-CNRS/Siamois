@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useEffect, type ReactNode } from "react";
 import { usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
@@ -25,6 +25,7 @@ import { useListColumns } from "./list/useListColumns";
 import { listPrefsKey } from "./listPreferences";
 import { useRowActions } from "./useRowActions";
 import { useWriteMode } from "./writeMode";
+import type { ListSeed } from "../navigation/externalBus";
 
 export interface EntityListPanelProps {
   entityType: string;
@@ -67,6 +68,9 @@ export interface EntityListPanelProps {
   // « Associer »), and row actions after the entity's own.
   toolbarExtra?: ReactNode;
   extraRowActions?: RowActionDef<unknown>[];
+  // The search the list was opened with (the top search bar's « Voir tout »). A new `nonce` applies
+  // it again: the list is already open and must follow the new search, whatever was typed since.
+  seed?: ListSeed;
 }
 
 
@@ -108,6 +112,7 @@ export function EntityListPanel({
   createPrefill,
   toolbarExtra,
   extraRowActions,
+  seed,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType) as EntityTypeConfig<unknown, unknown> | undefined;
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
@@ -124,6 +129,17 @@ export function EntityListPanel({
     embedded,
   });
   const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters } = table;
+
+  // Keyed on the nonce alone: the seed object is rebuilt by its owner, the search it carries is not
+  // a reason to apply it again (the user may have edited it since).
+  const seedNonce = seed?.nonce;
+  const seedSearch = seed?.search;
+  useEffect(() => {
+    if (seedNonce == null) return;
+    setFilters({});
+    setSearch(seedSearch ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
   const { rows, totalCount, isLoading, isFetching, error } = page;
   const { columns, fieldByColumn, togglerOptions, filterSpecs } = useListColumns({
     config,

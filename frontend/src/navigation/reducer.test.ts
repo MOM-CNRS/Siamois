@@ -3,7 +3,7 @@ import { configureBasePath } from "../api/basePath";
 import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig } from "../entities/types";
 import type { MountOptions } from "../mountOptions";
-import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
+import { decodeUrl, encodeUrl, initialNavState, navReducer, sameEntity, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 import { encodeFocusUrl } from "./url";
 
 function fake(key: string, segment: string): EntityTypeConfig<unknown, unknown> {
@@ -167,5 +167,30 @@ describe("serverSync", () => {
 
   it("doesn't resend the overview the server already holds", () => {
     expect(serverSync({ mainPath: "/a", overview: overview("1") }, { mainPath: "/a", overview: overview("1") }).setOverview).toBeUndefined();
+  });
+});
+
+describe("a list in the overview (the search bar's « Voir tout »)", () => {
+  const start = initialNavState(options);
+  const list = { entityType: "recordingUnit", seed: { search: "mur", nonce: 1 } };
+
+  it("opens beside the main pane, keeping its seed, and is a different overview from any fiche", () => {
+    const opened = apply(start, { type: "openOverview", overview: list });
+    expect(opened.overview).toEqual(list);
+    expect(sameEntity(opened.overview, { entityType: "recordingUnit", entityId: "3" })).toBe(false);
+    expect(sameEntity(opened.overview, { ...list, seed: { search: "autre", nonce: 2 } })).toBe(true);
+  });
+
+  it("has no address of its own, and no fiche to promote to the main pane", () => {
+    const opened = apply(start, { type: "openOverview", overview: list });
+    expect(encodeUrl(opened)).toBe(encodeUrl(start));
+    expect(apply(opened, { type: "enterFocus" })).toBe(opened);
+  });
+
+  it("is invisible to the JSF session: it is only told a fiche overview went away", () => {
+    expect(serverSync({ mainPath: "/a", overview: null }, { mainPath: "/a", overview: list })).toEqual({ closeOverview: false });
+    expect(serverSync({ mainPath: "/a", overview: { entityType: "project", entityId: "1" } }, { mainPath: "/a", overview: list })).toMatchObject({
+      closeOverview: true,
+    });
   });
 });
