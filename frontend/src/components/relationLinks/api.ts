@@ -1,4 +1,6 @@
 import { apiFetch } from "../../api/client";
+import { getEntityType } from "../../entities/registry";
+import { entityRowLabel } from "../../fields/optionSources";
 
 export type HierarchyZone = "parents" | "children";
 export type StratigraphyZone = "anterior" | "synchronous" | "posterior";
@@ -55,4 +57,15 @@ export async function searchProjectUnits(projectId: string | number, q: string):
   if (q) query.set("search", q);
   const body = await apiFetch<UnitRowsBody>(`/api/v1/projects/${projectId}/recording-units?${query.toString()}`);
   return body.data.map((row) => ({ id: String(row.id), label: row.fullIdentifier ?? row.identifier ?? String(row.id) }));
+}
+
+// A unit just created, as the picker shows it: nothing is linked yet, the user still confirms the link.
+// The id stands in for the label when the unit can't be read back.
+export async function createdUnitOption(id: string | number): Promise<UnitOption> {
+  try {
+    const row = await getEntityType("recordingUnit")!.api.get(id);
+    return { id: String(id), label: entityRowLabel(row) };
+  } catch {
+    return { id: String(id), label: String(id) };
+  }
 }

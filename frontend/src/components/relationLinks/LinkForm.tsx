@@ -1,11 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { messageForError } from "../../api/errors";
-import { getEntityType } from "../../entities/registry";
 import { t } from "../../i18n";
 import { CreateFormField, CreateFormShell } from "../CreateFormShell";
 import { searchProjectUnits, type UnitOption } from "./api";
 import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";
+import { canCreateUnit, NewUnitForm, NewUnitItem } from "./NewUnit";
 
 // The icon of the relation graph, on every form that adds to it.
 export const GRAPH_ICON = "bi bi-diagram-3";
@@ -22,7 +22,7 @@ export interface LinkFormProps {
 }
 
 // The form that adds a hierarchy link: the unit to link, picked among the project's or created on the
-// spot. (A stratigraphic link has a type and an uncertainty to set: that is StratigraphyEditor.)
+// spot (created, it is only picked: the link is made on saving). (A stratigraphic link has a type and an uncertainty to set: that is StratigraphyEditor.)
 // Mounted fresh for each use, so it starts empty.
 export function LinkForm({ title, projectId, organizationId, excludeUnitId, onCancel, onSubmit }: LinkFormProps) {
   const [unit, setUnit] = useState<PickerOption | null>(null);
@@ -47,28 +47,8 @@ export function LinkForm({ title, projectId, organizationId, excludeUnitId, onCa
     setBusy(false);
   };
 
-  const createUnitForm = getEntityType("recordingUnit")?.list.createForm;
-  if (creating && createUnitForm) {
-    // The unit to link doesn't exist yet: the recording unit's own create form, then it is linked at once.
-    return (
-      <FitToViewport>
-        {createUnitForm({
-          organizationId,
-          scope: projectId != null ? { entityType: "project", id: projectId } : undefined,
-          onCreated: (id) => void link({ id: String(id), label: "" }),
-          onCancel: () => setCreating(false),
-        })}
-      </FitToViewport>
-    );
-  }
-
-  let createLink: ReactNode;
-  if (createUnitForm && projectId != null) {
-    createLink = (
-      <button type="button" className="sia-inline-picker-item" onMouseDown={(e) => e.preventDefault()} onClick={() => setCreating(true)}>
-        <i className="bi bi-plus-square" aria-hidden="true" /> {t("recordingUnit.graph.dialog.createUnit")}
-      </button>
-    );
+  if (creating) {
+    return <NewUnitForm projectId={projectId} organizationId={organizationId} onCreated={(created) => { setCreating(false); setUnit(created); }} onCancel={() => setCreating(false)} />;
   }
 
   return (
@@ -85,7 +65,7 @@ export function LinkForm({ title, projectId, organizationId, excludeUnitId, onCa
         onCancel={onCancel}
       >
         <CreateFormField label={t("recordingUnit.graph.dialog.unit")} required>
-          <InlinePicker value={unit} onChange={setUnit} load={loadUnits} placeholder={t("recordingUnit.graph.dialog.unitPlaceholder")} autoFocus footer={createLink} />
+          <InlinePicker value={unit} onChange={setUnit} load={loadUnits} placeholder={t("recordingUnit.graph.dialog.unitPlaceholder")} autoFocus footer={canCreateUnit(projectId) ? <NewUnitItem onClick={() => setCreating(true)} /> : undefined} />
         </CreateFormField>
       </CreateFormShell>
     </FitToViewport>

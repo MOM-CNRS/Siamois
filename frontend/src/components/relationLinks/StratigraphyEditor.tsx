@@ -1,19 +1,19 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { apiFetch } from "../../api/client";
 import { messageForError } from "../../api/errors";
 import { queryKeys } from "../../api/queryKeys";
-import { getEntityType } from "../../entities/registry";
 import { qualifiedLabel, refChipStyle } from "../../fields/display";
 import { t } from "../../i18n";
 import { useOpenEntity } from "../../panels/entityNavigation";
 import { addStratigraphyLink, removeStratigraphyLink, searchProjectUnits, updateStratigraphyLink, type StratigraphyZone } from "./api";
 import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";
+import { canCreateUnit, NewUnitForm, NewUnitItem } from "./NewUnit";
 import { QualifierFields, type Qualifier } from "./QualifierFields";
 
-export interface StratigraphyRef {
+interface StratigraphyRef {
   resourceId: string;
   label?: string | null;
   qualifier?: { concept?: { resourceId?: string; label?: string | null } | null; uncertain?: boolean | null } | null;
@@ -95,21 +95,15 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
     return found.filter((option) => option.id !== String(unitId));
   };
 
-  const createUnitForm = getEntityType("recordingUnit")?.list.createForm;
-  if (creating && createUnitForm) {
-    // The unit to link doesn't exist yet: the recording unit's own create form, then it is linked at once.
+  if (creating) {
+    // The created unit is only picked: the link is made when the user confirms it.
     return (
-      <FitToViewport>
-        {createUnitForm({
-          organizationId,
-          scope: projectId != null ? { entityType: "project", id: projectId } : undefined,
-          onCreated: (id) => {
-            setCreating(false);
-            void link({ id: String(id), label: "" }, { type: null, uncertain: false });
-          },
-          onCancel: () => setCreating(false),
-        })}
-      </FitToViewport>
+      <NewUnitForm
+        projectId={projectId}
+        organizationId={organizationId}
+        onCreated={(unit) => { setCreating(false); setForm({ kind: "add", unit, qualifier: { type: null, uncertain: false } }); }}
+        onCancel={() => setCreating(false)}
+      />
     );
   }
 
@@ -118,15 +112,6 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
     openEntity("recordingUnit", ref.resourceId);
     onClose();
   };
-
-  let createLink: ReactNode;
-  if (createUnitForm && projectId != null) {
-    createLink = (
-      <button type="button" className="sia-inline-picker-item" onMouseDown={(e) => e.preventDefault()} onClick={() => setCreating(true)}>
-        <i className="bi bi-plus-square" aria-hidden="true" /> {t("recordingUnit.graph.dialog.createUnit")}
-      </button>
-    );
-  }
 
   const rows = values.data ?? [];
   const editedId = form?.kind === "edit" ? form.ref.resourceId : null;
@@ -165,7 +150,7 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
             onChange={(unit) => setForm({ kind: "add", unit, qualifier: form?.kind === "add" ? form.qualifier : { type: null, uncertain: false } })}
             load={loadUnits}
             placeholder={t("recordingUnit.graph.dialog.unitPlaceholder")}
-            footer={createLink}
+            footer={canCreateUnit(projectId) ? <NewUnitItem onClick={() => setCreating(true)} /> : undefined}
           />
         )}
         {form && (form.kind === "edit" || form.unit) && (

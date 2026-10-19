@@ -179,7 +179,6 @@ export const en: Record<MessageKey, string> = {
   "recordingUnit.graph.delete": "Delete the link",
   "recordingUnit.graph.deleteConfirm": "Delete the link with {label}? The unit itself is not deleted.",
   "recordingUnit.graph.dialog.addTitle": "Add to “{zone}”",
-  "recordingUnit.graph.dialog.editTitle": "Edit the link with {label}",
   "recordingUnit.graph.dialog.unit": "Unit",
   "recordingUnit.graph.dialog.unitPlaceholder": "Search a unit…",
   "recordingUnit.graph.dialog.type": "Relationship type",

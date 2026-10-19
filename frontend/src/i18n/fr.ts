@@ -179,7 +179,6 @@ export const fr = {
   "recordingUnit.graph.delete": "Supprimer le lien",
   "recordingUnit.graph.deleteConfirm": "Supprimer le lien avec {label} ? L'unité n'est pas supprimée.",
   "recordingUnit.graph.dialog.addTitle": "Ajouter à « {zone} »",
-  "recordingUnit.graph.dialog.editTitle": "Modifier le lien avec {label}",
   "recordingUnit.graph.dialog.unit": "Unité",
   "recordingUnit.graph.dialog.unitPlaceholder": "Rechercher une unité…",
   "recordingUnit.graph.dialog.type": "Type de relation",

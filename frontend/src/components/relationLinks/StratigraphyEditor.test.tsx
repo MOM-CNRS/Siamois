@@ -22,6 +22,7 @@ beforeEach(() => {
     if (url.includes("/values")) {
       return { data: [{ resourceId: "5", label: "US 5", qualifier: { position: "posterior", concept: { resourceId: "11", label: "coupe" }, uncertain: true } }] };
     }
+    if (url.includes("/projects/7/recording-units")) return { data: [{ id: 9, fullIdentifier: "US 9" }, { id: 42, fullIdentifier: "US 42" }] };
     return undefined;
   });
   container = document.createElement("div");
@@ -112,6 +113,34 @@ describe("StratigraphyEditor", () => {
     expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/stratigraphic-relationships/5", {
       method: "PUT",
       body: { typeConceptId: 11, uncertain: false },
+    });
+    expect(onChanged).toHaveBeenCalled();
+  });
+
+  it("adds a unit picked in the search — never the edited unit itself — once its type and uncertainty are confirmed", async () => {
+    const { onChanged } = render();
+    await flush();
+
+    await act(async () => {
+      (container.querySelector(".sia-inline-picker input") as HTMLInputElement).focus();
+    });
+    await flush();
+    const options = [...container.querySelectorAll(".sia-inline-picker-item")].map((el) => el.textContent);
+    expect(options).toEqual(["US 9"]);
+
+    await act(async () => {
+      (container.querySelector(".sia-inline-picker-item") as HTMLElement).click();
+    });
+    // Picked, not linked yet: the link waits for the confirmation.
+    expect(apiFetch).not.toHaveBeenCalledWith(expect.stringContaining("stratigraphic-relationships"), expect.objectContaining({ method: "POST" }));
+    await act(async () => {
+      button("Confirmer").click();
+    });
+    await flush();
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/stratigraphic-relationships", {
+      method: "POST",
+      body: { relatedRecordingUnitId: 9, position: "posterior", typeConceptId: null, uncertain: false },
     });
     expect(onChanged).toHaveBeenCalled();
   });
