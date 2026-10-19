@@ -9,6 +9,7 @@ import type { FieldResource } from "../../fields/types";
 import { registerEntityType } from "../../entities/registry";
 import type { EntityTypeConfig } from "../../entities/types";
 import { EntityNavigationProvider } from "../../panels/entityNavigation";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 
 const { fetchAllValues } = vi.hoisted(() => ({ fetchAllValues: vi.fn() }));
@@ -502,6 +503,33 @@ describe("CellEditOverlay", () => {
       await flush();
 
       expect(onSave).toHaveBeenCalledWith("1", { "-201": { value: { numericValue: 12, symbol: "cm", comment: null } } });
+    });
+  });
+
+  describe("a stratigraphic field", () => {
+    const stratigraphyField: FieldResource = {
+      id: "-329",
+      resourceType: "fields",
+      label: "Postérieur",
+      answerType: "SELECT_MULTIPLE_STRATIGRAPHY",
+      isSystemField: true,
+      valueBinding: "posteriorRelationships",
+      readOnly: true,
+    };
+
+    it("opens the relationships editor rather than a picker", async () => {
+      act(() => {
+        root.render(
+          <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+            <CellEditOverlay target={{ row: { id: "42", projectId: "7" } as Row, field: stratigraphyField, anchor: ANCHOR }} onSave={vi.fn()} onSaved={vi.fn()} onClose={vi.fn()} />
+          </QueryClientProvider>,
+        );
+      });
+      await flush();
+
+      expect(overlayEl()!.querySelector(".sia-strati-editor")).not.toBeNull();
+      // Its search opens on a click, not on focus: nothing is listed until the user asks.
+      expect(overlayEl()!.querySelector(".sia-inline-picker-list")).toBeNull();
     });
   });
 });

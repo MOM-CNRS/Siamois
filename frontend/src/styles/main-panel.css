@@ -2133,48 +2133,63 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   gap: 8px;
 }
 
-.sia-link-editor-list {
+/* The editor of a stratigraphic field (components/relationLinks/StratigraphyEditor.tsx): the field's
+   chips, with a pencil and a cross each, and what edits a link under them. */
+.sia-strati-editor {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 260px;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  list-style: none;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
 }
 
-.sia-link-editor-row {
+.sia-strati-editor-busy {
+  opacity: 0.7;
+}
+
+.sia-strati-chips {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.sia-strati-chips:empty {
+  display: none;
+}
+
+.sia-strati-chip {
+  gap: 0.35rem;
+  border-color: var(--ref-chip-color);
+}
+
+.sia-strati-chip-edited {
+  background: var(--surface-100, #f3f4f6);
+}
+
+.sia-strati-chip-button {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-
-.sia-link-editor-label {
-  flex: 1;
-  min-width: 0;
-}
-
-.sia-link-editor-position {
-  margin-right: 6px;
-  opacity: 0.65;
-}
-
-.sia-link-editor-type {
-  margin-left: 6px;
-}
-
-.sia-link-editor-empty {
-  opacity: 0.6;
-}
-
-.sia-link-button {
   padding: 0;
   border: none;
   background: transparent;
   color: inherit;
-  font: inherit;
+  font-size: 0.75em;
   cursor: pointer;
+}
+
+.sia-strati-chip-button:hover:not(:disabled) {
+  opacity: 0.6;
+}
+
+.sia-strati-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sia-strati-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
 }
 
 /* ── Header search bar (src/search/GlobalSearchBar.tsx) ───────────────────────────────────────── */

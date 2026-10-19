@@ -46,7 +46,8 @@ function isResolvedResource(value: unknown): value is ResolvedResourceLike {
  * A qualified reference's label: the relationship's concept before the other unit ("coupe US 12"),
  * a "?" after it when the relationship is uncertain.
  */
-function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
+/** A stratigraphic unit as its chip reads: « coupe US 5 », with a « ? » when the relation is uncertain. */
+export function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
   if (!qualifier) return label;
   const concept = qualifier.concept?.label;
   return `${concept ? `${concept} ` : ""}${label}${qualifier.uncertain ? " ?" : ""}`;

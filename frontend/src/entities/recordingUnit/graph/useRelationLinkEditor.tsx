@@ -4,11 +4,14 @@ import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
 import { messageForError } from "../../../api/errors";
 import { queryKeys } from "../../../api/queryKeys";
 import {
-  addHierarchyLink, addStratigraphyLink, removeHierarchyLink, removeStratigraphyLink, updateStratigraphyLink,
+  addHierarchyLink, removeHierarchyLink, removeStratigraphyLink,
   type HierarchyZone, type StratigraphyZone,
 } from "../../../components/relationLinks/api";
-import type { LinkFormValue } from "../../../components/relationLinks/LinkForm";
 import { LinkOverlay } from "../../../components/relationLinks/LinkOverlay";
+import { CellEditOverlay } from "../../../components/table/CellEditOverlay";
+import { STRATIGRAPHY_ANSWER_TYPE } from "../../../fields/stratigraphy";
+import type { FieldResource } from "../../../fields/types";
+import type { UnitOption } from "../../../components/relationLinks/api";
 import { t } from "../../../i18n";
 import { zoneTitle } from "./labels";
 import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
@@ -16,6 +19,16 @@ import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
 const STRATIGRAPHY_ZONES: ZoneKey[] = ["anterior", "synchronous", "posterior"];
 export const isStratigraphy = (zone?: ZoneKey): zone is StratigraphyZone => zone != null && STRATIGRAPHY_ZONES.includes(zone);
 export const isHierarchy = (zone?: ZoneKey): zone is HierarchyZone => zone === "parents" || zone === "children";
+
+// The field of the fiche that holds one side of the stratigraphy, as the cell editor takes it.
+const stratigraphicField = (zone: StratigraphyZone, id: string): FieldResource => ({
+  id,
+  resourceType: "fields",
+  label: zoneTitle(zone),
+  answerType: STRATIGRAPHY_ANSWER_TYPE,
+  isSystemField: true,
+  valueBinding: `${zone}Relationships`,
+});
 
 type OverlayState = { mode: "add"; zone: ZoneKey; anchor: HTMLElement } | { mode: "edit"; zone: ZoneKey; ref: GraphUnitRef; anchor: HTMLElement };
 
@@ -75,41 +88,41 @@ export function useRelationLinkEditor({ unitId, projectId, organizationId, typeC
     },
   }), [unitId, changed]);
 
-  const submit = async (value: LinkFormValue) => {
-    if (!overlay) return;
-    const typeId = value.typeConceptId != null ? Number(value.typeConceptId) : null;
-    if (overlay.mode === "edit") {
-      await updateStratigraphyLink(unitId, overlay.ref.resourceId, { typeConceptId: typeId, uncertain: value.uncertain });
-    } else if (value.unit) {
-      if (isHierarchy(overlay.zone)) await addHierarchyLink(unitId, overlay.zone, value.unit.id);
-      else if (isStratigraphy(overlay.zone)) await addStratigraphyLink(unitId, overlay.zone, value.unit.id, { typeConceptId: typeId, uncertain: value.uncertain });
-    }
+  // Only a hierarchy link is added from a form; a stratigraphic one is edited in StratigraphyEditor.
+  const addHierarchy = async (unit: UnitOption) => {
+    if (overlay && isHierarchy(overlay.zone)) await addHierarchyLink(unitId, overlay.zone, unit.id);
     setOverlay(null);
     await changed();
   };
 
   const zone = overlay?.zone;
-  const title = overlay?.mode === "edit"
-    ? t("recordingUnit.graph.dialog.editTitle", { label: overlay.ref.label ?? overlay.ref.resourceId })
-    : t("recordingUnit.graph.dialog.addTitle", { zone: zone ? zoneTitle(zone) : "" });
+  const stratigraphic = isStratigraphy(zone) && fields ? zone : undefined;
+  const hide = () => setOverlay(null);
 
   const overlays = (
     <>
       <ConfirmPopup />
       <LinkOverlay
-        anchor={overlay?.anchor ?? null}
-        title={title}
-        mode={overlay?.mode ?? "add"}
-        qualified={isStratigraphy(zone)}
+        anchor={overlay && !stratigraphic ? overlay.anchor : null}
+        title={t("recordingUnit.graph.dialog.addTitle", { zone: zone ? zoneTitle(zone) : "" })}
         projectId={projectId}
         organizationId={organizationId}
-        vocabulary={isStratigraphy(zone) && fields ? { fieldId: fields[zone], valueConceptId: typeConceptId } : undefined}
-        initial={overlay?.mode === "edit"
-          ? { typeConceptId: overlay.ref.qualifier?.concept?.resourceId ?? null, uncertain: !!overlay.ref.qualifier?.uncertain }
-          : undefined}
         excludeUnitId={String(unitId)}
-        onHide={() => setOverlay(null)}
-        onSubmit={submit}
+        onHide={hide}
+        onSubmit={addHierarchy}
+      />
+      {/* A stratigraphic zone: the field's own cell editor, the one of the fiche and the tables. */}
+      <CellEditOverlay
+        target={overlay && stratigraphic ? {
+          row: { id: unitId, projectId, type: typeConceptId ? { id: typeConceptId } : null },
+          field: stratigraphicField(stratigraphic, fields![stratigraphic]),
+          anchor: overlay.anchor.getBoundingClientRect(),
+        } : null}
+        organizationId={organizationId}
+        entityType="recordingUnit"
+        onSave={async () => undefined}
+        onSaved={() => void changed()}
+        onClose={hide}
       />
     </>
   );
