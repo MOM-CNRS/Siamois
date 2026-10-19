@@ -245,7 +245,7 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return save(info, actionUnit, typeConcept, null);
+        return saveWithTemplate(info, actionUnit, typeConcept, null);
     }
 
     /**
@@ -258,6 +258,12 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId)
             throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, templateId);
+    }
+
+    // Shared by both transactional save entry points: a call through `this` from one to the other would skip the proxy.
+    private ActionUnitDTO saveWithTemplate(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept,
+                                           String templateId) throws ActionUnitAlreadyExistsException {
         boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
         if (isCreation && (actionUnit.getIdentifier() == null || actionUnit.getIdentifier().isBlank())) {

@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 
 class ProjectIdentifierServiceTest {
 
@@ -129,7 +130,7 @@ class ProjectIdentifierServiceTest {
                 .thenReturn(Optional.of(new ActionUnit()));
 
         assertThat(service.preview(info)).contains("PROJ5");
-        verify(counterRepository, org.mockito.Mockito.never()).nextValue(anyLong(), anyLong(), anyString(), anyInt());
+        verify(counterRepository, never()).nextValue(anyLong(), anyLong(), anyString(), anyInt());
     }
 
     @Test

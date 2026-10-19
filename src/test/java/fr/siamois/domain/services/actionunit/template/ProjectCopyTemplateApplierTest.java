@@ -29,6 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 class ProjectCopyTemplateApplierTest {
 
@@ -124,7 +125,7 @@ class ProjectCopyTemplateApplierTest {
         assertThat(config.getValue().getIdentifierFormat()).isEqualTo("US{NUM_UE:00}");
 
         ArgumentCaptor<FieldFormConfig> fields = ArgumentCaptor.forClass(FieldFormConfig.class);
-        verify(fieldRepository, org.mockito.Mockito.times(2)).save(fields.capture());
+        verify(fieldRepository, times(2)).save(fields.capture());
         FieldFormConfig copy = fields.getAllValues().get(0);
         assertThat(copy).isNotSameAs(plain);
         assertThat(copy.getFormConfig().getId()).isEqualTo(2L);

@@ -181,7 +181,7 @@ class ProjectApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class);
 
         org.mockito.ArgumentCaptor<ActionUnitDTO> shell = org.mockito.ArgumentCaptor.forClass(ActionUnitDTO.class);
-        org.mockito.Mockito.verify(actionUnitService).save(any(), shell.capture(), any(), any());
+        verify(actionUnitService).save(any(), shell.capture(), any(), any());
         assertThat(shell.getValue().getIdentifier()).isNull();
     }
 
@@ -266,7 +266,7 @@ class ProjectApiServiceTest {
         assertThat(service.duplicateProject(caller, "5", "fr")).isSameAs(row);
 
         org.mockito.ArgumentCaptor<ActionUnitDTO> shell = org.mockito.ArgumentCaptor.forClass(ActionUnitDTO.class);
-        org.mockito.Mockito.verify(actionUnitService).save(any(), shell.capture(), any(), org.mockito.ArgumentMatchers.eq("project:5"));
+        verify(actionUnitService).save(any(), shell.capture(), any(), eq("project:5"));
         assertThat(shell.getValue().getName()).isEqualTo("Fouille (2)");
         assertThat(shell.getValue().getIdentifier()).isNull();
         assertThat(shell.getValue().getMainLocation()).isNull();
@@ -288,7 +288,7 @@ class ProjectApiServiceTest {
 
     // ---- project templates --------------------------------------------------
 
-    private void stubCreationUpToSave() throws Exception {
+    private void stubCreationUpToSave() {
         when(institutionService.findById(10L)).thenReturn(institution);
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
@@ -316,7 +316,7 @@ class ProjectApiServiceTest {
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr")).isInstanceOf(ResponseStatusException.class);
 
-        org.mockito.Mockito.verify(actionUnitService).save(any(), any(), any(), org.mockito.ArgumentMatchers.eq("project:5"));
+        verify(actionUnitService).save(any(), any(), any(), eq("project:5"));
     }
 
     @Test
@@ -328,7 +328,7 @@ class ProjectApiServiceTest {
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr")).isInstanceOf(ResponseStatusException.class);
 
-        org.mockito.Mockito.verify(actionUnitService).save(any(), any(), any(), org.mockito.ArgumentMatchers.isNull());
+        verify(actionUnitService).save(any(), any(), any(), isNull());
     }
 
     @Test
@@ -339,7 +339,7 @@ class ProjectApiServiceTest {
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-        org.mockito.Mockito.verify(actionUnitService, org.mockito.Mockito.never()).save(any(), any(), any(), any());
+        verify(actionUnitService, never()).save(any(), any(), any(), any());
     }
 
     @Test
@@ -353,7 +353,7 @@ class ProjectApiServiceTest {
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-        org.mockito.Mockito.verify(actionUnitService, org.mockito.Mockito.never()).save(any(), any(), any(), any());
+        verify(actionUnitService, never()).save(any(), any(), any(), any());
     }
 
     @Test

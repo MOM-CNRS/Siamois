@@ -484,6 +484,12 @@ public class ProjectApiService {
      */
     @Transactional
     public AccessibleProjectForApi createProject(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
+        return create(caller, request, lang);
+    }
+
+    // Shared by createProject and duplicateProject: both are transactional entry points, and a call through
+    // `this` to the other would skip the proxy.
+    private AccessibleProjectForApi create(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
         if (request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -547,8 +553,9 @@ public class ProjectApiService {
     /**
      * {@code POST /projects/{id}/duplicate}: a new project of the same organization and type (not its places), named
      * « name (n) », numbered automatically and configured from the source (types, fields, rules; no data, members
-     * or counters). Not transactional itself: the creation is, and a name taken meanwhile surfaces as a 409.
+     * or counters). A name taken meanwhile surfaces as a 409.
      */
+    @Transactional
     public AccessibleProjectForApi duplicateProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
         ActionUnitDTO source = requireAccessibleProject(caller, projectIdOrKey).actionUnit();
         InstitutionDTO institution = source.getCreatedByInstitution();
@@ -561,7 +568,7 @@ public class ProjectApiService {
         request.setTypeId(String.valueOf(source.getType().getId()));
         request.setTemplateId(ProjectTemplate.projectId(source.getId()));
         request.setName(freeCopyName(institution.getId(), source.getName()));
-        return createProject(caller, request, lang);
+        return create(caller, request, lang);
     }
 
     private String freeCopyName(Long institutionId, String sourceName) {
