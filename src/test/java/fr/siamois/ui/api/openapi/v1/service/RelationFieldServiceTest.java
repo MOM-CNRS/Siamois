@@ -79,8 +79,40 @@ class RelationFieldServiceTest {
         assertThat(page.values().get(1).value().qualifier().concept().label()).isEqualTo("coupe");
     }
 
+    @Test
+    void anAsynchronousTypeShowsOnlyFromTheUnitItReadsFrom() {
+        // "008 recouvre 006": the type reads from the first unit (006 is older, so 008 is unit2 and the direction is false).
+        when(repository.page(RelationField.RECORDING_UNIT_ANTERIOR, 8L, 0, 50, null, true)).thenReturn(List.of(
+                row(8L, 6L, "US 6", "unit2", true, 77L, false)));
+        when(repository.page(RelationField.RECORDING_UNIT_POSTERIOR, 6L, 0, 50, null, true)).thenReturn(List.of(
+                row(6L, 8L, "US 8", "unit1", true, 77L, false)));
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "recouvre"));
+
+        ResourceRef fromReader = service.page(RelationField.RECORDING_UNIT_ANTERIOR, 8L, 0, 50, null, true, "fr").values().get(0);
+        ResourceRef fromOther = service.page(RelationField.RECORDING_UNIT_POSTERIOR, 6L, 0, 50, null, true, "fr").values().get(0);
+
+        assertThat(fromReader.qualifier().concept().label()).isEqualTo("recouvre");
+        assertThat(fromOther.qualifier().concept()).isNull();
+    }
+
+    @Test
+    void aSynchronousTypeShowsFromBothUnits() {
+        when(repository.page(RelationField.RECORDING_UNIT_SYNCHRONOUS, 1L, 0, 50, null, true)).thenReturn(List.of(
+                row(1L, 2L, "US 2", "unit1", false, 77L, true),
+                row(1L, 3L, "US 3", "unit2", false, 77L, true)));
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "même niveau"));
+
+        List<ResourceRef> values = service.page(RelationField.RECORDING_UNIT_SYNCHRONOUS, 1L, 0, 50, null, true, "fr").values();
+
+        assertThat(values).extracting(v -> v.qualifier().concept().label()).containsOnly("même niveau");
+    }
+
     private static Row row(long owner, long target, String label, String role, Boolean asynchronous, Long conceptId) {
+        return row(owner, target, label, role, asynchronous, conceptId, null);
+    }
+
+    private static Row row(long owner, long target, String label, String role, Boolean asynchronous, Long conceptId, Boolean conceptDirection) {
         return new Row(owner, target, label, role, conceptId, conceptId == null ? null : "ext" + conceptId,
-                asynchronous, null, false);
+                asynchronous, conceptDirection, false);
     }
 }

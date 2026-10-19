@@ -7,6 +7,7 @@ import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
 import { fetchAllValues } from "../../fields/multiValues";
+import { stratigraphyPositionOf } from "../../fields/stratigraphy";
 import {
   readMultiValue,
   resolveValueBinding,
@@ -15,6 +16,7 @@ import {
   type FieldResource,
 } from "../../fields/types";
 import { numberOf, type Bound, type FieldState } from "../../rules";
+import { StratigraphyEditor } from "../relationLinks/StratigraphyEditor";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
 
@@ -242,7 +244,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // Not before a preview's whole list has loaded: the widget isn't there yet, so the focus (and
   // with it the picker's first search) waits for it.
   useEffect(() => {
-    if (!target || loadingValues) return;
+    // A stratigraphic field's search opens its list on focus: it is left to a click.
+    if (!target || loadingValues || stratigraphyPositionOf(target.field)) return;
     const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
     if (!control) return;
     control.focus();
@@ -308,6 +311,9 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
 
   const { field, anchor } = target;
   const Renderer = getFieldRenderer(field.answerType);
+  // The relationships of a unit are not answers: their editor writes through the unit's own endpoints.
+  const stratigraphyPosition = stratigraphyPositionOf(field);
+  const context = editContextOf(target.row, entityType, organizationId);
 
   // fields/commit.ts owns both rules, shared with the Project fiche's own autosave: save on change
   // for a widget whose one interaction yields one final value, and for a multi-valued one keep the
@@ -344,7 +350,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
         position: "fixed",
         top: `${anchor.top}px`,
         left: `${anchor.left}px`,
-        minWidth: `${Math.max(anchor.width, 12 * 16)}px`,
+        minWidth: `${Math.max(anchor.width, (stratigraphyPosition ? 22 : 12) * 16)}px`,
         // A yes/no is a small box and its label: it needs room around it, and enough height to hide the cell below.
         ...(field.answerType === "BOOLEAN" ? { padding: "0.5rem 1rem", minHeight: "2.75rem", display: "flex", alignItems: "center" } : {}),
         // A measurement is a small form: room around its fields.
@@ -376,6 +382,17 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
             <span className="cell-edit-overlay-empty">Aucune valeur</span>
           )}
         </div>
+      ) : stratigraphyPosition && target.row.id != null ? (
+        <StratigraphyEditor
+          fieldId={field.id}
+          position={stratigraphyPosition}
+          unitId={target.row.id}
+          projectId={context.projectId}
+          organizationId={organizationId}
+          typeConceptId={context.typeConceptId}
+          onChanged={onSaved}
+          onClose={onClose}
+        />
       ) : (
         <Renderer
           field={field}
@@ -383,7 +400,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           readOnly={saving}
           required={target.required ?? false}
           organizationId={organizationId}
-          context={editContextOf(target.row, entityType, organizationId)}
+          context={context}
           bounds={target.fieldState?.bounds}
           optionsContext={target.fieldState?.optionsContext}
           placeContext={target.fieldState?.placeContext}
@@ -399,7 +416,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
 
 /** The target's answer when it is a multi-valued one the row only carries a preview of. */
 function partialAnswerOf<TRow>(target: CellEditTarget<TRow>) {
-  if (!target.field.answerType.startsWith("SELECT_MULTIPLE")) return null;
+  // A stratigraphic field's editor loads its own values (they are no draft to write back).
+  if (!target.field.answerType.startsWith("SELECT_MULTIPLE") || stratigraphyPositionOf(target.field)) return null;
   const answer = readMultiValue(resolveValueBinding(target.field).readRaw(target.row));
   return answer && !answer.complete && answer._links?.values ? answer : null;
 }
