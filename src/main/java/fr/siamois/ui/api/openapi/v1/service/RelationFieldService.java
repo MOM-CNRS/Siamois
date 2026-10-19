@@ -109,11 +109,22 @@ public class RelationFieldService {
         if (!relation.qualified()) {
             return new ResourceRef(id, relation.resourceType(), row.label());
         }
-        ResourceRef concept = row.conceptId() == null ? null : new ResourceRef(
+        ResourceRef concept = row.conceptId() == null || !typeReadsFromOwner(row) ? null : new ResourceRef(
                 String.valueOf(row.conceptId()), FieldAnswerWireService.CONCEPTS,
                 Objects.requireNonNullElseGet(conceptLabels.get(row.conceptId()), () -> "[" + row.conceptExternalId() + "]"));
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
                 concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
+    }
+
+    /**
+     * Whether the relationship's type makes sense read from the owner. It reads from one unit toward
+     * the other ({@code concept_direction}: true from the first unit): "008 recouvre 006" says nothing
+     * of 006, whose side only has the number of the other unit. A synchronous relationship reads the
+     * same from both sides, and a type with no recorded direction is shown as it is.
+     */
+    private static boolean typeReadsFromOwner(Row row) {
+        if ("synchronous".equals(positionOf(row)) || row.conceptDirection() == null) return true;
+        return row.conceptDirection() == "unit1".equals(row.role());
     }
 
     /**
