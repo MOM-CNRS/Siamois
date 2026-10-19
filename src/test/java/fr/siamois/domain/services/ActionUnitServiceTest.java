@@ -94,9 +94,6 @@ class ActionUnitServiceTest {
     @Mock private ProjectIdentifierService projectIdentifierService;
     @Spy private List<ProjectTemplateApplier> templateAppliers = new ArrayList<>();
 
-    @Mock
-    private fr.siamois.domain.services.actionunit.ProjectDeletionService projectDeletionService;
-
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -137,7 +134,6 @@ class ActionUnitServiceTest {
         lenient().when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         lenient().when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
-        lenient().when(profilePermissionService.hasDeleteProjectPermission(any(UserInfo.class), any())).thenReturn(true);
         c1 = new Concept();
         c2 = new Concept();
         c3 = new Concept();
@@ -1003,69 +999,77 @@ class ActionUnitServiceTest {
     }
 
     // ------------------------------------------------------------------
-    // deleteProjectWithContent
+    // deleteProjectWhenEmpty
     // ------------------------------------------------------------------
 
     @Test
-    void deleteProjectWithContent_throwsForbidden_whenNoExecutionContext() {
+    void deleteProjectWhenEmpty_throwsForbidden_whenNoExecutionContext() {
         ExecutionContextHolder.clear();
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.deleteProjectWithContent(1L));
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWithContent_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
-        when(profilePermissionService.hasDeleteProjectPermission(any(UserInfo.class), anyLong())).thenReturn(false);
+    void deleteProjectWhenEmpty_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.deleteProjectWithContent(1L));
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWithContent_throwsIllegalState_whenChildActionUnitsExist() {
+    void deleteProjectWhenEmpty_throwsIllegalState_whenRecordingUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(2L);
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenDocumentsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(documentRepository.countByActionUnitId(1L)).thenReturn(2);
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWhenEmpty_throwsIllegalState_whenChildActionUnitsExist() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
         when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
                 .thenReturn(Collections.singletonList(new Object[]{1L, 3L}));
 
         assertThrows(IllegalStateException.class,
-                () -> actionUnitService.deleteProjectWithContent(1L));
-
-        verify(projectDeletionService, never()).deleteContent(anyLong());
-        verify(actionUnitRepository, never()).deleteById(anyLong());
-    }
-
-    @Test
-    void deleteProjectWithContent_propagatesCrossProjectRefusal_andDeletesNothing() {
-        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
-        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(new ActionUnit()));
-        when(projectDeletionService.deleteContent(1L)).thenThrow(new IllegalStateException("liens"));
-
-        assertThrows(IllegalStateException.class,
-                () -> actionUnitService.deleteProjectWithContent(1L));
+                () -> actionUnitService.deleteProjectWhenEmpty(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWithContent_happyPath_deletesEverything() {
-        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
-        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(new ActionUnit()));
-        when(projectDeletionService.deleteContent(1L)).thenReturn(List.of(9L));
+    void deleteProjectWhenEmpty_happyPath_deletesEverything() {
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
+                .thenReturn(List.of());
 
-        actionUnitService.deleteProjectWithContent(1L);
+        actionUnitService.deleteProjectWhenEmpty(1L);
 
-        verify(projectDeletionService).deleteContent(1L);
         verify(personProfileAssignmentRepository).deleteAllByProfileActionUnitId(1L);
         verify(profileRepository).deleteAllByActionUnitId(1L);
         verify(recordingUnitIdLabelRepository).deleteAllByActionUnitId(1L);
         verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteById(1L);
-        verify(projectDeletionService).deleteArks(List.of(9L));
     }
 
     // ------------------------------------------------------------------
@@ -2494,6 +2498,22 @@ class ActionUnitServiceTest {
 
         assertThat(result.recordingUnitCount()).isZero();
         assertThat(result.childActionUnitCount()).isZero();
+    }
+
+    // ------------------------------------------------------------------
+    // deleteProjectWhenEmpty — autorisation portée par le projet seul
+    // ------------------------------------------------------------------
+
+    @Test
+    void deleteProjectWhenEmpty_allowedByProjectPermissionOnly_deletesEverything() {
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
+        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(true);
+        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+
+        actionUnitService.deleteProjectWhenEmpty(1L);
+
+        verify(actionUnitRepository).deleteById(1L);
     }
 
     private void bindExecutionContext(UserInfo userInfo) {

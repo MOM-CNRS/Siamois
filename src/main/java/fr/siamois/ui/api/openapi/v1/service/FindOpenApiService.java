@@ -181,9 +181,7 @@ public class FindOpenApiService {
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo,
                 dto.getActionUnit() != null ? dto.getActionUnit().getId() : null);
         resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit)
-                .withValidate(canValidate)
-                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo,
-                        dto.getActionUnit() != null ? dto.getActionUnit().getId() : null)));
+                .withValidate(canValidate));
         if (dto.getId() != null) {
             resource.setResourceUri("/specimen/" + dto.getId());
         }
@@ -246,14 +244,12 @@ public class FindOpenApiService {
                 ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo,
-                dto.getActionUnit() != null ? dto.getActionUnit().getId() : null)) {
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
         }
 
         try {
-            // The domain check reads the execution context, which a token-authenticated call has no session for.
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> specimenService.deleteSpecimenById(specimenId));
+            specimenService.deleteSpecimenById(specimenId);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         } catch (IllegalArgumentException e) {

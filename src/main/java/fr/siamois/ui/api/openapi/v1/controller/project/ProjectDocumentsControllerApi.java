@@ -122,8 +122,7 @@ public class ProjectDocumentsControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
                         projectApiService.canEditDocumentsForProject(caller, id, lang))
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
-                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
         DocumentListProjectionService.DocumentListProjection projection =
                 documentListProjectionService.build(page.getContent(), fields, lang);
 

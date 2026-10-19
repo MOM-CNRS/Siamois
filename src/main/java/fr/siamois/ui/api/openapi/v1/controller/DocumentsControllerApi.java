@@ -247,8 +247,8 @@ public class DocumentsControllerApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un document",
-            description = "Supprime la ligne document et le fichier sur le stockage. Refus (409) si le document est encore lié "
-                    + "à une entité (UE, mobilier, lieu, phase, contenant, étude) : retirer d'abord ces liens. L'institution de création doit être dans le périmètre JWT et l'appelant doit pouvoir éditer "
+            description = "Supprime la ligne document, les liaisons (projet, UE spatiale, mobilier, études, etc.) et le fichier "
+                    + "sur le stockage. L'institution de création doit être dans le périmètre JWT et l'appelant doit pouvoir éditer "
                     + "les documents du projet du document."
     )
     @ApiResponses(value = {
@@ -256,7 +256,6 @@ public class DocumentsControllerApi {
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "403", description = "Pas le droit d'éditer les documents du projet"),
             @ApiResponse(responseCode = "404", description = "Document introuvable ou hors périmètre"),
-            @ApiResponse(responseCode = "409", description = "Document encore lié à une entité"),
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<Void> deleteDocument(

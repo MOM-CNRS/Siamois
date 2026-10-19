@@ -45,8 +45,6 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class ContainerService {
 
-    private final EntityLinkGuard entityLinkGuard;
-
     private final ContainerRepository containerRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
     private final ContainerMapper containerMapper;
@@ -252,28 +250,4 @@ public class ContainerService {
                 );
     }
 
-
-    /**
-     * Supprime le contenant qui n'a aucune relation avec une autre entité.
-     *
-     * @throws IllegalStateException si le contenant a encore des relations
-     */
-    public void deleteById(long id) {
-        Container entity = containerRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Contenant introuvable: " + id));
-
-        UserInfo info = ExecutionContextHolder.get();
-        Long actionUnitId = entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
-        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
-            throw new ForbiddenOperationException("You are not allowed to delete this container");
-        }
-
-        EntityLinkGuard.Kind kind = EntityLinkGuard.Kind.CONTAINER;
-        entityLinkGuard.requireNoLinks(kind, id, "le contenant");
-
-        ContainerDTO idOnly = new ContainerDTO();
-        idOnly.setId(id);
-        customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);
-        containerRepository.delete(entity);
-    }
 }

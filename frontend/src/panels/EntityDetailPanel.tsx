@@ -22,7 +22,6 @@ import { siblingsQuery } from "./listSiblings";
 import type { EntityPreview, EntitySibling } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
 import { t } from "../i18n";
-import { useDeleteEntity } from "./useDeleteEntity";
 
 export type { EntityPreview };
 
@@ -191,8 +190,6 @@ export function EntityDetailPanel({
     },
   });
 
-  const deletion = useDeleteEntity(entityType, config, organizationId);
-
   // The main pane's fiche names the browser tab after its entity (focus.xhtml's <title> only knows
   // the entity JSF rendered). The overview's fiche doesn't.
   const documentTitle =
@@ -287,14 +284,6 @@ export function EntityDetailPanel({
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
       settingsProjectId != null ? () => openProjectSettings(settingsProjectId) : undefined,
-    delete:
-      writeMode && deletion.canDelete && (data as { _permissions?: { canDelete?: boolean } })._permissions?.canDelete === true
-        ? () =>
-            deletion.requestDelete({
-              id: entityId,
-              name: String((data as { name?: unknown }).name ?? config.detail.chrome?.(data).title ?? entityId),
-            })
-        : undefined,
   };
   const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
     ...toolbar,
@@ -368,7 +357,6 @@ export function EntityDetailPanel({
           (onOpenOverview ?? onNavigate)?.(entityType, id);
         }}
       />
-      {deletion.dialog}
       <TabView
         className="entity-detail-panel-tabs"
         // One line, scrolled with ‹ › when the tabs don't fit (the narrow overview pane).

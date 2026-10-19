@@ -177,8 +177,7 @@ public class ContainerOpenApiService {
         resource.setAnswers(multiValueAnswers.shapeOne(Container.class, container.getId(), answers, null,
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
-                .withValidate(profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId()))
-                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, container.getActionUnit().getId())));
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
@@ -223,23 +222,5 @@ public class ContainerOpenApiService {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.CONTAINER,
                 container.getActionUnit().getId(), container.getId());
-    }
-
-    /**
-     * Supprime le contenant sans relation avec une autre entité (409 sinon). Droit d'édition requis sur le projet.
-     */
-    @Transactional
-    public void deleteContainer(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
-        ContainerDTO dto = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
-        InstitutionDTO institution = dto.getActionUnit().getCreatedByInstitution();
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo, dto.getActionUnit().getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
-        }
-        try {
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> containerService.deleteById(id));
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
-        }
     }
 }

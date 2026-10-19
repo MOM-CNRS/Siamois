@@ -85,8 +85,7 @@ public class ProjectFindsApi {
         // recording-units list.
         boolean canEdit = projectApiService.canEditFindsForProject(caller, id, lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
-                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
 
         FindListProjectionService.FindListProjection projection = findListProjectionService.build(page.getContent(), fields, lang);
 

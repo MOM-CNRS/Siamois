@@ -90,9 +90,6 @@ class SpatialUnitServiceTest {
     @Mock
     private fr.siamois.domain.services.ark.ArkService arkService;
 
-    @Mock
-    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
-
     @InjectMocks
     private SpatialUnitService spatialUnitService;
 
@@ -1360,23 +1357,46 @@ class SpatialUnitServiceTest {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(5L);
         when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(0L);
+        when(recordingUnitRepository.countBySpatialContext(5L)).thenReturn(0);
+        when(actionUnitRepository.countBySpatialContext(5L)).thenReturn(0);
+        when(spatialUnitRepository.countAsMainLocation(5L)).thenReturn(0L);
+        when(spatialUnitRepository.countContainersBySpatialUnit(5L)).thenReturn(0L);
 
         spatialUnitService.deleteIfUnused(5L);
 
-        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu");
+        verify(spatialUnitRepository).deleteHierarchyLinksForSpatialUnit(5L);
+        verify(actionUnitRepository).deleteSpatialContextLinksForSpatialUnit(5L);
+        verify(documentRepository).deleteAllSpatialUnitDocumentLinksBySpatialUnitId(5L);
         verify(spatialUnitRepository).deleteById(5L);
     }
 
     @Test
-    void deleteWhenUnused_withLinks_throws() {
+    void deleteWhenUnused_withChildren_throws() {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(5L);
         when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
-        org.mockito.Mockito.doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
-                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu");
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(2L);
 
-        assertThrows(IllegalStateException.class, () -> spatialUnitService.deleteIfUnused(5L));
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> spatialUnitService.deleteIfUnused(5L));
 
+        assertTrue(ex.getMessage().contains("enfants"));
+        verify(spatialUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteWhenUnused_withRecordingUnits_throws() {
+        SpatialUnit unit = new SpatialUnit();
+        unit.setId(5L);
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
+        when(spatialUnitRepository.countChildrenByParentId(5L)).thenReturn(0L);
+        when(recordingUnitRepository.countBySpatialContext(5L)).thenReturn(3);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> spatialUnitService.deleteIfUnused(5L));
+
+        assertTrue(ex.getMessage().contains("unités d'enregistrement"));
         verify(spatialUnitRepository, never()).deleteById(anyLong());
     }
 

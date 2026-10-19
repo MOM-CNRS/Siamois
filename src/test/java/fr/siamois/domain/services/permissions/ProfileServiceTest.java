@@ -137,9 +137,7 @@ class ProfileServiceTest {
             PermissionConstants.INSTANCE_EDIT_FINDS,
             PermissionConstants.INSTANCE_EDIT_CONTAINERS,
             PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
-            PermissionConstants.INSTANCE_EDIT_STUDIES,
-            PermissionConstants.INSTANCE_DELETE_ENTITIES,
-            PermissionConstants.INSTANCE_DELETE_PROJECT);
+            PermissionConstants.INSTANCE_EDIT_STUDIES);
 
     private void stubPermissionLookupByCode() {
         when(permissionRepository.findByCode(anyString()))
@@ -310,9 +308,7 @@ class ProfileServiceTest {
                 permission(PermissionConstants.PROJECT_EDIT_PHASES),
                 permission(PermissionConstants.PROJECT_EDIT_CONTAINERS),
                 permission(PermissionConstants.PROJECT_EDIT_DOCUMENTS),
-                permission(PermissionConstants.PROJECT_EDIT_STUDIES),
-                permission(PermissionConstants.PROJECT_DELETE_ENTITIES),
-                permission(PermissionConstants.PROJECT_DELETE_PROJECT)))).build();
+                permission(PermissionConstants.PROJECT_EDIT_STUDIES)))).build();
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of(manager));
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of());
 

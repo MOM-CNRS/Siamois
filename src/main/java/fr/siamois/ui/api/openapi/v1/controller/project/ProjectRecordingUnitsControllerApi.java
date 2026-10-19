@@ -95,8 +95,7 @@ public class ProjectRecordingUnitsControllerApi {
         // project list's own permissionsFor (which spans several action units at once).
         boolean canEdit = projectApiService.canEditRecordingUnitsForProject(caller, id, lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
-                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
 
         // Labels et projection answers : un seul lot pour la page, jamais par ligne.
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =

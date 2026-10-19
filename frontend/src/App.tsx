@@ -17,7 +17,6 @@ import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/p
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
 import { registerNavigation } from "./navigation/externalBus";
-import { onEntityDeleted } from "./panels/entityDeleted";
 import { ContextPublisher } from "./navigation/ContextPublisher";
 import { PROJECT_KEY } from "./entities/keys";
 import type { ListScope } from "./entities/types";
@@ -157,21 +156,6 @@ export function App({ options }: { options: MountOptions }) {
   // What the top search bar (its own React root) can drive.
   const external = useMemo(() => ({ navigate, openOverview, openList }), [navigate, openOverview, openList]);
   useEffect(() => registerNavigation(external), [external]);
-
-  // A deleted entity can no longer be shown: close the overview that displays it, and leave a main
-  // pane showing its fiche for the list of its type.
-  useEffect(
-    () =>
-      onEntityDeleted((entityType, id) => {
-        if (overview?.entityType === entityType && overview.entityId != null && String(overview.entityId) === String(id)) {
-          closeOverview();
-        }
-        if (view.panelKind === "detail" && view.entityType === entityType && view.entityId != null && String(view.entityId) === String(id)) {
-          navigate(entityType);
-        }
-      }),
-    [overview, view, closeOverview, navigate],
-  );
 
   // options.overview is the chrome of the overview JSF mounted with — only valid for that entity.
   // For anything else it's a placeholder until EntityDetailPanel derives the real one from

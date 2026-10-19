@@ -168,8 +168,7 @@ public class StudyOpenApiService {
         resource.setAnswers(multiValueAnswers.shapeOne(Study.class, study.getId(), answers, null,
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
-                .withValidate(profilePermissionService.hasValidatePermission(userInfo, study.getActionUnit().getId()))
-                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, study.getActionUnit().getId())));
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, study.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }
@@ -220,23 +219,5 @@ public class StudyOpenApiService {
         StudyDTO study = requireAccessibleStudy(id, personDto, accessibleInstitutionIds);
         return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.STUDY,
                 study.getActionUnit().getId(), study.getId());
-    }
-
-    /**
-     * Supprime l'étude sans relation avec une autre entité (409 sinon). Droit d'édition requis sur le projet.
-     */
-    @Transactional
-    public void deleteStudy(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
-        StudyDTO dto = requireAccessibleStudy(id, personDto, accessibleInstitutionIds);
-        InstitutionDTO institution = dto.getActionUnit().getCreatedByInstitution();
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo, dto.getActionUnit().getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
-        }
-        try {
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> studyService.deleteById(id));
-        } catch (IllegalStateException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
-        }
     }
 }

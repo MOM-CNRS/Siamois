@@ -882,7 +882,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, Set.of(10L)))
                 .thenReturn(ru);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(false);
 
         mockMvc.perform(delete("/api/v1/recording-units/5"))
                 .andExpect(status().isForbidden());
@@ -900,7 +900,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(9L, Set.of(10L)))
                 .thenReturn(ru);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         doNothing().when(recordingUnitService).deleteRecordingUnitById(9L);
 
         mockMvc.perform(delete("/api/v1/recording-units/9"))
@@ -919,7 +919,7 @@ class RecordingUnitsControllerApiTest {
         ru.setCreatedByInstitution(institutionDto);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(10L)))
                 .thenReturn(ru);
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("finds")).when(recordingUnitService).deleteRecordingUnitById(3L);
 
         mockMvc.perform(delete("/api/v1/recording-units/3"))

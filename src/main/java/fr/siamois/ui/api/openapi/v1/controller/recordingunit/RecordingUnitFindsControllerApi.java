@@ -91,9 +91,7 @@ public class RecordingUnitFindsControllerApi {
                 && projectApiService.canEditFindsForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);
         boolean canValidate = ru.getActionUnit() != null
                 && projectApiService.canValidateForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);
-        boolean canDelete = ru.getActionUnit() != null
-                && projectApiService.canDeleteEntitiesForProject(caller, String.valueOf(ru.getActionUnit().getId()), lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate).withDelete(canDelete);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate);
         if (fields != null) {
             FindListProjectionService.FindListProjection projection = findListProjectionService.build(result.rows(), fields, lang);
             page.getContent().forEach(resource -> resource.setAnswers(projection.answersFor(resource.getId() == null ? null : Long.valueOf(resource.getId()))));
