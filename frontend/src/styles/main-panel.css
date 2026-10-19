@@ -1941,3 +1941,35 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
 .entity-list-panel-create-blocked .p-button {
   pointer-events: none;
 }
+
+/* The list's tree view (useTreeRows + EntityTable's `tree` prop). The identifier cell is indented by
+   depth and starts with an expander. */
+.entity-tree-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.entity-tree-toggle:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+.entity-tree-toggle .pi {
+  font-size: 0.75rem;
+}
+.entity-tree-toggle-leaf {
+  cursor: default;
+}
+/* A parent shown only because a match is below it: its identifier chip is dashed (the matches keep
+   the solid outline), the rest of the row is left alone. */
+.entity-list-panel .p-datatable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
+  border-style: dashed;
+}

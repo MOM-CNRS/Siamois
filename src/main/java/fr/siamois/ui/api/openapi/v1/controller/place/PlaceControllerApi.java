@@ -173,12 +173,14 @@ public class PlaceControllerApi {
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @Parameter(description = "Projection des champs de formulaire dans answers : \"all\" ou une liste d'identifiants de champ séparés par des virgules.")
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre : avec une recherche ou un filtre, seuls les enfants menant à une correspondance ; chaque lieu porte hasChildren et match.")
+            @RequestParam(defaultValue = "false") boolean tree,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields);
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(body.getMeta().total()))
                 .body(body);

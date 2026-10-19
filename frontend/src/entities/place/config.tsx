@@ -43,6 +43,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
     defaultSort: "creationTime:desc",
     searchable: true,
+    tree: true,
     // Places belong to the organization, not a project: the one organization-wide list whose
     // creation is allowed (see CreateForm.tsx).
     createForm: (ctx) => <PlaceCreateForm {...ctx} />,

@@ -19,6 +19,8 @@ export interface UseEntityListDataOptions {
   prefsKey: string;
   // An embedded list's tab badge already is the collection total: no count request of its own.
   embedded?: boolean;
+  // The tree view fetches its own rows: no flat page meanwhile.
+  paused?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ export interface UseEntityListDataOptions {
  * visible columns, the current page, the rules its cells follow and the collection's size. The
  * panel renders from this and owns no query.
  */
-export function useEntityListData({ entityType, config, organizationId, scope, prefsKey, embedded }: UseEntityListDataOptions) {
+export function useEntityListData({ entityType, config, organizationId, scope, prefsKey, embedded, paused }: UseEntityListDataOptions) {
   const table = useTableState({ defaultSort: config?.list.defaultSort, prefsKey });
   const { state, seedVisibleColumns, columnsSeeded } = table;
 
@@ -97,7 +99,7 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
     fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
     // A list with a schema waits for its columns, rather than fetching once without them and then
     // adding each one (a failed catalog just means no dynamic columns).
-    enabled: config != null && (!hasSchema || columnsSeeded || catalogFailed),
+    enabled: !paused && config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
   const { rows, totalCount } = page;
   useEffect(() => setSeenRows(rows), [rows]);

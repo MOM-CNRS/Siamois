@@ -142,6 +142,11 @@ public class RecordingUnitSortFilterService {
         return closure;
     }
 
+    /** The matches of the user filters and all their ancestors (sets {@code filters}' closure and match ids). */
+    Collection<Long> ancestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        return resolveAncestorClosure(institution, filters);
+    }
+
     Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {
         if (!filters.isRootOnly() || !filters.hasUserFilters()) {
             return Collections.emptySet();

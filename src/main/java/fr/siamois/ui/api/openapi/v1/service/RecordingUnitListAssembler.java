@@ -42,6 +42,8 @@ public class RecordingUnitListAssembler {
                     RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
+                    resource.setHasChildren(dto.getTreeHasChildren());
+                    resource.setMatch(dto.getTreeMatch());
                     return resource;
                 })
                 .toList();

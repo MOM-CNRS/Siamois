@@ -627,6 +627,51 @@ public class SpatialUnitService implements ArkEntityService {
         return page;
     }
 
+    /**
+     * The children of a place in the tree view. With a search, only the children leading to a match
+     * (the matches and their ancestors, as for the roots) — so a search keeps the whole path open
+     * without listing the siblings that don't match. Without one, same as
+     * {@link #searchSpatialUnitsInSpatialUnit}. {@code filterDTO}'s closure and match ids are set when
+     * a search is active, for {@link #treeFlags}.
+     */
+    public Page<SpatialUnitDTO> searchChildrenTree(InstitutionDTO institutionDTO,
+                                                   SpatialUnitDTO parent,
+                                                   FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(SpatialUnitSpec.spatialUnitInSpatialUnit(parent.getId()));
+        if (filterDTO.hasUserFilters()) {
+            Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
+            if (closure.isEmpty()) {
+                specs = specs.and((root, q, cb) -> cb.disjunction());
+            } else {
+                specs = specs.and(SpatialUnitSpec.idIn(closure));
+            }
+        }
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, stripCountSort(pageable));
+        Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
+        hydrateRecordingUnitCountsForPage(page);
+        return page;
+    }
+
+    /**
+     * What the tree needs of a page of rows: which of them have children to show (all their children,
+     * or only those in the search's closure) and which actually matched the search.
+     */
+    public TreeFlags treeFlags(Collection<Long> pageIds, FilterDTO filterDTO) {
+        if (pageIds.isEmpty()) {
+            return new TreeFlags(Set.of(), null);
+        }
+        Collection<Long> closure = filterDTO.getAncestorClosure();
+        List<Long> parents = closure != null && filterDTO.hasUserFilters()
+                ? (closure.isEmpty() ? List.of() : spatialUnitRepository.findParentIdsHavingChildrenAmong(pageIds, closure))
+                : spatialUnitRepository.findParentIdsHavingChildren(pageIds);
+        return new TreeFlags(new HashSet<>(parents), filterDTO.hasUserFilters() ? filterDTO.getMatchIds() : null);
+    }
+
+    /** {@code matchIds} is null when no search is active (every row then counts as a match). */
+    public record TreeFlags(Set<Long> withChildren, Set<Long> matchIds) { }
+
     public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
                                                SpatialUnitDTO spatialUnitDTO,
                                                FilterDTO filterDTO) {

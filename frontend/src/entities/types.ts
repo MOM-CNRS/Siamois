@@ -61,6 +61,9 @@ export interface ListParams {
   // type's global list endpoint (plan: generic "related list" tab, e.g. a project's recording
   // units). See entities/listApi.ts for the URL this produces.
   scope?: ListScope;
+  // The tree view's fetch (GET .../places?tree=true, .../places/{id}/children?tree=true): the roots
+  // — or, with a search or a filter, the rows leading to a match — each flagged hasChildren/match.
+  tree?: boolean;
 }
 
 // One neighbour of an entity in its "fiche précédente/suivante" navigation — mirrors
@@ -359,6 +362,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     typesSegment?: string;
     defaultSort?: string;
     searchable: boolean;
+    // The organization-wide list can also be shown as a tree (a parent/child hierarchy of the same
+    // entity type, children at GET .../{id}/children): panels/list/EntityTreeTable.tsx.
+    tree?: boolean;
     // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button
     // (deliberately an overlay, not a JSF-style modal dialog — see CreateFormContext's own
     // rationale). Optional: an entity that doesn't supply this keeps EntityListPanel's older

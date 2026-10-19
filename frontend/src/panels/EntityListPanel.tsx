@@ -11,12 +11,14 @@ import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/creatableProjects";
 import type { CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListScope, RowActionDef } from "../entities/types";
+import { t } from "../i18n";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
 import type { FilterOption } from "../fields/optionSources";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { queryKeys } from "../api/queryKeys";
 import { EntityTable } from "./list/EntityTable";
+import { useTreeRows } from "./list/useTreeRows";
 import { EntityTableSettings } from "./list/EntityTableSettings";
 import { ListSearchBox } from "./list/ListSearchBox";
 import { ListToolbar } from "./list/ListToolbar";
@@ -115,6 +117,12 @@ export function EntityListPanel({
   const queryClient = useQueryClient();
   const writeMode = useWriteMode();
 
+  // The hierarchy view, for the organization-wide list of a type that has one (places, recording
+  // units): a switch in the toolbar, the flat list staying the default.
+  const canShowTree = config?.list.tree === true && scope == null;
+  const [treeView, setTreeView] = usePaneState<boolean>("treeView", false);
+  const showTree = canShowTree && treeView;
+
   const { table, catalog, hasSchema, pinnedFieldIds, params, page, rowRules, collectionTotal } = useEntityListData({
     entityType,
     config,
@@ -122,9 +130,20 @@ export function EntityListPanel({
     scope,
     prefsKey,
     embedded,
+    paused: showTree,
   });
   const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters } = table;
-  const { rows, totalCount, isLoading, isFetching, error } = page;
+  const treeRows = useTreeRows({
+    entityType,
+    config,
+    organizationId,
+    params,
+    fields: state.visibleColumns,
+    offset: state.offset,
+    limit: state.limit,
+    enabled: showTree,
+  });
+  const { rows, totalCount, isLoading, isFetching, error } = showTree ? treeRows : page;
   const { columns, fieldByColumn, togglerOptions, filterSpecs } = useListColumns({
     config,
     catalog,
@@ -221,6 +240,22 @@ export function EntityListPanel({
                     : null
                 }
               />
+              {canShowTree && (
+                <Button
+                  icon={showTree ? "bi bi-list-ul" : "bi bi-diagram-3"}
+                  text
+                  rounded
+                  size="small"
+                  aria-label={showTree ? t("list.viewList") : t("list.viewTree")}
+                  tooltip={showTree ? t("list.viewList") : t("list.viewTree")}
+                  tooltipOptions={{ position: "bottom" }}
+                  onClick={() => {
+                    setTreeView(!showTree);
+                    // A page of roots is not a page of the flat list: back to the first.
+                    setPage(0, state.limit);
+                  }}
+                />
+              )}
               {config.list.searchable && <ListSearchBox value={state.search ?? ""} onSearch={setSearch} />}
               {/* The filters narrow the same result set as the search box, so they sit right after
                   it, in the toolbar — not in a strip of their own above the columns. Rendered only
@@ -270,6 +305,7 @@ export function EntityListPanel({
         onOpenOverview={onOpenOverview}
         overviewEntityId={overviewEntityId}
         onCellSaved={onCellSaved}
+        tree={showTree ? treeRows.tree : undefined}
       />
       {rowActions.dialog}
     </>

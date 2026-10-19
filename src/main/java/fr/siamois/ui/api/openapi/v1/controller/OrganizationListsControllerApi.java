@@ -125,6 +125,8 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "creationTime:desc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre : seulement les UE racines (avec une recherche ou un filtre, les racines menant à une correspondance) ; chaque UE porte hasChildren et match. Les enfants : GET /recording-units/{id}/children?tree=true.")
+            @RequestParam(defaultValue = "false") boolean tree,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
@@ -134,7 +136,7 @@ public class OrganizationListsControllerApi {
         // f.<key>[.from|.to] — same contract as GET /api/v1/projects/{id}/recording-units.
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution, offset, limit, sort, search, filter,
-                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage), tree);
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, RecordingUnitDTO::getActionUnit, lang, EditPermissions.RECORDING_UNITS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
                 page.getContent().stream().map(RecordingUnitDTO::getActionUnit).toList(), lang);
@@ -147,6 +149,8 @@ public class OrganizationListsControllerApi {
                     resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissionsFor(canEdit, canValidate, dto.getActionUnit()));
                     resource.setProject(OrganizationListService.projectRef(dto.getActionUnit()));
+                    resource.setHasChildren(dto.getTreeHasChildren());
+                    resource.setMatch(dto.getTreeMatch());
                     return resource;
                 })
                 .toList();
@@ -401,12 +405,14 @@ public class OrganizationListsControllerApi {
             @RequestParam(defaultValue = "name:asc") String sort,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @Parameter(description = FIELDS_PARAM_DOC) @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre : seulement les lieux racines (avec une recherche ou un filtre, les racines menant à une correspondance) ; chaque lieu porte hasChildren et match. Les enfants : GET /places/{id}/children?tree=true.")
+            @RequestParam(defaultValue = "false") boolean tree,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         PlaceListResponse body = placeOpenApiService.listByOrganization(caller, organizationId, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields);
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree);
         return ResponseEntity.ok()
                 .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
                 .body(body);

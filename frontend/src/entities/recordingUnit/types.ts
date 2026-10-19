@@ -21,6 +21,10 @@ export interface RecordingUnitPermissions {
 
 export interface RecordingUnitResource {
   resourceType: string;
+  // Tree view only (?tree=true): has children to show, and matched the search (false = only an
+  // ancestor of a match; absent without a search, where every row counts as a match).
+  hasChildren?: boolean;
+  match?: boolean;
   id: string;
   syncRevision?: number | null;
   identifier?: string | null;

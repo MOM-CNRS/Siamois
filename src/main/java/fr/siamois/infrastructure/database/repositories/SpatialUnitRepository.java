@@ -207,6 +207,24 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
+    /** Among {@code parentIds}, those having at least one child (the tree's expand arrows). */
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT h.fk_parent_id
+            FROM spatial_hierarchy h
+            WHERE h.fk_parent_id IN (:parentIds)
+            """)
+    List<Long> findParentIdsHavingChildren(@Param("parentIds") Collection<Long> parentIds);
+
+    /** Same, counting only the children in {@code childIds} (a search keeps the matches and their ancestors). */
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT h.fk_parent_id
+            FROM spatial_hierarchy h
+            WHERE h.fk_parent_id IN (:parentIds)
+              AND h.fk_child_id IN (:childIds)
+            """)
+    List<Long> findParentIdsHavingChildrenAmong(@Param("parentIds") Collection<Long> parentIds,
+                                                @Param("childIds") Collection<Long> childIds);
+
     @Transactional
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM spatial_hierarchy WHERE fk_parent_id = :spatialUnitId OR fk_child_id = :spatialUnitId")

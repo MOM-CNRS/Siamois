@@ -55,6 +55,14 @@ public class PlaceResource extends PlaceResourceIdentifier implements Bookmarkab
     @Schema(description = "Droits du caller sur ce lieu. Détail seulement.")
     private ProjectResourcePermissions permissions;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Mode arbre seulement : le lieu a des enfants à afficher (tous, ou ceux menant à une correspondance pendant une recherche).")
+    private Boolean hasChildren;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Mode arbre seulement : le lieu correspond à la recherche (faux = simple ancêtre d'une correspondance).")
+    private Boolean match;
+
     @Schema(description = "URI de navigation/favori du lieu", example = "/spatial-unit/42")
     private String resourceUri;
 

@@ -1567,14 +1567,29 @@ public class ProjectApiService {
             String search,
             RecordingUnitListFilter filter,
             FieldQuery fieldQuery) {
+        return pageRecordingUnitChildren(caller, recordingUnitKey, offset, limit, sortParam, search, filter, fieldQuery, false);
+    }
+
+    /** {@code tree}: the tree view's children — with a search or a filter, only those leading to a match. */
+    public ScopedRecordingUnitPage pageRecordingUnitChildren(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery,
+            boolean tree) {
         RecordingUnitDTO parent = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, parent);
         Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
         FilterDTO filterDTO = filter.toFilterDTO(search);
         filterDTO.setFieldQuery(fieldQuery);
-        Page<RecordingUnitDTO> page = recordingUnitService.findChildrenOf(
-                parent.getId(), limit, offset, sort, filterDTO);
+        Page<RecordingUnitDTO> page = tree
+                ? recordingUnitService.findChildrenOfTree(parent.getCreatedByInstitution(), parent.getId(), limit, offset, sort, filterDTO)
+                : recordingUnitService.findChildrenOf(parent.getId(), limit, offset, sort, filterDTO);
         return new ScopedRecordingUnitPage(page, parent.getActionUnit() != null ? parent.getActionUnit().getId() : null);
     }
 

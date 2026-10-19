@@ -32,6 +32,7 @@ export async function fetchList<T>(collectionPath: string, params: ListParams): 
   if (params.sort) query.set("sort", params.sort);
   if (params.organizationId != null) query.set("organizationId", String(params.organizationId));
   if (params.fields) query.set("fields", params.fields);
+  if (params.tree) query.set("tree", "true");
   if (params.filters) {
     // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;
     // filtersToQueryParams is the one place that owns the encoding, shared with the base64url

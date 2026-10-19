@@ -402,6 +402,24 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
+    /** Among {@code parentIds}, those having at least one child (the tree's expand arrows). */
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT h.fk_parent_id
+            FROM recording_unit_hierarchy h
+            WHERE h.fk_parent_id IN (:parentIds)
+            """)
+    List<Long> findParentIdsHavingChildren(@Param("parentIds") java.util.Collection<Long> parentIds);
+
+    /** Same, counting only the children in {@code childIds} (a search keeps the matches and their ancestors). */
+    @Query(nativeQuery = true, value = """
+            SELECT DISTINCT h.fk_parent_id
+            FROM recording_unit_hierarchy h
+            WHERE h.fk_parent_id IN (:parentIds)
+              AND h.fk_child_id IN (:childIds)
+            """)
+    List<Long> findParentIdsHavingChildrenAmong(@Param("parentIds") java.util.Collection<Long> parentIds,
+                                                @Param("childIds") java.util.Collection<Long> childIds);
+
 
     @Query("SELECT ru FROM RecordingUnit ru " +
             "WHERE ru.actionUnit.id = :actionUnitId " +

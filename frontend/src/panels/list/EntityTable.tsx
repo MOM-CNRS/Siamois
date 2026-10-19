@@ -18,6 +18,7 @@ import { PAGE_SIZE_OPTIONS } from "../tableState";
 import { useWriteMode } from "../writeMode";
 import { isFieldPending } from "../usePagedList";
 import type { RowRecord } from "./useEntityListData";
+import type { EntityTableTree } from "./useTreeRows";
 import { t } from "../../i18n";
 
 // Placeholder rows shown during a list's very first load, one skeleton per cell — the table keeps
@@ -66,6 +67,9 @@ export interface EntityTableProps {
   overviewEntityId?: string | number;
   // A saved cell: the list and any view of the same entity refetch.
   onCellSaved: (row: RowRecord) => void;
+  // The rows are a flattened hierarchy (the list's tree view): the identifier cell is indented by
+  // depth and gets an expander; the parents that only lead to a match are dimmed.
+  tree?: EntityTableTree;
 }
 
 /**
@@ -99,6 +103,7 @@ export function EntityTable({
   onOpenOverview,
   overviewEntityId,
   onCellSaved,
+  tree,
 }: EntityTableProps) {
   const tableRef = useRef<DataTable<RowRecord[]>>(null);
   // The one shared edit surface for every editable cell (plan phase 4b) — a single instance,
@@ -371,8 +376,9 @@ export function EntityTable({
           rowClassName={(row: RowRecord) => {
             const classes: string[] = [];
             if (isSkeletonRow(row)) return "entity-list-panel-skeleton-row";
+            if (tree?.isContext(row)) classes.push("entity-tree-context-row");
             if (overviewEntityId != null && row.id === overviewEntityId) classes.push("overview-open");
-            if (search) classes.push("search-match");
+            if (search && !tree?.isContext(row)) classes.push("search-match");
             return classes.join(" ");
           }}
           selectionMode="checkbox"
@@ -432,7 +438,11 @@ export function EntityTable({
                 isSkeletonRow(row) || isFieldPending(row, col.key) ? (
                   <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
                 ) : (
-                  <span className="entity-list-panel-cell">
+                  <span
+                    className="entity-list-panel-cell"
+                    style={col.identifier && tree ? { paddingLeft: `${tree.depthOf(row) * 1.25}rem` } : undefined}
+                  >
+                    {col.identifier && tree && <TreeToggle tree={tree} row={row} />}
                     {col.identifier && (
                       <ValidationStatusCell
                         entityType={entityType}
@@ -487,5 +497,25 @@ export function EntityTable({
         />
       )}
     </>
+  );
+}
+
+/** The expander of a row in the tree view; a leaf gets a spacer of the same width so the labels line up. */
+function TreeToggle({ tree, row }: { tree: EntityTableTree; row: RowRecord }) {
+  if (!tree.hasChildren(row)) return <span className="entity-tree-toggle entity-tree-toggle-leaf" aria-hidden="true" />;
+  const expanded = tree.isExpanded(row);
+  return (
+    <button
+      type="button"
+      className="entity-tree-toggle"
+      aria-expanded={expanded}
+      aria-label={expanded ? t("list.treeCollapse") : t("list.treeExpand")}
+      onClick={(e) => {
+        e.stopPropagation();
+        tree.onToggle(row);
+      }}
+    >
+      <i className={tree.isLoading(row) ? "pi pi-spin pi-spinner" : expanded ? "pi pi-chevron-down" : "pi pi-chevron-right"} />
+    </button>
   );
 }

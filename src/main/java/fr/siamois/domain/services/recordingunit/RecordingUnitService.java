@@ -1327,7 +1327,53 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
         Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
-        return pageAndEnrich(specs, pageable, includeFullRelations);
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations);
+        if (filters.isRootOnly()) {
+            applyTreeFlags(page, filters);
+        }
+        return page;
+    }
+
+    /**
+     * Direct children of a recording unit for the tree view: with a search or a filter, only the
+     * children leading to a match (the matches and their ancestors, as for the roots), each flagged
+     * {@code treeHasChildren}/{@code treeMatch}.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                     Sort sort, FilterDTO filters) {
+        Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId));
+        if (filters.hasUserFilters()) {
+            java.util.Collection<Long> closure = recordingUnitSortFilterService.ancestorClosure(institution, filters);
+            specs = closure.isEmpty()
+                    ? specs.and((root, query, cb) -> cb.disjunction())
+                    : specs.and(RecordingUnitSpec.idIn(closure));
+        }
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        applyTreeFlags(page, filters);
+        return page;
+    }
+
+    /**
+     * What the tree needs of a page of rows: which have children to show (all their children, or only
+     * those in the search's closure) and which actually matched the search (every row, without one).
+     */
+    private void applyTreeFlags(Page<RecordingUnitDTO> page, FilterDTO filters) {
+        java.util.List<Long> ids = page.getContent().stream().map(RecordingUnitDTO::getId)
+                .filter(java.util.Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        java.util.Collection<Long> closure = filters.getAncestorClosure();
+        boolean narrowed = filters.hasUserFilters() && closure != null;
+        java.util.Set<Long> withChildren = new java.util.HashSet<>(narrowed
+                ? (closure.isEmpty() ? java.util.List.<Long>of() : recordingUnitRepository.findParentIdsHavingChildrenAmong(ids, closure))
+                : recordingUnitRepository.findParentIdsHavingChildren(ids));
+        java.util.Set<Long> matches = narrowed ? filters.getMatchIds() : null;
+        for (RecordingUnitDTO dto : page.getContent()) {
+            dto.setTreeHasChildren(withChildren.contains(dto.getId()));
+            dto.setTreeMatch(matches == null || matches.contains(dto.getId()));
+        }
     }
 
     /**

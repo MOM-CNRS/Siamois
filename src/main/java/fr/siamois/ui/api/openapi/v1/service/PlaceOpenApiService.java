@@ -91,7 +91,7 @@ public class PlaceOpenApiService {
                                               String sortParam,
                                               String search,
                                               String lang) {
-        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null, false);
     }
 
     /**
@@ -109,12 +109,31 @@ public class PlaceOpenApiService {
                                               String lang,
                                               FieldQuery fieldQuery,
                                               String fieldsParam) {
-        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam);
+        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, false);
+    }
+
+    /**
+     * Tree view of the list: the roots (places with no parent) — or, with a search or a filter, the
+     * roots leading to a match — each flagged {@code hasChildren}/{@code match}. The children are
+     * fetched one parent at a time ({@link #listChildren} with {@code tree}).
+     */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listByOrganization(ProjectApiCaller caller,
+                                              Long organizationId,
+                                              int offset,
+                                              int limit,
+                                              String sortParam,
+                                              String search,
+                                              String lang,
+                                              FieldQuery fieldQuery,
+                                              String fieldsParam,
+                                              boolean tree) {
+        return listByOrganizationInternal(caller, organizationId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, tree);
     }
 
     private PlaceListResponse listByOrganizationInternal(ProjectApiCaller caller, Long organizationId, int offset, int limit,
                                                          String sortParam, String search, String lang,
-                                                         FieldQuery fieldQuery, String fieldsParam) {
+                                                         FieldQuery fieldQuery, String fieldsParam, boolean tree) {
         if (organizationId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -128,13 +147,14 @@ public class PlaceOpenApiService {
         Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
+        filter.setRootOnly(tree);
         if (search != null && !search.isBlank()) {
             filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
         Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnits(
                 institution, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
 
-        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam);
+        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam, tree ? filter : null);
     }
 
     /**
@@ -144,7 +164,7 @@ public class PlaceOpenApiService {
     @Transactional(readOnly = true)
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang) {
-        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null, false);
     }
 
     /** {@link #listChildren} with the sort/filters on form fields and the {@code fields=} projection. */
@@ -152,12 +172,20 @@ public class PlaceOpenApiService {
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang,
                                           FieldQuery fieldQuery, String fieldsParam) {
-        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, false);
+    }
+
+    /** {@link #listChildren} for the tree view: with a search, only the children leading to a match. */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                          String sortParam, String search, String lang,
+                                          FieldQuery fieldQuery, String fieldsParam, boolean tree) {
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, tree);
     }
 
     private PlaceListResponse listChildrenInternal(ProjectApiCaller caller, long placeId, int offset, int limit,
                                                    String sortParam, String search, String lang,
-                                                   FieldQuery fieldQuery, String fieldsParam) {
+                                                   FieldQuery fieldQuery, String fieldsParam, boolean tree) {
         SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = parent.getCreatedByInstitution();
         Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);
@@ -166,9 +194,11 @@ public class PlaceOpenApiService {
         if (search != null && !search.isBlank()) {
             filter.add(SpatialUnitSpec.NAME_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
-        Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnitsInSpatialUnit(
-                institution, parent, filter, PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort));
-        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam);
+        PageRequest pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        Page<SpatialUnitDTO> page = tree
+                ? spatialUnitService.searchChildrenTree(institution, parent, filter, pageable)
+                : spatialUnitService.searchSpatialUnitsInSpatialUnit(institution, parent, filter, pageable);
+        return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam, tree ? filter : null);
     }
 
     /** The access check every place-scoped endpoint starts with (404 / 403 when out of scope). */
@@ -178,8 +208,10 @@ public class PlaceOpenApiService {
 
     private PlaceListResponse toListResponse(ProjectApiCaller caller, InstitutionDTO institution,
                                              Page<SpatialUnitDTO> page, String lang, int limit, int offset,
-                                             String fieldsParam) {
+                                             String fieldsParam, FilterDTO treeFilter) {
         Set<String> requested = requestedFieldIds(fieldsParam);
+        SpatialUnitService.TreeFlags flags = treeFilter == null ? null : spatialUnitService.treeFlags(
+                page.getContent().stream().map(SpatialUnitDTO::getId).filter(java.util.Objects::nonNull).toList(), treeFilter);
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
                 profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES))
@@ -189,6 +221,10 @@ public class PlaceOpenApiService {
                 .map(dto -> {
                     PlaceResource resource = placeOpenApiMapper.toResource(dto, lang);
                     resource.setPermissions(permissions);
+                    if (flags != null) {
+                        resource.setHasChildren(flags.withChildren().contains(dto.getId()));
+                        resource.setMatch(flags.matchIds() == null || flags.matchIds().contains(dto.getId()));
+                    }
                     if (dto.getId() != null) {
                         resource.setResourceUri("/spatial-unit/" + dto.getId());
                     }
