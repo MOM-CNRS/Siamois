@@ -83,7 +83,8 @@ public class ProjectStudiesControllerApi {
 
         boolean canEdit = projectApiService.canEditStudiesForProject(caller, id, lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit)
-                .withValidate(projectApiService.canValidateForProject(caller, id, lang));
+                .withValidate(projectApiService.canValidateForProject(caller, id, lang))
+                .withDelete(projectApiService.canDeleteEntitiesForProject(caller, id, lang));
 
         StudyListProjectionService.StudyListProjection projection =
                 studyListProjectionService.build(page.getContent(), fields, lang);

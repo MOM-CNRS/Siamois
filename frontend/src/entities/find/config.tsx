@@ -1,4 +1,5 @@
 import type { EntityTypeConfig } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { loadTypeCatalog } from "../typeCatalog";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
@@ -27,6 +28,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   icon: "bi bi-bucket",
   panelClass: "specimen-panel",
   api: {
+    delete: (id) => deleteEntity("finds", id),
     siblings: (id) => fetchSiblings("finds", id),
     breadcrumbs: (id) => fetchBreadcrumbs("finds", id),
     get: getFind,

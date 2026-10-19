@@ -183,7 +183,9 @@ public class PlaceOpenApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         ProjectResourcePermissions permissions = ProjectResourcePermissions.of(
                 profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES))
-                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo));
+                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo))
+                // A place belongs to no project: it is deleted with the right that manages the places.
+                .withDelete(profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES));
 
         var resources = page.getContent().stream()
                 .map(dto -> {
@@ -238,7 +240,8 @@ public class PlaceOpenApiService {
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         boolean canEdit = profilePermissionService.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_PLACES);
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
-                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo)));
+                .withValidate(profilePermissionService.hasPlaceValidatePermission(userInfo))
+                .withDelete(canEdit));
         if (dto.getId() != null) {
             resource.setResourceUri("/spatial-unit/" + dto.getId());
         }

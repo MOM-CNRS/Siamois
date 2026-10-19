@@ -469,7 +469,31 @@ public class CustomFieldAnswerService {
     /** Removes every additional-field answer a document holds, whatever type's form they were saved under. */
     @Transactional(rollbackFor = Exception.class)
     public void deleteAdditionalFieldAnswers(DocumentDTO documentDTO) {
-        for (FormConfigAnswer set : formConfigAnswerService.findAllFormConfigAnswers(documentDTO)) {
+        deleteAnswerSets(formConfigAnswerService.findAllFormConfigAnswers(documentDTO));
+    }
+
+    /** Removes every additional-field answer a phase holds. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAdditionalFieldAnswers(PhaseDTO phaseDTO) {
+        deleteAnswerSets(formConfigAnswerService.findAllFormConfigAnswers(phaseDTO));
+    }
+
+    /** Removes every additional-field answer a study holds. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAdditionalFieldAnswers(StudyDTO studyDTO) {
+        deleteAnswerSets(formConfigAnswerService.findAllFormConfigAnswers(studyDTO));
+    }
+
+    /** Removes every additional-field answer a container holds. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAdditionalFieldAnswers(ContainerDTO containerDTO) {
+        deleteAnswerSets(formConfigAnswerService.findAllFormConfigAnswers(containerDTO));
+    }
+
+    /** Removes the given answer sets with the answers they hold. */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteAnswerSets(List<FormConfigAnswer> sets) {
+        for (FormConfigAnswer set : sets) {
             customFieldAnswerRepository.deleteAll(answersOf(set));
             formConfigAnswerService.delete(set);
         }

@@ -52,6 +52,12 @@ class PhaseServiceTest {
     @Mock
     private ProfilePermissionService profilePermissionService;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
+    @Mock
+    private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
+
     @InjectMocks
     private PhaseService phaseService;
 
@@ -77,6 +83,7 @@ class PhaseServiceTest {
 
         ExecutionContextHolder.set(new UserInfo(institution, new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString(), anyString(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
     }
 
     @AfterEach
@@ -726,5 +733,56 @@ class PhaseServiceTest {
         PhaseDTO result = phaseService.findPreviousByActionUnit(action, phaseDTO);
 
         assertSame(mostRecentDto, result);
+    }
+
+    @Test
+    void deleteById_unlinked_deletesEntityAndAnswers() {
+        Phase target = new Phase();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(phaseRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+
+        phaseService.deleteById(4L);
+
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.PHASE, 4L, "la phase");
+        verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(PhaseDTO.class));
+        verify(phaseRepository).delete(target);
+    }
+
+    @Test
+    void deleteById_linked_throwsAndDeletesNothing() {
+        Phase target = new Phase();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(phaseRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+        doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.PHASE, 4L, "la phase");
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> phaseService.deleteById(4L));
+
+        verify(phaseRepository, never()).delete(any(Phase.class));
+    }
+
+    @Test
+    void deleteById_withoutPermission_throwsForbidden() {
+        Phase target = new Phase();
+        target.setId(4L);
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        target.setActionUnit(au);
+        when(phaseRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(false);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
+                () -> phaseService.deleteById(4L));
+
+        verify(phaseRepository, never()).delete(any(Phase.class));
     }
 }

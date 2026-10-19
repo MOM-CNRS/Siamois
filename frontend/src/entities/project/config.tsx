@@ -1,4 +1,5 @@
 import { relationTab } from "../../panels/relationTab";
+import { deleteEntity } from "../deleteApi";
 import type { EntityTypeConfig } from "../types";
 import { duplicateProject, getProject, getProjectSiblings, listProjects, patchProject } from "./api";
 import { projectColumns } from "./columns";
@@ -24,7 +25,10 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
   panelClass: "action-unit-panel",
+  // A project takes all its content with it: the user types its name to confirm.
+  deleteRequiresName: true,
   api: {
+    delete: (id) => deleteEntity("projects", id),
     // fields=all so the detail response carries an `answers` map for the WHOLE field catalog, not
     // just the seven properties ProjectResource exposes flat — that map is what lets the fiche
     // render all 33 of ActionUnit.DETAILS_FORM's fields with real values (FicheTab.tsx). The list

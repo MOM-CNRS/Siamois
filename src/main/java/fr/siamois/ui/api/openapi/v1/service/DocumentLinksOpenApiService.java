@@ -110,7 +110,8 @@ public class DocumentLinksOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
-        return ProjectResourcePermissions.of(canEdit).withValidate(profilePermissionService.hasValidatePermission(userInfo, projectId));
+        return ProjectResourcePermissions.of(canEdit).withValidate(profilePermissionService.hasValidatePermission(userInfo, projectId))
+                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, projectId));
     }
 
     /** Idempotent: linking a document that is already linked changes nothing. */
