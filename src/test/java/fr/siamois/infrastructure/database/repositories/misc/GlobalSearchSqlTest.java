@@ -19,8 +19,10 @@ class GlobalSearchSqlTest {
     @Test
     void function_searchesTheFourTypesAndCountsBeforeCutting() throws IOException {
         String sql = sql();
-        assertThat(sql).contains("'project'", "'recordingUnit'", "'find'", "'place'");
-        assertThat(sql).contains("count(*) OVER ()").contains("r.rn <= p_limit");
+        assertThat(sql)
+                .contains("'project'", "'recordingUnit'", "'find'", "'place'")
+                .contains("count(*) OVER ()")
+                .contains("r.rn <= p_limit");
     }
 
     @Test

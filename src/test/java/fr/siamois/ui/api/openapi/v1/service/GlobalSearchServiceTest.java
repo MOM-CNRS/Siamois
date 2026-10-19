@@ -102,11 +102,23 @@ class GlobalSearchServiceTest {
     }
 
     @Test
-    void search_rejectsUnknownKeywordTypeAndLimit() {
-        assertThatThrownBy(() -> service.search(caller, institution, "x", null, List.of("couleur:rouge"), null, 5))
+    void search_rejectsUnknownKeyword() {
+        List<String> filters = List.of("couleur:rouge");
+
+        assertThatThrownBy(() -> service.search(caller, institution, "x", null, filters, null, 5))
                 .isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(() -> service.search(caller, institution, "x", null, null, List.of("martian"), 5))
+    }
+
+    @Test
+    void search_rejectsUnknownType() {
+        List<String> types = List.of("martian");
+
+        assertThatThrownBy(() -> service.search(caller, institution, "x", null, null, types, 5))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void search_rejectsALimitOutOfRange() {
         assertThatThrownBy(() -> service.search(caller, institution, "x", null, null, null, 0))
                 .isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.search(caller, institution, "x", null, null, null, 99))

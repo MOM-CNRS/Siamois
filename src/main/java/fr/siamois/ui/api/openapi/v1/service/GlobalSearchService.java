@@ -54,14 +54,15 @@ public class GlobalSearchService {
             return new GlobalSearchResponse(List.of());
         }
 
+        // No requested type means every type: the SQL function reads NULL as "all".
         List<GlobalSearchRow> rows = searchRepository.searchSections(input, institution.getId(), projectIds, visible,
-                requestedTypes, limit);
+                requestedTypes.isEmpty() ? null : requestedTypes, limit);
         return toResponse(rows);
     }
 
     private static List<String> requireTypes(List<String> types) {
         if (types == null || types.isEmpty()) {
-            return null;
+            return List.of();
         }
         for (String type : types) {
             if (!TYPES.contains(type)) {
