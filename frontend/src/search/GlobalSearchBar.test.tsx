@@ -6,9 +6,12 @@ import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig } from "../entities/types";
 import { publishContext, registerNavigation } from "../navigation/externalBus";
 import { GlobalSearchBar } from "./GlobalSearchBar";
+import { listProjects } from "../entities/project/api";
 import { fetchGlobalSearch, type SearchSection } from "./searchApi";
 
 vi.mock("./searchApi", () => ({ fetchGlobalSearch: vi.fn() }));
+vi.mock("../entities/project/api", () => ({ listProjects: vi.fn() }));
+const listProjectsMock = vi.mocked(listProjects);
 const fetchMock = vi.mocked(fetchGlobalSearch);
 
 function fake(key: string, plural: string): EntityTypeConfig<unknown, unknown> {
@@ -48,7 +51,7 @@ async function settle(ms = 700) {
 }
 
 function type(value: string) {
-  const input = container.querySelector("input")!;
+  const input = document.body.querySelector("input")!;
   act(() => {
     // React tracks the value setter: go through the prototype's, as a real keystroke does.
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
@@ -65,15 +68,20 @@ function render() {
       </QueryClientProvider>,
     );
   });
-  act(() => {
-    container.querySelector("input")!.focus();
-    container.querySelector("input")!.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
-  });
+  // The topbar only shows a button: the search happens in the overlay it opens.
+  act(() => (container.querySelector(".sia-search-trigger") as HTMLElement).click());
 }
 
 beforeEach(() => {
   fetchMock.mockReset();
   fetchMock.mockResolvedValue(sections);
+  listProjectsMock.mockReset();
+  listProjectsMock.mockResolvedValue({
+    data: [{ id: "4", fullIdentifier: "FOUILLE-4", name: "Abbaye" }],
+    totalCount: 1,
+    limit: 5,
+    offset: 0,
+  } as never);
   navigate.mockReset();
   openList.mockReset();
   unregister = registerNavigation({ navigate, openOverview: vi.fn(), openList });
@@ -90,14 +98,58 @@ afterEach(() => {
 });
 
 describe("GlobalSearchBar", () => {
+  it("is a button in the topbar that opens an overlay with the field focused", () => {
+    render();
+    expect(container.querySelector("input")).toBeNull();
+    expect(document.body.querySelector(".sia-search-backdrop")).not.toBeNull();
+    expect(document.activeElement).toBe(document.body.querySelector("input"));
+  });
+
+  it("offers the home page's recent projects while nothing is typed, and opens the chosen one", async () => {
+    render();
+    await settle(200);
+    const title = document.body.querySelector(".sia-search-section-title")!.textContent;
+    expect(title).toBe("Projets récents");
+    expect(document.body.querySelector(".sia-search-row")!.textContent).toBe("FOUILLE-4Abbaye");
+    act(() => (document.body.querySelector(".sia-search-row") as HTMLElement).click());
+    expect(navigate).toHaveBeenCalledWith("project", 4);
+    expect(document.body.textContent).not.toContain("Mots-clés");
+  });
+
+  it("closes on Escape or a click outside the panel, and keeps what was typed for the next opening", async () => {
+    render();
+    type("mur");
+    act(() => {
+      document.body.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(document.body.querySelector(".sia-search-backdrop")).toBeNull();
+    act(() => (container.querySelector(".sia-search-trigger") as HTMLElement).click());
+    expect(document.body.querySelector("input")!.value).toBe("mur");
+    act(() => {
+      document.body.querySelector(".sia-search-backdrop")!.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    expect(document.body.querySelector(".sia-search-backdrop")).toBeNull();
+  });
+
+  it("opens with the / key outside a text field", () => {
+    render();
+    act(() => {
+      document.body.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "/", bubbles: true }));
+    });
+    expect(document.body.querySelector(".sia-search-backdrop")).not.toBeNull();
+  });
+
   it("groups the results by entity type with their totals", async () => {
     render();
     type("mur");
     await settle();
-    const titles = [...container.querySelectorAll(".sia-search-section-title")].map((e) => e.textContent);
-    expect(titles).toEqual(["Unités d'enregistrement12", "Lieux1"]);
+    const titles = [...document.body.querySelectorAll(".sia-search-section-title")].map((e) => e.textContent);
+    expect(titles).toEqual(["Unités d'enregistrement", "Lieux"]);
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.objectContaining({ organizationId: 7, q: "mur", filters: [], projectId: undefined, limit: 5 }),
+      expect.objectContaining({ organizationId: 7, q: "mur", filters: [], limit: 5 }),
       expect.anything(),
     );
   });
@@ -116,7 +168,7 @@ describe("GlobalSearchBar", () => {
     render();
     type("ue");
     await settle();
-    act(() => (container.querySelector(".sia-search-row:not(.sia-search-all)") as HTMLElement).click());
+    act(() => (document.body.querySelector(".sia-search-row:not(.sia-search-all)") as HTMLElement).click());
     expect(navigate).toHaveBeenCalledWith("recordingUnit", 1);
   });
 
@@ -124,28 +176,83 @@ describe("GlobalSearchBar", () => {
     render();
     type("mur");
     await settle();
-    act(() => (container.querySelector(".sia-search-all") as HTMLElement).click());
+    act(() => (document.body.querySelector(".sia-search-all") as HTMLElement).click());
     expect(openList).toHaveBeenCalledWith("recordingUnit", { search: "mur", projectId: undefined });
   });
 
-  it("restricts to the current project until the chip is taken off", async () => {
-    publishContext({ organizationId: 7, projectId: "9", projectLabel: "Fouille" });
+  it("offers the current project as a projet: keyword in the input, which then filters the search", async () => {
+    publishContext({ organizationId: 7, projectId: "9", projectLabel: "Mon nom" });
     render();
-    type("mur");
+    await settle(100);
+    expect(document.body.querySelector("input")!.value).toBe('projet:"Mon nom" ');
+    type('projet:"Mon nom" mur');
     await settle();
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: "9" }), expect.anything());
-    act(() => (container.querySelector(".sia-search-chip-toggle") as HTMLElement).click());
-    await settle();
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: undefined }), expect.anything());
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "mur", filters: [{ key: "projet", value: "Mon nom" }] }),
+      expect.anything(),
+    );
   });
 
-  it("an explicit projet: keyword replaces the implicit project", async () => {
-    publishContext({ organizationId: 7, projectId: "9", projectLabel: "Fouille" });
+  it("swaps the offered keyword when the project changes, and drops it when there is none", async () => {
+    publishContext({ organizationId: 7, projectId: "9", projectLabel: "A" });
     render();
-    type("projet:X mur");
+    await settle(100);
+    act(() => publishContext({ organizationId: 7, projectId: "10", projectLabel: "B" }));
+    await settle(100);
+    expect(document.body.querySelector("input")!.value).toBe("projet:B ");
+    act(() => publishContext({ organizationId: 7 }));
+    await settle(100);
+    expect(document.body.querySelector("input")!.value).toBe("");
+  });
+
+  it("does not search on the offered keyword alone", async () => {
+    publishContext({ organizationId: 7, projectId: "9", projectLabel: "A" });
+    render();
     await settle();
-    expect(container.querySelector(".sia-search-chip")).toBeNull();
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.objectContaining({ projectId: undefined }), expect.anything());
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("restricts « Voir tout » to the current project when the keyword names it", async () => {
+    publishContext({ organizationId: 7, projectId: "9", projectLabel: "A" });
+    render();
+    await settle(100);
+    type("projet:A mur");
+    await settle();
+    act(() => (document.body.querySelector(".sia-search-all") as HTMLElement).click());
+    expect(openList).toHaveBeenCalledWith("recordingUnit", { search: "mur", projectId: "9" });
+  });
+
+  it("suggests projects while a projet: keyword is typed, and a click completes it", async () => {
+    fetchMock.mockImplementation(async (params) =>
+      params.types?.includes("project")
+        ? [{ type: "project", total: 1, items: [{ id: 9, label: "FOUILLE-1", subtitle: "Fouille de l'abbaye" }] }]
+        : sections,
+    );
+    render();
+    type("mur projet:abb");
+    await settle();
+    expect(fetchMock).toHaveBeenCalledWith(expect.objectContaining({ q: "abb", types: ["project"] }), expect.anything());
+    // The keyword being typed is not a filter yet, and the results of the words wait for it.
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.objectContaining({ q: "mur" }), expect.anything());
+    expect(document.body.querySelector(".sia-search-autocomplete")!.textContent).toBe("Autocomplétion");
+    act(() => (document.body.querySelector(".sia-search-row") as HTMLElement).click());
+    expect(document.body.querySelector("input")!.value).toBe("mur projet:FOUILLE-1 ");
+    await settle();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: "mur", filters: [{ key: "projet", value: "FOUILLE-1" }] }),
+      expect.anything(),
+    );
+  });
+
+  it("Enter on the suggestions picks the first one", async () => {
+    fetchMock.mockResolvedValue([{ type: "project", total: 1, items: [{ id: 9, label: "P 1", subtitle: "x" }] }]);
+    render();
+    type("projet:p");
+    await settle();
+    act(() => {
+      document.body.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    expect(document.body.querySelector("input")!.value).toBe('projet:"P 1" ');
   });
 
   it("Enter with nothing highlighted views all of the first section", async () => {
@@ -153,7 +260,7 @@ describe("GlobalSearchBar", () => {
     type("mur");
     await settle();
     act(() => {
-      container.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      document.body.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     expect(openList).toHaveBeenCalledWith("recordingUnit", expect.objectContaining({ search: "mur" }));
   });
@@ -164,7 +271,7 @@ describe("GlobalSearchBar", () => {
     await settle();
     const key = (k: string) =>
       act(() => {
-        container.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
+        document.body.querySelector("input")!.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
       });
     key("ArrowDown");
     key("Enter");

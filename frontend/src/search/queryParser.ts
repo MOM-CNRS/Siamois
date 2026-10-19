@@ -71,3 +71,23 @@ export function keywordCompletion(input: string): SearchKeyword | undefined {
   if (!last || last.includes(":")) return undefined;
   return SEARCH_KEYWORDS.find((keyword) => keyword.names.some((name) => name.startsWith(last) && name !== last));
 }
+
+export interface TailKeyword {
+  // Where the `keyword:` token starts in the input.
+  start: number;
+  key: string;
+  // What is typed after the colon so far, quotes removed.
+  partial: string;
+}
+
+/**
+ * The `keyword:partial` the user is typing right now (the input ends on it, no space after): what the
+ * search bar completes with suggestions. A quoted value may contain spaces until its quote closes.
+ */
+export function tailKeyword(input: string): TailKeyword | undefined {
+  const match = /(?:^|\s)([^\s:"]+):("[^"]*|[^\s"]*)$/.exec(input);
+  const keyword = match ? keywordOf(match[1]) : undefined;
+  if (!match || !keyword) return undefined;
+  const start = match.index + match[0].length - match[1].length - 1 - match[2].length;
+  return { start, key: keyword.key, partial: match[2].replace(/"/g, "") };
+}

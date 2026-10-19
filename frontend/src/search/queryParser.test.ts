@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatFilter, keywordCompletion, parseQuery } from "./queryParser";
+import { formatFilter, keywordCompletion, parseQuery, tailKeyword } from "./queryParser";
 
 describe("parseQuery", () => {
   it("returns plain text untouched", () => {
@@ -41,5 +41,24 @@ describe("keywordCompletion", () => {
     expect(keywordCompletion("projet")).toBeUndefined();
     expect(keywordCompletion("projet:x")).toBeUndefined();
     expect(keywordCompletion("")).toBeUndefined();
+  });
+});
+
+describe("tailKeyword", () => {
+  it("finds the keyword being typed at the end of the input", () => {
+    expect(tailKeyword("projet:ab")).toEqual({ start: 0, key: "projet", partial: "ab" });
+    expect(tailKeyword("mur Project:ab")).toEqual({ start: 4, key: "projet", partial: "ab" });
+    expect(tailKeyword("projet:")).toEqual({ start: 0, key: "projet", partial: "" });
+  });
+
+  it("follows a quoted value until its quote closes", () => {
+    expect(tailKeyword('projet:"fouille 20')).toEqual({ start: 0, key: "projet", partial: "fouille 20" });
+    expect(tailKeyword('projet:"fouille 2024" ')).toBeUndefined();
+  });
+
+  it("ignores a finished keyword, an unknown one, and plain text", () => {
+    expect(tailKeyword("projet:ab ")).toBeUndefined();
+    expect(tailKeyword("12:30")).toBeUndefined();
+    expect(tailKeyword("mur")).toBeUndefined();
   });
 });

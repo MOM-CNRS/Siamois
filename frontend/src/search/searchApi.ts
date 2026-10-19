@@ -20,6 +20,8 @@ export interface SearchParams {
   q: string;
   projectId?: string;
   filters: SearchFilter[];
+  // Entity types to search (registry keys); every type when absent.
+  types?: string[];
   limit?: number;
 }
 
@@ -28,6 +30,7 @@ export async function fetchGlobalSearch(params: SearchParams, signal?: AbortSign
   const query = new URLSearchParams({ organizationId: String(params.organizationId), q: params.q });
   if (params.projectId) query.set("projectId", params.projectId);
   for (const filter of params.filters) query.append("filters", `${filter.key}:${filter.value}`);
+  for (const type of params.types ?? []) query.append("types", type);
   if (params.limit) query.set("limit", String(params.limit));
   const body = await apiFetch<{ sections: SearchSection[] }>(`/api/v1/search?${query.toString()}`, { signal });
   return body.sections ?? [];

@@ -2179,61 +2179,124 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
 
 /* ── Header search bar (src/search/GlobalSearchBar.tsx) ───────────────────────────────────────── */
 .sia-search {
-  position: relative;
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
 }
 
+/* Room between the institution select and the button (the id outweighs the host theme's own padding). */
+div#search-bar .sia-search {
+  padding-left: 24px;
+}
+
+/* What the topbar shows: a field-looking button, the way into the overlay below. */
+.sia-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--surface-300, #ced4da);
+  border-radius: 6px;
+  background: var(--surface-0, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+
+.sia-search-trigger-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sia-search-trigger-text {
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* The overlay sits above the whole page, the institution select included. */
+.sia-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgb(0 0 0 / 25%);
+}
+
+/* Placed (left, top, width) from the button it covers; the defaults only matter before that. */
+.sia-search-panel {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: min(760px, calc(100vw - 16px));
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 12px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 25%);
+}
+
+/* The field is the click target: the icons never take the click from the input. */
 .sia-search-field {
-  display: block;
-  width: 100%;
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin: 8px;
 }
 
-.sia-search-input {
+.sia-search-field > .bi-search {
+  position: absolute;
+  left: 0.75rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Both selectors: the host theme's own padding on .p-inputtext would otherwise put the text under the icon. */
+.sia-search-field > input.sia-search-input.p-inputtext {
+  box-sizing: border-box;
   width: 100%;
-  padding-left: 2.25rem;
-  padding-right: 2.25rem;
+  min-width: 0;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+/* The browser draws its own clear button on a type=search input: ours is the only one. */
+.sia-search-input::-webkit-search-cancel-button,
+.sia-search-input::-webkit-search-decoration {
+  display: none;
+  -webkit-appearance: none;
 }
 
 .sia-search-clear {
+  position: absolute;
   right: 0.75rem;
+  margin: 0;
   cursor: pointer;
 }
 
 .sia-search-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 1100;
-  max-height: min(70vh, 560px);
+  min-height: 0;
   overflow-y: auto;
-  border: 1px solid var(--surface-300, #e0e0e0);
-  border-radius: 10px;
-  background: var(--surface-0, #fff);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+  border-top: 1px solid var(--surface-200, #eee);
 }
 
-.sia-search-scope,
 .sia-search-keywords {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-}
-
-.sia-search-keywords {
   border-top: 1px solid var(--surface-200, #eee);
 }
 
-.sia-search-keywords-title {
-  margin-right: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--main-color);
-}
-
-.sia-search-chip,
 .sia-search-keyword {
   display: inline-flex;
   align-items: center;
@@ -2248,19 +2311,6 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
 
 .sia-search-keyword {
   font-family: monospace;
-  cursor: pointer;
-}
-
-.sia-search-chip.is-off {
-  opacity: 0.6;
-  text-decoration: line-through;
-}
-
-.sia-search-chip-toggle {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
   cursor: pointer;
 }
 
@@ -2286,15 +2336,6 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--main-color);
-}
-
-.sia-search-count {
-  margin-left: auto;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--surface-100, #f3f4f6);
-  color: var(--text-color-secondary, #6b7280);
-  font-weight: 500;
 }
 
 .sia-search-row {
@@ -2337,4 +2378,11 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   border-radius: 3px;
   background: var(--siamois-green-light-100, #dcebe1);
   color: inherit;
+}
+
+.sia-search-autocomplete {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8rem;
 }
