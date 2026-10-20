@@ -212,6 +212,62 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
     fields: FIELDS,
   })],
   [/^\/api\/v1\/bookmarks\/status$/, () => ({ bookmarked: false })],
+  // What the user changed on a list or a fiche: kept in memory, so a change survives a remount of the
+  // panel (not a reload of the harness).
+  [/^\/api\/v1\/view-states$/, (_m, url, init) => {
+    if (init?.method === "PUT") {
+      const body = JSON.parse(String(init.body)) as { viewKey: string; state: Record<string, unknown> };
+      viewStates.set(body.viewKey, body.state);
+      return body;
+    }
+    const viewKey = url.searchParams.get("viewKey") ?? "";
+    if (init?.method === "DELETE") viewStates.delete(viewKey);
+    return { viewKey, state: viewStates.get(viewKey) ?? null };
+  }],
+  // The tabs a project configured for a fiche: kept in memory; the harness user may edit them.
+  [/^\/api\/v1\/fiche-configs$/, (_m, url, init) => {
+    if (init?.method === "PUT") {
+      const body = JSON.parse(String(init.body)) as { resourceType: string; projectId?: number; typeId?: number; tabs: Record<string, unknown> };
+      ficheConfigs.set(ficheConfigKey(body), body.tabs);
+      return { tabs: body.tabs, canEdit: true };
+    }
+    const scope = {
+      resourceType: url.searchParams.get("resourceType") ?? "",
+      projectId: url.searchParams.get("projectId") ?? undefined,
+      typeId: url.searchParams.get("typeId") ?? undefined,
+    };
+    if (init?.method === "DELETE") ficheConfigs.delete(ficheConfigKey(scope));
+    const tabs = ficheConfigs.get(ficheConfigKey(scope)) ?? ficheConfigs.get(ficheConfigKey({ ...scope, typeId: undefined }));
+    return { tabs: tabs ?? null, canEdit: true };
+  }],
+  // Saved views: the harness user owns them all.
+  [/^\/api\/v1\/views$/, (_m, url, init) => {
+    if (init?.method === "POST") {
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+      const view = { id: nextViewId++, kind: "USER", ownerId: 1, ownerName: "Grégory B.", canEdit: true, ...body };
+      savedViews.set(view.id, view);
+      return view;
+    }
+    const type = url.searchParams.get("resourceType");
+    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const data = [...savedViews.values()].filter(
+      (v) => (!type || v.resourceType === type) && String(v.title).toLowerCase().includes(q),
+    );
+    return { data, totalCount: data.length, limit: 50, offset: 0 };
+  }],
+  [/^\/api\/v1\/views\/(\d+)$/, (m, _url, init) => {
+    const id = Number(m[1]);
+    if (init?.method === "DELETE") {
+      savedViews.delete(id);
+      return {};
+    }
+    if (init?.method === "PUT") {
+      const view = { ...savedViews.get(id), ...(JSON.parse(String(init.body)) as Record<string, unknown>) };
+      savedViews.set(id, view);
+      return view;
+    }
+    return savedViews.get(id);
+  }],
   [/^\/api\/v1\/projects$/, (_m, url) => list(projects, url)],
   [/^\/api\/v1\/projects\/(\d+)\/siblings$/, (m) => {
     const i = Number(m[1]) - 1;
@@ -237,6 +293,15 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
     return { data: p };
   }],
 ];
+
+const viewStates = new Map<string, Record<string, unknown>>();
+const ficheConfigs = new Map<string, Record<string, unknown>>();
+function ficheConfigKey(scope: { resourceType: string; projectId?: number | string; typeId?: number | string }): string {
+  return `${scope.resourceType}|${scope.projectId ?? ""}|${scope.typeId ?? ""}`;
+}
+// The saved views of the organization, kept in memory like the view states.
+const savedViews = new Map<number, Record<string, unknown>>();
+let nextViewId = 1;
 
 const realFetch = window.fetch.bind(window);
 

@@ -53,19 +53,35 @@ public class FocusViewBean implements Serializable {
     private String secondaryToken;
     private String backToken;
 
-    /** A resource URI: its type, and its entity id when it names one entity rather than a list. */
-    private record ParsedPath(String type, Long id) {
+    /**
+     * A resource URI: its type, its entity id when it names one entity rather than a list, and the saved
+     * view a list opens on ({@code ?viewId=}).
+     */
+    private record ParsedPath(String type, Long id, Long viewId) {
     }
 
-    // The query string (the former ?tab= and ?viewId=, still in old bookmarks) is ignored: React
-    // keeps its own tab and list state.
+    // Of the query string only ?viewId= is read, for a list (the former ?tab= is ignored: React keeps its
+    // own tab and list state). A viewId that isn't a number is no view.
     private ParsedPath parsePath(String path) {
         if (path.startsWith("/")) path = path.substring(1);
         int query = path.indexOf('?');
         String[] parts = (query >= 0 ? path.substring(0, query) : path).split("/");
         String type = parts.length > 0 ? parts[0] : "";
         Long id = parts.length > 1 ? Long.valueOf(parts[1]) : null;
-        return new ParsedPath(type, id);
+        return new ParsedPath(type, id, id == null && query >= 0 ? viewIdOf(path.substring(query + 1)) : null);
+    }
+
+    private static Long viewIdOf(String queryString) {
+        for (String param : queryString.split("&")) {
+            if (param.startsWith("viewId=")) {
+                try {
+                    return Long.valueOf(param.substring("viewId=".length()));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     public void beforeInit() {
@@ -81,12 +97,13 @@ public class FocusViewBean implements Serializable {
             HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
             mainPanel = panelFactory.create(parsedMain.type(), parsedMain.id());
             mainPanel.setRoot(true);
+            mainPanel.setViewId(parsedMain.viewId());
             if (backToken != null) {
                 mainPanel.setGoBackUrl(decodeToken(backToken));
             }
             main.setIcon(mainPanel.getIcon());
             main.setTitle(mainPanel.resolveTitleOrTitleCode());
-            main.setUri(mainPanel.ressourceUri());
+            main.setUri(mainPanel.reactResourceUri());
             main.setStyleClass(mainPanel.getPanelClass());
             newEntry.setMain(main);
         }
@@ -138,6 +155,7 @@ public class FocusViewBean implements Serializable {
 
         AbstractPanel overview = mainPanel.getParentOrOverview();
         next.setRoot(true);
+        next.setViewId(parsed.viewId());
         if (overview != null) {
             next.setParentOrOverview(overview);
             overview.setParentOrOverview(next);
@@ -156,7 +174,7 @@ public class FocusViewBean implements Serializable {
         HistoryBean.HistoryItemComponent component = new HistoryBean.HistoryItemComponent();
         component.setTitle(panel.resolveTitleOrTitleCode());
         component.setIcon(panel.getIcon());
-        component.setUri(panel.ressourceUri());
+        component.setUri(panel.reactResourceUri());
         component.setStyleClass(panel.getPanelClass());
         return component;
     }

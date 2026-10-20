@@ -28,11 +28,13 @@ export interface PanelToolbarProps {
   actions?: PanelActions;
   // Prev/next buttons, rendered inside the navigation group (before the bookmark).
   navigation?: ReactNode;
+  // What a panel adds to its toolbar, right before the bookmark (the list's view button).
+  beforeBookmark?: ReactNode;
   // Overview pane: create/duplicate/settings collapse into a "…" menu.
   compact?: boolean;
 }
 
-export function PanelToolbar({ chrome, organizationId, actions, navigation, compact }: PanelToolbarProps) {
+export function PanelToolbar({ chrome, organizationId, actions, navigation, beforeBookmark, compact }: PanelToolbarProps) {
   // chrome.bookmarked is unknown for a list/Home reached client-side — ask the server then.
   const statusKnown = chrome.bookmarked !== undefined;
   const { data: fetchedBookmarked } = useQuery({
@@ -134,6 +136,7 @@ export function PanelToolbar({ chrome, organizationId, actions, navigation, comp
         />
       )}
       {navigation}
+      {beforeBookmark}
       <Button
         icon={bookmarked ? "bi bi-bookmark-fill" : "bi bi-bookmark"}
         className="sideview-topbar-button"

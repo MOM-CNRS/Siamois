@@ -13,7 +13,7 @@ import java.io.Serializable;
 public class SidebarBean implements Serializable {
 
     public enum SidebarMode {
-        NONE, HISTORIQUE, BOOKMARKS
+        NONE, HISTORIQUE, BOOKMARKS, VIEWS
     }
 
     private SidebarMode currentMode = SidebarMode.NONE;

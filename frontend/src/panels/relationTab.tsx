@@ -42,6 +42,7 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
     key: spec.key,
     label: spec.label,
     badge: spec.badge,
+    relation: { target: spec.target, creatable: spec.creatable, createPrefill: spec.createPrefill },
     render: (entity: TDetail, helpers: DetailTabHelpers) => (
       <EntityListPanel
         embedded

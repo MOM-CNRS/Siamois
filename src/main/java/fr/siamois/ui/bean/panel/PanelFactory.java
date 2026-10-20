@@ -73,6 +73,28 @@ public class PanelFactory {
         };
     }
 
+    /**
+     * The resource path of a type's list ("/action-unit"), by the React registry key of the type
+     * ("project", "recordingUnit", …), or null for an unknown key: the inverse of {@link #create}'s
+     * first segment, for what only knows the key (a saved view).
+     */
+    public static String listPathOf(String reactEntityType) {
+        if (reactEntityType == null) {
+            return null;
+        }
+        return switch (reactEntityType) {
+            case "project" -> "/action-unit";
+            case "recordingUnit" -> "/recording-unit";
+            case "find" -> "/specimen";
+            case "phase" -> "/phase";
+            case "document" -> "/document";
+            case "study" -> "/study";
+            case "container" -> "/container";
+            case "place" -> "/spatial-unit";
+            default -> null;
+        };
+    }
+
     public WelcomePanel createWelcomePanel() {
         return welcomePanelProvider.getObject();
     }

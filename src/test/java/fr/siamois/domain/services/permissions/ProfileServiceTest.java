@@ -137,6 +137,7 @@ class ProfileServiceTest {
             PermissionConstants.INSTANCE_EDIT_FINDS,
             PermissionConstants.INSTANCE_EDIT_CONTAINERS,
             PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+            PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS,
             PermissionConstants.INSTANCE_EDIT_STUDIES,
             PermissionConstants.INSTANCE_DELETE_ENTITIES,
             PermissionConstants.INSTANCE_DELETE_PROJECT);
@@ -310,6 +311,7 @@ class ProfileServiceTest {
                 permission(PermissionConstants.PROJECT_EDIT_PHASES),
                 permission(PermissionConstants.PROJECT_EDIT_CONTAINERS),
                 permission(PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+                permission(PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS),
                 permission(PermissionConstants.PROJECT_EDIT_STUDIES),
                 permission(PermissionConstants.PROJECT_DELETE_ENTITIES),
                 permission(PermissionConstants.PROJECT_DELETE_PROJECT)))).build();

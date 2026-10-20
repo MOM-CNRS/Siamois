@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import type { EntityTypeConfig } from "../entities/types";
+import type { EntityPreview, EntityTypeConfig } from "../entities/types";
 import { EntityDetailPanel } from "./EntityDetailPanel";
 import { recallListContext, rememberListContext } from "./listContext";
 import { WriteModeProvider } from "./writeMode";
@@ -12,6 +12,10 @@ import { onEntityDeleted } from "./entityDeleted";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
 import { openProjectSettings } from "./projectSettings";
+import { getViewState, putViewState } from "../api/views";
+import { getFicheConfig } from "../api/ficheConfigs";
+import { SAVE_DELAY_MS } from "./useUserViewState";
+import { usePersistedPaneState } from "./persistedPaneState";
 
 vi.mock("./projectSettings", () => ({ openProjectSettings: vi.fn() }));
 const mockedOpenProjectSettings = vi.mocked(openProjectSettings);
@@ -70,6 +74,30 @@ const tabbedConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
   routes: { list: "/tabbed", detail: (id) => `/tabbed/${id}` },
 };
 registerEntityType(tabbedConfig);
+
+// A tab with a piece of state kept for the user: a counter.
+function CounterTab({ label }: { label: string }) {
+  const [count, setCount] = usePersistedPaneState("count", 0);
+  return (
+    <button type="button" data-testid={`counter-${label}`} onClick={() => setCount((c) => c + 1)}>
+      {`${label}:${count}`}
+    </button>
+  );
+}
+
+const statefulConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+  ...fakeConfig,
+  key: "fake-stateful-entity",
+  collectionPath: "fake-stateful-entities",
+  detail: {
+    tabs: [
+      { key: "a", label: "TabA", render: () => <CounterTab label="a" /> },
+      { key: "b", label: "TabB", render: () => <CounterTab label="b" /> },
+    ],
+  },
+  routes: { list: "/stateful", detail: (id) => `/stateful/${id}` },
+};
+registerEntityType(statefulConfig);
 
 let container: HTMLDivElement;
 let root: Root;
@@ -328,6 +356,8 @@ describe("EntityDetailPanel tab badge and helpers (plan: generic related-list ta
         </QueryClientProvider>,
       );
     });
+    await flush();
+    // The fiche's configured tabs are read once the entity is known: one more round.
     await flush();
 
     expect(seen).toMatchObject({ organizationId: 42, onOpenOverview, overviewEntityId: "9" });
@@ -847,5 +877,307 @@ describe("EntityDetailPanel titlebar creation", () => {
     await flush();
     expect(container.querySelector("[data-testid=graph-body]")).not.toBeNull();
     expect(container.querySelector("[data-testid=fiche-body]")).toBeNull();
+  });
+});
+
+// The tab a user was on is kept server-side per organization and entity type (GET/PUT /view-states).
+describe("EntityDetailPanel's tab kept per user", () => {
+  async function renderTabbed(props: { preview?: EntityPreview } = {}) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <EntityDetailPanel entityType="fake-tabbed-entity" entityId="1" organizationId={4} {...props} />
+        </QueryClientProvider>,
+      );
+    });
+    // Twice, each in its own act(): the fiche waits for the saved tab before it renders.
+    await flush();
+    await flush();
+  }
+
+  function tabLink(label: string): HTMLElement {
+    return Array.from(container.querySelectorAll<HTMLElement>("a.p-tabview-nav-link")).find((a) => a.textContent?.includes(label))!;
+  }
+
+  beforeEach(() => {
+    vi.mocked(getViewState).mockClear();
+    vi.mocked(putViewState).mockClear();
+    vi.mocked(getViewState).mockImplementation((_org, viewKey) => Promise.resolve({ viewKey, state: null }));
+  });
+
+  it("opens on the tab saved for this fiche", async () => {
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+
+    await renderTabbed();
+
+    expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity:1");
+    expect(tabLink("Graph").getAttribute("aria-selected")).toBe("true");
+    expect(container.querySelector('[data-testid="graph-body"]')).not.toBeNull();
+  });
+
+  it("opens on the first tab when nothing was saved, or the saved tab no longer exists", async () => {
+    await renderTabbed();
+    expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
+
+    act(() => root.render(null));
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "gone" } });
+    await renderTabbed();
+    expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("lets a preview naming a tab win over the saved one", async () => {
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+
+    await renderTabbed({ preview: { label: "Fake", tab: "fiche" } });
+
+    expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("saves the tab the user picks, and nothing before", async () => {
+    await renderTabbed();
+    expect(putViewState).not.toHaveBeenCalled();
+
+    await act(async () => {
+      tabLink("Graph").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS + 100));
+    });
+
+    expect(putViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity:1", { v: 1, tab: "graph" });
+  });
+
+  describe("the tabs configured by the project", () => {
+    function tabLabels(): string[] {
+      return Array.from(container.querySelectorAll<HTMLElement>("a.p-tabview-nav-link")).map((a) => a.textContent?.trim() ?? "");
+    }
+
+    function configured(...tabs: Record<string, unknown>[]) {
+      vi.mocked(getFicheConfig).mockResolvedValue({ tabs: { v: 1, tabs }, canEdit: false });
+    }
+
+    afterEach(() => {
+      vi.mocked(getFicheConfig).mockReset();
+      vi.mocked(getFicheConfig).mockResolvedValue({ tabs: null, canEdit: false });
+    });
+
+    it("asks for the configuration of the fiche's project and sub-type", async () => {
+      getMock.mockResolvedValue({ id: "1", name: "x", projectId: "11", type: { id: "21" } } as FakeEntity);
+
+      await renderTabbed();
+
+      expect(getFicheConfig).toHaveBeenCalledWith({
+        organizationId: 4,
+        resourceType: "fake-tabbed-entity",
+        projectId: 11,
+        typeId: 21,
+      });
+    });
+
+    it("shows the tabs in the configured order, under the configured names, without the hidden ones", async () => {
+      configured({ key: "graph", label: "Carte" }, { key: "fiche", hidden: true });
+
+      await renderTabbed();
+
+      expect(tabLabels()).toEqual(["Carte"]);
+    });
+
+    it("puts a tab the configuration does not name after the others", async () => {
+      configured({ key: "graph" });
+
+      await renderTabbed();
+
+      expect(tabLabels()).toEqual(["Graph", "Fiche"]);
+    });
+
+    it("ignores a tab the code no longer knows, and keeps the code's tabs when nothing valid is left", async () => {
+      configured({ key: "gone" }, { key: "fiche", label: "Notice" });
+      await renderTabbed();
+      expect(tabLabels()).toEqual(["Notice", "Graph"]);
+
+      act(() => root.render(null));
+      configured({ key: "fiche", hidden: true }, { key: "graph", hidden: true });
+      await renderTabbed();
+      expect(tabLabels()).toEqual(["Fiche", "Graph"]);
+    });
+
+    it("opens on the first tab when the tab the user kept is hidden", async () => {
+      configured({ key: "fiche" }, { key: "graph", hidden: true });
+      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+
+      await renderTabbed();
+
+      expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
+    });
+
+    it("opens on the kept tab at its new place", async () => {
+      configured({ key: "graph" }, { key: "fiche" });
+      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "fiche" } });
+
+      await renderTabbed();
+
+      expect(tabLabels()).toEqual(["Graph", "Fiche"]);
+      expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
+    });
+
+    it("keeps the code's tabs when the configuration cannot be read", async () => {
+      vi.mocked(getFicheConfig).mockRejectedValue(new Error("down"));
+
+      await renderTabbed();
+
+      expect(tabLabels()).toEqual(["Fiche", "Graph"]);
+    });
+  });
+
+  describe("the state of the whole fiche", () => {
+    async function renderStateful(entityId = "1") {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityDetailPanel entityType="fake-stateful-entity" entityId={entityId} organizationId={4} />
+          </QueryClientProvider>,
+        );
+      });
+      await flush();
+      await flush();
+    }
+
+    async function click(el: Element) {
+      await act(async () => {
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    }
+
+    async function waitForSave() {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS + 100));
+      });
+    }
+
+    function lastSaved(): Record<string, unknown> {
+      const calls = vi.mocked(putViewState).mock.calls;
+      return calls[calls.length - 1][2];
+    }
+
+    it("keeps what each tab saved when the user changes tab", async () => {
+      await renderStateful();
+      await click(container.querySelector('[data-testid="counter-a"]')!);
+      await click(tabLink("TabB"));
+      await click(container.querySelector('[data-testid="counter-b"]')!);
+      await click(container.querySelector('[data-testid="counter-b"]')!);
+      await waitForSave();
+
+      expect(lastSaved()).toEqual({ v: 1, tab: "b", tabs: { a: { count: 1 }, b: { count: 2 } } });
+    });
+
+    it("restores each tab's own pieces", async () => {
+      vi.mocked(getViewState).mockResolvedValue({
+        viewKey: "detail:fake-stateful-entity:99",
+        state: { v: 1, tab: "b", tabs: { a: { count: 5 }, b: { count: 7 } } },
+      });
+
+      await renderStateful("99");
+
+      expect(container.querySelector('[data-testid="counter-b"]')!.textContent).toBe("b:7");
+      await click(tabLink("TabA"));
+      expect(container.querySelector('[data-testid="counter-a"]')!.textContent).toBe("a:5");
+      // Asked per fiche: another record of the same type has its own state.
+      expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-stateful-entity:99");
+      expect(getViewState).not.toHaveBeenCalledWith(4, "detail:fake-stateful-entity:1");
+    });
+
+    it("saves nothing for a piece the user left as it opened", async () => {
+      await renderStateful();
+      await waitForSave();
+
+      expect(putViewState).not.toHaveBeenCalled();
+    });
+  });
+});
+
+
+// Whoever may edit the project's default views arranges its fiches' tabs, in write mode: « Ajouter » and
+// « Modifier » after the last tab.
+describe("EntityDetailPanel's tab shortcuts (Ajouter, Modifier)", () => {
+  const configGet = vi.fn<(id: string | number) => Promise<FakeEntity>>();
+  const configurableConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+    ...fakeConfig,
+    key: "fake-configurable-entity",
+    collectionPath: "fake-configurable-entities",
+    api: { list: vi.fn(), get: configGet },
+    detail: {
+      tabs: [
+        { key: "fiche", label: "Fiche", render: () => <span /> },
+        // A relation tab: the fiche can add lists of that type.
+        { key: "docs", label: "Docs", relation: { target: "fake-configurable-entity" }, render: () => <span /> },
+      ],
+    },
+    routes: { list: "/configurable", detail: (id) => `/configurable/${id}` },
+  };
+  registerEntityType(configurableConfig);
+
+  async function renderPanel(opts: { writeMode: boolean; canEdit: boolean }) {
+    vi.mocked(getFicheConfig).mockResolvedValue({ tabs: null, canEdit: opts.canEdit });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={opts.writeMode}>
+            <EntityDetailPanel
+              entityType="fake-configurable-entity"
+              entityId="7"
+              organizationId={4}
+              toolbar={{ chrome: { resourceUri: "", title: "" } }}
+            />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+    await flush();
+  }
+
+  const shortcut = (label: string) =>
+    Array.from(container.querySelectorAll<HTMLElement>(".fiche-tabs-shortcut a.p-tabview-nav-link")).find((a) => a.textContent?.includes(label));
+
+  beforeEach(() => {
+    configGet.mockReset().mockResolvedValue({ id: "7", name: "Seven" });
+  });
+
+  afterEach(() => {
+    vi.mocked(getFicheConfig).mockReset();
+    vi.mocked(getFicheConfig).mockResolvedValue({ tabs: null, canEdit: false });
+  });
+
+  it("offers them to who may edit default views, in write mode only, and not in the panel's header", async () => {
+    await renderPanel({ writeMode: true, canEdit: true });
+    expect(shortcut("Ajouter")).toBeDefined();
+    expect(shortcut("Modifier")).toBeDefined();
+    expect(container.querySelector('button[aria-label="Configurer les onglets"]')).toBeNull();
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    await renderPanel({ writeMode: false, canEdit: true });
+    expect(shortcut("Ajouter")).toBeUndefined();
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    await renderPanel({ writeMode: true, canEdit: false });
+    expect(shortcut("Modifier")).toBeUndefined();
+  });
+
+  it("« Modifier » opens the tabs editor, and does not become the active tab", async () => {
+    await renderPanel({ writeMode: true, canEdit: true });
+
+    await act(async () => {
+      shortcut("Modifier")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(document.body.querySelector(".fiche-tabs-editor")).not.toBeNull();
+    expect(shortcut("Modifier")!.getAttribute("aria-selected")).not.toBe("true");
+    expect(container.querySelector("a.p-tabview-nav-link")!.getAttribute("aria-selected")).toBe("true");
   });
 });

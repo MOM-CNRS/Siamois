@@ -46,9 +46,12 @@ function PanelContent({
   overview,
   onCreate,
   toolbar,
+  onOpenView,
 }: {
   view: NavigationView;
   organizationId?: number;
+  // Opens a saved view of the list in this pane (without an id, the default list).
+  onOpenView?: (entityType: string, viewId?: number) => void;
   onNavigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // Only meaningful for a "list" view — opens the entity in the overview pane instead of
   // navigating the main pane away from the list (plan §8 phase 5).
@@ -84,6 +87,8 @@ function PanelContent({
           overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
           onCreate={onCreate}
           toolbar={toolbar}
+          viewId={view.viewId}
+          onViewChange={onOpenView && ((viewId) => onOpenView(view.entityType, viewId))}
         />
       );
     case "detail":
@@ -151,7 +156,7 @@ export function App({ options }: { options: MountOptions }) {
   // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
-  const { state, navigate, openOverview, openList, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  const { state, navigate, openView, openOverview, openList, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   const { view, overview, navigatedAway } = state;
 
   // What the top search bar (its own React root) can drive.
@@ -255,6 +260,7 @@ export function App({ options }: { options: MountOptions }) {
       view={view}
       organizationId={options.organizationId}
       onNavigate={navigate}
+      onOpenView={openView}
       onOpenOverview={openOverview}
       overview={overview}
       toolbar={mainToolbar}

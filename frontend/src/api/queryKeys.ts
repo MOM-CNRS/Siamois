@@ -9,8 +9,13 @@ export const queryKeys = {
   entityLists: () => ["entity-list"] as const,
   entityList: (entityType: string) => ["entity-list", entityType] as const,
   entityListPage: (entityType: string, params: ListParams) => ["entity-list", entityType, params] as const,
-  entityListTotal: (entityType: string, organizationId: number | undefined, scope: ListScope | undefined) =>
-    ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id] as const,
+  // The size of the whole collection, or of what a saved view's own filters keep (`filters`).
+  entityListTotal: (
+    entityType: string,
+    organizationId: number | undefined,
+    scope: ListScope | undefined,
+    filters?: Record<string, unknown>,
+  ) => ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id, filters ?? null] as const,
   entityListSchema: (entityType: string, organizationId: number | undefined, scope: ListScope | undefined) =>
     ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id] as const,
 
@@ -36,6 +41,21 @@ export const queryKeys = {
   bookmarks: () => ["bookmark-status"] as const,
   bookmark: (resourceUri: string | undefined, organizationId: number | undefined) =>
     ["bookmark-status", resourceUri, organizationId] as const,
+
+  // What one user changed on one view (GET /api/v1/view-states): per organization and view key.
+  viewState: (organizationId: number | undefined, viewKey: string | undefined) =>
+    ["view-state", organizationId, viewKey] as const,
+
+  // How a project arranges the tabs of a record type's fiche (GET /api/v1/fiche-configs).
+  ficheConfig: (organizationId: number | undefined, resourceType: string, projectId?: number, typeId?: number) =>
+    ["fiche-config", organizationId, resourceType, projectId ?? null, typeId ?? null] as const,
+
+  // The saved views of an organization: the list of a type's (under views(), so one invalidation reaches
+  // every search), and one view.
+  views: (organizationId: number | undefined) => ["views", organizationId] as const,
+  viewList: (organizationId: number | undefined, resourceType: string, q: string) =>
+    ["views", organizationId, "list", resourceType, q] as const,
+  view: (organizationId: number | undefined, id: number | undefined) => ["views", organizationId, "one", id] as const,
 
   creatableProjects: (kind: string | undefined, organizationId: number | undefined) =>
     ["creatable-projects", kind, organizationId] as const,

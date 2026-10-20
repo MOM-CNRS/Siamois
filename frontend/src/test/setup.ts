@@ -1,4 +1,4 @@
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { queryClient } from "../api/queryClient";
 
 // Vitest setup shared by every test file.
@@ -19,3 +19,23 @@ console.error = (...args: unknown[]) => {
 
 // The app's shared cache (catalogs are fetched through it) must not carry one test's data into the next.
 afterEach(() => queryClient.clear());
+
+// No test reaches the server for what a user kept on a view (GET/PUT /api/v1/view-states) or for the saved
+// views (/api/v1/views): by default nothing was kept and there is no view. A test of that state overrides these mocks.
+vi.mock("../api/views", () => ({
+  getViewState: vi.fn((_organizationId: number, viewKey: string) => Promise.resolve({ viewKey, state: null })),
+  putViewState: vi.fn(() => Promise.resolve()),
+  deleteViewState: vi.fn(() => Promise.resolve()),
+  listViews: vi.fn(() => Promise.resolve({ data: [], totalCount: 0, limit: 50, offset: 0 })),
+  getView: vi.fn(() => Promise.reject(new Error("no such view"))),
+  createView: vi.fn(),
+  updateView: vi.fn(),
+  deleteView: vi.fn(() => Promise.resolve()),
+}));
+
+// Nor the tabs a project configured for a fiche (/api/v1/fiche-configs): by default none, and nobody may edit.
+vi.mock("../api/ficheConfigs", () => ({
+  getFicheConfig: vi.fn(() => Promise.resolve({ tabs: null, canEdit: false })),
+  putFicheConfig: vi.fn(() => Promise.resolve({ tabs: null, canEdit: true })),
+  deleteFicheConfig: vi.fn(() => Promise.resolve()),
+}));

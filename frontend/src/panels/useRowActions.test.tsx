@@ -99,12 +99,16 @@ async function render(rows: FakeRow[], options: { writeMode?: boolean; onOpenOve
   await flush();
 }
 
+// Twice, each in its own act(): the list waits for the user's saved state (GET /view-states) before its
+// first fetch, and what that read changes is committed when its act ends.
 async function flush() {
-  await act(async () => {
-    for (let i = 0; i < 5; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  });
+  for (let round = 0; round < 2; round++) {
+    await act(async () => {
+      for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    });
+  }
 }
 
 function actionButton(label: string): HTMLButtonElement | null {

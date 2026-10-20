@@ -31,6 +31,8 @@ public abstract class AbstractPanel implements Serializable {
     protected String panelClass;
     protected String icon;
     private String goBackUrl;
+    /** The saved view a list panel opens on (the {@code ?viewId=} of its URL); null for the default list. */
+    private Long viewId;
     protected boolean isRoot = true; // Is the panel a root panel or an overview
     protected AbstractPanel parentOrOverview; // if root, the panel can have an overview
 
@@ -71,6 +73,16 @@ public abstract class AbstractPanel implements Serializable {
     /** Institution/organization id scoping this panel's data, or null when not applicable. */
     public Long reactOrganizationId() {
         return null;
+    }
+
+    /** {@link #ressourceUri()}, plus the view the panel is on: what React shows, bookmarks and re-opens. */
+    public String reactResourceUri() {
+        return viewId == null ? ressourceUri() : ressourceUri() + "?viewId=" + viewId;
+    }
+
+    /** Whether {@link #reactResourceUri()} is bookmarked: a view and its list are bookmarked apart. */
+    public boolean reactBookmarked() {
+        return bookmarkService.isRessourceBookmarkedByUser(sessionSettingsBean.getUserInfo(), reactResourceUri());
     }
 
     public boolean isBookmarked() {

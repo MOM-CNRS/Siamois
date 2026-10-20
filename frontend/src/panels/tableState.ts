@@ -6,6 +6,7 @@
 // without wiring full route ownership into this phase.
 
 import type { FilterValue } from "../entities/types";
+import type { ListViewMode } from "./list/listViews";
 
 export type { FilterValue };
 
@@ -21,6 +22,8 @@ export interface TableState {
   // matching a config with no `list.schema` at all.
   visibleColumns: string[];
   filters: Record<string, FilterValue>;
+  // How the list is shown (flat list, tree). Absent until chosen: the flat list.
+  viewMode?: ListViewMode;
 }
 
 // Rows-per-page choices; the server caps a page at 200 (ProjectApiService.MAX_PAGE_SIZE).

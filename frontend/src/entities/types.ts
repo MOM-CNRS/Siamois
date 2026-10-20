@@ -195,6 +195,9 @@ export interface CreatePrefill {
   spatialContext?: EntityRef;
   // Document: what a Documents tab creates it linked to (the request's recordingUnitIds, findIds…).
   document?: { field: DocumentLinkField; entityType: string; ref: EntityRef };
+  // The type (the id of a type declared in the project) the new entity gets: a list tab filtered on one type
+  // creates entities of that type.
+  typeId?: string;
 }
 
 // The DocumentCreateRequest list a document is linked to its entity through.
@@ -237,6 +240,10 @@ export interface DetailTabDef<TDetail> {
   // A count pastille on the tab header itself (actionUnitTabView.xhtml's
   // panelModel.unit.recordingUnitCount badge) — optional, most tabs (the fiche) have none.
   badge?: (entity: TDetail) => ReactNode;
+  // Set on a tab that lists the entities of type `target` related to this fiche (see relationTab): the
+  // types a project may add as list tabs of its own, with filters of their own.
+  // `creatable`/`createPrefill` are those of its « Créer »: a list tab the project adds on the same target gets them too.
+  relation?: { target: string; creatable?: boolean; createPrefill?: (entity: TDetail) => CreatePrefill };
   render: (entity: TDetail, helpers: DetailTabHelpers) => ReactNode;
 }
 
