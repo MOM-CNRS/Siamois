@@ -11,7 +11,7 @@ import { resolveEntityPath } from "../../navigation/paths";
 import { usePaneState } from "../../panels/paneState";
 import { ClickableCard } from "./ClickableCard";
 import { DataAccessSection } from "./DataAccessSection";
-import { openHistoryDrawer } from "./sidebar";
+import { openSidebarDrawer } from "./sidebar";
 
 // « Consulté récemment » on the home page: the pages the user opened last, as cards like the other sections.
 // « Voir tout » opens the sidebar's history, which has the whole list.
@@ -53,7 +53,7 @@ function RecentlyViewed(ctx: HomeWidgetContext) {
       header={
         <span className="home-section-title">
           {t("home.history")}
-          <Button text size="small" label={t("home.seeHistory")} icon="bi bi-clock" onClick={openHistoryDrawer} />
+          <Button text size="small" label={t("home.seeHistory")} icon="bi bi-clock" onClick={() => openSidebarDrawer("historique")} />
         </span>
       }
       toggleable

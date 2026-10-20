@@ -7,7 +7,7 @@ import { configureBasePath } from "../../api/basePath";
 import { registerEntityType } from "../../entities/registry";
 import type { EntityTypeConfig } from "../../entities/types";
 import { homeShortcutWidgets } from "./HomeShortcuts";
-import { openHistoryDrawer } from "./sidebar";
+import { openSidebarDrawer } from "./sidebar";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);
@@ -138,7 +138,7 @@ describe("home history", () => {
   });
 });
 
-describe("openHistoryDrawer", () => {
+describe("openSidebarDrawer", () => {
   function sidebar(classes: string) {
     const el = document.createElement("div");
     el.id = "subSidebarForm";
@@ -154,22 +154,38 @@ describe("openHistoryDrawer", () => {
 
   it("clicks the sidebar entry when the drawer is closed or shows another one", () => {
     const closed = sidebar("mode-historique is-collapsed");
-    openHistoryDrawer();
+    openSidebarDrawer("historique");
     expect(closed).toHaveBeenCalledTimes(1);
 
     document.body.innerHTML = "";
     const other = sidebar("mode-bookmarks");
-    openHistoryDrawer();
+    openSidebarDrawer("historique");
     expect(other).toHaveBeenCalledTimes(1);
   });
 
   it("leaves a drawer that is already showing alone (the entry would close it)", () => {
     const clicked = sidebar("mode-historique");
-    openHistoryDrawer();
+    openSidebarDrawer("historique");
     expect(clicked).not.toHaveBeenCalled();
   });
 
+  it("opens the views drawer through the views entry", () => {
+    const el = document.createElement("div");
+    el.id = "subSidebarForm";
+    el.className = "mode-historique";
+    document.body.appendChild(el);
+    const link = document.createElement("a");
+    link.id = "navForm:viewsLinkNav";
+    const clicked = vi.fn();
+    link.addEventListener("click", clicked);
+    document.body.appendChild(link);
+
+    openSidebarDrawer("views");
+
+    expect(clicked).toHaveBeenCalledTimes(1);
+  });
+
   it("does nothing without a JSF sidebar", () => {
-    expect(() => openHistoryDrawer()).not.toThrow();
+    expect(() => openSidebarDrawer("historique")).not.toThrow();
   });
 });

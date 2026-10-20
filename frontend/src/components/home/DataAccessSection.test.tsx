@@ -94,8 +94,8 @@ describe("DataAccessSection", () => {
     // The type's name only, with how many there are under the view's own filters.
     expect(card.textContent).toBe("Couche42");
     expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 7, filters: { type: { op: "in", v: ["412"] } } }));
-    expect(container.querySelector(".home-data-access-add")).toBeNull();
-    expect(button("Retirer cet accès")).toBeUndefined();
+    expect(button("Ajouter une vue à la une")).toBeUndefined();
+    expect(button("Retirer de la une")).toBeUndefined();
 
     act(() => card.click());
     expect(onOpenView).toHaveBeenCalledWith("recordingUnit", 11);
@@ -107,26 +107,28 @@ describe("DataAccessSection", () => {
     render({ organizationId: 7, onOpenView });
     await flush();
 
-    await act(async () => button("Retirer cet accès")!.click());
+    await act(async () => button("Retirer de la une")!.click());
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/home-accesses/1?organizationId=7", { method: "DELETE" });
     expect(onOpenView).not.toHaveBeenCalled();
   });
 
-  it("shows a manager the empty section with a dashed « Ajouter une vue » card", async () => {
+  it("shows a manager the empty section, with « Ajouter une vue à la une » in its header", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
 
-    expect(container.textContent).toContain("Accès aux données");
-    expect(container.querySelector(".home-data-access-add")?.textContent).toContain("Ajouter une vue");
+    expect(container.textContent).toContain("Vues à la une");
+    expect(container.textContent).toContain("Vues à la une");
+    expect(container.textContent).toContain("Aucune vue à la une.");
+    expect(button("Ajouter une vue à la une")).toBeDefined();
   });
 
   it("adding a table and a type creates the access with a view filtered on the type", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => container.querySelector<HTMLElement>(".home-data-access-add .sia-clickable-card, .sia-clickable-card[aria-label=\"Ajouter une vue\"]")!.click());
+    await act(async () => button("Ajouter une vue à la une")!.click());
     await flush();
 
     // The type dropdown offers the table's types, read from its type field's concepts.
@@ -152,11 +154,26 @@ describe("DataAccessSection", () => {
     });
   });
 
+  it("« Voir toutes les vues » opens the views drawer of the sidebar, for members too", async () => {
+    accesses(false, [{ id: 1, viewId: 11, resourceType: "recordingUnit", title: "UE – Couche", label: "Couche" }]);
+    const link = document.createElement("a");
+    link.id = "navForm:viewsLinkNav";
+    const clicked = vi.fn();
+    link.addEventListener("click", clicked);
+    document.body.appendChild(link);
+    render({ organizationId: 7 });
+    await flush();
+
+    await act(async () => button("Voir toutes les vues")!.click());
+
+    expect(clicked).toHaveBeenCalledTimes(1);
+  });
+
   it("cannot add before a type is chosen", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => container.querySelector<HTMLElement>(".home-data-access-add")!.click());
+    await act(async () => button("Ajouter une vue à la une")!.click());
     await flush();
 
     const add = Array.from(document.querySelectorAll<HTMLButtonElement>(".home-data-access-actions button")).pop()!;

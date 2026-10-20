@@ -11,6 +11,7 @@ import { t } from "../../i18n";
 import { usePaneState } from "../../panels/paneState";
 import { AddDataAccessDialog } from "./AddDataAccessDialog";
 import { ClickableCard } from "./ClickableCard";
+import { openSidebarDrawer } from "./sidebar";
 
 /**
  * « Accès aux données »: the cards the organization's managers set up — a table on a view (so, say, only one type) —
@@ -39,35 +40,33 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
   return (
     <>
       <Panel
-        header={t("home.dataAccess")}
+        header={
+          <span className="home-section-title">
+            {t("home.dataAccess")}
+            {canEdit && <Button text size="small" label={t("home.dataAccess.addButton")} icon="bi bi-plus-square" onClick={() => setAdding(true)} />}
+            <Button text size="small" label={t("home.dataAccess.seeAll")} icon="bi bi-file-earmark-spreadsheet" onClick={() => openSidebarDrawer("views")} />
+          </span>
+        }
         toggleable
         collapsed={folded}
         onToggle={(e) => setFolded(e.value)}
         className="sia-form-panel"
       >
-        <div className="sia-card-grid">
-          {accesses.map((access) => (
-            <DataAccessCard
-              key={access.id}
-              access={access}
-              organizationId={organizationId}
-              canEdit={canEdit}
-              onOpen={() => onOpenView?.(access.resourceType, access.viewId)}
-              onRemove={() => remove.mutate(access.id)}
-            />
-          ))}
-          {canEdit && (
-            // A dashed card, like a slot to fill: it opens the form that adds a card.
-            <ClickableCard ariaLabel={t("home.dataAccess.addCard")} onOpen={() => setAdding(true)} className="home-data-access-add">
-              <div className="home-data-access-add-body">
-                <span className="home-data-access-add-icon">
-                  <i className="bi bi-plus-lg" />
-                </span>
-                <span className="sia-count-card-title">{t("home.dataAccess.addCard")}</span>
-              </div>
-            </ClickableCard>
-          )}
-        </div>
+        {accesses.length === 0 && <div>{t("home.dataAccess.empty")}</div>}
+        {accesses.length > 0 && (
+          <div className="sia-card-grid">
+            {accesses.map((access) => (
+              <DataAccessCard
+                key={access.id}
+                access={access}
+                organizationId={organizationId}
+                canEdit={canEdit}
+                onOpen={() => onOpenView?.(access.resourceType, access.viewId)}
+                onRemove={() => remove.mutate(access.id)}
+              />
+            ))}
+          </div>
+        )}
       </Panel>
       {adding && <AddDataAccessDialog organizationId={organizationId} onHide={() => setAdding(false)} />}
     </>
