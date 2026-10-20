@@ -309,6 +309,19 @@ body .required-btn::after {
 }
 
 /* Ensure the button text span inside takes up the remaining horizontal space */
+/*
+ * A row of the sidebar's views list takes the colour of its list type, handed over as --sia-row-color by the
+ * page (an inline `color: … !important` would be the only way to win over the button's own colours).
+ * The selectors are specific enough to beat PrimeFaces' flat button, hover and focus included.
+ */
+.sia-views-table .ui-button.ui-button-flat.bookmark-full-button,
+.sia-views-table .ui-button.ui-button-flat.bookmark-full-button:enabled:hover,
+.sia-views-table .ui-button.ui-button-flat.bookmark-full-button:enabled:focus,
+.sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-icon,
+.sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-button-text {
+    color: var(--sia-row-color, inherit);
+}
+
 .bookmark-full-button .ui-button-text {
   text-align: left;
 }

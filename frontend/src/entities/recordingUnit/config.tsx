@@ -154,7 +154,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
       // JSF's hierarchy tab, reduced to what the recording unit contains (its direct children).
       relationTab<RecordingUnitDetail>({
         key: "children",
-        label: t("entity.recordingUnit.plural"),
+        label: t("entity.recordingUnit.unit"),
         target: "recordingUnit",
         scopeEntityType: "recordingUnit",
         path: "children",

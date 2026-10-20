@@ -17,6 +17,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PanelFactory {
 
+    // Keys that are both a resource URI segment and a React registry key.
+    private static final String CONTAINER = "container";
+    private static final String PHASE = "phase";
+    private static final String DOCUMENT = "document";
+    private static final String STUDY = "study";
+
     private final ObjectProvider<SpatialUnitListPanel> spatialUnitListPanelProvider;
     private final ObjectProvider<ActionUnitListPanel> actionUnitListPanelProvider;
     private final ObjectProvider<ContainerListPanel> containerListPanelProvider;
@@ -46,10 +52,10 @@ public class PanelFactory {
             case "action-unit" -> id == null ? actionUnitListPanelProvider.getObject() : entity(actionUnitPanelProvider, id);
             case "spatial-unit" -> id == null ? spatialUnitListPanelProvider.getObject() : entity(spatialUnitPanelProvider, id);
             case "specimen" -> id == null ? specimenListPanelProvider.getObject() : entity(specimenPanelProvider, id);
-            case "container" -> id == null ? containerListPanelProvider.getObject() : entity(containerPanelProvider, id);
-            case "phase" -> id == null ? phaseListPanelProvider.getObject() : entity(phasePanelProvider, id);
-            case "document" -> id == null ? documentListPanelProvider.getObject() : entity(documentPanelProvider, id);
-            case "study" -> id == null ? studyListPanelProvider.getObject() : entity(studyPanelProvider, id);
+            case CONTAINER -> id == null ? containerListPanelProvider.getObject() : entity(containerPanelProvider, id);
+            case PHASE -> id == null ? phaseListPanelProvider.getObject() : entity(phasePanelProvider, id);
+            case DOCUMENT -> id == null ? documentListPanelProvider.getObject() : entity(documentPanelProvider, id);
+            case STUDY -> id == null ? studyListPanelProvider.getObject() : entity(studyPanelProvider, id);
             case "welcome" -> welcomePanelProvider.getObject();
             default -> throw new IllegalArgumentException("Unknown panel type: " + type);
         };
@@ -64,10 +70,10 @@ public class PanelFactory {
             case "project" -> entity(actionUnitPanelProvider, id);
             case "recordingUnit" -> entity(recordingUnitPanelProvider, id);
             case "find" -> entity(specimenPanelProvider, id);
-            case "phase" -> entity(phasePanelProvider, id);
-            case "document" -> entity(documentPanelProvider, id);
-            case "study" -> entity(studyPanelProvider, id);
-            case "container" -> entity(containerPanelProvider, id);
+            case PHASE -> entity(phasePanelProvider, id);
+            case DOCUMENT -> entity(documentPanelProvider, id);
+            case STUDY -> entity(studyPanelProvider, id);
+            case CONTAINER -> entity(containerPanelProvider, id);
             case "place" -> entity(spatialUnitPanelProvider, id);
             default -> null;
         };
@@ -86,10 +92,10 @@ public class PanelFactory {
             case "project" -> "/action-unit";
             case "recordingUnit" -> "/recording-unit";
             case "find" -> "/specimen";
-            case "phase" -> "/phase";
-            case "document" -> "/document";
-            case "study" -> "/study";
-            case "container" -> "/container";
+            case PHASE -> "/phase";
+            case DOCUMENT -> "/document";
+            case STUDY -> "/study";
+            case CONTAINER -> "/container";
             case "place" -> "/spatial-unit";
             default -> null;
         };

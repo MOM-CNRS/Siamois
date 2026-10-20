@@ -31,7 +31,7 @@ describe("listPreferences", () => {
   });
 
   it("reconciles a saved action layout with the actions that exist now", () => {
-    expect(reconcileActionBar(undefined, ["a", "b"])).toEqual({ order: ["a", "b"], inline: ["a", "b"] });
+    expect(reconcileActionBar(undefined, ["a", "b"])).toEqual({ order: ["a", "b"], inline: [] });
     expect(reconcileActionBar({ order: ["b", "gone", "a"], inline: ["gone"] }, ["a", "b", "c"])).toEqual({
       order: ["b", "a", "c"],
       inline: ["c"],

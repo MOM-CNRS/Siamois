@@ -68,7 +68,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
       }),
       relationTab<PhaseDetail>({
         key: "recording-units",
-        label: t("entity.recordingUnit.plural"),
+        label: t("entity.recordingUnit.unit"),
         target: "recordingUnit",
         scopeEntityType: "phase",
         path: "recording-units",

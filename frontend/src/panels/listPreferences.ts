@@ -60,11 +60,12 @@ export function saveListPrefs(key: string, patch: Omit<Partial<ListPrefs>, "v">)
 /**
  * Lines a saved action layout up with the actions the list actually has now: keys that no longer
  * exist are dropped, and new ones are appended as inline — so an action added to a config later
- * shows up rather than silently landing in the menu. No saved layout: everything inline, in the
- * config's own order (the pre-settings behavior).
+ * shows up rather than silently landing in the menu. No saved layout: only the bookmark (always inline,
+ * not one of these keys) shows in the row; every other action is put away in the "…" menu, in the config's
+ * own order, until the user brings some back from the gear.
  */
 export function reconcileActionBar(saved: ActionBarPrefs | undefined, keys: string[]): ActionBarPrefs {
-  if (!saved) return { order: keys, inline: keys };
+  if (!saved) return { order: keys, inline: [] };
   const known = new Set(keys);
   const order = saved.order.filter((k) => known.has(k));
   const added = keys.filter((k) => !order.includes(k));

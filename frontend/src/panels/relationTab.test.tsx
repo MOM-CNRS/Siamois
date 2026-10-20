@@ -6,6 +6,7 @@ import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { relationTab } from "./relationTab";
 import { WriteModeProvider } from "./writeMode";
+import { listPrefsKey, saveListPrefs } from "./listPreferences";
 
 
 interface FakeChildRow {
@@ -197,6 +198,8 @@ describe("relationTab project context and create", () => {
       ),
       extraRowActions: () => [{ key: "unlink", icon: "bi bi-x", tooltip: "Retirer", run }],
     });
+    // The row's actions are put away by default: this one is brought back inline.
+    saveListPrefs(listPrefsKey("fake-child-entity", { entityType: "fake-parent-entity", id: 5 }, 42), { actionBar: { order: [], inline: [] } });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
       root.render(

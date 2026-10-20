@@ -112,7 +112,7 @@ export const projectEntityConfig: EntityTypeConfig<
       }),
       relationTab<ProjectDetail>({
         key: "recording-units",
-        label: t("entity.recordingUnit.plural"),
+        label: t("entity.recordingUnit.unit"),
         target: "recordingUnit",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.recordingUnits ?? 0,

@@ -519,4 +519,38 @@ class ProfilePermissionServiceTest {
         assertThat(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(person, byActionUnit))
                 .containsExactlyInAnyOrder(1L, 2L);
     }
+
+    @Test
+    void hasDefaultViewEditPermission_withoutProject_needsTheInstanceOrOrganizationRight() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), null));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_withoutProjectAndWithoutAnyRight_isFalse() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+
+        assertFalse(profilePermissionService.hasDefaultViewEditPermission(userInfo(), null));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_onAProject_acceptsAProjectGrant() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 40L, PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), 40L));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_onAProject_acceptsTheOrganizationGrantWithoutLookingAtTheProject() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), 40L));
+    }
 }

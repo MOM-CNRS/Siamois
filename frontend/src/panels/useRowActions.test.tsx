@@ -6,6 +6,7 @@ import { registerEntityType } from "../entities/registry";
 import type { CreateFormContext, EntityTypeConfig, PagedResult } from "../entities/types";
 import { EntityListPanel } from "./EntityListPanel";
 import { WriteModeProvider } from "./writeMode";
+import { listPrefsKey, saveListPrefs } from "./listPreferences";
 import { onEntityDeleted } from "./entityDeleted";
 import { ApiError } from "../api/client";
 
@@ -84,7 +85,16 @@ function row(overrides: Partial<FakeRow> = {}): FakeRow {
   return { id: "1", name: "Row A", resourceUri: "/chose/1", bookmarked: false, _permissions: { canEdit: true }, ...overrides };
 }
 
-async function render(rows: FakeRow[], options: { writeMode?: boolean; onOpenOverview?: (t: string, id: string | number) => void; entityType?: string } = {}) {
+// By default only the bookmark shows in a row; the tests of the actions themselves want them in the row, as a user
+// who brought them back from the gear would have them (no action of the saved layout, so all are « added », inline).
+async function render(
+  rows: FakeRow[],
+  options: { writeMode?: boolean; onOpenOverview?: (t: string, id: string | number) => void; entityType?: string; defaultLayout?: boolean } = {},
+) {
+  const prefsKey = listPrefsKey(options.entityType ?? "row-action-entity", undefined, 3);
+  if (!options.defaultLayout && window.localStorage.getItem(prefsKey) == null) {
+    saveListPrefs(prefsKey, { actionBar: { order: [], inline: [] } });
+  }
   listMock.mockResolvedValue({ data: rows, totalCount: rows.length, limit: 20, offset: 0 });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
@@ -261,6 +271,15 @@ describe("list row actions", () => {
     // "gone" no longer exists; "duplicate" wasn't in the saved layout, so it's appended inline.
     expect(inline).toEqual(["Ajouter aux favoris", "Créer un enfant", "Dupliquer"]);
     expect(actionButton("Plus d'actions")).toBeNull();
+  });
+
+  it("shows only the bookmark in a row by default, every other action put away in the menu", async () => {
+    await render([row()], { defaultLayout: true });
+
+    expect(container.querySelector('.entity-list-panel-row-actions button[aria-label="Dupliquer"]')).toBeNull();
+    expect(actionButton("Dupliquer")).toBeNull();
+    expect(container.querySelector(".entity-list-panel-row-actions .bi-bookmark")).not.toBeNull();
+    expect(actionButton("Plus d'actions")).not.toBeNull();
   });
 
   it("offers the action bar settings from the gear, even without a column catalog", async () => {
