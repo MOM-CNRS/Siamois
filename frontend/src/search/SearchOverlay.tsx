@@ -80,7 +80,7 @@ export function KeywordButtons({
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onInsert(keyword.key)}
         >
-          {formatFilter({ key: keyword.key, value: "" })}
+          {formatFilter({ key: keyword.names[0] ?? keyword.key, value: "" })}
         </button>
       ))}
     </div>
