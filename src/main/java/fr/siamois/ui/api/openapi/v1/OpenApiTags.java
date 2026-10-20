@@ -19,6 +19,7 @@ public final class OpenApiTags {
     public static final String USER = "Utilisateurs";
     public static final String BOOKMARK = "Favoris";
     public static final String VIEW = "Vues";
+    public static final String HISTORY = "Historique";
 
     private OpenApiTags() {
     }

@@ -1,0 +1,42 @@
+import { apiFetch } from "./client";
+import type { FilterValue } from "../entities/types";
+import type { ViewTableState } from "./views";
+
+// GET/POST/DELETE /api/v1/home-accesses — the cards of the home page's « Accès aux données » section: a table on a
+// view (which holds the type to show). Every member sees them; who may edit the organization's default views
+// adds and removes them. Adding one creates its view.
+export interface HomeAccess {
+  id: number;
+  viewId: number;
+  // The table (key of the entity registry).
+  resourceType: string;
+  // The view's title.
+  title: string;
+  // What the card says: the name of the type it shows (or of the table).
+  label: string;
+  // The view's filters, to count what it shows.
+  filters?: Record<string, FilterValue> | null;
+}
+
+export interface HomeAccessList {
+  data: HomeAccess[];
+  canEdit: boolean;
+}
+
+export async function listHomeAccesses(organizationId: number): Promise<HomeAccessList> {
+  return apiFetch<HomeAccessList>(`/api/v1/home-accesses?organizationId=${organizationId}`);
+}
+
+export async function createHomeAccess(body: {
+  organizationId: number;
+  resourceType: string;
+  title: string;
+  label: string;
+  state: ViewTableState;
+}): Promise<HomeAccess> {
+  return apiFetch<HomeAccess>("/api/v1/home-accesses", { method: "POST", body });
+}
+
+export async function deleteHomeAccess(organizationId: number, id: number): Promise<void> {
+  await apiFetch<void>(`/api/v1/home-accesses/${id}?organizationId=${organizationId}`, { method: "DELETE" });
+}

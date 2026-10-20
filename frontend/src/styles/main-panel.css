@@ -2728,3 +2728,16 @@ div#search-bar .sia-search {
   font-weight: 400;
   white-space: nowrap;
 }
+
+
+/* Home sections: the title, then its actions beside it, icons centred on the text. */
+.home-section-title { display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.home-section-title .p-button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; }
+.home-section-title .p-button .p-button-icon { display: inline-flex; align-items: center; margin: 0; line-height: 1; }
+.home-section-title .p-button .p-button-label { line-height: 1; }
+
+/* Home: the « Ajouter un accès aux données » form, and the remove button of a card. */
+.home-data-access-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+.home-data-access-error { color: var(--red-500, #c0392b); }
+.home-data-access-remove { margin-left: auto; }

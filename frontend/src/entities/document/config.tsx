@@ -25,6 +25,8 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
   // Matches DocumentPanel's own icon.
   icon: "bi bi-file-earmark-text",
   panelClass: "document-panel",
+  cardClassName: "sia-document",
+  countChipClassName: "document-count-chip",
   api: {
     delete: (id) => deleteEntity("documents", id),
     siblings: (id) => fetchSiblings("documents", id),

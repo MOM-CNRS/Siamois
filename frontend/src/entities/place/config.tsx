@@ -33,6 +33,8 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
   panelClass: "spatial-unit-panel",
+  cardClassName: "sia-spatial-unit",
+  countChipClassName: "spatial-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("places", id),
     siblings: (id) => fetchSiblings("places", id),

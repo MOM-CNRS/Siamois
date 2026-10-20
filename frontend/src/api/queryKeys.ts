@@ -42,6 +42,14 @@ export const queryKeys = {
   bookmark: (resourceUri: string | undefined, organizationId: number | undefined) =>
     ["bookmark-status", resourceUri, organizationId] as const,
 
+  // The data-access cards of the home page.
+  homeAccesses: (organizationId: number | undefined) => ["home-accesses", organizationId] as const,
+  // The types one can pick for a table (the options of its type field).
+  tableTypeOptions: (organizationId: number | undefined, entityType: string) =>
+    ["table-type-options", organizationId, entityType] as const,
+  // The pages the user opened lately, on the home page.
+  homeHistory: (organizationId: number | undefined) => ["home-history", organizationId] as const,
+
   // What one user changed on one view (GET /api/v1/view-states): per organization and view key.
   viewState: (organizationId: number | undefined, viewKey: string | undefined) =>
     ["view-state", organizationId, viewKey] as const,
@@ -60,6 +68,7 @@ export const queryKeys = {
   creatableProjects: (kind: string | undefined, organizationId: number | undefined) =>
     ["creatable-projects", kind, organizationId] as const,
   organizationCounts: (organizationId: number | undefined) => ["organization-counts", organizationId] as const,
+  organizationPermissions: (organizationId: number | undefined) => ["organization-permissions", organizationId] as const,
   duplicationStructure: (entityType: string, id: string | number) => ["duplication-structure", entityType, id] as const,
 
   // The raw types catalog at `path` (GET …/<x>-types): fetched once per path, whoever reads it.

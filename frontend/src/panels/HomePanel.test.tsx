@@ -38,16 +38,16 @@ describe("HomePanel", () => {
   });
 
   // homePanel.xhtml is two separate sibling p:panels ("Mes derniers projets"/myActionUnits and
-  // "Accéder aux bases de données"/dbAccess), not one panel holding everything.
+  // "Accès par table"/dbAccess), not one panel holding everything.
   it("renders a 'panel'-kind widget standalone, not grouped with the database-access panel", () => {
     const html = renderToStaticMarkup(
       <HomePanel widgets={[{ key: "recent", render: () => <span>Recent projects panel</span> }]} />,
     );
     expect(html).toContain("Recent projects panel");
-    expect(html).not.toContain("Accéder aux bases de données");
+    expect(html).not.toContain("Accès par table");
   });
 
-  it("groups every 'card'-kind widget into the shared 'Accéder aux bases de données' panel", () => {
+  it("groups every 'card'-kind widget into the shared 'Accès par table' panel", () => {
     const html = renderToStaticMarkup(
       <HomePanel
         widgets={[
@@ -56,7 +56,7 @@ describe("HomePanel", () => {
         ]}
       />,
     );
-    expect(html).toContain("Accéder aux bases de données");
+    expect(html).toContain("Accès par table");
     expect(html).toContain("Card A");
     expect(html).toContain("Card B");
   });

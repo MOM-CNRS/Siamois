@@ -26,6 +26,8 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   // Matches StudyPanel's own icon.
   icon: "bi bi-clipboard-data",
   panelClass: "study-panel",
+  cardClassName: "sia-study",
+  countChipClassName: "study-count-chip",
   api: {
     delete: (id) => deleteEntity("studies", id),
     siblings: (id) => fetchSiblings("studies", id),

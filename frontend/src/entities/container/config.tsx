@@ -27,6 +27,8 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   // Matches ContainerTableDefinitionFactory/ContainerPanel's own icon.
   icon: "bi bi-box-seam",
   panelClass: "container-panel",
+  cardClassName: "sia-container",
+  countChipClassName: "container-count-chip",
   api: {
     delete: (id) => deleteEntity("containers", id),
     siblings: (id) => fetchSiblings("containers", id),

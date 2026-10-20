@@ -254,6 +254,9 @@ export interface DetailTabDef<TDetail> {
 export interface HomeWidgetContext {
   organizationId?: number;
   onNavigate?: (entityType: string, id?: string | number) => void;
+  // Opens a list on a saved view (a bookmark of a view), and a fiche in the overview pane.
+  onOpenView?: (entityType: string, viewId?: number) => void;
+  onOpenOverview?: (entityType: string, id: string | number) => void;
 }
 
 export interface HomeWidgetDef {
@@ -335,7 +338,8 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   key: string;
   // `all` is the breadcrumb's "all of them" crumb, for types whose plural doesn't fit "Tous les …"
   // (mobilier is a collective noun: "Tout le mobilier").
-  labels: { singular: string; plural: string; all?: string };
+  // `short`: the name used in a crowded title (a view's « UE – Couche »), the plural when absent.
+  labels: { singular: string; plural: string; all?: string; short?: string };
   // The REST collection segment for this entity ("projects", "recording-units") — used to build a
   // scoped list URL generically (entities/listApi.ts: `/api/v1/{parent.collectionPath}/{id}/{path
   // ?? child.collectionPath}`) without a per-relation lookup table. Every registered entity has
@@ -350,6 +354,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
   // (siamois/panel/_panels.scss's themed-panel). App puts it on each pane, the way focus.xhtml and
   // panelContent.xhtml put panelClass on theirs.
   panelClass?: string;
+  // The theme class giving this type's home cards their colour (`sia-welcome-card sia-<type>`).
+  cardClassName?: string;
+  // The theme class of the counter chip of those cards (`<type>-count-chip`).
+  countChipClassName?: string;
   api: {
     list(params: ListParams): Promise<PagedResult<TSummary>>;
     get(id: string | number): Promise<TDetail>;

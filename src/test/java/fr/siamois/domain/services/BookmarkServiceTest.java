@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +42,9 @@ class BookmarkServiceTest {
     private PersonMapper personMapper;
     @Mock
     private InstitutionMapper institutionMapper;
+
+    @Mock
+    private LangService langService;
 
     @InjectMocks
     private BookmarkService bookmarkService;
@@ -142,6 +147,83 @@ class BookmarkServiceTest {
         assertEquals(title, result.getTitleCode());
 
         verify(bookmarkRepository).save(any(Bookmark.class));
+    }
+
+    @Test
+    void save_storesAMessageCodeAsItsTextInTheUsersLanguage() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        Locale fr = Locale.FRENCH;
+        when(langService.localeForApiLang("fr")).thenReturn(fr);
+        when(langService.msg("panel.title.allrecordingunit", fr)).thenReturn("Unités d'enregistrement");
+        when(bookmarkRepository.save(any(Bookmark.class))).thenAnswer(call -> call.getArgument(0));
+
+        Bookmark result = bookmarkService.save(userInfo, "/recording-unit", "panel.title.allrecordingunit");
+
+        assertEquals("Unités d'enregistrement", result.getTitleCode());
+    }
+
+    @Test
+    void save_keepsATitleThatIsNotAMessageCode() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+        when(langService.msg("Mes US du Nord", Locale.FRENCH)).thenThrow(new NoSuchMessageException("Mes US du Nord"));
+        when(bookmarkRepository.save(any(Bookmark.class))).thenAnswer(call -> call.getArgument(0));
+
+        Bookmark result = bookmarkService.save(userInfo, "/recording-unit?viewId=3", "Mes US du Nord");
+
+        assertEquals("Mes US du Nord", result.getTitleCode());
+    }
+
+    @Test
+    void latest_returnsTheMostRecentOnesWithTheirNamesAsText() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+        when(langService.msg("panel.title.x", Locale.FRENCH)).thenReturn("Texte");
+        Bookmark bookmark = new Bookmark();
+        when(bookmarkRepository.findByPersonAndInstitution(eq(person), eq(institution), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(bookmark)));
+        BookmarkDTO dto = new BookmarkDTO();
+        dto.setTitle("panel.title.x");
+        when(bookmarkMapper.toDto(bookmark)).thenReturn(dto);
+
+        List<BookmarkDTO> result = bookmarkService.latest(userInfo, 5);
+
+        assertEquals(1, result.size());
+        assertEquals("Texte", result.get(0).getTitle());
+    }
+
+    @Test
+    void rename_givesTheBookmarkItsOwnName() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        Bookmark bookmark = new Bookmark();
+        bookmark.setTitleCode("Ancien");
+        when(bookmarkRepository.findByPersonAndInstitutionAndResourceUri(person, institution, "/action-unit/1"))
+                .thenReturn(List.of(bookmark));
+
+        boolean renamed = bookmarkService.rename(userInfo, "/action-unit/1", "  Nouveau ");
+
+        assertTrue(renamed);
+        assertEquals("Nouveau", bookmark.getTitleCode());
+        verify(bookmarkRepository).saveAll(List.of(bookmark));
+    }
+
+    @Test
+    void rename_withoutBookmark_returnsFalse() {
+        when(personMapper.invertConvert(any(PersonDTO.class))).thenReturn(person);
+        when(institutionMapper.invertConvert(any(InstitutionDTO.class))).thenReturn(institution);
+        when(bookmarkRepository.findByPersonAndInstitutionAndResourceUri(person, institution, "/x")).thenReturn(List.of());
+
+        assertFalse(bookmarkService.rename(userInfo, "/x", "Nom"));
+    }
+
+    @Test
+    void rename_blankName_isRejected() {
+        assertThrows(IllegalArgumentException.class, () -> bookmarkService.rename(userInfo, "/x", " "));
+        assertThrows(IllegalArgumentException.class, () -> bookmarkService.rename(userInfo, "/x", null));
     }
 
     @Test
