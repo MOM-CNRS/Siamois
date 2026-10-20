@@ -24,6 +24,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
@@ -61,7 +62,7 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitutionId(institution.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
         loadOptions();
-        usages = thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode());
+        usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
     }
 
     public void saveConfig() {
@@ -73,7 +74,7 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary, progressWrapper);
             notifySaved();
-            usages = thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode());
+            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

@@ -72,6 +72,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ActionUnitService implements ArkEntityService {
 
+    private static final String NOT_FOUND_BY_ID = "ActionUnit not found with ID: ";
+
+
     private final ActionUnitRepository actionUnitRepository;
     private final ProjectDeletionService projectDeletionService;
     private final RecordingUnitRepository recordingUnitRepository;
@@ -105,7 +108,7 @@ public class ActionUnitService implements ArkEntityService {
     public ActionUnitDTO findById(long id) {
         try {
             ActionUnit actionUnit = actionUnitRepository.findById(id)
-                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+                    .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + id));
             return convertWithCount(actionUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -1152,7 +1155,7 @@ public class ActionUnitService implements ArkEntityService {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
         ActionUnit project = actionUnitRepository.findById(actionUnitId)
-                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + actionUnitId));
+                .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + actionUnitId));
         Long projectArkId = project.getArk() != null ? project.getArk().getInternalId() : null;
 
         List<Long> arkIds = new ArrayList<>(projectDeletionService.deleteContent(actionUnitId));
@@ -1173,16 +1176,16 @@ public class ActionUnitService implements ArkEntityService {
     private ActionUnitDTO loadProjectDtoForLookupKey(String id) {
         String key = id == null ? "" : id.trim();
         if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
-            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
+            throw new ActionUnitNotFoundException(NOT_FOUND_BY_ID + key);
         }
         long projectId;
         try {
             projectId = Long.parseLong(key);
         } catch (NumberFormatException e) {
-            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
+            throw new ActionUnitNotFoundException(NOT_FOUND_BY_ID + key);
         }
         ActionUnit actionUnit = actionUnitRepository.findById(projectId)
-                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + projectId));
+                .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + projectId));
         return convertWithCount(actionUnit);
     }
 

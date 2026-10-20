@@ -22,6 +22,9 @@ import java.util.Map;
 @Repository
 public class RelationFieldRepository {
 
+    private static final String OWNER_PARAM = "owner";
+
+
     /** One value of a relation, and — for a stratigraphic one — what the relation says of it. */
     public record Row(long ownerId, long targetId, @Nullable String label,
                       @Nullable String role, @Nullable Long conceptId, @Nullable String conceptExternalId,
@@ -77,7 +80,7 @@ public class RelationFieldRepository {
         Query query = entityManager.createNativeQuery("SELECT v.* FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search)
                         + " ORDER BY lower(v.label) " + direction + " NULLS LAST, v.target_id " + direction)
-                .setParameter("owner", ownerId)
+                .setParameter(OWNER_PARAM, ownerId)
                 .setFirstResult(offset)
                 .setMaxResults(limit);
         bindSearch(query, search);
@@ -91,7 +94,7 @@ public class RelationFieldRepository {
     public long count(RelationField relation, long ownerId, @Nullable String search) {
         Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + valuesSql(relation) + ") v " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum; values are bound
                         + "WHERE v.owner_id = :owner" + searchClause(search))
-                .setParameter("owner", ownerId);
+                .setParameter(OWNER_PARAM, ownerId);
         bindSearch(query, search);
         return ((Number) query.getSingleResult()).longValue();
     }
@@ -115,7 +118,7 @@ public class RelationFieldRepository {
         Query query = entityManager.createNativeQuery("SELECT k.* FROM (" + acrossSql(kinds) + ") k " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum and the kinds' fixed names; values are bound
                         + "WHERE k.owner_id = :owner" + searchClause(search, "k")
                         + " ORDER BY " + order)
-                .setParameter("owner", ownerId)
+                .setParameter(OWNER_PARAM, ownerId)
                 .setFirstResult(offset)
                 .setMaxResults(limit);
         bindSearch(query, search);
@@ -133,7 +136,7 @@ public class RelationFieldRepository {
         if (kinds.isEmpty()) return 0;
         Query query = entityManager.createNativeQuery("SELECT count(*) FROM (" + acrossSql(kinds) + ") k " // NOSONAR S2077: SQL fragments are the constants of the RelationField enum and the kinds' fixed names; values are bound
                         + "WHERE k.owner_id = :owner" + searchClause(search, "k"))
-                .setParameter("owner", ownerId);
+                .setParameter(OWNER_PARAM, ownerId);
         bindSearch(query, search);
         return ((Number) query.getSingleResult()).longValue();
     }

@@ -86,6 +86,9 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FieldQueryService {
 
+    private static final String IS_ASYNCHRONOUS = "isAsynchronous";
+
+
     /** The {@link fr.siamois.domain.models.form.config.FormConfigAnswer} property naming each owner. */
     private static final Map<Class<?>, String> ANSWER_OWNERS = Map.of(
             RecordingUnit.class, "recordingUnit",
@@ -457,14 +460,14 @@ public class FieldQueryService {
      */
     private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<StratigraphicRelationship> rel,
                                                     Path<?> unit, String position, @Nullable List<Long> otherIds) {
-        Predicate asynchronous = cb.or(cb.isNull(rel.get("isAsynchronous")), cb.isTrue(rel.get("isAsynchronous")));
+        Predicate asynchronous = cb.or(cb.isNull(rel.get(IS_ASYNCHRONOUS)), cb.isTrue(rel.get(IS_ASYNCHRONOUS)));
         Predicate unit1IsOwner = cb.and(cb.equal(rel.get("unit1"), unit), otherIs(rel, "unit2", otherIds));
         Predicate unit2IsOwner = cb.and(cb.equal(rel.get("unit2"), unit), otherIs(rel, "unit1", otherIds));
         return switch (position) {
             // The owner is the older, first, unit: the other one is posterior to it.
             case "posterior" -> cb.and(asynchronous, unit1IsOwner);
             case "anterior" -> cb.and(asynchronous, unit2IsOwner);
-            default -> cb.and(cb.isFalse(rel.get("isAsynchronous")), cb.or(unit1IsOwner, unit2IsOwner));
+            default -> cb.and(cb.isFalse(rel.get(IS_ASYNCHRONOUS)), cb.or(unit1IsOwner, unit2IsOwner));
         };
     }
 

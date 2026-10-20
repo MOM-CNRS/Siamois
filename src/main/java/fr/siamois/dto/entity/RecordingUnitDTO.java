@@ -43,11 +43,11 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected String matrixColor;
     protected PersonDTO author;
     protected String description;
-    protected List<PersonDTO> contributors = new ArrayList<>();
+    protected ArrayList<PersonDTO> contributors = new ArrayList<>();
     protected SpatialUnitSummaryDTO spatialUnit;
     protected String comments;
-    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
-    protected Set<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
+    protected HashSet<StratigraphicRelationshipDTO> relationshipsAsUnit1 = new HashSet<>();
+    protected HashSet<StratigraphicRelationshipDTO> relationshipsAsUnit2 = new HashSet<>();
     protected Integer taq;
     protected Integer tpq;
     protected ConceptDTO chronologicalPhase;

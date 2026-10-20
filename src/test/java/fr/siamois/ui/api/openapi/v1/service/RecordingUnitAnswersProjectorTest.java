@@ -17,6 +17,7 @@ import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -129,7 +130,7 @@ class RecordingUnitAnswersProjectorTest {
         p1.setName("A");
         p1.setLastname("B");
         RecordingUnitDTO dto = recordingUnit(1L);
-        dto.setContributors(List.of(p1));
+        dto.setContributors(new ArrayList<>(List.of(p1)));
 
         Map<String, Object> answers = projector.project(List.of(dto), Set.of(fieldId("contributors")), Map.of()).get(1L);
 
