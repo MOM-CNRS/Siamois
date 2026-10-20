@@ -25,10 +25,17 @@ listes embarquées dans une fiche. Un type l'active avec `list.tree: true` dans 
 
 ## Compteurs
 
-- Le total du paginateur compte les **racines** (la pagination ne porte que sur elles).
-- Le compteur de la barre d'outils (`sélection/total`) affiche le nombre d'**entités distinctes qui
-  correspondent**, parents de contexte exclus. Il vient d'une requête de la liste à plat avec la même
-  recherche et les mêmes filtres (`matchCount` de `useTreeRows`).
+La réponse des racines (`tree=true`, liste d'organisation) porte deux nombres dans `meta` :
+
+- `total` : le nombre de **racines**. Il sert au paginateur, comme `limit` et `offset`, qui portent sur
+  les racines.
+- `matchCount` : le nombre d'**entités distinctes qui correspondent**, parents de contexte exclus. Il
+  alimente le compteur de la barre d'outils (`sélection/total`). Avec une recherche ou un filtre, c'est
+  la taille de l'ensemble des correspondances déjà calculé pour trouver les racines (aucune requête de
+  plus) ; sans filtre, c'est le nombre de toutes les entités du contexte (un `COUNT`).
+
+`matchCount` n'est présent que sur les racines en mode arbre (`TreePage`, `ListMeta.of`) : absent des
+autres listes et de la réponse des enfants.
 
 ## Édition et actions
 
@@ -92,9 +99,8 @@ des dépôts) en `UNION`, qui déduplique et ne boucle pas en cas de cycle. `Fil
   relations (elles ont aussi `POST` et `DELETE`) : leur faire porter un mode arbre mélange deux
   usages. Cible retenue : un paramètre `parent` (racines, ou l'id d'un nœud) sur la liste elle-même,
   et `/children` laissé à la gestion des relations. Pas encore fait.
-- **Compteur de résultats par une requête de la liste à plat.** Simple, mais une requête de plus à
-  chaque changement de recherche ou de filtre ; une valeur renvoyée par le serveur dans la réponse de
-  l'arbre l'éviterait.
+- **`matchCount` dans la réponse des racines**, séparé de `total` (qui pagine les racines) : le client
+  n'a pas à refaire une requête de liste pour compter.
 - **Pas d'ouverture automatique.** L'ancien JSF ouvrait les parents purs en mode filtré ; on a choisi
   de ne rien ouvrir. Contrepartie : avec une recherche, seules les racines sont visibles. Le badge
   « N résultats » par branche, ou un autre mécanisme de recherche, est à tester ensuite.
@@ -139,19 +145,36 @@ UE » ajoute une requête récursive. Front : `canShowTree` exige aujourd'hui `s
 chargement des enfants est écrit pour la liste d'organisation. Premier contexte visé : l'onglet des UE
 d'un projet.
 
-## Dette de qualité connue
+## Qualité : fait et reste à faire
 
-- **Aucun test** de la fonctionnalité (fermeture des ancêtres, drapeaux `hasChildren`/`match`,
-  enfants limités, `useTreeRows`, rendu `TreeTable`).
+Fait :
+
+- **Tests.** Front : `useTreeRows.test.tsx` (racines, feuilles, pas d'ouverture automatique, enfants au
+  dépliage sous le chemin du parent, entité sous deux parents, contexte, compteur, erreur, plafond,
+  branches conservées au rechargement) et `EntityListPanel.tree.test.tsx` (bascule, pas d'arbre en
+  contexte, colonnes de la liste, expandeur, compteur). Backend : `FilterDTOTest` (ce qui rend une
+  liste « filtrée »), `FieldQueryServiceQueryTest` (drapeau `filtered`), `SpatialUnitServiceTest`
+  (`treeFlags`), `RecordingUnitServiceTest` (drapeaux des racines sans et avec filtre, aucun drapeau
+  hors arbre, enfants sans filtre et avec un filtre sans résultat).
+- **Erreur de chargement des enfants :** la branche se referme et l'erreur s'affiche au-dessus du
+  tableau ; une branche conservée qu'on ne peut pas rouvrir au rechargement reste fermée sans faire
+  échouer les racines.
+- **Plafond de 200 enfants :** un message d'information s'affiche quand une branche ouverte en contient
+  davantage (`list.treeMoreChildren`).
+- **`EntityTable.tsx` allégé** de la colonne de sélection de l'arbre (`treeSelectionColumn.tsx`).
+
+Reste à faire :
+
 - **Coût du dépliage filtré :** chaque `children?tree=true` refait la requête de correspondances et la
-  fermeture des ancêtres. Le JSF gardait la fermeture en mémoire. Pistes : cache de courte durée, ou
-  « ce nœud a-t-il un résultat en dessous » sans fermeture globale.
-- **`EntityTable.tsx`** porte deux tableaux (`DataTable`, `TreeTable`) aux propriétés dupliquées ;
-  extraire la construction des colonnes.
-- **Erreur de chargement des enfants :** la branche reste ouverte sans enfants et sans message.
-- **Plafond de 200 enfants** par parent, sans pagination ni indication.
+  fermeture des ancêtres (le JSF gardait la fermeture en mémoire). Pistes : cache de courte durée (la
+  clé doit contenir l'utilisateur, l'organisation et les filtres de contexte), ou « ce nœud a-t-il un
+  résultat en dessous » sans fermeture globale. Non fait : le risque d'un cache périmé ou partagé entre
+  droits demande une décision.
+- **`EntityTable.tsx`** porte encore deux tableaux aux propriétés dupliquées (~700 lignes) ; extraire la
+  construction des colonnes (elle dépend de l'état d'édition des cellules).
 - **Précédent/suivant d'une fiche** ouverte depuis l'arbre suit l'ordre de la liste à plat
   (`rememberListContext`), pas celui de l'arbre.
 - **Création dans l'arbre :** l'arbre se recharge avec les branches ouvertes ; une entité créée sous
   une branche fermée reste invisible. Le JSF l'insérait à sa place (`LazyTreeMutator`).
-- Jamais validé contre un backend réel : uniquement typecheck, tests unitaires et harnais simulé.
+- **Validation contre un backend réel :** tout est vérifié par typecheck, tests unitaires et harnais
+  simulé (`?kind=list&type=recordingUnit`, bascule arbre).

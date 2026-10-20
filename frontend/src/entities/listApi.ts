@@ -8,7 +8,7 @@ import type { ListParams, PagedResult } from "./types";
 // generic panels. Kept generic over T so both a plain list and a scoped one share this shape.
 interface ListResponseBody<T> {
   data: T[];
-  meta: { total: number; limit: number; offset: number };
+  meta: { total: number; limit: number; offset: number; matchCount?: number };
 }
 
 /**
@@ -24,13 +24,17 @@ interface ListResponseBody<T> {
  * exactly as `getEntityType(scope.entityType)` already resolves every other cross-entity concern
  * (routes, icon, labels) elsewhere in this codebase.
  */
-export async function fetchList<T>(collectionPath: string, params: ListParams): Promise<PagedResult<T>> {
+export async function fetchList<T>(
+  collectionPath: string,
+  params: ListParams,
+): Promise<PagedResult<T>> {
   const query = new URLSearchParams();
   query.set("offset", String(params.offset));
   query.set("limit", String(params.limit));
   if (params.search) query.set("search", params.search);
   if (params.sort) query.set("sort", params.sort);
-  if (params.organizationId != null) query.set("organizationId", String(params.organizationId));
+  if (params.organizationId != null)
+    query.set("organizationId", String(params.organizationId));
   if (params.fields) query.set("fields", params.fields);
   if (params.tree) query.set("tree", "true");
   if (params.filters) {
@@ -49,6 +53,9 @@ export async function fetchList<T>(collectionPath: string, params: ListParams): 
     totalCount: body.meta.total,
     limit: body.meta.limit,
     offset: body.meta.offset,
+    ...(body.meta.matchCount != null
+      ? { matchCount: body.meta.matchCount }
+      : {}),
   };
 }
 

@@ -1,16 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "../../i18n";
 import type { TreeTableExpandedKeysType } from "primereact/treetable";
 import type { TreeNode as PrimeTreeNode } from "primereact/treenode";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../api/queryKeys";
-import type { EntityTypeConfig, ListParams, PagedResult } from "../../entities/types";
+import type {
+  EntityTypeConfig,
+  ListParams,
+  PagedResult,
+} from "../../entities/types";
 import type { RowRecord } from "./useEntityListData";
 
 // A parent's children are fetched in one request, up to this many.
 const CHILDREN_LIMIT = 200;
 
 /** The tree view's row: the list's own row plus what `?tree=true` adds. */
-export type TreeRow = RowRecord & { hasChildren?: boolean; match?: boolean; __treeKey?: string };
+export type TreeRow = RowRecord & {
+  hasChildren?: boolean;
+  match?: boolean;
+  __treeKey?: string;
+};
 
 // A PrimeReact TreeTable node: `key` is the node's path ("rootId/parentId/id"), so an entity under
 // several parents shows once per branch, each occurrence with its own open state; `data` is the
@@ -21,6 +30,10 @@ interface TreeState {
   roots: TreeNode[];
   expanded: TreeTableExpandedKeysType;
   total: number;
+  // The entities that match, each counted once however many branches show them (roots page: `total`).
+  matchCount: number;
+  // Open nodes whose children were cut at CHILDREN_LIMIT: path → how many children the node has.
+  truncated: Record<string, number>;
 }
 
 export interface UseTreeRowsOptions {
@@ -50,14 +63,26 @@ export interface EntityTableTree {
 function toNodes(rows: TreeRow[], parentPath?: string): TreeNode[] {
   return rows.map((row) => {
     const key = parentPath == null ? String(row.id) : `${parentPath}/${row.id}`;
-    return { key, data: { ...row, __treeKey: key }, leaf: row.hasChildren !== true };
+    return {
+      key,
+      data: { ...row, __treeKey: key },
+      leaf: row.hasChildren !== true,
+    };
   });
 }
 
-function updateNode(nodes: TreeNode[], path: string, update: (node: TreeNode) => TreeNode): TreeNode[] {
+function updateNode(
+  nodes: TreeNode[],
+  path: string,
+  update: (node: TreeNode) => TreeNode,
+): TreeNode[] {
   return nodes.map((node) => {
     if (node.key === path) return update(node);
-    if (node.children && path.startsWith(`${node.key}/`)) return { ...node, children: updateNode(node.children as TreeNode[], path, update) };
+    if (node.children && path.startsWith(`${node.key}/`))
+      return {
+        ...node,
+        children: updateNode(node.children as TreeNode[], path, update),
+      };
     return node;
   });
 }
@@ -65,7 +90,10 @@ function updateNode(nodes: TreeNode[], path: string, update: (node: TreeNode) =>
 function findNode(nodes: TreeNode[], path: string): TreeNode | undefined {
   for (const node of nodes) {
     if (node.key === path) return node;
-    const found = node.children && path.startsWith(`${node.key}/`) ? findNode(node.children as TreeNode[], path) : undefined;
+    const found =
+      node.children && path.startsWith(`${node.key}/`)
+        ? findNode(node.children as TreeNode[], path)
+        : undefined;
     if (found) return found;
   }
   return undefined;
@@ -77,22 +105,44 @@ function findNode(nodes: TreeNode[], path: string): TreeNode | undefined {
  * that merely lead to a match are `isContext`) but never opens a branch. The server sorts the roots
  * and each parent's children the same way, so sorting never breaks the hierarchy. Branches opened by
  * hand stay open when the list is fetched again (a saved cell, a sort, a search). An entity under
- * several parents appears in each branch; `matchCount` counts it once.
+ * several parents appears in each branch; `matchCount` (from the server) counts it once.
  */
-export function useTreeRows({ entityType, config, organizationId, params, fields, offset, limit, enabled }: UseTreeRowsOptions) {
-  const narrowed = Boolean(params.search) || Object.keys(params.filters ?? {}).length > 0;
+export function useTreeRows({
+  entityType,
+  config,
+  organizationId,
+  params,
+  fields,
+  offset,
+  limit,
+  enabled,
+}: UseTreeRowsOptions) {
+  const narrowed =
+    Boolean(params.search) || Object.keys(params.filters ?? {}).length > 0;
   const fieldsParam = fields.length > 0 ? fields.join(",") : undefined;
 
   const fetchPage = useCallback(
     (extra: Partial<ListParams>) =>
-      config!.api.list({ ...params, organizationId, fields: fieldsParam, tree: true, ...extra } as ListParams) as Promise<
-        PagedResult<TreeRow>
-      >,
+      config!.api.list({
+        ...params,
+        organizationId,
+        fields: fieldsParam,
+        tree: true,
+        ...extra,
+      } as ListParams) as Promise<PagedResult<TreeRow>>,
     [config, params, organizationId, fieldsParam],
   );
   const fetchChildren = useCallback(
     (parent: TreeRow) =>
-      fetchPage({ offset: 0, limit: CHILDREN_LIMIT, scope: { entityType, id: parent.id as string | number, path: "children" } }),
+      fetchPage({
+        offset: 0,
+        limit: CHILDREN_LIMIT,
+        scope: {
+          entityType,
+          id: parent.id as string | number,
+          path: "children",
+        },
+      }),
     [fetchPage, entityType],
   );
 
@@ -100,41 +150,65 @@ export function useTreeRows({ entityType, config, organizationId, params, fields
   const openRef = useRef<Set<string>>(new Set());
 
   const query = useQuery({
-    queryKey: [...queryKeys.entityList(entityType), "tree", organizationId, params, fieldsParam, offset, limit],
+    queryKey: [
+      ...queryKeys.entityList(entityType),
+      "tree",
+      organizationId,
+      params,
+      fieldsParam,
+      offset,
+      limit,
+    ],
     enabled: enabled && config != null,
     placeholderData: (previous) => previous,
     queryFn: async (): Promise<TreeState> => {
       const page = await fetchPage({ offset, limit });
       const keep = new Set(openRef.current);
       const expanded: TreeTableExpandedKeysType = {};
+      const truncated: Record<string, number> = {};
+      // A branch that can't be reopened (its request failed) stays closed: the roots are what matter.
       const open = async (nodes: TreeNode[]): Promise<TreeNode[]> =>
         Promise.all(
           nodes.map(async (node) => {
-            if (node.leaf || !keep.has(node.key as string)) return node;
-            expanded[node.key as string] = true;
-            return { ...node, children: await open(toNodes((await fetchChildren(node.data)).data, node.key as string)) };
+            const path = node.key as string;
+            if (node.leaf || !keep.has(path)) return node;
+            try {
+              const children = await fetchChildren(node.data);
+              expanded[path] = true;
+              if (children.totalCount > children.data.length)
+                truncated[path] = children.totalCount;
+              return {
+                ...node,
+                children: await open(toNodes(children.data, path)),
+              };
+            } catch {
+              return node;
+            }
           }),
         );
-      return { roots: await open(toNodes(page.data)), expanded, total: page.totalCount };
+      return {
+        roots: await open(toNodes(page.data)),
+        expanded,
+        total: page.totalCount,
+        matchCount: page.matchCount ?? page.totalCount,
+        truncated,
+      };
     },
-  });
-
-  // The entities that match, each counted once however many branches show it: the flat list's total
-  // for the same search and filters (the tree's own total counts roots, for the paging).
-  const matches = useQuery({
-    queryKey: [...queryKeys.entityList(entityType), "tree-matches", organizationId, params],
-    enabled: enabled && config != null,
-    placeholderData: (previous) => previous,
-    queryFn: () => config!.api.list({ ...params, organizationId, offset: 0, limit: 1 } as ListParams),
   });
 
   // What was fetched, plus what the user opened since.
   const [tree, setTree] = useState<TreeState | null>(null);
+  const [childrenError, setChildrenError] = useState<Error | null>(null);
   useEffect(() => {
-    if (query.data) setTree(query.data);
+    if (query.data) {
+      setTree(query.data);
+      setChildrenError(null);
+    }
   }, [query.data]);
   useEffect(() => {
-    openRef.current = new Set(Object.keys(tree?.expanded ?? {}).filter((id) => tree?.expanded[id]));
+    openRef.current = new Set(
+      Object.keys(tree?.expanded ?? {}).filter((id) => tree?.expanded[id]),
+    );
   }, [tree]);
 
   const onToggle = useCallback((keys: TreeTableExpandedKeysType) => {
@@ -145,8 +219,34 @@ export function useTreeRows({ entityType, config, organizationId, params, fields
     async (node: PrimeTreeNode) => {
       const path = node.key as string;
       if (!tree || findNode(tree.roots, path)?.children) return;
-      const children = toNodes((await fetchChildren((node as TreeNode).data)).data, path);
-      setTree((latest) => (latest ? { ...latest, roots: updateNode(latest.roots, path, (n) => ({ ...n, children })) } : latest));
+      try {
+        const page = await fetchChildren((node as TreeNode).data);
+        const children = toNodes(page.data, path);
+        setChildrenError(null);
+        setTree((latest) =>
+          latest
+            ? {
+                ...latest,
+                roots: updateNode(latest.roots, path, (n) => ({
+                  ...n,
+                  children,
+                })),
+                truncated:
+                  page.totalCount > page.data.length
+                    ? { ...latest.truncated, [path]: page.totalCount }
+                    : latest.truncated,
+              }
+            : latest,
+        );
+      } catch (e) {
+        // The branch was marked open before its children arrived: close it again and say why.
+        setChildrenError(e instanceof Error ? e : new Error(String(e)));
+        setTree((latest) =>
+          latest
+            ? { ...latest, expanded: { ...latest.expanded, [path]: false } }
+            : latest,
+        );
+      }
     },
     [tree, fetchChildren],
   );
@@ -168,20 +268,30 @@ export function useTreeRows({ entityType, config, organizationId, params, fields
     const walk = (nodes: TreeNode[]) => {
       for (const node of nodes) {
         out.push(node.data);
-        if (node.children && tree?.expanded[node.key as string]) walk(node.children as TreeNode[]);
+        if (node.children && tree?.expanded[node.key as string])
+          walk(node.children as TreeNode[]);
       }
     };
     if (tree) walk(tree.roots);
     return out;
   }, [tree]);
 
+  // The first open branch whose children don't all fit (a branch is cut at CHILDREN_LIMIT children).
+  const notice = useMemo(() => {
+    const cut = Object.entries(tree?.truncated ?? {}).find(
+      ([path]) => tree?.expanded[path],
+    );
+    return cut ? t("list.treeMoreChildren", { count: CHILDREN_LIMIT }) : null;
+  }, [tree]);
+
   return {
     rows,
+    notice,
     totalCount: tree?.total ?? 0,
-    matchCount: matches.data?.totalCount ?? 0,
+    matchCount: tree?.matchCount ?? 0,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
-    error: query.error,
+    error: query.error ?? childrenError,
     tree: tableTree,
   };
 }

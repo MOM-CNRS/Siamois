@@ -23,6 +23,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -568,7 +569,23 @@ public class SpatialUnitService implements ArkEntityService {
         log.trace("Found {} SpatialUnits", result.getTotalElements());
         Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
         hydrateRecordingUnitCountsForPage(page);
-        return page;
+        return filterDTO.isRootOnly() ? TreePage.of(page, countMatches(institutionDTO, filterDTO)) : page;
+    }
+
+    /**
+     * The entities that match, for the tree view: with a search or a filter, the match set already
+     * computed to find the roots; without, every entity of the context.
+     */
+    private long countMatches(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        if (filterDTO.hasUserFilters() && filterDTO.getMatchIds() != null) {
+            return filterDTO.getMatchIds().size();
+        }
+        filterDTO.setRootOnly(false);
+        try {
+            return countSearchResults(institutionDTO, filterDTO);
+        } finally {
+            filterDTO.setRootOnly(true);
+        }
     }
 
     private void hydrateRecordingUnitCountsForPage(Page<SpatialUnitDTO> page) {

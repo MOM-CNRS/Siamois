@@ -2033,6 +2033,124 @@ class RecordingUnitServiceTest {
             verify(phaseRepository, never()).findByRecordingUnitId(any());
         }
 
+        // ---------- tree view (rootOnly) ----------
+
+        private RecordingUnit unit(long id) {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(id);
+            ru.setFullIdentifier("RU-" + id);
+            return ru;
+        }
+
+        private RecordingUnitDTO dto(long id) {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            dto.setId(id);
+            return dto;
+        }
+
+        @Test
+        void searchRecordingUnit_rootOnlyWithoutAFilter_flagsWhichRowsHaveChildrenAndCountsEveryRowAsAMatch() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            RecordingUnit a = unit(1L);
+            RecordingUnit b = unit(2L);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(a, b)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+            when(recordingUnitMapper.toLightDto(b)).thenReturn(dto(2L));
+            when(recordingUnitRepository.findParentIdsHavingChildren(List.of(1L, 2L))).thenReturn(List.of(1L));
+            // No filter: every recording unit of the context is a result, not just the roots on this page.
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(7L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(true), pageable);
+
+            assertEquals(7L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+
+            assertEquals(true, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(false, result.getContent().get(1).getTreeHasChildren());
+            assertEquals(true, result.getContent().get(0).getTreeMatch());
+            assertEquals(true, result.getContent().get(1).getTreeMatch());
+        }
+
+        @Test
+        void searchRecordingUnit_rootOnlyWithAFilter_marksTheParentsThatOnlyLeadToAMatchAsContext() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            RecordingUnit root = unit(1L);
+            RecordingUnit match = unit(5L);
+            // 5 matches; its closure is 5 and its ancestor 1, the only root.
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{5L})).thenReturn(List.of(5L, 1L));
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(root)));
+            when(recordingUnitMapper.toLightDto(root)).thenReturn(dto(1L));
+            when(recordingUnitRepository.findParentIdsHavingChildrenAmong(eq(List.of(1L)), any())).thenReturn(List.of(1L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable);
+
+            RecordingUnitDTO row = result.getContent().get(0);
+            assertEquals(true, row.getTreeHasChildren());
+            assertEquals(false, row.getTreeMatch());
+            // The one match, not the one root: counted from the match set, without another query.
+            assertEquals(1L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+            verify(recordingUnitRepository, never()).count(any(Specification.class));
+            verify(recordingUnitRepository, never()).findParentIdsHavingChildren(any());
+        }
+
+        @Test
+        void searchRecordingUnit_notRootOnly_addsNoTreeFlags() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            RecordingUnit a = unit(1L);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(a)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(false), pageable);
+
+            assertEquals(null, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(null, result.getContent().get(0).getTreeMatch());
+            verify(recordingUnitRepository, never()).findParentIdsHavingChildren(any());
+        }
+
+        @Test
+        void findChildrenOfTree_withoutAFilter_returnsEveryChildFlagged() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            when(recordingUnitRepository.findParentIdsHavingChildren(List.of(10L))).thenReturn(List.of());
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true));
+
+            assertEquals(1, result.getTotalElements());
+            assertEquals(false, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(true, result.getContent().get(0).getTreeMatch());
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void findChildrenOfTree_withAFilterThatMatchesNothing_isEmptyWithoutQueryingTheChildren() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitSortFilterService.ancestorClosure(any(), any())).thenAnswer(inv -> {
+                FilterDTO f = inv.getArgument(1);
+                f.setAncestorClosure(Set.of());
+                f.setMatchIds(Set.of());
+                return Set.<Long>of();
+            });
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), filters);
+
+            assertEquals(0, result.getTotalElements());
+        }
+
         @Test
         void searchRecordingUnit_withSpecimenCountSort_stripsSortFromPageable() {
             InstitutionDTO institution = new InstitutionDTO();

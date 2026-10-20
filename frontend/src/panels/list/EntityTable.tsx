@@ -8,7 +8,6 @@ import {
   type SyntheticEvent,
 } from "react";
 import { Column } from "primereact/column";
-import { Checkbox } from "primereact/checkbox";
 import {
   DataTable,
   type DataTableSelectionMultipleChangeEvent,
@@ -48,6 +47,7 @@ import { PAGE_SIZE_OPTIONS } from "../tableState";
 import { useWriteMode } from "../writeMode";
 import { isFieldPending } from "../usePagedList";
 import type { RowRecord } from "./useEntityListData";
+import { buildTreeSelectionColumn } from "./treeSelectionColumn";
 import type { EntityTableTree } from "./useTreeRows";
 import { t } from "../../i18n";
 
@@ -448,56 +448,16 @@ export function EntityTable({
     return classes;
   };
 
-  // The tree view has no PrimeReact selection (a TreeTable's would tick whole branches): a plain
-  // checkbox per row, keyed on the row's place in the tree.
-  const treeKeyOf = (row: RowRecord) =>
-    (row as { __treeKey?: string }).__treeKey ?? String(row.id);
-  const treeRowsOnScreen = (nodes: TreeNode[]): RowRecord[] =>
-    nodes.flatMap((n) => [
-      n.data as RowRecord,
-      ...(n.children && tree?.expandedKeys[n.key as string]
-        ? treeRowsOnScreen(n.children)
-        : []),
-    ]);
-  const treeSelectionColumn = (
-    <Column
-      columnKey="__selection"
-      {...(lastFrozenIndex >= 0 ? frozenProps(0) : {})}
-      headerStyle={{ width: "3rem" }}
-      className={`p-selection-column${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
-      headerClassName={`p-selection-column entity-list-panel-selection-header${lastFrozenIndex >= 0 ? ` ${FROZEN_COLUMN_CLASS}` : ""}`}
-      reorderable={false}
-      header={
-        <Checkbox
-          checked={rows.length > 0 && selectedRows.length === rows.length}
-          onChange={(e) =>
-            onSelectionChange(
-              e.checked ? treeRowsOnScreen(tree?.nodes ?? []) : [],
-            )
-          }
-        />
-      }
-      body={(arg: unknown) => {
-        const row = rowOf(arg);
-        if (isSkeletonRow(row)) return null;
-        const checked = selectedRows.some(
-          (r) => treeKeyOf(r) === treeKeyOf(row),
-        );
-        return (
-          <Checkbox
-            checked={checked}
-            onChange={(e) =>
-              onSelectionChange(
-                e.checked
-                  ? [...selectedRows, row]
-                  : selectedRows.filter((r) => treeKeyOf(r) !== treeKeyOf(row)),
-              )
-            }
-          />
-        );
-      }}
-    />
-  );
+  const treeSelectionColumn = buildTreeSelectionColumn({
+    nodes: tree?.nodes ?? [],
+    expandedKeys: tree?.expandedKeys ?? {},
+    rows,
+    selectedRows,
+    onSelectionChange,
+    rowOf,
+    isSkeleton: isSkeletonRow,
+    frozen: lastFrozenIndex >= 0 ? frozenProps(0) : undefined,
+  });
 
   const filler = (
     <Column

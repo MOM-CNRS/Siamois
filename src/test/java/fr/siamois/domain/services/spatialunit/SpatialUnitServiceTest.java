@@ -1380,4 +1380,53 @@ class SpatialUnitServiceTest {
         verify(spatialUnitRepository, never()).deleteById(anyLong());
     }
 
+
+    // ---------- tree view flags ----------
+
+    @Test
+    void treeFlags_withoutAFilter_everyRowCountsAsAMatchAndHasChildrenWhenItHasAny() {
+        when(spatialUnitRepository.findParentIdsHavingChildren(List.of(1L, 2L))).thenReturn(List.of(1L));
+
+        SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(1L, 2L), new fr.siamois.dto.FilterDTO(true));
+
+        assertEquals(java.util.Set.of(1L), flags.withChildren());
+        assertNull(flags.matchIds());
+    }
+
+    @Test
+    void treeFlags_withAFilter_onlyChildrenInTheClosureCountAndTheMatchesAreReported() {
+        fr.siamois.dto.FilterDTO filter = new fr.siamois.dto.FilterDTO(true);
+        filter.add("name", "x", fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        filter.setAncestorClosure(java.util.Set.of(1L, 5L));
+        filter.setMatchIds(java.util.Set.of(5L));
+        when(spatialUnitRepository.findParentIdsHavingChildrenAmong(List.of(1L, 2L), filter.getAncestorClosure()))
+                .thenReturn(List.of(1L));
+
+        SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(1L, 2L), filter);
+
+        assertEquals(java.util.Set.of(1L), flags.withChildren());
+        assertEquals(java.util.Set.of(5L), flags.matchIds());
+        org.mockito.Mockito.verify(spatialUnitRepository, org.mockito.Mockito.never()).findParentIdsHavingChildren(org.mockito.ArgumentMatchers.anyCollection());
+    }
+
+    @Test
+    void treeFlags_withAFilterThatMatchesNothing_hasNoChildrenAndDoesNotQuery() {
+        fr.siamois.dto.FilterDTO filter = new fr.siamois.dto.FilterDTO(true);
+        filter.add("name", "x", fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        filter.setAncestorClosure(java.util.Set.of());
+        filter.setMatchIds(java.util.Set.of());
+
+        SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(1L), filter);
+
+        assertTrue(flags.withChildren().isEmpty());
+        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void treeFlags_ofAnEmptyPage_doesNotQuery() {
+        SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(), new fr.siamois.dto.FilterDTO(true));
+
+        assertTrue(flags.withChildren().isEmpty());
+        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+    }
 }

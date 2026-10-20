@@ -15,6 +15,9 @@ export interface PagedResult<T> {
   totalCount: number;
   limit: number;
   offset: number;
+  // The tree view only: totalCount counts the roots (it pages them); this is the number of entities
+  // that match the search and filters, each counted once.
+  matchCount?: number;
 }
 
 /**

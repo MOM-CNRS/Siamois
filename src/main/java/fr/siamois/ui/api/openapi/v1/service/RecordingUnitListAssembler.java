@@ -52,6 +52,6 @@ public class RecordingUnitListAssembler {
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
-        return new RecordingUnitListResponse(resources, new ListMeta(page.getTotalElements(), limit, (long) offset));
+        return new RecordingUnitListResponse(resources, ListMeta.of(page, limit, offset));
     }
 }

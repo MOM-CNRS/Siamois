@@ -196,6 +196,18 @@ class FieldQueryServiceQueryTest {
     // ---------- system scalar columns ----------
 
     @Test
+    void aFilterMarksTheQueryFiltered_aSortAloneDoesNot() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        // The tree view treats a filtered list like a searched one; a mere sort narrows nothing.
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).filtered()).isTrue();
+        assertThat(build(RecordingUnit.class, sort(true)).filtered()).isFalse();
+        assertThat(build(RecordingUnit.class, sort(true)).ordered()).isTrue();
+        assertThat(FieldQuery.NONE.filtered()).isFalse();
+    }
+
+    @Test
     void textColumn_filterContains_andSortLowercased() {
         field(new CustomFieldText(), true, "fullIdentifier");
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);

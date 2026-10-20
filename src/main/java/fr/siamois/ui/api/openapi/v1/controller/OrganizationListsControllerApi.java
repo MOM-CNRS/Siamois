@@ -447,7 +447,7 @@ public class OrganizationListsControllerApi {
     }
 
     private static ListMeta meta(Page<?> page, int limit, int offset) {
-        return new ListMeta(page.getTotalElements(), limit, (long) offset);
+        return ListMeta.of(page, limit, offset);
     }
 
     private static <B> ResponseEntity<B> ok(B body, Page<?> page) {

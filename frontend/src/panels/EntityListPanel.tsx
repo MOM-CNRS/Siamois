@@ -284,6 +284,7 @@ export function EntityListPanel({
         />
       )}
       {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
+      {showTree && treeRows.notice && <Message severity="info" className="entity-list-panel-action-error" text={treeRows.notice} />}
       {rowActions.notice && <ActionMessage severity="success" text={rowActions.notice} onClose={rowActions.clearNotice} />}
       {/* A page or a column arriving: the previous page stays on screen meanwhile (and a new
           column shows skeleton cells), so this is what says something is loading. Same convention as the

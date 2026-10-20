@@ -241,7 +241,7 @@ public class PlaceOpenApiService {
                 .toList();
 
         resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
-        ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
+        ListMeta meta = ListMeta.of(page, limit, offset);
         return new PlaceListResponse(resources, meta);
     }
 

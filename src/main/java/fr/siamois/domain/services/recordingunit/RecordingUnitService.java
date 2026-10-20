@@ -27,6 +27,7 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -1287,8 +1288,25 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations);
         if (filters.isRootOnly()) {
             applyTreeFlags(page, filters);
+            return TreePage.of(page, countTreeMatches(institution, filters));
         }
         return page;
+    }
+
+    /**
+     * The entities that match, for the tree view: with a search or a filter, the match set already
+     * computed to find the roots; without, every recording unit of the context.
+     */
+    private long countTreeMatches(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.hasUserFilters() && filters.getMatchIds() != null) {
+            return filters.getMatchIds().size();
+        }
+        filters.setRootOnly(false);
+        try {
+            return countSearchResults(institution, filters);
+        } finally {
+            filters.setRootOnly(true);
+        }
     }
 
     /**
