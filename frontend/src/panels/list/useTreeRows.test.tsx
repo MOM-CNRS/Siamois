@@ -162,6 +162,26 @@ describe("useTreeRows", () => {
     expect(latest.rows.map((r) => r.id)).toEqual([1, 10, 11]);
   });
 
+  it("fetches the children from the same scoped list with `parent` inside a scope", async () => {
+    params = { scope: { entityType: "project", id: 5 } };
+    listMock.mockImplementation(async (p) =>
+      p.parent != null
+        ? page([row(10)])
+        : page([row(1, { hasChildren: true })]),
+    );
+    mount();
+    await flush();
+    await open("1");
+
+    expect(treeCalls().some((p) => p.scope?.path === "children")).toBe(false);
+    expect(treeCalls()[1]).toMatchObject({
+      tree: true,
+      parent: 1,
+      scope: { entityType: "project", id: 5 },
+    });
+    expect(latest.rows.map((r) => r.id)).toEqual([1, 10]);
+  });
+
   it("shows an entity under two parents once per branch, each with its own key", async () => {
     listMock.mockImplementation(async (p) => {
       if (!p.scope)

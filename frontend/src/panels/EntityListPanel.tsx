@@ -10,8 +10,14 @@ import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/creatableProjects";
-import type { CreatePrefill, EntityPreview, EntityTypeConfig, FilterValue, ListScope, RowActionDef } from "../entities/types";
-import { t } from "../i18n";
+import type {
+  CreatePrefill,
+  EntityPreview,
+  EntityTypeConfig,
+  FilterValue,
+  ListScope,
+  RowActionDef,
+} from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
 import type { FilterOption } from "../fields/optionSources";
@@ -20,6 +26,13 @@ import { queryKeys } from "../api/queryKeys";
 import { EntityTable } from "./list/EntityTable";
 import { useTreeRows } from "./list/useTreeRows";
 import { EntityTableSettings } from "./list/EntityTableSettings";
+import {
+  availableViews,
+  DEFAULT_LIST_VIEW,
+  resolveViewMode,
+  viewOptions,
+  type ListViewMode,
+} from "./list/listViews";
 import { ListSearchBox } from "./list/ListSearchBox";
 import { ListToolbar } from "./list/ListToolbar";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
@@ -39,7 +52,11 @@ export interface EntityListPanelProps {
   // Opens the row's entity in the right-hand overview pane instead of replacing the list (plan §8
   // phase 5, JSF's own row-click behavior) — wired to the identifier cell only, matching JSF's
   // CommandLinkColumn (the rest of the row is inert, unlike the pre-phase-5 whole-row click).
-  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  onOpenOverview?: (
+    entityType: string,
+    id: string | number,
+    preview?: EntityPreview,
+  ) => void;
   // The overview's current entity id, when it's showing this same entity type — highlights that
   // row (plan §8 phase 5's rowClassName), mirroring EntityTableViewModel.getRowStyleClass's
   // "overview-open".
@@ -75,9 +92,16 @@ export interface EntityListPanelProps {
   seed?: ListSeed;
 }
 
-
 /** A dismissable line under the toolbar: what a row action just did, or why it failed. */
-function ActionMessage({ severity, text, onClose }: { severity: "success" | "error"; text: string; onClose: () => void }) {
+function ActionMessage({
+  severity,
+  text,
+  onClose,
+}: {
+  severity: "success" | "error";
+  text: string;
+  onClose: () => void;
+}) {
   return (
     <Message
       severity={severity}
@@ -85,7 +109,14 @@ function ActionMessage({ severity, text, onClose }: { severity: "success" | "err
       content={
         <span className="sia-filled-row">
           <span className="sia-grow">{text}</span>
-          <Button icon="bi bi-x" text rounded size="small" aria-label="Fermer" onClick={onClose} />
+          <Button
+            icon="bi bi-x"
+            text
+            rounded
+            size="small"
+            aria-label="Fermer"
+            onClick={onClose}
+          />
         </span>
       }
     />
@@ -116,19 +147,33 @@ export function EntityListPanel({
   extraRowActions,
   seed,
 }: EntityListPanelProps) {
-  const config = getEntityType(entityType) as EntityTypeConfig<unknown, unknown> | undefined;
+  const config = getEntityType(entityType) as
+    EntityTypeConfig<unknown, unknown> | undefined;
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
   const prefsKey = listPrefsKey(entityType, scope, organizationId);
   const queryClient = useQueryClient();
   const writeMode = useWriteMode();
 
-  // The hierarchy view, for the organization-wide list of a type that has one (places, recording
-  // units): a switch in the toolbar, the flat list staying the default.
-  const canShowTree = config?.list.tree === true && scope == null;
-  const [treeView, setTreeView] = usePaneState<boolean>("treeView", false);
-  const showTree = canShowTree && treeView;
+  // How the list is shown (flat list, tree, later a map…): chosen in the gear menu, the flat list
+  // staying the default.
+  const views = availableViews(config, scope);
+  const [rememberedView, setViewMode] = usePaneState<ListViewMode>(
+    "viewMode",
+    DEFAULT_LIST_VIEW,
+  );
+  const viewMode = resolveViewMode(rememberedView, views);
+  const showTree = viewMode === "tree";
 
-  const { table, catalog, hasSchema, pinnedFieldIds, params, page, rowRules, collectionTotal } = useEntityListData({
+  const {
+    table,
+    catalog,
+    hasSchema,
+    pinnedFieldIds,
+    params,
+    page,
+    rowRules,
+    collectionTotal,
+  } = useEntityListData({
     entityType,
     config,
     organizationId,
@@ -137,7 +182,8 @@ export function EntityListPanel({
     embedded,
     paused: showTree,
   });
-  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters } = table;
+  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters } =
+    table;
   const treeRows = useTreeRows({
     entityType,
     config,
@@ -148,7 +194,9 @@ export function EntityListPanel({
     limit: state.limit,
     enabled: showTree,
   });
-  const { rows, totalCount, isLoading, isFetching, error } = showTree ? treeRows : page;
+  const { rows, totalCount, isLoading, isFetching, error } = showTree
+    ? treeRows
+    : page;
 
   // Keyed on the nonce alone: the seed object is rebuilt by its owner, the search it carries is not
   // a reason to apply it again (the user may have edited it since).
@@ -160,17 +208,24 @@ export function EntityListPanel({
     setSearch(seedSearch ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedNonce]);
-  const { columns, fieldByColumn, togglerOptions, filterSpecs } = useListColumns({
-    config,
-    catalog,
-    visibleColumns: state.visibleColumns,
-    pinnedFieldIds,
-    organizationId,
-    scope,
-  });
+  const { columns, fieldByColumn, togglerOptions, filterSpecs } =
+    useListColumns({
+      config,
+      catalog,
+      visibleColumns: state.visibleColumns,
+      pinnedFieldIds,
+      organizationId,
+      scope,
+    });
 
-  const [selectedRows, setSelectedRows] = usePaneState<RowRecord[]>("selection", []);
-  const clearSelection = useCallback(() => setSelectedRows([]), [setSelectedRows]);
+  const [selectedRows, setSelectedRows] = usePaneState<RowRecord[]>(
+    "selection",
+    [],
+  );
+  const clearSelection = useCallback(
+    () => setSelectedRows([]),
+    [setSelectedRows],
+  );
 
   // Created and duplicated entities open where a row's own identifier would (the overview).
   const rowActions = useRowActions({
@@ -185,35 +240,62 @@ export function EntityListPanel({
 
   // An organization-wide list of a kind created inside a project: its create form picks the project,
   // so "Créer" needs at least one project where the caller may create this kind.
-  const createNeedsPickedProject = config?.list.createProjectKind != null && scopeProjectId(scope) == null;
+  const createNeedsPickedProject =
+    config?.list.createProjectKind != null && scopeProjectId(scope) == null;
   const creatableProjects = useQuery({
-    queryKey: queryKeys.creatableProjects(config?.list.createProjectKind, organizationId),
-    queryFn: () => searchCreatableProjects(organizationId!, config!.list.createProjectKind!, undefined, 1),
-    enabled: createNeedsPickedProject && organizationId != null && creatable !== false,
+    queryKey: queryKeys.creatableProjects(
+      config?.list.createProjectKind,
+      organizationId,
+    ),
+    queryFn: () =>
+      searchCreatableProjects(
+        organizationId!,
+        config!.list.createProjectKind!,
+        undefined,
+        1,
+      ),
+    enabled:
+      createNeedsPickedProject && organizationId != null && creatable !== false,
   });
   const canCreateInSomeProject = (creatableProjects.data?.totalCount ?? 0) > 0;
 
   // Labels for the ids an "in" filter carries — FilterValue itself is ids-only (the wire shape),
   // so the chip bar needs this to print "Statut: En cours" rather than "Statut: 4711".
-  const [filterOptionsByKey, setFilterOptionsByKey] = usePaneState<Record<string, FilterOption[]>>("filterOptions", {});
-  function onFilterChange(key: string, value: FilterValue | undefined, options?: FilterOption[]) {
+  const [filterOptionsByKey, setFilterOptionsByKey] = usePaneState<
+    Record<string, FilterOption[]>
+  >("filterOptions", {});
+  function onFilterChange(
+    key: string,
+    value: FilterValue | undefined,
+    options?: FilterOption[],
+  ) {
     const next = { ...state.filters };
     if (value) next[key] = value;
     else delete next[key];
     setFilters(next);
-    if (options) setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
+    if (options)
+      setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
   }
 
   // Re-fetches the list (so the saved row's new value shows without a full page reload) and, in
   // case the same entity is open in a detail view or the overview pane, that too — the overlay
   // itself doesn't know which other views might be showing this row.
   function onCellSaved(row: RowRecord) {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
-    if (row.id != null) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetail(entityType, row.id) });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.entityList(entityType),
+    });
+    if (row.id != null)
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.entityDetail(entityType, row.id),
+      });
   }
 
   if (!config) {
-    return <div className="entity-list-panel-unsupported">Unknown entity type &quot;{entityType}&quot;</div>;
+    return (
+      <div className="entity-list-panel-unsupported">
+        Unknown entity type &quot;{entityType}&quot;
+      </div>
+    );
   }
 
   const hasActionBarSettings = rowActions.items.length > 0;
@@ -221,7 +303,11 @@ export function EntityListPanel({
 
   const body = (
     <>
-      {(config.list.searchable || onCreate || config.list.createForm || hasGear || filterSpecs.length > 0) && (
+      {(config.list.searchable ||
+        onCreate ||
+        config.list.createForm ||
+        hasGear ||
+        filterSpecs.length > 0) && (
         <ListToolbar
           entityType={entityType}
           config={config}
@@ -235,7 +321,9 @@ export function EntityListPanel({
           createPrefill={createPrefill}
           endExtra={toolbarExtra}
           createBlocked={
-            createNeedsPickedProject && !canCreateInSomeProject ? { loading: creatableProjects.isLoading } : null
+            createNeedsPickedProject && !canCreateInSomeProject
+              ? { loading: creatableProjects.isLoading }
+              : null
           }
           onCreate={onCreate}
           // Opens in the overview, so the list stays where it was; the full fiche is one click away
@@ -247,45 +335,78 @@ export function EntityListPanel({
           start={
             <>
               <EntityTableSettings
+                views={
+                  views.length > 1
+                    ? {
+                        options: viewOptions(views),
+                        value: viewMode,
+                        onChange: (mode) => {
+                          setViewMode(mode);
+                          // A page of roots is not a page of the flat list: back to the first.
+                          setPage(0, state.limit);
+                        },
+                      }
+                    : null
+                }
                 columns={
-                  hasSchema ? { options: togglerOptions, visible: state.visibleColumns, onChange: setVisibleColumns } : null
+                  hasSchema
+                    ? {
+                        options: togglerOptions,
+                        visible: state.visibleColumns,
+                        onChange: setVisibleColumns,
+                      }
+                    : null
                 }
                 actionBar={
                   hasActionBarSettings
-                    ? { items: rowActions.items, layout: rowActions.actionBar, onChange: rowActions.setActionBar }
+                    ? {
+                        items: rowActions.items,
+                        layout: rowActions.actionBar,
+                        onChange: rowActions.setActionBar,
+                      }
                     : null
                 }
               />
-              {canShowTree && (
-                <Button
-                  icon={showTree ? "bi bi-list-ul" : "bi bi-diagram-3"}
-                  text
-                  rounded
-                  size="small"
-                  aria-label={showTree ? t("list.viewList") : t("list.viewTree")}
-                  tooltip={showTree ? t("list.viewList") : t("list.viewTree")}
-                  tooltipOptions={{ position: "bottom" }}
-                  onClick={() => {
-                    setTreeView(!showTree);
-                    // A page of roots is not a page of the flat list: back to the first.
-                    setPage(0, state.limit);
-                  }}
+              {config.list.searchable && (
+                <ListSearchBox
+                  value={state.search ?? ""}
+                  onSearch={setSearch}
                 />
               )}
-              {config.list.searchable && <ListSearchBox value={state.search ?? ""} onSearch={setSearch} />}
               {/* The filters narrow the same result set as the search box, so they sit right after
                   it, in the toolbar — not in a strip of their own above the columns. Rendered only
                   when there is at least one filterable column. */}
               {filterSpecs.length > 0 && (
-                <FilterChipBar specs={filterSpecs} filters={state.filters} optionsByKey={filterOptionsByKey} onChange={onFilterChange} />
+                <FilterChipBar
+                  specs={filterSpecs}
+                  filters={state.filters}
+                  optionsByKey={filterOptionsByKey}
+                  onChange={onFilterChange}
+                />
               )}
             </>
           }
         />
       )}
-      {error && <div className="entity-list-panel-error">{(error as Error).message}</div>}
-      {showTree && treeRows.notice && <Message severity="info" className="entity-list-panel-action-error" text={treeRows.notice} />}
-      {rowActions.notice && <ActionMessage severity="success" text={rowActions.notice} onClose={rowActions.clearNotice} />}
+      {error && (
+        <div className="entity-list-panel-error">
+          {(error as Error).message}
+        </div>
+      )}
+      {showTree && treeRows.notice && (
+        <Message
+          severity="info"
+          className="entity-list-panel-action-error"
+          text={treeRows.notice}
+        />
+      )}
+      {rowActions.notice && (
+        <ActionMessage
+          severity="success"
+          text={rowActions.notice}
+          onClose={rowActions.clearNotice}
+        />
+      )}
       {/* A page or a column arriving: the previous page stays on screen meanwhile (and a new
           column shows skeleton cells), so this is what says something is loading. Same convention as the
           JSF panels' own p:progressBar (panelContent.xhtml's panel-progressbar): a 3px track that
@@ -332,11 +453,7 @@ export function EntityListPanel({
     // No <Panel>/PanelHeaderBar — the flex chain that gives scrollHeight="flex" its bound
     // otherwise comes from that <Panel>; reproduce it directly (styles/main-panel.css has the
     // matching `.entity-list-panel.embedded` rule for the tab body wrapping this).
-    return (
-      <div className="entity-list-panel embedded">
-        {body}
-      </div>
-    );
+    return <div className="entity-list-panel embedded">{body}</div>;
   }
 
   return (
@@ -350,16 +467,30 @@ export function EntityListPanel({
           title={
             <div className="entity-list-panel-header sia-hstack">
               <i className={`${config.icon} sia-list-title-icon`} />
-              <span className="sia-list-title-text">{config.labels.plural}</span>
+              <span className="sia-list-title-text">
+                {config.labels.plural}
+              </span>
               {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
                   with the same inline transparent background/main-color text. */}
               {isLoading || collectionTotal == null ? (
-                <Skeleton width="2.5rem" height="1.75rem" borderRadius="16px" className="loading-skeleton" />
+                <Skeleton
+                  width="2.5rem"
+                  height="1.75rem"
+                  borderRadius="16px"
+                  className="loading-skeleton"
+                />
               ) : (
                 <Chip
                   label={String(collectionTotal)}
-                  className={config.panelClass ? config.panelClass.replace(/-panel$/, "-count-chip") : undefined}
-                  style={{ background: "transparent", color: "var(--main-color)" }}
+                  className={
+                    config.panelClass
+                      ? config.panelClass.replace(/-panel$/, "-count-chip")
+                      : undefined
+                  }
+                  style={{
+                    background: "transparent",
+                    color: "var(--main-color)",
+                  }}
                 />
               )}
             </div>

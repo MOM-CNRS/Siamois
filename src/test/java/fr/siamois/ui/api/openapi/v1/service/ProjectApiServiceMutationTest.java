@@ -1237,6 +1237,31 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void pageRecordingUnitsForProject_withTree_asksForTheTreeInsideTheProjectAndItsChildren() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        fr.siamois.dto.TreePage<RecordingUnitDTO> expected = new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 10), 0, 0);
+        when(recordingUnitService.findTreeInScope(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class), eq(55L)))
+                .thenReturn(expected);
+
+        Page<RecordingUnitDTO> result = service.pageRecordingUnitsForProject(
+                caller, "7", 0, 10, null, null, RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, true, 55L);
+
+        assertThat(result).isSameAs(expected);
+        verify(recordingUnitService, org.mockito.Mockito.never()).findByActionUnitId(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class));
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_parentWithoutTreeIsABadRequest() {
+        assertThatThrownBy(() -> service.pageRecordingUnitsForProject(
+                caller, "7", 0, 10, null, null, RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, false, 55L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+        verifyNoInteractions(recordingUnitService);
+    }
+
+    @Test
     void pageRecordingUnitsForProject_requiresAccessibleProjectBeforeAnyPaging() {
         when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
                 .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));

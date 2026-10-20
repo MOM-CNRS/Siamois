@@ -77,6 +77,8 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     defaultSort: "creationTime:desc",
     searchable: true,
     tree: true,
+    // A project's own list of recording units is a tree too (roots: the units with no parent in the project).
+    treeScopes: ["project"],
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.

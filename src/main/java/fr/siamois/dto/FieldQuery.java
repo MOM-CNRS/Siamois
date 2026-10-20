@@ -16,15 +16,28 @@ import org.springframework.lang.Nullable;
  * override it.</p>
  *
  * <p>{@link #filtered()}: at least one filter (not just a sort) is part of the specification — what
- * makes the list "narrowed" for the tree view, like a search.</p>
+ * makes the list "narrowed" for the tree view, like a search. {@link #ordering()} is the sort alone,
+ * without the filters: the tree view orders every level by it but must not narrow the context parents
+ * by the filters (they are what the closure of ancestors is for).</p>
  */
-public record FieldQuery(@Nullable Specification<?> specification, boolean ordered, boolean filtered) {
+public record FieldQuery(@Nullable Specification<?> specification, boolean ordered, boolean filtered,
+                         @Nullable Specification<?> ordering) {
 
-    public static final FieldQuery NONE = new FieldQuery(null, false, false);
+    public static final FieldQuery NONE = new FieldQuery(null, false, false, null);
+
+    public FieldQuery(@Nullable Specification<?> specification, boolean ordered, boolean filtered) {
+        this(specification, ordered, filtered, null);
+    }
 
     @SuppressWarnings("unchecked")
     public <E> Specification<E> specificationFor() {
         return specification == null ? (root, query, cb) -> null : (Specification<E>) specification;
+    }
+
+    /** The sort alone (no filter), for a query that applies the filters its own way. */
+    @SuppressWarnings("unchecked")
+    public <E> Specification<E> orderingSpecificationFor() {
+        return ordering == null ? (root, query, cb) -> null : (Specification<E>) ordering;
     }
 
     public Pageable pageable(Pageable pageable) {

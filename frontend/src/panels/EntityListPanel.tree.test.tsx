@@ -41,6 +41,7 @@ registerEntityType({
     ],
     searchable: true,
     tree: true,
+    treeScopes: ["project"],
   },
   detail: { tabs: [] },
   routes: { list: "/t", detail: (id) => `/t/${id}` },
@@ -80,10 +81,22 @@ function renderPanel(
   });
 }
 
-const switchToTree = () =>
-  container.querySelector<HTMLButtonElement>(
-    'button[aria-label="Vue arborescente"]',
+const gear = () =>
+  container.querySelector<HTMLButtonElement>(".entity-list-panel-gear-button");
+const viewEntries = () =>
+  Array.from(
+    document.body.querySelectorAll(
+      ".entity-list-panel-gear-menu [role=menuitemradio]",
+    ),
   );
+// The display modes live in the gear menu: open it, pick one.
+async function pickView(label: string) {
+  await click(gear()!);
+  await click(viewEntries().find((e) => e.textContent?.includes(label))!);
+}
+async function openGear() {
+  await click(gear()!);
+}
 const bodyRows = () =>
   Array.from(container.querySelectorAll(".p-treetable-tbody > tr"));
 const names = () =>
@@ -95,7 +108,7 @@ beforeEach(() => {
   window.localStorage.clear();
   listMock.mockReset();
   listMock.mockImplementation(async (p) => {
-    if (p.scope)
+    if (p.parent != null || p.scope?.path === "children")
       return {
         data: [{ id: 10, name: "Child" }],
         totalCount: 1,
@@ -137,26 +150,53 @@ afterEach(() => {
 });
 
 describe("EntityListPanel: the tree view", () => {
-  it("starts as the flat list, with a switch to the tree", async () => {
+  it("starts as the flat list, and offers the tree among the display modes of the gear menu", async () => {
     renderPanel();
     await flush();
     expect(container.querySelector(".p-datatable")).not.toBeNull();
     expect(container.querySelector(".p-treetable")).toBeNull();
-    expect(switchToTree()).not.toBeNull();
+
+    await openGear();
+    expect(viewEntries().map((e) => e.textContent)).toEqual(["Liste", "Arbre"]);
+    // The one in use is ticked.
+    expect(viewEntries().map((e) => e.getAttribute("aria-checked"))).toEqual([
+      "true",
+      "false",
+    ]);
   });
 
-  it("offers no tree inside a context (a scoped list)", async () => {
+  it("offers no display mode but the table inside a context the type doesn't support", async () => {
     renderPanel({
       scope: { entityType: "other", id: 5, path: "tree-panel-entities" },
     });
     await flush();
-    expect(switchToTree()).toBeNull();
+    // Nothing to configure in this list: no gear at all.
+    expect(gear()).toBeNull();
+  });
+
+  it("offers the tree inside a context the type supports, and keeps the children in that context", async () => {
+    renderPanel({
+      scope: { entityType: "project", id: 5, path: "recording-units" },
+    });
+    await flush();
+    await pickView("Arbre");
+    await click(container.querySelector(".p-treetable-toggler")!);
+
+    expect(names()).toEqual(["Parent", "Child", "Hit"]);
+    const childCall = listMock.mock.calls
+      .map(([p]) => p)
+      .find((p) => p.parent != null)!;
+    expect(childCall).toMatchObject({
+      parent: 1,
+      tree: true,
+      scope: { entityType: "project", id: 5 },
+    });
   });
 
   it("draws the roots in a TreeTable with the list's columns, and an expander only on parents", async () => {
     renderPanel();
     await flush();
-    await click(switchToTree()!);
+    await pickView("Arbre");
 
     expect(container.querySelector(".p-treetable")).not.toBeNull();
     expect(container.querySelector(".p-datatable")).toBeNull();
@@ -175,10 +215,20 @@ describe("EntityListPanel: the tree view", () => {
     ]);
   });
 
+  it("goes back to the flat list from the same menu", async () => {
+    renderPanel();
+    await flush();
+    await pickView("Arbre");
+    await pickView("Liste");
+
+    expect(container.querySelector(".p-datatable")).not.toBeNull();
+    expect(container.querySelector(".p-treetable")).toBeNull();
+  });
+
   it("opens a branch on its expander and shows the children right below", async () => {
     renderPanel();
     await flush();
-    await click(switchToTree()!);
+    await pickView("Arbre");
     await click(container.querySelector(".p-treetable-toggler")!);
 
     expect(names()).toEqual(["Parent", "Child", "Hit"]);
@@ -187,7 +237,7 @@ describe("EntityListPanel: the tree view", () => {
   it("counts the entities that match in the toolbar, not the roots", async () => {
     renderPanel();
     await flush();
-    await click(switchToTree()!);
+    await pickView("Arbre");
 
     expect(
       container.querySelector(".entity-list-panel-toolbar")?.textContent,

@@ -2099,6 +2099,72 @@ class RecordingUnitServiceTest {
             verify(recordingUnitRepository, never()).findParentIdsHavingChildren(any());
         }
 
+        // ---------- tree view inside a context (findTreeInScope) ----------
+
+        private final Specification<RecordingUnit> scope = (root, query, cb) -> null;
+
+        @Test
+        void findTreeInScope_withoutAFilter_flagsTheRootsByTheirChildrenInTheContextAndCountsTheContext() {
+            RecordingUnit a = unit(1L);
+            RecordingUnit b = unit(2L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(a, b)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+            when(recordingUnitMapper.toLightDto(b)).thenReturn(dto(2L));
+            // 1 has child 10 (in the context); 2 has child 20 (in another project: not in the context).
+            when(recordingUnitRepository.findChildEdges(List.of(1L, 2L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{1L, 10L}, new Object[]{2L, 20L}));
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(unit(10L)));
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(40L);
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), new FilterDTO(), null);
+
+            assertEquals(true, page.getContent().get(0).getTreeHasChildren());
+            assertEquals(false, page.getContent().get(1).getTreeHasChildren());
+            assertEquals(true, page.getContent().get(0).getTreeMatch());
+            assertEquals(40L, page.getMatchCount());
+        }
+
+        @Test
+        void findTreeInScope_withAFilter_keepsOnlyTheAncestorsInTheContextAndMarksThemAsContext() {
+            FilterDTO filters = new FilterDTO();
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            RecordingUnit match = unit(5L);
+            RecordingUnit parentInContext = unit(3L);
+            // Matches {5}; 5's parent 3 is in the context; 3's parent 1 is not (idsOf finds nothing for it).
+            when(recordingUnitRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of(match))               // the matches
+                    .thenReturn(List.of(parentInContext))     // parents of 5 in the context: {3}
+                    .thenReturn(List.of())                    // parents of 3 in the context: none
+                    .thenReturn(List.of(match));              // children of 3 in the closure and the context: {5}
+            when(recordingUnitRepository.findParentEdges(List.of(5L))).thenReturn(List.<Object[]>of(new Object[]{5L, 3L}));
+            when(recordingUnitRepository.findParentEdges(List.of(3L))).thenReturn(List.<Object[]>of(new Object[]{3L, 1L}));
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(parentInContext)));
+            when(recordingUnitMapper.toLightDto(parentInContext)).thenReturn(dto(3L));
+            when(recordingUnitRepository.findChildEdges(List.of(3L))).thenReturn(List.<Object[]>of(new Object[]{3L, 5L}, new Object[]{3L, 6L}));
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), filters, null);
+
+            RecordingUnitDTO row = page.getContent().get(0);
+            assertEquals(true, row.getTreeHasChildren());
+            assertEquals(false, row.getTreeMatch());
+            assertEquals(1L, page.getMatchCount());
+            verify(recordingUnitRepository, never()).count(any(Specification.class));
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void findTreeInScope_withAFilterThatMatchesNothing_isEmpty() {
+            FilterDTO filters = new FilterDTO();
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), filters, null);
+
+            assertEquals(0, page.getTotalElements());
+            assertEquals(0L, page.getMatchCount());
+        }
+
         @Test
         void searchRecordingUnit_notRootOnly_addsNoTreeFlags() {
             InstitutionDTO institution = new InstitutionDTO();

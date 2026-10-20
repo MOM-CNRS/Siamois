@@ -208,6 +208,18 @@ class FieldQueryServiceQueryTest {
     }
 
     @Test
+    void theOrderingIsKeptApartFromTheFilters() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        // The tree view orders every level by the sort but must not narrow its parents by the filters.
+        assertThat(build(RecordingUnit.class, sort(true)).ordering()).isNotNull();
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).ordering()).isNull();
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).<RecordingUnit>orderingSpecificationFor()).isNotNull();
+        assertThat(FieldQuery.NONE.<Object>orderingSpecificationFor()).isNotNull();
+    }
+
+    @Test
     void textColumn_filterContains_andSortLowercased() {
         field(new CustomFieldText(), true, "fullIdentifier");
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);

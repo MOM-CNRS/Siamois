@@ -658,7 +658,8 @@ public class SpatialUnitService implements ArkEntityService {
                                                    SpatialUnitDTO parent,
                                                    FilterDTO filterDTO, Pageable pageable) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
-                .and(SpatialUnitSpec.spatialUnitInSpatialUnit(parent.getId()));
+                .and(SpatialUnitSpec.spatialUnitInSpatialUnit(parent.getId()))
+                .and(filterDTO.getFieldQuery().orderingSpecificationFor());
         if (filterDTO.hasUserFilters()) {
             Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
             if (closure.isEmpty()) {
@@ -710,7 +711,9 @@ public class SpatialUnitService implements ArkEntityService {
             // Scope filters (e.g. "children of this spatial unit") are always part of the fixed
             // query context, even with no active user search — they must never be dropped in
             // root-mode, otherwise roots from other contexts leak into the tree.
-            Specification<SpatialUnit> scoped = base.and(scopeFilterSpecs(filterDTO));
+            // The tree is ordered by the list's sort on a form field too, at every level.
+            Specification<SpatialUnit> scoped = base.and(scopeFilterSpecs(filterDTO))
+                    .and(filterDTO.getFieldQuery().orderingSpecificationFor());
             if (filterDTO.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
                 if (closure.isEmpty()) {

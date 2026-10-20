@@ -132,18 +132,27 @@ export function useTreeRows({
       } as ListParams) as Promise<PagedResult<TreeRow>>,
     [config, params, organizationId, fieldsParam],
   );
+  // Inside a scope (a project's units) the children come from the same scoped list, so the scope
+  // still limits them; in the organization-wide list, from the row's own children route.
+  const scoped = params.scope != null;
   const fetchChildren = useCallback(
     (parent: TreeRow) =>
-      fetchPage({
-        offset: 0,
-        limit: CHILDREN_LIMIT,
-        scope: {
-          entityType,
-          id: parent.id as string | number,
-          path: "children",
-        },
-      }),
-    [fetchPage, entityType],
+      scoped
+        ? fetchPage({
+            offset: 0,
+            limit: CHILDREN_LIMIT,
+            parent: parent.id as string | number,
+          })
+        : fetchPage({
+            offset: 0,
+            limit: CHILDREN_LIMIT,
+            scope: {
+              entityType,
+              id: parent.id as string | number,
+              path: "children",
+            },
+          }),
+    [fetchPage, entityType, scoped],
   );
 
   // The branches open right now, read by the next fetch of the roots.

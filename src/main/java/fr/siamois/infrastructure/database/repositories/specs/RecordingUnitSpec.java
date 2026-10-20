@@ -247,6 +247,27 @@ public class RecordingUnitSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENTS_FILTER)));
     }
 
+    /**
+     * The root of a tree inside a context: none of its parents is part of {@code scope}. Not "has no
+     * parent": a unit whose parents are all outside the context (another project's, say) would
+     * otherwise have no place in the context's tree at all.
+     */
+    @NonNull
+    public static Specification<RecordingUnit> hasNoParentIn(Specification<RecordingUnit> scope) {
+        return (root, query, cb) -> {
+            Subquery<Long> parentsInScope = query.subquery(Long.class);
+            Root<RecordingUnit> parent = parentsInScope.from(RecordingUnit.class);
+            Join<RecordingUnit, RecordingUnit> child = parent.join(CHILDREN_FILTER);
+            jakarta.persistence.criteria.Predicate where = cb.equal(child.get("id"), root.get("id"));
+            jakarta.persistence.criteria.Predicate inScope = scope.toPredicate(parent, query, cb);
+            if (inScope != null) {
+                where = cb.and(where, inScope);
+            }
+            parentsInScope.select(parent.get("id")).where(where);
+            return cb.not(cb.exists(parentsInScope));
+        };
+    }
+
     @NonNull
     public static Specification<RecordingUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);

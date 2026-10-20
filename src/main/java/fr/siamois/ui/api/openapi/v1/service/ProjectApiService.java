@@ -1066,6 +1066,28 @@ public class ProjectApiService {
             String search,
             RecordingUnitListFilter filter,
             FieldQuery fieldQuery) {
+        return pageRecordingUnitsForProject(caller, projectIdOrKey, offset, limit, sortParam, search, filter, fieldQuery, false, null);
+    }
+
+    /**
+     * The project's recording units, or with {@code tree} their tree inside the project: the units none
+     * of whose parents belongs to the project, or — with {@code parentId} — the children of that unit
+     * that belong to it ({@link RecordingUnitService#findTreeInScope}).
+     */
+    public Page<RecordingUnitDTO> pageRecordingUnitsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery,
+            boolean tree,
+            Long parentId) {
+        if (parentId != null && !tree) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "parent n'a de sens qu'avec tree=true");
+        }
         // Authorization first, same order pageAccessibleProjects/requireAccessibleProject follow
         // everywhere else in this service — a caller with no access to the project must never learn
         // anything about it, including whether its sort/filter params would otherwise be valid.
@@ -1073,6 +1095,10 @@ public class ProjectApiService {
         Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
         FilterDTO filterDTO = filter.toFilterDTO(search);
         filterDTO.setFieldQuery(fieldQuery);
+        if (tree) {
+            return recordingUnitService.findTreeInScope(
+                    RecordingUnitSpec.recordingUnitInActionUnit(row.actionUnit().getId()), limit, offset, sort, filterDTO, parentId);
+        }
         return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort, filterDTO);
     }
 

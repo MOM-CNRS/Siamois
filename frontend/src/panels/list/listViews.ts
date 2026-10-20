@@ -1,0 +1,64 @@
+import type { EntityTypeConfig, ListScope } from "../../entities/types";
+import { t, type MessageKey } from "../../i18n";
+
+/**
+ * How a list is shown. The table's own views are "list" (flat, paged) and "tree" (the hierarchy);
+ * other kinds of view (a map, a timeline…) will join this union, each with its own entry in
+ * LIST_VIEWS and its own availability rule in `availableViews`. Chosen in the gear menu, remembered
+ * per pane.
+ */
+export type ListViewMode = "list" | "tree";
+
+export const DEFAULT_LIST_VIEW: ListViewMode = "list";
+
+interface ListViewDefinition {
+  label: MessageKey;
+  icon: string;
+}
+
+export const LIST_VIEWS: Record<ListViewMode, ListViewDefinition> = {
+  list: { label: "list.viewModeList", icon: "bi bi-list-ul" },
+  tree: { label: "list.viewModeTree", icon: "bi bi-diagram-3" },
+};
+
+export interface ListViewOption {
+  mode: ListViewMode;
+  label: string;
+  icon: string;
+}
+
+/** The views `config`'s list offers inside `scope` (none when there is only the flat list). */
+export function availableViews(
+  config: EntityTypeConfig<unknown, unknown> | undefined,
+  scope: ListScope | undefined,
+): ListViewMode[] {
+  if (!config) return [DEFAULT_LIST_VIEW];
+  const views: ListViewMode[] = [DEFAULT_LIST_VIEW];
+  // A hierarchy view of the organization-wide list, or of a context the type declares.
+  if (
+    config.list.tree === true &&
+    (scope == null ||
+      config.list.treeScopes?.includes(scope.entityType) === true)
+  ) {
+    views.push("tree");
+  }
+  return views;
+}
+
+/** The mode to show: the remembered one if this list still offers it, else the flat list. */
+export function resolveViewMode(
+  remembered: ListViewMode | undefined,
+  available: ListViewMode[],
+): ListViewMode {
+  return remembered != null && available.includes(remembered)
+    ? remembered
+    : DEFAULT_LIST_VIEW;
+}
+
+export function viewOptions(available: ListViewMode[]): ListViewOption[] {
+  return available.map((mode) => ({
+    mode,
+    label: t(LIST_VIEWS[mode].label),
+    icon: LIST_VIEWS[mode].icon,
+  }));
+}

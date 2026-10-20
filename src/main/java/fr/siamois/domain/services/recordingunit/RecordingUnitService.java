@@ -27,6 +27,7 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.domain.services.tree.HierarchyTreeQuery;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
@@ -1317,7 +1318,8 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
                                                      Sort sort, FilterDTO filters) {
-        Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId));
+        Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId))
+                .and(filters.getFieldQuery().orderingSpecificationFor());
         if (filters.hasUserFilters()) {
             java.util.Collection<Long> closure = recordingUnitSortFilterService.ancestorClosure(institution, filters);
             specs = closure.isEmpty()
@@ -1327,6 +1329,84 @@ public class RecordingUnitService implements ArkEntityService {
         Page<RecordingUnitDTO> page = pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
         applyTreeFlags(page, filters);
         return page;
+    }
+
+    /**
+     * The tree view of a list inside a context — {@code scope} is the context (the recording units of a
+     * project…). Roots are the units of the context none of whose parents is in it; {@code parentId}
+     * asks for the children of one unit instead, still inside the context. With a search or a filter,
+     * the matches are taken in the context and only their ancestors <em>in the context</em> are kept
+     * (an ancestor outside it is never shown). Each row is flagged {@code treeHasChildren} (children in
+     * the context, among the closure when narrowed) and {@code treeMatch}.
+     *
+     * <p>The page's total counts the roots (or the children) it pages; the {@link TreePage#getMatchCount}
+     * is the number of units of the context that match.</p>
+     */
+    @Transactional(readOnly = true)
+    public TreePage<RecordingUnitDTO> findTreeInScope(Specification<RecordingUnit> scope, int limit, int offset, Sort sort,
+                                                      FilterDTO filters, Long parentId) {
+        Specification<RecordingUnit> matches = filters.hasUserFilters()
+                ? RecordingUnitSortFilterService.userFilterSpecs(filters)
+                : null;
+        return new HierarchyTreeQuery<>(recordingUnitHierarchy()).page(
+                scope, matches, filters.getFieldQuery().orderingSpecificationFor(), parentId,
+                PageRequest.of(offset / limit, limit, sort));
+    }
+
+    /** Recording units as {@link HierarchyTreeQuery} sees a hierarchical type. */
+    private HierarchyTreeQuery.Hierarchy<RecordingUnit, RecordingUnitDTO> recordingUnitHierarchy() {
+        return new HierarchyTreeQuery.Hierarchy<>() {
+            @Override
+            public Specification<RecordingUnit> hasParent(long parentId) {
+                return RecordingUnitSpec.hasParent(parentId);
+            }
+
+            @Override
+            public Specification<RecordingUnit> hasNoParentIn(Specification<RecordingUnit> scope) {
+                return RecordingUnitSpec.hasNoParentIn(scope);
+            }
+
+            @Override
+            public Specification<RecordingUnit> idIn(Collection<Long> ids) {
+                return RecordingUnitSpec.idIn(ids);
+            }
+
+            @Override
+            public List<Object[]> parentEdges(Collection<Long> childIds) {
+                return recordingUnitRepository.findParentEdges(childIds);
+            }
+
+            @Override
+            public List<Object[]> childEdges(Collection<Long> parentIds) {
+                return recordingUnitRepository.findChildEdges(parentIds);
+            }
+
+            @Override
+            public List<Long> ids(Specification<RecordingUnit> specs) {
+                return recordingUnitRepository.findAll(specs).stream().map(RecordingUnit::getId).toList();
+            }
+
+            @Override
+            public long count(Specification<RecordingUnit> specs) {
+                return recordingUnitRepository.count(specs);
+            }
+
+            @Override
+            public Page<RecordingUnitDTO> page(Specification<RecordingUnit> specs, Pageable pageable) {
+                return pageAndEnrich(specs, pageable, false);
+            }
+
+            @Override
+            public Long idOf(RecordingUnitDTO row) {
+                return row.getId();
+            }
+
+            @Override
+            public void flag(RecordingUnitDTO row, boolean hasChildren, boolean match) {
+                row.setTreeHasChildren(hasChildren);
+                row.setTreeMatch(match);
+            }
+        };
     }
 
     /**

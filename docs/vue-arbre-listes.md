@@ -1,11 +1,20 @@
 # Vue arbre des listes
 
 Les listes d'un type hiérarchique (lieux, unités d'enregistrement) ont une vue arbre, en plus de la
-liste à plat. Un bouton de la barre d'outils (`bi-diagram-3` / `bi-list-ul`) bascule de l'une à
-l'autre ; le choix est mémorisé par panneau (`usePaneState("treeView")`) et la liste à plat reste la
-vue par défaut. La vue n'existe que pour la liste d'une organisation (`scope == null`), pas pour les
-listes embarquées dans une fiche. Un type l'active avec `list.tree: true` dans sa config
-(`entities/place/config.tsx`, `entities/recordingUnit/config.tsx`).
+liste à plat.
+
+**Mode d'affichage.** Il se choisit dans le menu de l'engrenage, sous le titre « Mode d'affichage » :
+une entrée par mode (Liste, Arbre), celui en cours coché. Ce n'est pas un interrupteur à deux états :
+les modes forment une liste ouverte (`ListViewMode` dans `panels/list/listViews.ts`), pensée pour
+accueillir d'autres vues (carte, chronologie…). Ajouter un mode = une entrée dans `LIST_VIEWS` (libellé,
+icône), une règle de disponibilité dans `availableViews`, et son rendu dans `EntityListPanel`. Le mode
+est mémorisé par panneau (`usePaneState("viewMode")`) ; s'il n'est plus offert (autre contexte), on
+retombe sur la liste. Le menu n'affiche le titre que si la liste offre au moins deux modes.
+
+**Où.** Un type active l'arbre avec `list.tree: true` (`entities/place/config.tsx`,
+`entities/recordingUnit/config.tsx`) pour sa liste d'organisation, et `list.treeScopes` liste les
+contextes (types de parent) où sa propre liste s'affiche aussi en arbre (voir « Arbres dans un
+contexte »).
 
 ## Règles de comportement
 
@@ -113,10 +122,10 @@ résultats, **même si le nœud correspond lui-même** : un parent qui correspon
 ne correspond ressemble à une feuille. L'ancien JSF montrait tous les descendants d'un parent qui
 correspond. À trancher : règle stricte actuelle (règle 1) ou comportement JSF.
 
-## Arbres dans un contexte (à faire)
+## Arbres dans un contexte
 
-Un contexte est une liste filtrée par un ensemble fixe `S` (les UE d'un projet, les enfants d'un
-lieu, les descendants d'une UE…). Le JSF le gérait avec un filtre constant (`withConstantFilter`) plus
+Un contexte est une liste filtrée par un ensemble fixe `S` (les UE d'un projet, les enfants d'un lieu,
+les descendants d'une UE…). Le JSF le gérait avec un filtre constant (`withConstantFilter`) plus
 `rootOnly`, avec le bouton arbre dans la barre d'outils de toute liste dont le type le supporte. Son
 défaut : une racine était « une ligne du contexte sans aucun parent », donc une UE du projet A dont le
 parent est dans le projet B n'apparaissait jamais (ni racine, ni enfant d'un nœud visible), et les
@@ -127,23 +136,40 @@ Règle retenue, la même pour tous les contextes :
 - **Racines :** les lignes de `S` dont **aucun parent n'est dans `S`** (et non « sans parent »).
 - **Enfants d'un nœud :** ses enfants qui sont dans `S`.
 - **Recherche et filtre :** les correspondances sont prises dans `S`, la fermeture des ancêtres aussi :
-  aucun ancêtre hors contexte n'est montré.
+  aucun ancêtre hors contexte n'est montré. Un nœud dont le seul chemin vers une correspondance passe
+  par un parent hors contexte n'est pas dans la fermeture (elle se calcule niveau par niveau, en ne
+  gardant que les parents de `S`).
 
 Cas couverts :
 
-| Contexte | `S` | Racines |
-|---|---|---|
-| Liste d'une organisation | tout | les lignes sans parent (comportement actuel) |
-| UE d'un projet | les UE du projet | celles dont aucun parent n'est dans le projet |
-| UE d'une UE | les descendants de l'UE | ses enfants directs (leur parent, l'UE, n'est pas dans `S`) |
+| Contexte | `S` | Racines | État |
+|---|---|---|---|
+| Liste d'une organisation | tout | les lignes sans parent | fait (`tree=true`, enfants par `/children`) |
+| UE d'un projet | les UE du projet | celles dont aucun parent n'est dans le projet | **fait** |
+| UE d'un lieu | les UE du lieu | idem | à faire (même mécanique, `S` = les UE du lieu) |
+| UE d'une UE | les descendants de l'UE | ses enfants directs (leur parent, l'UE, n'est pas dans `S`) | à faire (demande une fermeture des descendants) |
 
-API : le contexte est déjà dans le chemin de la liste (`/projects/{id}/recording-units`…). Même mode
-sur ces listes, avec `parent` (racines ou id d'un nœud) : le contexte n'est pas à répéter pour chaque
-dépliage. Backend : « aucun parent dans `S` » = sous-requête `NOT EXISTS` sur la table de hiérarchie
-jointe au filtre de contexte (les contextes actuels sont des égalités simples) ; « descendants d'une
-UE » ajoute une requête récursive. Front : `canShowTree` exige aujourd'hui `scope == null` et le
-chargement des enfants est écrit pour la liste d'organisation. Premier contexte visé : l'onglet des UE
-d'un projet.
+**Liste des UE d'un projet** : `GET /api/v1/projects/{id}/recording-units?tree=true` renvoie les racines
+du projet (ou, filtré, celles qui mènent à une correspondance) ; avec `parent=<id d'une UE>`, les
+enfants de cette UE qui sont dans le projet. Mêmes champs `hasChildren` et `match`, et `meta.matchCount`
+compte les UE du projet qui correspondent. `parent` sans `tree=true` est refusé (400). Côté serveur :
+`RecordingUnitService.findTreeInScope` avec `RecordingUnitSpec.hasNoParentIn(scope)` (sous-requête
+`NOT EXISTS` : aucun parent ne satisfait le contexte).
+
+**Service générique.** Les règles (racines, enfants, fermeture des ancêtres dans le contexte, drapeaux,
+compteur) sont dans `HierarchyTreeQuery` (`domain/services/tree`), indépendantes du type ; un type ne
+fournit que ses requêtes, par l'interface `HierarchyTreeQuery.Hierarchy` (`hasParent`, `hasNoParentIn`,
+`idIn`, arêtes parents et enfants, `ids`, `count`, `page`, `flag`). Les UE l'implémentent
+(`recordingUnitHierarchy()`) ; étendre à un autre type, c'est écrire son adaptateur (et, au besoin, les
+requêtes d'arêtes de son dépôt), pas recopier les règles. Les tests des règles tournent sur une
+hiérarchie en mémoire (`HierarchyTreeQueryTest`). Côté front : `list.treeScopes` d'un type liste
+les contextes dont sa propre liste peut s'afficher en arbre (`["project"]` pour les UE) ; en contexte,
+`useTreeRows` va chercher les enfants dans la même liste avec `parent` plutôt que par `/children`.
+
+**Tri sur un champ de formulaire.** Le tri sur une colonne de formulaire vit dans une spécification
+(`FieldQuery`) mêlée aux filtres ; les chemins en arbre l'ignoraient. Elle est maintenant séparée
+(`FieldQuery.ordering()`) et appliquée à chaque niveau, sans les filtres (ils restreignent par la
+fermeture des ancêtres, pas par la spécification).
 
 ## Qualité : fait et reste à faire
 
@@ -172,6 +198,8 @@ Reste à faire :
   droits demande une décision.
 - **`EntityTable.tsx`** porte encore deux tableaux aux propriétés dupliquées (~700 lignes) ; extraire la
   construction des colonnes (elle dépend de l'état d'édition des cellules).
+- **Dépliage filtré en contexte :** même coût que dans l'organisation (chaque `parent=` refait les
+  correspondances et la fermeture, niveau par niveau).
 - **Précédent/suivant d'une fiche** ouverte depuis l'arbre suit l'ordre de la liste à plat
   (`rememberListContext`), pas celui de l'arbre.
 - **Création dans l'arbre :** l'arbre se recharge avec les branches ouvertes ; une entité créée sous

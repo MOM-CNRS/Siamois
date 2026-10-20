@@ -210,7 +210,7 @@ class PlaceControllerApiTest {
 
     @Test
     void getChildren_delegatesToTheService() throws Exception {
-        when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any()))
+        when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any(), eq(false)))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
                         List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
 
@@ -218,6 +218,17 @@ class PlaceControllerApiTest {
                         .param("search", "cave"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Total-Count", "0"));
+    }
+
+    @Test
+    void getChildren_withTree_asksTheServiceForTheTreeChildren() throws Exception {
+        when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any(), eq(true)))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
+                        List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/children")
+                        .param("search", "cave").param("tree", "true"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
     }
 
     @Test

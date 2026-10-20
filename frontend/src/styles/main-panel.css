@@ -2532,3 +2532,13 @@ div#search-bar .sia-search {
 .entity-list-panel .p-treetable-tbody > tr {
   background: #fff;
 }
+
+/* The gear menu's display modes (list, tree…): the one in use is ticked at the end of its entry. */
+.entity-list-panel-gear-menu .entity-list-panel-view-check {
+  margin-left: auto;
+  padding-left: 1rem;
+  color: var(--main-color, #80b480);
+}
+.entity-list-panel-gear-menu .entity-list-panel-view-active .p-menuitem-text {
+  font-weight: 600;
+}
