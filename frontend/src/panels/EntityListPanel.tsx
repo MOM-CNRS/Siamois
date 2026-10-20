@@ -228,7 +228,7 @@ export function EntityListPanel({
           organizationId={organizationId}
           scope={scope}
           isLoading={isLoading}
-          totalCount={totalCount}
+          totalCount={showTree ? treeRows.matchCount : totalCount}
           selectedCount={selectedRows.length}
           onClearSelection={clearSelection}
           creatable={creatable}

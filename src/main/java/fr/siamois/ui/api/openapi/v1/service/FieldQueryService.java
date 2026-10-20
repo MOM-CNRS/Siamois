@@ -281,7 +281,7 @@ public class FieldQueryService {
         }
         Specification<E> spec = (root, q, cb) -> null;
         for (Specification<E> part : parts) spec = spec.and(part);
-        return new FieldQuery(spec, ordered);
+        return new FieldQuery(spec, ordered, !query.filters().isEmpty());
     }
 
     /**

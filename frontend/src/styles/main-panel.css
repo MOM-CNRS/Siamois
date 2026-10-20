@@ -339,7 +339,8 @@
 .entity-list-panel.p-panel,
 .entity-list-panel.p-panel > .p-toggleable-content,
 .entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
-.entity-list-panel .p-datatable {
+.entity-list-panel .p-datatable,
+.entity-list-panel .p-treetable {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -393,7 +394,8 @@
 
 /* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
    are siblings of it, so they stay put. */
-.entity-list-panel .p-datatable-wrapper {
+.entity-list-panel .p-datatable-wrapper,
+.entity-list-panel .p-treetable-wrapper {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -402,7 +404,9 @@
    sideways — which is the situation frozen columns exist for. Excludes the selection box, which
    is pinned at 3rem, and the frozen identifier, sized just below. */
 .entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
-.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-treetable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-treetable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
   min-width: 9rem;
 }
 
@@ -411,29 +415,34 @@
    file keeps on the table root. Below: the stacking order between the frozen columns and the
    sticky header, an opaque background, and a width floor. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   position: sticky;
 }
 
 /* Frozen cells must sit above the columns sliding underneath them, and the header above both —
    otherwise the frozen identifier paints over the header it is supposed to pass beneath. */
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   z-index: 1;
 }
-
-.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen {
   z-index: 2;
 }
 
 /* The columns sliding underneath must not show through. A body cell takes its row's background,
    so a row this app paints itself (the overview-open highlight, a search hit) stays painted; a
    header cell keeps the theme's own header background — its row has none to inherit. */
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   background: inherit;
 }
-
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   background-clip: padding-box;
 }
 
@@ -442,13 +451,15 @@
    here a cell's max-width is advisory and would silently do nothing — long values are already
    ellipsised by .entity-list-panel-cell-value instead. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
   min-width: 11rem;
 }
-
-
 .entity-list-panel .p-datatable-thead > tr > th,
-.entity-list-panel .p-datatable-tbody > tr > td {
+.entity-list-panel .p-datatable-tbody > tr > td,
+.entity-list-panel .p-treetable-thead > tr > th,
+.entity-list-panel .p-treetable-tbody > tr > td {
   padding: var(--cell-pad-y) var(--cell-pad-x);
 }
 
@@ -456,16 +467,18 @@
    is served first in the auto table layout, the others then get their content width), and has no
    padding of its own so it's truly empty once the columns overflow. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-filler-cell,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-filler-cell,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-filler-cell {
   width: 100%;
   padding: 0;
 }
-
-.entity-list-panel .p-datatable-tbody > tr {
+.entity-list-panel .p-datatable-tbody > tr,
+.entity-list-panel .p-treetable-tbody > tr {
   height: var(--entity-list-row-height);
 }
-
-.entity-list-panel .p-datatable-tbody > tr > td {
+.entity-list-panel .p-datatable-tbody > tr > td,
+.entity-list-panel .p-treetable-tbody > tr > td {
   box-sizing: border-box;
   height: var(--entity-list-row-height);
   max-height: var(--entity-list-row-height);
@@ -1005,9 +1018,9 @@
   opacity: 0.45;
   transition: opacity 0.15s ease;
 }
-
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-actions,
-.entity-list-panel .entity-list-panel-row-actions:focus-within {
+.entity-list-panel .entity-list-panel-row-actions:focus-within,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-actions {
   opacity: 1;
 }
 
@@ -1054,18 +1067,21 @@
    overview; while its row is hovered it fills in the entity's color (inverted). Only that chip —
    a linked entity's chip in another column keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
-.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
+.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip {
   background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   color: var(--primary-color-text, #ffffff);
 }
-
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
 }
 
 /* Selection checkboxes aligned to the left of their cell. */
 .entity-list-panel .p-datatable-thead > tr > th.p-selection-column,
-.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column {
+.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column,
+.entity-list-panel .p-treetable-thead > tr > th.p-selection-column,
+.entity-list-panel .p-treetable-tbody > tr > td.p-selection-column {
   text-align: left;
 }
 
@@ -1301,11 +1317,12 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* A placeholder row is not selectable and has no hover state. */
-.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox,
+.entity-list-panel .p-treetable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
   visibility: hidden;
 }
-
-.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover {
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover,
+.entity-list-panel .p-treetable-tbody > tr.entity-list-panel-skeleton-row:hover {
   background: inherit;
 }
 
@@ -2436,34 +2453,82 @@ div#search-bar .sia-search {
   color: var(--red-700, #b3261e);
 }
 
-/* The list's tree view (useTreeRows + EntityTable's `tree` prop). The identifier cell is indented by
-   depth and starts with an expander. */
-.entity-tree-toggle {
-  flex: 0 0 auto;
+/* The list's tree view (EntityTable's TreeTable): the same rows as the flat list — the selectors
+   above are doubled for p-treetable — with the one scroll box and sticky header DataTable's
+   scrollable mode gives. TreeTable's own scrollable mode splits header and body into two tables,
+   which would break the frozen columns, so it is left off and the wrapper scrolls instead. */
+.entity-list-panel .p-treetable-wrapper {
+  overflow: auto;
+}
+/* TreeTable's theme lays the table out as `fixed`, which would split the width evenly (and give the
+   filler column all of it); the list's columns size to their content, as DataTable's do. */
+.entity-list-panel .p-treetable-table {
+  table-layout: auto;
+}
+/* DataTable's header lays the title and the sort icon on one line; TreeTable's leaves them as blocks. */
+.entity-list-panel .p-treetable-thead .p-column-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.entity-list-panel .p-treetable-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen {
+  z-index: 3;
+}
+.entity-list-panel .p-treetable-tbody > tr > td .p-treetable-toggler {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  vertical-align: middle;
   margin-right: 0.25rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
 }
-.entity-tree-toggle:hover {
-  background: rgba(0, 0, 0, 0.08);
+/* The expander and the cell's own content share one line. */
+.entity-list-panel .p-treetable-tbody > tr > td > .p-treetable-toggler + .entity-list-panel-cell {
+  display: inline-flex;
+  vertical-align: middle;
 }
-.entity-tree-toggle .pi {
-  font-size: 0.75rem;
-}
-.entity-tree-toggle-leaf {
-  cursor: default;
+.entity-list-panel .p-treetable-tbody > tr > td:has(> .p-treetable-toggler) {
+  white-space: nowrap;
 }
 /* A parent shown only because a match is below it: its identifier chip is dashed (the matches keep
    the solid outline), the rest of the row is left alone. */
-.entity-list-panel .p-datatable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
+  /* 1px dashed, in a lighter tint of the entity colour (outline and label): it reads as "context",
+     not as a result. */
+  --context-chip-color: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 55%, transparent);
   border-style: dashed;
+  border-color: var(--context-chip-color);
+  color: var(--context-chip-color);
+}
+/* On hover the chip fills with the entity colour (rule above): the label goes back to white, or it
+   would vanish into the fill. */
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row:hover .entity-list-panel-row-identifier.entity-nav-chip,
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
+  border-color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  color: var(--primary-color-text, #ffffff);
+}
+
+/* The theme styles only DataTable's header and cells: TreeTable's get the same look. */
+.entity-list-panel .p-treetable-thead > tr > th {
+  background: var(--siamois-green-light-100, #e6f0e6);
+  color: var(--text-color, #2a2c30);
+  border: 0 solid #e9ecef;
+  border-bottom-width: 1px;
+  text-align: left;
+  box-sizing: border-box;
+}
+.entity-list-panel .p-treetable-thead > tr > th .p-column-title {
+  font-weight: 600;
+}
+.entity-list-panel .p-treetable-tbody > tr > td {
+  border: 0 solid rgba(0, 0, 0, 0.08);
+  border-bottom-width: 1px;
+  text-align: start;
+}
+.entity-list-panel .p-treetable-tbody > tr {
+  background: #fff;
 }

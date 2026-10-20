@@ -14,10 +14,13 @@ import org.springframework.lang.Nullable;
  * subquery or a label lookup cannot be a {@code Sort} property): the service must then query with
  * an unsorted {@link Pageable} — {@link #pageable(Pageable)} — or the pageable's own sort would
  * override it.</p>
+ *
+ * <p>{@link #filtered()}: at least one filter (not just a sort) is part of the specification — what
+ * makes the list "narrowed" for the tree view, like a search.</p>
  */
-public record FieldQuery(@Nullable Specification<?> specification, boolean ordered) {
+public record FieldQuery(@Nullable Specification<?> specification, boolean ordered, boolean filtered) {
 
-    public static final FieldQuery NONE = new FieldQuery(null, false);
+    public static final FieldQuery NONE = new FieldQuery(null, false, false);
 
     @SuppressWarnings("unchecked")
     public <E> Specification<E> specificationFor() {

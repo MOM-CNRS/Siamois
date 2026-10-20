@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { TreeTableExpandedKeysType } from "primereact/treetable";
+import type { TreeNode as PrimeTreeNode } from "primereact/treenode";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../api/queryKeys";
 import type { EntityTypeConfig, ListParams, PagedResult } from "../../entities/types";
@@ -6,22 +8,18 @@ import type { RowRecord } from "./useEntityListData";
 
 // A parent's children are fetched in one request, up to this many.
 const CHILDREN_LIMIT = 200;
-// A search opens every branch leading to a match: the fetch is capped so a very broad search
-// (every row matches) can't walk the whole hierarchy.
-const AUTO_EXPAND_MAX_REQUESTS = 200;
 
 /** The tree view's row: the list's own row plus what `?tree=true` adds. */
-export type TreeRow = RowRecord & { hasChildren?: boolean; match?: boolean };
+export type TreeRow = RowRecord & { hasChildren?: boolean; match?: boolean; __treeKey?: string };
 
-interface TreeNode {
-  row: TreeRow;
-  // Undefined until the node has been opened once.
-  children?: TreeNode[];
-}
+// A PrimeReact TreeTable node: `key` is the node's path ("rootId/parentId/id"), so an entity under
+// several parents shows once per branch, each occurrence with its own open state; `data` is the
+// row. `children` stays undefined until the node has been opened once.
+type TreeNode = PrimeTreeNode & { data: TreeRow };
 
 interface TreeState {
   roots: TreeNode[];
-  expanded: Record<string, boolean>;
+  expanded: TreeTableExpandedKeysType;
   total: number;
 }
 
@@ -38,49 +36,51 @@ export interface UseTreeRowsOptions {
   enabled: boolean;
 }
 
-/** What the table needs to draw the rows as a hierarchy (EntityTable's `tree` prop). */
+/** What the table needs to draw the rows as a TreeTable (EntityTable's `tree` prop). */
 export interface EntityTableTree {
-  depthOf: (row: RowRecord) => number;
-  hasChildren: (row: RowRecord) => boolean;
-  isExpanded: (row: RowRecord) => boolean;
-  isLoading: (row: RowRecord) => boolean;
+  nodes: PrimeTreeNode[];
+  expandedKeys: TreeTableExpandedKeysType;
+  onToggle: (keys: TreeTableExpandedKeysType) => void;
+  // A node is opened: its children are fetched the first time.
+  onExpand: (node: PrimeTreeNode) => void;
   // A parent shown only because a match is below it.
   isContext: (row: RowRecord) => boolean;
-  onToggle: (row: RowRecord) => void;
 }
 
-const key = (row: RowRecord) => String(row.id);
-
-function toNodes(rows: TreeRow[]): TreeNode[] {
-  return rows.map((row) => ({ row }));
+function toNodes(rows: TreeRow[], parentPath?: string): TreeNode[] {
+  return rows.map((row) => {
+    const key = parentPath == null ? String(row.id) : `${parentPath}/${row.id}`;
+    return { key, data: { ...row, __treeKey: key }, leaf: row.hasChildren !== true };
+  });
 }
 
-function updateNode(nodes: TreeNode[], id: string, update: (node: TreeNode) => TreeNode): TreeNode[] {
+function updateNode(nodes: TreeNode[], path: string, update: (node: TreeNode) => TreeNode): TreeNode[] {
   return nodes.map((node) => {
-    if (key(node.row) === id) return update(node);
-    if (node.children) return { ...node, children: updateNode(node.children, id, update) };
+    if (node.key === path) return update(node);
+    if (node.children && path.startsWith(`${node.key}/`)) return { ...node, children: updateNode(node.children as TreeNode[], path, update) };
     return node;
   });
 }
 
-function findNode(nodes: TreeNode[], id: string): TreeNode | undefined {
+function findNode(nodes: TreeNode[], path: string): TreeNode | undefined {
   for (const node of nodes) {
-    if (key(node.row) === id) return node;
-    const found = node.children && findNode(node.children, id);
+    if (node.key === path) return node;
+    const found = node.children && path.startsWith(`${node.key}/`) ? findNode(node.children as TreeNode[], path) : undefined;
     if (found) return found;
   }
   return undefined;
 }
 
 /**
- * The list as a hierarchy, flattened to the rows the table shows: the roots page by page, a parent's
- * children fetched when it is opened — and, while a search or a filter narrows the list, every branch
- * leading to a match already open (the parents that merely lead there are `isContext`). The server
- * sorts the roots and each parent's children the same way, so sorting never breaks the hierarchy.
- * Branches opened by hand stay open when the list is fetched again (a saved cell, a created row).
+ * The list as a hierarchy, as the nodes of a TreeTable: the roots page by page, a parent's
+ * children fetched when it is opened. A search or a filter narrows what each level holds (the parents
+ * that merely lead to a match are `isContext`) but never opens a branch. The server sorts the roots
+ * and each parent's children the same way, so sorting never breaks the hierarchy. Branches opened by
+ * hand stay open when the list is fetched again (a saved cell, a sort, a search). An entity under
+ * several parents appears in each branch; `matchCount` counts it once.
  */
 export function useTreeRows({ entityType, config, organizationId, params, fields, offset, limit, enabled }: UseTreeRowsOptions) {
-  const narrowed = Boolean(params.search) || params.filters != null;
+  const narrowed = Boolean(params.search) || Object.keys(params.filters ?? {}).length > 0;
   const fieldsParam = fields.length > 0 ? fields.join(",") : undefined;
 
   const fetchPage = useCallback(
@@ -106,19 +106,26 @@ export function useTreeRows({ entityType, config, organizationId, params, fields
     queryFn: async (): Promise<TreeState> => {
       const page = await fetchPage({ offset, limit });
       const keep = new Set(openRef.current);
-      let budget = AUTO_EXPAND_MAX_REQUESTS;
-      const expanded: Record<string, boolean> = {};
+      const expanded: TreeTableExpandedKeysType = {};
       const open = async (nodes: TreeNode[]): Promise<TreeNode[]> =>
         Promise.all(
           nodes.map(async (node) => {
-            if (!node.row.hasChildren || budget <= 0 || !(narrowed || keep.has(key(node.row)))) return node;
-            budget -= 1;
-            expanded[key(node.row)] = true;
-            return { ...node, children: await open(toNodes((await fetchChildren(node.row)).data)) };
+            if (node.leaf || !keep.has(node.key as string)) return node;
+            expanded[node.key as string] = true;
+            return { ...node, children: await open(toNodes((await fetchChildren(node.data)).data, node.key as string)) };
           }),
         );
       return { roots: await open(toNodes(page.data)), expanded, total: page.totalCount };
     },
+  });
+
+  // The entities that match, each counted once however many branches show it: the flat list's total
+  // for the same search and filters (the tree's own total counts roots, for the paging).
+  const matches = useQuery({
+    queryKey: [...queryKeys.entityList(entityType), "tree-matches", organizationId, params],
+    enabled: enabled && config != null,
+    placeholderData: (previous) => previous,
+    queryFn: () => config!.api.list({ ...params, organizationId, offset: 0, limit: 1 } as ListParams),
   });
 
   // What was fetched, plus what the user opened since.
@@ -130,74 +137,48 @@ export function useTreeRows({ entityType, config, organizationId, params, fields
     openRef.current = new Set(Object.keys(tree?.expanded ?? {}).filter((id) => tree?.expanded[id]));
   }, [tree]);
 
-  const [loading, setLoading] = useState<Set<string>>(new Set());
+  const onToggle = useCallback((keys: TreeTableExpandedKeysType) => {
+    setTree((latest) => (latest ? { ...latest, expanded: keys } : latest));
+  }, []);
 
-  const onToggle = useCallback(
-    async (row: RowRecord) => {
-      const id = key(row);
-      const current = tree;
-      if (!current) return;
-      if (current.expanded[id]) {
-        setTree({ ...current, expanded: { ...current.expanded, [id]: false } });
-        return;
-      }
-      const node = findNode(current.roots, id);
-      if (node?.children) {
-        setTree({ ...current, expanded: { ...current.expanded, [id]: true } });
-        return;
-      }
-      setLoading((ids) => new Set(ids).add(id));
-      try {
-        const children = toNodes((await fetchChildren(row as TreeRow)).data);
-        setTree((latest) =>
-          latest
-            ? {
-                ...latest,
-                roots: updateNode(latest.roots, id, (n) => ({ ...n, children })),
-                expanded: { ...latest.expanded, [id]: true },
-              }
-            : latest,
-        );
-      } finally {
-        setLoading((ids) => {
-          const next = new Set(ids);
-          next.delete(id);
-          return next;
-        });
-      }
+  const onExpand = useCallback(
+    async (node: PrimeTreeNode) => {
+      const path = node.key as string;
+      if (!tree || findNode(tree.roots, path)?.children) return;
+      const children = toNodes((await fetchChildren((node as TreeNode).data)).data, path);
+      setTree((latest) => (latest ? { ...latest, roots: updateNode(latest.roots, path, (n) => ({ ...n, children })) } : latest));
     },
     [tree, fetchChildren],
   );
 
-  const flat = useMemo(() => {
-    const rows: TreeRow[] = [];
-    const depths = new Map<string, number>();
-    const walk = (nodes: TreeNode[], depth: number) => {
-      for (const node of nodes) {
-        rows.push(node.row);
-        depths.set(key(node.row), depth);
-        if (node.children && tree?.expanded[key(node.row)]) walk(node.children, depth + 1);
-      }
-    };
-    if (tree) walk(tree.roots, 0);
-    return { rows, depths };
-  }, [tree]);
-
   const tableTree: EntityTableTree = useMemo(
     () => ({
-      depthOf: (row) => flat.depths.get(key(row)) ?? 0,
-      hasChildren: (row) => (row as TreeRow).hasChildren === true,
-      isExpanded: (row) => tree?.expanded[key(row)] === true,
-      isLoading: (row) => loading.has(key(row)),
+      nodes: tree?.roots ?? [],
+      expandedKeys: tree?.expanded ?? {},
+      onToggle,
+      onExpand: (node) => void onExpand(node),
       isContext: (row) => narrowed && (row as TreeRow).match === false,
-      onToggle: (row) => void onToggle(row),
     }),
-    [flat, tree, loading, narrowed, onToggle],
+    [tree, narrowed, onToggle, onExpand],
   );
 
+  // The rows on screen in display order (the open branches' children included).
+  const rows = useMemo(() => {
+    const out: RowRecord[] = [];
+    const walk = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        out.push(node.data);
+        if (node.children && tree?.expanded[node.key as string]) walk(node.children as TreeNode[]);
+      }
+    };
+    if (tree) walk(tree.roots);
+    return out;
+  }, [tree]);
+
   return {
-    rows: flat.rows as RowRecord[],
+    rows,
     totalCount: tree?.total ?? 0,
+    matchCount: matches.data?.totalCount ?? 0,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     error: query.error,
