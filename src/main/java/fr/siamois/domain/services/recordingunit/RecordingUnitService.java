@@ -1318,6 +1318,17 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
                                                      Sort sort, FilterDTO filters) {
+        return findChildrenOfTree(institution, parentId, limit, offset, sort, filters, false);
+    }
+
+    /**
+     * {@code withMatchCount}: the list is the tree of everything below {@code parentId} (a unit's "UE" tab),
+     * so the page carries the number of units below it that match — all of them without a search. The
+     * count costs one query: it is asked for only by the call that shows it.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                     Sort sort, FilterDTO filters, boolean withMatchCount) {
         Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId))
                 .and(filters.getFieldQuery().orderingSpecificationFor());
         if (filters.hasUserFilters()) {
@@ -1328,7 +1339,15 @@ public class RecordingUnitService implements ArkEntityService {
         }
         Page<RecordingUnitDTO> page = pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
         applyTreeFlags(page, filters);
-        return page;
+        return withMatchCount ? TreePage.of(page, countMatchesBelow(parentId, filters)) : page;
+    }
+
+    private long countMatchesBelow(Long parentId, FilterDTO filters) {
+        if (!filters.hasUserFilters()) {
+            return recordingUnitRepository.countDescendants(parentId);
+        }
+        Set<Long> matchIds = filters.getMatchIds();
+        return matchIds == null || matchIds.isEmpty() ? 0L : recordingUnitRepository.countDescendantsAmong(parentId, matchIds);
     }
 
     /**

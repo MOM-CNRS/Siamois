@@ -134,7 +134,12 @@ export function useTreeRows({
   );
   // Inside a scope (a project's units) the children come from the same scoped list, so the scope
   // still limits them; in the organization-wide list, from the row's own children route.
-  const scoped = params.scope != null;
+  // A "children" context (everything below a parent) already lists through the children route, which
+  // each row's own children are fetched from too.
+  const scoped =
+    (params.scope != null && params.scope.path !== "children") ||
+    config?.list?.treeChildren === "parent";
+  const showsMatchCount = params.scope?.path === "children";
   const fetchChildren = useCallback(
     (parent: TreeRow) =>
       scoped
@@ -171,7 +176,11 @@ export function useTreeRows({
     enabled: enabled && config != null,
     placeholderData: (previous) => previous,
     queryFn: async (): Promise<TreeState> => {
-      const page = await fetchPage({ offset, limit });
+      const page = await fetchPage({
+        offset,
+        limit,
+        ...(showsMatchCount ? { matchCount: true } : {}),
+      });
       const keep = new Set(openRef.current);
       const expanded: TreeTableExpandedKeysType = {};
       const truncated: Record<string, number> = {};

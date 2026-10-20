@@ -2199,6 +2199,57 @@ class RecordingUnitServiceTest {
         }
 
         @Test
+        void findChildrenOfTree_withMatchCount_countsEveryUnitBelowWithoutAFilter() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            when(recordingUnitRepository.countDescendants(1L)).thenReturn(12L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true), true);
+
+            assertEquals(12L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+        }
+
+        @Test
+        void findChildrenOfTree_withMatchCountAndAFilter_countsTheMatchesBelow() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitSortFilterService.ancestorClosure(any(), any())).thenAnswer(inv -> {
+                FilterDTO f = inv.getArgument(1);
+                f.setAncestorClosure(Set.of(10L, 11L));
+                f.setMatchIds(Set.of(11L, 50L));
+                return Set.<Long>of(10L, 11L);
+            });
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            // 50 matches but is not below unit 1: only the matches the database finds below it count.
+            when(recordingUnitRepository.countDescendantsAmong(1L, Set.of(11L, 50L))).thenReturn(1L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), filters, true);
+
+            assertEquals(1L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+        }
+
+        @Test
+        void findChildrenOfTree_withoutMatchCount_isAPlainPage() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true));
+
+            assertEquals(false, result instanceof fr.siamois.dto.TreePage);
+            verify(recordingUnitRepository, never()).countDescendants(any());
+        }
+
+        @Test
         void findChildrenOfTree_withAFilterThatMatchesNothing_isEmptyWithoutQueryingTheChildren() {
             InstitutionDTO institution = new InstitutionDTO();
             institution.setId(1L);

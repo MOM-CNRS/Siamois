@@ -25,7 +25,10 @@ function placeRef(place: PlaceSummary): EntityRef {
 
 export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   key: "place",
-  labels: { singular: t("entity.place.singular"), plural: t("entity.place.plural") },
+  labels: {
+    singular: t("entity.place.singular"),
+    plural: t("entity.place.plural"),
+  },
   collectionPath: "places",
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
@@ -46,6 +49,8 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     defaultSort: "creationTime:desc",
     searchable: true,
     tree: true,
+    // The places below a place: its "Lieux" tab as a tree.
+    treeScopes: ["place:children"],
     // Places belong to the organization, not a project: the one organization-wide list whose
     // creation is allowed (see CreateForm.tsx).
     createForm: (ctx) => <PlaceCreateForm {...ctx} />,
@@ -55,19 +60,24 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         key: "new-parent",
         icon: "bi bi-node-plus-fill rotate-minus90",
         tooltip: t("row.newParentPlace"),
-        run: (row, ctx) => ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
       },
       {
         key: "new-child",
         icon: "bi bi-node-plus-fill rotate-90",
         tooltip: t("row.newChildPlace"),
-        run: (row, ctx) => ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
       },
       {
         key: "new-project",
         icon: "bi bi-arrow-down-square",
         tooltip: t("row.newProject"),
-        run: (row, ctx) => ctx.openCreate("project", { prefill: { spatialContext: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("project", {
+            prefill: { spatialContext: placeRef(row) },
+          }),
       },
     ],
   },
@@ -77,7 +87,13 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         key: "fiche",
         label: t("common.details"),
         render: (entity, helpers) => (
-          <SchemaFicheTab entity={entity} entityType="place" isFieldShown={(field) => field.valueBinding !== "address"} save={patchPlaceAnswers} onSaved={helpers.refetch} />
+          <SchemaFicheTab
+            entity={entity}
+            entityType="place"
+            isFieldShown={(field) => field.valueBinding !== "address"}
+            save={patchPlaceAnswers}
+            onSaved={helpers.refetch}
+          />
         ),
       },
       // JSF's hierarchy tab, reduced to the places this one contains.
@@ -109,7 +125,9 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         entityRef: placeRef,
       }),
     ],
-    header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity, helpers) => (
+      <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.name),
   },
   routes: jsfRoutes("spatial-unit"),

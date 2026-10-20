@@ -19,6 +19,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
@@ -164,7 +165,7 @@ public class PlaceOpenApiService {
     @Transactional(readOnly = true)
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang) {
-        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null, false);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, FieldQuery.NONE, null, false, false);
     }
 
     /** {@link #listChildren} with the sort/filters on form fields and the {@code fields=} projection. */
@@ -172,7 +173,7 @@ public class PlaceOpenApiService {
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang,
                                           FieldQuery fieldQuery, String fieldsParam) {
-        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, false);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, false, false);
     }
 
     /** {@link #listChildren} for the tree view: with a search, only the children leading to a match. */
@@ -180,12 +181,24 @@ public class PlaceOpenApiService {
     public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
                                           String sortParam, String search, String lang,
                                           FieldQuery fieldQuery, String fieldsParam, boolean tree) {
-        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, tree);
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, tree, false);
+    }
+
+    /**
+     * {@link #listChildren} for the tree view of everything below a place (its "Lieux" tab): with
+     * {@code withMatchCount}, {@code meta.matchCount} counts the places below it that match.
+     */
+    @Transactional(readOnly = true)
+    public PlaceListResponse listChildren(ProjectApiCaller caller, long placeId, int offset, int limit,
+                                          String sortParam, String search, String lang,
+                                          FieldQuery fieldQuery, String fieldsParam, boolean tree, boolean withMatchCount) {
+        return listChildrenInternal(caller, placeId, offset, limit, sortParam, search, lang, fieldQuery, fieldsParam, tree, withMatchCount);
     }
 
     private PlaceListResponse listChildrenInternal(ProjectApiCaller caller, long placeId, int offset, int limit,
                                                    String sortParam, String search, String lang,
-                                                   FieldQuery fieldQuery, String fieldsParam, boolean tree) {
+                                                   FieldQuery fieldQuery, String fieldsParam, boolean tree,
+                                                   boolean withMatchCount) {
         SpatialUnitDTO parent = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = parent.getCreatedByInstitution();
         Sort sort = ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePlaceSort);
@@ -198,6 +211,9 @@ public class PlaceOpenApiService {
         Page<SpatialUnitDTO> page = tree
                 ? spatialUnitService.searchChildrenTree(institution, parent, filter, pageable)
                 : spatialUnitService.searchSpatialUnitsInSpatialUnit(institution, parent, filter, pageable);
+        if (tree && withMatchCount) {
+            page = TreePage.of(page, spatialUnitService.countMatchesBelow(parent.getId(), filter));
+        }
         return toListResponse(caller, institution, page, lang, limit, offset, fieldsParam, tree ? filter : null);
     }
 

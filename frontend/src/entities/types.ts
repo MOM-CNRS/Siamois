@@ -67,6 +67,8 @@ export interface ListParams {
   // type's global list endpoint (plan: generic "related list" tab, e.g. a project's recording
   // units). See entities/listApi.ts for the URL this produces.
   scope?: ListScope;
+  // Tree view of everything below a parent (its "children" list): ask for meta.matchCount too.
+  matchCount?: boolean;
   // The tree view's fetch (GET .../places?tree=true, .../places/{id}/children?tree=true): the roots
   // — or, with a search or a filter, the rows leading to a match — each flagged hasChildren/match.
   tree?: boolean;
@@ -402,10 +404,14 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // The organization-wide list can also be shown as a tree (a parent/child hierarchy of the same
     // entity type, children at GET .../{id}/children): panels/list/useTreeRows.ts.
     tree?: boolean;
-    // The kinds of parent (ListScope.entityType) whose own list of this entity can be shown as a tree
-    // too: inside that scope, the roots are the rows none of whose parents is in the scope, and the
-    // children are fetched from the same scoped list with `parent`.
+    // The contexts whose list of this entity can be shown as a tree too, named by listViews.treeScopeKey:
+    // "project" (a list scoped to a project: the roots are the rows none of whose parents is in it, the
+    // children come from the same list with `parent`) or "recordingUnit:children" (everything below a
+    // unit: the roots are its children, the children come from each row's own children route).
     treeScopes?: string[];
+    // Where a row's children come from in the organization-wide tree: its own `.../{id}/children` route
+    // (the default), or this same list asked for them with `parent` (projects have no such route).
+    treeChildren?: "route" | "parent";
     // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button
     // (deliberately an overlay, not a JSF-style modal dialog — see CreateFormContext's own
     // rationale). Optional: an entity that doesn't supply this keeps EntityListPanel's older

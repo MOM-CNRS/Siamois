@@ -99,6 +99,18 @@ public class ActionUnitSpec {
         });
     }
 
+    /** Projects that have {@code parentId} as a parent (action_hierarchy). */
+    @NonNull
+    public static Specification<ActionUnit> hasParent(long parentId) {
+        return HierarchySpecs.hasParent(ActionUnit.class, "children", parentId);
+    }
+
+    /** The root of the projects' tree inside a context: none of its parents is in {@code scope}. */
+    @NonNull
+    public static Specification<ActionUnit> hasNoParentIn(Specification<ActionUnit> scope) {
+        return HierarchySpecs.hasNoParentIn(ActionUnit.class, "children", scope);
+    }
+
     @NonNull
     public static Specification<ActionUnit> fullIdentifierContaining(@Nullable String value) {
         return ((root, query, criteriaBuilder) -> {

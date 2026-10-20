@@ -20,11 +20,12 @@ type Params = Omit<ListParams, "offset" | "limit" | "fields">;
 
 const listMock = vi.fn<(params: ListParams) => Promise<PagedResult<TreeRow>>>();
 
-const config = {
+const baseConfig = {
   key: "tree-entity",
   collectionPath: "tree-entities",
   api: { list: listMock },
 } as unknown as EntityTypeConfig<unknown, unknown>;
+let config = baseConfig;
 
 const page = (
   data: TreeRow[],
@@ -98,6 +99,7 @@ async function open(path: string) {
 }
 
 beforeEach(() => {
+  config = baseConfig;
   params = {};
   listMock.mockReset();
   container = document.createElement("div");
@@ -179,6 +181,63 @@ describe("useTreeRows", () => {
       parent: 1,
       scope: { entityType: "project", id: 5 },
     });
+    expect(latest.rows.map((r) => r.id)).toEqual([1, 10]);
+  });
+
+  it("lists the roots through the children route and asks for the match count, when the list is everything below a parent", async () => {
+    params = { scope: { entityType: "tree-entity", id: 5, path: "children" } };
+    listMock.mockResolvedValue({
+      ...page([row(1, { hasChildren: true })]),
+      matchCount: 12,
+    });
+    mount();
+    await flush();
+
+    expect(treeCalls()[0]).toMatchObject({
+      tree: true,
+      matchCount: true,
+      scope: { entityType: "tree-entity", id: 5, path: "children" },
+    });
+    expect(latest.matchCount).toBe(12);
+  });
+
+  it("opens a branch of that list through the row's own children route, not with `parent`", async () => {
+    params = { scope: { entityType: "tree-entity", id: 5, path: "children" } };
+    listMock.mockImplementation(async (p) =>
+      p.scope?.id === 1
+        ? page([row(10)])
+        : page([row(1, { hasChildren: true })]),
+    );
+    mount();
+    await flush();
+    await open("1");
+
+    const call = treeCalls().find((p) => p.scope?.id === 1)!;
+    expect(call).toMatchObject({
+      tree: true,
+      scope: { entityType: "tree-entity", id: 1, path: "children" },
+    });
+    expect(call.parent).toBeUndefined();
+    expect(call.matchCount).toBeUndefined();
+    expect(latest.rows.map((r) => r.id)).toEqual([1, 10]);
+  });
+
+  it("asks a type with no children route for the children of a row from the list itself, with `parent`", async () => {
+    config = {
+      ...baseConfig,
+      list: { treeChildren: "parent" },
+    } as unknown as EntityTypeConfig<unknown, unknown>;
+    listMock.mockImplementation(async (p) =>
+      p.parent != null
+        ? page([row(10)])
+        : page([row(1, { hasChildren: true })]),
+    );
+    mount();
+    await flush();
+    await open("1");
+
+    expect(treeCalls().some((p) => p.scope?.path === "children")).toBe(false);
+    expect(treeCalls()[1]).toMatchObject({ tree: true, parent: 1 });
     expect(latest.rows.map((r) => r.id)).toEqual([1, 10]);
   });
 

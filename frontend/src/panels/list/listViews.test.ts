@@ -23,13 +23,56 @@ describe("availableViews", () => {
     ]);
   });
 
+  it("offers the tree of the projects of a place", () => {
+    const projects = config({ tree: true, treeScopes: ["place:projects"] });
+    expect(
+      availableViews(projects, {
+        entityType: "place",
+        id: 1,
+        path: "projects",
+      }),
+    ).toEqual(["list", "tree"]);
+    expect(
+      availableViews(projects, {
+        entityType: "place",
+        id: 1,
+        path: "children",
+      }),
+    ).toEqual(["list"]);
+  });
+
+  it("names a context by its sub-collection when it isn't the default one", () => {
+    const hierarchical = config({
+      tree: true,
+      treeScopes: ["recordingUnit:children"],
+    });
+    // The units below a unit are a tree; its ancestors, or its default list, are not.
+    expect(
+      availableViews(hierarchical, {
+        entityType: "recordingUnit",
+        id: 1,
+        path: "children",
+      }),
+    ).toEqual(["list", "tree"]);
+    expect(
+      availableViews(hierarchical, {
+        entityType: "recordingUnit",
+        id: 1,
+        path: "parents",
+      }),
+    ).toEqual(["list"]);
+    expect(
+      availableViews(hierarchical, { entityType: "recordingUnit", id: 1 }),
+    ).toEqual(["list"]);
+  });
+
   it("adds the tree inside a context only when the type declares it", () => {
     const hierarchical = config({ tree: true, treeScopes: ["project"] });
     expect(
-      availableViews(hierarchical, { entityType: "project", id: 1, path: "x" }),
+      availableViews(hierarchical, { entityType: "project", id: 1 }),
     ).toEqual(["list", "tree"]);
     expect(
-      availableViews(hierarchical, { entityType: "place", id: 1, path: "x" }),
+      availableViews(hierarchical, { entityType: "place", id: 1 }),
     ).toEqual(["list"]);
   });
 });

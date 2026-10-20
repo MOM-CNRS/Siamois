@@ -115,12 +115,13 @@ des dépôts) en `UNION`, qui déduplique et ne boucle pas en cas de cycle. `Fil
   « N résultats » par branche, ou un autre mécanisme de recherche, est à tester ensuite.
 - **Clé d'un nœud = son chemin**, pour la polyhiérarchie (voir plus haut).
 
-## Question ouverte : un parent qui correspond
+## Décision : un parent qui correspond
 
-Aujourd'hui, avec un filtre, les enfants d'un nœud sont limités à la fermeture des ancêtres des
-résultats, **même si le nœud correspond lui-même** : un parent qui correspond mais dont aucun enfant
-ne correspond ressemble à une feuille. L'ancien JSF montrait tous les descendants d'un parent qui
-correspond. À trancher : règle stricte actuelle (règle 1) ou comportement JSF.
+Une branche disparaît si rien ne correspond dedans. Un parent qui correspond mais dont aucun descendant
+ne correspond est donc une feuille : on ne montre pas ses descendants pour autant (l'ancien JSF les
+montrait tous). Ses enfants ne s'affichent que si l'un d'eux, à un niveau quelconque en dessous, correspond.
+C'est ce que fait `HierarchyTreeQuery` (enfants et drapeau `hasChildren` limités à la fermeture des
+ancêtres des correspondances), pinglé par `HierarchyTreeQueryTest`.
 
 ## Arbres dans un contexte
 
@@ -145,9 +146,37 @@ Cas couverts :
 | Contexte | `S` | Racines | État |
 |---|---|---|---|
 | Liste d'une organisation | tout | les lignes sans parent | fait (`tree=true`, enfants par `/children`) |
-| UE d'un projet | les UE du projet | celles dont aucun parent n'est dans le projet | **fait** |
-| UE d'un lieu | les UE du lieu | idem | à faire (même mécanique, `S` = les UE du lieu) |
-| UE d'une UE | les descendants de l'UE | ses enfants directs (leur parent, l'UE, n'est pas dans `S`) | à faire (demande une fermeture des descendants) |
+| UE d'un projet | les UE du projet | celles dont aucun parent n'est dans le projet | **fait** (`parent=`) |
+| UE d'une UE (onglet « UE ») | tout ce qui est sous l'UE | ses enfants directs | **fait** (route `/children`) |
+| Lieux d'un lieu (onglet « Lieux ») | tout ce qui est sous le lieu | ses enfants directs | **fait** (route `/children`) |
+| UE d'un lieu | les UE du lieu | idem projet | pas d'onglet aujourd'hui (le point d'API `/places/{id}/recording-units` est un stub 501) |
+| Liste des projets | les projets accessibles | ceux dont aucun parent n'est accessible | **fait** (`parent=`) |
+| Projets d'un lieu (onglet « Projets ») | les projets accessibles du lieu | idem | **fait** (`parent=`) |
+| Mobilier | — | — | à faire (adaptateur par type) |
+
+**Deux familles de contexte.** Une liste « filtrée » (les UE d'un projet) est un ensemble `S` quelconque :
+les racines sont les lignes dont aucun parent n'est dans `S`, et les enfants d'un nœud viennent de la
+même liste avec `parent=<id>` (`HierarchyTreeQuery`). Une liste « tout ce qui est sous un parent » (les
+onglets « UE » d'une UE et « Lieux » d'un lieu) est fermée par ses enfants : ses racines sont les enfants
+directs du parent, et les enfants d'un nœud sont ceux de sa propre route `/children?tree=true`, la même
+que pour l'arbre de l'organisation. Dans ce cas la restriction « seulement ce qui mène à une
+correspondance » donne le bon résultat sans matérialiser `S`. Le compteur `meta.matchCount` s'y obtient
+par `?matchCount=true` (une requête récursive : `countDescendants` / `countDescendantsAmong`), demandé
+par le seul appel des racines, jamais par les dépliages. Un contexte se nomme dans `list.treeScopes` par
+son parent et sa sous-collection (`treeScopeKey` : `project`, `recordingUnit:children`, `place:children` ;
+`recordingUnit:parents`, qui liste des ancêtres, n'en fait pas partie).
+
+**Projets.** `GET /api/v1/projects?tree=true` renvoie les projets accessibles dont aucun parent n'est
+accessible : un projet sous un parent que la personne ne voit pas est une racine pour elle (les droits
+font partie du contexte). Avec `parent=<id>` : les sous-projets accessibles de ce projet. Mêmes champs
+`hasChildren`/`match` et `meta.matchCount`. `GET /places/{id}/projects?tree=true` fait de même dans le
+lieu, qui est alors une partie du **contexte** (`spatialContextId`) et non un filtre : un projet dont le
+parent est dans un autre lieu y est une racine. Les projets n'ont pas de route `/{id}/children` : leur
+type déclare `list.treeChildren: "parent"` pour que le front demande les enfants à la liste elle-même.
+Côté serveur : `ActionUnitService.findAccessibleProjectsTree` sur `HierarchyTreeQuery`, la page portant
+ses drapeaux (`TreePage.hasChildren/isMatch`) puisque `AccessibleProjectForApi` est un record sans
+setters ; les conditions « a pour parent » et « aucun parent dans le contexte » sont partagées par tous
+les types (`HierarchySpecs`).
 
 **Liste des UE d'un projet** : `GET /api/v1/projects/{id}/recording-units?tree=true` renvoie les racines
 du projet (ou, filtré, celles qui mènent à une correspondance) ; avec `parent=<id d'une UE>`, les
@@ -191,18 +220,48 @@ Fait :
 
 Reste à faire :
 
-- **Coût du dépliage filtré :** chaque `children?tree=true` refait la requête de correspondances et la
-  fermeture des ancêtres (le JSF gardait la fermeture en mémoire). Pistes : cache de courte durée (la
-  clé doit contenir l'utilisateur, l'organisation et les filtres de contexte), ou « ce nœud a-t-il un
-  résultat en dessous » sans fermeture globale. Non fait : le risque d'un cache périmé ou partagé entre
-  droits demande une décision.
-- **`EntityTable.tsx`** porte encore deux tableaux aux propriétés dupliquées (~700 lignes) ; extraire la
-  construction des colonnes (elle dépend de l'état d'édition des cellules).
-- **Dépliage filtré en contexte :** même coût que dans l'organisation (chaque `parent=` refait les
-  correspondances et la fermeture, niveau par niveau).
-- **Précédent/suivant d'une fiche** ouverte depuis l'arbre suit l'ordre de la liste à plat
+*Fonctionnalités*
+
+- **Mobilier :** l'arbre n'est pas branché. La hiérarchie existe en base (`specimen_hierarchy`) mais le JSF
+  ne l'exposait pas ; à faire seulement si les données l'utilisent vraiment (un adaptateur
+  `HierarchyTreeQuery`, les requêtes d'arêtes du dépôt, `list.tree` sur le type).
+- **UE d'un lieu :** pas d'onglet aujourd'hui, et `GET /places/{id}/recording-units` est un stub 501 ; il
+  faut d'abord construire l'endpoint et l'onglet (le contexte se traite alors comme celui d'un projet).
+- **Recherche en arbre :** sans ouverture automatique, avec une recherche seules les racines sont visibles
+  et il faut déplier à la main pour atteindre un résultat. Un badge « N résultats » par branche, ou un
+  autre mécanisme, est à tester ensuite. Pas de bouton « tout déplier » pour le moment.
+- **Création dans l'arbre :** l'arbre se recharge avec les branches ouvertes ; une entité créée sous une
+  branche fermée reste invisible. Le JSF l'insérait à sa place (`LazyTreeMutator` : à la racine, premier
+  enfant, parent avec ré-affiliation, frère en dessous).
+- **Précédent/suivant d'une fiche** ouverte depuis l'arbre : il suit l'ordre de la liste à plat
   (`rememberListContext`), pas celui de l'arbre.
-- **Création dans l'arbre :** l'arbre se recharge avec les branches ouvertes ; une entité créée sous
-  une branche fermée reste invisible. Le JSF l'insérait à sa place (`LazyTreeMutator`).
+
+*Performance*
+
+- **Coût du dépliage filtré :** chaque dépliage d'une liste filtrée (`children?tree=true` ou `parent=`)
+  refait la requête de correspondances et la fermeture des ancêtres (le JSF gardait la fermeture en
+  mémoire). Pistes : un cache de courte durée (la clé doit contenir l'utilisateur, l'organisation, les
+  filtres de contexte et les droits : un cache périmé ou partagé entre droits est le risque), ou « ce
+  nœud a-t-il un résultat en dessous » sans fermeture globale. Même coût dans les contextes.
+
+*Interface*
+
+- **Pas d'indicateur de chargement** pendant le dépliage d'une branche.
+- **Glisser-déposer des en-têtes** absent en vue arbre (le `TreeTable` n'a pas `resetColumnOrder`).
+- **Plafond de 200 enfants** par parent : un message l'indique, pas de pagination.
+
+*Qualité et cohérence*
+
+- **`EntityTable.tsx`** porte encore deux tableaux aux propriétés dupliquées (~680 lignes) ; extraire la
+  construction des colonnes (elle dépend de l'état d'édition des cellules).
+- **API à unifier :** les listes d'organisation des UE et des lieux déplient par `/{id}/children?tree=true`,
+  les projets et les UE d'un projet par `parent=`. La cible est `parent=` partout, `/children` restant à
+  la gestion des relations.
 - **Validation contre un backend réel :** tout est vérifié par typecheck, tests unitaires et harnais
-  simulé (`?kind=list&type=recordingUnit`, bascule arbre).
+  simulé (`?kind=list&type=recordingUnit`, mode d'affichage « Arbre »), puis un premier essai
+  manuel de l'utilisateur (« ça semble marcher ») ; les contextes (UE d'un projet, projets d'un lieu), le
+  compteur avec un filtre par champ et le tri sur une colonne de formulaire sont à passer en revue.
+
+*Avant de fusionner*
+
+- La branche `feat/tree-view` part de `feat/rels` ; elle n'a pas les commits de `feat/search-bar`.

@@ -27,6 +27,15 @@ export interface ListViewOption {
   icon: string;
 }
 
+/**
+ * How a context is named in `list.treeScopes`: its parent's type, plus the sub-collection when the list
+ * is not the parent's default one ("recordingUnit:children" is the units below a unit, where
+ * "recordingUnit:parents" would be its ancestors).
+ */
+export function treeScopeKey(scope: ListScope): string {
+  return scope.path ? `${scope.entityType}:${scope.path}` : scope.entityType;
+}
+
 /** The views `config`'s list offers inside `scope` (none when there is only the flat list). */
 export function availableViews(
   config: EntityTypeConfig<unknown, unknown> | undefined,
@@ -38,7 +47,7 @@ export function availableViews(
   if (
     config.list.tree === true &&
     (scope == null ||
-      config.list.treeScopes?.includes(scope.entityType) === true)
+      config.list.treeScopes?.includes(treeScopeKey(scope)) === true)
   ) {
     views.push("tree");
   }

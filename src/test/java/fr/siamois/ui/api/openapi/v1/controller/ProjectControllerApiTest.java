@@ -291,6 +291,58 @@ class ProjectControllerApiTest {
     }
 
     @Test
+    void getAllProjects_withTree_returnsTheFlagsAndTheMatchCount() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
+        // The page of roots: project 1 has sub-projects and is only context (the search matched below it); 37 match.
+        when(actionUnitService.findAccessibleProjectsTree(
+                anyLong(), eq(Set.of(100L)), isNull(), eq("fouille"), any(Pageable.class), isNull(), any(),
+                org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), isNull(), isNull()))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(row), PageRequest.of(0, 20), 1, 37, Set.of(1L), Set.of(99L)));
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("1");
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any())).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects").param("tree", "true").param("search", "fouille"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].hasChildren").value(true))
+                .andExpect(jsonPath("$.data[0].match").value(false))
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.meta.matchCount").value(37));
+    }
+
+    @Test
+    void getAllProjects_withTreeAndParent_asksForThatProjectsChildren() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectsTree(
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(),
+                org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(5L), isNull()))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(), PageRequest.of(0, 20), 0, 0));
+
+        mockMvc.perform(get("/api/v1/projects").param("tree", "true").param("parent", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
+    void getAllProjects_parentWithoutTree_isABadRequest() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects").param("parent", "5"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void getAllProjects_passesAcceptLanguageToMapper() throws Exception {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);

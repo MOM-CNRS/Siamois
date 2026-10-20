@@ -38,6 +38,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
@@ -267,6 +268,49 @@ public class ProjectApiService {
                 countDirection,
                 filter,
                 fieldQuery);
+    }
+
+    /**
+     * The tree view of the accessible projects, or with {@code parentId} one project's accessible children:
+     * a {@link TreePage} (its flags, its match count) — see {@link ActionUnitService#findAccessibleProjectsTree}.
+     */
+    public TreePage<AccessibleProjectForApi> pageAccessibleProjectsTree(
+            ProjectApiCaller caller,
+            Long organizationId,
+            String search,
+            int offset,
+            int limit,
+            String sortParam,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery,
+            Long parentId) {
+        return pageAccessibleProjectsTree(caller, organizationId, search, offset, limit, sortParam, filter, fieldQuery, parentId, null);
+    }
+
+    /** {@code spatialContextId}: the tree of the projects of one place (its "Projets" tab). */
+    public TreePage<AccessibleProjectForApi> pageAccessibleProjectsTree(
+            ProjectApiCaller caller,
+            Long organizationId,
+            String search,
+            int offset,
+            int limit,
+            String sortParam,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery,
+            Long parentId,
+            Long spatialContextId) {
+        assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        int pageNumber = offset / limit;
+        Sort.Direction countDirection = fieldQuery.ordered() ? null : recordingUnitCountSortDirection(sortParam);
+        Pageable pageable;
+        if (fieldQuery.ordered()) {
+            pageable = PageRequest.of(pageNumber, limit);
+        } else {
+            pageable = PageRequest.of(pageNumber, limit,
+                    countDirection != null ? Sort.by(Sort.Direction.ASC, "id") : parseProjectSort(sortParam));
+        }
+        return actionUnitService.findAccessibleProjectsTree(caller.person().getId(), caller.accessibleInstitutionIds(),
+                organizationId, search, pageable, countDirection, filter, fieldQuery, parentId, spatialContextId);
     }
 
     /**
@@ -1722,6 +1766,21 @@ public class ProjectApiService {
             RecordingUnitListFilter filter,
             FieldQuery fieldQuery,
             boolean tree) {
+        return pageRecordingUnitChildren(caller, recordingUnitKey, offset, limit, sortParam, search, filter, fieldQuery, tree, false);
+    }
+
+    /** {@code withMatchCount}: with {@code tree}, also the number of units below that match (see {@link RecordingUnitService#findChildrenOfTree}). */
+    public ScopedRecordingUnitPage pageRecordingUnitChildren(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            int offset,
+            int limit,
+            String sortParam,
+            String search,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery,
+            boolean tree,
+            boolean withMatchCount) {
         RecordingUnitDTO parent = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, parent);
@@ -1729,7 +1788,7 @@ public class ProjectApiService {
         FilterDTO filterDTO = filter.toFilterDTO(search);
         filterDTO.setFieldQuery(fieldQuery);
         Page<RecordingUnitDTO> page = tree
-                ? recordingUnitService.findChildrenOfTree(parent.getCreatedByInstitution(), parent.getId(), limit, offset, sort, filterDTO)
+                ? recordingUnitService.findChildrenOfTree(parent.getCreatedByInstitution(), parent.getId(), limit, offset, sort, filterDTO, withMatchCount)
                 : recordingUnitService.findChildrenOf(parent.getId(), limit, offset, sort, filterDTO);
         return new ScopedRecordingUnitPage(page, parent.getActionUnit() != null ? parent.getActionUnit().getId() : null);
     }

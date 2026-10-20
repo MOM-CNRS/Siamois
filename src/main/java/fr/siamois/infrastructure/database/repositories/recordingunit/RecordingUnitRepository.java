@@ -66,6 +66,28 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
         """, nativeQuery = true)
     List<Object[]> findChildEdges(@Param("parentIds") Collection<Long> parentIds);
 
+    /** How many units are below {@code unitId}, at any depth (each counted once, however many routes lead to it). */
+    @Query(value = """
+        WITH RECURSIVE below(id) AS (
+            SELECT h.fk_child_id FROM recording_unit_hierarchy h WHERE h.fk_parent_id = :unitId
+            UNION
+            SELECT h.fk_child_id FROM recording_unit_hierarchy h JOIN below b ON h.fk_parent_id = b.id
+        )
+        SELECT COUNT(*) FROM below
+        """, nativeQuery = true)
+    long countDescendants(@Param("unitId") Long unitId);
+
+    /** Same, counting only the units in {@code ids} (the matches of a search). */
+    @Query(value = """
+        WITH RECURSIVE below(id) AS (
+            SELECT h.fk_child_id FROM recording_unit_hierarchy h WHERE h.fk_parent_id = :unitId
+            UNION
+            SELECT h.fk_child_id FROM recording_unit_hierarchy h JOIN below b ON h.fk_parent_id = b.id
+        )
+        SELECT COUNT(*) FROM below WHERE id IN (:ids)
+        """, nativeQuery = true)
+    long countDescendantsAmong(@Param("unitId") Long unitId, @Param("ids") Collection<Long> ids);
+
     @Query(value = """
         SELECT h.fk_child_id, COUNT(*)
         FROM recording_unit_hierarchy h

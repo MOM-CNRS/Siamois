@@ -70,6 +70,8 @@ public class RecordingUnitChildrenControllerApi {
             @RequestParam(required = false) String fields,
             @Parameter(description = "Vue arbre : avec une recherche ou un filtre, seules les UE menant à une correspondance ; chaque UE porte hasChildren et match.")
             @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : meta.matchCount compte les UE sous celle-ci (à tout niveau) qui correspondent à la recherche ou aux filtres, toutes sans eux.")
+            @RequestParam(defaultValue = "false") boolean matchCount,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
@@ -77,7 +79,7 @@ public class RecordingUnitChildrenControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.ScopedRecordingUnitPage scoped = projectApiService.pageRecordingUnitChildren(
                 caller, id, offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams),
-                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage), tree);
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage), tree, tree && matchCount);
         RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
                 caller, scoped.page(), scoped.projectId(), fields, lang, limit, offset);
         return ResponseEntity.ok()

@@ -175,12 +175,14 @@ public class PlaceControllerApi {
             @RequestParam(required = false) String fields,
             @Parameter(description = "Vue arbre : avec une recherche ou un filtre, seuls les enfants menant à une correspondance ; chaque lieu porte hasChildren et match.")
             @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : meta.matchCount compte les lieux sous celui-ci (à tout niveau) qui correspondent à la recherche ou aux filtres, tous sans eux.")
+            @RequestParam(defaultValue = "false") boolean matchCount,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree);
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree, tree && matchCount);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(body.getMeta().total()))
                 .body(body);
@@ -205,16 +207,29 @@ public class PlaceControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre des projets de ce lieu : ceux dont aucun parent n'est dans ce lieu ; "
+                    + "hasChildren, match et meta.matchCount comme GET /api/v1/projects?tree=true.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : l'id d'un projet, pour avoir ses sous-projets de ce lieu.")
+            @RequestParam(required = false) Long parent,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        if (parent != null && !tree) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "parent n'a de sens qu'avec tree=true");
+        }
         SpatialUnitDTO place = placeOpenApiService.requireAccessible(caller, id);
-        ProjectListFilter filter = ProjectListFilter.parse(queryParams).withSpatialContext(place.getId());
-        Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort, filter,
-                fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage));
+        fr.siamois.dto.FieldQuery fieldQuery = fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage);
+        // In the tree the place is part of the context (the projects of this place), not a filter.
+        Page<AccessibleProjectForApi> rows = tree
+                ? projectApiService.pageAccessibleProjectsTree(
+                        caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
+                        ProjectListFilter.parse(queryParams), fieldQuery, parent, place.getId())
+                : projectApiService.pageAccessibleProjects(
+                        caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
+                        ProjectListFilter.parse(queryParams).withSpatialContext(place.getId()), fieldQuery);
         ProjectListResponse body = projectListAssembler.assemble(caller, rows, fields, lang, limit, offset);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))

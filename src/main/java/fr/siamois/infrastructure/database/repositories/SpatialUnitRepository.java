@@ -225,6 +225,28 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
     List<Long> findParentIdsHavingChildrenAmong(@Param("parentIds") Collection<Long> parentIds,
                                                 @Param("childIds") Collection<Long> childIds);
 
+    /** How many places are below {@code placeId}, at any depth (each counted once). */
+    @Query(nativeQuery = true, value = """
+            WITH RECURSIVE below(id) AS (
+                SELECT h.fk_child_id FROM spatial_hierarchy h WHERE h.fk_parent_id = :placeId
+                UNION
+                SELECT h.fk_child_id FROM spatial_hierarchy h JOIN below b ON h.fk_parent_id = b.id
+            )
+            SELECT COUNT(*) FROM below
+            """)
+    long countDescendants(@Param("placeId") Long placeId);
+
+    /** Same, counting only the places in {@code ids} (the matches of a search). */
+    @Query(nativeQuery = true, value = """
+            WITH RECURSIVE below(id) AS (
+                SELECT h.fk_child_id FROM spatial_hierarchy h WHERE h.fk_parent_id = :placeId
+                UNION
+                SELECT h.fk_child_id FROM spatial_hierarchy h JOIN below b ON h.fk_parent_id = b.id
+            )
+            SELECT COUNT(*) FROM below WHERE id IN (:ids)
+            """)
+    long countDescendantsAmong(@Param("placeId") Long placeId, @Param("ids") Collection<Long> ids);
+
     @Transactional
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM spatial_hierarchy WHERE fk_parent_id = :spatialUnitId OR fk_child_id = :spatialUnitId")

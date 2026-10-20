@@ -37,6 +37,7 @@ export async function fetchList<T>(
     query.set("organizationId", String(params.organizationId));
   if (params.fields) query.set("fields", params.fields);
   if (params.tree) query.set("tree", "true");
+  if (params.matchCount) query.set("matchCount", "true");
   if (params.parent != null) query.set("parent", String(params.parent));
   if (params.filters) {
     // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;

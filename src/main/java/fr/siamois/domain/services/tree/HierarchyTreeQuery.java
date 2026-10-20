@@ -71,7 +71,9 @@ public class HierarchyTreeQuery<E, D> {
 
         Long idOf(D row);
 
-        void flag(D row, boolean hasChildren, boolean match);
+        /** Sets the tree flags on a row, for a type whose DTO has them; the page carries them too. */
+        default void flag(D row, boolean hasChildren, boolean match) {
+        }
     }
 
     private final Hierarchy<E, D> hierarchy;
@@ -112,7 +114,7 @@ public class HierarchyTreeQuery<E, D> {
             hierarchy.flag(row, withChildren.contains(id), matchIds == null || matchIds.contains(id));
         }
         long matchCount = narrowed ? matchIds.size() : hierarchy.count(scope);
-        return TreePage.of(page, matchCount);
+        return new TreePage<>(page.getContent(), page.getPageable(), page.getTotalElements(), matchCount, withChildren, matchIds);
     }
 
     private Set<Long> ancestorClosureInScope(Specification<E> scope, Set<Long> matchIds) {

@@ -208,6 +208,30 @@ class HierarchyTreeQueryTest {
     }
 
     @Test
+    void aMatchingParentWithNoMatchBelowIsALeaf() {
+        // 1 matches and has children 2 and 3, none of which matches: a branch with nothing matching in it
+        // disappears, so 1 shows no children and opens to nothing.
+        InMemory h = new InMemory().row(1).row(2, 1).row(3, 1);
+
+        TreePage<Long> roots = page(h, EVERYTHING, in(1L), null);
+
+        assertThat(roots.getContent()).containsExactly(1L);
+        assertThat(h.match).containsEntry(1L, true);
+        assertThat(h.hasChildren).containsEntry(1L, false);
+        assertThat(page(h, EVERYTHING, in(1L), 1L).getContent()).isEmpty();
+    }
+
+    @Test
+    void aMatchingParentOpensOnlyOnTheBranchesWithAMatchBelow() {
+        // 1 matches; 2 has a matching child 4, 3 has nothing matching: only 2 is shown under 1.
+        InMemory h = new InMemory().row(1).row(2, 1).row(3, 1).row(4, 2);
+
+        TreePage<Long> children = page(h, EVERYTHING, in(1L, 4L), 1L);
+
+        assertThat(children.getContent()).containsExactly(2L);
+    }
+
+    @Test
     void theClosureStopsAtAParentOutsideTheContext() {
         // 3's parent 2 is outside the context; 2's parent 1 is inside it. Inside the context, 3 is a root and
         // 1 leads nowhere: 1 must not show up as a parent of the match.

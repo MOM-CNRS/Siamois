@@ -1429,4 +1429,31 @@ class SpatialUnitServiceTest {
         assertTrue(flags.withChildren().isEmpty());
         org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
     }
+
+    @Test
+    void countMatchesBelow_withoutAFilter_countsEveryPlaceBelow() {
+        when(spatialUnitRepository.countDescendants(5L)).thenReturn(9L);
+
+        assertEquals(9L, spatialUnitService.countMatchesBelow(5L, new fr.siamois.dto.FilterDTO(true)));
+    }
+
+    @Test
+    void countMatchesBelow_withAFilter_countsTheMatchesBelow() {
+        fr.siamois.dto.FilterDTO filter = new fr.siamois.dto.FilterDTO(true);
+        filter.add("name", "x", fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        filter.setMatchIds(java.util.Set.of(7L, 8L));
+        when(spatialUnitRepository.countDescendantsAmong(5L, java.util.Set.of(7L, 8L))).thenReturn(1L);
+
+        assertEquals(1L, spatialUnitService.countMatchesBelow(5L, filter));
+    }
+
+    @Test
+    void countMatchesBelow_withAFilterThatMatchesNothing_isZeroWithoutQuerying() {
+        fr.siamois.dto.FilterDTO filter = new fr.siamois.dto.FilterDTO(true);
+        filter.add("name", "x", fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
+        filter.setMatchIds(java.util.Set.of());
+
+        assertEquals(0L, spatialUnitService.countMatchesBelow(5L, filter));
+        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+    }
 }

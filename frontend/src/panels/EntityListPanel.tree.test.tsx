@@ -65,7 +65,7 @@ async function click(el: Element) {
 }
 
 function renderPanel(
-  props: { scope?: { entityType: string; id: number; path: string } } = {},
+  props: { scope?: { entityType: string; id: number; path?: string } } = {},
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -176,7 +176,7 @@ describe("EntityListPanel: the tree view", () => {
 
   it("offers the tree inside a context the type supports, and keeps the children in that context", async () => {
     renderPanel({
-      scope: { entityType: "project", id: 5, path: "recording-units" },
+      scope: { entityType: "project", id: 5 },
     });
     await flush();
     await pickView("Arbre");

@@ -690,6 +690,18 @@ public class SpatialUnitService implements ArkEntityService {
         return new TreeFlags(new HashSet<>(parents), filterDTO.hasUserFilters() ? filterDTO.getMatchIds() : null);
     }
 
+    /**
+     * The places below {@code parentId} (at any depth) that match: all of them without a search or a
+     * filter, else those among the match set {@code filterDTO} holds.
+     */
+    public long countMatchesBelow(Long parentId, FilterDTO filterDTO) {
+        if (!filterDTO.hasUserFilters()) {
+            return spatialUnitRepository.countDescendants(parentId);
+        }
+        Set<Long> matchIds = filterDTO.getMatchIds();
+        return matchIds == null || matchIds.isEmpty() ? 0L : spatialUnitRepository.countDescendantsAmong(parentId, matchIds);
+    }
+
     /** {@code matchIds} is null when no search is active (every row then counts as a match). */
     public record TreeFlags(Set<Long> withChildren, Set<Long> matchIds) { }
 
