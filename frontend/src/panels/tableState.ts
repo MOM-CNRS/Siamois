@@ -28,7 +28,10 @@ export interface TableState {
 
 // Rows-per-page choices; the server caps a page at 200 (ProjectApiService.MAX_PAGE_SIZE).
 export const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
-export const DEFAULT_LIMIT = 25;
+export const DEFAULT_LIMIT = 100;
+// The default before it was 100: a kept state always carries its page size, so one saved then holds a 25 the
+// user never chose. It is read as "no choice" and the list opens on the current default.
+export const LEGACY_DEFAULT_LIMIT = 25;
 
 export function createTableState(overrides: Partial<TableState> = {}): TableState {
   return {

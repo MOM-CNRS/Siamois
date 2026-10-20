@@ -1,5 +1,5 @@
 import type { ViewStateBody, ViewTableState } from "../api/views";
-import { PAGE_SIZE_OPTIONS, type FilterValue, type TableState } from "./tableState";
+import { LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue, type TableState } from "./tableState";
 import type { ListViewMode } from "./list/listViews";
 
 // What of a list's TableState is kept for the user (GET/PUT /api/v1/view-states), and how it reads
@@ -40,7 +40,8 @@ export function parsePersisted(raw: ViewStateBody | undefined): PersistedListSta
   if (raw == null || raw.v !== VERSION) return undefined;
   const parsed: PersistedListState = {};
   // Only a size the list still offers: the server refuses any other (a page is capped, offset is a multiple of it).
-  if (typeof raw.limit === "number" && PAGE_SIZE_OPTIONS.includes(raw.limit)) parsed.limit = raw.limit;
+  // (A kept 25 is the former default, not a choice: see LEGACY_DEFAULT_LIMIT.)
+  if (typeof raw.limit === "number" && PAGE_SIZE_OPTIONS.includes(raw.limit) && raw.limit !== LEGACY_DEFAULT_LIMIT) parsed.limit = raw.limit;
   if (typeof raw.sort === "string" && raw.sort) parsed.sort = raw.sort;
   if (isStringArray(raw.visibleColumns)) parsed.visibleColumns = raw.visibleColumns;
   if (raw.viewMode === "list" || raw.viewMode === "tree") parsed.viewMode = raw.viewMode;

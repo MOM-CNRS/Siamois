@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
 import { usePersistedPaneState } from "../../../panels/persistedPaneState";
-import { DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/tableState";
+import { DEFAULT_LIMIT, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/tableState";
 import { getRelationList, type RelationListParams } from "./api";
 import type { RelationKind, RelationRow } from "./types";
 
@@ -66,7 +66,7 @@ export function useRelationList(unitId: string | number): RelationListModel {
     INITIAL,
     {
       toSaved: ({ filters, sort, limit }) => ({ filters, sort, limit }),
-      fromSaved: (saved, initial) => ({ ...initial, ...saved }),
+      fromSaved: (saved, initial) => ({ ...initial, ...saved, limit: saved.limit === LEGACY_DEFAULT_LIMIT ? initial.limit : saved.limit }),
       isValid: isSavedRelationListState,
     },
   );

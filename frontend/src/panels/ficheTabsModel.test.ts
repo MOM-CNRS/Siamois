@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { registerEntityType } from "../entities/registry";
 import type { DetailTabDef, EntityTypeConfig } from "../entities/types";
-import { editableTabs, hasVisibleTab, moveTab, newListTab, relationTargets, removeTab, restorableTabs, restoreTab, shownTabs, toConfigTabs } from "./ficheTabsModel";
+import { editableTabs, hasVisibleTab, moveTab, moveTabTo, newListTab, relationTargets, removeTab, restorableTabs, restoreTab, shownTabs, toConfigTabs } from "./ficheTabsModel";
 
 registerEntityType({
   key: "tabs-model-target",
@@ -90,6 +90,14 @@ describe("the editor's helpers", () => {
     expect(moveTab(rows, "fiche", 1).map((r) => r.key)).toEqual(["targets", "fiche", "gone-target"]);
     expect(moveTab(rows, "fiche", -1)).toBe(rows);
     expect(moveTab(rows, "gone-target", 1)).toBe(rows);
+  });
+
+  it("drops a line on another: after it going down, before it going up", () => {
+    const rows = editableTabs(code, undefined);
+    expect(moveTabTo(rows, "fiche", "gone-target").map((r) => r.key)).toEqual(["targets", "gone-target", "fiche"]);
+    expect(moveTabTo(rows, "gone-target", "fiche").map((r) => r.key)).toEqual(["gone-target", "fiche", "targets"]);
+    expect(moveTabTo(rows, "fiche", "fiche")).toBe(rows);
+    expect(moveTabTo(rows, "fiche", "unknown")).toBe(rows);
   });
 
   it("wants one tab shown", () => {

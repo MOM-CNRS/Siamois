@@ -89,10 +89,40 @@ describe("FicheTabsEditor", () => {
     expect(nameInputs()[1].closest("li")!.contains(removeButtons()[0])).toBe(true);
   });
 
+  async function pressOnHandle(index: number, key: string) {
+    const handle = dialog().querySelectorAll<HTMLElement>(".fiche-tabs-editor-handle")[index];
+    await act(async () => {
+      handle.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    });
+  }
+
+  it("reorders by dragging a row by its handle onto another", async () => {
+    await renderEditor();
+    const before = nameInputs().map((i) => i.placeholder);
+    const rows = dialog().querySelectorAll<HTMLElement>(".fiche-tabs-editor-row");
+    const handle = rows[0].querySelector<HTMLElement>(".fiche-tabs-editor-handle")!;
+    // Only a press on the handle makes the row draggable: a press in the name must not.
+    expect(rows[0].draggable).toBe(false);
+    await act(async () => {
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    expect(rows[0].draggable).toBe(true);
+    const drag = (type: string, target: Element) =>
+      act(async () => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, "dataTransfer", { value: { setData: () => {}, effectAllowed: "", dropEffect: "" } });
+        target.dispatchEvent(event);
+      });
+    await drag("dragstart", rows[0]);
+    await drag("dragover", rows[1]);
+    await drag("drop", rows[1]);
+    expect(nameInputs().map((i) => i.placeholder)).toEqual([before[1], before[0], ...before.slice(2)]);
+  });
+
   it("saves the order, names and removals as one configuration for every sub-type of a fiche without one", async () => {
     await renderEditor();
 
-    await click(buttonNamed("Descendre"));
+    await pressOnHandle(0, "ArrowDown");
     await type(nameInputs()[0], "Pièces jointes");
     await click(removeButtons()[0]);
     await click(buttonNamed("Enregistrer"));

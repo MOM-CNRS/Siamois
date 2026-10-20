@@ -458,14 +458,14 @@ describe("EntityListPanel", () => {
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
-  it("paginates 25 rows per page by default, with 25/50/100/200 to choose from", async () => {
+  it("paginates 100 rows per page by default, with 25/50/100/200 to choose from", async () => {
     renderPanel();
     await flush();
 
     expect(container.querySelector(".p-paginator")).toBeTruthy();
     expect(container.querySelector(".p-virtualscroller")).toBeNull();
     const dropdown = container.querySelector(".p-paginator .p-dropdown");
-    expect(dropdown?.textContent).toContain("25");
+    expect(dropdown?.textContent).toContain("100");
   });
 
   it("fetches the page the user moves to, and counts the whole result set", async () => {

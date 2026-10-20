@@ -64,3 +64,10 @@ describe("parsePersisted", () => {
     ).toEqual({ filters: { ok: { op: "contains", v: "x" } } });
   });
 });
+
+describe("a kept page size of 25", () => {
+  it("is the former default, not a choice: the list opens on the current default", () => {
+    expect(parsePersisted({ v: 1, limit: 25, sort: "name:asc" })).toEqual({ sort: "name:asc" });
+    expect(parsePersisted({ v: 1, limit: 50 })).toEqual({ limit: 50 });
+  });
+});

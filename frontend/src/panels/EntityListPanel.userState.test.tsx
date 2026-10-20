@@ -206,7 +206,7 @@ describe("EntityListPanel's state kept per user", () => {
       await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS + 100));
     });
 
-    expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ sort: "name:asc", limit: 25 }));
+    expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ sort: "name:asc", limit: 100 }));
     expect(putViewState).not.toHaveBeenCalled();
   });
 
@@ -225,7 +225,7 @@ describe("EntityListPanel's state kept per user", () => {
     expect(putViewState).toHaveBeenCalledWith(
       7,
       "ctx:user-state-entity:global",
-      expect.objectContaining({ v: 1, sort: expect.stringMatching(/^name:/), limit: 25, filters: {} }),
+      expect.objectContaining({ v: 1, sort: expect.stringMatching(/^name:/), limit: 100, filters: {} }),
     );
   });
 
@@ -268,7 +268,7 @@ describe("EntityListPanel's state kept per user", () => {
 
       await renderList();
 
-      expect(pages()).toEqual([expect.objectContaining({ limit: 25, sort: "name:desc" })]);
+      expect(pages()).toEqual([expect.objectContaining({ limit: 100, sort: "name:desc" })]);
     });
 
     it("gives up what the user kept, once, when the server still refuses it, and lists with the defaults", async () => {
@@ -287,7 +287,7 @@ describe("EntityListPanel's state kept per user", () => {
       await flush();
 
       expect(deleteViewState).toHaveBeenCalledWith(7, "ctx:user-state-entity:global");
-      expect(lastPage()).toEqual(expect.objectContaining({ limit: 25, sort: "name:asc" }));
+      expect(lastPage()).toEqual(expect.objectContaining({ limit: 100, sort: "name:asc" }));
       expect(lastPage()?.filters).toBeUndefined();
       expect(container.textContent).toContain("Row A");
     });
