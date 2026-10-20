@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Menu } from "primereact/menu";
@@ -14,6 +14,7 @@ import {
   editableTabs,
   hasVisibleTab,
   moveTab,
+  moveTabTo,
   relationTargets,
   removeTab,
   restorableTabs,
@@ -53,6 +54,22 @@ export function FicheTabsEditor({ entityType, entityId, organizationId, scope, c
   const [busy, setBusy] = useState(false);
   const { save, reset } = useFicheTabsSave(entityType, organizationId, scope);
   const targets = relationTargets(codeTabs);
+  // A row is dragged by its handle only (armed on press), so selecting text in the name still works.
+  const [armed, setArmed] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+
+  function endDrag() {
+    setArmed(null);
+    setDragging(null);
+    setOver(null);
+  }
+
+  function onHandleKey(event: KeyboardEvent, key: string) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    setRows((r) => moveTab(r, key, event.key === "ArrowUp" ? -1 : 1));
+  }
 
   function rename(key: string, label: string) {
     setRows((current) => current.map((row) => (row.key === key ? { ...row, label } : row)));
@@ -79,13 +96,57 @@ export function FicheTabsEditor({ entityType, entityId, organizationId, scope, c
     <>
       <Dialog header={t("tabs.editorTitle")} visible onHide={onHide} style={{ width: "min(40rem, 95vw)" }} draggable={false}>
         <div className="fiche-tabs-editor">
-          <p className="fiche-tabs-editor-hint">{t("tabs.editorHint")}</p>
+          <div className="fiche-tabs-editor-head">
+            <p className="fiche-tabs-editor-hint">{t("tabs.editorHint")}</p>
+            {addItems.length > 0 && (
+              <>
+                <Button
+                  type="button"
+                  icon="bi bi-plus-lg"
+                  label={t("tabs.add")}
+                  size="small"
+                  outlined
+                  onClick={(e) => (restorable.length > 0 ? addMenu.current?.toggle(e) : setAdding(true))}
+                />
+                <Menu ref={addMenu} popup model={addItems} />
+              </>
+            )}
+          </div>
           <ul className="fiche-tabs-editor-rows">
-            {shownTabs(rows).map((row, index, shown) => (
-              <li key={row.key} className="fiche-tabs-editor-row">
-                <span className="fiche-tabs-editor-move">
-                  <Button icon="bi bi-chevron-up" text rounded size="small" aria-label={t("tabs.moveUp")} disabled={index === 0} onClick={() => setRows((r) => moveTab(r, row.key, -1))} />
-                  <Button icon="bi bi-chevron-down" text rounded size="small" aria-label={t("tabs.moveDown")} disabled={index === shown.length - 1} onClick={() => setRows((r) => moveTab(r, row.key, 1))} />
+            {shownTabs(rows).map((row) => (
+              <li
+                key={row.key}
+                className={`fiche-tabs-editor-row${dragging === row.key ? " is-dragging" : ""}${over === row.key && dragging !== row.key ? " is-drop-target" : ""}`}
+                draggable={armed === row.key}
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", row.key);
+                  setDragging(row.key);
+                }}
+                onDragOver={(e) => {
+                  if (dragging == null) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  setOver(row.key);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragging != null) setRows((r) => moveTabTo(r, dragging, row.key));
+                  endDrag();
+                }}
+                onDragEnd={endDrag}
+              >
+                <span
+                  className="fiche-tabs-editor-handle"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t("tabs.dragHandle")}
+                  title={t("tabs.dragHandle")}
+                  onMouseDown={() => setArmed(row.key)}
+                  onMouseUp={() => setArmed(null)}
+                  onKeyDown={(e) => onHandleKey(e, row.key)}
+                >
+                  <i className="bi bi-grip-vertical" />
                 </span>
                 <InputText
                   className="fiche-tabs-editor-name"
@@ -96,24 +157,14 @@ export function FicheTabsEditor({ entityType, entityId, organizationId, scope, c
                   onChange={(e) => rename(row.key, e.target.value)}
                 />
                 {row.kind === "list" && <span className="fiche-tabs-editor-kind">{`${t("tabs.listKind")} · ${targetLabel(row.target!)}`}</span>}
-                {row.removable && (
+                {row.removable ? (
                   <Button icon="bi bi-trash" text rounded size="small" severity="danger" aria-label={t("tabs.remove")} onClick={() => setRows((r) => removeTab(r, row.key))} />
+                ) : (
+                  <span className="fiche-tabs-editor-remove-spacer" />
                 )}
               </li>
             ))}
           </ul>
-          {addItems.length > 0 && (
-            <>
-              <Button
-                type="button"
-                icon="bi bi-plus-lg"
-                label={t("tabs.add")}
-                text
-                onClick={(e) => (restorable.length > 0 ? addMenu.current?.toggle(e) : setAdding(true))}
-              />
-              <Menu ref={addMenu} popup model={addItems} />
-            </>
-          )}
           {!hasVisibleTab(rows) && <p className="fiche-tabs-editor-warning">{t("tabs.needVisible")}</p>}
           <div className="fiche-tabs-editor-actions">
             <Button type="button" label={t("tabs.reset")} text severity="secondary" disabled={busy || saved == null} onClick={() => void run(() => reset(savedTypeId != null), t("tabs.resetDone"))} />

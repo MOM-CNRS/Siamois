@@ -332,8 +332,7 @@ export const en: Record<MessageKey, string> = {
   "tabs.saveAsTab": "Save as a tab…",
   "tabs.editorTitle": "Configure tabs",
   "tabs.editorHint": "Applies to every fiche of this type in this project.",
-  "tabs.moveUp": "Move up",
-  "tabs.moveDown": "Move down",
+  "tabs.dragHandle": "Drag to reorder (or up and down arrows)",
   "tabs.visible": "Show the tab",
   "tabs.name": "Tab name",
   "tabs.remove": "Remove the tab",
@@ -364,5 +363,7 @@ export const en: Record<MessageKey, string> = {
   "search.empty": "No result for “{q}”",
   "search.error": "The search failed",
   "search.viewAll": "View the {n} {label}",
+  "list.search.apply": "Apply the {n} results",
+  "list.search.keyword": "Filter on “{label}”",
   "search.keyword.projet": "Restrict to a project (identifier or name)",
 };

@@ -45,7 +45,7 @@ afterEach(() => {
 
 describe("useRelationList", () => {
   it("starts on the first page, by kind, and reads the total from the answer", () => {
-    expect(getRelationList).toHaveBeenCalledWith(42, { kinds: [], search: undefined, sort: "kind:asc", offset: 0, limit: 25 });
+    expect(getRelationList).toHaveBeenCalledWith(42, { kinds: [], search: undefined, sort: "kind:asc", offset: 0, limit: 100 });
     expect(latest.rows).toHaveLength(1);
     expect(latest.total).toBe(61);
   });

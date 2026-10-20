@@ -9,7 +9,7 @@ describe("createTableState", () => {
     expect(createTableState()).toEqual({
       v: 3,
       offset: 0,
-      limit: 25,
+      limit: 100,
       visibleColumns: [],
       filters: {},
     });
@@ -19,7 +19,7 @@ describe("createTableState", () => {
     expect(createTableState({ sort: "name:asc" })).toEqual({
       v: 3,
       offset: 0,
-      limit: 25,
+      limit: 100,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},

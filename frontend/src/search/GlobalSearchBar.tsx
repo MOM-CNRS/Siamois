@@ -1,4 +1,3 @@
-import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getEntityType } from "../entities/registry";
@@ -7,13 +6,22 @@ import { queryKeys } from "../api/queryKeys";
 import { getContext, getNavigation, subscribeContext } from "../navigation/externalBus";
 import { t } from "../i18n";
 import { formatFilter, keywordCompletion, parseQuery, SEARCH_KEYWORDS, tailKeyword } from "./queryParser";
+import {
+  anchorOf,
+  Highlighted,
+  KeywordButtons,
+  nextActive,
+  SearchOverlay,
+  SearchRow,
+  useDebounced,
+  type SearchAnchor,
+} from "./SearchOverlay";
 import { fetchGlobalSearch, type SearchItem, type SearchSection } from "./searchApi";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 const SECTION_LIMIT = 5;
 const SUGGESTION_LIMIT = 8;
 const RECENT_LIMIT = 5;
-const MIN_PANEL_WIDTH = 520;
 
 // What Enter / a click does on one row of the dropdown.
 type Row =
@@ -21,15 +29,6 @@ type Row =
   | { kind: "all"; type: string; total: number }
   // A project offered while a `projet:` keyword is being typed: choosing it completes the keyword.
   | { kind: "suggestion"; item: SearchItem };
-
-function useDebounced<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const handle = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(handle);
-  }, [value, delay]);
-  return debounced;
-}
 
 /** The project every item of every section belongs to, when there is exactly one. */
 function commonProjectId(sections: SearchSection[]): string | undefined {
@@ -44,18 +43,6 @@ function openSnakeEasterEgg(typed: string): boolean {
   const dialog = pf?.("snakeGameDiag");
   dialog?.show?.();
   return dialog != null;
-}
-
-function Highlighted({ text, term }: Readonly<{ text: string; term: string }>) {
-  const at = term ? text.toLowerCase().indexOf(term.toLowerCase()) : -1;
-  if (at < 0) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, at)}
-      <mark className="sia-search-mark">{text.slice(at, at + term.length)}</mark>
-      {text.slice(at + term.length)}
-    </>
-  );
 }
 
 /**
@@ -85,7 +72,6 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
       return next ? `${next} ${rest}` : rest;
     });
   }, [context.projectId, context.projectLabel]);
-  const root = useRef<HTMLDivElement>(null);
 
   // A `projet:xxx` being typed is completed by suggestions, not yet a filter of the search.
   const tail = useMemo(() => tailKeyword(input), [input]);
@@ -174,24 +160,13 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
 
   // The overlay starts where the button is and covers it: placed from the button's box when it opens.
   const trigger = useRef<HTMLButtonElement>(null);
-  const [anchor, setAnchor] = useState<{ left: number; top: number; width: number }>();
+  const [anchor, setAnchor] = useState<SearchAnchor>();
   function openOverlay() {
-    const box = trigger.current?.getBoundingClientRect();
-    if (box) {
-      // Starts on the button, but never runs off the right edge of the window.
-      const width = Math.min(Math.max(box.width, MIN_PANEL_WIDTH), window.innerWidth - 16);
-      setAnchor({ left: Math.max(8, Math.min(box.left, window.innerWidth - width - 8)), top: box.top, width });
-    } else {
-      setAnchor(undefined);
-    }
+    setAnchor(anchorOf(trigger.current));
     setOpen(true);
   }
 
-  // The field of the overlay takes the typing as soon as it opens.
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
 
   // The project a « Voir tout » list is restricted to: the current one when the keyword names it,
   // otherwise the one every result shares.
@@ -229,9 +204,8 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
       if (rows.length === 0) return;
       event.preventDefault();
       setOpen(true);
-      const step = event.key === "ArrowDown" ? 1 : -1;
       // -1 (nothing highlighted: Enter then means "see all") is part of the cycle.
-      setActive((current) => ((current + 1 + step + rows.length + 1) % (rows.length + 1)) - 1);
+      setActive((current) => nextActive(current, event.key as "ArrowDown" | "ArrowUp", rows.length));
     } else if (event.key === "Enter") {
       const row = rows[active] ?? (tail ? rows[0] : rows.find((r) => r.kind === "all"));
       if (row) {
@@ -255,6 +229,15 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
   let activeIndex = -1;
   const rowIndex = () => ++activeIndex;
 
+  function onInput(value: string) {
+    if (openSnakeEasterEgg(value)) {
+      setInput("");
+      return;
+    }
+    setInput(value);
+    setOpen(true);
+  }
+
   return (
     <div className="sia-search">
       {/* What the topbar shows is only the way in: the search itself happens in the overlay. */}
@@ -263,50 +246,18 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
         <span className="sia-search-trigger-text">{t("search.placeholder")}</span>
       </button>
 
-      {open &&
-        createPortal(
-          <div className="sia-search-backdrop" onMouseDown={() => setOpen(false)}>
-            <div className="sia-search-panel" role="dialog" aria-label={t("search.ariaLabel")} ref={root}
-              style={anchor && { left: anchor.left, top: anchor.top, width: anchor.width }}
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-      <span className="sia-search-field">
-        <i className="bi bi-search" />
-        <input
-          className="p-inputtext sia-search-input"
-          type="search"
-          role="combobox"
-          aria-expanded={open}
-          aria-controls="sia-search-listbox"
-          aria-label={t("search.ariaLabel")}
-          aria-activedescendant={active >= 0 ? `sia-search-row-${active}` : undefined}
+      {open && (
+        <SearchOverlay
+          anchor={anchor}
+          ariaLabel={t("search.ariaLabel")}
           placeholder={t("search.placeholder")}
-          value={input}
-          autoComplete="off"
-          onChange={(event) => {
-            if (openSnakeEasterEgg(event.target.value)) {
-              setInput("");
-              return;
-            }
-            setInput(event.target.value);
-            setOpen(true);
-          }}
-          ref={inputRef}
+          input={input}
+          active={active}
+          inputRef={inputRef}
+          onInput={onInput}
           onKeyDown={onKeyDown}
-        />
-        {input && (
-          <i
-            className="bi bi-x-lg sia-search-clear"
-            role="button"
-            tabIndex={0}
-            aria-label={t("search.clear")}
-            onClick={() => setInput("")}
-            onKeyDown={(event) => event.key === "Enter" && setInput("")}
-          />
-        )}
-      </span>
-
-        <div className="sia-search-dropdown" id="sia-search-listbox" role="listbox">
+          onClose={() => setOpen(false)}
+        >
           {tail && suggestions.length > 0 && (
             <div className="sia-search-section">
               <div className="sia-search-section-title">
@@ -314,15 +265,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
                 {getEntityType("project")?.labels.plural}
               </div>
               {suggestions.map((item, index) => (
-                <div
-                  key={item.id}
-                  id={`sia-search-row-${index}`}
-                  role="option"
-                  aria-selected={index === active}
-                  className={`sia-search-row${index === active ? " is-active" : ""}`}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => run({ kind: "suggestion", item })}
-                >
+                <SearchRow key={item.id} index={index} active={active} onSelect={() => run({ kind: "suggestion", item })}>
                   <span className="sia-search-row-label">
                     <Highlighted text={item.label} term={tail.partial} />
                   </span>
@@ -333,7 +276,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
                   )}
                   {/* Tells a completion of the keyword being typed from a search result. */}
                   <span className="sia-search-autocomplete">{t("search.autocomplete")}</span>
-                </div>
+                </SearchRow>
               ))}
             </div>
           )}
@@ -345,18 +288,10 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
                 {t("home.recentProjects")}
               </div>
               {recent.map((item, index) => (
-                <div
-                  key={item.id}
-                  id={`sia-search-row-${index}`}
-                  role="option"
-                  aria-selected={index === active}
-                  className={`sia-search-row${index === active ? " is-active" : ""}`}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => run({ kind: "item", type: "project", item })}
-                >
+                <SearchRow key={item.id} index={index} active={active} onSelect={() => run({ kind: "item", type: "project", item })}>
                   <span className="sia-search-row-label">{item.label}</span>
                   {item.subtitle && <span className="sia-search-row-sub">{item.subtitle}</span>}
-                </div>
+                </SearchRow>
               ))}
             </div>
           )}
@@ -375,64 +310,35 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
                   <i className={config?.icon} />
                   {config?.labels.plural ?? section.type}
                 </div>
-                {section.items.map((item) => {
-                  const index = rowIndex();
-                  return (
-                    <div
-                      key={item.id}
-                      id={`sia-search-row-${index}`}
-                      role="option"
-                      aria-selected={index === active}
-                      className={`sia-search-row${index === active ? " is-active" : ""}`}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => run({ kind: "item", type: section.type, item })}
-                    >
-                      <span className="sia-search-row-label">
-                        <Highlighted text={item.label} term={parsed.text} />
-                      </span>
-                      {item.subtitle && <span className="sia-search-row-sub">{item.subtitle}</span>}
-                    </div>
-                  );
-                })}
-                {(() => {
-                  const index = rowIndex();
-                  return (
-                    <div
-                      id={`sia-search-row-${index}`}
-                      role="option"
-                      aria-selected={index === active}
-                      className={`sia-search-row sia-search-all${index === active ? " is-active" : ""}`}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => run({ kind: "all", type: section.type, total: section.total })}
-                    >
-                      {t("search.viewAll", { n: section.total, label: (config?.labels.plural ?? section.type).toLowerCase() })}
-                      <i className="bi bi-arrow-return-left" />
-                    </div>
-                  );
-                })()}
+                {section.items.map((item) => (
+                  <SearchRow
+                    key={item.id}
+                    index={rowIndex()}
+                    active={active}
+                    onSelect={() => run({ kind: "item", type: section.type, item })}
+                  >
+                    <span className="sia-search-row-label">
+                      <Highlighted text={item.label} term={parsed.text} />
+                    </span>
+                    {item.subtitle && <span className="sia-search-row-sub">{item.subtitle}</span>}
+                  </SearchRow>
+                ))}
+                <SearchRow
+                  index={rowIndex()}
+                  active={active}
+                  className="sia-search-all"
+                  onSelect={() => run({ kind: "all", type: section.type, total: section.total })}
+                >
+                  {t("search.viewAll", { n: section.total, label: (config?.labels.plural ?? section.type).toLowerCase() })}
+                  <i className="bi bi-arrow-return-left" />
+                </SearchRow>
               </div>
             );
           })}
 
-          <div className="sia-search-keywords">
-            {SEARCH_KEYWORDS.map((keyword) => (
-              <button
-                type="button"
-                key={keyword.key}
-                className="sia-search-keyword"
-                title={t("search.keyword.projet")}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => insertKeyword(keyword.key)}
-              >
-                {formatFilter({ key: keyword.key, value: "" })}
-              </button>
-            ))}
-          </div>
-        </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+          <KeywordButtons keywords={SEARCH_KEYWORDS} title={() => t("search.keyword.projet")} onInsert={insertKeyword} />
+        </SearchOverlay>
+      )}
     </div>
   );
 }

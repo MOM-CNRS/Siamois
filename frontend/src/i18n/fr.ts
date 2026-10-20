@@ -332,8 +332,7 @@ export const fr = {
   "tabs.saveAsTab": "Enregistrer comme onglet…",
   "tabs.editorTitle": "Configurer les onglets",
   "tabs.editorHint": "Valable pour toutes les fiches de ce type dans ce projet.",
-  "tabs.moveUp": "Monter",
-  "tabs.moveDown": "Descendre",
+  "tabs.dragHandle": "Glisser pour réordonner (ou flèches haut et bas)",
   "tabs.visible": "Afficher l'onglet",
   "tabs.name": "Nom de l'onglet",
   "tabs.remove": "Supprimer l'onglet",
@@ -364,6 +363,8 @@ export const fr = {
   "search.empty": "Aucun résultat pour « {q} »",
   "search.error": "La recherche a échoué",
   "search.viewAll": "Voir les {n} {label}",
+  "list.search.apply": "Appliquer les {n} résultats",
+  "list.search.keyword": "Filtrer sur « {label} »",
   "search.keyword.projet": "Restreindre à un projet (identifiant ou nom)",
 } as const;
 

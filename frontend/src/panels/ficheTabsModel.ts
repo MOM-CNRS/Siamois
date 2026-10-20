@@ -116,6 +116,23 @@ export function moveTab(rows: EditableTab[], key: string, delta: number): Editab
   return next;
 }
 
+/**
+ * Drops a shown tab on another one: it takes that place among the shown tabs (after it when moving down,
+ * before it when moving up). The same lines when either is unknown or they are the same.
+ */
+export function moveTabTo(rows: EditableTab[], key: string, targetKey: string): EditableTab[] {
+  if (key === targetKey) return rows;
+  const shown = shownTabs(rows);
+  const from = shown.findIndex((row) => row.key === key);
+  const to = shown.findIndex((row) => row.key === targetKey);
+  if (from < 0 || to < 0) return rows;
+  const moved = rows.find((row) => row.key === key)!;
+  const rest = rows.filter((row) => row.key !== key);
+  const at = rest.findIndex((row) => row.key === targetKey);
+  rest.splice(from < to ? at + 1 : at, 0, moved);
+  return rest;
+}
+
 /** At least one tab stays visible: a fiche without any would be empty. */
 export function hasVisibleTab(rows: EditableTab[]): boolean {
   return rows.some((row) => !row.hidden);

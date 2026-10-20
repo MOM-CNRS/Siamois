@@ -2670,9 +2670,48 @@ div#search-bar .sia-search {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding: 0.15rem 0.25rem;
+  border-radius: var(--border-radius, 6px);
+  border-top: 2px solid transparent;
 }
-.fiche-tabs-editor-move {
+.fiche-tabs-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.fiche-tabs-editor-head .fiche-tabs-editor-hint {
+  flex: 1 1 auto;
+}
+.fiche-tabs-editor-row.is-dragging {
+  opacity: 0.45;
+}
+.fiche-tabs-editor-row.is-drop-target {
+  border-top-color: var(--primary-color, #6b9e6b);
+  background: var(--surface-50, rgb(0 0 0 / 3%));
+}
+.fiche-tabs-editor-handle {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 2rem;
+  color: var(--text-color-secondary);
+  cursor: grab;
+  border-radius: var(--border-radius, 6px);
+  user-select: none;
+}
+.fiche-tabs-editor-handle:hover,
+.fiche-tabs-editor-handle:focus-visible {
+  background: var(--surface-100, rgb(0 0 0 / 6%));
+  color: var(--text-color);
+}
+.fiche-tabs-editor-handle:active {
+  cursor: grabbing;
+}
+/* Keeps the names aligned when a built-in tab has no delete button. */
+.fiche-tabs-editor-remove-spacer {
+  flex: 0 0 2.1rem;
 }
 .fiche-tabs-editor-name {
   flex: 1 1 auto;
@@ -2741,3 +2780,8 @@ div#search-bar .sia-search {
 .home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
 .home-data-access-error { color: var(--red-500, #c0392b); }
 .home-data-access-remove { margin-left: auto; }
+
+/* The list's filters, shown between the field of the list search overlay and its results. */
+.sia-search-chips {
+  padding: 0.4rem 0.75rem 0;
+}

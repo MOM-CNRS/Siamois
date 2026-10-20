@@ -42,7 +42,7 @@ describe("useTableState", () => {
     expect(latest.state).toEqual({
       v: 3,
       offset: 0,
-      limit: 25,
+      limit: 100,
       sort: "name:asc",
       visibleColumns: [],
       filters: {},
@@ -169,7 +169,7 @@ describe("useTableState", () => {
     it("keeps the defaults when nothing was saved", () => {
       renderHarness("id:asc", { settled: true, saved: undefined });
       expect(latest.userStateReady).toBe(true);
-      expect(latest.state).toMatchObject({ sort: "id:asc", limit: 25 });
+      expect(latest.state).toMatchObject({ sort: "id:asc", limit: 100 });
       act(() => latest.seedVisibleColumns(["x"]));
       expect(latest.state.visibleColumns).toEqual(["x"]);
     });
@@ -185,7 +185,7 @@ describe("useTableState", () => {
       renderHarness();
       act(() => latest.setViewMode("tree"));
       expect(latest.state.viewMode).toBe("tree");
-      expect(latest.state.limit).toBe(25);
+      expect(latest.state.limit).toBe(100);
     });
   });
 });
