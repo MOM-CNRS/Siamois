@@ -42,8 +42,8 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected String thesaurusUrl;
     /** The URL typed in the "add a thesaurus" dialog. */
     protected String newThesaurusUrl;
-    protected List<ThesaurusOption> thesaurusOptions = new ArrayList<>();
-    protected List<ThesaurusUsage> usages = new ArrayList<>();
+    protected ArrayList<ThesaurusOption> thesaurusOptions = new ArrayList<>();
+    protected ArrayList<ThesaurusUsage> usages = new ArrayList<>();
     protected ProgressWrapper progressWrapper = new ProgressWrapper();
 
     protected AbstractThesaurusSettingsBean(VocabularyService vocabularyService, LabelService labelService, LangBean langBean) {
@@ -63,7 +63,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected void loadOptions() {
         thesaurusOptions = vocabularyService.findAll().stream()
                 .map(v -> new ThesaurusOption(urlOf(v), labelService.findLabelOf(v, langBean.getLanguageCode()).getValue()))
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
     protected static String urlOf(Vocabulary v) {

@@ -49,68 +49,81 @@ public class ProjectDeletionService {
     private static final String CO = "SELECT container_id FROM container WHERE fk_action_unit_id = :pid";
     private static final String DOC = "SELECT document_id FROM siamois_document WHERE fk_action_unit_id = :pid";
 
+    private static final String T_RU_HIERARCHY = "recording_unit_hierarchy";
+    private static final String T_STRATI = "stratigraphic_relationship";
+    private static final String T_SP_HIERARCHY = "specimen_hierarchy";
+    private static final String C_PARENT = "fk_parent_id";
+    private static final String C_CHILD = "fk_child_id";
+    private static final String C_RU = "fk_recording_unit_id";
+    private static final String C_PHASE = "fk_phase_id";
+    private static final String C_SPECIMEN = "fk_specimen_id";
+    private static final String C_CONTAINER = "fk_container_id";
+    private static final String C_STUDY = "fk_study_id";
+    private static final String C_DOCUMENT = "fk_document_id";
+    private static final String IN_OPEN = " IN (";
+
     /** A link table whose rows must not straddle the project boundary. */
     private record Cross(String label, String table, String colA, String setA, String colB, String setB) {
         String countSql() {
-            return "SELECT COUNT(*) FROM " + table + " WHERE (" + colA + " IN (" + setA + ")) <> (" + colB
-                    + " IN (" + setB + "))";
+            return "SELECT COUNT(*) FROM " + table + " WHERE (" + colA + IN_OPEN + setA + ")) <> (" + colB
+                    + IN_OPEN + setB + "))";
         }
     }
 
     private static final List<Cross> CROSS_LINKS = List.of(
-            new Cross("la hiérarchie des unités d'enregistrement", "recording_unit_hierarchy",
-                    "fk_parent_id", RU, "fk_child_id", RU),
-            new Cross("des relations stratigraphiques", "stratigraphic_relationship",
+            new Cross("la hiérarchie des unités d'enregistrement", T_RU_HIERARCHY,
+                    C_PARENT, RU, C_CHILD, RU),
+            new Cross("des relations stratigraphiques", T_STRATI,
                     "fk_recording_unit_1_id", RU, "fk_recording_unit_2_id", RU),
-            new Cross("la hiérarchie des mobiliers", "specimen_hierarchy", "fk_parent_id", SP, "fk_child_id", SP),
-            new Cross("la hiérarchie des contenants", "container", "container_id", CO, "fk_parent_id", CO),
-            new Cross("des phases", "recording_unit_phase", "fk_recording_unit_id", RU, "fk_phase_id", PH),
-            new Cross("des phases (mobiliers)", "specimen_phase", "fk_specimen_id", SP, "fk_phase_id", PH),
-            new Cross("des contenants (mobiliers)", "specimen_container", "fk_specimen_id", SP, "fk_container_id", CO),
+            new Cross("la hiérarchie des mobiliers", T_SP_HIERARCHY, C_PARENT, SP, C_CHILD, SP),
+            new Cross("la hiérarchie des contenants", "container", "container_id", CO, C_PARENT, CO),
+            new Cross("des phases", "recording_unit_phase", C_RU, RU, C_PHASE, PH),
+            new Cross("des phases (mobiliers)", "specimen_phase", C_SPECIMEN, SP, C_PHASE, PH),
+            new Cross("des contenants (mobiliers)", "specimen_container", C_SPECIMEN, SP, C_CONTAINER, CO),
             new Cross("des études (unités d'enregistrement)", "study_recording_unit",
-                    "fk_study_id", ST, "fk_recording_unit_id", RU),
-            new Cross("des études (mobiliers)", "study_specimen", "fk_study_id", ST, "fk_specimen_id", SP),
+                    C_STUDY, ST, C_RU, RU),
+            new Cross("des études (mobiliers)", "study_specimen", C_STUDY, ST, C_SPECIMEN, SP),
             new Cross("des documents (unités d'enregistrement)", "recording_unit_document",
-                    "fk_recording_unit_id", RU, "fk_document_id", DOC),
-            new Cross("des documents (mobiliers)", "specimen_document", "fk_specimen_id", SP, "fk_document_id", DOC),
-            new Cross("des documents (phases)", "phase_document", "fk_phase_id", PH, "fk_document_id", DOC),
-            new Cross("des documents (contenants)", "container_document", "fk_container_id", CO, "fk_document_id", DOC),
-            new Cross("des documents (études)", "study_document", "fk_study_id", ST, "fk_document_id", DOC)
+                    C_RU, RU, C_DOCUMENT, DOC),
+            new Cross("des documents (mobiliers)", "specimen_document", C_SPECIMEN, SP, C_DOCUMENT, DOC),
+            new Cross("des documents (phases)", "phase_document", C_PHASE, PH, C_DOCUMENT, DOC),
+            new Cross("des documents (contenants)", "container_document", C_CONTAINER, CO, C_DOCUMENT, DOC),
+            new Cross("des documents (études)", "study_document", C_STUDY, ST, C_DOCUMENT, DOC)
     );
 
     /** Counts that must be zero: links of project content to things that are not part of the project. */
     private static final List<Cross> OTHER_BLOCKERS = List.of(
-            new Cross("des mouvements de mobiliers", "specimen_movement", "fk_specimen_id", SP, "fk_specimen_id", SP),
+            new Cross("des mouvements de mobiliers", "specimen_movement", C_SPECIMEN, SP, C_SPECIMEN, SP),
             new Cross("des groupes de mobiliers", "specimen_group_attribution",
-                    "fk_specimen_id", SP, "fk_specimen_id", SP)
+                    C_SPECIMEN, SP, C_SPECIMEN, SP)
     );
 
     private record LinkDeletion(String table, String column, String set) {
         String sql() {
-            return "DELETE FROM " + table + " WHERE " + column + " IN (" + set + ")";
+            return "DELETE FROM " + table + " WHERE " + column + IN_OPEN + set + ")";
         }
     }
 
     private static final List<LinkDeletion> LINK_DELETIONS = List.of(
-            new LinkDeletion("recording_unit_hierarchy", "fk_parent_id", RU),
-            new LinkDeletion("recording_unit_hierarchy", "fk_child_id", RU),
-            new LinkDeletion("stratigraphic_relationship", "fk_recording_unit_1_id", RU),
-            new LinkDeletion("stratigraphic_relationship", "fk_recording_unit_2_id", RU),
-            new LinkDeletion("recording_unit_contributors", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_phase", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_document", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_on_the_fly_fields", "fk_recording_unit_id", RU),
-            new LinkDeletion("study_recording_unit", "fk_recording_unit_id", RU),
-            new LinkDeletion("specimen_hierarchy", "fk_parent_id", SP),
-            new LinkDeletion("specimen_hierarchy", "fk_child_id", SP),
-            new LinkDeletion("specimen_document", "fk_specimen_id", SP),
-            new LinkDeletion("specimen_container", "fk_specimen_id", SP),
-            new LinkDeletion("specimen_phase", "fk_specimen_id", SP),
-            new LinkDeletion("study_specimen", "fk_specimen_id", SP),
-            new LinkDeletion("phase_document", "fk_phase_id", PH),
-            new LinkDeletion("container_document", "fk_container_id", CO),
-            new LinkDeletion("study_document", "fk_study_id", ST),
-            new LinkDeletion("spatial_unit_document", "fk_document_id", DOC)
+            new LinkDeletion(T_RU_HIERARCHY, C_PARENT, RU),
+            new LinkDeletion(T_RU_HIERARCHY, C_CHILD, RU),
+            new LinkDeletion(T_STRATI, "fk_recording_unit_1_id", RU),
+            new LinkDeletion(T_STRATI, "fk_recording_unit_2_id", RU),
+            new LinkDeletion("recording_unit_contributors", C_RU, RU),
+            new LinkDeletion("recording_unit_phase", C_RU, RU),
+            new LinkDeletion("recording_unit_document", C_RU, RU),
+            new LinkDeletion("recording_unit_on_the_fly_fields", C_RU, RU),
+            new LinkDeletion("study_recording_unit", C_RU, RU),
+            new LinkDeletion(T_SP_HIERARCHY, C_PARENT, SP),
+            new LinkDeletion(T_SP_HIERARCHY, C_CHILD, SP),
+            new LinkDeletion("specimen_document", C_SPECIMEN, SP),
+            new LinkDeletion("specimen_container", C_SPECIMEN, SP),
+            new LinkDeletion("specimen_phase", C_SPECIMEN, SP),
+            new LinkDeletion("study_specimen", C_SPECIMEN, SP),
+            new LinkDeletion("phase_document", C_PHASE, PH),
+            new LinkDeletion("container_document", C_CONTAINER, CO),
+            new LinkDeletion("study_document", C_STUDY, ST),
+            new LinkDeletion("spatial_unit_document", C_DOCUMENT, DOC)
     );
 
     @PersistenceContext
@@ -137,6 +150,10 @@ public class ProjectDeletionService {
      */
     @Transactional(readOnly = true)
     public List<String> crossProjectLinks(long projectId) {
+        return findCrossProjectLinks(projectId);
+    }
+
+    private List<String> findCrossProjectLinks(long projectId) {
         List<String> found = new ArrayList<>();
         for (Cross cross : CROSS_LINKS) {
             if (count(cross.countSql(), projectId) > 0) {
@@ -148,7 +165,7 @@ public class ProjectDeletionService {
             found.add("des mobiliers rattachés à un autre projet");
         }
         for (Cross blocker : OTHER_BLOCKERS) {
-            String sql = "SELECT COUNT(*) FROM " + blocker.table() + " WHERE " + blocker.colA() + " IN (" + SP + ")";
+            String sql = "SELECT COUNT(*) FROM " + blocker.table() + " WHERE " + blocker.colA() + IN_OPEN + SP + ")";
             if (count(sql, projectId) > 0) {
                 found.add(blocker.label());
             }
@@ -164,7 +181,7 @@ public class ProjectDeletionService {
      */
     @Transactional
     public List<Long> deleteContent(long projectId) {
-        List<String> links = crossProjectLinks(projectId);
+        List<String> links = findCrossProjectLinks(projectId);
         if (!links.isEmpty()) {
             throw new IllegalStateException("Impossible de supprimer : le contenu du projet est lié à d'autres projets ("
                     + String.join(", ", links) + "). Retirez d'abord ces relations.");

@@ -11,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.dto.entity.vocabulary.ConceptCollectionDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
@@ -433,6 +434,31 @@ class FormConfigServiceTest {
         assertThat(saved.getId().getCustomFieldId()).isEqualTo(200L);
         // the collection import is the collection service business, the branch expansion is not used here
         verifyNoInteractions(conceptApi, vocabularyService, conceptService);
+    }
+
+    @Test
+    void addConceptConfigFor_withProgressWrapper_shouldCreateConfigWithTopTerm() throws Exception {
+        stubDownExpansion(new ConceptBranchDTO());
+
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO, new ProgressWrapper());
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getBranchTopTerm()).isSameAs(branchTopConcept);
+        assertThat(saved.getCollection()).isNull();
+    }
+
+    @Test
+    void addConceptConfigFor_withProgressWrapper_shouldCreateConfigWithCollection() {
+        ConceptCollectionDTO collectionDTO = collectionDTO();
+        ConceptCollection savedCollection = savedCollection();
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        when(conceptCollectionService.createOrUpdateConceptCollection(eq(collectionDTO), any())).thenReturn(savedCollection);
+
+        formConfigService.addConceptConfigFor(formConfig, field, collectionDTO, new ProgressWrapper());
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getCollection()).isSameAs(savedCollection);
+        assertThat(saved.getBranchTopTerm()).isNull();
     }
 
     @Test

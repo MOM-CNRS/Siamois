@@ -174,7 +174,7 @@ public class SpatialUnitService implements ArkEntityService {
      * @return The saved SpatialUnit
      * @throws SpatialUnitAlreadyExistsException If a SpatialUnit with the same name already exists in the institution
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict({
             "InstitutionHasRootChildrenSU",
             "ParentHasRootChildrenSU"
@@ -813,7 +813,7 @@ public class SpatialUnitService implements ArkEntityService {
     /**
      * Met à jour un lieu existant (champs null = inchangés).
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
     public SpatialUnitDTO updatePlace(UserInfo info,
                                       long placeId,

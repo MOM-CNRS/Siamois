@@ -5,6 +5,8 @@ import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
 import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.domain.models.UserInfo;
@@ -927,6 +929,60 @@ class CustomFieldAnswerServiceTest {
         when(formConfigAnswerService.findAllFormConfigAnswers(document)).thenReturn(List.of(set));
 
         service.deleteAdditionalFieldAnswers(document);
+
+        verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
+        verify(formConfigAnswerService).delete(set);
+    }
+
+    @Test
+    void deleteAdditionalFieldAnswers_ofAPhase_removesEverySetAndItsAnswers() {
+        PhaseDTO phase = new PhaseDTO();
+        FormConfigAnswer set = new FormConfigAnswer();
+        CustomFieldAnswerText answer = textAnswer(CustomFieldText.builder().id(1L).build(), set, "x");
+        set.setAnswers(new HashSet<>(Set.of(answer)));
+        when(formConfigAnswerService.findAllFormConfigAnswers(phase)).thenReturn(List.of(set));
+
+        service.deleteAdditionalFieldAnswers(phase);
+
+        verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
+        verify(formConfigAnswerService).delete(set);
+    }
+
+    @Test
+    void deleteAdditionalFieldAnswers_ofAStudy_removesEverySetAndItsAnswers() {
+        StudyDTO study = new StudyDTO();
+        FormConfigAnswer set = new FormConfigAnswer();
+        CustomFieldAnswerText answer = textAnswer(CustomFieldText.builder().id(1L).build(), set, "x");
+        set.setAnswers(new HashSet<>(Set.of(answer)));
+        when(formConfigAnswerService.findAllFormConfigAnswers(study)).thenReturn(List.of(set));
+
+        service.deleteAdditionalFieldAnswers(study);
+
+        verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
+        verify(formConfigAnswerService).delete(set);
+    }
+
+    @Test
+    void deleteAdditionalFieldAnswers_ofAContainer_removesEverySetAndItsAnswers() {
+        ContainerDTO container = new ContainerDTO();
+        FormConfigAnswer set = new FormConfigAnswer();
+        CustomFieldAnswerText answer = textAnswer(CustomFieldText.builder().id(1L).build(), set, "x");
+        set.setAnswers(new HashSet<>(Set.of(answer)));
+        when(formConfigAnswerService.findAllFormConfigAnswers(container)).thenReturn(List.of(set));
+
+        service.deleteAdditionalFieldAnswers(container);
+
+        verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
+        verify(formConfigAnswerService).delete(set);
+    }
+
+    @Test
+    void deleteAnswerSets_removesEverySetAndItsAnswers() {
+        FormConfigAnswer set = new FormConfigAnswer();
+        CustomFieldAnswerText answer = textAnswer(CustomFieldText.builder().id(1L).build(), set, "x");
+        set.setAnswers(new HashSet<>(Set.of(answer)));
+
+        service.deleteAnswerSets(List.of(set));
 
         verify(customFieldAnswerRepository).deleteAll(Set.of(answer));
         verify(formConfigAnswerService).delete(set);

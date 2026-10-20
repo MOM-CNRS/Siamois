@@ -1071,6 +1071,52 @@ class ActionUnitServiceTest {
         verify(projectDeletionService).deleteArks(List.of(9L));
     }
 
+    @Test
+    void deleteProjectWithContent_deletesTheProjectArkToo_whenItHasOne() {
+        ActionUnit project = new ActionUnit();
+        Ark ark = new Ark();
+        ark.setInternalId(5L);
+        project.setArk(ark);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(projectDeletionService.deleteContent(1L)).thenReturn(List.of(9L));
+
+        actionUnitService.deleteProjectWithContent(1L);
+
+        verify(projectDeletionService).deleteArks(List.of(9L, 5L));
+    }
+
+    @Test
+    void deleteProjectWithContent_throwsNotFound_whenTheProjectIsGone() {
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.deleteProjectWithContent(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenTheKeyIsNotANumber() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("abc", Set.of(1L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenTheKeyOverflowsALong() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("99999999999999999999", Set.of(1L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenNoProjectHasThatId() {
+        when(actionUnitRepository.findById(42L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("42", Set.of(1L)));
+    }
+
     // ------------------------------------------------------------------
     // count delegators
     // ------------------------------------------------------------------

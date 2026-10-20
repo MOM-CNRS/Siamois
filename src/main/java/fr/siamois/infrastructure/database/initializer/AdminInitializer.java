@@ -47,7 +47,7 @@ public class AdminInitializer implements DatabaseInitializer {
      * The SUPERADMIN profile is assigned later by {@link SystemPermissionsInitializer}.
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void initialize() throws DatabaseDataInitException {
         initializeAdmin();
     }

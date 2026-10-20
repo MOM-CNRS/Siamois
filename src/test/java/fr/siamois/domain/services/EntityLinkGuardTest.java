@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,6 +66,6 @@ class EntityLinkGuardTest {
     void requireNoLinks_passes_whenUnlinked() {
         everyLinkCount(0L);
 
-        guard.requireNoLinks(EntityLinkGuard.Kind.CONTAINER, 7L, "le contenant");
+        assertDoesNotThrow(() -> guard.requireNoLinks(EntityLinkGuard.Kind.CONTAINER, 7L, "le contenant"));
     }
 }

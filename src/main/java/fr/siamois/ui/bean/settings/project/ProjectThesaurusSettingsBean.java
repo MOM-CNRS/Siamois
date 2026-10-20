@@ -22,6 +22,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
@@ -59,7 +60,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
         loadOptions();
-        usages = thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode());
+        usages = new ArrayList<>(thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode()));
     }
 
     /** Opens the field configuration of the project, where other thesauri (PACTOLS...) can be used. */
@@ -75,7 +76,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper);
             notifySaved();
-            usages = thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode());
+            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode()));
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

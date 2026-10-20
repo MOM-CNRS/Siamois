@@ -64,7 +64,7 @@ public class ChartresDatasetInitializer implements DatabaseInitializer {
      * Insert chartres test dataset into DB
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void initialize() throws DatabaseDataInitException {
 
         // run only if not inserted

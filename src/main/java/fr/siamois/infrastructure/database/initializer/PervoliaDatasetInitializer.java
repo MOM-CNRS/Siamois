@@ -62,7 +62,7 @@ public class PervoliaDatasetInitializer  {
     /**
      * Insert pervolia test dataset into DB
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void initialize() throws DatabaseDataInitException {
 
 

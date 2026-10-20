@@ -54,7 +54,7 @@ public class FormConfigService {
     public void addConceptConfigFor(@NonNull FormConfig formConfig,
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept) {
-        addConceptConfigFor(formConfig, customFieldConcept, branchTopConcept, null);
+        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, null);
     }
 
     /**
@@ -68,6 +68,11 @@ public class FormConfigService {
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept,
                                     @Nullable ProgressWrapper progressWrapper) {
+        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, progressWrapper);
+    }
+
+    private void doAddConceptConfig(FormConfig formConfig, CustomFieldConcept customFieldConcept,
+                                    ConceptDTO branchTopConcept, @Nullable ProgressWrapper progressWrapper) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
         Concept concept;
         try {
@@ -88,7 +93,7 @@ public class FormConfigService {
 
     @Transactional(rollbackFor = Exception.class)
     public void addConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @NonNull ConceptCollectionDTO collectionDTO) {
-        addConceptConfigFor(formConfig, customFieldConcept, collectionDTO, null);
+        doAddConceptConfig(formConfig, customFieldConcept, collectionDTO, null);
     }
 
     /**
@@ -99,6 +104,11 @@ public class FormConfigService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void addConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @NonNull ConceptCollectionDTO collectionDTO, @Nullable ProgressWrapper progressWrapper) {
+        doAddConceptConfig(formConfig, customFieldConcept, collectionDTO, progressWrapper);
+    }
+
+    private void doAddConceptConfig(FormConfig formConfig, CustomFieldConcept customFieldConcept,
+                                    ConceptCollectionDTO collectionDTO, @Nullable ProgressWrapper progressWrapper) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
         ConceptCollection savedCollection = conceptCollectionService.createOrUpdateConceptCollection(collectionDTO, progressWrapper);
         conceptFieldFormConfig.setCollection(savedCollection);

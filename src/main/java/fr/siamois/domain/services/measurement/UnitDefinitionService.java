@@ -31,7 +31,7 @@ public class UnitDefinitionService {
     @Transactional(readOnly = true)
     public @Nullable UnitDefinition resolve(@Nullable UnitDefinition unit) {
         if (unit == null) return null;
-        if (unit.getId() != null) return resolveById(unit.getId());
+        if (unit.getId() != null) return findById(unit.getId());
 
         return unitDefinitionRepository
                 .findFirstBySymbolAndDimensionOrderByIdAsc(unit.getSymbol(), unit.getDimension())
@@ -47,6 +47,10 @@ public class UnitDefinitionService {
      */
     @Transactional(readOnly = true)
     public @Nullable UnitDefinition resolveById(@Nullable Long id) {
+        return findById(id);
+    }
+
+    private @Nullable UnitDefinition findById(@Nullable Long id) {
         if (id == null) return null;
         return unitDefinitionRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("UnitDefinition not found: " + id));
