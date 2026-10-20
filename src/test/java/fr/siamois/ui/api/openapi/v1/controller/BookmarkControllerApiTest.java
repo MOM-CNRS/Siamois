@@ -48,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -196,6 +197,64 @@ class BookmarkControllerApiTest {
                 .andExpect(status().isCreated());
 
         verify(bookmarkService).save(any(UserInfo.class), eq("/action-unit/1"), eq("Mon projet"));
+    }
+
+    @Test
+    void latest_listsTheCallersBookmarks() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        fr.siamois.dto.entity.BookmarkDTO bookmark = new fr.siamois.dto.entity.BookmarkDTO();
+        bookmark.setId(5L);
+        bookmark.setTitle("Mes US");
+        bookmark.setResourceUri("/recording-unit?viewId=3");
+        when(bookmarkService.latest(any(UserInfo.class), eq(5))).thenReturn(java.util.List.of(bookmark));
+
+        mockMvc.perform(get("/api/v1/bookmarks").param("organizationId", "100").param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("Mes US"))
+                .andExpect(jsonPath("$.data[0].resourceUri").value("/recording-unit?viewId=3"));
+    }
+
+    @Test
+    void rename_success_delegatesToBookmarkServiceAndReturns204() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(bookmarkService.rename(any(UserInfo.class), eq("/action-unit/1"), eq("Mon nom"))).thenReturn(true);
+
+        mockMvc.perform(patch("/api/v1/bookmarks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resourceUri\":\"/action-unit/1\",\"title\":\"Mon nom\",\"organizationId\":100}"))
+                .andExpect(status().isNoContent());
+
+        verify(bookmarkService).rename(any(UserInfo.class), eq("/action-unit/1"), eq("Mon nom"));
+    }
+
+    @Test
+    void rename_unknownBookmark_returns404() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(bookmarkService.rename(any(UserInfo.class), eq("/action-unit/1"), eq("Mon nom"))).thenReturn(false);
+
+        mockMvc.perform(patch("/api/v1/bookmarks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"resourceUri\":\"/action-unit/1\",\"title\":\"Mon nom\",\"organizationId\":100}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rename_missingFields_returns400() throws Exception {
+        login();
+
+        for (String body : new String[] {
+                "{\"title\":\"Mon nom\",\"organizationId\":100}",
+                "{\"resourceUri\":\"/action-unit/1\",\"title\":\" \",\"organizationId\":100}",
+                "{\"resourceUri\":\"/action-unit/1\",\"title\":\"Mon nom\"}"}) {
+            mockMvc.perform(patch("/api/v1/bookmarks").contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Test

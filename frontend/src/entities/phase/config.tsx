@@ -28,6 +28,8 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   // Matches PhaseTableDefinitionFactory/PhasePanel's own icon.
   icon: "bi bi-layers",
   panelClass: "phase-panel",
+  cardClassName: "sia-recording-unit",
+  countChipClassName: "recording-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("phases", id),
     siblings: (id) => fetchSiblings("phases", id),

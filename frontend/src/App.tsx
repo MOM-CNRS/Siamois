@@ -4,6 +4,7 @@ import { NotifyProvider } from "./notify/NotifyProvider";
 import { PaneErrorBoundary } from "./components/PaneErrorBoundary";
 import { queryClient } from "./api/queryClient";
 import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
+import { homeShortcutWidgets } from "./components/home/HomeShortcuts";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
 import { EntityDetailPanel, type EntityPreview } from "./panels/EntityDetailPanel";
@@ -72,9 +73,11 @@ function PanelContent({
       // Assembled from every registered entity's own `home.widgets` (plan §8 phase 7) — not a
       // switch/import per entity, same "registry, not a switch" principle List/Detail already
       // follow. Most entities won't declare `home` at all yet, so this stays empty until they do.
-      const widgets = getAllEntityTypes().flatMap(
-        (config) => config.home?.widgets({ organizationId, onNavigate }) ?? [],
-      );
+      const home = { organizationId, onNavigate, onOpenView, onOpenOverview };
+      const widgets = [
+        ...getAllEntityTypes().flatMap((config) => config.home?.widgets(home) ?? []),
+        ...homeShortcutWidgets(home),
+      ];
       return <HomePanel widgets={widgets} toolbar={toolbar} />;
     }
     case "list":

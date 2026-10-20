@@ -1,10 +1,11 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { Card } from "primereact/card";
 
 // A Card that is itself the link — no inner button. Keyboard-reachable like a real link
 // (Tab + Enter/Space), since a clickable <div> is otherwise invisible to keyboard users.
 export interface ClickableCardProps {
-  onOpen: () => void;
+  // The event is handed over for a card that opens a popup anchored to itself.
+  onOpen: (event: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>) => void;
   className?: string;
   style?: CSSProperties;
   ariaLabel?: string;
@@ -15,7 +16,7 @@ export function ClickableCard({ onOpen, className, style, ariaLabel, children }:
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onOpen();
+      onOpen(e);
     }
   }
 

@@ -37,6 +37,8 @@ export const projectEntityConfig: EntityTypeConfig<
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
   panelClass: "action-unit-panel",
+  cardClassName: "sia-action-unit",
+  countChipClassName: "action-unit-count-chip",
   // A project takes all its content with it: the user types its name to confirm.
   deleteRequiresName: true,
   api: {

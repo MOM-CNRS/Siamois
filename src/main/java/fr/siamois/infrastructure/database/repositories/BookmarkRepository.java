@@ -20,6 +20,7 @@ public interface BookmarkRepository extends CrudRepository<Bookmark, Long> {
     Long countBookmarkByPersonAndInstitutionAndResourceUri(Person person, Institution institution, String resourceUri);
     void deleteBookmarkByPersonAndInstitutionAndResourceUri(Person person, Institution institution, String resourceUri);
     Page<Bookmark> findByPersonAndInstitution(Person person, Institution institution, Pageable pageable);
+    List<Bookmark> findByPersonAndInstitutionAndResourceUri(Person person, Institution institution, String resourceUri);
 
     /**
      * Bulk lookup for a whole list page's worth of resource URIs at once (plan §5/§6) — avoids one

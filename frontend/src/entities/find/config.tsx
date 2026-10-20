@@ -27,6 +27,8 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",
   panelClass: "specimen-panel",
+  cardClassName: "sia-specimen",
+  countChipClassName: "specimen-count-chip",
   api: {
     delete: (id) => deleteEntity("finds", id),
     siblings: (id) => fetchSiblings("finds", id),

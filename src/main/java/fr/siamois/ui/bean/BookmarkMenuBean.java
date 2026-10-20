@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component
@@ -83,8 +82,10 @@ public class BookmarkMenuBean implements Serializable {
 
                 this.setRowCount(cachedTotalRows);
 
-                // Return the localized raw collection list back to the virtual scroll datatable renderer
-                return resultPage.getContent();
+                // A bookmark made before names were stored as text still holds a message code: show (and edit) its text.
+                List<BookmarkDTO> bookmarks = resultPage.getContent();
+                bookmarks.forEach(bookmark -> bookmark.setTitle(navBean.bookmarkTitle(bookmark)));
+                return bookmarks;
             }
         };
     }
@@ -103,32 +104,16 @@ public class BookmarkMenuBean implements Serializable {
         // Simply delete from the database and refresh the PrimeFaces component grid.
     }
 
+    /** The name is the bookmark's own: renaming it leaves the view (or page) it points to as it is. */
     public void onRowEdit(RowEditEvent<BookmarkDTO> event) {
         BookmarkDTO editedItem = event.getObject();
-        Long viewId = resolveViewId(editedItem.getResourceUri());
-        if(viewId == null) { return ;}
-        // If view exist, get it
-        UITableViewDTO view = findViewOrNull(viewId);
-        if(view == null || !isOwner(view)) { return ;}
-        view.setTitle(editedItem.getTitle());
-        uiViewService.save(view);
+        if (editedItem.getTitle() == null || editedItem.getTitle().isBlank()) {
+            return;
+        }
+        bookmarkService.rename(sessionSettingsBean.getUserInfo(), editedItem.getResourceUri(), editedItem.getTitle());
     }
 
     public String resolveName(BookmarkDTO bookmark) {
-
-        Long viewId = resolveViewId(bookmark.getResourceUri());
-
-        if (viewId == null) {
-            return navBean.bookmarkTitle(bookmark);
-        }
-
-        // Every view is visible to the whole organisation: its title is shown whoever created it.
-        UITableViewDTO view = findViewOrNull(viewId);
-
-        if (view != null && view.getTitle() != null && !view.getTitle().isBlank()) {
-            return view.getTitle();
-        }
-
         return navBean.bookmarkTitle(bookmark);
     }
 
@@ -138,15 +123,6 @@ public class BookmarkMenuBean implements Serializable {
         // No database action required here, JSF rolls back the local property changes natively
     }
 
-    public Boolean canEditViewNameOfBookmark(BookmarkDTO bookmark) {
-        Long viewId = resolveViewId(bookmark.getResourceUri());
-        if(viewId == null) { return false ;}
-        // If view exist, get it and check author
-        UITableViewDTO view = findViewOrNull(viewId);
-        // Can edit if it's the same user
-        return view != null && isOwner(view);
-    }
-
     /** The view, or null when it no longer exists (a view deleted since the bookmark was made). */
     private UITableViewDTO findViewOrNull(Long viewId) {
         try {
@@ -154,12 +130,6 @@ public class BookmarkMenuBean implements Serializable {
         } catch (IllegalArgumentException e) {
             return null;
         }
-    }
-
-    /** Only the owner renames a view; a default view has no owner. */
-    private boolean isOwner(UITableViewDTO view) {
-        return view.getOwner() != null
-                && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
     }
 
     private Long resolveViewId(String path) {

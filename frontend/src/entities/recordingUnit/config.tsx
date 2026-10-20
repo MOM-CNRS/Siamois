@@ -54,11 +54,14 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
     singular: t("entity.recordingUnit.singular"),
     plural: t("entity.recordingUnit.plural"),
     all: t("entity.recordingUnit.all"),
+    short: t("entity.recordingUnit.unit"),
   },
   collectionPath: "recording-units",
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",
   panelClass: "recording-unit-panel",
+  cardClassName: "sia-recording-unit",
+  countChipClassName: "recording-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("recording-units", id),
     siblings: (id) => fetchSiblings("recording-units", id),

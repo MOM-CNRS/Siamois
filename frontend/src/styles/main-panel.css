@@ -2728,3 +2728,38 @@ div#search-bar .sia-search {
   font-weight: 400;
   white-space: nowrap;
 }
+
+
+/* Home sections: the title, then its actions beside it, icons centred on the text. */
+.home-section-title { display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.home-section-title .p-button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; }
+.home-section-title .p-button .p-button-icon { display: inline-flex; align-items: center; margin: 0; line-height: 1; }
+.home-section-title .p-button .p-button-label { line-height: 1; }
+
+/* Home: the « Ajouter un accès aux données » form, and the remove button of a card. */
+.home-data-access-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+.home-data-access-error { color: var(--red-500, #c0392b); }
+.home-data-access-remove { margin-left: auto; }
+/* « Ajouter une vue »: a slot to fill, not a card of data — a dashed outline in the app's green that fills in on hover. */
+.home-data-access-add .p-card {
+  background: transparent;
+  box-shadow: none;
+  border: 2px dashed color-mix(in srgb, var(--siamois-green, #2e7d32) 55%, transparent);
+  border-radius: 12px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.home-data-access-add:hover .p-card,
+.home-data-access-add:focus-visible .p-card {
+  background: color-mix(in srgb, var(--siamois-green, #2e7d32) 8%, transparent);
+  border-color: var(--siamois-green, #2e7d32);
+}
+.home-data-access-add:focus-visible { outline: none; }
+.home-data-access-add-body { display: flex; align-items: center; gap: 0.9rem; }
+.home-data-access-add-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.5rem; height: 2.5rem; border-radius: 50%;
+  background: color-mix(in srgb, var(--siamois-green, #2e7d32) 14%, transparent);
+  color: var(--siamois-green, #2e7d32); font-size: 1.25rem;
+}
+.home-data-access-add-body .sia-count-card-title { color: var(--siamois-green, #2e7d32); }
