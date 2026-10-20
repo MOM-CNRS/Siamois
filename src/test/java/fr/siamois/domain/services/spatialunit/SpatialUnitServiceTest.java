@@ -1057,6 +1057,103 @@ class SpatialUnitServiceTest {
     }
 
     @Test
+    void searchSpatialUnits_rootOnlyWithoutFilters_countsTheWholeContextAsMatches() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+        when(spatialUnitRepository.count(any(Specification.class))).thenReturn(9L);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        // The page is the roots; the match count is every place, and the filter is left as it was found.
+        assertEquals(9L, ((fr.siamois.dto.TreePage<SpatialUnitDTO>) result).getMatchCount());
+        assertTrue(filters.isRootOnly());
+    }
+
+    @Test
+    void searchSpatialUnits_rootOnlyWithFilters_countsTheMatchesAndNotTheRoots() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(spatialUnit1, spatialUnit2));
+        when(spatialUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L, 3L));
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, filters, pageable);
+
+        // Two places match; the third of the closure is only an ancestor leading to them.
+        assertEquals(2L, ((fr.siamois.dto.TreePage<SpatialUnitDTO>) result).getMatchCount());
+        verify(spatialUnitRepository, never()).count(any(Specification.class));
+    }
+
+    @Test
+    void searchSpatialUnits_notRootOnly_isAPlainPage() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchSpatialUnits(inst, new FilterDTO(false), pageable);
+
+        assertFalse(result instanceof fr.siamois.dto.TreePage);
+    }
+
+    @Test
+    void searchChildrenTree_withoutAFilter_listsEveryChildOfTheParent() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO();
+        parent.setId(7L);
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchChildrenTree(inst, parent, new FilterDTO(true), pageable);
+
+        assertEquals(2, result.getContent().size());
+        verify(spatialUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
+    void searchChildrenTree_withAFilter_keepsTheChildrenInTheClosure() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO();
+        parent.setId(7L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "x", FilterDTO.FilterType.CONTAINS);
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(spatialUnit2));
+        when(spatialUnitRepository.findAncestorClosure(any(Long[].class))).thenReturn(List.of(1L, 2L));
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(p);
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(spatialUnit1DTO);
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchChildrenTree(inst, parent, filters, pageable);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals(java.util.Set.of(2L), filters.getMatchIds());
+    }
+
+    @Test
+    void searchChildrenTree_withAFilterThatMatchesNothing_hasNoChild() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(1L);
+        SpatialUnitDTO parent = new SpatialUnitDTO();
+        parent.setId(7L);
+        FilterDTO filters = new FilterDTO(true);
+        filters.add(SpatialUnitSpec.NAME_FILTER, "nope", FilterDTO.FilterType.CONTAINS);
+        when(spatialUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(spatialUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of()));
+
+        Page<SpatialUnitDTO> result = spatialUnitService.searchChildrenTree(inst, parent, filters, pageable);
+
+        assertTrue(result.getContent().isEmpty());
+        verify(spatialUnitRepository, never()).findAncestorClosure(any(Long[].class));
+    }
+
+    @Test
     void searchSpatialUnits_rootOnlyWithScopeNameFilter_appliesScopeSpecAndRuns() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(1L);
@@ -1406,7 +1503,7 @@ class SpatialUnitServiceTest {
 
         assertEquals(java.util.Set.of(1L), flags.withChildren());
         assertEquals(java.util.Set.of(5L), flags.matchIds());
-        org.mockito.Mockito.verify(spatialUnitRepository, org.mockito.Mockito.never()).findParentIdsHavingChildren(org.mockito.ArgumentMatchers.anyCollection());
+        verify(spatialUnitRepository, never()).findParentIdsHavingChildren(org.mockito.ArgumentMatchers.anyCollection());
     }
 
     @Test
@@ -1419,7 +1516,7 @@ class SpatialUnitServiceTest {
         SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(1L), filter);
 
         assertTrue(flags.withChildren().isEmpty());
-        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+        verifyNoInteractions(spatialUnitRepository);
     }
 
     @Test
@@ -1427,7 +1524,7 @@ class SpatialUnitServiceTest {
         SpatialUnitService.TreeFlags flags = spatialUnitService.treeFlags(List.of(), new fr.siamois.dto.FilterDTO(true));
 
         assertTrue(flags.withChildren().isEmpty());
-        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+        verifyNoInteractions(spatialUnitRepository);
     }
 
     @Test
@@ -1454,6 +1551,6 @@ class SpatialUnitServiceTest {
         filter.setMatchIds(java.util.Set.of());
 
         assertEquals(0L, spatialUnitService.countMatchesBelow(5L, filter));
-        org.mockito.Mockito.verifyNoInteractions(spatialUnitRepository);
+        verifyNoInteractions(spatialUnitRepository);
     }
 }

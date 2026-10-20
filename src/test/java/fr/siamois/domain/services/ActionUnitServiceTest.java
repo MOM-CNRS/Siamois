@@ -1,6 +1,9 @@
 package fr.siamois.domain.services;
 
 
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.dto.FieldQuery;
+import fr.siamois.domain.services.actionunit.ProjectTreeQuery;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
@@ -1638,13 +1641,16 @@ class ActionUnitServiceTest {
     // findAccessibleProjectsTree (vue arbre de la liste des projets)
     // ------------------------------------------------------------------
 
+    private static ProjectTreeQuery projectTree(Set<Long> institutions, String search) {
+        return new ProjectTreeQuery(1L, institutions, null, null, null,
+                new ProjectTreeQuery.Selection(search, ProjectListFilter.EMPTY, FieldQuery.NONE, PageRequest.of(0, 20), null));
+    }
+
     @Test
     void findAccessibleProjectsTree_emptyInstitutions_returnsEmptyPageWithoutDb() {
-        var page = actionUnitService.findAccessibleProjectsTree(
-                1L, Set.of(), null, null, PageRequest.of(0, 20), null,
-                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, null);
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(), null));
 
-        assertThat(page.getContent()).isEmpty();
+        assertThat(treePage.getContent()).isEmpty();
         verifyNoInteractions(actionUnitRepository);
     }
 
@@ -1658,7 +1664,7 @@ class ActionUnitServiceTest {
                 .thenReturn(new PageImpl<>(List.of(actionUnit1, actionUnit2), PageRequest.of(0, 20), 2));
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
         when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
-        // 1 has a sub-project 10, which the person can see; 2 has a sub-project 20, which they cannot.
+        // Project 1 has a sub-project 10, which the person can see; project 2 has a sub-project 20, which they cannot.
         when(actionUnitRepository.findChildEdges(List.of(1L, 2L)))
                 .thenReturn(List.<Object[]>of(new Object[]{1L, 10L}, new Object[]{2L, 20L}));
         ActionUnit visibleSubProject = new ActionUnit();
@@ -1667,30 +1673,30 @@ class ActionUnitServiceTest {
         when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(visibleSubProject));
         when(actionUnitRepository.count(any(Specification.class))).thenReturn(14L);
 
-        var page = actionUnitService.findAccessibleProjectsTree(
-                1L, Set.of(10L), null, null, PageRequest.of(0, 20), null,
-                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, null);
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(10L), null));
 
-        assertThat(page.getContent()).hasSize(2);
-        assertThat(page.hasChildren(1L)).isTrue();
-        assertThat(page.hasChildren(2L)).isFalse();
+        assertThat(treePage.getContent()).hasSize(2);
+        assertThat(treePage.hasChildren(1L)).isTrue();
+        assertThat(treePage.hasChildren(2L)).isFalse();
         // No search: every project is a match, and the match count is every accessible project, not the roots.
-        assertThat(page.isMatch(2L)).isTrue();
-        assertThat(page.getMatchCount()).isEqualTo(14L);
+        assertThat(treePage.isMatch(2L)).isTrue();
+        assertThat(treePage.getMatchCount()).isEqualTo(14L);
     }
 
     @Test
     void findAccessibleProjectsTree_search_marksTheParentThatOnlyLeadsToAMatchAsContext() {
         actionUnit1.setFullIdentifier("TREE-CTX-1");
         actionUnit2.setFullIdentifier("TREE-CTX-2");
-        actionUnit1dto.setId(1L);
-        // Searching "x": project 2 matches, its accessible parent 1 is the only root of the closure.
-        when(actionUnitRepository.findAll(any(Specification.class)))
-                .thenReturn(List.of(actionUnit2))     // the matches
-                .thenReturn(List.of(actionUnit1))     // 2's parents that are accessible: {1} (1 has none: the climb stops)
-                .thenReturn(List.of(actionUnit2));    // children of 1 in the closure and accessible: {2}
-        actionUnit2.setId(2L);
         actionUnit1.setId(1L);
+        actionUnit2.setId(2L);
+        actionUnit1dto.setId(1L);
+        // Searching "x": project 2 matches, and its accessible parent 1 is the only root of the closure.
+        // The calls, in order: the matches, then the accessible parents of 2 (1 has none, so the climb
+        // stops), then the children of 1 that are in the closure and accessible.
+        when(actionUnitRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(actionUnit2))
+                .thenReturn(List.of(actionUnit1))
+                .thenReturn(List.of(actionUnit2));
         when(actionUnitRepository.findParentEdges(List.of(2L))).thenReturn(List.<Object[]>of(new Object[]{2L, 1L}));
         when(actionUnitRepository.findParentEdges(List.of(1L))).thenReturn(List.of());
         when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
@@ -1698,13 +1704,47 @@ class ActionUnitServiceTest {
         when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
         when(actionUnitRepository.findChildEdges(List.of(1L))).thenReturn(List.<Object[]>of(new Object[]{1L, 2L}));
 
-        var page = actionUnitService.findAccessibleProjectsTree(
-                1L, Set.of(10L), null, "x", PageRequest.of(0, 20), null,
-                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, null);
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(10L), "x"));
 
-        assertThat(page.hasChildren(1L)).isTrue();
-        assertThat(page.isMatch(1L)).isFalse();
-        assertThat(page.getMatchCount()).isEqualTo(1L);
+        assertThat(treePage.hasChildren(1L)).isTrue();
+        assertThat(treePage.isMatch(1L)).isFalse();
+        assertThat(treePage.getMatchCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void findAccessibleProjectsTree_inAPlaceWithFiltersAndASort_isNarrowedAndOrderedByTheCount() {
+        // The place is part of the context; the user's filters narrow; the recording-unit-count sort orders.
+        ProjectListFilter filter = ProjectListFilter.parse(
+                new org.springframework.util.LinkedMultiValueMap<>(Map.of("f.fullIdentifier", List.of("OA"))));
+        var query = new ProjectTreeQuery(1L, Set.of(10L), 10L, 5L, 8L,
+                new ProjectTreeQuery.Selection(null, filter, FieldQuery.NONE, PageRequest.of(0, 20), Sort.Direction.DESC));
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(query);
+
+        // Nothing matches: the page is empty, and no climb, no count of the context is asked for.
+        assertThat(treePage.getContent()).isEmpty();
+        assertThat(treePage.getMatchCount()).isZero();
+        verify(actionUnitRepository, never()).count(any(Specification.class));
+        verify(actionUnitRepository, never()).findParentEdges(any());
+    }
+
+    @Test
+    void findAccessibleProjectsTree_aFilterOnAFormField_narrowsLikeASearch() {
+        FieldQuery fieldFilter = new FieldQuery((root, query, cb) -> null, false, true, null);
+        var query = new ProjectTreeQuery(1L, Set.of(10L), null, null, null,
+                new ProjectTreeQuery.Selection(null, ProjectListFilter.EMPTY, fieldFilter, PageRequest.of(0, 20), null));
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(query);
+
+        // Narrowed, so the match count is the (empty) match set's size, not a count of the whole list.
+        assertThat(treePage.getMatchCount()).isZero();
+        verify(actionUnitRepository, never()).count(any(Specification.class));
     }
 
     // ------------------------------------------------------------------

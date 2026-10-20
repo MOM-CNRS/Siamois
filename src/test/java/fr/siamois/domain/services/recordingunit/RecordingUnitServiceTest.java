@@ -2130,12 +2130,11 @@ class RecordingUnitServiceTest {
             filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
             RecordingUnit match = unit(5L);
             RecordingUnit parentInContext = unit(3L);
-            // Matches {5}; 5's parent 3 is in the context; 3's parent 1 is not (idsOf finds nothing for it).
+            // Unit 5 matches; its parent 3 is in the context; 3's parent 1 is not. The lookups, in order: the
+            // matches; the parents of 5 that are in the context ({3}); the parents of 3 that are in the context
+            // (none); the children of 3 that are in the closure and the context ({5}).
             when(recordingUnitRepository.findAll(any(Specification.class)))
-                    .thenReturn(List.of(match))               // the matches
-                    .thenReturn(List.of(parentInContext))     // parents of 5 in the context: {3}
-                    .thenReturn(List.of())                    // parents of 3 in the context: none
-                    .thenReturn(List.of(match));              // children of 3 in the closure and the context: {5}
+                    .thenReturn(List.of(match), List.of(parentInContext), List.of(), List.of(match));
             when(recordingUnitRepository.findParentEdges(List.of(5L))).thenReturn(List.<Object[]>of(new Object[]{5L, 3L}));
             when(recordingUnitRepository.findParentEdges(List.of(3L))).thenReturn(List.<Object[]>of(new Object[]{3L, 1L}));
             when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(parentInContext)));

@@ -1318,7 +1318,7 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
                                                      Sort sort, FilterDTO filters) {
-        return findChildrenOfTree(institution, parentId, limit, offset, sort, filters, false);
+        return childrenOfTree(institution, parentId, limit, offset, sort, filters, false);
     }
 
     /**
@@ -1329,17 +1329,28 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
                                                      Sort sort, FilterDTO filters, boolean withMatchCount) {
+        return childrenOfTree(institution, parentId, limit, offset, sort, filters, withMatchCount);
+    }
+
+    private Page<RecordingUnitDTO> childrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                  Sort sort, FilterDTO filters, boolean withMatchCount) {
         Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId))
                 .and(filters.getFieldQuery().orderingSpecificationFor());
         if (filters.hasUserFilters()) {
             java.util.Collection<Long> closure = recordingUnitSortFilterService.ancestorClosure(institution, filters);
-            specs = closure.isEmpty()
-                    ? specs.and((root, query, cb) -> cb.disjunction())
-                    : specs.and(RecordingUnitSpec.idIn(closure));
+            specs = specs.and(closure.isEmpty() ? (root, query, cb) -> cb.disjunction() : RecordingUnitSpec.idIn(closure));
         }
         Page<RecordingUnitDTO> page = pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
         applyTreeFlags(page, filters);
         return withMatchCount ? TreePage.of(page, countMatchesBelow(parentId, filters)) : page;
+    }
+
+    /** Which of {@code ids} have children — only among {@code closure} when it is not null (a search narrowed the tree). */
+    private java.util.List<Long> parentsHavingChildren(java.util.List<Long> ids, java.util.Collection<Long> closure) {
+        if (closure == null) {
+            return recordingUnitRepository.findParentIdsHavingChildren(ids);
+        }
+        return closure.isEmpty() ? java.util.List.of() : recordingUnitRepository.findParentIdsHavingChildrenAmong(ids, closure);
     }
 
     private long countMatchesBelow(Long parentId, FilterDTO filters) {
@@ -1440,9 +1451,7 @@ public class RecordingUnitService implements ArkEntityService {
         }
         java.util.Collection<Long> closure = filters.getAncestorClosure();
         boolean narrowed = filters.hasUserFilters() && closure != null;
-        java.util.Set<Long> withChildren = new java.util.HashSet<>(narrowed
-                ? (closure.isEmpty() ? java.util.List.<Long>of() : recordingUnitRepository.findParentIdsHavingChildrenAmong(ids, closure))
-                : recordingUnitRepository.findParentIdsHavingChildren(ids));
+        java.util.Set<Long> withChildren = new java.util.HashSet<>(parentsHavingChildren(ids, narrowed ? closure : null));
         java.util.Set<Long> matches = narrowed ? filters.getMatchIds() : null;
         for (RecordingUnitDTO dto : page.getContent()) {
             dto.setTreeHasChildren(withChildren.contains(dto.getId()));

@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The tree view of a list of a hierarchical type (recording units, places, projects…), inside a
@@ -121,10 +122,7 @@ public class HierarchyTreeQuery<E, D> {
         Set<Long> closure = new HashSet<>(matchIds);
         Set<Long> frontier = new HashSet<>(matchIds);
         while (!frontier.isEmpty()) {
-            Set<Long> parents = new HashSet<>();
-            for (Object[] edge : hierarchy.parentEdges(new ArrayList<>(frontier))) {
-                parents.add(((Number) edge[1]).longValue());
-            }
+            Set<Long> parents = idsOf(hierarchy.parentEdges(new ArrayList<>(frontier)), 1);
             parents.removeAll(closure);
             if (parents.isEmpty()) {
                 break;
@@ -141,10 +139,7 @@ public class HierarchyTreeQuery<E, D> {
             return Set.of();
         }
         List<Object[]> edges = hierarchy.childEdges(ids);
-        Set<Long> children = new HashSet<>();
-        for (Object[] edge : edges) {
-            children.add(((Number) edge[1]).longValue());
-        }
+        Set<Long> children = idsOf(edges, 1);
         if (closure != null) {
             children.retainAll(closure);
         }
@@ -152,12 +147,18 @@ public class HierarchyTreeQuery<E, D> {
             return Set.of();
         }
         Set<Long> inScope = new HashSet<>(hierarchy.ids(hierarchy.and(scope, hierarchy.idIn(children))));
-        Set<Long> parents = new HashSet<>();
-        for (Object[] edge : edges) {
-            if (inScope.contains(((Number) edge[1]).longValue())) {
-                parents.add(((Number) edge[0]).longValue());
-            }
-        }
-        return parents;
+        return edges.stream()
+                .filter(edge -> inScope.contains(idAt(edge, 1)))
+                .map(edge -> idAt(edge, 0))
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    /** The ids in column {@code index} of {@code [id, id]} edges. */
+    private static Set<Long> idsOf(List<Object[]> edges, int index) {
+        return edges.stream().map(edge -> idAt(edge, index)).collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private static Long idAt(Object[] edge, int index) {
+        return ((Number) edge[index]).longValue();
     }
 }

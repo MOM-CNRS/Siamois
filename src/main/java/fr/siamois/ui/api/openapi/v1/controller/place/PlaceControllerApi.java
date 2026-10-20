@@ -38,6 +38,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/places")
@@ -181,8 +183,10 @@ public class PlaceControllerApi {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree, tree && matchCount);
+        PlaceListResponse body = placeOpenApiService.listChildren(caller, id,
+                new ListWindow(offset, limit, sort, search), lang,
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields,
+                TreeRequest.of(tree, null).withMatchCount(matchCount));
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(body.getMeta().total()))
                 .body(body);
@@ -225,8 +229,9 @@ public class PlaceControllerApi {
         // In the tree the place is part of the context (the projects of this place), not a filter.
         Page<AccessibleProjectForApi> rows = tree
                 ? projectApiService.pageAccessibleProjectsTree(
-                        caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
-                        ProjectListFilter.parse(queryParams), fieldQuery, parent, place.getId())
+                        caller, place.getCreatedByInstitution().getId(), new ListWindow(offset, limit, sort, search),
+                        ProjectListFilter.parse(queryParams), fieldQuery,
+                        TreeRequest.tree(parent).inSpatialContext(place.getId()))
                 : projectApiService.pageAccessibleProjects(
                         caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
                         ProjectListFilter.parse(queryParams).withSpatialContext(place.getId()), fieldQuery);

@@ -69,6 +69,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 /**
  * Organization-wide lists, at the collection root like {@code GET /api/v1/projects?organizationId=…}
@@ -135,7 +137,8 @@ public class OrganizationListsControllerApi {
 
         // f.<key>[.from|.to] — same contract as GET /api/v1/projects/{id}/recording-units.
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
-        Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution, offset, limit, sort, search, filter,
+        Page<RecordingUnitDTO> page = organizationListService.pageRecordingUnits(caller, institution,
+                new ListWindow(offset, limit, sort, search), filter,
                 fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage), tree);
         Map<Long, Boolean> canEdit = canEdit(caller, institution, page, RecordingUnitDTO::getActionUnit, lang, EditPermissions.RECORDING_UNITS);
         Map<Long, Boolean> canValidate = organizationListService.canValidateByProject(caller, institution,
@@ -423,8 +426,9 @@ public class OrganizationListsControllerApi {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, organizationId, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, tree);
+        PlaceListResponse body = placeOpenApiService.listByOrganization(caller, organizationId,
+                new ListWindow(offset, limit, sort, search), lang,
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields, TreeRequest.of(tree, null));
         return ResponseEntity.ok()
                 .header(HEADER_TOTAL_COUNT, String.valueOf(body.getMeta().total()))
                 .body(body);

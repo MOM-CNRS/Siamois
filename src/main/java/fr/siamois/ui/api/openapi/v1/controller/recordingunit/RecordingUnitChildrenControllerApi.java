@@ -25,6 +25,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 
 @RestController
@@ -78,8 +80,9 @@ public class RecordingUnitChildrenControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.ScopedRecordingUnitPage scoped = projectApiService.pageRecordingUnitChildren(
-                caller, id, offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams),
-                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage), tree, tree && matchCount);
+                caller, id, new ListWindow(offset, limit, sort, search), RecordingUnitListFilter.parse(queryParams),
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage),
+                TreeRequest.of(tree, null).withMatchCount(matchCount));
         RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
                 caller, scoped.page(), scoped.projectId(), fields, lang, limit, offset);
         return ResponseEntity.ok()

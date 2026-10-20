@@ -44,6 +44,8 @@ import fr.siamois.dto.FieldQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -112,7 +114,8 @@ public class ProjectControllerApi {
         FieldQuery fieldQuery = fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage);
         Page<AccessibleProjectForApi> rows = tree
                 ? projectApiService.pageAccessibleProjectsTree(
-                        caller, organizationId, search, offset, limit, sort, filter, fieldQuery, parent)
+                        caller, organizationId, new ListWindow(offset, limit, sort, search), filter, fieldQuery,
+                        TreeRequest.tree(parent))
                 : projectApiService.pageAccessibleProjects(
                         caller, organizationId, search, offset, limit, sort, filter, fieldQuery);
 

@@ -84,6 +84,13 @@ des dépôts) en `UNION`, qui déduplique et ne boucle pas en cas de cycle. `Fil
 - **Clé d'un nœud** : son chemin (`racine/parent/id`). C'est ce qui permet à une entité sous deux
   parents d'avoir un état ouvert par occurrence.
 
+**Côté serveur, les paramètres d'une liste sont des objets.** `ListWindow` (offset, limit, sort, search) et
+`TreeRequest` (arbre ou non, `parent`, contexte spatial, `matchCount`) regroupent ce que les contrôleurs
+transmettent aux services (`PlaceOpenApiService`, `ProjectApiService`, `OrganizationListService`), et
+`ProjectTreeQuery` fait de même pour `ActionUnitService.findAccessibleProjectsTree`. Une liste qui
+gagne une option (un mode d'affichage de plus) l'ajoute à ces objets au lieu d'allonger des signatures
+déjà à sept paramètres.
+
 ## Limites connues
 
 - Pas de glisser-déposer des en-têtes de colonnes en vue arbre (le `TreeTable` n'a pas l'équivalent

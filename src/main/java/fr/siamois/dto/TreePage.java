@@ -44,6 +44,17 @@ public class TreePage<T> extends PageImpl<T> {
         return new TreePage<>(page.getContent(), page.getPageable(), page.getTotalElements(), matchCount);
     }
 
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof TreePage<?> that && super.equals(that) && matchCount == that.matchCount
+                && java.util.Objects.equals(withChildren, that.withChildren) && java.util.Objects.equals(matchIds, that.matchIds);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(super.hashCode(), matchCount, withChildren, matchIds);
+    }
+
     public long getMatchCount() {
         return matchCount;
     }

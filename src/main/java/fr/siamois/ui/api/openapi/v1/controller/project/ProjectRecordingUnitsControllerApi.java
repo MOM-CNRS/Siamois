@@ -29,6 +29,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/projects/{id}/recording-units")
@@ -94,7 +96,7 @@ public class ProjectRecordingUnitsControllerApi {
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         FieldQuery fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(
-                caller, id, offset, limit, sort, search, filter, fieldQuery, tree, parent);
+                caller, id, new ListWindow(offset, limit, sort, search), filter, fieldQuery, TreeRequest.of(tree, parent));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 

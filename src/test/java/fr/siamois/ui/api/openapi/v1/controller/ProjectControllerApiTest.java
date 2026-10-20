@@ -301,8 +301,9 @@ class ProjectControllerApiTest {
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
         // The page of roots: project 1 has sub-projects and is only context (the search matched below it); 37 match.
         when(actionUnitService.findAccessibleProjectsTree(
-                anyLong(), eq(Set.of(100L)), isNull(), eq("fouille"), any(Pageable.class), isNull(), any(),
-                org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), isNull(), isNull()))
+                org.mockito.ArgumentMatchers.argThat(q -> "fouille".equals(q.selection().search())
+                        && q.parentId() == null && q.spatialContextId() == null
+                        && Set.of(100L).equals(q.accessibleInstitutionIds()))))
                 .thenReturn(new fr.siamois.dto.TreePage<>(List.of(row), PageRequest.of(0, 20), 1, 37, Set.of(1L), Set.of(99L)));
         ProjectResource resource = new ProjectResource();
         resource.setResourceType("projects");
@@ -323,8 +324,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(actionUnitService.findAccessibleProjectsTree(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(),
-                org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(5L), isNull()))
+                org.mockito.ArgumentMatchers.argThat(q -> Long.valueOf(5L).equals(q.parentId()))))
                 .thenReturn(new fr.siamois.dto.TreePage<>(List.of(), PageRequest.of(0, 20), 0, 0));
 
         mockMvc.perform(get("/api/v1/projects").param("tree", "true").param("parent", "5"))

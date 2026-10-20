@@ -68,7 +68,7 @@ class HierarchyTreeQueryTest {
         @Override
         public Specification<Long> hasNoParentIn(Specification<Long> scope) {
             LongPredicate inScope = test(scope);
-            return new Rows(id -> parents.getOrDefault(id, List.of()).stream().noneMatch(p -> inScope.test(p)));
+            return new Rows(id -> parents.getOrDefault(id, List.of()).stream().noneMatch(inScope::test));
         }
 
         @Override

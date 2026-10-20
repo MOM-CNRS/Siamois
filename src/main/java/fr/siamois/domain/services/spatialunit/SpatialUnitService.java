@@ -684,10 +684,16 @@ public class SpatialUnitService implements ArkEntityService {
             return new TreeFlags(Set.of(), null);
         }
         Collection<Long> closure = filterDTO.getAncestorClosure();
-        List<Long> parents = closure != null && filterDTO.hasUserFilters()
-                ? (closure.isEmpty() ? List.of() : spatialUnitRepository.findParentIdsHavingChildrenAmong(pageIds, closure))
-                : spatialUnitRepository.findParentIdsHavingChildren(pageIds);
+        List<Long> parents = parentsHavingChildren(pageIds, closure != null && filterDTO.hasUserFilters() ? closure : null);
         return new TreeFlags(new HashSet<>(parents), filterDTO.hasUserFilters() ? filterDTO.getMatchIds() : null);
+    }
+
+    /** Which of {@code pageIds} have children — only among {@code closure} when it is not null (a search narrowed the tree). */
+    private List<Long> parentsHavingChildren(Collection<Long> pageIds, Collection<Long> closure) {
+        if (closure == null) {
+            return spatialUnitRepository.findParentIdsHavingChildren(pageIds);
+        }
+        return closure.isEmpty() ? List.of() : spatialUnitRepository.findParentIdsHavingChildrenAmong(pageIds, closure);
     }
 
     /**

@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -128,7 +130,7 @@ class OrganizationListsControllerApiTest {
         RecordingUnitDTO readOnly = new RecordingUnitDTO();
         readOnly.setId(2L);
         readOnly.setActionUnit(readOnlyProject);
-        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(0), eq(10), eq("creationTime:desc"), eq("US"), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(false)))
+        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(new ListWindow(0, 10, "creationTime:desc", "US")), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(false)))
                 .thenReturn(new PageImpl<>(List.of(editable, readOnly), PageRequest.of(0, 10), 2));
         permissions(OrganizationListService.EditPermissions.RECORDING_UNITS);
         when(recordingUnitListProjectionService.build(any(), isNull(), any()))
@@ -287,7 +289,7 @@ class OrganizationListsControllerApiTest {
         when(projectApiService.requireCaller()).thenReturn(caller);
         PlaceResource place = new PlaceResource();
         place.setName("Cave A");
-        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(0), eq(10), eq("name:asc"), eq("cave"), any(), any(), any(), eq(false)))
+        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(new ListWindow(0, 10, "name:asc", "cave")), any(), any(), any(), eq(TreeRequest.OFF)))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 10, 0L)));
 
         mockMvc.perform(get("/api/v1/places").param("organizationId", "10").param("search", "cave"))
@@ -303,7 +305,7 @@ class OrganizationListsControllerApiTest {
         place.setName("Cave A");
         place.setHasChildren(true);
         place.setMatch(false);
-        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(0), eq(10), eq("name:asc"), eq("cave"), any(), any(), any(), eq(true)))
+        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(new ListWindow(0, 10, "name:asc", "cave")), any(), any(), any(), eq(TreeRequest.tree(null))))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 10, 0L, 37L)));
 
         mockMvc.perform(get("/api/v1/places").param("organizationId", "10").param("search", "cave").param("tree", "true"))
