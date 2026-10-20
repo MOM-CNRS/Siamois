@@ -78,6 +78,11 @@ public final class PermissionConstants {
     public static final String ORGANIZATION_EDIT_DOCUMENTS = "ORGANIZATION_EDIT_DOCUMENTS";
 
     /**
+     * Organisation-wide counterpart of {@link #PROJECT_EDIT_DEFAULT_VIEWS}.
+     */
+    public static final String ORGANIZATION_EDIT_DEFAULT_VIEWS = "ORGANIZATION_EDIT_DEFAULT_VIEWS";
+
+    /**
      * Organisation-wide counterpart of {@link #PROJECT_EDIT_STUDIES}.
      */
     public static final String ORGANIZATION_EDIT_STUDIES = "ORGANIZATION_EDIT_STUDIES";
@@ -109,6 +114,11 @@ public final class PermissionConstants {
     public static final String PROJECT_EDIT_FINDS = "PROJECT_EDIT_FINDS";
     public static final String PROJECT_EDIT_CONTAINERS = "PROJECT_EDIT_CONTAINERS";
     public static final String PROJECT_EDIT_DOCUMENTS = "PROJECT_EDIT_DOCUMENTS";
+    /**
+     * Allows editing the default list views (columns, sort, filters, tab names) of the project's
+     * records, i.e. what every member sees before any personal change.
+     */
+    public static final String PROJECT_EDIT_DEFAULT_VIEWS = "PROJECT_EDIT_DEFAULT_VIEWS";
     public static final String PROJECT_EDIT_STUDIES = "PROJECT_EDIT_STUDIES";
     /**
      * Allows deleting the records of the project (recording units, finds, phases, containers,
@@ -178,6 +188,11 @@ public final class PermissionConstants {
      * Instance-wide counterpart of {@link #PROJECT_EDIT_DOCUMENTS}.
      */
     public static final String INSTANCE_EDIT_DOCUMENTS = "INSTANCE_EDIT_DOCUMENTS";
+
+    /**
+     * Instance-wide counterpart of {@link #PROJECT_EDIT_DEFAULT_VIEWS}.
+     */
+    public static final String INSTANCE_EDIT_DEFAULT_VIEWS = "INSTANCE_EDIT_DEFAULT_VIEWS";
 
     /**
      * Instance-wide counterpart of {@link #PROJECT_EDIT_STUDIES}.

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { usePaneState } from "../panels/paneState";
+import { usePersistedPaneState } from "../panels/persistedPaneState";
 import { Panel } from "primereact/panel";
 import { evaluateForm, type FieldState } from "../rules";
 import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";
@@ -33,6 +33,15 @@ export interface FormLayoutViewProps<TEntity extends { id?: string | number }> {
   isFieldShown?: (field: FieldResource, stored: unknown) => boolean;
 }
 
+// A section is told apart by its name (the form bundle's own code); position only when it has none.
+const sectionKey = (name: string | undefined, index: number) => (name ? name : `#${index}`);
+
+const isFoldedSections = (saved: unknown): boolean =>
+  saved != null &&
+  typeof saved === "object" &&
+  !Array.isArray(saved) &&
+  Object.values(saved).every((v) => typeof v === "boolean");
+
 export function FormLayoutView<TEntity extends { id?: string | number }>({
   entity,
   entityType,
@@ -49,8 +58,13 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
     return evaluateForm(columns, (id) => valueOfField(entity, fields, id));
   }, [panels, fields, entity]);
 
-  // Which sections are folded: remembered, so a fiche moving between panes (focus) keeps them.
-  const [folded, setFolded] = usePaneState<Record<number, boolean>>("foldedSections", {});
+  // Which sections are folded: remembered, so a fiche moving between panes (focus) keeps them, and kept for
+  // the user, per type of fiche.
+  // Keyed by the section's name, not its position: a form that gains, loses or reorders sections since
+  // must not fold another one. A saved name the form no longer has is simply never read.
+  const [folded, setFolded] = usePersistedPaneState<Record<string, boolean>>("foldedSections", {}, {
+    isValid: isFoldedSections,
+  });
 
   return (
     <>
@@ -59,8 +73,8 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
           key={panelIndex}
           header={panelLabel(panel.name)}
           toggleable
-          collapsed={folded[panelIndex] === true}
-          onToggle={(e) => setFolded((prev) => ({ ...prev, [panelIndex]: e.value }))}
+          collapsed={folded[sectionKey(panel.name, panelIndex)] === true}
+          onToggle={(e) => setFolded((prev) => ({ ...prev, [sectionKey(panel.name, panelIndex)]: e.value }))}
           className={`sia-form-panel ${panel.className ?? ""}`.trim()}
         >
           {panel.rows.map((row, rowIndex) => (

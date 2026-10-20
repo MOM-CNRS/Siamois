@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { usePaneState } from "../../../panels/paneState";
+import { usePersistedPaneState } from "../../../panels/persistedPaneState";
 import { useCanEdit } from "../../../panels/writeMode";
 import { entityChipStyle } from "../../../fields/display";
 import { editContextOf } from "../../../fields/editContext";
@@ -174,8 +174,10 @@ export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOve
   const canEdit = useCanEdit(entity);
   const { data, isLoading, isError } = useRelationGraph(recordingUnitId);
   const list = useRelationList(recordingUnitId);
-  const [mode, setMode] = usePaneState<RelationsMode>("relationsMode", "graph");
-  const [showLinks, setShowLinks] = usePaneState("showLinks", true);
+  const [mode, setMode] = usePersistedPaneState<RelationsMode>("relationsMode", "graph", {
+    isValid: (saved) => saved === "graph" || saved === "list",
+  });
+  const [showLinks, setShowLinks] = usePersistedPaneState("showLinks", true, { isValid: (saved) => typeof saved === "boolean" });
   const typeConceptId = editContextOf(entity, "recordingUnit", organizationId).typeConceptId;
   const editor = useRelationLinkEditor({
     unitId: recordingUnitId,

@@ -5,6 +5,7 @@ import type { MountOptions } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
 import { withPanelTransition } from "../panels/panelTransition";
 import type { ListSeed } from "./externalBus";
+import { listPath } from "./paths";
 import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 
 export interface Navigation {
@@ -12,6 +13,8 @@ export interface Navigation {
   // Stable identities: panels receive them, and must not re-render on every navigation.
   navigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   openOverview: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // The entity type's list in the main pane, on a saved view (or, without one, its default list).
+  openView: (entityType: string, viewId?: number) => void;
   // The entity type's list in the overview pane, started on this search (the search bar's « Voir tout »).
   openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
   closeOverview: () => void;
@@ -47,6 +50,14 @@ export function useNavigation(options: MountOptions): Navigation {
       }
       const path = id != null ? config.routes.detail(id) : config.routes.list;
       send({ type: "navigate", path, view: { panelKind: id != null ? "detail" : "list", entityType, entityId: id, preview } });
+    },
+    [send],
+  );
+  const openView = useCallback<Navigation["openView"]>(
+    (entityType, viewId) => {
+      const path = listPath(entityType, viewId);
+      if (path == null) return;
+      send({ type: "navigate", path, view: { panelKind: "list", entityType, viewId } });
     },
     [send],
   );
@@ -100,5 +111,5 @@ export function useNavigation(options: MountOptions): Navigation {
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, openOverview, openList, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, openView, openOverview, openList, closeOverview, enterFocus, closeFocus };
 }

@@ -6,6 +6,7 @@ import { registerEntityType } from "../entities/registry";
 import type { EntityTypeConfig, PagedResult } from "../entities/types";
 import { relationTab } from "./relationTab";
 import { WriteModeProvider } from "./writeMode";
+import { listPrefsKey, saveListPrefs } from "./listPreferences";
 
 
 interface FakeChildRow {
@@ -34,12 +35,16 @@ registerEntityType(childConfig);
 let container: HTMLDivElement;
 let root: Root;
 
+// Twice, each in its own act(): the list waits for the user's saved state (GET /view-states) before its
+// first fetch, and what that read changes is committed when its act ends.
 async function flush() {
-  await act(async () => {
-    for (let i = 0; i < 5; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  });
+  for (let round = 0; round < 2; round++) {
+    await act(async () => {
+      for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    });
+  }
 }
 
 beforeEach(() => {
@@ -193,6 +198,8 @@ describe("relationTab project context and create", () => {
       ),
       extraRowActions: () => [{ key: "unlink", icon: "bi bi-x", tooltip: "Retirer", run }],
     });
+    // The row's actions are put away by default: this one is brought back inline.
+    saveListPrefs(listPrefsKey("fake-child-entity", { entityType: "fake-parent-entity", id: 5 }, 42), { actionBar: { order: [], inline: [] } });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
       root.render(

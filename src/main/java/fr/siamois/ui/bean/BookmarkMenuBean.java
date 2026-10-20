@@ -108,8 +108,8 @@ public class BookmarkMenuBean implements Serializable {
         Long viewId = resolveViewId(editedItem.getResourceUri());
         if(viewId == null) { return ;}
         // If view exist, get it
-        UITableViewDTO view = uiViewService.findOne(viewId);
-        if(view == null) { return ;}
+        UITableViewDTO view = findViewOrNull(viewId);
+        if(view == null || !isOwner(view)) { return ;}
         view.setTitle(editedItem.getTitle());
         uiViewService.save(view);
     }
@@ -122,16 +122,10 @@ public class BookmarkMenuBean implements Serializable {
             return navBean.bookmarkTitle(bookmark);
         }
 
-        UITableViewDTO view = uiViewService.findOne(viewId);
+        // Every view is visible to the whole organisation: its title is shown whoever created it.
+        UITableViewDTO view = findViewOrNull(viewId);
 
-        if (view != null
-                && Objects.equals(
-                view.getOwner().getId(),
-                sessionSettingsBean.getUserInfo().getUser().getId()
-        )
-                && view.getTitle() != null
-                && !view.getTitle().isBlank()) {
-
+        if (view != null && view.getTitle() != null && !view.getTitle().isBlank()) {
             return view.getTitle();
         }
 
@@ -148,9 +142,24 @@ public class BookmarkMenuBean implements Serializable {
         Long viewId = resolveViewId(bookmark.getResourceUri());
         if(viewId == null) { return false ;}
         // If view exist, get it and check author
-        UITableViewDTO view = uiViewService.findOne(viewId);
+        UITableViewDTO view = findViewOrNull(viewId);
         // Can edit if it's the same user
-        return view != null && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
+        return view != null && isOwner(view);
+    }
+
+    /** The view, or null when it no longer exists (a view deleted since the bookmark was made). */
+    private UITableViewDTO findViewOrNull(Long viewId) {
+        try {
+            return uiViewService.findOne(viewId);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Only the owner renames a view; a default view has no owner. */
+    private boolean isOwner(UITableViewDTO view) {
+        return view.getOwner() != null
+                && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
     }
 
     private Long resolveViewId(String path) {
@@ -183,7 +192,7 @@ public class BookmarkMenuBean implements Serializable {
         Long viewId = resolveViewId(bookmark.getResourceUri());
         if(viewId == null) { return null;}
         // If view exist, get it
-        UITableViewDTO view = uiViewService.findOne(viewId);
+        UITableViewDTO view = findViewOrNull(viewId);
         if(view == null) { return null;}
         return FilterStateTooltipHelper.buildTooltip(view.getState().getFilters());
     }

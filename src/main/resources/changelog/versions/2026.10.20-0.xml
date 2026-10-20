@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    There is at most one default view per organisation, record type, project and type of record
+    (no project / no type being a value of its own): a partial unique index, which JPA can't declare.
+    On a fresh database the table does not exist yet when this runs: the statement is guarded.
+    -->
+
+    <changeSet id="2026.10.20-0-ui-table-view-default-unique" author="Gregory Bliault" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $$
+            BEGIN
+                IF to_regclass('ui_table_view') IS NULL
+                   OR NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                  WHERE table_name = 'ui_table_view' AND column_name = 'kind') THEN
+                    RETURN;
+                END IF;
+                CREATE UNIQUE INDEX IF NOT EXISTS ux_ui_table_view_default
+                    ON ui_table_view (fk_institution, resource_type, COALESCE(fk_project, 0), COALESCE(type_id, 0))
+                    WHERE kind = 'DEFAULT';
+            END
+            $$;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

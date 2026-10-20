@@ -441,6 +441,27 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Checks if the user can edit the default list views, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_DEFAULT_VIEWS} on the project, or the organisation /
+     * instance counterpart. Without a project (e.g. the project list itself) only the organisation
+     * and instance codes are considered.
+     *
+     * @param user         the user information
+     * @param actionUnitId the project (action unit) id, or null for an organisation-level view
+     * @return true if the user can edit the default views
+     */
+    public boolean hasDefaultViewEditPermission(UserInfo user, Long actionUnitId) {
+        if (actionUnitId == null) {
+            return hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS)
+                    || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS);
+        }
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS,
+                PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS,
+                PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS);
+    }
+
+    /**
      * Checks if the user can write the given study, i.e. holds
      * {@link PermissionConstants#PROJECT_EDIT_STUDIES} on the study's project.
      *

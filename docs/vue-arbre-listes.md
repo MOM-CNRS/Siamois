@@ -8,8 +8,9 @@ une entrée par mode (Liste, Arbre), celui en cours coché. Ce n'est pas un inte
 les modes forment une liste ouverte (`ListViewMode` dans `panels/list/listViews.ts`), pensée pour
 accueillir d'autres vues (carte, chronologie…). Ajouter un mode = une entrée dans `LIST_VIEWS` (libellé,
 icône), une règle de disponibilité dans `availableViews`, et son rendu dans `EntityListPanel`. Le mode
-est mémorisé par panneau (`usePaneState("viewMode")`) ; s'il n'est plus offert (autre contexte), on
-retombe sur la liste. Le menu n'affiche le titre que si la liste offre au moins deux modes.
+est mémorisé par panneau (`TableState.viewMode`) et enregistré pour l'utilisateur avec le reste de l'état de
+la liste (voir `vues-et-etat-utilisateur.md`) ; s'il n'est plus offert (autre contexte), on retombe sur la
+liste. Le menu n'affiche le titre que si la liste offre au moins deux modes.
 
 **Où.** Un type active l'arbre avec `list.tree: true` (`entities/place/config.tsx`,
 `entities/recordingUnit/config.tsx`) pour sa liste d'organisation, et `list.treeScopes` liste les

@@ -12,6 +12,8 @@ export interface NavigationView {
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;
+  // The saved view a "list" view shows (its path carries `?viewId=`): the main pane's list state.
+  viewId?: number;
   // What the opener already knew about the entity (a list row, a sibling's label): shown in the
   // fiche's header while the entity itself loads.
   preview?: EntityPreview;
@@ -84,7 +86,7 @@ export function overviewPath(overview: OverviewState | null): string | undefined
 
 export function initialNavState(options: MountOptions): NavState {
   return {
-    view: { panelKind: options.panelKind, entityType: options.entityType, entityId: options.entityId },
+    view: { panelKind: options.panelKind, entityType: options.entityType, entityId: options.entityId, viewId: options.viewId },
     mainPath: options.main.resourceUri,
     // Not `?? ""`: a null overview must render no overview pane at all.
     overview:

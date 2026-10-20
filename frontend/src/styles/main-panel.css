@@ -1647,6 +1647,29 @@ body button.p-button.status-button.status-button-compact {
   color: var(--title-color);
   padding-right: 0.5em;
 }
+/* The title of a list on one of the user's own views: a button that turns into a field. */
+.entity-list-panel-view-title {
+  border: 0;
+  background: transparent;
+  cursor: text;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.entity-list-panel-view-title-icon {
+  font-size: 0.7em;
+  opacity: 0;
+}
+.entity-list-panel-view-title:hover .entity-list-panel-view-title-icon,
+.entity-list-panel-view-title:focus-visible .entity-list-panel-view-title-icon {
+  opacity: 0.6;
+}
+.entity-list-panel-view-title-input {
+  font-size: var(--font-size-title-page);
+  font-weight: var(--font-weight-title);
+  min-width: 12rem;
+}
 .entity-list-panel.embedded {
   display: flex;
   flex-direction: column;
@@ -2541,4 +2564,167 @@ div#search-bar .sia-search {
 }
 .entity-list-panel-gear-menu .entity-list-panel-view-active .p-menuitem-text {
   font-weight: 600;
+}
+
+/* The header's view button and the dialog naming a new view (panels/list/ViewActions.tsx). */
+/* A light split button: transparent, outlined and written in the Siamois green, its two halves joined. */
+.entity-list-panel-views-button.p-splitbutton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-right: 0.25rem;
+}
+.entity-list-panel-views-button .p-button-label {
+  white-space: nowrap;
+}
+.entity-list-panel-views-button .p-button {
+  background: transparent;
+  border: 1px solid var(--primary-color, #669966);
+  color: var(--primary-color, #669966);
+  box-shadow: none;
+}
+.entity-list-panel-views-button .p-button .p-button-label,
+.entity-list-panel-views-button .p-button .p-button-icon {
+  color: inherit;
+}
+.entity-list-panel-views-button .p-splitbutton-defaultbutton {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.entity-list-panel-views-button .p-splitbutton-menubutton {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -1px;
+}
+.entity-list-panel-views-button .p-button:hover,
+.entity-list-panel-views-button .p-button:focus-visible {
+  background: color-mix(in srgb, var(--primary-color, #669966) 10%, transparent);
+  border-color: var(--primary-color, #669966);
+  color: var(--primary-color, #669966);
+}
+/* The split button's menu is a PrimeReact TieredMenu rendered in the body: the host theme gives its entries
+   no padding, so the look is set here. */
+.entity-list-panel-views-menu {
+  min-width: 12rem;
+  padding: 0.25rem;
+  border: 1px solid var(--siamois-green-light-200, #cfe2cf);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+.entity-list-panel-views-menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entity-list-panel-views-menu .p-menuitem-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  color: var(--text-color, #2a2c30);
+  text-decoration: none;
+  outline: none;
+  cursor: pointer;
+}
+.entity-list-panel-views-menu .p-menuitem-link .p-menuitem-icon {
+  color: var(--primary-color, #669966);
+}
+.entity-list-panel-views-menu .p-menuitem.p-focus > .p-menuitem-content .p-menuitem-link,
+.entity-list-panel-views-menu .p-menuitem-link:hover {
+  background: var(--siamois-green-light-100, #e6f0e6);
+}
+.entity-list-panel-views-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.entity-list-panel-views-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* The tabs editor (« Configurer les onglets ») and the list-tab dialog. The dialogs scroll inside themselves. */
+.fiche-tabs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fiche-tabs-editor-hint,
+.fiche-tabs-add-hint {
+  margin: 0;
+  color: var(--text-color-secondary);
+}
+.fiche-tabs-editor-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.fiche-tabs-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fiche-tabs-editor-move {
+  display: inline-flex;
+}
+.fiche-tabs-editor-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fiche-tabs-editor-kind {
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.fiche-tabs-editor-subtype {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fiche-tabs-editor-warning {
+  margin: 0;
+  color: var(--red-500, #c0392b);
+}
+.fiche-tabs-editor-actions,
+.fiche-tabs-add-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.fiche-tabs-editor-spacer {
+  flex: 1 1 auto;
+}
+.fiche-tabs-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fiche-tabs-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.fiche-tabs-add-preview {
+  height: 45vh;
+  min-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+}
+
+/* « Ajouter » and « Modifier », the two buttons after a fiche's last tab (not tabs themselves): the tabs' own
+   look, a quieter colour. */
+.entity-detail-panel-tabs .fiche-tabs-shortcut .p-tabview-nav-link .sia-tab-title {
+  color: var(--text-color-secondary);
+  font-weight: 400;
+  white-space: nowrap;
 }

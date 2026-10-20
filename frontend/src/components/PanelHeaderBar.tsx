@@ -17,12 +17,14 @@ export interface PanelHeaderBarProps {
   toolbar?: PanelToolbarSlot;
   // Prev/next, placed in the toolbar's navigation group.
   navigation?: ReactNode;
+  // Placed in the toolbar, right before the bookmark (the list's view button).
+  toolbarExtra?: ReactNode;
   // "main": title left, toolbar pushed to the right. "overview": toolbar first (its secondary
   // actions folded into a "…" menu), then the title — the narrow pane reads left to right.
   layout?: "main" | "overview";
 }
 
-export function PanelHeaderBar({ title, toolbar, navigation, layout = "main" }: PanelHeaderBarProps) {
+export function PanelHeaderBar({ title, toolbar, navigation, toolbarExtra, layout = "main" }: PanelHeaderBarProps) {
   const overview = layout === "overview";
   // No toolbar (a pane rendered without one): prev/next still show, on their own.
   const toolbarNode = toolbar ? (
@@ -31,10 +33,14 @@ export function PanelHeaderBar({ title, toolbar, navigation, layout = "main" }: 
       organizationId={toolbar.organizationId}
       actions={toolbar.actions}
       navigation={navigation}
+      beforeBookmark={toolbarExtra}
       compact={overview}
     />
   ) : (
-    navigation
+    <>
+      {navigation}
+      {toolbarExtra}
+    </>
   );
   return (
     <div

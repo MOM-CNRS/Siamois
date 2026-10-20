@@ -1,5 +1,5 @@
-import { useCallback, useEffect, type ReactNode } from "react";
-import { usePaneState } from "./paneState";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { PaneStateScope, usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
 import { ProgressBar } from "primereact/progressbar";
@@ -26,13 +26,15 @@ import { queryKeys } from "../api/queryKeys";
 import { EntityTable } from "./list/EntityTable";
 import { useTreeRows } from "./list/useTreeRows";
 import { EntityTableSettings } from "./list/EntityTableSettings";
-import {
-  availableViews,
-  DEFAULT_LIST_VIEW,
-  resolveViewMode,
-  viewOptions,
-  type ListViewMode,
-} from "./list/listViews";
+import { viewOptions } from "./list/listViews";
+import { ViewActions } from "./list/ViewActions";
+import { ViewTitle } from "./list/ViewTitle";
+import { fixedTypeOf } from "./list/fixedType";
+import { toViewState } from "./listState";
+import { useNotify } from "../notify/NotifyProvider";
+import { t } from "../i18n";
+import { useFicheTabsActions } from "./ficheTabsContext";
+import { listPath } from "../navigation/paths";
 import { ListSearchBox } from "./list/ListSearchBox";
 import { ListToolbar } from "./list/ListToolbar";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
@@ -90,6 +92,19 @@ export interface EntityListPanelProps {
   // The search the list was opened with (the top search bar's « Voir tout »). A new `nonce` applies
   // it again: the list is already open and must follow the new search, whatever was typed since.
   seed?: ListSeed;
+  // The saved view the list is on (`?viewId=` of its address), and how to open another (or, without an
+  // id, the default list). Without `onViewChange` the list offers no views.
+  viewId?: number;
+  onViewChange?: (viewId?: number) => void;
+  // A configured tab of a fiche (see panels/ficheConfig.ts): the filters that define it, and the key that
+  // keeps its state apart from the fiche's other lists of this type.
+  fixedFilters?: Record<string, FilterValue>;
+  stateKey?: string;
+  // The preview of a tab being configured (panels/FicheTabsEditor.tsx): its state is not kept for the user, it
+  // opens on `initialFilters`, and `onFiltersChange` hears every change of its filters.
+  volatile?: boolean;
+  initialFilters?: Record<string, FilterValue>;
+  onFiltersChange?: (filters: Record<string, FilterValue>) => void;
 }
 
 /** A dismissable line under the toolbar: what a row action just did, or why it failed. */
@@ -131,7 +146,19 @@ function ActionMessage({
  * list/useEntityListData (what is fetched), list/useListColumns (the columns), list/ListToolbar,
  * list/EntityTableSettings, list/ListSearchBox and list/EntityTable (what is drawn).
  */
-export function EntityListPanel({
+export function EntityListPanel(props: EntityListPanelProps) {
+  // Each view keeps its own state in the pane store: moving between views is not a change of the list
+  // being shown, but of which list this is.
+  return props.viewId != null ? (
+    <PaneStateScope name={`view:${props.viewId}`}>
+      <EntityListPanelBody {...props} />
+    </PaneStateScope>
+  ) : (
+    <EntityListPanelBody {...props} />
+  );
+}
+
+function EntityListPanelBody({
   entityType,
   organizationId,
   onNavigate,
@@ -146,6 +173,13 @@ export function EntityListPanel({
   toolbarExtra,
   extraRowActions,
   seed,
+  viewId,
+  onViewChange,
+  fixedFilters,
+  stateKey,
+  volatile,
+  initialFilters,
+  onFiltersChange,
 }: EntityListPanelProps) {
   const config = getEntityType(entityType) as
     EntityTypeConfig<unknown, unknown> | undefined;
@@ -153,16 +187,6 @@ export function EntityListPanel({
   const prefsKey = listPrefsKey(entityType, scope, organizationId);
   const queryClient = useQueryClient();
   const writeMode = useWriteMode();
-
-  // How the list is shown (flat list, tree, later a map…): chosen in the gear menu, the flat list
-  // staying the default.
-  const views = availableViews(config, scope);
-  const [rememberedView, setViewMode] = usePaneState<ListViewMode>(
-    "viewMode",
-    DEFAULT_LIST_VIEW,
-  );
-  const viewMode = resolveViewMode(rememberedView, views);
-  const showTree = viewMode === "tree";
 
   const {
     table,
@@ -173,6 +197,15 @@ export function EntityListPanel({
     page,
     rowRules,
     collectionTotal,
+    views,
+    viewMode,
+    listReady,
+    userState,
+    view,
+    viewMissing,
+    modified,
+    hasUserState,
+    resetToBase,
   } = useEntityListData({
     entityType,
     config,
@@ -180,10 +213,39 @@ export function EntityListPanel({
     scope,
     prefsKey,
     embedded,
-    paused: showTree,
+    viewId,
+    fixedFilters,
+    stateKey,
+    volatile,
+    initialFilters,
   });
-  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters } =
+  const showTree = viewMode === "tree";
+  // A tab filtered on exactly one type creates entities of that type.
+  const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
+  const createPrefillWithType = fixedTypeId ? { ...createPrefill, typeId: fixedTypeId } : createPrefill;
+  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, setViewMode } =
     table;
+  // A preview being configured hears its filters; a list that is a tab of a fiche the user may configure can be
+  // kept, filters included, as a tab of the project.
+  const filtersListener = useRef(onFiltersChange);
+  filtersListener.current = onFiltersChange;
+  useEffect(() => {
+    filtersListener.current?.(state.filters);
+  }, [state.filters]);
+  const ficheTabs = useFicheTabsActions();
+  const filtersOfTab = params.filters;
+  const saveAsTabButton =
+    ficheTabs && embedded && scope && !volatile && filtersOfTab ? (
+      <Button
+        icon="bi bi-pin-angle"
+        text
+        rounded
+        size="large"
+        aria-label={t("tabs.saveAsTab")}
+        tooltip={t("tabs.saveAsTab")}
+        onClick={() => ficheTabs.saveAsTab(entityType, filtersOfTab)}
+      />
+    ) : null;
   const treeRows = useTreeRows({
     entityType,
     config,
@@ -192,7 +254,7 @@ export function EntityListPanel({
     fields: state.visibleColumns,
     offset: state.offset,
     limit: state.limit,
-    enabled: showTree,
+    enabled: showTree && listReady,
   });
   const { rows, totalCount, isLoading, isFetching, error } = showTree
     ? treeRows
@@ -290,6 +352,23 @@ export function EntityListPanel({
       });
   }
 
+  // On a view, the pane's bookmark is the view's: its address carries ?viewId=, its title is the view's.
+  // Whether it is bookmarked is not known from the page that mounted (that was the list's): asked afresh.
+  const viewListPath = listPath(entityType, viewId);
+  const viewToolbar: PanelToolbarSlot | undefined =
+    toolbar && viewId != null && viewListPath != null
+      ? { ...toolbar, chrome: { resourceUri: viewListPath, title: view?.title ?? toolbar.chrome.title } }
+      : toolbar;
+
+  // A view that no longer exists (deleted since a bookmark or a link to it was made): the default list.
+  const notify = useNotify();
+  useEffect(() => {
+    if (viewId == null || !viewMissing) return;
+    notify.error(t("views.missing"));
+    onViewChange?.(undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewId, viewMissing]);
+
   if (!config) {
     return (
       <div className="entity-list-panel-unsupported">
@@ -298,7 +377,12 @@ export function EntityListPanel({
     );
   }
 
-  const hasActionBarSettings = rowActions.items.length > 0;
+  // Views are of the organization-wide list, in a pane that can open another view.
+  const showViews = !embedded && scope == null && organizationId != null && onViewChange != null;
+  // Changed since it was opened: on a view, from the view's state; on the default list, anything the user kept.
+  const viewsDirty = viewId != null ? modified : hasUserState;
+  // A preview being configured has no row actions to arrange.
+  const hasActionBarSettings = rowActions.items.length > 0 && !volatile;
   const hasGear = hasSchema || hasActionBarSettings;
 
   const body = (
@@ -318,8 +402,15 @@ export function EntityListPanel({
           selectedCount={selectedRows.length}
           onClearSelection={clearSelection}
           creatable={creatable}
-          createPrefill={createPrefill}
-          endExtra={toolbarExtra}
+          createPrefill={createPrefillWithType}
+          endExtra={
+            toolbarExtra || saveAsTabButton ? (
+              <>
+                {toolbarExtra}
+                {saveAsTabButton}
+              </>
+            ) : undefined
+          }
           createBlocked={
             createNeedsPickedProject && !canCreateInSomeProject
               ? { loading: creatableProjects.isLoading }
@@ -443,6 +534,7 @@ export function EntityListPanel({
         onOpenOverview={onOpenOverview}
         overviewEntityId={overviewEntityId}
         onCellSaved={onCellSaved}
+        readOnly={volatile}
         tree={showTree ? treeRows.tree : undefined}
       />
       {rowActions.dialog}
@@ -467,9 +559,13 @@ export function EntityListPanel({
           title={
             <div className="entity-list-panel-header sia-hstack">
               <i className={`${config.icon} sia-list-title-icon`} />
-              <span className="sia-list-title-text">
-                {config.labels.plural}
-              </span>
+              {viewId != null && view && organizationId != null ? (
+                <ViewTitle view={view} organizationId={organizationId} />
+              ) : (
+                <span className="sia-list-title-text">
+                  {config.labels.plural}
+                </span>
+              )}
               {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
                   with the same inline transparent background/main-color text. */}
               {isLoading || collectionTotal == null ? (
@@ -495,7 +591,21 @@ export function EntityListPanel({
               )}
             </div>
           }
-          toolbar={toolbar}
+          toolbar={viewToolbar}
+          // The old titlebar's view button, at the right of the toolbar before the bookmark: only once the list has been changed.
+          toolbarExtra={
+            showViews && viewsDirty ? (
+              <ViewActions
+                entityType={entityType}
+                organizationId={organizationId}
+                activeView={view}
+                currentViewState={() => toViewState(state, table.columnsSeeded)}
+                onOpen={onViewChange}
+                onReset={resetToBase}
+                onUpdated={userState.reset}
+              />
+            ) : undefined
+          }
         />
       }
     >

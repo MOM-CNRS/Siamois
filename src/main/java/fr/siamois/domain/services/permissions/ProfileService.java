@@ -45,6 +45,7 @@ public class ProfileService {
             PermissionConstants.INSTANCE_EDIT_FINDS,
             PermissionConstants.INSTANCE_EDIT_CONTAINERS,
             PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
+            PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS,
             PermissionConstants.INSTANCE_EDIT_STUDIES,
             PermissionConstants.INSTANCE_DELETE_ENTITIES,
             PermissionConstants.INSTANCE_DELETE_PROJECT
@@ -149,6 +150,7 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_EDIT_FINDS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
+                PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_DELETE_ENTITIES,
                 PermissionConstants.ORGANIZATION_DELETE_PROJECT
@@ -207,6 +209,7 @@ public class ProfileService {
             PermissionConstants.PROJECT_EDIT_PHASES,
             PermissionConstants.PROJECT_EDIT_CONTAINERS,
             PermissionConstants.PROJECT_EDIT_DOCUMENTS,
+            PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS,
             PermissionConstants.PROJECT_EDIT_STUDIES,
             PermissionConstants.PROJECT_DELETE_ENTITIES,
             PermissionConstants.PROJECT_DELETE_PROJECT

@@ -107,6 +107,8 @@ export interface EntityTableProps {
   overviewEntityId?: string | number;
   // A saved cell: the list and any view of the same entity refetch.
   onCellSaved: (row: RowRecord) => void;
+  // Only to look at (the preview of a tab being configured): no actions column, no cell editing.
+  readOnly?: boolean;
   // The list's tree view: the rows are drawn by a TreeTable (same columns, same row styles), the
   // identifier column carrying the expander; a parent that only leads to a match gets a dashed chip.
   tree?: EntityTableTree;
@@ -143,6 +145,7 @@ export function EntityTable({
   onOpenOverview,
   overviewEntityId,
   onCellSaved,
+  readOnly,
   tree,
 }: EntityTableProps) {
   const tableRef = useRef<DataTable<RowRecord[]>>(null);
@@ -185,7 +188,7 @@ export function EntityTable({
   // fiche and the panel header follow. Only a UI gate: ProjectApiService.patchProject is what
   // actually enforces it; this just avoids offering a control that would 403.
   function canEditRow(row: RowRecord): boolean {
-    if (!writeMode) return false;
+    if (!writeMode || readOnly) return false;
     const permissions = (row as { _permissions?: { canEdit?: boolean } })
       ._permissions;
     return permissions?.canEdit === true;
@@ -528,7 +531,7 @@ export function EntityTable({
       />,
       // The row's actions (bookmark, duplicate, new child…) sit right after the identifier,
       // frozen with it — JSF merges both into one statusIdActionsCol.
-      ...(index === Math.max(lastFrozenIndex, 0)
+      ...(index === Math.max(lastFrozenIndex, 0) && !readOnly
         ? [
             <Column
               key="__row-actions"

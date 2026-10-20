@@ -127,7 +127,7 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <h:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="historyLinkNav"
@@ -136,10 +136,10 @@
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
                                     <p:tooltip for="historyLinkNav" value="Historique"/>
-                                </h:commandLink>
+                                </p:commandLink>
                             </li>
                             <li class="nav-item">
-                                <h:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
@@ -148,7 +148,19 @@
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>
                                     <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
-                                </h:commandLink>
+                                </p:commandLink>
+                            </li>
+                            <li class="nav-item">
+                                <p:commandLink action="#{sidebarBean.toggleMode('VIEWS')}"
+                                               update="subSidebarForm:sidebarAnimatedInner"
+                                               process="@this"
+                                               id="viewsLinkNav"
+                                               oncomplete="handleSidebarToggle('VIEWS');"
+                                               styleClass="nav-link">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill"/>
+                                    <span class="menu-text">#{langBean.msg('nav.views')}</span>
+                                    <p:tooltip for="viewsLinkNav" value="#{langBean.msg('nav.views.hint')}"/>
+                                </p:commandLink>
                             </li>
                             <p:divider/>
 

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Message } from "primereact/message";
 import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../entities/types";
 import { SelectOneConceptRenderer } from "../fields/renderers";
+import { referenceTargetOf } from "../fields/optionSources";
 import { useDeclaredTypesState } from "../entities/useDeclaredTypes";
 import { NoTypeHint } from "./NoTypeHint";
 import type { FieldResource } from "../fields/types";
@@ -43,6 +44,7 @@ export function TypeOnlyCreateForm({
   children,
   organizationId,
   scope,
+  prefill,
   onCreated,
   onCancel,
 }: TypeOnlyCreateFormProps) {
@@ -65,6 +67,19 @@ export function TypeOnlyCreateForm({
   );
 
   const { options: declaredTypes, loaded: typesLoaded } = useDeclaredTypesState(typesSegment, projectId);
+
+  // Created from a list tab filtered on one type: that type is picked already (still changeable).
+  const prefilledType = prefill?.typeId;
+  const appliedPrefill = useRef<string | null>(null);
+  useEffect(() => {
+    appliedPrefill.current = null;
+  }, [projectId]);
+  useEffect(() => {
+    if (prefilledType == null || appliedPrefill.current === prefilledType || !typeField || !typesLoaded) return;
+    const option = declaredTypes.find((o) => o.id === prefilledType);
+    appliedPrefill.current = prefilledType;
+    if (option) setType({ resourceId: option.id, resourceType: referenceTargetOf(typeField).resourceType, label: option.label });
+  }, [prefilledType, typeField, typesLoaded, declaredTypes]);
 
   const mutation = useMutation({
     mutationFn: () => create(projectId as string, type!.resourceId),

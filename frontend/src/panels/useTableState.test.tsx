@@ -10,14 +10,16 @@ let container: HTMLDivElement;
 let root: Root;
 let latest: ReturnType<typeof useTableState>;
 
-function Harness({ defaultSort }: { defaultSort?: string }) {
-  latest = useTableState({ defaultSort });
+type UserStateProp = NonNullable<Parameters<typeof useTableState>[0]["userState"]>;
+
+function Harness({ defaultSort, userState }: { defaultSort?: string; userState?: UserStateProp }) {
+  latest = useTableState({ defaultSort, userState });
   return null;
 }
 
-function renderHarness(defaultSort?: string) {
+function renderHarness(defaultSort?: string, userState?: UserStateProp) {
   act(() => {
-    root.render(<Harness defaultSort={defaultSort} />);
+    root.render(<Harness defaultSort={defaultSort} userState={userState} />);
   });
 }
 
@@ -126,5 +128,64 @@ describe("useTableState", () => {
     });
     act(() => latest.seedVisibleColumns(["z"]));
     expect(latest.state.visibleColumns).toEqual(["a", "b"]);
+  });
+
+  describe("with the user's saved state", () => {
+    const saved = {
+      v: 1,
+      limit: 100,
+      sort: "name:desc",
+      filters: { k: { op: "in", v: ["1"] } },
+      viewMode: "tree",
+      visibleColumns: ["b", "gone", "a"],
+    };
+
+    it("holds the list back until the saved state has been read", () => {
+      renderHarness("id:asc", { settled: false, saved: undefined });
+      expect(latest.userStateReady).toBe(false);
+      act(() => latest.seedVisibleColumns(["a"]));
+      expect(latest.columnsSeeded).toBe(false);
+    });
+
+    it("applies what was saved, over the defaults, once it is read", () => {
+      renderHarness("id:asc", { settled: false, saved: undefined });
+      renderHarness("id:asc", { settled: true, saved });
+      expect(latest.userStateReady).toBe(true);
+      expect(latest.state).toMatchObject({
+        limit: 100,
+        sort: "name:desc",
+        filters: { k: { op: "in", v: ["1"] } },
+        viewMode: "tree",
+        offset: 0,
+      });
+    });
+
+    it("seeds the saved columns, minus those the catalog lost, before the catalog's defaults", () => {
+      renderHarness("id:asc", { settled: true, saved });
+      act(() => latest.seedVisibleColumns(["x", "y"], ["a", "b", "x", "y"]));
+      expect(latest.state.visibleColumns).toEqual(["b", "a"]);
+    });
+
+    it("keeps the defaults when nothing was saved", () => {
+      renderHarness("id:asc", { settled: true, saved: undefined });
+      expect(latest.userStateReady).toBe(true);
+      expect(latest.state).toMatchObject({ sort: "id:asc", limit: 25 });
+      act(() => latest.seedVisibleColumns(["x"]));
+      expect(latest.state.visibleColumns).toEqual(["x"]);
+    });
+
+    it("applies it once: a later change of the saved state does not override the user's own", () => {
+      renderHarness("id:asc", { settled: true, saved });
+      act(() => latest.setSort("other:asc"));
+      renderHarness("id:asc", { settled: true, saved: { ...saved, sort: "late:asc" } });
+      expect(latest.state.sort).toBe("other:asc");
+    });
+
+    it("setViewMode changes only the mode", () => {
+      renderHarness();
+      act(() => latest.setViewMode("tree"));
+      expect(latest.state.viewMode).toBe("tree");
+      expect(latest.state.limit).toBe(25);
+    });
   });
 });

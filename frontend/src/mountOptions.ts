@@ -64,6 +64,8 @@ export interface PanelBridge {
   setMain?: (path: string) => void;
   // Redraws the JSF sidebar's bookmarks list after React added or removed a bookmark (REST).
   refreshBookmarks?: () => void;
+  // Redraws the JSF sidebar's views list after React created, renamed or updated a view (REST).
+  refreshViews?: () => void;
 }
 
 export interface MountOptions {
@@ -72,6 +74,8 @@ export interface MountOptions {
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;
+  // The saved view a "list" panel opens on (the page was loaded on `…?viewId=`).
+  viewId?: number;
   overviewEntityType?: string;
   overviewEntityId?: string | number;
   organizationId?: number;
@@ -142,6 +146,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
     panelKind,
     entityType: dataset.entityType ?? "",
     entityId: text("entityId"),
+    viewId: number("viewId"),
     overviewEntityType: text("overviewEntityType"),
     overviewEntityId: text("overviewEntityId"),
     organizationId: number("organizationId"),
@@ -175,6 +180,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
       closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
       setMain: setMain && ((path) => setMain({ path })),
       refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
+      refreshViews: action("actionRefreshViews") as PanelBridge["refreshViews"],
     },
   };
 }
