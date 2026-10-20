@@ -36,7 +36,7 @@ public class UserHistoryService {
 
     /** Puts the visit at the top of the user's history, and drops what falls beyond {@value #MAX_ENTRIES}. */
     @Transactional
-    public void record(UserInfo userInfo, Visit visit) {
+    public void remember(UserInfo userInfo, Visit visit) {
         if (visit == null || visit.mainUri() == null || visit.mainUri().isBlank()) {
             return;
         }

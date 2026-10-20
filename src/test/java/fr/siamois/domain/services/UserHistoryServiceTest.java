@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -63,7 +64,7 @@ class UserHistoryServiceTest {
         when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/action-unit/1", ""))
                 .thenReturn(List.of());
 
-        service.record(userInfo, visit("/action-unit/1", null));
+        service.remember(userInfo, visit("/action-unit/1", null));
 
         ArgumentCaptor<UserHistoryEntry> saved = ArgumentCaptor.forClass(UserHistoryEntry.class);
         verify(repository).save(saved.capture());
@@ -80,7 +81,7 @@ class UserHistoryServiceTest {
         when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", "/b"))
                 .thenReturn(List.of(first, duplicate));
 
-        service.record(userInfo, visit("/a", "/b"));
+        service.remember(userInfo, visit("/a", "/b"));
 
         verify(repository).deleteAll(List.of(duplicate));
         verify(repository).save(first);
@@ -99,15 +100,15 @@ class UserHistoryServiceTest {
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(all);
 
-        service.record(userInfo, visit("/x", null));
+        service.remember(userInfo, visit("/x", null));
 
         verify(repository).deleteAll(all.subList(UserHistoryService.MAX_ENTRIES, all.size()));
     }
 
     @Test
     void record_withoutPage_doesNothing() {
-        service.record(userInfo, null);
-        service.record(userInfo, visit(" ", null));
+        service.remember(userInfo, null);
+        service.remember(userInfo, visit(" ", null));
 
         verify(repository, never()).save(any());
         verifyNoInteractions(repository);
@@ -122,7 +123,7 @@ class UserHistoryServiceTest {
         service.latest(userInfo, 0);
 
         ArgumentCaptor<Pageable> page = ArgumentCaptor.forClass(Pageable.class);
-        verify(repository, org.mockito.Mockito.times(2))
+        verify(repository, times(2))
                 .findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), page.capture());
         assertEquals(UserHistoryService.MAX_ENTRIES, page.getAllValues().get(0).getPageSize());
         assertEquals(1, page.getAllValues().get(1).getPageSize());

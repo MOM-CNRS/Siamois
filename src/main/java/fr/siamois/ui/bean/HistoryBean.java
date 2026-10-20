@@ -35,9 +35,9 @@ public class HistoryBean {
     private static final int MAX_ITEMS = 20;
 
     private final FlowBean flowBean;
-    private final transient UserHistoryService historyService;
+    private final UserHistoryService historyService;
     // Looked up when needed: SessionSettingsBean depends on FlowBean, which depends on this bean.
-    private final transient ObjectProvider<SessionSettingsBean> sessionSettings;
+    private final ObjectProvider<SessionSettingsBean> sessionSettings;
 
     private List<HistoryItem> items = new ArrayList<>();
     private boolean loaded;
@@ -110,7 +110,7 @@ public class HistoryBean {
         HistoryItemComponent main = item.getMain();
         HistoryItemComponent side = item.getSecondary();
         try {
-            historyService.record(userInfo, new UserHistoryService.Visit(
+            historyService.remember(userInfo, new UserHistoryService.Visit(
                     main.getUri(), main.getTitle(), main.getIcon(), main.getStyleClass(),
                     side == null ? null : side.getUri(), side == null ? null : side.getTitle(),
                     side == null ? null : side.getIcon(), side == null ? null : side.getStyleClass()));

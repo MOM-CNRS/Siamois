@@ -47,6 +47,10 @@ public class BookmarkService {
      */
     @Transactional(readOnly = true)
     public Page<BookmarkDTO> findAll(UserInfo userInfo, Pageable pageable) {
+        return pageOf(userInfo, pageable);
+    }
+
+    private Page<BookmarkDTO> pageOf(UserInfo userInfo, Pageable pageable) {
         Person person = personMapper.invertConvert(userInfo.getUser());
         Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
@@ -61,7 +65,7 @@ public class BookmarkService {
     /** The user's latest bookmarks in the organisation (most recent first), their names as text in the user's language. */
     @Transactional(readOnly = true)
     public List<BookmarkDTO> latest(UserInfo userInfo, int limit) {
-        Page<BookmarkDTO> page = findAll(userInfo,
+        Page<BookmarkDTO> page = pageOf(userInfo,
                 PageRequest.of(0, Math.max(1, Math.min(limit, 50)), Sort.by(Sort.Direction.DESC, "createdAt")));
         page.forEach(bookmark -> bookmark.setTitle(resolveTitle(bookmark.getTitle(), userInfo.getLang())));
         return page.getContent();
