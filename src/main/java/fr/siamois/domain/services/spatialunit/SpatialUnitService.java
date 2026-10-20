@@ -23,6 +23,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -568,7 +569,23 @@ public class SpatialUnitService implements ArkEntityService {
         log.trace("Found {} SpatialUnits", result.getTotalElements());
         Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
         hydrateRecordingUnitCountsForPage(page);
-        return page;
+        return filterDTO.isRootOnly() ? TreePage.of(page, countMatches(institutionDTO, filterDTO)) : page;
+    }
+
+    /**
+     * The entities that match, for the tree view: with a search or a filter, the match set already
+     * computed to find the roots; without, every entity of the context.
+     */
+    private long countMatches(InstitutionDTO institutionDTO, FilterDTO filterDTO) {
+        if (filterDTO.hasUserFilters() && filterDTO.getMatchIds() != null) {
+            return filterDTO.getMatchIds().size();
+        }
+        filterDTO.setRootOnly(false);
+        try {
+            return countSearchResults(institutionDTO, filterDTO);
+        } finally {
+            filterDTO.setRootOnly(true);
+        }
     }
 
     private void hydrateRecordingUnitCountsForPage(Page<SpatialUnitDTO> page) {
@@ -630,6 +647,70 @@ public class SpatialUnitService implements ArkEntityService {
         return page;
     }
 
+    /**
+     * The children of a place in the tree view. With a search, only the children leading to a match
+     * (the matches and their ancestors, as for the roots) — so a search keeps the whole path open
+     * without listing the siblings that don't match. Without one, same as
+     * {@link #searchSpatialUnitsInSpatialUnit}. {@code filterDTO}'s closure and match ids are set when
+     * a search is active, for {@link #treeFlags}.
+     */
+    public Page<SpatialUnitDTO> searchChildrenTree(InstitutionDTO institutionDTO,
+                                                   SpatialUnitDTO parent,
+                                                   FilterDTO filterDTO, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId())
+                .and(SpatialUnitSpec.spatialUnitInSpatialUnit(parent.getId()))
+                .and(filterDTO.getFieldQuery().orderingSpecificationFor());
+        if (filterDTO.hasUserFilters()) {
+            Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
+            if (closure.isEmpty()) {
+                specs = specs.and((root, q, cb) -> cb.disjunction());
+            } else {
+                specs = specs.and(SpatialUnitSpec.idIn(closure));
+            }
+        }
+        specs = applyCountSort(specs, pageable.getSort());
+        Page<SpatialUnit> result = spatialUnitRepository.findAll(specs, stripCountSort(pageable));
+        Page<SpatialUnitDTO> page = result.map(spatialUnitMapper::convert);
+        hydrateRecordingUnitCountsForPage(page);
+        return page;
+    }
+
+    /**
+     * What the tree needs of a page of rows: which of them have children to show (all their children,
+     * or only those in the search's closure) and which actually matched the search.
+     */
+    public TreeFlags treeFlags(Collection<Long> pageIds, FilterDTO filterDTO) {
+        if (pageIds.isEmpty()) {
+            return new TreeFlags(Set.of(), null);
+        }
+        Collection<Long> closure = filterDTO.getAncestorClosure();
+        List<Long> parents = parentsHavingChildren(pageIds, closure != null && filterDTO.hasUserFilters() ? closure : null);
+        return new TreeFlags(new HashSet<>(parents), filterDTO.hasUserFilters() ? filterDTO.getMatchIds() : null);
+    }
+
+    /** Which of {@code pageIds} have children — only among {@code closure} when it is not null (a search narrowed the tree). */
+    private List<Long> parentsHavingChildren(Collection<Long> pageIds, Collection<Long> closure) {
+        if (closure == null) {
+            return spatialUnitRepository.findParentIdsHavingChildren(pageIds);
+        }
+        return closure.isEmpty() ? List.of() : spatialUnitRepository.findParentIdsHavingChildrenAmong(pageIds, closure);
+    }
+
+    /**
+     * The places below {@code parentId} (at any depth) that match: all of them without a search or a
+     * filter, else those among the match set {@code filterDTO} holds.
+     */
+    public long countMatchesBelow(Long parentId, FilterDTO filterDTO) {
+        if (!filterDTO.hasUserFilters()) {
+            return spatialUnitRepository.countDescendants(parentId);
+        }
+        Set<Long> matchIds = filterDTO.getMatchIds();
+        return matchIds == null || matchIds.isEmpty() ? 0L : spatialUnitRepository.countDescendantsAmong(parentId, matchIds);
+    }
+
+    /** {@code matchIds} is null when no search is active (every row then counts as a match). */
+    public record TreeFlags(Set<Long> withChildren, Set<Long> matchIds) { }
+
     public int countSearchResultsInSpatialUnit(InstitutionDTO institutionDTO,
                                                SpatialUnitDTO spatialUnitDTO,
                                                FilterDTO filterDTO) {
@@ -648,7 +729,9 @@ public class SpatialUnitService implements ArkEntityService {
             // Scope filters (e.g. "children of this spatial unit") are always part of the fixed
             // query context, even with no active user search — they must never be dropped in
             // root-mode, otherwise roots from other contexts leak into the tree.
-            Specification<SpatialUnit> scoped = base.and(scopeFilterSpecs(filterDTO));
+            // The tree is ordered by the list's sort on a form field too, at every level.
+            Specification<SpatialUnit> scoped = base.and(scopeFilterSpecs(filterDTO))
+                    .and(filterDTO.getFieldQuery().orderingSpecificationFor());
             if (filterDTO.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institutionDTO, filterDTO);
                 if (closure.isEmpty()) {

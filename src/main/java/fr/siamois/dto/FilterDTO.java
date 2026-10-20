@@ -95,7 +95,7 @@ public class FilterDTO {
     }
 
     public boolean hasUserFilters() {
-        return filter.keySet().stream().anyMatch(k -> !scopeFilterKeys.contains(k));
+        return fieldQuery.filtered() || filter.keySet().stream().anyMatch(k -> !scopeFilterKeys.contains(k));
     }
 
     /**

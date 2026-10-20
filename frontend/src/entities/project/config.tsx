@@ -1,7 +1,13 @@
 import { relationTab } from "../../panels/relationTab";
 import { deleteEntity } from "../deleteApi";
 import type { EntityTypeConfig } from "../types";
-import { duplicateProject, getProject, getProjectSiblings, listProjects, patchProject } from "./api";
+import {
+  duplicateProject,
+  getProject,
+  getProjectSiblings,
+  listProjects,
+  patchProject,
+} from "./api";
 import { projectColumns } from "./columns";
 import { ProjectCreateForm } from "./CreateForm";
 import { ProjectDetailHeader } from "./DetailHeader";
@@ -18,9 +24,15 @@ import { t } from "../../i18n";
 // entity-agnostic and shipped in phase 2. Routes mirror the real redirection-controller URLs
 // (ActionUnitController: GET /action-unit, GET /action-unit/{id}) — plain navigation, no
 // client-side router, per the plan's "React does not own global routing" rule (§7.4).
-export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail> = {
+export const projectEntityConfig: EntityTypeConfig<
+  ProjectSummary,
+  ProjectDetail
+> = {
   key: "project",
-  labels: { singular: t("entity.project.singular"), plural: t("entity.project.plural") },
+  labels: {
+    singular: t("entity.project.singular"),
+    plural: t("entity.project.plural"),
+  },
   collectionPath: "projects",
   // Matches ActionUnitPanel/ActionUnitListPanel's own AbstractPanel.icon exactly.
   icon: "bi bi-arrow-down-square",
@@ -62,6 +74,11 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
     defaultSort: "creationTime:desc",
     searchable: true,
+    // Projects have sub-projects: the list is a tree too, its children fetched from the list itself
+    // (`parent`), and so is a place's own list of projects.
+    tree: true,
+    treeChildren: "parent",
+    treeScopes: ["place:projects"],
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc for
     // why it's a reduced field set compared to newUnitDialog.xhtml.
     createForm: (ctx) => <ProjectCreateForm {...ctx} />,
@@ -73,7 +90,9 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       {
         key: "fiche",
         label: t("common.details"),
-        render: (entity, helpers) => <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />
+        ),
       },
       // actionUnitTabView.xhtml's order: détails, documents, UE, contenants, phases. The project is
       // the document's own attachment, not a link: the tab lists, creates, and has nothing to link.
@@ -135,13 +154,17 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
         key: "places",
         label: t("entity.place.plural"),
         badge: (entity) => entity.spatialContext?.length ?? 0,
-        render: (entity, helpers) => <PlacesTab entity={entity} helpers={helpers} />,
+        render: (entity, helpers) => (
+          <PlacesTab entity={entity} helpers={helpers} />
+        ),
       },
     ],
     // actionUnitPanelHeader.xhtml's content, rendered inside EntityDetailPanel's own panel header
     // (plan §7/§8, "toolbar is part of the panel header" — the header and the generic toolbar
     // share one titlebar, exactly like the real markup).
-    header: (entity, helpers) => <ProjectDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity, helpers) => (
+      <ProjectDetailHeader entity={entity} onSaved={helpers.refetch} />
+    ),
     // Derives the overview toolbar's chrome client-side, for an overview opened by
     // EntityListPanel's onOpenOverview (plan §8 phase 5) rather than seeded from MountOptions.
     // resourceUri comes straight off the API (ActionUnitPanel.ressourceUri() server-side) — never
@@ -151,7 +174,8 @@ export const projectEntityConfig: EntityTypeConfig<ProjectSummary, ProjectDetail
       title: entity.fullIdentifier || entity.name,
       bookmarked: entity.bookmarked ?? false,
     }),
-    settingsProjectId: (entity) => (entity._permissions?.canManageSettings ? entity.id : undefined),
+    settingsProjectId: (entity) =>
+      entity._permissions?.canManageSettings ? entity.id : undefined,
   },
   routes: jsfRoutes("action-unit"),
   home: {

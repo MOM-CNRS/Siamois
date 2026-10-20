@@ -247,6 +247,12 @@ public class RecordingUnitSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENTS_FILTER)));
     }
 
+    /** The root of a tree inside a context: none of its parents is in {@code scope} (see {@link HierarchySpecs#hasNoParentIn}). */
+    @NonNull
+    public static Specification<RecordingUnit> hasNoParentIn(Specification<RecordingUnit> scope) {
+        return HierarchySpecs.hasNoParentIn(RecordingUnit.class, CHILDREN_FILTER, scope);
+    }
+
     @NonNull
     public static Specification<RecordingUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);

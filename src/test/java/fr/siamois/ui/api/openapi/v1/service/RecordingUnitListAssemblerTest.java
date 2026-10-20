@@ -90,4 +90,23 @@ class RecordingUnitListAssemblerTest {
         verify(projectApiService, never()).canEditRecordingUnitsForProject(any(), anyString(), anyString());
         verify(resourceBookmarkService, never()).markBookmarked(any(), any(InstitutionDTO.class), any(List.class), any());
     }
+
+    @Test
+    void assemble_aTreePageCarriesItsMatchCountAndEachRowItsTreeFlags() {
+        RecordingUnitDTO first = ru(1L);
+        first.setTreeHasChildren(true);
+        first.setTreeMatch(false);
+        Page<RecordingUnitDTO> page = new fr.siamois.dto.TreePage<>(List.of(first), PageRequest.of(0, 10), 11L, 37L);
+        when(recordingUnitListProjectionService.build(any(), any(), any()))
+                .thenReturn(RecordingUnitListProjectionService.RecordingUnitListProjection.empty());
+        when(recordingUnitResponseMapper.convert(first)).thenReturn(new RecordingUnitResource());
+
+        RecordingUnitListResponse response = assembler.assemble(caller, page, null, null, "fr", 10, 0);
+
+        assertThat(response.getData().get(0).getHasChildren()).isTrue();
+        assertThat(response.getData().get(0).getMatch()).isFalse();
+        // The page counts its roots; the match count is the units that match.
+        assertThat(response.getMeta().total()).isEqualTo(11L);
+        assertThat(response.getMeta().matchCount()).isEqualTo(37L);
+    }
 }

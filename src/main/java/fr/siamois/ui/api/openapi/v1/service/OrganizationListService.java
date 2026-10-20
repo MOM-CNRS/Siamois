@@ -14,6 +14,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -124,29 +125,39 @@ public class OrganizationListService {
     public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
                                                      int offset, int limit, String sortParam, String search,
                                                      RecordingUnitListFilter columnFilter) {
-        return pageRecordingUnitsQuery(caller, institution, offset, limit, sortParam, search, columnFilter, FieldQuery.NONE);
+        return pageRecordingUnitsQuery(caller, institution, new ListWindow(offset, limit, sortParam, search), columnFilter, FieldQuery.NONE, false);
     }
 
     @Transactional(readOnly = true)
     public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
                                                      int offset, int limit, String sortParam, String search,
                                                      RecordingUnitListFilter columnFilter, FieldQuery fieldQuery) {
-        return pageRecordingUnitsQuery(caller, institution, offset, limit, sortParam, search, columnFilter, fieldQuery);
+        return pageRecordingUnitsQuery(caller, institution, new ListWindow(offset, limit, sortParam, search), columnFilter, fieldQuery, false);
+    }
+
+    /** {@code tree}: only the root recording units (or, with a search, the roots leading to a match), flagged for the tree view. */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> pageRecordingUnits(ProjectApiCaller caller, InstitutionDTO institution,
+                                                     ListWindow window, RecordingUnitListFilter columnFilter,
+                                                     FieldQuery fieldQuery, boolean tree) {
+        return pageRecordingUnitsQuery(caller, institution, window, columnFilter, fieldQuery, tree);
     }
 
     private Page<RecordingUnitDTO> pageRecordingUnitsQuery(ProjectApiCaller caller, InstitutionDTO institution,
-                                                     int offset, int limit, String sortParam, String search,
-                                                     RecordingUnitListFilter columnFilter, FieldQuery fieldQuery) {
-        Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort));
+                                                           ListWindow window, RecordingUnitListFilter columnFilter,
+                                                           FieldQuery fieldQuery, boolean tree) {
+        Pageable pageable = pageable(window.offset(), window.limit(),
+                ProjectApiService.sortOr(fieldQuery, window.sort(), ProjectApiService::parseRecordingUnitSort));
         // f.<key> columns are honoured here like on the project-scoped RU list (same parser), since
         // the React identifier column is filterable on both.
-        FilterDTO filter = columnFilter.toFilterDTO(search);
+        FilterDTO filter = columnFilter.toFilterDTO(window.search());
         filter.setFieldQuery(fieldQuery);
+        filter.setRootOnly(tree);
         if (!restrictToVisibleProjects(caller, institution, filter, RecordingUnitSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
         return recordingUnitService.searchRecordingUnit(institution, filter, pageable, false);
-        }
+    }
 
 
     @Transactional(readOnly = true)

@@ -29,6 +29,9 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected ActionUnitSummaryDTO actionUnit;
     protected Integer parentsCount;
     protected Integer childrenCount;
+    /** Tree view only (set by the list service): has children to show / matched the search (null outside it). */
+    protected Boolean treeHasChildren;
+    protected Boolean treeMatch;
     protected OffsetDateTime openingDate;
     protected OffsetDateTime closingDate;
     protected ConceptDTO geomorphologicalCycle;

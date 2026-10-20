@@ -8,13 +8,19 @@ import type { PanelChrome } from "../mountOptions";
 import type { EntityKey } from "./keys";
 
 // The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
-export type CreatableKind = Extract<EntityKey, "recordingUnit" | "find" | "phase" | "container" | "document" | "study">;
+export type CreatableKind = Extract<
+  EntityKey,
+  "recordingUnit" | "find" | "phase" | "container" | "document" | "study"
+>;
 
 export interface PagedResult<T> {
   data: T[];
   totalCount: number;
   limit: number;
   offset: number;
+  // The tree view only: totalCount counts the roots (it pages them); this is the number of entities
+  // that match the search and filters, each counted once.
+  matchCount?: number;
 }
 
 /**
@@ -61,6 +67,14 @@ export interface ListParams {
   // type's global list endpoint (plan: generic "related list" tab, e.g. a project's recording
   // units). See entities/listApi.ts for the URL this produces.
   scope?: ListScope;
+  // Tree view of everything below a parent (its "children" list): ask for meta.matchCount too.
+  matchCount?: boolean;
+  // The tree view's fetch (GET .../places?tree=true, .../places/{id}/children?tree=true): the roots
+  // — or, with a search or a filter, the rows leading to a match — each flagged hasChildren/match.
+  tree?: boolean;
+  // Tree view inside a scope (GET .../projects/{id}/recording-units?tree=true&parent=<id>): the children
+  // of this row, still inside the scope. Without it the children come from .../{id}/children.
+  parent?: string | number;
 }
 
 // One neighbour of an entity in its "fiche précédente/suivante" navigation — mirrors
@@ -184,7 +198,8 @@ export interface CreatePrefill {
 }
 
 // The DocumentCreateRequest list a document is linked to its entity through.
-export type DocumentLinkField = "recordingUnitIds" | "findIds" | "placeIds" | "phaseIds" | "containerIds";
+export type DocumentLinkField =
+  "recordingUnitIds" | "findIds" | "placeIds" | "phaseIds" | "containerIds";
 
 export interface CreateFormContext {
   organizationId?: number;
@@ -208,7 +223,11 @@ export interface DetailTabHelpers {
   refetch: () => void;
   organizationId?: number;
   onNavigate?: (entityType: string, id?: string | number) => void;
-  onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  onOpenOverview?: (
+    entityType: string,
+    id: string | number,
+    preview?: EntityPreview,
+  ) => void;
   overviewEntityId?: string | number;
 }
 
@@ -249,7 +268,10 @@ export interface HomeWidgetDef {
 // Handed to a row action's `run`: what it may do besides calling the API itself.
 export interface RowActionContext {
   // Opens the create dialog for `entityType`, linked through `prefill`, in `scope`'s project.
-  openCreate: (entityType: string, options: { scope?: ListScope; prefill?: CreatePrefill }) => void;
+  openCreate: (
+    entityType: string,
+    options: { scope?: ListScope; prefill?: CreatePrefill },
+  ) => void;
   // Asks for a confirmation next to the button just clicked, then runs `onAccept` (no browser dialog).
   confirm: (message: string, onAccept: () => void) => void;
   // After an action that changed something: re-fetches this list and the open fiches (their tab badges).
@@ -293,7 +315,10 @@ export interface DuplicationResult {
 // and how many exemplars. Without it, a row's "Dupliquer" just makes one copy (`api.duplicate`).
 export interface DuplicationConfig {
   load(id: string | number): Promise<DuplicationStructure>;
-  run(id: string | number, options: { copies: number; descendantIds: (string | number)[] }): Promise<DuplicationResult>;
+  run(
+    id: string | number,
+    options: { copies: number; descendantIds: (string | number)[] },
+  ): Promise<DuplicationResult>;
   // What a copy is called in the summary ("UE").
   unit: string;
   maxCopies: number;
@@ -324,11 +349,17 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     // Generic by-field-id write path the list's click-to-edit overlay (CellEditOverlay) uses —
     // optional: an entity with no schema (and therefore no dynamic, form-driven columns to edit)
     // has no need for it, and omitting it simply means the overlay never opens for that entity.
-    patchAnswers?(id: string | number, answers: Record<string, AnswerInputBody>): Promise<TDetail>;
+    patchAnswers?(
+      id: string | number,
+      answers: Record<string, AnswerInputBody>,
+    ): Promise<TDetail>;
     // The "fiche précédente/suivante" pair for this entity (plan: prev/next navigation). Optional:
     // an entity type that doesn't declare it renders no arrows at all — EntityDetailPanel checks
     // for its presence before even querying, matching how `patchAnswers` gates the edit overlay.
-    siblings?(id: string | number, ctx: { organizationId?: number }): Promise<EntitySiblings>;
+    siblings?(
+      id: string | number,
+      ctx: { organizationId?: number },
+    ): Promise<EntitySiblings>;
     // The fil d'Ariane (project → parents → fiche). Optional: an entity type without it (project,
     // place) keeps the home + « Tous les … » crumbs.
     breadcrumbs?(id: string | number): Promise<EntityBreadcrumbs>;
@@ -358,7 +389,10 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       // catalog can be parent-scoped rather than organization-scoped — RecordingUnit's
       // recording-unit-types catalog lives at GET /api/v1/projects/{id}/recording-unit-types, not
       // under the organization).
-      load: (ctx: { organizationId?: number; scope?: ListScope }) => Promise<FieldCatalog>;
+      load: (ctx: {
+        organizationId?: number;
+        scope?: ListScope;
+      }) => Promise<FieldCatalog>;
     };
     // The types catalog segment of an entity whose form is configured per type in its project
     // (GET /api/v1/projects/{id}/<typesSegment>, e.g. "recording-unit-types"): its layouts give the
@@ -367,6 +401,17 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     typesSegment?: string;
     defaultSort?: string;
     searchable: boolean;
+    // The organization-wide list can also be shown as a tree (a parent/child hierarchy of the same
+    // entity type, children at GET .../{id}/children): panels/list/useTreeRows.ts.
+    tree?: boolean;
+    // The contexts whose list of this entity can be shown as a tree too, named by listViews.treeScopeKey:
+    // "project" (a list scoped to a project: the roots are the rows none of whose parents is in it, the
+    // children come from the same list with `parent`) or "recordingUnit:children" (everything below a
+    // unit: the roots are its children, the children come from each row's own children route).
+    treeScopes?: string[];
+    // Where a row's children come from in the organization-wide tree: its own `.../{id}/children` route
+    // (the default), or this same list asked for them with `parent` (projects have no such route).
+    treeChildren?: "route" | "parent";
     // An overlay-hosted creation form for this entity's OWN list toolbar "Créer" button
     // (deliberately an overlay, not a JSF-style modal dialog — see CreateFormContext's own
     // rationale). Optional: an entity that doesn't supply this keeps EntityListPanel's older
@@ -379,7 +424,11 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     createProjectKind?: CreatableKind;
     // What a « Nouveau » from a reference field pre-fills from the entity being edited (a find
     // created from a recording unit's field is created ON that recording unit).
-    createPrefillFrom?: (edited: { entityType?: string; entityId?: string | number; entityLabel?: string }) => CreatePrefill | undefined;
+    createPrefillFrom?: (edited: {
+      entityType?: string;
+      entityId?: string | number;
+      entityLabel?: string;
+    }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
   };

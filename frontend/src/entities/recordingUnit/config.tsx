@@ -6,13 +6,23 @@ import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
 import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { scopeProjectId } from "../scope";
-import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUnit, getRecordingUnitStructure, listRecordingUnits, patchRecordingUnitAnswers } from "./api";
+import {
+  duplicateRecordingUnit,
+  duplicateRecordingUnitStructure,
+  getRecordingUnit,
+  getRecordingUnitStructure,
+  listRecordingUnits,
+  patchRecordingUnitAnswers,
+} from "./api";
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { RelationGraphTab } from "./graph/RelationGraphTab";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { getOrganizationRecordingUnitTypes, getRecordingUnitTypes } from "./recordingUnitTypes";
+import {
+  getOrganizationRecordingUnitTypes,
+  getRecordingUnitTypes,
+} from "./recordingUnitTypes";
 import { jsfRoutes } from "../routes";
 import { countCardWidgets } from "../countCard";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
@@ -35,9 +45,16 @@ function projectScope(ru: RecordingUnitSummary): ListScope | undefined {
 // see FicheTab.tsx/DetailHeader.tsx for what's deliberately still absent and why). Prev/next is
 // scoped to the RU's own project (GET /recording-units/{id}/siblings), not an organization the way
 // Project's is.
-export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, RecordingUnitDetail> = {
+export const recordingUnitEntityConfig: EntityTypeConfig<
+  RecordingUnitSummary,
+  RecordingUnitDetail
+> = {
   key: "recordingUnit",
-  labels: { singular: t("entity.recordingUnit.singular"), plural: t("entity.recordingUnit.plural"), all: t("entity.recordingUnit.all") },
+  labels: {
+    singular: t("entity.recordingUnit.singular"),
+    plural: t("entity.recordingUnit.plural"),
+    all: t("entity.recordingUnit.all"),
+  },
   collectionPath: "recording-units",
   // Matches RecordingUnitTableDefinitionFactory's own identifierCol iconClass.
   icon: "bi bi-pencil-square",
@@ -68,7 +85,8 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         const projectId = scopeProjectId(scope);
         let types;
         if (projectId != null) types = await getRecordingUnitTypes(projectId);
-        else if (!scope && organizationId != null) types = await getOrganizationRecordingUnitTypes(organizationId);
+        else if (!scope && organizationId != null)
+          types = await getOrganizationRecordingUnitTypes(organizationId);
         else return { fields: {}, columns: [] };
         return { fields: types.fields, columns: types.tableColumns };
       },
@@ -76,6 +94,10 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
     typesSegment: "recording-unit-types",
     defaultSort: "creationTime:desc",
     searchable: true,
+    tree: true,
+    // A project's list of units is a tree too (roots: the units with no parent in the project), and so is the
+    // list of everything below a unit.
+    treeScopes: ["project", "recordingUnit:children"],
     // Overlay-hosted creation form (migration plan follow-up) — see CreateForm.tsx's own doc.
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
@@ -86,19 +108,31 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         key: "new-parent",
         icon: "bi bi-node-plus-fill rotate-minus90",
         tooltip: t("row.newParentRU"),
-        run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { child: recordingUnitRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("recordingUnit", {
+            scope: projectScope(row),
+            prefill: { child: recordingUnitRef(row) },
+          }),
       },
       {
         key: "new-child",
         icon: "bi bi-node-plus-fill rotate-90",
         tooltip: t("row.newChildRU"),
-        run: (row, ctx) => ctx.openCreate("recordingUnit", { scope: projectScope(row), prefill: { parent: recordingUnitRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("recordingUnit", {
+            scope: projectScope(row),
+            prefill: { parent: recordingUnitRef(row) },
+          }),
       },
       {
         key: "new-find",
         icon: "bi bi-bucket",
         tooltip: t("row.newFind"),
-        run: (row, ctx) => ctx.openCreate("find", { scope: projectScope(row), prefill: { recordingUnit: recordingUnitRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("find", {
+            scope: projectScope(row),
+            prefill: { recordingUnit: recordingUnitRef(row) },
+          }),
       },
     ],
   },
@@ -108,7 +142,13 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         key: "fiche",
         label: t("common.details"),
         render: (entity, helpers) => (
-          <SchemaFicheTab entity={entity} entityType="recordingUnit" typesSegment="recording-unit-types" save={patchRecordingUnitAnswers} onSaved={helpers.refetch} />
+          <SchemaFicheTab
+            entity={entity}
+            entityType="recordingUnit"
+            typesSegment="recording-unit-types"
+            save={patchRecordingUnitAnswers}
+            onSaved={helpers.refetch}
+          />
         ),
       },
       // JSF's hierarchy tab, reduced to what the recording unit contains (its direct children).
@@ -130,13 +170,23 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         scopeEntityType: "recordingUnit",
         path: "finds",
         projectId: (entity) => entity.projectId,
-        createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
+        createPrefill: (entity) => ({
+          recordingUnit: recordingUnitRef(entity),
+        }),
         badge: (entity) => entity._counts?.finds ?? 0,
       }),
       {
         key: "graph",
         label: t("recordingUnit.tab.graph"),
-        render: (entity, helpers) => <RelationGraphTab entity={entity} organizationId={helpers.organizationId} onNavigate={helpers.onNavigate} onOpenOverview={helpers.onOpenOverview} onChanged={helpers.refetch} />,
+        render: (entity, helpers) => (
+          <RelationGraphTab
+            entity={entity}
+            organizationId={helpers.organizationId}
+            onNavigate={helpers.onNavigate}
+            onOpenOverview={helpers.onOpenOverview}
+            onChanged={helpers.refetch}
+          />
+        ),
       },
       documentsTab<RecordingUnitDetail>({
         scopeEntityType: "recordingUnit",
@@ -147,10 +197,15 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         entityRef: recordingUnitRef,
       }),
     ],
-    header: (entity, helpers) => <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity, helpers) => (
+      <RecordingUnitDetailHeader entity={entity} onSaved={helpers.refetch} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.fullIdentifier),
     // The titlebar's "Créer" makes a sibling in the same project.
-    createScope: (entity) => (entity.projectId ? { entityType: "project", id: entity.projectId } : undefined),
+    createScope: (entity) =>
+      entity.projectId
+        ? { entityType: "project", id: entity.projectId }
+        : undefined,
   },
   routes: jsfRoutes("recording-unit"),
   home: {

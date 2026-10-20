@@ -274,14 +274,16 @@ public class FieldQueryService {
             parts.add(filter(target, e.getKey(), e.getValue()));
         }
         boolean ordered = false;
+        Specification<E> ordering = null;
         if (query.sortFieldId() != null) {
             Target target = requireTarget(entityType, query.sortFieldId());
-            parts.add(orderBy(target, query.sortFieldId(), query.ascending(), query.lang()));
+            ordering = orderBy(target, query.sortFieldId(), query.ascending(), query.lang());
+            parts.add(ordering);
             ordered = true;
         }
         Specification<E> spec = (root, q, cb) -> null;
         for (Specification<E> part : parts) spec = spec.and(part);
-        return new FieldQuery(spec, ordered);
+        return new FieldQuery(spec, ordered, !query.filters().isEmpty(), ordering);
     }
 
     /**

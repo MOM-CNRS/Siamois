@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -1106,6 +1108,108 @@ class ProjectApiServiceMutationTest {
                 .isEqualTo(Sort.Direction.DESC);
     }
 
+    // ---- pageAccessibleProjectsTree ----
+
+    private fr.siamois.domain.services.actionunit.ProjectTreeQuery treeQueryAsked(TreeRequest tree, fr.siamois.dto.FieldQuery fieldQuery,
+                                                                                    String sort) {
+        when(actionUnitService.findAccessibleProjectsTree(any()))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 10), 0, 0));
+
+        service.pageAccessibleProjectsTree(caller, 10L, new ListWindow(20, 10, sort, "fouille"),
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fieldQuery, tree);
+
+        ArgumentCaptor<fr.siamois.domain.services.actionunit.ProjectTreeQuery> asked =
+                ArgumentCaptor.forClass(fr.siamois.domain.services.actionunit.ProjectTreeQuery.class);
+        verify(actionUnitService).findAccessibleProjectsTree(asked.capture());
+        return asked.getValue();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_forwardsWhoAsksAndWhatIsAsked() {
+        var query = treeQueryAsked(TreeRequest.tree(8L).inSpatialContext(5L), fr.siamois.dto.FieldQuery.NONE, "name:desc");
+
+        assertThat(query.personId()).isEqualTo(1L);
+        assertThat(query.accessibleInstitutionIds()).isEqualTo(SCOPE);
+        assertThat(query.organizationId()).isEqualTo(10L);
+        assertThat(query.parentId()).isEqualTo(8L);
+        assertThat(query.spatialContextId()).isEqualTo(5L);
+        assertThat(query.selection().search()).isEqualTo("fouille");
+        assertThat(query.selection().recordingUnitCountOrder()).isNull();
+        Pageable pageable = query.selection().pageable();
+        assertThat(pageable.getPageNumber()).isEqualTo(2);
+        assertThat(pageable.getPageSize()).isEqualTo(10);
+        assertThat(pageable.getSort().getOrderFor("name").getDirection()).isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_theRecordingUnitCountSortIsASpecificationNotAPageableSort() {
+        var query = treeQueryAsked(TreeRequest.tree(null), fr.siamois.dto.FieldQuery.NONE, "recordingUnitCount:desc");
+
+        assertThat(query.selection().recordingUnitCountOrder()).isEqualTo(Sort.Direction.DESC);
+        assertThat(query.selection().pageable().getSort().getOrderFor("recordingUnitCount")).isNull();
+        assertThat(query.selection().pageable().getSort().getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_aSortOnAFormFieldLeavesThePageableUnsorted() {
+        fr.siamois.dto.FieldQuery ordered = new fr.siamois.dto.FieldQuery((r, q, c) -> null, true, false, (r, q, c) -> null);
+
+        var query = treeQueryAsked(TreeRequest.tree(null), ordered, "name:asc");
+
+        assertThat(query.selection().pageable().getSort().isSorted()).isFalse();
+        assertThat(query.selection().recordingUnitCountOrder()).isNull();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_anOrganizationOutOfScopeIsRefused() {
+        ProjectApiCaller outsider = new ProjectApiCaller(personDto, Set.of(99L), List.of());
+
+        assertThatThrownBy(() -> service.pageAccessibleProjectsTree(outsider, 10L, new ListWindow(0, 10, "name:asc", null),
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, TreeRequest.tree(null)))
+                .isInstanceOf(ResponseStatusException.class);
+
+        verifyNoInteractions(actionUnitService);
+    }
+
+    // ---- pageRecordingUnitChildren ----
+
+    private RecordingUnitDTO viewableUnit() {
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(2L);
+        ru.setCreatedByInstitution(projectWithInstitution().getCreatedByInstitution());
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(SCOPE), isNull())).thenReturn(ru);
+        when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        return ru;
+    }
+
+    @Test
+    void pageRecordingUnitChildren_withTree_asksForTheTreeChildrenAndTheMatchCount() {
+        RecordingUnitDTO ru = viewableUnit();
+        Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
+        when(recordingUnitService.findChildrenOfTree(eq(ru.getCreatedByInstitution()), eq(2L), eq(200), eq(0), any(Sort.class),
+                any(FilterDTO.class), eq(true))).thenReturn(expected);
+
+        ProjectApiService.ScopedRecordingUnitPage result = service.pageRecordingUnitChildren(
+                caller, "2", new ListWindow(0, 200, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.tree(null).withMatchCount(true));
+
+        assertThat(result.page()).isSameAs(expected);
+        verify(recordingUnitService, never()).findChildrenOf(any(), anyInt(), anyInt(), any(Sort.class), any(FilterDTO.class));
+    }
+
+    @Test
+    void pageRecordingUnitChildren_withoutTree_listsTheDirectChildren() {
+        viewableUnit();
+        Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
+        when(recordingUnitService.findChildrenOf(eq(2L), eq(200), eq(0), any(Sort.class), any(FilterDTO.class))).thenReturn(expected);
+
+        ProjectApiService.ScopedRecordingUnitPage result = service.pageRecordingUnitChildren(
+                caller, "2", new ListWindow(0, 200, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.OFF);
+
+        assertThat(result.page()).isSameAs(expected);
+    }
+
     @Test
     void pageAccessibleProjects_appendsStableIdTiebreaker() {
         when(actionUnitService.findAccessibleProjects(any(), any(), any(), any(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
@@ -1234,6 +1338,33 @@ class ProjectApiServiceMutationTest {
         assertThat(dto.valueOfAsString("fullIdentifier")).isEqualTo("UE1");
         assertThat(dto.containsColumn("type")).isTrue();
         assertThat(dto.valueAsIdListOf("type")).containsExactly(12L);
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_withTree_asksForTheTreeInsideTheProjectAndItsChildren() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        fr.siamois.dto.TreePage<RecordingUnitDTO> expected = new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 10), 0, 0);
+        when(recordingUnitService.findTreeInScope(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class), eq(55L)))
+                .thenReturn(expected);
+
+        Page<RecordingUnitDTO> result = service.pageRecordingUnitsForProject(
+                caller, "7", new ListWindow(0, 10, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.tree(55L));
+
+        assertThat(result).isSameAs(expected);
+        verify(recordingUnitService, never()).findByActionUnitId(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class));
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_parentWithoutTreeIsABadRequest() {
+        assertThatThrownBy(() -> service.pageRecordingUnitsForProject(
+                caller, "7", new ListWindow(0, 10, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                new TreeRequest(false, 55L, null, false)))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+        verifyNoInteractions(recordingUnitService);
     }
 
     @Test

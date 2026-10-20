@@ -37,7 +37,11 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
+import fr.siamois.domain.services.actionunit.ProjectTreeQuery;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
@@ -267,6 +271,34 @@ public class ProjectApiService {
                 countDirection,
                 filter,
                 fieldQuery);
+    }
+
+    /**
+     * The tree view of the accessible projects, or with {@code tree.parentId()} one project's accessible
+     * children, or with {@code tree.spatialContextId()} those of one place (its "Projets" tab): a
+     * {@link TreePage} (its flags, its match count) — see {@link ActionUnitService#findAccessibleProjectsTree}.
+     */
+    public TreePage<AccessibleProjectForApi> pageAccessibleProjectsTree(
+            ProjectApiCaller caller,
+            Long organizationId,
+            ListWindow window,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery,
+            TreeRequest tree) {
+        assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
+        int pageNumber = window.offset() / window.limit();
+        Sort.Direction countDirection = fieldQuery.ordered() ? null : recordingUnitCountSortDirection(window.sort());
+        Pageable pageable;
+        if (fieldQuery.ordered()) {
+            pageable = PageRequest.of(pageNumber, window.limit());
+        } else {
+            pageable = PageRequest.of(pageNumber, window.limit(),
+                    countDirection != null ? Sort.by(Sort.Direction.ASC, "id") : parseProjectSort(window.sort()));
+        }
+        return actionUnitService.findAccessibleProjectsTree(new ProjectTreeQuery(
+                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId,
+                tree.spatialContextId(), tree.parentId(),
+                new ProjectTreeQuery.Selection(window.search(), filter, fieldQuery, pageable, countDirection)));
     }
 
     /**
@@ -1066,14 +1098,37 @@ public class ProjectApiService {
             String search,
             RecordingUnitListFilter filter,
             FieldQuery fieldQuery) {
+        return pageRecordingUnitsForProject(caller, projectIdOrKey, new ListWindow(offset, limit, sortParam, search), filter, fieldQuery, TreeRequest.OFF);
+    }
+
+    /**
+     * The project's recording units, or with {@code tree} their tree inside the project: the units none
+     * of whose parents belongs to the project, or — with {@code tree.parentId()} — the children of that unit
+     * that belong to it ({@link RecordingUnitService#findTreeInScope}).
+     */
+    public Page<RecordingUnitDTO> pageRecordingUnitsForProject(
+            ProjectApiCaller caller,
+            String projectIdOrKey,
+            ListWindow window,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery,
+            TreeRequest tree) {
+        if (tree.parentId() != null && !tree.enabled()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "parent n'a de sens qu'avec tree=true");
+        }
         // Authorization first, same order pageAccessibleProjects/requireAccessibleProject follow
         // everywhere else in this service — a caller with no access to the project must never learn
         // anything about it, including whether its sort/filter params would otherwise be valid.
         AccessibleProjectForApi row = requireAccessibleProject(caller, projectIdOrKey);
-        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
-        FilterDTO filterDTO = filter.toFilterDTO(search);
+        Sort sort = sortOr(fieldQuery, window.sort(), ProjectApiService::parseRecordingUnitSort);
+        FilterDTO filterDTO = filter.toFilterDTO(window.search());
         filterDTO.setFieldQuery(fieldQuery);
-        return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), limit, offset, sort, filterDTO);
+        if (tree.enabled()) {
+            return recordingUnitService.findTreeInScope(
+                    RecordingUnitSpec.recordingUnitInActionUnit(row.actionUnit().getId()),
+                    window.limit(), window.offset(), sort, filterDTO, tree.parentId());
+        }
+        return recordingUnitService.findByActionUnitId(row.actionUnit().getId(), window.limit(), window.offset(), sort, filterDTO);
     }
 
     /**
@@ -1682,14 +1737,31 @@ public class ProjectApiService {
             String search,
             RecordingUnitListFilter filter,
             FieldQuery fieldQuery) {
+        return pageRecordingUnitChildren(caller, recordingUnitKey, new ListWindow(offset, limit, sortParam, search), filter, fieldQuery, TreeRequest.OFF);
+    }
+
+    /**
+     * {@code tree}: the tree view's children — with a search or a filter, only those leading to a match; with
+     * {@code tree.withMatchCount()}, also the number of units below that match (see
+     * {@link RecordingUnitService#findChildrenOfTree}).
+     */
+    public ScopedRecordingUnitPage pageRecordingUnitChildren(
+            ProjectApiCaller caller,
+            String recordingUnitKey,
+            ListWindow window,
+            RecordingUnitListFilter filter,
+            FieldQuery fieldQuery,
+            TreeRequest tree) {
         RecordingUnitDTO parent = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, parent);
-        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseRecordingUnitSort);
-        FilterDTO filterDTO = filter.toFilterDTO(search);
+        Sort sort = sortOr(fieldQuery, window.sort(), ProjectApiService::parseRecordingUnitSort);
+        FilterDTO filterDTO = filter.toFilterDTO(window.search());
         filterDTO.setFieldQuery(fieldQuery);
-        Page<RecordingUnitDTO> page = recordingUnitService.findChildrenOf(
-                parent.getId(), limit, offset, sort, filterDTO);
+        Page<RecordingUnitDTO> page = tree.enabled()
+                ? recordingUnitService.findChildrenOfTree(parent.getCreatedByInstitution(), parent.getId(),
+                        window.limit(), window.offset(), sort, filterDTO, tree.withMatchCount())
+                : recordingUnitService.findChildrenOf(parent.getId(), window.limit(), window.offset(), sort, filterDTO);
         return new ScopedRecordingUnitPage(page, parent.getActionUnit() != null ? parent.getActionUnit().getId() : null);
     }
 

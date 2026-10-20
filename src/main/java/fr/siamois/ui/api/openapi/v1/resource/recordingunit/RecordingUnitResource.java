@@ -30,6 +30,14 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier imple
     private String fullIdentifier;
     private String projectId;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Mode arbre seulement : l'UE a des enfants à afficher (tous, ou ceux menant à une correspondance pendant une recherche).")
+    private Boolean hasChildren;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "Mode arbre seulement : l'UE correspond à la recherche (faux = simple ancêtre d'une correspondance).")
+    private Boolean match;
+
     // Organization-wide list only (GET /api/v1/<collection>?organizationId=…): the row's project,
     // for the list's "Projet" column. Absent everywhere else (every row there shares one project).
     @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
@@ -41,10 +42,15 @@ public class ProjectListAssembler {
                     ProjectResourcePermissions permissions = permissionsByActionUnitId.getOrDefault(
                             id, ProjectResourcePermissions.of(false));
                     boolean bookmarked = bookmarkedUris.contains(ProjectApiService.actionUnitResourceUri(id));
-                    return projectResponseMapper.toResource(row, lang, permissions, bookmarked,
+                    ProjectResource resource = projectResponseMapper.toResource(row, lang, permissions, bookmarked,
                             projection.resolvedLabels(), projection.answersFor(id));
+                    if (rows instanceof TreePage<AccessibleProjectForApi> treePage) {
+                        resource.setHasChildren(treePage.hasChildren(id));
+                        resource.setMatch(treePage.isMatch(id));
+                    }
+                    return resource;
                 })
                 .toList();
-        return new ProjectListResponse(resources, new ListMeta(rows.getTotalElements(), limit, (long) offset));
+        return new ProjectListResponse(resources, ListMeta.of(rows, limit, offset));
     }
 }

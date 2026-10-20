@@ -29,6 +29,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/projects/{id}/recording-units")
@@ -76,6 +78,13 @@ public class ProjectRecordingUnitsControllerApi {
                     + "(colonnes visibles par défaut de la liste), ou une liste d'ids de champs séparés par "
                     + "des virgules. Absent : pas de clé answers, la liste reste au coût d'avant.")
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre dans le projet : les UE du projet dont aucun parent n'est dans le projet "
+                    + "(avec une recherche ou un filtre, celles qui mènent à une correspondance) ; chaque UE porte "
+                    + "hasChildren et match, et meta.matchCount compte les UE qui correspondent.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : l'id d'une UE, pour avoir ses enfants qui sont dans le projet "
+                    + "(restreints à ceux menant à une correspondance quand la liste est filtrée).")
+            @RequestParam(required = false) Long parent,
             @Parameter(hidden = true)
             @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -87,7 +96,7 @@ public class ProjectRecordingUnitsControllerApi {
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         FieldQuery fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
         Page<RecordingUnitDTO> page = projectApiService.pageRecordingUnitsForProject(
-                caller, id, offset, limit, sort, search, filter, fieldQuery);
+                caller, id, new ListWindow(offset, limit, sort, search), filter, fieldQuery, TreeRequest.of(tree, parent));
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
@@ -107,6 +116,8 @@ public class ProjectRecordingUnitsControllerApi {
                     RecordingUnitResource resource = recordingUnitResourceMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
+                    resource.setHasChildren(dto.getTreeHasChildren());
+                    resource.setMatch(dto.getTreeMatch());
                     return resource;
                 })
                 .toList();
@@ -115,7 +126,7 @@ public class ProjectRecordingUnitsControllerApi {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
 
-        ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
+        ListMeta meta = ListMeta.of(page, limit, offset);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(page.getTotalElements()))
                 .body(new RecordingUnitListResponse(resources, meta));

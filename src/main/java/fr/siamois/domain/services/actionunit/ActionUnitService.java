@@ -23,6 +23,8 @@ import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.domain.services.tree.HierarchyTreeQuery;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -861,8 +863,11 @@ public class ActionUnitService implements ArkEntityService {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
         }
 
-        Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
+        return toAccessibleProjects(actionUnitRepository.findAll(spec, pageable), pageable);
+    }
 
+    /** A page of projects with what the API lists of each: its recording-unit and child counts, its forms warmed. */
+    private Page<AccessibleProjectForApi> toAccessibleProjects(Page<ActionUnit> page, Pageable pageable) {
         List<Long> ids = page.getContent().stream().map(ActionUnit::getId).toList();
         warmFormCollections(ids);
         Map<Long, Long> ruByProject = ids.isEmpty()
@@ -880,6 +885,99 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
 
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    /**
+     * The tree view of the accessible projects: the projects none of whose parents is accessible (a project
+     * under one the person cannot see is a root for them), or with {@code parentId} that project's accessible
+     * children. A search or a filter keeps the matches and their accessible ancestors
+     * ({@link HierarchyTreeQuery}); the page carries the tree flags of its rows and the match count.
+     */
+    @Transactional(readOnly = true)
+    public TreePage<AccessibleProjectForApi> findAccessibleProjectsTree(ProjectTreeQuery query) {
+        ProjectTreeQuery.Selection selection = query.selection();
+        Pageable pageable = selection.pageable();
+        Set<Long> institutions = query.accessibleInstitutionIds();
+        if (institutions == null || institutions.isEmpty()) {
+            return new TreePage<>(List.of(), pageable, 0, 0);
+        }
+        Collection<Long> institutionScope = query.organizationId() != null ? List.of(query.organizationId()) : institutions;
+        Specification<ActionUnit> scope = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(query.personId()));
+        if (query.spatialContextId() != null) {
+            scope = scope.and(ActionUnitSpec.actionUnitInSpatialUnit(query.spatialContextId()));
+        }
+
+        FieldQuery fieldQuery = selection.fieldQuery();
+        String search = selection.search();
+        ProjectListFilter filter = selection.filter();
+        boolean narrowed = (search != null && !search.isBlank())
+                || (filter != null && !filter.isEmpty())
+                || fieldQuery.filtered();
+        Specification<ActionUnit> matches = narrowed ? matchesOf(search, filter, fieldQuery) : null;
+        Specification<ActionUnit> ordering = Specification.where(fieldQuery.<ActionUnit>orderingSpecificationFor());
+        if (selection.recordingUnitCountOrder() != null) {
+            ordering = ordering.and(ActionUnitSpec.orderByRecordingUnitCount(selection.recordingUnitCountOrder()));
+        }
+        return new HierarchyTreeQuery<>(actionUnitHierarchy()).page(scope, matches, ordering, query.parentId(), pageable);
+    }
+
+    private static Specification<ActionUnit> matchesOf(String search, ProjectListFilter filter, FieldQuery fieldQuery) {
+        Specification<ActionUnit> matches = Specification.where(ActionUnitSpec.projectSearch(search));
+        if (filter != null && !filter.isEmpty()) {
+            matches = matches.and(ActionUnitFilterSpec.fromFilter(filter));
+        }
+        return matches.and(fieldQuery.specificationFor());
+    }
+
+    /** Projects as {@link HierarchyTreeQuery} sees a hierarchical type. */
+    private HierarchyTreeQuery.Hierarchy<ActionUnit, AccessibleProjectForApi> actionUnitHierarchy() {
+        return new HierarchyTreeQuery.Hierarchy<>() {
+            @Override
+            public Specification<ActionUnit> hasParent(long parentId) {
+                return ActionUnitSpec.hasParent(parentId);
+            }
+
+            @Override
+            public Specification<ActionUnit> hasNoParentIn(Specification<ActionUnit> scope) {
+                return ActionUnitSpec.hasNoParentIn(scope);
+            }
+
+            @Override
+            public Specification<ActionUnit> idIn(Collection<Long> ids) {
+                return ActionUnitSpec.idIn(ids);
+            }
+
+            @Override
+            public List<Object[]> parentEdges(Collection<Long> childIds) {
+                return actionUnitRepository.findParentEdges(childIds);
+            }
+
+            @Override
+            public List<Object[]> childEdges(Collection<Long> parentIds) {
+                return actionUnitRepository.findChildEdges(parentIds);
+            }
+
+            @Override
+            public List<Long> ids(Specification<ActionUnit> specs) {
+                return actionUnitRepository.findAll(specs).stream().map(ActionUnit::getId).toList();
+            }
+
+            @Override
+            public long count(Specification<ActionUnit> specs) {
+                return actionUnitRepository.count(specs);
+            }
+
+            @Override
+            public Page<AccessibleProjectForApi> page(Specification<ActionUnit> specs, Pageable page) {
+                return toAccessibleProjects(actionUnitRepository.findAll(specs, page), page);
+            }
+
+            @Override
+            public Long idOf(AccessibleProjectForApi row) {
+                return row.actionUnit().getId();
+            }
+        };
     }
 
     /**

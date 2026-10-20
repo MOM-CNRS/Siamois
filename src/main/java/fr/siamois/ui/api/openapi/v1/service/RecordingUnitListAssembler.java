@@ -44,12 +44,14 @@ public class RecordingUnitListAssembler {
                     RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
+                    resource.setHasChildren(dto.getTreeHasChildren());
+                    resource.setMatch(dto.getTreeMatch());
                     return resource;
                 })
                 .toList();
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
-        return new RecordingUnitListResponse(resources, new ListMeta(page.getTotalElements(), limit, (long) offset));
+        return new RecordingUnitListResponse(resources, ListMeta.of(page, limit, offset));
     }
 }

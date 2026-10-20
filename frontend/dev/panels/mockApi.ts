@@ -185,12 +185,15 @@ function list(data: unknown[], url: URL) {
   const offset = Number(url.searchParams.get("offset") ?? 0);
   const limit = Number(url.searchParams.get("limit") ?? 20);
   const fields = (url.searchParams.get("fields") ?? "").split(",").filter(Boolean);
-  return { data: data.slice(offset, offset + limit).map((r) => project(r, fields)), meta: { total: data.length, limit, offset } };
+  // The tree view (?tree=true): every other row has children to show.
+  const tree = url.searchParams.get("tree") === "true";
+  const rows = data.slice(offset, offset + limit).map((r, i) => ({ ...project(r, fields), ...(tree ? { hasChildren: i % 2 === 0, ...(url.searchParams.get("search") ? { match: i % 2 === 1 } : {}) } : {}) }));
+  return { data: rows, meta: { total: data.length, limit, offset } };
 }
 
 const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => unknown][] = [
   // Writes of the relation graph: accepted, not applied (the harness has no store behind it).
-  [/^\/api\/v1\/recording-units\/\d+\/(parents|children|stratigraphic-relationships)(\/\d+)?$/, (_m, _u, init) => (init?.method && init.method !== "GET" ? undefined : { data: [] })],
+  [/^\/api\/v1\/recording-units\/\d+\/(parents|children|stratigraphic-relationships)(\/\d+)?$/, (_m, url, init) => (init?.method && init.method !== "GET" ? undefined : url.searchParams.get("tree") === "true" ? list(recordingUnits.slice(0, 2), url) : { data: [] })],
   [/^\/api\/v1\/organizations\/\d+\/concepts$/, () => ({ data: ["coupe", "recouvre", "s'appuie sur", "égal à"].map((label, i) => ({ id: String(160 + i), resolvedLabel: label })) })],
   [/^\/api\/v1\/recording-units\/(\d+)\/relation-graph$/, (m) => relationGraph(Number(m[1]))],
   [/^\/api\/v1\/recording-units\/(\d+)\/relations$/, (m, url) => relationList(Number(m[1]), url)],
