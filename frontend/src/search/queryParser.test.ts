@@ -62,3 +62,21 @@ describe("tailKeyword", () => {
     expect(tailKeyword("mur")).toBeUndefined();
   });
 });
+
+describe("custom keywords", () => {
+  const keywords = [{ key: "type", names: ["type", "typologie"] }];
+
+  it("recognises only the keywords it is given", () => {
+    expect(parseQuery("type:mur projet:ABC", keywords)).toEqual({
+      text: "projet:ABC",
+      filters: [{ key: "type", value: "mur" }],
+    });
+    expect(parseQuery("type:mur").filters).toEqual([]);
+  });
+
+  it("completes and tails the given keywords", () => {
+    expect(keywordCompletion("typo", keywords)?.key).toBe("type");
+    expect(tailKeyword("mur type:fo", keywords)?.partial).toBe("fo");
+    expect(tailKeyword("mur type:fo")).toBeUndefined();
+  });
+});

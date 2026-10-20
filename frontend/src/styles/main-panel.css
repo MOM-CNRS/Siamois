@@ -2741,3 +2741,8 @@ div#search-bar .sia-search {
 .home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
 .home-data-access-error { color: var(--red-500, #c0392b); }
 .home-data-access-remove { margin-left: auto; }
+
+/* The list's filters, shown between the field of the list search overlay and its results. */
+.sia-search-chips {
+  padding: 0.4rem 0.75rem 0;
+}

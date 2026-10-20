@@ -364,6 +364,8 @@ export const fr = {
   "search.empty": "Aucun résultat pour « {q} »",
   "search.error": "La recherche a échoué",
   "search.viewAll": "Voir les {n} {label}",
+  "list.search.apply": "Appliquer les {n} résultats",
+  "list.search.keyword": "Filtrer sur « {label} »",
   "search.keyword.projet": "Restreindre à un projet (identifiant ou nom)",
 } as const;
 

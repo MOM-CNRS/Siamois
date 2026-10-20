@@ -22,9 +22,11 @@ export interface ParsedQuery {
   filters: SearchFilter[];
 }
 
-function keywordOf(name: string): SearchKeyword | undefined {
+// Every function below takes the keywords it recognises: the header search knows `projet`, a list's
+// search knows the keys of its own filterable columns.
+function keywordOf(name: string, keywords: readonly SearchKeyword[]): SearchKeyword | undefined {
   const lower = name.toLowerCase();
-  return SEARCH_KEYWORDS.find((keyword) => keyword.names.includes(lower));
+  return keywords.find((keyword) => keyword.names.includes(lower));
 }
 
 /** Splits on whitespace, keeping a double-quoted run (after a `key:`) together. */
@@ -47,12 +49,12 @@ function tokenize(input: string): string[] {
   return tokens;
 }
 
-export function parseQuery(input: string): ParsedQuery {
+export function parseQuery(input: string, keywords: readonly SearchKeyword[] = SEARCH_KEYWORDS): ParsedQuery {
   const words: string[] = [];
   const filters: SearchFilter[] = [];
   for (const token of tokenize(input)) {
     const colon = token.indexOf(":");
-    const keyword = colon > 0 ? keywordOf(token.slice(0, colon)) : undefined;
+    const keyword = colon > 0 ? keywordOf(token.slice(0, colon), keywords) : undefined;
     const value = colon > 0 ? token.slice(colon + 1).replace(/"/g, "").trim() : "";
     if (keyword && value) filters.push({ key: keyword.key, value });
     else words.push(token);
@@ -66,10 +68,13 @@ export function formatFilter(filter: SearchFilter): string {
 }
 
 /** The keyword a half-typed last word starts (`proj` → projet), to offer it as a completion. */
-export function keywordCompletion(input: string): SearchKeyword | undefined {
+export function keywordCompletion(
+  input: string,
+  keywords: readonly SearchKeyword[] = SEARCH_KEYWORDS,
+): SearchKeyword | undefined {
   const last = input.split(/\s+/).pop()?.toLowerCase() ?? "";
   if (!last || last.includes(":")) return undefined;
-  return SEARCH_KEYWORDS.find((keyword) => keyword.names.some((name) => name.startsWith(last) && name !== last));
+  return keywords.find((keyword) => keyword.names.some((name) => name.startsWith(last) && name !== last));
 }
 
 export interface TailKeyword {
@@ -84,9 +89,9 @@ export interface TailKeyword {
  * The `keyword:partial` the user is typing right now (the input ends on it, no space after): what the
  * search bar completes with suggestions. A quoted value may contain spaces until its quote closes.
  */
-export function tailKeyword(input: string): TailKeyword | undefined {
+export function tailKeyword(input: string, keywords: readonly SearchKeyword[] = SEARCH_KEYWORDS): TailKeyword | undefined {
   const match = /(?:^|\s)([^\s:"]+):("[^"]*|[^\s"]*)$/.exec(input);
-  const keyword = match ? keywordOf(match[1]) : undefined;
+  const keyword = match ? keywordOf(match[1], keywords) : undefined;
   if (!match || !keyword) return undefined;
   const start = match.index + match[0].length - match[1].length - 1 - match[2].length;
   return { start, key: keyword.key, partial: match[2].replace(/"/g, "") };

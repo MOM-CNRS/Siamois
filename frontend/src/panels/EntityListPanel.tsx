@@ -35,7 +35,7 @@ import { useNotify } from "../notify/NotifyProvider";
 import { t } from "../i18n";
 import { useFicheTabsActions } from "./ficheTabsContext";
 import { listPath } from "../navigation/paths";
-import { ListSearchBox } from "./list/ListSearchBox";
+import { ListSearchOverlayBox } from "./list/ListSearchOverlay";
 import { ListToolbar } from "./list/ListToolbar";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
 import { useListColumns } from "./list/useListColumns";
@@ -144,7 +144,7 @@ function ActionMessage({
  * entities/<type>/config.tsx supplies pinned columns via `config.list.columns` and, optionally, a
  * dynamic column source via `config.list.schema`. This component only wires the pieces together:
  * list/useEntityListData (what is fetched), list/useListColumns (the columns), list/ListToolbar,
- * list/EntityTableSettings, list/ListSearchBox and list/EntityTable (what is drawn).
+ * list/EntityTableSettings, list/ListSearchOverlay and list/EntityTable (what is drawn).
  */
 export function EntityListPanel(props: EntityListPanelProps) {
   // Each view keeps its own state in the pane store: moving between views is not a change of the list
@@ -459,9 +459,21 @@ function EntityListPanelBody({
                 }
               />
               {config.list.searchable && (
-                <ListSearchBox
+                <ListSearchOverlayBox
+                  entityType={entityType}
+                  config={config}
+                  params={params}
+                  filters={state.filters}
+                  filterSpecs={filterSpecs}
+                  optionsByKey={filterOptionsByKey}
                   value={state.search ?? ""}
-                  onSearch={setSearch}
+                  onApply={(search, filters, options) => {
+                    setFilters(filters);
+                    setSearch(search);
+                    if (Object.keys(options).length > 0) setFilterOptionsByKey((byKey) => ({ ...byKey, ...options }));
+                  }}
+                  onFilterRemove={(key) => onFilterChange(key, undefined)}
+                  onOpenRow={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id)}
                 />
               )}
               {/* The filters narrow the same result set as the search box, so they sit right after
