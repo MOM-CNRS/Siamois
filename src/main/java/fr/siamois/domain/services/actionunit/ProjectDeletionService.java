@@ -93,9 +93,9 @@ public class ProjectDeletionService {
 
     /** Counts that must be zero: links of project content to things that are not part of the project. */
     private static final List<Cross> OTHER_BLOCKERS = List.of(
-            new Cross("des mouvements de mobiliers", "specimen_movement", "fk_specimen_id", SP, "fk_specimen_id", SP),
+            new Cross("des mouvements de mobiliers", "specimen_movement", C_SPECIMEN, SP, C_SPECIMEN, SP),
             new Cross("des groupes de mobiliers", "specimen_group_attribution",
-                    "fk_specimen_id", SP, "fk_specimen_id", SP)
+                    C_SPECIMEN, SP, C_SPECIMEN, SP)
     );
 
     private record LinkDeletion(String table, String column, String set) {
@@ -105,25 +105,25 @@ public class ProjectDeletionService {
     }
 
     private static final List<LinkDeletion> LINK_DELETIONS = List.of(
-            new LinkDeletion("recording_unit_hierarchy", "fk_parent_id", RU),
-            new LinkDeletion("recording_unit_hierarchy", "fk_child_id", RU),
-            new LinkDeletion("stratigraphic_relationship", "fk_recording_unit_1_id", RU),
-            new LinkDeletion("stratigraphic_relationship", "fk_recording_unit_2_id", RU),
-            new LinkDeletion("recording_unit_contributors", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_phase", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_document", "fk_recording_unit_id", RU),
-            new LinkDeletion("recording_unit_on_the_fly_fields", "fk_recording_unit_id", RU),
-            new LinkDeletion("study_recording_unit", "fk_recording_unit_id", RU),
-            new LinkDeletion("specimen_hierarchy", "fk_parent_id", SP),
-            new LinkDeletion("specimen_hierarchy", "fk_child_id", SP),
-            new LinkDeletion("specimen_document", "fk_specimen_id", SP),
-            new LinkDeletion("specimen_container", "fk_specimen_id", SP),
-            new LinkDeletion("specimen_phase", "fk_specimen_id", SP),
-            new LinkDeletion("study_specimen", "fk_specimen_id", SP),
-            new LinkDeletion("phase_document", "fk_phase_id", PH),
-            new LinkDeletion("container_document", "fk_container_id", CO),
-            new LinkDeletion("study_document", "fk_study_id", ST),
-            new LinkDeletion("spatial_unit_document", "fk_document_id", DOC)
+            new LinkDeletion(T_RU_HIERARCHY, C_PARENT, RU),
+            new LinkDeletion(T_RU_HIERARCHY, C_CHILD, RU),
+            new LinkDeletion(T_STRATI, "fk_recording_unit_1_id", RU),
+            new LinkDeletion(T_STRATI, "fk_recording_unit_2_id", RU),
+            new LinkDeletion("recording_unit_contributors", C_RU, RU),
+            new LinkDeletion("recording_unit_phase", C_RU, RU),
+            new LinkDeletion("recording_unit_document", C_RU, RU),
+            new LinkDeletion("recording_unit_on_the_fly_fields", C_RU, RU),
+            new LinkDeletion("study_recording_unit", C_RU, RU),
+            new LinkDeletion(T_SP_HIERARCHY, C_PARENT, SP),
+            new LinkDeletion(T_SP_HIERARCHY, C_CHILD, SP),
+            new LinkDeletion("specimen_document", C_SPECIMEN, SP),
+            new LinkDeletion("specimen_container", C_SPECIMEN, SP),
+            new LinkDeletion("specimen_phase", C_SPECIMEN, SP),
+            new LinkDeletion("study_specimen", C_SPECIMEN, SP),
+            new LinkDeletion("phase_document", C_PHASE, PH),
+            new LinkDeletion("container_document", C_CONTAINER, CO),
+            new LinkDeletion("study_document", C_STUDY, ST),
+            new LinkDeletion("spatial_unit_document", C_DOCUMENT, DOC)
     );
 
     @PersistenceContext
