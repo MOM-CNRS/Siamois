@@ -156,8 +156,20 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String METHOD_FIELD_CODE = "SIARU.TYPE";
 
+    // The type vocabulary of the relationships a unit has with each side. SIARU.STRATI, which was
+    // one list for all three, is still read (import, units already typed) and stands in for each of
+    // them until the thesaurus defines its own.
     @FieldCode
     public static final String STRATI_FIELD_CODE = "SIARU.STRATI";
+
+    @FieldCode
+    public static final String ANTERIOR_FIELD_CODE = "SIARU.STRATI.ANTERIOR";
+
+    @FieldCode
+    public static final String POSTERIOR_FIELD_CODE = "SIARU.STRATI.POSTERIOR";
+
+    @FieldCode
+    public static final String SYNCHRONOUS_FIELD_CODE = "SIARU.STRATI.SYNCHRONOUS";
 
     @FieldCode
     public static final String EROSION_SHAPE_FIELD_CODE = "SIARU.EROSIONSHAPE";

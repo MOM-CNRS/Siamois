@@ -173,7 +173,7 @@ class ProjectApiServiceMutationTest {
 
         ActionUnitDTO saved = new ActionUnitDTO();
         saved.setId(77L);
-        when(actionUnitService.save(any(), any(), eq(typeDto))).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), eq(typeDto), any())).thenReturn(saved);
         AccessibleProjectForApi row = new AccessibleProjectForApi(saved, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("77", SCOPE)).thenReturn(row);
 
@@ -189,7 +189,7 @@ class ProjectApiServiceMutationTest {
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
-        when(actionUnitService.save(any(), any(), any()))
+        when(actionUnitService.save(any(), any(), any(), any()))
                 .thenThrow(new ActionUnitAlreadyExistsException("identifier", "exists"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
@@ -643,29 +643,16 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void deleteProject_withRecordingUnits_throws409() {
-        ActionUnitDTO au = projectWithInstitution();
-        au.setId(7L);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-
-        assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
-    }
-
-    @Test
-    void deleteProject_success_deletesWhenEmpty() {
+    void deleteProject_success_deletesWithContent() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         service.deleteProject(caller, "7", "fr");
 
-        verify(actionUnitService).deleteProjectWhenEmpty(7L);
+        verify(actionUnitService).deleteProjectWithContent(7L);
     }
 
     @Test
@@ -674,8 +661,8 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWhenEmpty(7L);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
+        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWithContent(7L);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1046,7 +1033,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(false);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1059,7 +1046,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
@@ -1285,7 +1272,7 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void createProject_blankNameOrIdentifierOrMissingType_throws400() {
+    void createProject_blankNameOrMissingType_throws400() {
         when(institutionService.findById(10L)).thenReturn(institution);
         when(profilePermissionService.hasActionUnitCreatePermission(any()))
                 .thenReturn(true);
@@ -1296,13 +1283,6 @@ class ProjectApiServiceMutationTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("name est obligatoire");
-
-        ProjectCreateRequest blankId = validCreateRequest();
-        blankId.setIdentifier("");
-        assertThatThrownBy(() -> service.createProject(caller, blankId, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
-                .isEqualTo("identifier est obligatoire");
 
         ProjectCreateRequest missingType = validCreateRequest();
         missingType.setTypeId(null);
@@ -1320,14 +1300,14 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any()))
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
 
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
     }
 
     @Test
@@ -1336,7 +1316,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
 
         service.deleteRecordingUnit(caller, 5L, "fr");
 
@@ -1445,5 +1425,45 @@ class ProjectApiServiceMutationTest {
         long result = service.countFindsForProject(row);
 
         assertThat(result).isEqualTo(5L);
+    }
+
+    @Test
+    void canDeleteEntitiesForProject_followsTheDeleteEntitiesRight() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(true);
+
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isTrue();
+
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(false);
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isFalse();
+    }
+
+    @Test
+    void permissionsFor_oneProject_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(profilePermissionService.hasActionUnitWritePermission(any(PersonDTO.class), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(PersonDTO.class), any(), any())).thenReturn(false);
+
+        var permissions = service.permissionsFor(caller, row);
+
+        assertThat(permissions.canEdit()).isTrue();
+        assertThat(permissions.canDelete()).isFalse();
+    }
+
+    @Test
+    void permissionsFor_aPage_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(profilePermissionService.actionUnitIdsWithWritePermission(any(), any())).thenReturn(java.util.Set.of(7L));
+        when(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(any(), any())).thenReturn(java.util.Set.of());
+
+        var permissions = service.permissionsFor(caller, List.of(new AccessibleProjectForApi(au, 0L, 0L)));
+
+        assertThat(permissions.get(7L).canEdit()).isTrue();
+        assertThat(permissions.get(7L).canDelete()).isFalse();
     }
 }

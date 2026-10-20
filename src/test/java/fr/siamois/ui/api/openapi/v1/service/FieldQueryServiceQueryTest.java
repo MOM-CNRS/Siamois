@@ -32,6 +32,8 @@ import jakarta.persistence.metamodel.Type;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -350,15 +352,16 @@ class FieldQueryServiceQueryTest {
         badRequest(RecordingUnit.class, sort(true));
     }
 
-    @Test
-    void stratigraphyIsRelatedThroughEitherSide() {
-        field(new CustomFieldSelectOneActionUnit(), true, "stratigraphicRelationships");
+    @ParameterizedTest
+    @ValueSource(strings = {"anteriorRelationships", "posteriorRelationships", "synchronousRelationships"})
+    void eachSideOfTheStratigraphyIsFilteredAndSortedOnItsOwn(String binding) {
+        field(new CustomFieldSelectOneActionUnit(), true, binding);
 
         run(build(RecordingUnit.class, filter(values("3"))));
         run(build(RecordingUnit.class, sort(true)));
 
         verify(cb, atLeastOnce()).exists(any());
-        verify(cb, atLeastOnce()).sum(any(jakarta.persistence.criteria.Expression.class), any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).count(any());
     }
 
     @Test

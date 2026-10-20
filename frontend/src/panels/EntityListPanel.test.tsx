@@ -1998,4 +1998,22 @@ describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
     expect(document.body.querySelector(".cell-edit-overlay-incoherent")?.textContent).toContain("ne s'applique plus");
     expect(document.body.querySelector(".cell-edit-overlay-clear")).toBeTruthy();
   });
+
+  it("starts on the search it was opened with, and follows a new one", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const render = (nonce: number, search: string) =>
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityListPanel entityType="fake-entity" seed={{ nonce, search }} />
+          </QueryClientProvider>,
+        );
+      });
+    render(1, "mur");
+    await flushDebounce();
+    expect(lastPageCall()).toMatchObject({ search: "mur" });
+    render(2, "four");
+    await flushDebounce();
+    expect(lastPageCall()).toMatchObject({ search: "four" });
+  });
 });

@@ -15,6 +15,7 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -70,6 +71,7 @@ import java.util.stream.Collectors;
 public class ActionUnitService implements ArkEntityService {
 
     private final ActionUnitRepository actionUnitRepository;
+    private final ProjectDeletionService projectDeletionService;
     private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
     private final ActionUnitMapper actionUnitMapper;
@@ -85,7 +87,8 @@ public class ActionUnitService implements ArkEntityService {
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
     private final InstitutionService institutionService;
-    private final DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    private final ProjectIdentifierService projectIdentifierService;
+    private final List<ProjectTemplateApplier> templateAppliers;
 
 
     /**
@@ -243,25 +246,69 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, null);
+    }
+
+    /**
+     * Save an ActionUnit with a transaction. A new project with no identifier is numbered automatically
+     * ({@link ProjectIdentifierService}), and is configured from the given template.
+     *
+     * @param templateId the project template to configure a new project from, null or {@code empty} for none
+     */
+    @Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
+    public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId)
+            throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, templateId);
+    }
+
+    // Shared by both transactional save entry points: a call through `this` from one to the other would skip the proxy.
+    private ActionUnitDTO saveWithTemplate(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept,
+                                           String templateId) throws ActionUnitAlreadyExistsException {
         boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
+        if (isCreation && (actionUnit.getIdentifier() == null || actionUnit.getIdentifier().isBlank())) {
+            actionUnit.setIdentifier(projectIdentifierService.generate(info).value());
+            actionUnit.setFullIdentifier(null);
+        }
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         if (isCreation) {
             assignRoles(info, savedDTO);
-            seedIdentifierConfigAfterCommit(info, savedDTO.getId());
+            applyTemplate(info, templateId, savedDTO.getId());
         }
         return savedDTO;
     }
 
-    private void seedIdentifierConfigAfterCommit(UserInfo info, Long projectId) {
+    /** Whether a project of the institution already carries this name (names are unique per institution). */
+    @Transactional(readOnly = true)
+    public boolean projectNameExists(Long institutionId, String name) {
+        return actionUnitRepository.findByNameAndCreatedByInstitutionId(name, institutionId).isPresent();
+    }
+
+    /** The identifier the next project of the institution would get, without reserving it. */
+    @Transactional(readOnly = true)
+    public Optional<String> previewNextProjectIdentifier(UserInfo info) {
+        return projectIdentifierService.preview(info);
+    }
+
+    private void applyTemplate(UserInfo info, String templateId, Long projectId) {
+        ProjectTemplateApplier applier = templateAppliers.stream()
+                .filter(candidate -> candidate.supports(templateId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown project template: " + templateId));
+        if (applier.transactional()) {
+            applier.apply(info, templateId, projectId);
+            return;
+        }
+        // the default configuration is seeded after commit and never cancels the creation
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+            applier.apply(info, templateId, projectId);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+                applier.apply(info, templateId, projectId);
             }
         });
     }
@@ -981,8 +1028,9 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun document, aucun enfant dans la hiérarchie.
-     * Nettoie les lignes dépendantes pour respecter les contraintes de clés étrangères.
+     * Supprime une unité d'action (projet) et tout son contenu (unités d'enregistrement, mobiliers, documents,
+     * phases, contenants, études, configuration du projet, membres).
+     * Refuse s'il existe des sous-projets ou si du contenu est lié à un autre projet.
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
      */
@@ -994,31 +1042,33 @@ public class ActionUnitService implements ArkEntityService {
             }),
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
-    public void deleteProjectWhenEmpty(long actionUnitId) {
+    @Transactional
+    public void deleteProjectWithContent(long actionUnitId) {
         UserInfo info = ExecutionContextHolder.get();
-        boolean allowed = info != null
-                && (profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
-                || profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
-        if (!allowed) {
+        if (!profilePermissionService.hasDeleteProjectPermission(info, actionUnitId)) {
             throw new ForbiddenOperationException("You are not allowed to delete this action unit");
-        }
-        if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
-        }
-        if (documentRepository.countByActionUnitId(actionUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le projet contient des documents");
         }
         Map<Long, Long> childrenByProject = countingMap(
                 actionUnitRepository.countChildActionUnitsByParentIds(List.of(actionUnitId)));
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
+        ActionUnit project = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + actionUnitId));
+        Long projectArkId = project.getArk() != null ? project.getArk().getInternalId() : null;
+
+        List<Long> arkIds = new ArrayList<>(projectDeletionService.deleteContent(actionUnitId));
+        if (projectArkId != null) {
+            arkIds.add(projectArkId);
+        }
+
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);
+        projectDeletionService.deleteArks(arkIds);
     }
 
     /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */

@@ -113,7 +113,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     public List<ConfigurableTable> listTables() {
-        return List.of(ConfigurableTable.values());
+        return ConfigurableTable.projectScopedTables();
     }
 
     @Override

@@ -46,7 +46,8 @@ function isResolvedResource(value: unknown): value is ResolvedResourceLike {
  * A qualified reference's label: the relationship's concept before the other unit ("coupe US 12"),
  * a "?" after it when the relationship is uncertain.
  */
-function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
+/** A stratigraphic unit as its chip reads: « coupe US 5 », with a « ? » when the relation is uncertain. */
+export function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
   if (!qualifier) return label;
   const concept = qualifier.concept?.label;
   return `${concept ? `${concept} ` : ""}${label}${qualifier.uncertain ? " ?" : ""}`;
@@ -120,6 +121,14 @@ export function refColor(resourceType: string): string {
   return REF_KINDS[resourceType]?.color ?? DEFAULT_REF_COLOR;
 }
 
+/** The custom properties a `.ref-chip` takes its colours from, by what it points at. */
+export function refChipStyle(resourceType: string): CSSProperties {
+  return {
+    "--ref-chip-color": refColor(resourceType),
+    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
+  } as CSSProperties;
+}
+
 /**
  * A read-only reference: a light outlined chip in its type's colour — the same token the
  * reference picker shows in edit mode, minus the remove button. With `onOpen`, a reference to an
@@ -141,10 +150,7 @@ function RefChip({
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
   const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
-  const style = {
-    "--ref-chip-color": refColor(resourceType),
-    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
-  } as CSSProperties;
+  const style = refChipStyle(resourceType);
 
   function open(e: SyntheticEvent) {
     e.stopPropagation();

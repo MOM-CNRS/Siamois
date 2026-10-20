@@ -1,4 +1,5 @@
 import type { EntityRef, EntityTypeConfig, ListScope } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
@@ -9,6 +10,7 @@ import { duplicateRecordingUnit, duplicateRecordingUnitStructure, getRecordingUn
 import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
+import { RelationGraphTab } from "./graph/RelationGraphTab";
 import { SchemaFicheTab } from "../../components/SchemaFicheTab";
 import { getOrganizationRecordingUnitTypes, getRecordingUnitTypes } from "./recordingUnitTypes";
 import { jsfRoutes } from "../routes";
@@ -41,6 +43,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
   icon: "bi bi-pencil-square",
   panelClass: "recording-unit-panel",
   api: {
+    delete: (id) => deleteEntity("recording-units", id),
     siblings: (id) => fetchSiblings("recording-units", id),
     breadcrumbs: (id) => fetchBreadcrumbs("recording-units", id),
     get: getRecordingUnit,
@@ -131,6 +134,11 @@ export const recordingUnitEntityConfig: EntityTypeConfig<RecordingUnitSummary, R
         createPrefill: (entity) => ({ recordingUnit: recordingUnitRef(entity) }),
         badge: (entity) => entity._counts?.finds ?? 0,
       }),
+      {
+        key: "graph",
+        label: t("recordingUnit.tab.graph"),
+        render: (entity, helpers) => <RelationGraphTab entity={entity} organizationId={helpers.organizationId} onNavigate={helpers.onNavigate} onOpenOverview={helpers.onOpenOverview} onChanged={helpers.refetch} />,
+      },
       documentsTab<RecordingUnitDetail>({
         scopeEntityType: "recordingUnit",
         segment: "recording-units",

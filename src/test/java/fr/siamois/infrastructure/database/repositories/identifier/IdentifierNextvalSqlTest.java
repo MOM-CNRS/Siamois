@@ -38,4 +38,15 @@ class IdentifierNextvalSqlTest {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
+
+    @Test
+    void institutionFunction_shouldAllocateThroughOneAtomicUpsertOnTheInstitutionScope() throws IOException {
+        try (var stream = getClass().getResourceAsStream("/pgplsql/institution_identifier_nextval.sql")) {
+            assertThat(stream).isNotNull();
+            String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(sql).contains("ON CONFLICT (fk_institution_id, fk_form_config_id, canonical_key)");
+            assertThat(sql).contains("GREATEST(institution_identifier_counter.counter, p_min_code) + 1");
+            assertThat(sql).contains("RETURNING counter - 1");
+        }
+    }
 }

@@ -51,6 +51,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class StudyService {
 
+    private final fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
     private final StudyRepository studyRepository;
     private final RecordingUnitRepository recordingUnitRepository;
     private final SpecimenRepository specimenRepository;
@@ -202,5 +204,29 @@ public class StudyService {
                         .findFirstByActionUnitIdOrderByCreationTimeDesc(actionUnit.getId())
                         .map(studyMapper::convert)
                         .orElseThrow(() -> new ActionUnitNotFoundException("No study found for project " + actionUnit.getId())));
+    }
+
+    /**
+     * Supprime l'étude qui n'a aucune relation avec une autre entité.
+     *
+     * @throws IllegalStateException si l'étude a encore des relations
+     */
+    public void deleteById(long id) {
+        Study entity = studyRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Étude introuvable: " + id));
+
+        UserInfo info = ExecutionContextHolder.get();
+        Long actionUnitId = entity.getActionUnit() != null ? entity.getActionUnit().getId() : null;
+        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
+            throw new ForbiddenOperationException("You are not allowed to delete this study");
+        }
+
+        fr.siamois.domain.services.EntityLinkGuard.Kind kind = fr.siamois.domain.services.EntityLinkGuard.Kind.STUDY;
+        entityLinkGuard.requireNoLinks(kind, id, "l'étude");
+
+        StudyDTO idOnly = new StudyDTO();
+        idOnly.setId(id);
+        customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);
+        studyRepository.delete(entity);
     }
 }

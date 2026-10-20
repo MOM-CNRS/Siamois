@@ -199,7 +199,8 @@ public class DocumentOpenApiService {
         resource.setAnswers(multiValueAnswers.shapeOne(Document.class, document.getId(), answers, null,
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
-                .withValidate(profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId())));
+                .withValidate(profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId()))
+                .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, document.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
     }

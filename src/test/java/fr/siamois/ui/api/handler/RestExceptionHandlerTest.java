@@ -125,4 +125,13 @@ class RestExceptionHandlerTest {
         assertThat(response.getBody().correlationId()).isNotBlank();
         assertThat(response.getBody().message()).doesNotContain("secret");
     }
+
+    @Test
+    void forbiddenOperation_returns403NotAnInternalError() {
+        ResponseEntity<ApiError> response = handler.forbiddenOperation(
+                new fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException("no"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody().error()).isEqualTo("forbidden");
+    }
 }

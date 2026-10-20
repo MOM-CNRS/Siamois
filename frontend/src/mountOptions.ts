@@ -12,7 +12,9 @@ export interface PanelActions {
   // Receives the click, so the creation form can open in an overlay next to what was clicked.
   create?: (event?: SyntheticEvent) => void;
   duplicate?: () => void;
-  // Project only: opens its settings page (a JSF redirect, through PanelBridge.openProjectSettings).
+  // Permanently deletes the displayed entity (opens the confirmation first).
+  delete?: () => void;
+  // Project only: opens its settings page (a navigation to the JSF settings route).
   settings?: () => void;
   // Main panel titlebar only, and only in focus mode (an overview entity promoted to main):
   // puts it back in the overview and restores the previous main — legacy focus.xhtml's
@@ -56,8 +58,6 @@ export interface PanelBridge {
   // 5), for F5 and the history — fire-and-forget.
   setOverview?: (entityType: string, id: string | number) => void;
   closeOverview?: () => void;
-  // NavBean#redirectToActionUnitSettingsFromRequest: a server-side mode switch + redirect.
-  openProjectSettings?: (projectId: string | number) => void;
   // FocusViewBean#setMainFromRequest: the main pane moved client-side to this resource path
   // ("/action-unit/12", "/action-unit") — the server follows it and records it in the history
   // sidebar, like a page load would. Fire-and-forget.
@@ -136,7 +136,6 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
   const action = (key: string) => resolveAction(dataset[key]);
   const setOverview = action("actionSetOverview");
   const setMain = action("actionSetMain");
-  const openProjectSettings = action("actionOpenProjectSettings");
 
   return {
     panelIndex: text("panelIndex"),
@@ -176,7 +175,6 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
       closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
       setMain: setMain && ((path) => setMain({ path })),
       refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
-      openProjectSettings: openProjectSettings && ((projectId) => openProjectSettings({ projectId })),
     },
   };
 }

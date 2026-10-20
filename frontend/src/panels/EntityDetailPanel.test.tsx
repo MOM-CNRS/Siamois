@@ -8,8 +8,13 @@ import type { EntityTypeConfig } from "../entities/types";
 import { EntityDetailPanel } from "./EntityDetailPanel";
 import { recallListContext, rememberListContext } from "./listContext";
 import { WriteModeProvider } from "./writeMode";
+import { onEntityDeleted } from "./entityDeleted";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
+import { openProjectSettings } from "./projectSettings";
+
+vi.mock("./projectSettings", () => ({ openProjectSettings: vi.fn() }));
+const mockedOpenProjectSettings = vi.mocked(openProjectSettings);
 
 // Generic-component test (plan §8 phase 6), registered against a throwaway fake entity type —
 // entities/project/config.tsx and FicheTab.tsx already have their own coverage. This exercises
@@ -50,6 +55,21 @@ const fakeConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
 };
 
 registerEntityType(fakeConfig);
+
+// A second entity with two tabs, to see which one a preview opens the fiche on.
+const tabbedConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+  ...fakeConfig,
+  key: "fake-tabbed-entity",
+  collectionPath: "fake-tabbed-entities",
+  detail: {
+    tabs: [
+      { key: "fiche", label: "Fiche", render: () => <span data-testid="fiche-body">fiche body</span> },
+      { key: "graph", label: "Graph", render: () => <span data-testid="graph-body">graph body</span> },
+    ],
+  },
+  routes: { list: "/tabbed", detail: (id) => `/tabbed/${id}` },
+};
+registerEntityType(tabbedConfig);
 
 let container: HTMLDivElement;
 let root: Root;
@@ -564,16 +584,17 @@ describe("EntityDetailPanel entity actions", () => {
   interface ActionEntity {
     id: string;
     name: string;
-    _permissions?: { canEdit: boolean; canManageSettings?: boolean };
+    _permissions?: { canEdit: boolean; canManageSettings?: boolean; canDelete?: boolean };
   }
   const actionGet = vi.fn<(id: string | number) => Promise<ActionEntity>>();
   const duplicateMock = vi.fn<(id: string | number) => Promise<ActionEntity>>();
+  const deleteMock = vi.fn<(id: string | number) => Promise<void>>();
   const actionConfig: EntityTypeConfig<ActionEntity, ActionEntity> = {
     key: "fake-action-entity",
     labels: { singular: "Action", plural: "Actions" },
     collectionPath: "fake-action-entities",
     icon: "bi bi-question",
-    api: { list: vi.fn(), get: actionGet, duplicate: duplicateMock },
+    api: { list: vi.fn(), get: actionGet, duplicate: duplicateMock, delete: deleteMock },
     list: {
       columns: [],
       searchable: false,
@@ -611,6 +632,47 @@ describe("EntityDetailPanel entity actions", () => {
   beforeEach(() => {
     actionGet.mockReset().mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true } });
     duplicateMock.mockReset().mockResolvedValue({ id: "8", name: "Seven (copie)" });
+    deleteMock.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("offers the bin only with the delete right, in write mode — not with the edit right alone", async () => {
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeNull();
+
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false, canDelete: true } });
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: false });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeNull();
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    renderPanel({ writeMode: true });
+    await flush();
+    expect(container.querySelector(".bi-trash")).toBeTruthy();
+  });
+
+  it("deletes the fiche after the confirmation and announces it", async () => {
+    actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: true, canDelete: true } });
+    const announced = vi.fn();
+    const stop = onEntityDeleted(announced);
+    renderPanel({ writeMode: true });
+    await flush();
+
+    await act(async () => {
+      container.querySelector(".bi-trash")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
+      .find((b) => b.textContent?.includes("Supprimer définitivement"))!;
+    await act(async () => confirm.click());
+    await flush();
+
+    expect(deleteMock).toHaveBeenCalledWith("7");
+    expect(announced).toHaveBeenCalledWith("fake-action-entity", "7");
+    stop();
   });
 
   it("offers create and duplicate only in write mode with edit rights", async () => {
@@ -668,22 +730,21 @@ describe("EntityDetailPanel entity actions", () => {
     expect(container.querySelector("button.status-button.complete")).toBeTruthy();
   });
 
-  it("shows settings only when allowed, and opens them through the bridge with the entity's id", async () => {
-    const openProjectSettings = vi.fn();
-    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+  it("shows settings only when allowed, and opens them with the entity's id", async () => {
+    renderPanel({ writeMode: false });
     await flush();
     expect(container.querySelector(".bi-gear")).toBeNull();
 
     actionGet.mockResolvedValue({ id: "7", name: "Seven", _permissions: { canEdit: false, canManageSettings: true } });
     act(() => root.unmount());
     root = createRoot(container);
-    renderPanel({ writeMode: false, bridge: { openProjectSettings } });
+    renderPanel({ writeMode: false });
     await flush();
 
     await act(async () => {
       container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(openProjectSettings).toHaveBeenCalledWith("7");
+    expect(mockedOpenProjectSettings).toHaveBeenCalledWith("7");
   });
 });
 
@@ -767,5 +828,24 @@ describe("EntityDetailPanel titlebar creation", () => {
 
     expect(document.body.querySelector(".p-overlaypanel .fake-create-form")).toBeTruthy();
     expect(document.body.querySelector(".p-dialog")).toBeNull();
+  });
+
+  it("opens the fiche on the tab its preview names, and on its first one otherwise", async () => {
+    getMock.mockResolvedValue({ id: "1", name: "First" });
+    const renderPanel = (preview?: { label: string; tab?: string }) => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityDetailPanel entityType="fake-tabbed-entity" entityId="1" preview={preview} />
+          </QueryClientProvider>,
+        );
+      });
+    };
+
+    renderPanel({ label: "First", tab: "graph" });
+    await flush();
+    expect(container.querySelector("[data-testid=graph-body]")).not.toBeNull();
+    expect(container.querySelector("[data-testid=fiche-body]")).toBeNull();
   });
 });

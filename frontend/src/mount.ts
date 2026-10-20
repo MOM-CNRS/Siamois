@@ -18,6 +18,7 @@ import { documentEntityConfig } from "./entities/document/config";
 import { studyEntityConfig } from "./entities/study/config";
 import { MountContractError, parseMountOptions, type ActionResolver, type MountOptions } from "./mountOptions";
 import { App } from "./App";
+import { mountAllSearchBars } from "./search/mountSearchBar";
 
 registerDefaultFieldRenderers();
 // One registerEntityType call per entity module (plan §3/§8 phase 4) — the next entity to
@@ -104,3 +105,6 @@ window.SiamoisMainPanel = { mount, mountFromDataset, unmount };
 for (const container of queued) {
   mountFromDataset(container);
 }
+
+// The header search bar (topbar.xhtml) is its own root, outside the panels' tree.
+mountAllSearchBars();

@@ -5,13 +5,13 @@ import { TabView, TabPanel } from "primereact/tabview";
 import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
 import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
+import { openProjectSettings } from "./projectSettings";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
 import { EntityBreadcrumbTrail } from "../components/EntityBreadcrumbTrail";
 import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
-import { useBridge } from "./bridge";
 import { PaneStateScope, usePaneState } from "./paneState";
 import { useCanEdit, useWriteMode } from "./writeMode";
 import { ValidationStatusButton } from "../components/ValidationStatusButton";
@@ -22,6 +22,7 @@ import { siblingsQuery } from "./listSiblings";
 import type { EntityPreview, EntitySibling } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
 import { t } from "../i18n";
+import { useDeleteEntity } from "./useDeleteEntity";
 
 export type { EntityPreview };
 
@@ -113,6 +114,14 @@ export function EntityDetailPanel({
     setRenderedForType(entityType);
     setActiveTabIndex(0);
   }
+  // A preview naming a tab (the relation graph opens a unit on its own graph) opens the fiche on it —
+  // each time a preview arrives, not only on the first mount; same render-time adjustment.
+  const [appliedPreview, setAppliedPreview] = useState<EntityPreview | undefined>(undefined);
+  if (preview !== appliedPreview) {
+    setAppliedPreview(preview);
+    const tabIndex = preview?.tab ? (config?.detail.tabs.findIndex((tab) => tab.key === preview.tab) ?? -1) : -1;
+    if (tabIndex >= 0) setActiveTabIndex(tabIndex);
+  }
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.entityDetail(entityType, entityId),
@@ -144,7 +153,6 @@ export function EntityDetailPanel({
   // stay above the early returns below.
   const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
   const writeMode = useWriteMode();
-  const bridge = useBridge();
   const queryClient = useQueryClient();
   // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
   // cache, so the jump usually lands on data that is already there — no skeleton at all.
@@ -182,6 +190,8 @@ export function EntityDetailPanel({
       (onOpenOverview ?? onNavigate)?.(entityType, copy.id);
     },
   });
+
+  const deletion = useDeleteEntity(entityType, config, organizationId);
 
   // The main pane's fiche names the browser tab after its entity (focus.xhtml's <title> only knows
   // the entity JSF rendered). The overview's fiche doesn't.
@@ -276,8 +286,14 @@ export function EntityDetailPanel({
     duplicate:
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
-      settingsProjectId != null && bridge.openProjectSettings
-        ? () => bridge.openProjectSettings!(settingsProjectId)
+      settingsProjectId != null ? () => openProjectSettings(settingsProjectId) : undefined,
+    delete:
+      writeMode && deletion.canDelete && (data as { _permissions?: { canDelete?: boolean } })._permissions?.canDelete === true
+        ? () =>
+            deletion.requestDelete({
+              id: entityId,
+              name: String((data as { name?: unknown }).name ?? config.detail.chrome?.(data).title ?? entityId),
+            })
         : undefined,
   };
   const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
@@ -352,6 +368,7 @@ export function EntityDetailPanel({
           (onOpenOverview ?? onNavigate)?.(entityType, id);
         }}
       />
+      {deletion.dialog}
       <TabView
         className="entity-detail-panel-tabs"
         // One line, scrolled with ‹ › when the tabs don't fit (the narrow overview pane).

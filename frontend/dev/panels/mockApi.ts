@@ -14,7 +14,9 @@ const FIELDS: Record<string, unknown> = {
 // defaults; this harness has neither): every list row carries a preview and a total (MultiValue).
   "-319": { id: "-319", resourceType: "fields", label: "Parents", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: true, valueBinding: "parents", icon: "bi bi-pencil-square", query: { sortable: true, filterOp: "in" } },
   "-320": { id: "-320", resourceType: "fields", label: "Contient", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: true, valueBinding: "children", icon: "bi bi-pencil-square", query: { sortable: true, filterOp: "in" } },
-  "-327": { id: "-327", resourceType: "fields", label: "Relations stratigraphiques", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "stratigraphicRelationships", icon: "bi bi-layers", readOnly: true, query: { sortable: true, filterOp: "in" } },
+  "-328": { id: "-328", resourceType: "fields", label: "Antérieur", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "anteriorRelationships", icon: "bi bi-layers", readOnly: true, query: { sortable: true, filterOp: "in" } },
+  "-329": { id: "-329", resourceType: "fields", label: "Postérieur", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "posteriorRelationships", icon: "bi bi-layers", readOnly: true, query: { sortable: true, filterOp: "in" } },
+  "-330": { id: "-330", resourceType: "fields", label: "Synchrone", answerType: "SELECT_MULTIPLE_STRATIGRAPHY", isSystemField: true, valueBinding: "synchronousRelationships", icon: "bi bi-layers", readOnly: true, query: { sortable: true, filterOp: "in" } },
   "-326": { id: "-326", resourceType: "fields", label: "Mobilier", answerType: "SELECT_MULTIPLE_SPECIMEN", isSystemField: true, valueBinding: "specimenList", icon: "bi bi-bucket", readOnly: true, query: { sortable: true, filterOp: "in" } },
 };
 
@@ -22,15 +24,17 @@ const RELATION_COLUMNS = [
   { columnId: "fullIdentifier", fieldId: "-2", visible: true, order: 0 },
   { columnId: "isPartOf", fieldId: "-319", visible: true, order: 1 },
   { columnId: "contains", fieldId: "-320", visible: true, order: 2 },
-  { columnId: "relationships", fieldId: "-327", visible: true, order: 3 },
-  { columnId: "specimen", fieldId: "-326", visible: true, order: 4 },
+  { columnId: "anterior", fieldId: "-328", visible: true, order: 3 },
+  { columnId: "posterior", fieldId: "-329", visible: true, order: 4 },
+  { columnId: "synchronous", fieldId: "-330", visible: true, order: 5 },
+  { columnId: "specimen", fieldId: "-326", visible: true, order: 6 },
 ];
 
 const usRef = (n: number) => ({ resourceId: String(100 + n), resourceType: "recording-units", label: `2026-OA1000-US${n + 1}` });
 const findRef = (n: number) => ({ resourceId: String(500 + n), resourceType: "finds", label: `2026-OA1000-M${n + 1}` });
 const stratiRef = (n: number) => ({
   ...usRef(n),
-  qualifier: { concept: { resourceId: "164", resourceType: "concepts", label: ["coupe", "recouvre", "synchrone de"][n % 3] }, role: "unit1", position: n % 3 === 2 ? "synchronous" : "posterior", asynchronous: n % 3 !== 2, uncertain: n % 4 === 3 },
+  qualifier: { concept: { resourceId: "164", resourceType: "concepts", label: ["coupe", "recouvre", "synchrone de"][n % 3] }, role: "unit1", position: n % 3 === 2 ? "synchronous" : n % 3 === 1 ? "anterior" : "posterior", asynchronous: n % 3 !== 2, uncertain: n % 4 === 3 },
 });
 // MultiValue as the list serves it (valuesLimit=1): the first value, the total, and the link to the rest.
 function preview(unitId: number, fieldId: string, all: unknown[]) {
@@ -41,16 +45,56 @@ function preview(unitId: number, fieldId: string, all: unknown[]) {
     ...(all.length > 1 ? { _links: { values: `/api/v1/recording-units/${unitId}/fields/${fieldId}/values` } } : {}),
   };
 }
+// Each side of the stratigraphy is a field of its own, holding the relations at its position.
+const STRATI_POSITION: Record<string, string> = { "-328": "anterior", "-329": "posterior", "-330": "synchronous" };
 function relationValues(unitId: number, fieldId: string): unknown[] {
   const i = unitId - 100;
   const n = (k: number) => Array.from({ length: k }, (_, j) => j);
+  const position = STRATI_POSITION[fieldId];
+  if (position) {
+    return n(i % 5 === 0 ? 0 : i + 2).map((j) => stratiRef(j)).filter((r) => r.qualifier.position === position);
+  }
   switch (fieldId) {
     case "-319": return n(i % 2).map((j) => usRef(j));
     case "-320": return n(i % 4).map((j) => usRef(j + 1));
-    case "-327": return n(i % 5 === 0 ? 0 : i + 2).map((j) => stratiRef(j));
     case "-326": return n(i * 7).map((j) => findRef(j));
     default: return [];
   }
+}
+
+// GET /recording-units/{id}/relations — every relation of the unit, paged, filtered by kind and by identifier.
+function relationList(unitId: number, url: URL) {
+  const graph = relationGraph(unitId);
+  const kinds = url.searchParams.getAll("kind");
+  const search = (url.searchParams.get("search") ?? "").toLowerCase();
+  const [sortKey, direction] = (url.searchParams.get("sort") ?? "kind:asc").split(":");
+  const order = ["parents", "children", "anterior", "posterior", "synchronous"] as const;
+  let rows = order.flatMap((kind) => graph[kind].values.map((unit) => ({ kind, unit })));
+  if (kinds.length) rows = rows.filter((r) => kinds.includes(r.kind));
+  if (search) rows = rows.filter((r) => String(r.unit.label).toLowerCase().includes(search));
+  const sign = direction === "desc" ? -1 : 1;
+  rows.sort((a, b) => sign * (sortKey === "label"
+    ? String(a.unit.label).localeCompare(String(b.unit.label))
+    : order.indexOf(a.kind) - order.indexOf(b.kind) || String(a.unit.label).localeCompare(String(b.unit.label))));
+  const offset = Number(url.searchParams.get("offset") ?? 0);
+  const limit = Number(url.searchParams.get("limit") ?? 25);
+  return { data: rows.slice(offset, offset + limit), meta: { total: rows.length, limit, offset } };
+}
+
+// The relation graph of a unit, grouped by zone as GET /recording-units/{id}/relation-graph serves it.
+function relationGraph(unitId: number) {
+  const zone = (values: unknown[], total = values.length) => ({ values, total, complete: values.length >= total });
+  const at = (fieldId: string) => zone(relationValues(unitId, fieldId));
+  return {
+    center: usRef(unitId - 100),
+    parents: zone(relationValues(unitId, "-319")),
+    children: unitId === 107 ? zone(Array.from({ length: 30 }, (_, j) => usRef(j)), 45) : zone(relationValues(unitId, "-320")),
+    anterior: at("-328"),
+    synchronous: at("-330"),
+    posterior: at("-329"),
+    others: zone([]),
+    fields: { anterior: "-328", posterior: "-329", synchronous: "-330" },
+  };
 }
 
 const LAYOUT = [
@@ -72,6 +116,15 @@ const LAYOUT = [
     rows: [{ columns: [
       { fieldId: 10, width: { span: 12 }, isRequired: false, isReadOnly: false },
       { fieldId: 11, width: { span: 12, md: 4 }, isRequired: false, isReadOnly: false },
+    ] }],
+  },
+  // A recording unit's stratigraphy, read-only in the form the way the server serves it: the fiche edits it in place.
+  {
+    name: "common.header.relations",
+    rows: [{ columns: [
+      { fieldId: -328, width: { span: 12, md: 4 }, isRequired: false, isReadOnly: true },
+      { fieldId: -329, width: { span: 12, md: 4 }, isRequired: false, isReadOnly: true },
+      { fieldId: -330, width: { span: 12, md: 4 }, isRequired: false, isReadOnly: true },
     ] }],
   },
 ];
@@ -117,7 +170,7 @@ const recordingUnits = Array.from({ length: 8 }, (_, i) => ({
   _permissions: PERMS,
   resourceUri: `/recording-unit/${100 + i}`,
   bookmarked: false,
-  answers: Object.fromEntries(["-319", "-320", "-327", "-326"].map((f) => [f, preview(100 + i, f, relationValues(100 + i, f))])),
+  answers: Object.fromEntries(["-319", "-320", "-328", "-329", "-330", "-326"].map((f) => [f, preview(100 + i, f, relationValues(100 + i, f))])),
 }));
 
 // `answers` projected to the requested `fields=`, like the real list endpoints — so a column shown
@@ -136,6 +189,11 @@ function list(data: unknown[], url: URL) {
 }
 
 const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => unknown][] = [
+  // Writes of the relation graph: accepted, not applied (the harness has no store behind it).
+  [/^\/api\/v1\/recording-units\/\d+\/(parents|children|stratigraphic-relationships)(\/\d+)?$/, (_m, _u, init) => (init?.method && init.method !== "GET" ? undefined : { data: [] })],
+  [/^\/api\/v1\/organizations\/\d+\/concepts$/, () => ({ data: ["coupe", "recouvre", "s'appuie sur", "égal à"].map((label, i) => ({ id: String(160 + i), resolvedLabel: label })) })],
+  [/^\/api\/v1\/recording-units\/(\d+)\/relation-graph$/, (m) => relationGraph(Number(m[1]))],
+  [/^\/api\/v1\/recording-units\/(\d+)\/relations$/, (m, url) => relationList(Number(m[1]), url)],
   [/^\/api\/auth\/session-token$/, () => ({ accessToken: "dev-harness", expiresIn: 3600, tokenType: "Bearer" })],
   [/^\/api\/v1\/organizations\/\d+\/counts$/, () => ({ data: { projects: projects.length, places: 9, recordingUnits: 240, finds: 1200, phases: 18, containers: 40 } })],
   [/^\/api\/v1\/organizations\/\d+\/project-types$/, () => ({
@@ -169,7 +227,7 @@ const routes: [RegExp, (m: RegExpMatchArray, url: URL, init?: RequestInit) => un
   [/^\/api\/v1\/recording-units$/, (_m, url) => list(recordingUnits, url)],
   [/^\/api\/v1\/recording-units\/(\d+)\/siblings$/, () => ({ data: { previous: { id: "100", label: "US1", resourceUri: "/recording-unit/100" }, next: { id: "101", label: "US2", resourceUri: "/recording-unit/101" } } })],
   [/^\/api\/v1\/recording-units\/(\d+)\/(children|parents)$/, (_m, url) => list(recordingUnits.slice(0, 2), url)],
-  [/^\/api\/v1\/recording-units\/(\d+)$/, (m) => ({ data: { ...(recordingUnits.find((r) => r.id === m[1]) ?? recordingUnits[0]), name: "Couche d'occupation", answers: { "10": "Sol damé, charbons." } } })],
+  [/^\/api\/v1\/recording-units\/(\d+)$/, (m) => ({ data: { ...(recordingUnits.find((r) => r.id === m[1]) ?? recordingUnits[0]), name: "Couche d'occupation", answers: { "10": "Sol damé, charbons.", ...Object.fromEntries(["-328", "-329", "-330"].map((f) => [f, preview(Number(m[1]), f, relationValues(Number(m[1]), f))])) } } })],
   [/^\/api\/v1\/projects\/(\d+)$/, (m, _url, init) => {
     const p = projects.find((x) => x.id === m[1]) ?? projects[0];
     if (init?.method === "PATCH" && init.body) Object.assign(p, JSON.parse(String(init.body)));

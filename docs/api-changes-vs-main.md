@@ -13,7 +13,7 @@
 |---|---|
 | Endpoints **removed** | 3 |
 | Endpoints whose contract changed in a **breaking** way | 6 (plus 4 schema-level breaks, and B8–B13 of 2026-10-09) |
-| Endpoints **added** | 45 |
+| Endpoints **added** | 49 |
 | Existing endpoints with **additive** changes (new params/fields) | ~17 |
 
 Things most likely to break an existing client, in order:
@@ -66,6 +66,12 @@ These are also breaking for clients that sent sloppy parameters:
 ## 3. Additive changes
 
 ### 3.1 New endpoints
+
+**Stratigraphic relationships of a recording unit (write).** `POST /api/v1/recording-units/{id}/stratigraphic-relationships` (`relatedRecordingUnitId`, `position` = `anterior` | `posterior` | `synchronous` — where the other unit stands relative to `{id}` —, optional `typeConceptId` and `uncertain`), `PUT …/{relatedId}` (replaces `typeConceptId` and `uncertain`) and `DELETE …/{relatedId}`, all `204`. Same write permission as the hierarchy links; `400` for units of two operations, `404` for an unknown relationship, `409` for an existing pair (either order) or a stratigraphic cycle. This replaces the `GET …/stratigraphic-relationships` stub, which answered `501`. The type concept is read from `{id}` toward the other unit.
+
+**Relation graph of a recording unit.** `GET /api/v1/recording-units/{id}/relation-graph` returns the unit (`center`) and its relations grouped by graph zone — `parents`, `children`, `anterior` (older units), `synchronous`, `posterior` (more recent units), `others` (always empty until configurable relations exist). Each zone is a bounded preview `{values, total, complete}` (30 units at most); stratigraphic references carry their `qualifier`. `fields` gives the id of the field that holds each stratigraphic zone (`anterior`, `synchronous`, `posterior`): its list gives the relationship types (`GET /api/v1/organizations/{id}/concepts?fieldId=`). Same unit key and access scope as `GET /api/v1/recording-units/{id}` (`401`, `404`). The zones are the contract: how each relation is stored stays behind it.
+
+**Relations of a recording unit, as a list.** `GET /api/v1/recording-units/{id}/relations` returns the same relations flat and paged (`{data: [{kind, unit}], meta}`, `X-Total-Count`): `kind` is `parents`, `children`, `anterior`, `posterior` or `synchronous`, `unit` a `ResourceRef` (stratigraphic ones carry their `qualifier`). `kind` (repeatable) keeps only those kinds, `search` the units whose identifier contains the text (case-insensitive), `sort` is `kind:asc|desc` (kind, then identifier — the default) or `label:asc|desc`; `offset` a multiple of `limit` (200 at most), as every list. Same access scope as the graph (`400` for a bad `kind`, `sort` or page, `401`, `404`).
 
 **Organisation-scoped lists.** These replace B1/B2 and add three entity types. All take `organizationId` (required; `400` if missing, `403` if outside the caller's scope), `offset`, `limit` (default 10), `search`, `sort` and `f.*` filters.
 
@@ -241,8 +247,8 @@ All of these are additive. Nullable fields are omitted when `null` wherever mark
 | `PlaceResource` | `answers`, `formBundle`, `fields`, `_permissions` (detail only), `resourceUri`, `bookmarked`, `validationStatus` |
 | `OrganizationResource` | `_permissions { canCreateProjects }` |
 | `FieldResource` | `isTextArea`, `icon`, `conceptUri`, `constraints { min, max, showTime, unit }`, `query { sortable, filterOp }`, `readOnly` |
-| `ResourceRef` | `href`: the referenced resource's detail URL (`/api/v1/recording-units/12`), absent for a type with no detail endpoint (persons, action codes). `qualifier` (stratigraphic relationships only): `{ concept: ResourceRef, role: unit1\|unit2, position: anterior\|posterior\|synchronous, conceptDirection, asynchronous, uncertain }` |
-| New system fields | RU: **`-326` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`, binding `specimenList`), **`-327` Relations stratigraphiques** (`SELECT_MULTIPLE_STRATIGRAPHY`). Phase: **`-511` Unités d'enregistrement** (`SELECT_MULTIPLE_RECORDING_UNIT`). Container: **`-609` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`). All read-only (`FieldResource.readOnly`), sortable by number of values and filterable (`in`). The RU parents (`-319`) and children (`-320`) are now projected on lists too (preview + total) and are default columns, as are `-326` and `-327`. |
+| `ResourceRef` | `href`: the referenced resource's detail URL (`/api/v1/recording-units/12`), absent for a type with no detail endpoint (persons, action codes). `qualifier` (stratigraphic relationships only): `{ concept: ResourceRef, role: unit1\|unit2, position: anterior\|posterior\|synchronous, conceptDirection, asynchronous, uncertain }`. For an anterior or posterior relationship, `concept` is only present on the side the type reads from (`conceptDirection` true from the first unit, false from the second): « 008 recouvre 006 » gives 006 only the number of 008. A synchronous one carries it on both sides. |
+| New system fields | RU: **`-326` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`, binding `specimenList`), **`-328` Antérieur**, **`-329` Postérieur** and **`-330` Synchrone** (`SELECT_MULTIPLE_STRATIGRAPHY`, bindings `anteriorRelationships`, `posteriorRelationships`, `synchronousRelationships`; they replace the single `-327`). Phase: **`-511` Unités d'enregistrement** (`SELECT_MULTIPLE_RECORDING_UNIT`). Container: **`-609` Mobilier** (`SELECT_MULTIPLE_SPECIMEN`). All read-only (`FieldResource.readOnly`), sortable by number of values and filterable (`in`). The RU parents (`-319`) and children (`-320`) are now projected on lists too (preview + total) and are default columns, as are `-326`, `-328`, `-329` and `-330` (table columns `anterior`, `posterior`, `synchronous` replace `relationships`). Each of the three is also a vocabulary field: it carries a `fieldCode` (`SIARU.STRATI.ANTERIOR`, `.POSTERIOR`, `.SYNCHRONOUS`, read through `SIARU.STRATI` until the thesaurus defines them) and a project can restrict it to a branch or a collection like any other, so `fields[<fieldId>].vocabulary` and `GET /api/v1/organizations/{id}/concepts?fieldId=` give the list of its relationship types. |
 | `ProjectRecordingUnitTypeListResponse` (`/projects/{id}/recording-unit-types`) | `tableColumns: [{ columnId, fieldId, visible, order }]`, at the root |
 | `ProjectRecordingUnitTypeListResponse` | `fields`: merged field catalogue across every type |
 

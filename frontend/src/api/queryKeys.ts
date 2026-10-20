@@ -20,6 +20,17 @@ export const queryKeys = {
   entitySiblings: (entityType: string, id: string | number, organizationId: number | undefined, context: unknown) =>
     ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
 
+  // The relations of a recording unit, grouped by graph zone.
+  relationGraph: (id: string | number) => ["relation-graph", id] as const,
+  // Every stratigraphic relationship of a unit (a field's values endpoint), for the fiche's editor.
+  stratigraphyValues: (id: string | number, fieldId?: string) => (fieldId === undefined ? ["stratigraphy-values", id] : ["stratigraphy-values", id, fieldId]) as readonly unknown[],
+  // The relations of a recording unit as a paged list (one entry per set of list parameters).
+  relationList: (id: string | number, params?: unknown) =>
+    (params === undefined ? ["relation-list", id] : ["relation-list", id, params]) as readonly unknown[],
+  // The types of one stratigraphic field: its list depends on the project and on the unit's type.
+  stratigraphyTypes: (organizationId: number | undefined, fieldId: string, projectId?: string | null, valueConceptId?: string) =>
+    ["stratigraphy-types", organizationId, fieldId, projectId ?? null, valueConceptId ?? null] as const,
+
   entityBreadcrumbs: (entityType: string, id: string | number) => ["entity-breadcrumbs", entityType, id] as const,
 
   bookmarks: () => ["bookmark-status"] as const,
@@ -38,6 +49,8 @@ export const queryKeys = {
     ["effective-form", segment, projectId, typeId ?? null] as const,
   typeRules: (segment: string | undefined, projectId: string) => ["type-rules", segment, projectId] as const,
   recordingUnitTypes: (projectId: string | number | null | undefined) => ["recording-unit-types", projectId] as const,
+  projectTemplates: (organizationId: string | number | null | undefined) => ["project-templates", organizationId] as const,
+  nextProjectIdentifier: (organizationId: string | number | null | undefined) => ["next-project-identifier", organizationId] as const,
   projectTypes: (organizationId: string | number | null | undefined) => ["project-types", organizationId] as const,
 
   projectHistory: (projectId: string | number | undefined) => ["project-history", projectId] as const,

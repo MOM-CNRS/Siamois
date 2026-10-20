@@ -34,6 +34,14 @@ public class RelationFieldService {
     public record ValuesPage(List<ResourceRef> values, long total) {
     }
 
+    /** A value of one of several relations, and the name of the relation it comes from. */
+    public record KindedValue(String kind, ResourceRef value) {
+    }
+
+    /** A page of one owner's values across several relations, and how many there are in all. */
+    public record KindedPage(List<KindedValue> values, long total) {
+    }
+
     /**
      * Each owner's preview: its first {@code limit} values and its total — every owner of
      * {@code ownerIds} gets one, empty when it has no value.
@@ -69,6 +77,25 @@ public class RelationFieldService {
         return new ValuesPage(rows.stream().map(row -> toRef(relation, row, conceptLabels)).toList(), total);
     }
 
+    /**
+     * One owner's values across several relations at once, each with the name of its relation, from
+     * {@code offset}, at most {@code limit}, those whose label contains {@code search}.
+     *
+     * @param kinds   the relations to read, by name; their order is the order of the {@code kind} sort
+     * @param byLabel sorted by label (then relation) rather than by relation (then label)
+     */
+    @Transactional(readOnly = true)
+    public KindedPage pageAcross(Map<String, RelationField> kinds, long ownerId, int offset, int limit,
+                                 @Nullable String search, boolean byLabel, boolean ascending, String lang) {
+        List<RelationFieldRepository.KindedRow> rows =
+                relationFieldRepository.pageAcross(kinds, ownerId, offset, limit, search, byLabel, ascending);
+        long total = relationFieldRepository.countAcross(kinds, ownerId, search);
+        Map<Long, String> conceptLabels = conceptLabels(rows.stream().map(RelationFieldRepository.KindedRow::row).toList(), lang);
+        return new KindedPage(rows.stream()
+                .map(row -> new KindedValue(row.kind(), toRef(kinds.get(row.kind()), row.row(), conceptLabels)))
+                .toList(), total);
+    }
+
     private Map<Long, String> conceptLabels(List<Row> rows, String lang) {
         List<ConceptDTO> concepts = rows.stream()
                 .filter(row -> row.conceptId() != null)
@@ -82,11 +109,22 @@ public class RelationFieldService {
         if (!relation.qualified()) {
             return new ResourceRef(id, relation.resourceType(), row.label());
         }
-        ResourceRef concept = row.conceptId() == null ? null : new ResourceRef(
+        ResourceRef concept = row.conceptId() == null || !typeReadsFromOwner(row) ? null : new ResourceRef(
                 String.valueOf(row.conceptId()), FieldAnswerWireService.CONCEPTS,
                 Objects.requireNonNullElseGet(conceptLabels.get(row.conceptId()), () -> "[" + row.conceptExternalId() + "]"));
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
                 concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
+    }
+
+    /**
+     * Whether the relationship's type makes sense read from the owner. It reads from one unit toward
+     * the other ({@code concept_direction}: true from the first unit): "008 recouvre 006" says nothing
+     * of 006, whose side only has the number of the other unit. A synchronous relationship reads the
+     * same from both sides, and a type with no recorded direction is shown as it is.
+     */
+    private static boolean typeReadsFromOwner(Row row) {
+        if ("synchronous".equals(positionOf(row)) || row.conceptDirection() == null) return true;
+        return row.conceptDirection() == "unit1".equals(row.role());
     }
 
     /**

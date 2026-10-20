@@ -7,4 +7,5 @@ import type { FieldResource } from "./types";
  */
 export function isTypeField(field: FieldResource): boolean {
   return field.valueBinding === "type";
+
 }

@@ -33,7 +33,9 @@ public class RecordingUnitListAssembler {
                 && projectApiService.canEditRecordingUnitsForProject(caller, String.valueOf(projectId), lang);
         boolean canValidate = projectId != null
                 && projectApiService.canValidateForProject(caller, String.valueOf(projectId), lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate);
+        boolean canDelete = projectId != null
+                && projectApiService.canDeleteEntitiesForProject(caller, String.valueOf(projectId), lang);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate).withDelete(canDelete);
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =
                 recordingUnitListProjectionService.build(page.getContent(), fields, lang);
 

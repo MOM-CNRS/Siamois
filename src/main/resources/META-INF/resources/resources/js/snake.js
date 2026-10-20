@@ -1,7 +1,7 @@
 /**
  * "Motherload" easter egg: an archaeology-themed Snake game rendered on a <canvas>.
  * Started/stopped by the p:dialog's onShow/onHide (siaSnakeInit/siaSnakeStop), triggered from
- * SearchBean#completeText when the user types "motherload" into the global search bar.
+ * the header search bar (frontend/src/search) when the user types "motherload" into the global search bar.
  */
 (function () {
     'use strict';

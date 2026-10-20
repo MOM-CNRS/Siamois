@@ -295,4 +295,18 @@ class OrganizationListServiceTest {
         dto.setId(id);
         return dto;
     }
+
+    @Test
+    void canDeleteByProject_asksOncePerPage_withTheDeleteCodes() {
+        ActionUnitSummaryDTO p7 = project(7L);
+        ActionUnitSummaryDTO p8 = project(8L);
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(Set.of(8L));
+
+        Map<Long, Boolean> result = service.canDeleteByProject(caller, institution, Arrays.asList(p7, p8, p7), "fr");
+
+        assertThat(result).containsEntry(7L, false).containsEntry(8L, true).hasSize(2);
+        verify(profilePermissionService, times(1)).actionUnitIdsGranting(any(UserInfo.class),
+                eq(PermissionConstants.INSTANCE_DELETE_ENTITIES), eq(PermissionConstants.ORGANIZATION_DELETE_ENTITIES),
+                eq(PermissionConstants.PROJECT_DELETE_ENTITIES));
+    }
 }

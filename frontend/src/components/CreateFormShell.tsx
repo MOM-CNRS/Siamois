@@ -13,6 +13,7 @@ import { t } from "../i18n";
  */
 export function CreateFormShell({
   entityType,
+  icon: iconOverride,
   title,
   canSubmit,
   submitLabel = t("create.submit"),
@@ -25,6 +26,8 @@ export function CreateFormShell({
 }: {
   // Registry key: gives the icon and the colour.
   entityType: string;
+  // The header's icon when it isn't the entity's own (a link form of a graph).
+  icon?: string;
   title: string;
   canSubmit: boolean;
   // The confirm button's label — « Créer » unless the form does something else (a duplication).
@@ -37,7 +40,7 @@ export function CreateFormShell({
   onCancel: () => void;
   children: ReactNode;
 }) {
-  const icon = getEntityType(entityType)?.icon;
+  const icon = iconOverride ?? getEntityType(entityType)?.icon;
   return (
     <form
       className="sia-create-form"

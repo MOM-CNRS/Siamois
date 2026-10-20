@@ -10,6 +10,7 @@ import { entityChipStyle, renderAnswerValue } from "../../fields/display";
 import { describeIncoherence } from "../../fields/incoherence";
 import { entityRowLabel } from "../../fields/optionSources";
 import { hasFieldRenderer } from "../../fields/registry";
+import { stratigraphyPositionOf } from "../../fields/stratigraphy";
 import type { FieldState } from "../../rules";
 import { resolveValueBinding, type FieldResource } from "../../fields/types";
 import { FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets } from "../frozenColumns";
@@ -146,6 +147,8 @@ export function EntityTable({
   // row's project, a generated identifier) and a type with no editor (action code, address) are
   // never edited.
   function isEditable(field: FieldResource, row: RowRecord): boolean {
+    // A unit's stratigraphy is no answer to patch (its field is read-only): writing it is the unit's own right.
+    if (stratigraphyPositionOf(field)) return canEditRow(row);
     return canPatchAnswers && canEditRow(row) && !field.readOnly && hasFieldRenderer(field.answerType);
   }
 

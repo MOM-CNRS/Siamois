@@ -278,6 +278,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto)))
                 .thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), any())).thenReturn(true);
 
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
@@ -2467,7 +2468,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("isPartOf", "contains", "relationships", "specimen", "action", "type", "phases",
+                .containsExactlyInAnyOrder("isPartOf", "contains", "anterior", "posterior", "synchronous", "specimen", "action", "type", "phases",
                         "spatial", "author");
         assertThat(tableColumns)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)

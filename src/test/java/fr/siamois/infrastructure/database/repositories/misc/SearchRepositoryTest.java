@@ -1,24 +1,22 @@
 package fr.siamois.infrastructure.database.repositories.misc;
 
 import com.zaxxer.hikari.HikariDataSource;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.SearchResultDTO;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,156 +31,61 @@ class SearchRepositoryTest {
     private PreparedStatement statement;
     @Mock
     private ResultSet resultSet;
+    @Mock
+    private Array sqlArray;
 
     @InjectMocks
     private SearchRepository searchRepository;
 
-    private InstitutionDTO institution;
-    private PersonDTO person;
-
-    @BeforeEach
-    void setUp() {
-        institution = new InstitutionDTO();
-        institution.setId(7L);
-        person = new PersonDTO();
-        person.setId(13L);
-    }
-
-    // ------------------------------------------------------------------
-    // findResultsFor — happy path
-    // ------------------------------------------------------------------
-
     @Test
-    void findResultsFor_singleRow_returnsMappedDto() throws SQLException {
+    void searchSections_mapsRowsAndPassesTheParameters() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(connection.createArrayOf(anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(sqlArray);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true, false);
-        when(resultSet.getString("matching_term")).thenReturn("paris");
-        when(resultSet.getObject("action_unit_id", Long.class)).thenReturn(11L);
-        when(resultSet.getObject("spatial_unit_id", Long.class)).thenReturn(22L);
-        when(resultSet.getObject("recording_unit_id", Long.class)).thenReturn(44L);
-        when(resultSet.getObject("specimen_id", Long.class)).thenReturn(33L);
+        when(resultSet.getString("entity_type")).thenReturn("recordingUnit");
+        when(resultSet.getObject("entity_id", Long.class)).thenReturn(5L);
+        when(resultSet.getString("label")).thenReturn("UE-5");
+        when(resultSet.getString("subtitle")).thenReturn("P1");
+        when(resultSet.getObject("project_id", Long.class)).thenReturn(9L);
+        when(resultSet.getLong("total")).thenReturn(42L);
 
-        List<SearchResultDTO> results = searchRepository.findResultsFor("paris", institution, person);
+        List<GlobalSearchRow> rows = searchRepository.searchSections("ue", 7L, List.of(9L), null, null, 5);
 
-        assertEquals(1, results.size());
-        SearchResultDTO dto = results.get(0);
-        assertNotNull(dto);
-        assertEquals("paris", dto.getMatchingTerm());
-        assertEquals(11L, dto.getActionUnitId());
-        assertEquals(22L, dto.getSpatialUnitId());
-
-        verify(statement).setString(1, "paris");
+        assertEquals(List.of(new GlobalSearchRow("recordingUnit", 5L, "UE-5", "P1", 9L, 42L)), rows);
+        verify(statement).setString(1, "ue");
         verify(statement).setLong(2, 7L);
-        verify(statement).setLong(3, 13L);
+        verify(statement).setArray(3, sqlArray);
+        verify(statement).setArray(4, null);
+        verify(statement).setArray(5, null);
+        verify(statement).setInt(6, 5);
     }
 
     @Test
-    void findResultsFor_multipleRows_returnsAll() throws SQLException {
+    void searchSections_returnsNothingOnSqlError() throws SQLException {
+        when(dataSource.getConnection()).thenThrow(new SQLException("down"));
+
+        assertTrue(searchRepository.searchSections("x", 1L, null, null, null, 5).isEmpty());
+    }
+
+    @Test
+    void findProjectIdsByRef_returnsEveryMatchingProject() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true, true, false);
-        when(resultSet.getString("matching_term")).thenReturn("a", "b");
-        when(resultSet.getObject("action_unit_id", Long.class)).thenReturn(1L, 2L);
-        when(resultSet.getObject("spatial_unit_id", Long.class)).thenReturn(10L, 20L);
-        when(resultSet.getObject("recording_unit_id", Long.class)).thenReturn(100L, 200L);
-        when(resultSet.getObject("specimen_id", Long.class)).thenReturn(100L, 200L);
+        when(resultSet.getLong(1)).thenReturn(3L, 4L);
 
-        List<SearchResultDTO> results = searchRepository.findResultsFor("foo", institution, person);
-
-        assertEquals(2, results.size());
-        assertEquals("a", results.get(0).getMatchingTerm());
-        assertEquals("b", results.get(1).getMatchingTerm());
+        assertEquals(List.of(3L, 4L), searchRepository.findProjectIdsByRef("abc", 7L));
+        verify(statement).setLong(1, 7L);
+        verify(statement).setString(2, "abc");
     }
 
     @Test
-    void findResultsFor_emptyResultSet_returnsEmptyList() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenReturn(statement);
-        when(statement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(false);
+    void findProjectIdsByRef_returnsNothingOnSqlError() throws SQLException {
+        when(dataSource.getConnection()).thenThrow(new SQLException("down"));
 
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        assertTrue(results.isEmpty());
+        assertTrue(searchRepository.findProjectIdsByRef("abc", 7L).isEmpty());
     }
-
-    @Test
-    void findResultsFor_nullInput_isPropagatedToStatement() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenReturn(statement);
-        when(statement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(false);
-
-        searchRepository.findResultsFor(null, institution, person);
-
-        verify(statement).setString(1, null);
-    }
-
-    // ------------------------------------------------------------------
-    // SQL exception branches — every failure must short-circuit to []
-    // ------------------------------------------------------------------
-
-    @Test
-    void findResultsFor_connectionFailure_returnsEmptyList() throws SQLException {
-        when(dataSource.getConnection()).thenThrow(new SQLException("conn-down"));
-
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        assertTrue(results.isEmpty());
-    }
-
-    @Test
-    void findResultsFor_prepareStatementFailure_returnsEmptyList() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenThrow(new SQLException("syntax"));
-
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        assertTrue(results.isEmpty());
-    }
-
-    @Test
-    void findResultsFor_executeQueryFailure_returnsEmptyList() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenReturn(statement);
-        when(statement.executeQuery()).thenThrow(new SQLException("exec-fail"));
-
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        assertTrue(results.isEmpty());
-    }
-
-    @Test
-    void findResultsFor_rowMappingFailure_yieldsNullEntryInList() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenReturn(statement);
-        when(statement.executeQuery()).thenReturn(resultSet);
-        when(resultSet.next()).thenReturn(true, false);
-        // The mapping call itself throws SQLException → rowToDTO swallows and returns null.
-        when(resultSet.getString("matching_term")).thenThrow(new SQLException("bad-column"));
-
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        // processResultSet still adds the (null) row produced by rowToDTO before
-        // returning, so we observe the failure as a single null entry.
-        assertEquals(1, results.size());
-        assertNull(results.get(0));
-    }
-
-    @Test
-    void findResultsFor_setLongFailure_returnsEmptyList() throws SQLException {
-        when(dataSource.getConnection()).thenReturn(connection);
-        when(connection.prepareStatement(anyString())).thenReturn(statement);
-        // Simulate failure when binding params.
-        org.mockito.Mockito.doThrow(new SQLException("bind-fail"))
-                .when(statement).setLong(anyInt(), anyLong());
-
-        List<SearchResultDTO> results = searchRepository.findResultsFor("x", institution, person);
-
-        assertTrue(results.isEmpty());
-    }
-    
 }

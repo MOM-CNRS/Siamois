@@ -189,4 +189,21 @@ describe("PanelToolbar", () => {
     const bookmarkButton = container.querySelector(".bi-bookmark")!.closest("button") as HTMLButtonElement;
     expect(bookmarkButton.disabled).toBe(true);
   });
+
+  it("puts the delete button next to « Dupliquer », in the same plain style", async () => {
+    const remove = vi.fn();
+    render({ resourceUri: "/x/1", title: "X", bookmarked: false }, 7, { duplicate: vi.fn(), delete: remove });
+
+    const bin = button("bi-trash");
+    expect(container.querySelector(".bi-copy")!.closest(".panel-toolbar")).toBe(bin.closest(".panel-toolbar"));
+    expect(bin.classList.contains("p-button-danger")).toBe(false);
+    await act(async () => bin.click());
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows no bin without the delete action", () => {
+    render({ resourceUri: "/x/1", title: "X", bookmarked: false }, 7, { duplicate: vi.fn() });
+
+    expect(container.querySelector(".bi-trash")).toBeNull();
+  });
 });

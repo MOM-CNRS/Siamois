@@ -1,4 +1,5 @@
 import type { EntityRef, EntityTypeConfig } from "../types";
+import { deleteEntity } from "../deleteApi";
 import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
@@ -30,6 +31,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   icon: "bi bi-geo-alt",
   panelClass: "spatial-unit-panel",
   api: {
+    delete: (id) => deleteEntity("places", id),
     siblings: (id) => fetchSiblings("places", id),
     get: getPlace,
     list: listPlaces,

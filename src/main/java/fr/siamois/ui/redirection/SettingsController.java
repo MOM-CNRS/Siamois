@@ -141,6 +141,22 @@ public class SettingsController {
     }
 
     /**
+     * A project's settings page (its tiles: import, members, tables, thesaurus): where the project fiche's
+     * settings button leads. Same right as the settings list's own entry.
+     */
+    @GetMapping("/settings/project/{projectId}")
+    public String goToProjectSettings(@PathVariable("projectId") Long projectId) {
+        if (!profilePermissionService.hasProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo(), projectId)) {
+            throw new ForbiddenException();
+        }
+        navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
+        projectDetailsBean.setProject(actionUnitService.findById(projectId));
+        projectDetailsBean.init();
+        return "forward:/pages/settings/project/projectSettings.xhtml";
+    }
+
+    /**
      * Straight to a project's table configuration (the page behind its "tables" tile), optionally
      * opened on one table: what a creation form links to when a table has no type declared yet.
      */

@@ -82,6 +82,16 @@ public final class PermissionConstants {
      */
     public static final String ORGANIZATION_EDIT_STUDIES = "ORGANIZATION_EDIT_STUDIES";
     /**
+     * Organisation-wide counterpart of {@link #PROJECT_DELETE_ENTITIES}.
+     */
+    public static final String ORGANIZATION_DELETE_ENTITIES = "ORGANIZATION_DELETE_ENTITIES";
+
+    /**
+     * Organisation-wide counterpart of {@link #PROJECT_DELETE_PROJECT}.
+     */
+    public static final String ORGANIZATION_DELETE_PROJECT = "ORGANIZATION_DELETE_PROJECT";
+
+    /**
      * Organisation-wide counterpart of {@link #PROJECT_VALIDATE} — also the right to validate the
      * organisation's places, which belong to no project.
      */
@@ -100,6 +110,17 @@ public final class PermissionConstants {
     public static final String PROJECT_EDIT_CONTAINERS = "PROJECT_EDIT_CONTAINERS";
     public static final String PROJECT_EDIT_DOCUMENTS = "PROJECT_EDIT_DOCUMENTS";
     public static final String PROJECT_EDIT_STUDIES = "PROJECT_EDIT_STUDIES";
+    /**
+     * Allows deleting the records of the project (recording units, finds, phases, containers,
+     * documents, studies) — separate from the edit rights, which never allow a deletion.
+     */
+    public static final String PROJECT_DELETE_ENTITIES = "PROJECT_DELETE_ENTITIES";
+
+    /**
+     * Allows deleting the whole project together with everything it contains.
+     */
+    public static final String PROJECT_DELETE_PROJECT = "PROJECT_DELETE_PROJECT";
+
     /**
      * "Validateur": allows setting an entity of the project to VALIDATED, or moving it out of
      * VALIDATED. Every other status change only needs the entity's edit right.
@@ -162,6 +183,16 @@ public final class PermissionConstants {
      * Instance-wide counterpart of {@link #PROJECT_EDIT_STUDIES}.
      */
     public static final String INSTANCE_EDIT_STUDIES = "INSTANCE_EDIT_STUDIES";
+
+    /**
+     * Instance-wide counterpart of {@link #PROJECT_DELETE_ENTITIES}.
+     */
+    public static final String INSTANCE_DELETE_ENTITIES = "INSTANCE_DELETE_ENTITIES";
+
+    /**
+     * Instance-wide counterpart of {@link #PROJECT_DELETE_PROJECT}.
+     */
+    public static final String INSTANCE_DELETE_PROJECT = "INSTANCE_DELETE_PROJECT";
 
     /**
      * Instance-wide counterpart of {@link #PROJECT_VALIDATE}.
