@@ -164,6 +164,8 @@ describe("EntityListPanel's state kept per user", () => {
     await act(async () => button.click());
 
     expect(saveAsTab).toHaveBeenCalledWith("user-state-entity", { name: { op: "contains", v: "fos" } });
+    // A tab of the fiche has its row actions.
+    expect(container.querySelector(".entity-list-panel-row-actions-cell")).not.toBeNull();
   });
 
   it("offers nothing when the fiche cannot be configured, or the list has no filter", async () => {
@@ -190,6 +192,8 @@ describe("EntityListPanel's state kept per user", () => {
     const pages = listMock.mock.calls.map(([p]) => p as Record<string, unknown>).filter((p) => p.limit !== 1);
     expect(pages).toEqual([expect.objectContaining({ filters: { name: { op: "contains", v: "abc" } } })]);
     expect(heard[heard.length - 1]).toEqual({ name: { op: "contains", v: "abc" } });
+    // Only to look at: no actions column, and no row actions to arrange in the gear.
+    expect(container.querySelector(".entity-list-panel-row-actions-cell")).toBeNull();
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS + 100));
     });

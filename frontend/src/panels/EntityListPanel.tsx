@@ -381,7 +381,8 @@ function EntityListPanelBody({
   const showViews = !embedded && scope == null && organizationId != null && onViewChange != null;
   // Changed since it was opened: on a view, from the view's state; on the default list, anything the user kept.
   const viewsDirty = viewId != null ? modified : hasUserState;
-  const hasActionBarSettings = rowActions.items.length > 0;
+  // A preview being configured has no row actions to arrange.
+  const hasActionBarSettings = rowActions.items.length > 0 && !volatile;
   const hasGear = hasSchema || hasActionBarSettings;
 
   const body = (
@@ -533,6 +534,7 @@ function EntityListPanelBody({
         onOpenOverview={onOpenOverview}
         overviewEntityId={overviewEntityId}
         onCellSaved={onCellSaved}
+        readOnly={volatile}
         tree={showTree ? treeRows.tree : undefined}
       />
       {rowActions.dialog}
