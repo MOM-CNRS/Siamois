@@ -103,7 +103,7 @@ déjà à sept paramètres.
   cocherait des branches entières). Cocher une occurrence ne coche pas l'autre.
 - Pas d'indicateur de chargement pendant le dépliage d'une branche.
 - Avec une recherche, seules les racines sont visibles : il faut déplier à la main pour atteindre un
-  résultat. Un badge « N résultats » par branche ou un autre mécanisme de recherche reste à tester.
+  résultat. Un badge « N résultats » par branche ou un autre mécanisme de recherche reste à tester. Piste étudiée : révéler une entité choisie dans l'overlay de recherche (chemin ouvert, page des racines), voir `recherche-listes-overlay.md` et `plan-revelation-liste-arbre.md`.
 
 ## Choix de conception
 
