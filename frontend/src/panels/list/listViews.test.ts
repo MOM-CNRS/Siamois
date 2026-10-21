@@ -16,6 +16,11 @@ describe("availableViews", () => {
     expect(availableViews(undefined, undefined)).toEqual(["list"]);
   });
 
+  it("adds the cards to a type that describes its cards", () => {
+    expect(availableViews(config({ card: {} }), undefined)).toEqual(["list", "cards"]);
+    expect(availableViews(config({ tree: true, card: {} }), undefined)).toEqual(["list", "tree", "cards"]);
+  });
+
   it("adds the tree to the organization-wide list of a hierarchical type", () => {
     expect(availableViews(config({ tree: true }), undefined)).toEqual([
       "list",

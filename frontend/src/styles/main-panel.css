@@ -2854,3 +2854,143 @@ div#search-bar .sia-search {
   cursor: pointer;
 }
 .home-data-access-create:hover { background: var(--surface-hover, rgba(0, 0, 0, 0.05)); }
+
+/* The list as a grid of cards (panels/list/EntityCardGrid.tsx). The panel never scrolls as a
+   document: the grid is its own overflow box, the paginator stays below it. */
+.entity-card-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.entity-card-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.entity-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  background: var(--surface-card, #fff);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.entity-card:hover,
+.entity-card:focus-visible {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+/* The entity open in the overview pane. */
+.entity-card.is-selected {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 0 0 2px var(--entity-chip-color, var(--main-color));
+}
+.entity-card-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  background: color-mix(in srgb, var(--entity-chip-color, #80b480) 14%, transparent);
+}
+.entity-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.entity-card-placeholder {
+  font-size: 3rem;
+  color: var(--entity-chip-color, #80b480);
+  opacity: 0.8;
+}
+.entity-card-typeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-height: 2rem;
+  padding: 0 0.25rem 0 0.6rem;
+}
+.entity-card-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #6c757d);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-card-zoom.p-button {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-left: auto;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+/* The selection box, in the picture's top-left corner. */
+.entity-card-select {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+}
+.entity-card-select .p-checkbox-box:not(.p-highlight) {
+  background: var(--surface-card, #fff);
+}
+.entity-card-image-full {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.entity-card-image-dialog {
+  width: min(90vw, 70rem);
+}
+.entity-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.4rem 0.4rem 0.4rem 0.6rem;
+}
+.entity-card-chip {
+  min-width: 0;
+  cursor: pointer;
+}
+/* The actions sit at the right end of the line. */
+.entity-card-footer .entity-card-actions {
+  margin-left: auto;
+}
+.entity-card-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  /* Always Siamois green, whatever the panel (as the table's row actions). */
+  --p-button-text-primary-color: var(--siamois-green, #80b480);
+}
+.entity-card-actions .p-button.p-button-sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+.entity-card-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-color-secondary, #6c757d);
+}
+/* A card's actions are always at full strength: there is no row hover to reveal them. */
+.entity-card-actions .entity-list-panel-row-actions {
+  opacity: 1;
+}

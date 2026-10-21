@@ -74,6 +74,7 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
   const table = useTableState({
     defaultSort: config?.list.defaultSort,
     prefsKey,
+    shareViewMode: viewId == null,
     userState: { settled: userState.settled && viewSettled, saved: effectiveSaved },
   });
   const { state, seedVisibleColumns, columnsSeeded, userStateReady } = table;

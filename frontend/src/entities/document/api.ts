@@ -37,6 +37,11 @@ export function fetchDocumentFile(id: string | number, download = false): Promis
   return apiBlob(`/api/v1/documents/${id}/file${download ? "?download=true" : ""}`);
 }
 
+// A reduced copy of an image document, for a card: the server resizes to `width` pixels wide.
+export function fetchDocumentThumbnail(id: string | number, width: number): Promise<Blob> {
+  return apiBlob(`/api/v1/documents/${id}/file?w=${width}`);
+}
+
 // A document's link to an entity — a recording unit, a find, a place, a phase or a container —
 // under the entity's own REST segment. Both are idempotent.
 export function linkDocument(segment: string, entityId: string | number, documentId: string | number): Promise<unknown> {

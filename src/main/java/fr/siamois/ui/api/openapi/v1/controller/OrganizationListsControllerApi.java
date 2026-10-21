@@ -43,6 +43,7 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService.EditPermissions;
 import fr.siamois.ui.api.openapi.v1.service.DocumentListProjectionService;
@@ -105,6 +106,7 @@ public class OrganizationListsControllerApi {
     private final ContainerListProjectionService containerListProjectionService;
     private final FindListProjectionService findListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FirstImageService firstImageService;
     private final FieldQueryService fieldQueryService;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
@@ -160,6 +162,7 @@ public class OrganizationListsControllerApi {
                 })
                 .toList();
         resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
+        firstImageService.markRecordingUnits(resources);
         return ok(new RecordingUnitListResponse(resources, meta(page, limit, offset)), page);
     }
 
@@ -210,6 +213,7 @@ public class OrganizationListsControllerApi {
                 })
                 .toList();
         resourceBookmarkService.markBookmarked(caller.person(), institution, resources, lang);
+        firstImageService.markFinds(resources);
         return ok(new FindListResponse(resources, meta(page, limit, offset)), page);
     }
 

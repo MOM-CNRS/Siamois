@@ -13,6 +13,7 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
@@ -42,6 +43,7 @@ public class ProjectRecordingUnitsControllerApi {
     private final RecordingUnitResponseMapper recordingUnitResourceMapper;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FirstImageService firstImageService;
     private final FieldQueryService fieldQueryService;
 
 
@@ -125,6 +127,7 @@ public class ProjectRecordingUnitsControllerApi {
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
+        firstImageService.markRecordingUnits(resources);
 
         ListMeta meta = ListMeta.of(page, limit, offset);
         return ResponseEntity.ok()

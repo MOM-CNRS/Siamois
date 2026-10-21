@@ -51,6 +51,10 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     createForm: (ctx) => <FindCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "find",
+    card: {
+      image: (r) => (r.firstImageDocumentId ? { documentId: r.firstImageDocumentId } : null),
+      subtitle: (r) => r.type?.resolvedLabel,
+    },
     // Created from a recording unit's field: ON that recording unit, as JSF's "new find" row action.
     createPrefillFrom: ({ entityType, entityId, entityLabel }) =>
       entityType === "recordingUnit" && entityId != null

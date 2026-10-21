@@ -17,6 +17,19 @@ describe("listPreferences", () => {
     expect(loadListPrefs(listPrefsKey("recordingUnit", undefined, 2)).visibleColumns).toEqual(["20"]);
   });
 
+  it("remembers the display mode for the kind of list, whichever fiche it sits in", () => {
+    // The units tab of project 5 and of project 6 share one key: the mode chosen in the first is the second's.
+    const key = (id: number) => listPrefsKey("recordingUnit", { entityType: "project", id });
+    saveListPrefs(key(5), { viewMode: "cards" });
+    expect(loadListPrefs(key(6)).viewMode).toBe("cards");
+    expect(loadListPrefs(listPrefsKey("recordingUnit")).viewMode).toBeUndefined();
+  });
+
+  it("ignores a display mode it does not know", () => {
+    window.localStorage.setItem("k", JSON.stringify({ v: 1, viewMode: "carousel" }));
+    expect(loadListPrefs("k").viewMode).toBeUndefined();
+  });
+
   it("round-trips, merging each save into what's already stored", () => {
     saveListPrefs("k", { visibleColumns: ["a"] });
     saveListPrefs("k", { actionBar: { order: ["x"], inline: [] } });

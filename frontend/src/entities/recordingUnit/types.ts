@@ -32,6 +32,8 @@ export interface RecordingUnitResource {
   // Navigation/bookmark URI ("/recording-unit/42") and the caller's bookmark flag.
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // The first image document linked to it, for the list's cards (list only).
+  firstImageDocumentId?: string | null;
   // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
   validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   projectId?: string | null;

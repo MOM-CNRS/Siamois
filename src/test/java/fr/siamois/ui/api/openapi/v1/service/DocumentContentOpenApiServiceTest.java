@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.document.ImageThumbnailer;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.institution.Institution;
@@ -45,7 +46,7 @@ class DocumentContentOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentContentOpenApiService(documentService, profilePermissionService);
+        service = new DocumentContentOpenApiService(documentService, profilePermissionService, new ImageThumbnailer());
     }
 
     @Test

@@ -46,6 +46,11 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
     createForm: (ctx) => <DocumentCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "document",
+    // An image document is its own picture.
+    card: {
+      image: (d) => (d.mimeType?.startsWith("image/") ? { documentId: d.id } : null),
+      subtitle: (d) => d.type?.resolvedLabel,
+    },
   },
   detail: {
     tabs: [

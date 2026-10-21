@@ -122,6 +122,15 @@ export interface EntityBreadcrumbs {
   truncated: boolean;
 }
 
+// What a list row shows as a card (list view « Vignettes »): the picture, then a footer with the
+// entity chip and the row actions. The chip is the identifier column's own value; this adds the rest.
+export interface CardDef<TSummary> {
+  // The document whose image is the card's picture; none: the type's icon on a plain background.
+  image?: (row: TSummary) => { documentId: string | number } | null | undefined;
+  // A line under the picture (the project, the type…); empty ones are skipped.
+  subtitle?: (row: TSummary) => string | null | undefined;
+}
+
 export interface ColumnDef<TSummary> {
   key: string;
   header: string;
@@ -447,6 +456,8 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
+    // Present: the list can also be shown as a grid of cards (a « Vignettes » choice in the gear menu).
+    card?: CardDef<TSummary>;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

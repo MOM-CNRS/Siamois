@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -44,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -154,7 +156,7 @@ class ProjectListControllersTest {
         when(findMapper.toResource(dto)).thenReturn(new FindResource());
 
         ResponseEntity<FindListResponse> response = new ProjectFindsApi(projectApiService, findMapper, bookmarks,
-                fieldQueryService, findProjection)
+                mock(FirstImageService.class), fieldQueryService, findProjection)
                 .getFinds("1", 0, 10, null, "fullIdentifier:asc", query, "all", "fr");
 
         FindResource resource = response.getBody().getData().get(0);

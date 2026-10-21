@@ -11,6 +11,8 @@ export interface UseTableStateOptions {
   // listPreferences key: when set, the visible columns (and their order) are restored from and
   // saved to this browser's storage.
   prefsKey?: string;
+  // The display mode is the kind of list's (prefsKey), not this pane's: a saved view keeps its own.
+  shareViewMode?: boolean;
   // The user's state on this list, kept server-side (useUserViewState): applied once, when it has
   // been read. Omitted: nothing to wait for, nothing to apply.
   userState?: { settled: boolean; saved: ViewStateBody | undefined };
@@ -21,7 +23,7 @@ export interface UseTableStateOptions {
  * A thin wrapper rather than TableState's own concern, so tableState.ts stays a pure, hook-free
  * shape usable from tests, saved views, and URL encode/decode alike.
  */
-export function useTableState({ defaultSort, prefsKey, userState }: UseTableStateOptions) {
+export function useTableState({ defaultSort, prefsKey, shareViewMode, userState }: UseTableStateOptions) {
   const [state, setState] = usePaneState<TableState>("table", () => createTableState({ sort: defaultSort }));
 
   // The user's saved state is applied once per pane (a list mounting again in focus mode keeps what
@@ -29,19 +31,28 @@ export function useTableState({ defaultSort, prefsKey, userState }: UseTableStat
   // defaults and again with the saved state. Rendered during the settle, not in an effect, so that
   // the state and the flag change in the same commit.
   const [userStateApplied, setUserStateApplied] = usePaneState("userStateApplied", false);
+  // What the user left on this list is where a list starts when it is opened with no context. A list that
+  // is retargeted while mounted (the arrows, another row of the main list: the fiche moves on to another
+  // entity) keeps what it shows instead, so the fiche stays consistent with the navigation; only the
+  // display mode of the kind of list is looked up, for a list the user never arranged.
+  const [appliedOnce, setAppliedOnce] = useState(false);
   const waitingForUserState = userState != null && !userStateApplied;
   const persisted = userState ? parsePersisted(userState.saved) : undefined;
   if (waitingForUserState && userState.settled) {
     setUserStateApplied(true);
-    if (persisted) {
-      setState((s) => ({
-        ...s,
-        limit: persisted.limit ?? s.limit,
-        sort: persisted.sort ?? s.sort,
-        filters: persisted.filters ?? s.filters,
-        viewMode: persisted.viewMode ?? s.viewMode,
-        offset: 0,
-      }));
+    if (!appliedOnce) {
+      setAppliedOnce(true);
+      const rememberedMode = shareViewMode && prefsKey ? loadListPrefs(prefsKey).viewMode : undefined;
+      if (persisted || rememberedMode) {
+        setState((s) => ({
+          ...s,
+          limit: persisted?.limit ?? s.limit,
+          sort: persisted?.sort ?? s.sort,
+          filters: persisted?.filters ?? s.filters,
+          viewMode: persisted?.viewMode ?? rememberedMode ?? s.viewMode,
+          offset: 0,
+        }));
+      }
     }
   }
   const userStateReady = userState == null || userStateApplied;
@@ -81,9 +92,11 @@ export function useTableState({ defaultSort, prefsKey, userState }: UseTableStat
     setState((s) => ({ ...s, filters, offset: 0 }));
   }, [setState]);
 
+  // Also remembered for the kind of list (listPreferences), so the next fiche's tab opens in the same mode.
   const setViewMode = useCallback((viewMode: ListViewMode) => {
-    setState((s) => ({ ...s, viewMode }));
-  }, [setState]);
+    setState((s) => (s.viewMode === viewMode ? s : { ...s, viewMode }));
+    if (prefsKey && shareViewMode) saveListPrefs(prefsKey, { viewMode });
+  }, [prefsKey, shareViewMode, setState]);
 
   // Seeds visibleColumns once — never overwrites a set the user (or a restored view) already
   // populated, including an explicit "hide everything" (`[]` is not empty in the sense this guards

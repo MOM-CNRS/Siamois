@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.recordingunit;
 
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+import fr.siamois.ui.api.openapi.v1.resource.FirstImageCarrier;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,7 +22,7 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
-public class RecordingUnitResource extends RecordingUnitResourceIdentifier implements BookmarkableResource {
+public class RecordingUnitResource extends RecordingUnitResourceIdentifier implements BookmarkableResource, FirstImageCarrier {
 
     @Schema(description = "Révision de synchronisation (optimistic locking)")
     private Long syncRevision;
@@ -86,6 +87,11 @@ public class RecordingUnitResource extends RecordingUnitResourceIdentifier imple
 
     @Schema(description = "L'unité d'enregistrement est dans les favoris du caller")
     private boolean bookmarked;
+
+    @Schema(description = "Identifiant du premier document image lié (listes uniquement) : l'image des vignettes. "
+            + "Absent quand aucun document image n'est lié.")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String firstImageDocumentId;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
     private ValidationStatus validationStatus;

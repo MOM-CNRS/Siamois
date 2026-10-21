@@ -24,6 +24,7 @@ import { withLabels } from "../components/table/ColumnFilter";
 import type { FilterOption } from "../fields/optionSources";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { queryKeys } from "../api/queryKeys";
+import { EntityCardGrid } from "./list/EntityCardGrid";
 import { EntityTable } from "./list/EntityTable";
 import { useTreeRows } from "./list/useTreeRows";
 import { EntityTableSettings } from "./list/EntityTableSettings";
@@ -221,6 +222,7 @@ function EntityListPanelBody({
     initialFilters,
   });
   const showTree = viewMode === "tree";
+  const showCards = viewMode === "cards";
   // A tab filtered on exactly one type creates entities of that type.
   const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
   const createPrefillWithType = fixedTypeId ? { ...createPrefill, typeId: fixedTypeId } : createPrefill;
@@ -523,6 +525,25 @@ function EntityListPanelBody({
         className={`panel-progressbar entity-list-panel-progressbar${isFetching && !isLoading ? " is-active" : ""}`}
         aria-hidden={!(isFetching && !isLoading)}
       />
+      {showCards ? (
+        <EntityCardGrid
+          entityType={entityType}
+          config={config}
+          rows={rows}
+          isLoading={isLoading}
+          totalCount={totalCount}
+          params={params}
+          offset={state.offset}
+          limit={state.limit}
+          onPage={setPage}
+          renderRowActions={rowActions.render}
+          onNavigate={onNavigate}
+          onOpenOverview={onOpenOverview}
+          overviewEntityId={overviewEntityId}
+          selectedRows={selectedRows}
+          onSelectionChange={setSelectedRows}
+        />
+      ) : (
       <EntityTable
         entityType={entityType}
         config={config}
@@ -552,6 +573,7 @@ function EntityListPanelBody({
         readOnly={volatile}
         tree={showTree ? treeRows.tree : undefined}
       />
+      )}
       {rowActions.dialog}
     </>
   );

@@ -37,6 +37,8 @@ export interface FindResource {
   _permissions?: FindPermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // The first image document linked to it, for the list's cards (list only).
+  firstImageDocumentId?: string | null;
   // Detail only: what the fiche's tab badges count.
   _counts?: { documents?: number | null };
   // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".

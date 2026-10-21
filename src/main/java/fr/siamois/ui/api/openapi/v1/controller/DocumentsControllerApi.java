@@ -26,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/documents")
@@ -151,11 +152,30 @@ public class DocumentsControllerApi {
             @Parameter(description = "Identifiant numérique du document (document_id).", example = "42")
             @PathVariable("id") long id,
             @Parameter(description = "true : téléchargement (attachment) ; sinon affichage dans le navigateur (inline).")
-            @RequestParam(value = "download", defaultValue = "false") boolean download) {
+            @RequestParam(value = "download", defaultValue = "false") boolean download,
+            @Parameter(description = "Image uniquement : largeur maximale en pixels (16 à 1600) d'une copie réduite en JPEG, "
+                    + "pour les vignettes. Ignoré pour un autre type de fichier ou une image que le serveur ne sait pas décoder "
+                    + "(le fichier d'origine est alors servi).", example = "480")
+            @RequestParam(value = "w", required = false) Integer width) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
         DocumentContentOpenApiService.DocumentFilePayload payload =
                 documentContentOpenApiService.requireDownloadableContent(id, caller.accessibleInstitutionIds());
+
+        if (width != null && !download) {
+            Optional<DocumentContentOpenApiService.DocumentFilePayload> thumbnail = documentContentOpenApiService.thumbnailOf(payload, width);
+            if (thumbnail.isPresent()) {
+                return ResponseEntity.ok()
+                        .contentType(thumbnail.get().mediaType())
+                        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                                .filename(thumbnail.get().fileName(), StandardCharsets.UTF_8).build().toString())
+                        // The picture of a card: the same document at the same width is not asked for twice.
+                        .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                        .body(new InputStreamResource(thumbnail.get().inputStream()));
+            }
+            // Not an image the server can decode: the thumbnail attempt used up the stream, open the file again.
+            payload = documentContentOpenApiService.requireDownloadableContent(id, caller.accessibleInstitutionIds());
+        }
 
         ContentDisposition disposition = (download ? ContentDisposition.attachment() : ContentDisposition.inline())
                 .filename(payload.fileName(), StandardCharsets.UTF_8)

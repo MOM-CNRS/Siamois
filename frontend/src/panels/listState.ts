@@ -44,7 +44,7 @@ export function parsePersisted(raw: ViewStateBody | undefined): PersistedListSta
   if (typeof raw.limit === "number" && PAGE_SIZE_OPTIONS.includes(raw.limit) && raw.limit !== LEGACY_DEFAULT_LIMIT) parsed.limit = raw.limit;
   if (typeof raw.sort === "string" && raw.sort) parsed.sort = raw.sort;
   if (isStringArray(raw.visibleColumns)) parsed.visibleColumns = raw.visibleColumns;
-  if (raw.viewMode === "list" || raw.viewMode === "tree") parsed.viewMode = raw.viewMode;
+  if (raw.viewMode === "list" || raw.viewMode === "tree" || raw.viewMode === "cards") parsed.viewMode = raw.viewMode;
   if (raw.filters != null && typeof raw.filters === "object" && !Array.isArray(raw.filters)) {
     const filters: Record<string, FilterValue> = {};
     for (const [key, value] of Object.entries(raw.filters)) {
