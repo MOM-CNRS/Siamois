@@ -29,6 +29,19 @@ describe("renderAnswerValue (plain text)", () => {
   });
 });
 
+describe("renderAnswerCell (every value, as a fiche field)", () => {
+  it("wraps each value, and carries the count of the others for a narrow fiche to show instead of them", () => {
+    const html = markup(renderAnswerCell(field(), [ref("1", "Néolithique"), ref("2", "Âge du Fer"), ref("3", "Gallo-romain")], { all: true }));
+    expect(html.match(/cell-multi-item/g)).toHaveLength(3);
+    expect(html).toContain("+2");
+    expect(html).toContain("cell-multi-fold");
+  });
+
+  it("has no counter for a single value", () => {
+    expect(markup(renderAnswerCell(field(), [ref("1", "Néolithique")], { all: true }))).not.toContain("cell-multi-fold");
+  });
+});
+
 describe("renderAnswerCell (one-line cell)", () => {
   it("shows the first label plus a +N counter for a multi-valued answer", () => {
     const html = markup(renderAnswerCell(field(), [ref("1", "Néolithique"), ref("2", "Âge du Fer"), ref("3", "Gallo-romain")]));

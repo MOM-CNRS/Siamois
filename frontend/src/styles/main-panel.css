@@ -910,6 +910,50 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* A row's negative top margin pulls it over the previous row, but not a field wrapped inside the same row:
+     the spacing then depended on how the form groups its fields. One field per line, so no overlap at all. */
+  .sia-fiche-tab .sia-grid {
+    margin: 0;
+  }
+  /* Every field is the same height whatever it holds (chips, a measurement, a checkbox): the row's height is
+     fixed, its contents are cropped to it. */
+  .sia-fiche-tab .field-value-group {
+    height: 2.1rem;
+    overflow: hidden;
+  }
+  .sia-fiche-tab .field-value-cell {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* A multi-valued field: its first value, then how many more. */
+  .sia-fiche-tab .cell-multi-all {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:nth-child(n + 2) {
+    display: none;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-fold {
+    display: inline;
+    flex: none;
+  }
+}
+.cell-multi-fold {
+  display: none;
 }
 
 /* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */

@@ -285,8 +285,18 @@ export function renderAnswerCell(
   return (
     <span className={options.all ? "cell-multi cell-multi-all" : "cell-multi"}>
       {options.all
-        ? shown.map((item, i) => render(item, i))
+        ? shown.map((item, i) => (
+            <span key={i} className="cell-multi-item">
+              {render(item)}
+            </span>
+          ))
         : shown.length > 0 && <span className="cell-multi-first">{render(shown[0])}</span>}
+      {/* Only a narrow fiche shows it (main-panel.css): the first value and this count, instead of every value. */}
+      {options.all && shown.length > 1 && (
+        <span className="cell-multi-fold" title={title}>
+          +{shown.length - 1}
+        </span>
+      )}
       {hidden > 0 && (
         <span className="cell-multi-more" title={title}>
           +{hidden}
