@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { PaneStateScope, usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
@@ -41,7 +41,7 @@ import { ListSearchOverlayBox } from "./list/ListSearchOverlay";
 import { ListToolbar } from "./list/ListToolbar";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
 import { useListColumns } from "./list/useListColumns";
-import { listPrefsKey } from "./listPreferences";
+import { defaultOpenMode, listPrefsKey, loadListPrefs, saveListPrefs, type OpenMode } from "./listPreferences";
 import { useRowActions } from "./useRowActions";
 import { useWriteMode } from "./writeMode";
 import type { ListSeed } from "../navigation/externalBus";
@@ -223,6 +223,15 @@ function EntityListPanelBody({
   });
   const showTree = viewMode === "tree";
   const showCards = viewMode === "cards";
+  // How a row opens a page: in the side overview, or in the main pane (focus) by leaving the overview out.
+  // Remembered for the kind of list; project lists start in focus, the others in the overview.
+  const [, setOpenModeTick] = useState(0);
+  const openMode: OpenMode = loadListPrefs(prefsKey).openMode ?? defaultOpenMode(entityType);
+  function setOpenMode(mode: OpenMode) {
+    saveListPrefs(prefsKey, { openMode: mode });
+    setOpenModeTick((n) => n + 1);
+  }
+  const rowOpenOverview = openMode === "focus" ? undefined : onOpenOverview;
   // A tab filtered on exactly one type creates entities of that type.
   const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
   const createPrefillWithType = fixedTypeId ? { ...createPrefill, typeId: fixedTypeId } : createPrefill;
@@ -429,6 +438,7 @@ function EntityListPanelBody({
           start={
             <>
               <EntityTableSettings
+                openMode={onOpenOverview && onNavigate ? { value: openMode, onChange: setOpenMode } : null}
                 views={
                   views.length > 1
                     ? {
@@ -538,7 +548,7 @@ function EntityListPanelBody({
           onPage={setPage}
           renderRowActions={rowActions.render}
           onNavigate={onNavigate}
-          onOpenOverview={onOpenOverview}
+          onOpenOverview={rowOpenOverview}
           overviewEntityId={overviewEntityId}
           selectedRows={selectedRows}
           onSelectionChange={setSelectedRows}
@@ -567,7 +577,7 @@ function EntityListPanelBody({
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
         onNavigate={onNavigate}
-        onOpenOverview={onOpenOverview}
+        onOpenOverview={rowOpenOverview}
         overviewEntityId={overviewEntityId}
         onCellSaved={onCellSaved}
         readOnly={volatile}

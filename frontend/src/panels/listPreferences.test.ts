@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs } from "./listPreferences";
+import { defaultOpenMode, listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs } from "./listPreferences";
 
 beforeEach(() => window.localStorage.clear());
 
@@ -23,6 +23,15 @@ describe("listPreferences", () => {
     saveListPrefs(key(5), { viewMode: "cards" });
     expect(loadListPrefs(key(6)).viewMode).toBe("cards");
     expect(loadListPrefs(listPrefsKey("recordingUnit")).viewMode).toBeUndefined();
+  });
+
+  it("opens project lists in focus and every other list in the overview, until the user chooses", () => {
+    expect(defaultOpenMode("project")).toBe("focus");
+    expect(defaultOpenMode("recordingUnit")).toBe("overview");
+    saveListPrefs("k", { openMode: "overview" });
+    expect(loadListPrefs("k").openMode).toBe("overview");
+    window.localStorage.setItem("k", JSON.stringify({ v: 1, openMode: "tab" }));
+    expect(loadListPrefs("k").openMode).toBeUndefined();
   });
 
   it("ignores a display mode it does not know", () => {

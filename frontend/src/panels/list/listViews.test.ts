@@ -83,6 +83,15 @@ describe("availableViews", () => {
 });
 
 describe("resolveViewMode", () => {
+  it("starts on the type's own default when nothing was chosen and the list offers it", () => {
+    expect(resolveViewMode(undefined, ["list", "cards"], "cards")).toBe("cards");
+    expect(resolveViewMode(undefined, ["list"], "cards")).toBe(DEFAULT_LIST_VIEW);
+  });
+
+  it("lets an explicit choice of the flat list win over the type's default", () => {
+    expect(resolveViewMode("list", ["list", "cards"], "cards")).toBe("list");
+  });
+
   it("keeps the remembered mode while the list still offers it", () => {
     expect(resolveViewMode("tree", ["list", "tree"])).toBe("tree");
   });

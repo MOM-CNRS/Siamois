@@ -46,6 +46,8 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
     createForm: (ctx) => <DocumentCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "document",
+    // Documents are looked at before they are read: their lists start as cards.
+    defaultView: "cards",
     // An image document is its own picture.
     card: {
       image: (d) => (d.mimeType?.startsWith("image/") ? { documentId: d.id } : null),

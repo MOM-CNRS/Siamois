@@ -81,7 +81,7 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
   // How the list is shown (flat list, tree, later a map…): chosen in the gear menu, the flat list
   // staying the default. The tree view fetches its own rows: no flat page meanwhile.
   const views = availableViews(config, scope);
-  const viewMode = resolveViewMode(state.viewMode, views);
+  const viewMode = resolveViewMode(state.viewMode, views, config?.list.defaultView);
   const showTree = viewMode === "tree";
 
   const hasSchema = config?.list.schema != null;

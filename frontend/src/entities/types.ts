@@ -458,6 +458,8 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     rowActions?: RowActionDef<TSummary>[];
     // Present: the list can also be shown as a grid of cards (a « Vignettes » choice in the gear menu).
     card?: CardDef<TSummary>;
+    // The display mode a list starts in when the user has chosen none (the flat list when absent).
+    defaultView?: "list" | "tree" | "cards";
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

@@ -83,18 +83,10 @@ function renderPanel(
 
 const gear = () =>
   container.querySelector<HTMLButtonElement>(".entity-list-panel-gear-button");
-// The display modes live in the gear menu, as one entry that opens a grid of tiles.
-const modeEntry = () =>
-  Array.from(document.body.querySelectorAll(".entity-list-panel-gear-menu .p-menuitem-link")).find((e) =>
-    e.textContent?.includes("Mode d'affichage"),
-  );
-const viewEntries = () => Array.from(document.body.querySelectorAll(".entity-list-panel-view-tile"));
-async function openModes() {
-  await click(gear()!);
-  await click(modeEntry()!);
-}
+// The display modes are tiles in the gear's own panel: open it, pick one.
+const viewEntries = () => Array.from(document.body.querySelectorAll(".entity-list-panel-gear-panel .entity-list-panel-view-tile"));
 async function pickView(label: string) {
-  await openModes();
+  await click(gear()!);
   await click(viewEntries().find((e) => e.textContent?.includes(label))!);
 }
 async function openGear() {
@@ -160,10 +152,7 @@ describe("EntityListPanel: the tree view", () => {
     expect(container.querySelector(".p-treetable")).toBeNull();
 
     await openGear();
-    // One entry names the mode in use...
-    expect(modeEntry()?.textContent).toContain("Liste");
-    // ...and opens a grid of tiles, the one in use checked.
-    await click(modeEntry()!);
+    // One tile per mode, the one in use checked.
     expect(viewEntries().map((e) => e.textContent)).toEqual(["Liste", "Arbre"]);
     expect(viewEntries().map((e) => e.getAttribute("aria-checked"))).toEqual(["true", "false"]);
   });

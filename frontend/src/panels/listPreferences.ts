@@ -22,11 +22,20 @@ export interface ActionBarPrefs {
   inline: string[];
 }
 
+// How a row opens a page: in the side overview (the default) or in the main pane, in focus.
+export type OpenMode = "overview" | "focus";
+
 export interface ListPrefs {
   v: 1;
   visibleColumns?: string[];
   actionBar?: ActionBarPrefs;
   viewMode?: ListViewMode;
+  openMode?: OpenMode;
+}
+
+/** Project lists open in focus, every other list in the overview, until the user chooses. */
+export function defaultOpenMode(entityType: string): OpenMode {
+  return entityType === "project" ? "focus" : "overview";
 }
 
 export function listPrefsKey(entityType: string, scope?: ListScope, organizationId?: number): string {
@@ -47,6 +56,7 @@ export function loadListPrefs(key: string): ListPrefs {
     const prefs: ListPrefs = { v: 1 };
     if (isStringArray(parsed.visibleColumns)) prefs.visibleColumns = parsed.visibleColumns;
     if (parsed.viewMode === "list" || parsed.viewMode === "tree" || parsed.viewMode === "cards") prefs.viewMode = parsed.viewMode;
+    if (parsed.openMode === "overview" || parsed.openMode === "focus") prefs.openMode = parsed.openMode;
     const bar = parsed.actionBar;
     if (bar && isStringArray(bar.order) && isStringArray(bar.inline)) prefs.actionBar = { order: bar.order, inline: bar.inline };
     return prefs;

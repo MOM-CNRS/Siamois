@@ -18,7 +18,7 @@ interface ListViewDefinition {
 
 export const LIST_VIEWS: Record<ListViewMode, ListViewDefinition> = {
   list: { label: "list.viewModeList", icon: "bi bi-list-ul" },
-  tree: { label: "list.viewModeTree", icon: "bi bi-diagram-3" },
+  tree: { label: "list.viewModeTree", icon: "bi bi-list-nested" },
   cards: { label: "list.viewModeCards", icon: "bi bi-grid-3x3-gap" },
 };
 
@@ -57,14 +57,15 @@ export function availableViews(
   return views;
 }
 
-/** The mode to show: the remembered one if this list still offers it, else the flat list. */
+/** The mode to show: the remembered one if this list still offers it, else the type's default, else the flat list. */
 export function resolveViewMode(
   remembered: ListViewMode | undefined,
   available: ListViewMode[],
+  preferred?: ListViewMode,
 ): ListViewMode {
-  return remembered != null && available.includes(remembered)
-    ? remembered
-    : DEFAULT_LIST_VIEW;
+  if (remembered != null && available.includes(remembered)) return remembered;
+  // Nothing chosen: the type's own starting mode, when this list offers it.
+  return remembered == null && preferred != null && available.includes(preferred) ? preferred : DEFAULT_LIST_VIEW;
 }
 
 export function viewOptions(available: ListViewMode[]): ListViewOption[] {
