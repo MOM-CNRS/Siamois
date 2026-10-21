@@ -83,15 +83,18 @@ function renderPanel(
 
 const gear = () =>
   container.querySelector<HTMLButtonElement>(".entity-list-panel-gear-button");
-const viewEntries = () =>
-  Array.from(
-    document.body.querySelectorAll(
-      ".entity-list-panel-gear-menu [role=menuitemradio]",
-    ),
+// The display modes live in the gear menu, as one entry that opens a grid of tiles.
+const modeEntry = () =>
+  Array.from(document.body.querySelectorAll(".entity-list-panel-gear-menu .p-menuitem-link")).find((e) =>
+    e.textContent?.includes("Mode d'affichage"),
   );
-// The display modes live in the gear menu: open it, pick one.
-async function pickView(label: string) {
+const viewEntries = () => Array.from(document.body.querySelectorAll(".entity-list-panel-view-tile"));
+async function openModes() {
   await click(gear()!);
+  await click(modeEntry()!);
+}
+async function pickView(label: string) {
+  await openModes();
   await click(viewEntries().find((e) => e.textContent?.includes(label))!);
 }
 async function openGear() {
@@ -157,12 +160,12 @@ describe("EntityListPanel: the tree view", () => {
     expect(container.querySelector(".p-treetable")).toBeNull();
 
     await openGear();
+    // One entry names the mode in use...
+    expect(modeEntry()?.textContent).toContain("Liste");
+    // ...and opens a grid of tiles, the one in use checked.
+    await click(modeEntry()!);
     expect(viewEntries().map((e) => e.textContent)).toEqual(["Liste", "Arbre"]);
-    // The one in use is ticked.
-    expect(viewEntries().map((e) => e.getAttribute("aria-checked"))).toEqual([
-      "true",
-      "false",
-    ]);
+    expect(viewEntries().map((e) => e.getAttribute("aria-checked"))).toEqual(["true", "false"]);
   });
 
   it("offers no display mode but the table inside a context the type doesn't support", async () => {

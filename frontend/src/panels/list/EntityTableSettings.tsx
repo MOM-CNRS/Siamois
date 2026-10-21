@@ -50,6 +50,7 @@ export function EntityTableSettings({
   const gearButtonRef = useRef<HTMLButtonElement | null>(null);
   const columnTogglerRef = useRef<OverlayPanel>(null);
   const actionBarSettingsRef = useRef<OverlayPanel>(null);
+  const viewModeRef = useRef<OverlayPanel>(null);
 
   const hasViews = views != null && views.options.length > 1;
   if (!columns && !actionBar && !hasViews) return null;
@@ -62,49 +63,16 @@ export function EntityTableSettings({
     if (anchor) ref.current?.show(e.originalEvent, anchor);
     else ref.current?.toggle(e.originalEvent);
   }
-  // The display modes are a choice among several (not an on/off switch): one entry each under their own
-  // heading, the one in use ticked.
+  // The display modes are a choice among several: one entry naming the one in use, which opens a drop-down
+  // of them (same overlay-on-the-gear pattern as the columns and the action bar).
+  const currentView = hasViews ? views.options.find((o) => o.mode === views.value) : undefined;
   const viewItems = hasViews
     ? [
         {
-          label: t("list.menuView"),
-          items: views.options.map((option) => {
-            const active = option.mode === views.value;
-            return {
-              label: option.label,
-              icon: option.icon,
-              className: active ? "entity-list-panel-view-active" : undefined,
-              command: () => views.onChange(option.mode),
-              template: (
-                item: { label?: string; icon?: string },
-                options: {
-                  onClick: (e: SyntheticEvent) => void;
-                  className: string;
-                  iconClassName: string;
-                  labelClassName: string;
-                },
-              ) => (
-                <a
-                  className={options.className}
-                  role="menuitemradio"
-                  aria-checked={active}
-                  tabIndex={0}
-                  onClick={options.onClick}
-                >
-                  <span
-                    className={`${options.iconClassName} ${item.icon ?? ""}`}
-                  />
-                  <span className={options.labelClassName}>{item.label}</span>
-                  {active && (
-                    <i
-                      className="bi bi-check2 entity-list-panel-view-check"
-                      aria-hidden="true"
-                    />
-                  )}
-                </a>
-              ),
-            };
-          }),
+          label: `${t("list.menuView")} : ${currentView?.label ?? ""}`,
+          icon: currentView?.icon ?? "bi bi-list-ul",
+          command: (e: { originalEvent: SyntheticEvent }) =>
+            openSettings(viewModeRef, e),
         },
         ...(columns || actionBar ? [{ separator: true }] : []),
       ]
@@ -172,6 +140,37 @@ export function EntityTableSettings({
         model={menuItems}
         className="entity-list-panel-gear-menu"
       />
+      {hasViews && (
+        <OverlayPanel
+          ref={viewModeRef}
+          className="entity-list-panel-settings-overlay"
+        >
+          <div className="entity-list-panel-view-mode" role="radiogroup" aria-label={t("list.menuView")}>
+            <span className="entity-list-panel-view-mode-title">{t("list.menuView")}</span>
+            <div className="entity-list-panel-view-mode-grid">
+              {views.options.map((option) => {
+                const active = option.mode === views.value;
+                return (
+                  <button
+                    key={option.mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`entity-list-panel-view-tile${active ? " is-active" : ""}`}
+                    onClick={() => {
+                      viewModeRef.current?.hide();
+                      if (!active) views.onChange(option.mode);
+                    }}
+                  >
+                    <i className={option.icon} aria-hidden="true" />
+                    <span>{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </OverlayPanel>
+      )}
       {columns && (
         <OverlayPanel
           ref={columnTogglerRef}
