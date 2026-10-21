@@ -109,7 +109,7 @@ export const en: Record<MessageKey, string> = {
   "views.rename": "Rename the view",
   "views.failed": "save the view",
   "views.missing": "This view no longer exists: the list shows its default state.",
-  "list.menuView": "Display mode",
+  "list.menuView": "Layout",
   "list.viewModeList": "List",
   "list.viewModeTree": "Tree",
   "list.viewImage": "View the whole image",

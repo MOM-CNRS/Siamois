@@ -259,9 +259,13 @@
   gap: 0.35rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* The outline is kept (the chip's size does not change) but transparent: only the colour of the text and
+     icon, and the fill on hover, show the entity. */
+  border: 1px solid transparent;
   background: transparent;
   color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* With no outline left, the weight is what makes the chip stand out of the row. */
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1777,6 +1781,17 @@ body button.p-button.status-button.status-button-compact {
   align-items: center;
 }
 
+/* The fiche's chips (the identifier, the second text, the type, the read-only ones) like the list's: no outline
+   and no fill, the text and icon in the panel's colour, in bold. The theme paints them filled (-chip-alt) or
+   outlined (-type-chip) with their own --main-color, which is what the text takes here. */
+.entity-detail-header .p-chip.p-component,
+.p-chip.p-component.entity-detail-panel-preview-chip {
+  background: transparent;
+  border-color: transparent;
+  color: var(--main-color);
+  font-weight: 600;
+}
+
 .entity-detail-header-primary-input {
   min-width: 12rem;
 }
@@ -2545,21 +2560,16 @@ div#search-bar .sia-search {
 .entity-list-panel .p-treetable-tbody > tr > td:has(> .p-treetable-toggler) {
   white-space: nowrap;
 }
-/* A parent shown only because a match is below it: its identifier chip is dashed (the matches keep
-   the solid outline), the rest of the row is left alone. */
+/* A parent shown only because a match is below it: its identifier chip is written in a lighter tint of
+   the entity colour (the matches keep the full colour), the rest of the row is left alone. */
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
-  /* 1px dashed, in a lighter tint of the entity colour (outline and label): it reads as "context",
-     not as a result. */
   --context-chip-color: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 55%, transparent);
-  border-style: dashed;
-  border-color: var(--context-chip-color);
   color: var(--context-chip-color);
 }
 /* On hover the chip fills with the entity colour (rule above): the label goes back to white, or it
    would vanish into the fill. */
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
-  border-color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   color: var(--primary-color-text, #ffffff);
 }
 
@@ -3048,6 +3058,13 @@ div#search-bar .sia-search {
 .entity-card-chip {
   min-width: 0;
   cursor: pointer;
+}
+/* A long identifier gives way (an ellipsis) rather than pushing the actions out. */
+.entity-card-chip .entity-nav-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* The actions sit at the right end of the line. */
 .entity-card-footer .entity-card-actions {

@@ -109,7 +109,7 @@ export const fr = {
   "views.rename": "Renommer la vue",
   "views.failed": "enregistrer la vue",
   "views.missing": "Cette vue n'existe plus : la liste s'affiche avec son état par défaut.",
-  "list.menuView": "Mode d'affichage",
+  "list.menuView": "Disposition",
   "list.viewModeList": "Liste",
   "list.viewModeTree": "Arbre",
   "list.viewImage": "Voir l'image en entier",

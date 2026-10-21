@@ -169,7 +169,7 @@ export interface EntityCardGridProps {
   limit: number;
   onPage: (offset: number, limit: number) => void;
   // A row's actions bar and the dialogs it opens (useRowActions) — the table's own.
-  renderRowActions: (row: RowRecord) => ReactNode;
+  renderRowActions: (row: RowRecord, compact?: boolean) => ReactNode;
   onNavigate?: (entityType: string, id: string | number) => void;
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   overviewEntityId?: string | number;
@@ -240,7 +240,7 @@ export function EntityCardGrid({
                 checked={isChecked(row)}
                 onToggleChecked={toggleChecked}
                 onOpen={open}
-                actions={renderRowActions(row)}
+                actions={renderRowActions(row, true)}
               />
             ))}
           </div>

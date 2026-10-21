@@ -107,11 +107,13 @@ export function EntityTableSettings({
     { mode: "overview", label: t("list.openOverview"), icon: "bi bi-layout-sidebar-inset-reverse" },
     { mode: "focus", label: t("list.openFocus"), icon: "bi bi-arrows-fullscreen" },
   ];
+  // The columns and the action bar arrange a table: they are offered on the list and the tree, not on cards.
+  const tableLayout = views == null || views.value !== "cards";
   const entries = [
-    ...(columns
+    ...(columns && tableLayout
       ? [{ key: "columns", label: t("list.menuColumns"), icon: "bi bi-layout-three-columns", ref: columnTogglerRef }]
       : []),
-    ...(actionBar
+    ...(actionBar && tableLayout
       ? [{ key: "actionBar", label: t("list.menuActionBar"), icon: "bi bi-three-dots", ref: actionBarSettingsRef }]
       : []),
   ];
