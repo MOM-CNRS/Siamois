@@ -318,6 +318,7 @@ export const fr = {
   "home.dataAccess.empty": "Aucune vue à la une.",
     "home.dataAccess.table": "Table",
   "home.dataAccess.type": "Type",
+  "home.dataAccess.name": "Nom de la vue",
   "home.dataAccess.noType": "Aucun type pour cette table",
   "home.dataAccess.add": "Ajouter",
   "home.dataAccess.addFailed": "La vue n'a pas pu être ajoutée",

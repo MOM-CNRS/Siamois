@@ -318,6 +318,7 @@ export const en: Record<MessageKey, string> = {
   "home.dataAccess.empty": "No featured view.",
   "home.dataAccess.table": "Table",
   "home.dataAccess.type": "Type",
+  "home.dataAccess.name": "View name",
   "home.dataAccess.noType": "No type for this table",
   "home.dataAccess.add": "Add",
   "home.dataAccess.addFailed": "The view could not be added",

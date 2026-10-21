@@ -10,9 +10,9 @@ export interface HomeAccess {
   viewId: number;
   // The table (key of the entity registry).
   resourceType: string;
-  // The view's title.
+  // The view's name: what the card says.
   title: string;
-  // What the card says: the name of the type it shows (or of the table).
+  // Legacy card caption; the card shows `title`.
   label: string;
   // The view's filters, to count what it shows.
   filters?: Record<string, FilterValue> | null;
@@ -33,7 +33,6 @@ export async function createHomeAccess(body: {
   viewId?: number;
   resourceType?: string;
   title?: string;
-  label?: string;
   state?: ViewTableState;
 }): Promise<HomeAccess> {
   return apiFetch<HomeAccess>("/api/v1/home-accesses", { method: "POST", body });

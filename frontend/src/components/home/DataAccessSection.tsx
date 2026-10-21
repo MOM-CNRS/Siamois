@@ -145,7 +145,7 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
   );
 }
 
-/** One card: the name of its type, and how many there are (the view's own filters apply). */
+/** One card: the name of its view, and how many there are (the view's own filters apply). */
 function DataAccessCard({
   access,
   organizationId,
@@ -179,11 +179,11 @@ function DataAccessCard({
     staleTime: 0,
   });
   const card = (
-    <ClickableCard ariaLabel={access.label} onOpen={onOpen} className={`sia-welcome-card ${type?.cardClassName ?? ""}`}>
+    <ClickableCard ariaLabel={access.title} onOpen={onOpen} className={`sia-welcome-card ${type?.cardClassName ?? ""}`}>
       <div className="sia-count-card-row">
         {editing && <i className="bi bi-grip-vertical home-data-access-handle" title={t("home.dataAccess.drag")} />}
         <i className={type?.icon ?? "bi bi-table"} />
-        <span className="sia-count-card-title">{access.label}</span>
+        <span className="sia-count-card-title">{access.title}</span>
         {count.data != null && <Chip label={String(count.data)} className={type?.countChipClassName} />}
         {editing && (
           <Button
