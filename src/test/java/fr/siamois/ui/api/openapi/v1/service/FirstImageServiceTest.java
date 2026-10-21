@@ -60,6 +60,16 @@ class FirstImageServiceTest {
     }
 
     @Test
+    void mark_doesNothingWhenNoRowHasAnId() {
+        RecordingUnitResource unsaved = unit(null);
+
+        service.markRecordingUnits(List.of(unsaved));
+
+        verifyNoInteractions(documentRepository);
+        assertNull(unsaved.getFirstImageDocumentId());
+    }
+
+    @Test
     void mark_doesNothingForAnEmptyPage() {
         service.markRecordingUnits(List.of());
 

@@ -49,6 +49,53 @@ class DocumentContentOpenApiServiceTest {
         service = new DocumentContentOpenApiService(documentService, profilePermissionService, new ImageThumbnailer());
     }
 
+    private static byte[] png(int width, int height) throws java.io.IOException {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", out);
+        return out.toByteArray();
+    }
+
+    @Test
+    void thumbnailOf_anImage_isAReducedJpegUnderTheSameName() throws Exception {
+        var payload = new DocumentContentOpenApiService.DocumentFilePayload(
+                new ByteArrayInputStream(png(800, 400)), MediaType.IMAGE_PNG, "photo.png");
+
+        var thumbnail = service.thumbnailOf(payload, 200).orElseThrow();
+
+        assertThat(thumbnail.mediaType()).isEqualTo(MediaType.IMAGE_JPEG);
+        assertThat(thumbnail.fileName()).isEqualTo("photo.png");
+        assertThat(javax.imageio.ImageIO.read(thumbnail.inputStream()).getWidth()).isEqualTo(200);
+    }
+
+    @Test
+    void thumbnailOf_somethingThatIsNotAnImage_isEmpty() {
+        var payload = new DocumentContentOpenApiService.DocumentFilePayload(
+                new ByteArrayInputStream(new byte[]{1, 2}), MediaType.APPLICATION_PDF, "doc.pdf");
+
+        assertThat(service.thumbnailOf(payload, 200)).isEmpty();
+    }
+
+    @Test
+    void thumbnailOf_anImageTheJdkCannotDecode_isEmpty() {
+        var payload = new DocumentContentOpenApiService.DocumentFilePayload(
+                new ByteArrayInputStream(new byte[]{1, 2}), MediaType.parseMediaType("image/webp"), "photo.webp");
+
+        assertThat(service.thumbnailOf(payload, 200)).isEmpty();
+    }
+
+    @Test
+    void thumbnailOf_aStreamThatFailsToRead_isEmpty() {
+        java.io.InputStream broken = new java.io.InputStream() {
+            @Override
+            public int read() throws java.io.IOException {
+                throw new java.io.IOException("disk gone");
+            }
+        };
+        var payload = new DocumentContentOpenApiService.DocumentFilePayload(broken, MediaType.IMAGE_PNG, "photo.png");
+
+        assertThat(service.thumbnailOf(payload, 200)).isEmpty();
+    }
+
     @Test
     void requireDownloadableContent_nullScope_throws404() {
         assertThatThrownBy(() -> service.requireDownloadableContent(1L, null))

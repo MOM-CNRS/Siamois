@@ -71,9 +71,6 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
     @Schema(description = "Le mobilier est dans les favoris du caller")
     private boolean bookmarked;
 
-    @Schema(description = "Identifiant du premier document image lié (listes uniquement) : l'image des vignettes. "
-            + "Absent quand aucun document image n'est lié.")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String firstImageDocumentId;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
