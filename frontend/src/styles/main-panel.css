@@ -2992,9 +2992,14 @@ div#search-bar .sia-search {
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
+  overflow: hidden;
   background: color-mix(in srgb, var(--entity-chip-color, #80b480) 14%, transparent);
 }
+/* The picture fills the box whatever its own proportions: it never sets the card's height, so the cards of a
+   row stay the same size. */
 .entity-card-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -3010,7 +3015,8 @@ div#search-bar .sia-search {
   justify-content: space-between;
   gap: 0.25rem;
   min-height: 2rem;
-  padding: 0 0.25rem 0 0.6rem;
+  /* Same side margins as the footer, so the zoom lines up over the "…" and the type over the status. */
+  padding: 0 0.4rem 0 0.6rem;
 }
 .entity-card-subtitle {
   min-width: 0;
@@ -3051,9 +3057,25 @@ div#search-bar .sia-search {
 .entity-card-footer {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
   min-width: 0;
-  padding: 0.4rem 0.4rem 0.4rem 0.6rem;
+  /* The footer sits at the bottom of the card: the cards of a row line their footers up. */
+  margin-top: auto;
+  padding: 0.4rem 0.4rem 0.5rem 0.6rem;
+}
+/* The status (a button or a badge) is a box of its own, centred, with no margin of the table's cell. */
+.entity-card-footer .status-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+}
+.entity-card-footer .entity-card-chip {
+  margin: 0;
+  padding-left: 0.4rem;
 }
 .entity-card-chip {
   min-width: 0;
