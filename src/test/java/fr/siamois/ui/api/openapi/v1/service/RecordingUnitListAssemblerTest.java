@@ -38,6 +38,8 @@ class RecordingUnitListAssemblerTest {
     private RecordingUnitListProjectionService recordingUnitListProjectionService;
     @Mock
     private ResourceBookmarkService resourceBookmarkService;
+    @Mock
+    private FirstImageService firstImageService;
 
     @InjectMocks
     private RecordingUnitListAssembler assembler;
@@ -77,6 +79,8 @@ class RecordingUnitListAssemblerTest {
         assertThat(resource.getAnswers()).containsEntry("8", "x");
         assertThat(response.getMeta().total()).isEqualTo(11L);
         verify(resourceBookmarkService).markBookmarked(caller.person(), institution, List.of(resource), "fr");
+        // The page's first images are looked up once, for the page's rows.
+        verify(firstImageService).markRecordingUnits(List.of(resource));
     }
 
     @Test

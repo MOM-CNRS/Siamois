@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -165,7 +166,7 @@ class ProjectControllerApiTest {
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,

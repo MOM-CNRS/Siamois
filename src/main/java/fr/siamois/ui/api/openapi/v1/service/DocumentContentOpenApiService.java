@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.document.ImageThumbnailer;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -32,6 +34,7 @@ public class DocumentContentOpenApiService {
 
     private final DocumentService documentService;
     private final ProfilePermissionService profilePermissionService;
+    private final ImageThumbnailer imageThumbnailer;
 
     @Value("${server.servlet.context-path:}")
     private String contextPath;
@@ -80,6 +83,22 @@ public class DocumentContentOpenApiService {
         // The user gets the file under its own name; the stored name (a generated code) is a storage detail.
         String name = StringUtils.hasText(doc.getFileName()) ? doc.getFileName() : doc.contentFileName();
         return new DocumentFilePayload(stream, mediaType, name);
+    }
+
+    /**
+     * A reduced JPEG copy of an image payload (consumes its stream), or empty when the payload is not an
+     * image the JDK can decode: the caller then serves the original. {@code null} stream stays closed.
+     */
+    public Optional<DocumentFilePayload> thumbnailOf(DocumentFilePayload payload, int width) {
+        if (!"image".equals(payload.mediaType().getType())) {
+            return Optional.empty();
+        }
+        try (InputStream in = payload.inputStream()) {
+            return imageThumbnailer.thumbnail(in, width).map(bytes -> new DocumentFilePayload(
+                    new java.io.ByteArrayInputStream(bytes), MediaType.IMAGE_JPEG, payload.fileName()));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     private static MediaType resolveMediaType(String rawMime) {

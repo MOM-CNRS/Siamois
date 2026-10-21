@@ -1,6 +1,5 @@
 import { useRef, type RefObject, type SyntheticEvent } from "react";
 import { Button } from "primereact/button";
-import { Menu } from "primereact/menu";
 import { OverlayPanel } from "primereact/overlaypanel";
 import {
   ColumnToggler,
@@ -9,6 +8,7 @@ import {
 import { VisibilityChooser } from "../../components/table/VisibilityChooser";
 import { t } from "../../i18n";
 import type { ListViewMode, ListViewOption } from "./listViews";
+import type { OpenMode } from "../listPreferences";
 
 export interface ActionBarLayout {
   order: string[];
@@ -22,6 +22,12 @@ export interface EntityTableSettingsProps {
     options: ListViewOption[];
     value: ListViewMode;
     onChange: (mode: ListViewMode) => void;
+  } | null;
+  // How a row opens a page: in the side overview or in the main pane (focus); null when the list has no
+  // overview to open into.
+  openMode: {
+    value: OpenMode;
+    onChange: (mode: OpenMode) => void;
   } | null;
   // The columns the user can show or hide; null when the list has no column catalog.
   columns: {
@@ -43,93 +49,72 @@ export interface EntityTableSettingsProps {
  */
 export function EntityTableSettings({
   views,
+  openMode,
   columns,
   actionBar,
 }: EntityTableSettingsProps) {
-  const gearMenuRef = useRef<Menu>(null);
+  const gearPanelRef = useRef<OverlayPanel>(null);
   const gearButtonRef = useRef<HTMLButtonElement | null>(null);
   const columnTogglerRef = useRef<OverlayPanel>(null);
   const actionBarSettingsRef = useRef<OverlayPanel>(null);
 
   const hasViews = views != null && views.options.length > 1;
-  if (!columns && !actionBar && !hasViews) return null;
+  if (!columns && !actionBar && !hasViews && !openMode) return null;
 
-  function openSettings(
-    ref: RefObject<OverlayPanel>,
-    e: { originalEvent: SyntheticEvent },
-  ) {
+  // The gear's own panel gives way to the one asked for, anchored on the gear itself.
+  function openSettings(ref: RefObject<OverlayPanel>, e: SyntheticEvent) {
+    gearPanelRef.current?.hide();
     const anchor = gearButtonRef.current;
-    if (anchor) ref.current?.show(e.originalEvent, anchor);
-    else ref.current?.toggle(e.originalEvent);
+    if (anchor) ref.current?.show(e, anchor);
+    else ref.current?.toggle(e);
   }
-  // The display modes are a choice among several (not an on/off switch): one entry each under their own
-  // heading, the one in use ticked.
-  const viewItems = hasViews
-    ? [
-        {
-          label: t("list.menuView"),
-          items: views.options.map((option) => {
-            const active = option.mode === views.value;
-            return {
-              label: option.label,
-              icon: option.icon,
-              className: active ? "entity-list-panel-view-active" : undefined,
-              command: () => views.onChange(option.mode),
-              template: (
-                item: { label?: string; icon?: string },
-                options: {
-                  onClick: (e: SyntheticEvent) => void;
-                  className: string;
-                  iconClassName: string;
-                  labelClassName: string;
-                },
-              ) => (
-                <a
-                  className={options.className}
-                  role="menuitemradio"
-                  aria-checked={active}
-                  tabIndex={0}
-                  onClick={options.onClick}
-                >
-                  <span
-                    className={`${options.iconClassName} ${item.icon ?? ""}`}
-                  />
-                  <span className={options.labelClassName}>{item.label}</span>
-                  {active && (
-                    <i
-                      className="bi bi-check2 entity-list-panel-view-check"
-                      aria-hidden="true"
-                    />
-                  )}
-                </a>
-              ),
-            };
-          }),
-        },
-        ...(columns || actionBar ? [{ separator: true }] : []),
-      ]
-    : [];
-  const menuItems = [
-    ...viewItems,
-    ...(columns
-      ? [
-          {
-            label: t("list.menuColumns"),
-            icon: "bi bi-layout-three-columns",
-            command: (e: { originalEvent: SyntheticEvent }) =>
-              openSettings(columnTogglerRef, e),
-          },
-        ]
+
+  // A choice among a few modes: one tile each, icon over label, the one in use outlined.
+  function tiles<T extends string>(
+    title: string,
+    options: { mode: T; label: string; icon: string }[],
+    value: T,
+    onChange: (mode: T) => void,
+  ) {
+    return (
+      <div className="entity-list-panel-view-mode" role="radiogroup" aria-label={title}>
+        <span className="entity-list-panel-view-mode-title">{title}</span>
+        <div className="entity-list-panel-view-mode-grid">
+          {options.map((option) => {
+            const active = option.mode === value;
+            return (
+              <button
+                key={option.mode}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                className={`entity-list-panel-view-tile${active ? " is-active" : ""}`}
+                onClick={() => {
+                  if (!active) onChange(option.mode);
+                }}
+              >
+                <i className={option.icon} aria-hidden="true" />
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const openModeOptions: { mode: OpenMode; label: string; icon: string }[] = [
+    { mode: "overview", label: t("list.openOverview"), icon: "bi bi-layout-sidebar-inset-reverse" },
+    { mode: "focus", label: t("list.openFocus"), icon: "bi bi-arrows-fullscreen" },
+  ];
+  // The columns and the action bar arrange a table: they are offered on the list and the tree, not on cards.
+  const tableLayout = views == null || views.value !== "cards";
+  const entries = [
+    ...(columns && tableLayout
+      ? [{ key: "columns", label: t("list.menuColumns"), icon: "bi bi-layout-three-columns", ref: columnTogglerRef }]
       : []),
-    ...(actionBar
-      ? [
-          {
-            label: t("list.menuActionBar"),
-            icon: "bi bi-three-dots",
-            command: (e: { originalEvent: SyntheticEvent }) =>
-              openSettings(actionBarSettingsRef, e),
-          },
-        ]
+    ...(actionBar && tableLayout
+      ? [{ key: "actionBar", label: t("list.menuActionBar"), icon: "bi bi-three-dots", ref: actionBarSettingsRef }]
       : []),
   ];
 
@@ -164,14 +149,36 @@ export function EntityTableSettings({
         aria-haspopup
         tooltip={t("list.settings")}
         className="entity-list-panel-gear-button"
-        onClick={(e) => gearMenuRef.current?.toggle(e)}
+        onClick={(e) => gearPanelRef.current?.toggle(e)}
       />
-      <Menu
-        ref={gearMenuRef}
-        popup
-        model={menuItems}
-        className="entity-list-panel-gear-menu"
-      />
+      <OverlayPanel ref={gearPanelRef} className="entity-list-panel-settings-overlay entity-list-panel-gear-panel">
+        {hasViews &&
+          tiles(t("list.menuView"), views.options, views.value, (mode) => {
+            gearPanelRef.current?.hide();
+            views.onChange(mode);
+          })}
+        {openMode &&
+          tiles(t("list.menuOpening"), openModeOptions, openMode.value, (mode) => {
+            gearPanelRef.current?.hide();
+            openMode.onChange(mode);
+          })}
+        {entries.length > 0 && (
+          <div className="entity-list-panel-gear-menu" role="menu">
+            {entries.map((entry) => (
+              <a
+                key={entry.key}
+                className="p-menuitem-link"
+                role="menuitem"
+                tabIndex={0}
+                onClick={(e) => openSettings(entry.ref, e)}
+              >
+                <span className={`p-menuitem-icon ${entry.icon}`} />
+                <span className="p-menuitem-text">{entry.label}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </OverlayPanel>
       {columns && (
         <OverlayPanel
           ref={columnTogglerRef}

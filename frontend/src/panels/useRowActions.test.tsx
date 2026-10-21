@@ -77,6 +77,14 @@ const deletableConfig: EntityTypeConfig<FakeRow, FakeRow> = {
   list: { ...config.list, rowActions: [] },
 };
 registerEntityType(deletableConfig);
+// The same again, listed as cards: a card's footer is its own, compact bar.
+const cardConfig: EntityTypeConfig<FakeRow, FakeRow> = {
+  ...config,
+  key: "row-card-entity",
+  collectionPath: "row-card-entities",
+  list: { ...config.list, card: {}, defaultView: "cards" },
+};
+registerEntityType(cardConfig);
 
 let container: HTMLDivElement;
 let root: Root;
@@ -256,6 +264,36 @@ describe("list row actions", () => {
     await click(entry);
 
     expect(duplicateMock).toHaveBeenCalledWith("1");
+  });
+
+  it("shows only the bookmark and the menu in a card's footer, whatever actions the user brought into the table's rows", async () => {
+    window.localStorage.setItem(
+      "siamois.list.org3.row-card-entity.global",
+      JSON.stringify({ v: 1, actionBar: { order: ["new-child", "duplicate"], inline: ["new-child", "duplicate"] } }),
+    );
+    await render([row()], { entityType: "row-card-entity" });
+
+    const footer = Array.from(container.querySelectorAll(".entity-card-footer .entity-list-panel-row-actions button")).map((b) =>
+      b.getAttribute("aria-label"),
+    );
+    expect(footer).toEqual(["Ajouter aux favoris", "Plus d'actions"]);
+
+    await click(container.querySelector('.entity-card-footer button[aria-label="Plus d\'actions"]')!);
+    const labels = Array.from(document.body.querySelectorAll(".entity-list-panel-row-actions-menu .p-menuitem-link")).map((a) => a.textContent);
+    expect(labels).toEqual(expect.arrayContaining(["Créer un enfant", "Dupliquer"]));
+  });
+
+  it("offers the columns and the action bar only for a table layout, not for cards", async () => {
+    await render([row()], { entityType: "row-card-entity" });
+    await click(container.querySelector(".entity-list-panel-gear-button")!);
+    // Cards: the layout tiles, nothing that arranges a table.
+    expect(document.body.querySelector(".entity-list-panel-gear-panel .entity-list-panel-view-tile")).not.toBeNull();
+    expect(document.body.querySelector(".entity-list-panel-gear-panel .entity-list-panel-gear-menu")).toBeNull();
+
+    // Back to the list: the action bar is offered again.
+    await click(Array.from(document.body.querySelectorAll(".entity-list-panel-view-tile")).find((e) => e.textContent === "Liste")!);
+    await click(container.querySelector(".entity-list-panel-gear-button")!);
+    expect(document.body.querySelector(".entity-list-panel-gear-panel .entity-list-panel-gear-menu")?.textContent).toContain("Barre d'actions");
   });
 
   it("follows the saved order and shows a newly added action inline", async () => {

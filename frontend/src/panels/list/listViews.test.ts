@@ -16,6 +16,11 @@ describe("availableViews", () => {
     expect(availableViews(undefined, undefined)).toEqual(["list"]);
   });
 
+  it("adds the cards to a type that describes its cards", () => {
+    expect(availableViews(config({ card: {} }), undefined)).toEqual(["list", "cards"]);
+    expect(availableViews(config({ tree: true, card: {} }), undefined)).toEqual(["list", "tree", "cards"]);
+  });
+
   it("adds the tree to the organization-wide list of a hierarchical type", () => {
     expect(availableViews(config({ tree: true }), undefined)).toEqual([
       "list",
@@ -78,6 +83,15 @@ describe("availableViews", () => {
 });
 
 describe("resolveViewMode", () => {
+  it("starts on the type's own default when nothing was chosen and the list offers it", () => {
+    expect(resolveViewMode(undefined, ["list", "cards"], "cards")).toBe("cards");
+    expect(resolveViewMode(undefined, ["list"], "cards")).toBe(DEFAULT_LIST_VIEW);
+  });
+
+  it("lets an explicit choice of the flat list win over the type's default", () => {
+    expect(resolveViewMode("list", ["list", "cards"], "cards")).toBe("list");
+  });
+
   it("keeps the remembered mode while the list still offers it", () => {
     expect(resolveViewMode("tree", ["list", "tree"])).toBe("tree");
   });

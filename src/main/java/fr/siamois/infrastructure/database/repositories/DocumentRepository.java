@@ -95,6 +95,22 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
     )
     boolean existsByHashInRecordingUnit(Long recordingUnitId, String hash);
 
+    /** For each of these recording units, the lowest id among its linked image documents: {@code [unitId, documentId]} rows. */
+    @Query(nativeQuery = true,
+            value = "SELECT l.fk_recording_unit_id, MIN(d.document_id) FROM recording_unit_document l " +
+                    "JOIN siamois_document d ON d.document_id = l.fk_document_id " +
+                    "WHERE l.fk_recording_unit_id IN (:ids) AND d.mime_type LIKE 'image/%' " +
+                    "GROUP BY l.fk_recording_unit_id")
+    List<Object[]> findFirstImageIdsOfRecordingUnits(@Param("ids") java.util.Collection<Long> ids);
+
+    /** Same, for finds (specimens). */
+    @Query(nativeQuery = true,
+            value = "SELECT l.fk_specimen_id, MIN(d.document_id) FROM specimen_document l " +
+                    "JOIN siamois_document d ON d.document_id = l.fk_document_id " +
+                    "WHERE l.fk_specimen_id IN (:ids) AND d.mime_type LIKE 'image/%' " +
+                    "GROUP BY l.fk_specimen_id")
+    List<Object[]> findFirstImageIdsOfSpecimens(@Param("ids") java.util.Collection<Long> ids);
+
     @Query(
             nativeQuery = true,
             value = "SELECT COUNT(*) > 0 " +

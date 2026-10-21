@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
@@ -96,7 +97,7 @@ class OrganizationListsControllerApiTest {
                 phaseOpenApiMapper, documentOpenApiMapper, documentListProjectionService,
                 studyOpenApiMapper, studyListProjectionService,
                 phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
-                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))

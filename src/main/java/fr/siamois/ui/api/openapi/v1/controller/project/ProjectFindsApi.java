@@ -13,6 +13,7 @@ import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.service.FindListProjectionService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,6 +43,7 @@ public class ProjectFindsApi {
     private final ProjectApiService projectApiService;
     private final FindOpenApiMapper findOpenApiMapper;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FirstImageService firstImageService;
     private final FieldQueryService fieldQueryService;
     private final FindListProjectionService findListProjectionService;
 
@@ -105,6 +107,7 @@ public class ProjectFindsApi {
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
+        firstImageService.markFinds(resources);
 
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
         return ResponseEntity.ok()

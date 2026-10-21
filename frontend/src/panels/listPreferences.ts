@@ -1,4 +1,5 @@
 import type { ListScope } from "../entities/types";
+import type { ListViewMode } from "./list/listViews";
 
 // What a user arranged on one list — which columns, in which order, and how the row actions are
 // laid out — remembered in this browser (localStorage), per entity type and per context: the
@@ -7,6 +8,9 @@ import type { ListScope } from "../entities/types";
 //
 // Keyed by organization too: additional field ids belong to one institution, and two organizations
 // (or two people sharing a browser and switching organization) must not overwrite each other's layout.
+//
+// The display mode (list, tree, cards) is kept here too: it belongs to the kind of list, not to the fiche
+// it sits in, so it follows the user from one project's units tab to the next.
 //
 // Browser-local on purpose: a saved view (tableState.ts's `POST /ui-views`) is the server-side
 // follow-up; this only has to survive a reload.
@@ -18,10 +22,20 @@ export interface ActionBarPrefs {
   inline: string[];
 }
 
+// How a row opens a page: in the side overview (the default) or in the main pane, in focus.
+export type OpenMode = "overview" | "focus";
+
 export interface ListPrefs {
   v: 1;
   visibleColumns?: string[];
   actionBar?: ActionBarPrefs;
+  viewMode?: ListViewMode;
+  openMode?: OpenMode;
+}
+
+/** Project lists open in focus, every other list in the overview, until the user chooses. */
+export function defaultOpenMode(entityType: string): OpenMode {
+  return entityType === "project" ? "focus" : "overview";
 }
 
 export function listPrefsKey(entityType: string, scope?: ListScope, organizationId?: number): string {
@@ -41,6 +55,8 @@ export function loadListPrefs(key: string): ListPrefs {
     if (parsed?.v !== 1) return { v: 1 };
     const prefs: ListPrefs = { v: 1 };
     if (isStringArray(parsed.visibleColumns)) prefs.visibleColumns = parsed.visibleColumns;
+    if (parsed.viewMode === "list" || parsed.viewMode === "tree" || parsed.viewMode === "cards") prefs.viewMode = parsed.viewMode;
+    if (parsed.openMode === "overview" || parsed.openMode === "focus") prefs.openMode = parsed.openMode;
     const bar = parsed.actionBar;
     if (bar && isStringArray(bar.order) && isStringArray(bar.inline)) prefs.actionBar = { order: bar.order, inline: bar.inline };
     return prefs;

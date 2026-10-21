@@ -61,6 +61,7 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
         onClick={(e) => overlayRef.current?.toggle(e)}
       />
       <OverlayPanel ref={overlayRef} className="validation-status-overlay">
+        <div className="validation-status-title">{t("validation.overlayTitle")}</div>
         <ul className="validation-status-options">
           {VALIDATION_STATUSES.map((target) => {
             const option = VALIDATION_PRESENTATION[target];

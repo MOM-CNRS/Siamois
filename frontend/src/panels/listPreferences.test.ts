@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs } from "./listPreferences";
+import { defaultOpenMode, listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs } from "./listPreferences";
 
 beforeEach(() => window.localStorage.clear());
 
@@ -15,6 +15,28 @@ describe("listPreferences", () => {
     saveListPrefs(listPrefsKey("recordingUnit", undefined, 2), { visibleColumns: ["20"] });
     expect(loadListPrefs(listPrefsKey("recordingUnit", undefined, 1)).visibleColumns).toEqual(["10"]);
     expect(loadListPrefs(listPrefsKey("recordingUnit", undefined, 2)).visibleColumns).toEqual(["20"]);
+  });
+
+  it("remembers the display mode for the kind of list, whichever fiche it sits in", () => {
+    // The units tab of project 5 and of project 6 share one key: the mode chosen in the first is the second's.
+    const key = (id: number) => listPrefsKey("recordingUnit", { entityType: "project", id });
+    saveListPrefs(key(5), { viewMode: "cards" });
+    expect(loadListPrefs(key(6)).viewMode).toBe("cards");
+    expect(loadListPrefs(listPrefsKey("recordingUnit")).viewMode).toBeUndefined();
+  });
+
+  it("opens project lists in focus and every other list in the overview, until the user chooses", () => {
+    expect(defaultOpenMode("project")).toBe("focus");
+    expect(defaultOpenMode("recordingUnit")).toBe("overview");
+    saveListPrefs("k", { openMode: "overview" });
+    expect(loadListPrefs("k").openMode).toBe("overview");
+    window.localStorage.setItem("k", JSON.stringify({ v: 1, openMode: "tab" }));
+    expect(loadListPrefs("k").openMode).toBeUndefined();
+  });
+
+  it("ignores a display mode it does not know", () => {
+    window.localStorage.setItem("k", JSON.stringify({ v: 1, viewMode: "carousel" }));
+    expect(loadListPrefs("k").viewMode).toBeUndefined();
   });
 
   it("round-trips, merging each save into what's already stored", () => {

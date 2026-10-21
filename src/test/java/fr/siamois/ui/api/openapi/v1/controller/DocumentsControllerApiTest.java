@@ -25,10 +25,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -130,6 +132,62 @@ class DocumentsControllerApiTest {
         mockMvc.perform(get("/api/v1/documents/42/file").param("download", "true"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Disposition", containsString("attachment")));
+    }
+
+    @Test
+    void downloadContent_withAWidth_servesTheThumbnailAndLetsItBeCached() throws Exception {
+        login();
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        DocumentContentOpenApiService.DocumentFilePayload original = new DocumentContentOpenApiService.DocumentFilePayload(
+                new ByteArrayInputStream(new byte[]{1}), MediaType.IMAGE_PNG, "photo.png");
+        when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L))).thenReturn(original);
+        byte[] reduced = new byte[]{9, 9};
+        when(documentContentOpenApiService.thumbnailOf(original, 200))
+                .thenReturn(Optional.of(new DocumentContentOpenApiService.DocumentFilePayload(
+                        new ByteArrayInputStream(reduced), MediaType.IMAGE_JPEG, "photo.png")));
+
+        mockMvc.perform(get("/api/v1/documents/42/file").param("w", "200"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                .andExpect(header().string("Cache-Control", containsString("max-age")))
+                .andExpect(content().bytes(reduced));
+    }
+
+    @Test
+    void downloadContent_withAWidthOnWhatCannotBeReduced_servesTheOriginalFile() throws Exception {
+        login();
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        byte[] data = new byte[]{1, 2, 3};
+        // The attempt at a thumbnail used up the first stream: the file is opened again.
+        when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
+                .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
+                        new ByteArrayInputStream(new byte[0]), MediaType.APPLICATION_PDF, "doc.pdf"))
+                .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
+                        new ByteArrayInputStream(data), MediaType.APPLICATION_PDF, "doc.pdf"));
+        when(documentContentOpenApiService.thumbnailOf(any(), eq(200))).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/documents/42/file").param("w", "200"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(content().bytes(data));
+        verify(documentContentOpenApiService, times(2)).requireDownloadableContent(42L, Set.of(10L));
+    }
+
+    @Test
+    void downloadContent_withAWidthAndTheDownloadFlag_isTheOriginalFile() throws Exception {
+        login();
+        when(projectApiService.requireCaller())
+                .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
+        when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
+                .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
+                        new ByteArrayInputStream(new byte[]{1}), MediaType.IMAGE_PNG, "photo.png"));
+
+        mockMvc.perform(get("/api/v1/documents/42/file").param("w", "200").param("download", "true"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("attachment")));
+        verify(documentContentOpenApiService, never()).thumbnailOf(any(), anyInt());
     }
 
     @Test

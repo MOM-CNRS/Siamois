@@ -259,9 +259,13 @@
   gap: 0.35rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* The outline is kept (the chip's size does not change) but transparent: only the colour of the text and
+     icon, and the fill on hover, show the entity. */
+  border: 1px solid transparent;
   background: transparent;
   color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* With no outline left, the weight is what makes the chip stand out of the row. */
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1687,10 +1691,38 @@ body button.p-button.status-button.status-button-compact {
   align-items: center;
   gap: 0.25rem;
 }
+.validation-status-title {
+  padding: 0 0.5rem 0.5rem;
+  font-weight: 600;
+}
 .validation-status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 11rem;
   list-style: none;
   margin: 0;
   padding: 0;
+}
+/* The four options line up: same box, icons in one column, labels starting at the same place. */
+.validation-status-overlay .validation-status-option.p-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+}
+.validation-status-overlay .validation-status-option .p-button-icon {
+  flex: none;
+  width: 1.25rem;
+  margin: 0;
+  text-align: center;
+}
+.validation-status-overlay .validation-status-option .p-button-label {
+  flex: 1 1 auto;
+  text-align: left;
 }
 
 /* Concept suggestion (fields/ConceptOptionItem.tsx) */
@@ -1747,6 +1779,17 @@ body button.p-button.status-button.status-button-compact {
   flex-wrap: nowrap;
   min-width: 0;
   align-items: center;
+}
+
+/* The fiche's chips (the identifier, the second text, the type, the read-only ones) like the list's: no outline
+   and no fill, the text and icon in the panel's colour, in bold. The theme paints them filled (-chip-alt) or
+   outlined (-type-chip) with their own --main-color, which is what the text takes here. */
+.entity-detail-header .p-chip.p-component,
+.p-chip.p-component.entity-detail-panel-preview-chip {
+  background: transparent;
+  border-color: transparent;
+  color: var(--main-color);
+  font-weight: 600;
 }
 
 .entity-detail-header-primary-input {
@@ -2517,21 +2560,16 @@ div#search-bar .sia-search {
 .entity-list-panel .p-treetable-tbody > tr > td:has(> .p-treetable-toggler) {
   white-space: nowrap;
 }
-/* A parent shown only because a match is below it: its identifier chip is dashed (the matches keep
-   the solid outline), the rest of the row is left alone. */
+/* A parent shown only because a match is below it: its identifier chip is written in a lighter tint of
+   the entity colour (the matches keep the full colour), the rest of the row is left alone. */
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
-  /* 1px dashed, in a lighter tint of the entity colour (outline and label): it reads as "context",
-     not as a result. */
   --context-chip-color: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 55%, transparent);
-  border-style: dashed;
-  border-color: var(--context-chip-color);
   color: var(--context-chip-color);
 }
 /* On hover the chip fills with the entity colour (rule above): the label goes back to white, or it
    would vanish into the fill. */
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row:hover .entity-list-panel-row-identifier.entity-nav-chip,
 .entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
-  border-color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   color: var(--primary-color-text, #ffffff);
 }
 
@@ -2556,14 +2594,67 @@ div#search-bar .sia-search {
   background: #fff;
 }
 
-/* The gear menu's display modes (list, tree…): the one in use is ticked at the end of its entry. */
-.entity-list-panel-gear-menu .entity-list-panel-view-check {
-  margin-left: auto;
-  padding-left: 1rem;
-  color: var(--main-color, #80b480);
+/* The gear's display modes (list, tree, cards…): a grid of tiles in its overlay, the one in use outlined. */
+.entity-list-panel-view-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
-.entity-list-panel-gear-menu .entity-list-panel-view-active .p-menuitem-text {
+.entity-list-panel-view-mode-title {
   font-weight: 600;
+}
+.entity-list-panel-view-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+.entity-list-panel-gear-panel .p-overlaypanel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.entity-list-panel-gear-menu {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--surface-border, #dee2e6);
+  padding-top: 0.5rem;
+}
+.entity-list-panel-gear-menu .p-menuitem-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.4rem;
+  cursor: pointer;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.entity-list-panel-gear-menu .p-menuitem-link:hover {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.04));
+}
+.entity-list-panel-view-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  background: transparent;
+}
+.entity-list-panel-view-tile i {
+  font-size: 1.4rem;
+}
+.entity-list-panel-view-tile:hover {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.04));
+}
+.entity-list-panel-view-tile.is-active {
+  color: var(--main-color, #80b480);
+  border: 2px solid var(--main-color, #80b480);
 }
 
 /* The header's view button and the dialog naming a new view (panels/list/ViewActions.tsx). */
@@ -2854,3 +2945,172 @@ div#search-bar .sia-search {
   cursor: pointer;
 }
 .home-data-access-create:hover { background: var(--surface-hover, rgba(0, 0, 0, 0.05)); }
+
+/* The list as a grid of cards (panels/list/EntityCardGrid.tsx). The panel never scrolls as a
+   document: the grid is its own overflow box, the paginator stays below it. */
+.entity-card-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.entity-card-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.entity-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  background: var(--surface-card, #fff);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.entity-card:hover,
+.entity-card:focus-visible {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+/* The entity open in the overview pane. */
+.entity-card.is-selected {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 0 0 2px var(--entity-chip-color, var(--main-color));
+}
+.entity-card-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--entity-chip-color, #80b480) 14%, transparent);
+}
+/* The picture fills the box whatever its own proportions: it never sets the card's height, so the cards of a
+   row stay the same size. */
+.entity-card-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.entity-card-placeholder {
+  font-size: 3rem;
+  color: var(--entity-chip-color, #80b480);
+  opacity: 0.8;
+}
+.entity-card-typeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-height: 2rem;
+  /* Same side margins as the footer, so the zoom lines up over the "…" and the type over the status. */
+  padding: 0 0.4rem 0 0.6rem;
+}
+.entity-card-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #6c757d);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-card-zoom.p-button {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-left: auto;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+/* The selection box, in the picture's top-left corner. */
+.entity-card-select {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+}
+.entity-card-select .p-checkbox-box:not(.p-highlight) {
+  background: var(--surface-card, #fff);
+}
+.entity-card-image-full {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.entity-card-image-dialog {
+  width: min(90vw, 70rem);
+}
+.entity-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  /* The footer sits at the bottom of the card: the cards of a row line their footers up. */
+  margin-top: auto;
+  padding: 0.4rem 0.4rem 0.5rem 0.6rem;
+}
+/* The status (a button or a badge) is a box of its own, centred, with no margin of the table's cell. */
+.entity-card-footer .status-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+}
+.entity-card-footer .entity-card-chip {
+  margin: 0;
+  padding-left: 0.4rem;
+}
+.entity-card-chip {
+  min-width: 0;
+  cursor: pointer;
+}
+/* A long identifier gives way (an ellipsis) rather than pushing the actions out. */
+.entity-card-chip .entity-nav-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The actions sit at the right end of the line. */
+.entity-card-footer .entity-card-actions {
+  margin-left: auto;
+}
+.entity-card-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  /* Always Siamois green, whatever the panel (as the table's row actions). */
+  --p-button-text-primary-color: var(--siamois-green, #80b480);
+}
+.entity-card-actions .p-button.p-button-sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+.entity-card-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-color-secondary, #6c757d);
+}
+/* A card's actions are always at full strength: there is no row hover to reveal them. */
+.entity-card-actions .entity-list-panel-row-actions {
+  opacity: 1;
+}

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useTableState } from "./useTableState";
-import { PaneStateProvider, PaneStateStore } from "./paneState";
+import { PaneStateProvider, PaneStateScope, PaneStateStore } from "./paneState";
 
 // No @testing-library/react in this project (see EntityListPanel.test.tsx's own createRoot/act
 // pattern) — a tiny harness component exposes the hook's latest return value for assertions.
@@ -14,6 +14,11 @@ type UserStateProp = NonNullable<Parameters<typeof useTableState>[0]["userState"
 
 function Harness({ defaultSort, userState }: { defaultSort?: string; userState?: UserStateProp }) {
   latest = useTableState({ defaultSort, userState });
+  return null;
+}
+
+function ModeHarness({ userState }: { userState?: UserStateProp }) {
+  latest = useTableState({ prefsKey: "k", shareViewMode: true, userState });
   return null;
 }
 
@@ -164,6 +169,40 @@ describe("useTableState", () => {
       renderHarness("id:asc", { settled: true, saved });
       act(() => latest.seedVisibleColumns(["x", "y"], ["a", "b", "x", "y"]));
       expect(latest.state.visibleColumns).toEqual(["b", "a"]);
+    });
+
+    it("keeps what the list shows when it is retargeted to another entity, instead of the saved state of that one", () => {
+      const store = new PaneStateStore();
+      const renderIn = (scope: string, userState: UserStateProp) =>
+        act(() => {
+          root.render(
+            <PaneStateProvider store={store}>
+              <PaneStateScope name={scope}>
+                <Harness userState={userState} />
+              </PaneStateScope>
+            </PaneStateProvider>,
+          );
+        });
+
+      // Opened with no context: the user's saved state is where it starts.
+      renderIn("project/1", { settled: true, saved });
+      expect(latest.state.viewMode).toBe("tree");
+      act(() => latest.setViewMode("cards"));
+
+      // The arrows move the fiche to project 2, which the user once left on the flat list.
+      renderIn("project/2", { settled: true, saved: { ...saved, viewMode: "list", sort: "id:asc" } });
+      expect(latest.userStateReady).toBe(true);
+      expect(latest.state.viewMode).toBe("cards");
+      expect(latest.state.sort).toBe("name:desc");
+    });
+
+    it("starts a list the user never arranged on the display mode of its kind of list", () => {
+      window.localStorage.setItem("k", JSON.stringify({ v: 1, viewMode: "cards" }));
+      act(() => {
+        root.render(<ModeHarness userState={{ settled: true, saved: undefined }} />);
+      });
+      expect(latest.state.viewMode).toBe("cards");
+      window.localStorage.clear();
     });
 
     it("keeps the defaults when nothing was saved", () => {

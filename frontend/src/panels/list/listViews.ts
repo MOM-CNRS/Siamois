@@ -7,7 +7,7 @@ import { t, type MessageKey } from "../../i18n";
  * LIST_VIEWS and its own availability rule in `availableViews`. Chosen in the gear menu, remembered
  * per pane.
  */
-export type ListViewMode = "list" | "tree";
+export type ListViewMode = "list" | "tree" | "cards";
 
 export const DEFAULT_LIST_VIEW: ListViewMode = "list";
 
@@ -18,7 +18,8 @@ interface ListViewDefinition {
 
 export const LIST_VIEWS: Record<ListViewMode, ListViewDefinition> = {
   list: { label: "list.viewModeList", icon: "bi bi-list-ul" },
-  tree: { label: "list.viewModeTree", icon: "bi bi-diagram-3" },
+  tree: { label: "list.viewModeTree", icon: "bi bi-list-nested" },
+  cards: { label: "list.viewModeCards", icon: "bi bi-grid-3x3-gap" },
 };
 
 export interface ListViewOption {
@@ -51,17 +52,20 @@ export function availableViews(
   ) {
     views.push("tree");
   }
+  // A grid of cards, for a type that says how its rows look as one.
+  if (config.list.card != null) views.push("cards");
   return views;
 }
 
-/** The mode to show: the remembered one if this list still offers it, else the flat list. */
+/** The mode to show: the remembered one if this list still offers it, else the type's default, else the flat list. */
 export function resolveViewMode(
   remembered: ListViewMode | undefined,
   available: ListViewMode[],
+  preferred?: ListViewMode,
 ): ListViewMode {
-  return remembered != null && available.includes(remembered)
-    ? remembered
-    : DEFAULT_LIST_VIEW;
+  if (remembered != null && available.includes(remembered)) return remembered;
+  // Nothing chosen: the type's own starting mode, when this list offers it.
+  return remembered == null && preferred != null && available.includes(preferred) ? preferred : DEFAULT_LIST_VIEW;
 }
 
 export function viewOptions(available: ListViewMode[]): ListViewOption[] {

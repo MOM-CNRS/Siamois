@@ -26,6 +26,7 @@ public class RecordingUnitListAssembler {
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FirstImageService firstImageService;
 
     public RecordingUnitListResponse assemble(ProjectApiCaller caller, Page<RecordingUnitDTO> page, Long projectId,
                                               String fields, String lang, int limit, int offset) {
@@ -52,6 +53,7 @@ public class RecordingUnitListAssembler {
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
+        firstImageService.markRecordingUnits(resources);
         return new RecordingUnitListResponse(resources, ListMeta.of(page, limit, offset));
     }
 }

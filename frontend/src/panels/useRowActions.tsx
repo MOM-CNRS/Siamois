@@ -79,7 +79,7 @@ const DELETE_KEY = "delete";
  * than per row: the create overlay and the "…" menu.
  */
 export function useRowActions({ entityType, config, organizationId, writeMode, onOpen, prefsKey, extraRowActions }: UseRowActionsOptions): {
-  render: (row: Row) => ReactNode;
+  render: (row: Row, compact?: boolean) => ReactNode;
   dialog: ReactNode;
   // What the last action did, when it has something to say (a duplication).
   notice: string | null;
@@ -223,10 +223,16 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const inline = actionBar.order.filter((k) => actionBar.inline.includes(k)).map((k) => byKey.get(k)!).filter(Boolean);
   const inMenu = actionBar.order.filter((k) => !actionBar.inline.includes(k)).map((k) => byKey.get(k)!).filter(Boolean);
 
-  function openMenu(e: SyntheticEvent, row: Row) {
+  // A compact bar (a card's footer) keeps the bookmark and puts every other action away in the "…" menu,
+  // whatever layout the user chose for the table's rows.
+  const allInMenu = actionBar.order.map((k) => byKey.get(k)!).filter(Boolean);
+  const [menuCompact, setMenuCompact] = useState(false);
+
+  function openMenu(e: SyntheticEvent, row: Row, compact: boolean) {
     e.stopPropagation();
     actionAnchorRef.current = e.currentTarget as HTMLElement;
     setMenuRow(row);
+    setMenuCompact(compact);
     menuRef.current?.toggle(e);
   }
 
@@ -235,8 +241,10 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     return writeMode && (action.visible ? action.visible(row) : row._permissions?.canEdit === true);
   }
 
-  function render(row: Row): ReactNode {
+  function render(row: Row, compact = false): ReactNode {
     const shown = (action: RowActionDescriptor) => isShown(action, row);
+    const rowInline = compact ? [] : inline;
+    const rowMenu = compact ? allInMenu : inMenu;
     const canBookmark = organizationId != null && !!row.resourceUri;
     return (
       <span className="entity-list-panel-row-actions">
@@ -256,7 +264,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             }}
           />
         )}
-        {inline.filter(shown).map((action) => (
+        {rowInline.filter(shown).map((action) => (
             <Button
               key={action.key}
               icon={action.icon}
@@ -275,7 +283,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
               }}
             />
           ))}
-        {inMenu.some(shown) && (
+        {rowMenu.some(shown) && (
           <Button
             icon="bi bi-three-dots"
             text
@@ -286,7 +294,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
             aria-haspopup
             tooltip={t("toolbar.moreActions")}
             tooltipOptions={{ position: "top" }}
-            onClick={(e) => openMenu(e, row)}
+            onClick={(e) => openMenu(e, row, compact)}
           />
         )}
       </span>
@@ -294,7 +302,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   }
 
   const menuModel: MenuItem[] = menuRow
-    ? inMenu.filter((action) => isShown(action, menuRow)).map((action) => ({
+    ? (menuCompact ? allInMenu : inMenu).filter((action) => isShown(action, menuRow)).map((action) => ({
         label: action.label,
         icon: action.icon,
         disabled: action.pending(menuRow),
