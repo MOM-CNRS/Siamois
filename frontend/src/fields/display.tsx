@@ -4,6 +4,7 @@
 import { Checkbox } from "primereact/checkbox";
 import { TriStateCheckbox } from "primereact/tristatecheckbox";
 import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
+import { isTypeField } from "./typeField";
 import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
 import { getEntityType } from "../entities/registry";
@@ -141,16 +142,24 @@ function RefChip({
   id,
   resourceType,
   onOpen,
+  inPanelColor,
 }: {
   label: string;
   id: string;
   resourceType: string;
   onOpen?: () => void;
+  // The entity's type column: the chip takes the colour of the table it sits in, not the vocabulary's green.
+  inPanelColor?: boolean;
 }) {
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
   const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
-  const style = refChipStyle(resourceType);
+  const style = inPanelColor
+    ? ({
+        "--ref-chip-color": "var(--main-color, #80b480)",
+        "--ref-chip-border": "color-mix(in srgb, var(--main-color, #80b480) 35%, transparent)",
+      } as CSSProperties)
+    : refChipStyle(resourceType);
 
   function open(e: SyntheticEvent) {
     e.stopPropagation();
@@ -263,7 +272,7 @@ export function renderAnswerCell(
 
   const render = (item: unknown, key?: number): ReactNode => {
     const ref = asRef(item);
-    return ref ? <RefChip key={key} {...ref} onOpen={options.onOpenLink} /> : formatOne(field, item);
+    return ref ? <RefChip key={key} {...ref} onOpen={options.onOpenLink} inPanelColor={isTypeField(field)} /> : formatOne(field, item);
   };
 
   if (items.length === 1 && total === 1) return render(items[0]);
