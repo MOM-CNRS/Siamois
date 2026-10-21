@@ -46,7 +46,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.primefaces.PrimeFaces;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.event.SelectEvent;
@@ -922,7 +921,7 @@ public class DocumentBulkImportBean implements Serializable {
             return langBean.msg("documents.nofileset");
         }
         if (!StringUtils.hasText(row.getMd5Sum())) {
-            row.setMd5Sum(DigestUtils.md5Hex(fileContent));
+            row.setMd5Sum(DocumentUtils.md5(fileContent));
         }
         String md5 = row.getMd5Sum();
 

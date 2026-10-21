@@ -16,9 +16,9 @@ import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.files.DocumentImportDraftStorage;
+import fr.siamois.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,6 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -109,7 +108,7 @@ public class DocumentImportDraftService {
         if (bytes.length == 0) {
             throw new IllegalArgumentException("EMPTY_FILE");
         }
-        String md5 = DigestUtils.md5Hex(bytes);
+        String md5 = DocumentUtils.md5(bytes);
         String storedName;
         try (InputStream in = new java.io.ByteArrayInputStream(bytes)) {
             storedName = draftStorage.save(institutionId, draft.getId(), originalFileName, in);
@@ -141,30 +140,22 @@ public class DocumentImportDraftService {
     }
 
     private void applyDefaultTargets(DocumentImportItem item, ItemDefaults defaults) {
-        if (defaults.projectIds() != null) {
-            defaults.projectIds().stream()
-                    .map(id -> actionUnitRepository.findById(id).orElse(null))
-                    .filter(Objects::nonNull)
-                    .forEach(item.getProjects()::add);
-        }
-        if (defaults.recordingUnitIds() != null) {
-            defaults.recordingUnitIds().stream()
-                    .map(id -> recordingUnitRepository.findById(id).orElse(null))
-                    .filter(Objects::nonNull)
-                    .forEach(item.getRecordingUnits()::add);
-        }
-        if (defaults.findIds() != null) {
-            defaults.findIds().stream()
-                    .map(id -> specimenRepository.findById(id).orElse(null))
-                    .filter(Objects::nonNull)
-                    .forEach(item.getFinds()::add);
-        }
-        if (defaults.placeIds() != null) {
-            defaults.placeIds().stream()
-                    .map(id -> spatialUnitRepository.findById(id).orElse(null))
-                    .filter(Objects::nonNull)
-                    .forEach(item.getPlaces()::add);
-        }
+        defaults.projectIds().stream()
+                .map(id -> actionUnitRepository.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(item.getProjects()::add);
+        defaults.recordingUnitIds().stream()
+                .map(id -> recordingUnitRepository.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(item.getRecordingUnits()::add);
+        defaults.findIds().stream()
+                .map(id -> specimenRepository.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(item.getFinds()::add);
+        defaults.placeIds().stream()
+                .map(id -> spatialUnitRepository.findById(id).orElse(null))
+                .filter(Objects::nonNull)
+                .forEach(item.getPlaces()::add);
     }
 
     @Transactional

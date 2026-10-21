@@ -53,6 +53,18 @@ public class DocumentUtils {
     }
 
     /**
+     * Content fingerprint for document duplicate detection (stored in {@code md5_sum}).
+     * Not used for passwords, tokens or cryptographic integrity — MD5 is kept for
+     * compatibility with existing rows and {@link fr.siamois.domain.services.document.DocumentService}.
+     *
+     * @param content file bytes
+     * @return lowercase hex MD5 fingerprint
+     */
+    public static String md5(byte[] content) {
+        return DigestUtils.md5Hex(content);
+    }
+
+    /**
      * Calculates the MD5 checksum of a file.
      *
      * @param fileInputStream the BufferedInputStream of the file to calculate the checksum for.

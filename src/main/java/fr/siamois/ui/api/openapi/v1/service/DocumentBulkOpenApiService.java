@@ -14,8 +14,8 @@ import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchManifestReques
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchTargetRequest;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentBatchItemResult;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentBatchResponse;
+import fr.siamois.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -121,15 +121,12 @@ public class DocumentBulkOpenApiService {
         }
         if (resolved.isEmpty()) {
             result.setStatus("failed");
-            if (result.getErrors().isEmpty()) {
-                result.getErrors().add("Aucune cible valide");
-            }
             return result;
         }
 
         final String md5;
         try {
-            md5 = DigestUtils.md5Hex(file.getBytes());
+            md5 = DocumentUtils.md5(file.getBytes());
         } catch (IOException e) {
             result.setStatus("failed");
             result.getErrors().add("Erreur lecture fichier");

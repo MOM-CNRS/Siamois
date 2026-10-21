@@ -1916,6 +1916,28 @@ class SpecimenServiceTest {
         verify(specimenRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
+    @Test
+    void findMatchingInInstitutionByFullIdentifier_mapsSummaries() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(10L);
+        Specimen specimen = new Specimen();
+        specimen.setId(3L);
+        SpecimenSummaryDTO summary = new SpecimenSummaryDTO();
+        summary.setId(3L);
+
+        when(specimenRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(specimen)));
+        when(specimenSummaryMapper.convert(specimen)).thenReturn(summary);
+
+        List<SpecimenSummaryDTO> result =
+                specimenService.findMatchingInInstitutionByFullIdentifier(institution, "AB-1", 5);
+
+        assertEquals(1, result.size());
+        assertSame(summary, result.get(0));
+        verify(specimenRepository).findAll(any(Specification.class), eq(PageRequest.ofSize(5)));
+        verify(specimenSummaryMapper).convert(specimen);
+    }
+
     private void mockGeneratedIdentifier(Specimen specimen, int number, String identifier) {
         when(identifierGenerator.generateIdentifierIfRequired(eq(specimen), any())).thenAnswer(invocation -> {
             IdentifierGenerationSpec<Specimen> spec = invocation.getArgument(1);
