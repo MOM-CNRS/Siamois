@@ -1781,15 +1781,34 @@ body button.p-button.status-button.status-button-compact {
   align-items: center;
 }
 
-/* The fiche's chips (the identifier, the second text, the type, the read-only ones) like the list's: no outline
-   and no fill, the text and icon in the panel's colour, in bold. The theme paints them filled (-chip-alt) or
-   outlined (-type-chip) with their own --main-color, which is what the text takes here. */
+/* The fiche's chips follow the list's: the identifier is the list's identifier chip (entity colour, bold) on a
+   light tint of that colour; the other chips (second text, type, read-only ones) are the list's rectangle chip
+   (.ref-chip: small radius, light outline, no fill). All share one box (padding, border, line-height, font
+   size) so they have the same height. */
 .entity-detail-header .p-chip.p-component,
 .p-chip.p-component.entity-detail-panel-preview-chip {
+  box-sizing: border-box;
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--main-color) 35%, transparent);
+  border-radius: 3px;
   background: transparent;
-  border-color: transparent;
   color: var(--main-color);
+  font-size: 1em;
   font-weight: 600;
+  line-height: 1.5;
+}
+
+.entity-detail-header .p-chip.p-component.entity-nav-chip {
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 1px 0.7rem;
+  background: color-mix(in srgb, var(--main-color) 12%, transparent);
+}
+
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  margin: 0;
+  color: inherit;
+  line-height: inherit;
 }
 
 .entity-detail-header-primary-input {
