@@ -7,13 +7,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record HomeAccessRequest(
         @Schema(description = "Organisation de l'accueil", required = true)
         Long organizationId,
-        @Schema(description = "Table (clé du registre front, ex. recordingUnit)", required = true)
+        @Schema(description = "Vue existante de l'organisation à mettre à la une ; sinon la vue est créée d'après les champs suivants")
+        Long viewId,
+        @Schema(description = "Table (clé du registre front, ex. recordingUnit)")
         String resourceType,
-        @Schema(description = "Titre de la carte, qui est celui de la vue", required = true)
+        @Schema(description = "Titre de la carte, qui est celui de la vue")
         String title,
         @Schema(description = "Ce que dit la carte : le nom du type montré (ou de la table)")
         String label,
-        @Schema(description = "État de la vue : filtre sur le type choisi", required = true)
+        @Schema(description = "État de la vue : filtre sur le type choisi")
         TableViewState state
 ) {
 }

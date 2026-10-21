@@ -10,9 +10,9 @@ export interface HomeAccess {
   viewId: number;
   // The table (key of the entity registry).
   resourceType: string;
-  // The view's title.
+  // The view's name: what the card says.
   title: string;
-  // What the card says: the name of the type it shows (or of the table).
+  // Legacy card caption; the card shows `title`.
   label: string;
   // The view's filters, to count what it shows.
   filters?: Record<string, FilterValue> | null;
@@ -27,16 +27,21 @@ export async function listHomeAccesses(organizationId: number): Promise<HomeAcce
   return apiFetch<HomeAccessList>(`/api/v1/home-accesses?organizationId=${organizationId}`);
 }
 
+// Either an existing view of the organization (`viewId`), or the table, title and state of a view to create.
 export async function createHomeAccess(body: {
   organizationId: number;
-  resourceType: string;
-  title: string;
-  label: string;
-  state: ViewTableState;
+  viewId?: number;
+  resourceType?: string;
+  title?: string;
+  state?: ViewTableState;
 }): Promise<HomeAccess> {
   return apiFetch<HomeAccess>("/api/v1/home-accesses", { method: "POST", body });
 }
 
 export async function deleteHomeAccess(organizationId: number, id: number): Promise<void> {
   await apiFetch<void>(`/api/v1/home-accesses/${id}?organizationId=${organizationId}`, { method: "DELETE" });
+}
+
+export async function reorderHomeAccesses(organizationId: number, ids: number[]): Promise<void> {
+  await apiFetch<void>("/api/v1/home-accesses/order", { method: "PUT", body: { organizationId, ids } });
 }

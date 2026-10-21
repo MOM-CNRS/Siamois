@@ -91,10 +91,10 @@ describe("DataAccessSection", () => {
     const card = container.querySelector<HTMLElement>(".sia-clickable-card")!;
     expect(card.querySelector(".sia-welcome-card")?.className).toContain("sia-recording-unit");
     expect(card.querySelector("i")?.className).toBe("bi bi-pencil-square");
-    // The type's name only, with how many there are under the view's own filters.
-    expect(card.textContent).toBe("Couche42");
+    // The view's name, with how many there are under the view's own filters.
+    expect(card.textContent).toBe("UE – Couche42");
     expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 7, filters: { type: { op: "in", v: ["412"] } } }));
-    expect(button("Ajouter une vue à la une")).toBeUndefined();
+    expect(button("Modifier les vues à la une")).toBeUndefined();
     expect(button("Retirer de la une")).toBeUndefined();
 
     act(() => card.click());
@@ -107,13 +107,18 @@ describe("DataAccessSection", () => {
     render({ organizationId: 7, onOpenView });
     await flush();
 
+    await act(async () => button("Modifier les vues à la une")!.click());
     await act(async () => button("Retirer de la une")!.click());
+    expect(mockedApiFetch).not.toHaveBeenCalledWith("/api/v1/home-accesses/1?organizationId=7", { method: "DELETE" });
+    // The confirmation dialog's own button comes after the card's.
+    const confirms = Array.from(document.querySelectorAll("button")).filter((b) => b.textContent?.includes("Retirer de la une"));
+    await act(async () => confirms[confirms.length - 1].click());
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/home-accesses/1?organizationId=7", { method: "DELETE" });
     expect(onOpenView).not.toHaveBeenCalled();
   });
 
-  it("shows a manager the empty section, with « Ajouter une vue à la une » in its header", async () => {
+  it("shows a manager the empty section, with « Modifier les vues à la une » in its header", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
@@ -121,14 +126,18 @@ describe("DataAccessSection", () => {
     expect(container.textContent).toContain("Vues à la une");
     expect(container.textContent).toContain("Vues à la une");
     expect(container.textContent).toContain("Aucune vue à la une.");
-    expect(button("Ajouter une vue à la une")).toBeDefined();
+    expect(button("Modifier les vues à la une")).toBeDefined();
   });
 
   it("adding a table and a type creates the access with a view filtered on the type", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => button("Ajouter une vue à la une")!.click());
+    await act(async () => button("Modifier les vues à la une")!.click());
+    // The last card searches the existing views; creating one is the footer of that list.
+    await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
+    await flush();
+    await act(async () => button("Créer une nouvelle vue")!.click());
     await flush();
 
     // The type dropdown offers the table's types, read from its type field's concepts.
@@ -148,8 +157,47 @@ describe("DataAccessSection", () => {
         organizationId: 7,
         resourceType: "recordingUnit",
         title: "UE – Couche",
-        label: "Couche",
-        state: { listFilters: { type: { op: "in", v: ["412"] } } },
+        state: { listFilters: { type: { op: "in", v: ["412"], labels: { "412": "Couche" } } } },
+      },
+    });
+  });
+
+  it("the name of the view can be edited in the creation dialog, and is what the card says", async () => {
+    accesses(true);
+    render({ organizationId: 7 });
+    await flush();
+    await act(async () => button("Modifier les vues à la une")!.click());
+    // The last card searches the existing views; creating one is the footer of that list.
+    await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
+    await flush();
+    await act(async () => button("Créer une nouvelle vue")!.click());
+    await flush();
+
+    // The type dropdown offers the table's types, read from its type field's concepts.
+    const typeDropdown = document.querySelector<HTMLElement>("#home-data-access-type")!.closest(".p-dropdown")!;
+    await act(async () => (typeDropdown.querySelector(".p-dropdown-trigger") as HTMLElement).click());
+    await flush();
+    const option = Array.from(document.querySelectorAll<HTMLElement>(".p-dropdown-item")).find((o) => o.textContent === "Couche")!;
+    await act(async () => option.click());
+
+    const name = document.querySelector<HTMLInputElement>("#home-data-access-name")!;
+    expect(name.value).toBe("UE – Couche");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(name, "Mes couches");
+      name.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>(".home-data-access-actions button")).pop()!.click());
+    await flush();
+
+    const post = mockedApiFetch.mock.calls.find(([path, init]) => path === "/api/v1/home-accesses" && init?.method === "POST")!;
+    expect(post[1]).toEqual({
+      method: "POST",
+      body: {
+        organizationId: 7,
+        resourceType: "recordingUnit",
+        title: "Mes couches",
+        state: { listFilters: { type: { op: "in", v: ["412"], labels: { "412": "Couche" } } } },
       },
     });
   });
@@ -173,7 +221,11 @@ describe("DataAccessSection", () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => button("Ajouter une vue à la une")!.click());
+    await act(async () => button("Modifier les vues à la une")!.click());
+    // The last card searches the existing views; creating one is the footer of that list.
+    await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
+    await flush();
+    await act(async () => button("Créer une nouvelle vue")!.click());
     await flush();
 
     const add = Array.from(document.querySelectorAll<HTMLButtonElement>(".home-data-access-actions button")).pop()!;

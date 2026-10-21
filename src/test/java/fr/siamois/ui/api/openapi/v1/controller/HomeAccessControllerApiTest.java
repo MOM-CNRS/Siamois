@@ -5,6 +5,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessOrderRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessRequest;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessListResponse;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessResource;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -115,5 +117,27 @@ class HomeAccessControllerApiTest {
                 .andExpect(status().isNoContent());
 
         verify(homeAccessService).delete(any(UserInfo.class), eq(5L));
+    }
+
+    @Test
+    void reorder_returns204_andPassesTheIds() throws Exception {
+        inScope();
+
+        mockMvc.perform(put("/api/v1/home-accesses/order").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organizationId\":10,\"ids\":[3,1,2]}"))
+                .andExpect(status().isNoContent());
+
+        verify(homeAccessService).reorder(any(UserInfo.class), eq(new HomeAccessOrderRequest(10L, List.of(3L, 1L, 2L))));
+    }
+
+    @Test
+    void reorder_withoutThePermission_returns403() throws Exception {
+        inScope();
+        org.mockito.Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN))
+                .when(homeAccessService).reorder(any(UserInfo.class), any(HomeAccessOrderRequest.class));
+
+        mockMvc.perform(put("/api/v1/home-accesses/order").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"organizationId\":10,\"ids\":[1]}"))
+                .andExpect(status().isForbidden());
     }
 }

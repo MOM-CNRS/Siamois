@@ -395,3 +395,17 @@ For clients that read the 2026-10-01 version of this document. B8–B13 are in �
 | `GET /vocabularies`, `GET /organizations/{id}/vocabularies` | the type catalogues (`…-types`, `fields[<fieldId>].vocabulary`) and `GET /organizations/{id}/concepts?fieldId=` |
 | `GET /finds/form` | `GET /projects/{id}/find-types` |
 | `GET /recording-units/creation-form` | `GET /projects/{id}/recording-unit-types` |
+
+## 10. Tree view of lists (2026-10-21)
+
+Additive, no break. The hierarchical lists (places, recording units, projects) can be asked as a tree. Behaviour and rules: `vue-arbre-listes.md`.
+
+| Endpoint | Param | Effect |
+|---|---|---|
+| `GET /projects`, `GET /organizations/{id}/…/lists/places`, `GET …/lists/recording-units`, `GET /projects/{id}/recording-units`, `GET /places/{id}/projects` | `tree=true` | Roots only (entities without a parent in the context). With a search or a filter (column filter or form-field filter), the roots that lead to a match. `offset`/`limit`/`meta.total` count roots. |
+| same | `parent=<id>` (needs `tree=true`, else `400`) | The children of that row, restricted to the branches leading to a match when the list is filtered. At most 200 per parent. |
+| `GET /places/{id}/children`, `GET /recording-units/{id}/children` | `tree=true`, `matchCount=true` | `meta.matchCount` counts the distinct matching entities below the row, at any level. |
+
+New row fields (only in tree mode): `hasChildren` (the row has children to show, within the ancestor closure when filtered) and `match` (`false` = context parent that does not match; absent without search or filter, where every row matches). New `meta.matchCount` on tree roots: distinct matching entities, context parents excluded; absent on flat lists and on children responses.
+
+A sort alone does not count as a filter. The ancestor closure is computed server-side and tolerates cycles. A polyhierarchical entity appears under each of its parents but counts once.

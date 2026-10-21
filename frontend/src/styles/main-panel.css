@@ -2780,8 +2780,77 @@ div#search-bar .sia-search {
 .home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
 .home-data-access-error { color: var(--red-500, #c0392b); }
 .home-data-access-remove { margin-left: auto; }
+.home-data-access-handle { cursor: grab; color: var(--text-light); }
+.home-data-access-item.is-dragging { opacity: 0.4; }
+.home-data-access-item.is-target { outline: 2px dashed var(--primary-color); outline-offset: 2px; border-radius: 6px; }
+/* The « add » slot at the end of the cards: transparent, its button centred. */
+.home-data-access-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 5rem;
+  padding: 0.75rem;
+  background: transparent;
+  border: 2px dashed var(--surface-border, #ccc);
+  border-radius: 6px;
+  transition: border-color 0.15s;
+}
+.home-data-access-add:hover,
+.home-data-access-add:focus-within { border-color: var(--primary-color); }
+.home-data-access-dropdown.p-dropdown {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.home-data-access-dropdown .p-dropdown-label {
+  text-align: center;
+  color: var(--text-light);
+  font-weight: 500;
+}
+.home-data-access-dropdown:hover .p-dropdown-label,
+.home-data-access-dropdown.p-focus .p-dropdown-label { color: var(--primary-color); }
+.home-data-access-dropdown .p-dropdown-trigger { color: var(--text-light); }
 
 /* The list's filters, shown between the field of the list search overlay and its results. */
 .sia-search-chips {
   padding: 0.4rem 0.75rem 0;
 }
+
+/* The panel of the featured-views picker: wide enough to read a title and its table on one line. */
+.home-data-access-panel { min-width: 22rem; }
+.home-data-access-panel .p-dropdown-items .p-dropdown-item { padding: 0.55rem 1rem; }
+.home-data-access-view-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+.home-data-access-view-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-data-access-view-table {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-ground, #f1f3f5);
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+.home-data-access-create-footer { border-top: 1px solid var(--surface-border, #ddd); padding: 0.25rem; }
+.home-data-access-create {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-data-access-create:hover { background: var(--surface-hover, rgba(0, 0, 0, 0.05)); }

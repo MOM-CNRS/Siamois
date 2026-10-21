@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
 import { createHomeAccess } from "../../api/homeAccesses";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
@@ -11,20 +12,24 @@ import { t } from "../../i18n";
 import { useTableTypes } from "./useTableTypes";
 
 /**
- * « Ajouter un accès aux données »: a table and one of its types, both required. Adding creates the view that
- * shows exactly that — and the card of the home page that opens it. Nothing else to fill in.
+ * « Créer une nouvelle vue »: a table and one of its types, both required, and the view's name (« Table – Type »
+ * until the user writes another). Creates the view that shows exactly that, and its card on the home page.
  */
 export function AddDataAccessDialog({ organizationId, onHide }: { organizationId: number; onHide: () => void }) {
   const queryClient = useQueryClient();
   const tables = getAllEntityTypes().filter((config) => config.list.schema != null);
   const [table, setTable] = useState<string | undefined>(tables[0]?.key);
   const [typeId, setTypeId] = useState<string | null>(null);
+  // What the user typed; null while the name follows the table and type.
+  const [typedName, setTypedName] = useState<string | null>(null);
   const types = useTableTypes(table, organizationId);
 
   const selected = tables.find((config) => config.key === table);
-  // The view's title says the table briefly (« UE – Couche »): it is read among every view of the organization.
+  // The default name says the table briefly (« UE – Couche »): it is read among every view of the organization.
   const tableName = selected?.labels.short ?? selected?.labels.plural ?? "";
   const typeLabel = types.data?.options.find((option) => option.id === typeId)?.label;
+  const defaultName = typeLabel ? `${tableName} – ${typeLabel}` : "";
+  const name = typedName ?? defaultName;
 
   const add = useMutation({
     mutationFn: () => {
@@ -32,10 +37,9 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
       return createHomeAccess({
         organizationId,
         resourceType: table!,
-        title: `${tableName} – ${typeLabel}`,
-        // The card says the type only.
-        label: typeLabel!,
-        state: { listFilters: { [fieldId!]: { op: "in", v: [typeId!] } } },
+        // The card shows the view's name.
+        title: name.trim(),
+        state: { listFilters: { [fieldId!]: { op: "in", v: [typeId!], labels: { [typeId!]: typeLabel! } } } },
       });
     },
     onSuccess: () => {
@@ -47,7 +51,7 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
   });
 
   return (
-    <Dialog header={t("home.dataAccess.addTitle")} visible onHide={onHide} style={{ width: "min(28rem, 95vw)" }} draggable={false}>
+    <Dialog header={t("home.dataAccess.createView")} visible onHide={onHide} style={{ width: "min(28rem, 95vw)" }} draggable={false}>
       <div className="home-data-access-form">
         <label htmlFor="home-data-access-table">{t("home.dataAccess.table")}</label>
         <Dropdown
@@ -69,10 +73,17 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
           onChange={(e) => setTypeId(e.value as string | null)}
           filter
         />
+        <label htmlFor="home-data-access-name">{t("home.dataAccess.name")}</label>
+        <InputText
+          id="home-data-access-name"
+          value={name}
+          maxLength={200}
+          onChange={(e) => setTypedName(e.target.value)}
+        />
         {add.isError && <small className="home-data-access-error">{messageForError(add.error, t("home.dataAccess.addFailed"))}</small>}
         <div className="home-data-access-actions">
           <Button type="button" text label={t("tabs.cancel")} onClick={onHide} />
-          <Button type="button" label={t("home.dataAccess.add")} disabled={table == null || typeId == null || add.isPending} onClick={() => add.mutate()} />
+          <Button type="button" label={t("home.dataAccess.add")} disabled={table == null || typeId == null || name.trim() === "" || add.isPending} onClick={() => add.mutate()} />
         </div>
       </div>
     </Dialog>

@@ -87,7 +87,7 @@ Classés par gravité réelle, pas par effort.
 - Extraire les en-têtes et formulaires de création dupliqués (R7).
 - Découper `ProjectApiService` quand on y retouche, pas avant (A3).
 - Renommer les classes CSS propres à React en `sia-*` quand on y touche, et couper `main-panel.css` par composant (R9).
-- Vue arborescente (lot 5) : plan dédié, cible déjà décrite dans `react-migration-apres-merge.md` §3.
+- ~~Vue arborescente (lot 5)~~ **Faite et close (21/10/2026)** : voir `vue-arbre-listes.md`.
 
 ### À surveiller en production
 

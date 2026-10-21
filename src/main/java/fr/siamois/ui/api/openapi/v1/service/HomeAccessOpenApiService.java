@@ -4,12 +4,15 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.uiview.HomeAccess;
 import fr.siamois.domain.models.uiview.UiTableView;
+import fr.siamois.dto.view.TableViewState;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.infrastructure.database.HomeAccessRepository;
+import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessOrderRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.ViewWriteRequest;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessListResponse;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessResource;
+import fr.siamois.ui.api.openapi.v1.resource.view.ViewResource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -50,21 +53,36 @@ public class HomeAccessOpenApiService {
     @Transactional
     public HomeAccessResource create(UserInfo user, HomeAccessRequest body) {
         requireEditor(user);
-        Long viewId = viewService.create(user, new ViewWriteRequest(
-                body.organizationId(), body.resourceType(), body.title(), null, body.state())).id();
-        String label = body.label() == null || body.label().isBlank() ? body.title() : body.label().trim();
+        Long institutionId = user.getInstitution().getId();
+        Long viewId;
+        String resourceType = body.resourceType();
+        String title = body.title();
+        TableViewState state = body.state();
+        if (body.viewId() != null) {
+            ViewResource existing = viewService.get(user, body.viewId());
+            if (homeAccessRepository.existsByViewIdAndInstitutionId(existing.id(), institutionId)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette vue est déjà à la une");
+            }
+            viewId = existing.id();
+            resourceType = existing.resourceType();
+            title = existing.title();
+            state = existing.state();
+        } else {
+            viewId = viewService.create(user, new ViewWriteRequest(
+                    body.organizationId(), resourceType, title, null, state)).id();
+        }
+        String label = body.label() == null || body.label().isBlank() ? title : body.label().trim();
         if (label.length() > MAX_LABEL_LENGTH) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le nom d'une carte fait " + MAX_LABEL_LENGTH + " caractères au plus");
         }
         HomeAccess access = new HomeAccess();
-        Long institutionId = user.getInstitution().getId();
         access.setInstitution(entityManager.getReference(Institution.class, institutionId));
         access.setView(entityManager.getReference(UiTableView.class, viewId));
         access.setLabel(label);
         access.setPosition(homeAccessRepository.maxPosition(institutionId) + 1);
         HomeAccess saved = homeAccessRepository.save(access);
-        return new HomeAccessResource(saved.getId(), viewId, body.resourceType(), body.title(), label,
-                body.state() == null ? null : body.state().getListFilters());
+        return new HomeAccessResource(saved.getId(), viewId, resourceType, title, label,
+                state == null ? null : state.getListFilters());
     }
 
     @Transactional
@@ -73,6 +91,28 @@ public class HomeAccessOpenApiService {
         HomeAccess access = homeAccessRepository.findByIdAndInstitutionId(id, user.getInstitution().getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Accès introuvable"));
         homeAccessRepository.delete(access);
+    }
+
+    /** Reorders the organisation's cards: the cards named take the given order, any other follows them. */
+    @Transactional
+    public void reorder(UserInfo user, HomeAccessOrderRequest body) {
+        requireEditor(user);
+        List<Long> ids = body.ids() == null ? List.of() : body.ids();
+        List<HomeAccess> all = homeAccessRepository.findAllOf(user.getInstitution().getId());
+        int position = 1;
+        for (Long id : ids) {
+            for (HomeAccess access : all) {
+                if (access.getId().equals(id)) {
+                    access.setPosition(position++);
+                }
+            }
+        }
+        for (HomeAccess access : all) {
+            if (!ids.contains(access.getId())) {
+                access.setPosition(position++);
+            }
+        }
+        homeAccessRepository.saveAll(all);
     }
 
     private boolean canEdit(UserInfo user) {

@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessOrderRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessRequest;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessListResponse;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessResource;
@@ -59,6 +60,21 @@ public class HomeAccessControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         HomeAccessResource created = homeAccessService.create(requireUserInfo(body.organizationId(), acceptLanguage), body);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping(value = "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Réordonner les accès aux données",
+            description = "Fixe l'ordre d'affichage des cartes. Droit de modifier les vues par défaut requis.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Réordonné"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Droit manquant ou organisation hors périmètre")
+    })
+    public ResponseEntity<Void> reorder(
+            @RequestBody HomeAccessOrderRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        homeAccessService.reorder(requireUserInfo(body.organizationId(), acceptLanguage), body);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

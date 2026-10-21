@@ -14,6 +14,8 @@ public interface HomeAccessRepository extends JpaRepository<HomeAccess, Long> {
     @Query("select a from HomeAccess a join fetch a.view where a.institution.id = :institutionId order by a.position, a.id")
     List<HomeAccess> findAllOf(@Param("institutionId") Long institutionId);
 
+    boolean existsByViewIdAndInstitutionId(Long viewId, Long institutionId);
+
     Optional<HomeAccess> findByIdAndInstitutionId(Long id, Long institutionId);
 
     @Query("select coalesce(max(a.position), 0) from HomeAccess a where a.institution.id = :institutionId")
