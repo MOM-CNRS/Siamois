@@ -156,7 +156,7 @@ export function EntityDetailHeader({
           onChange={(e) => setPrimaryDraft(e.target.value)}
         />
       ) : (
-        <Chip label={primary.value || primary.fallback || ""} className={`${chipPrefix}-chip-alt entity-nav-chip`} icon={getEntityType(entityType)?.icon} />
+        <Chip label={primary.value || primary.fallback || ""} title={primary.value || primary.fallback || ""} className={`${chipPrefix}-chip-alt entity-nav-chip`} icon={getEntityType(entityType)?.icon} />
       )}
       {secondary &&
         (isEditing || !secondary.hideInView) &&
@@ -168,7 +168,7 @@ export function EntityDetailHeader({
             onChange={(e) => setSecondaryDraft(e.target.value)}
           />
         ) : (
-          <Chip label={secondary.value} className={`mr-2 ${chipPrefix}-type-chip`} />
+          <Chip label={secondary.value} title={secondary.value} className={`mr-2 ${chipPrefix}-type-chip`} />
         ))}
       {typeEditable ? (
         <span className="entity-detail-header-type sia-inline-center">
@@ -185,7 +185,7 @@ export function EntityDetailHeader({
       ) : (
         (typeLabel || (canEdit && type?.field != null)) && (
           <span className="entity-detail-header-type sia-inline-center">
-            <Chip label={typeLabel ?? t("header.noType")} className={`mr-2 ${chipPrefix}-type-chip`} />
+            <Chip label={typeLabel ?? t("header.noType")} title={typeLabel ?? undefined} className={`mr-2 ${chipPrefix}-type-chip`} />
           </span>
         )
       )}

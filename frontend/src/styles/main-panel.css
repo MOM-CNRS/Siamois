@@ -1772,14 +1772,47 @@ body button.p-button.status-button.status-button-compact {
    an edit; in edit mode it is the one validate button and stays visible. */
 .sideview-titlebar > .sia-hstack {
   flex: 1 1 auto;
+  /* The status button stays on the main chip's line; only the header's own chips wrap, inside it. */
+  flex-wrap: nowrap;
 }
 
 .entity-detail-header {
   flex: 1 1 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
   min-width: 0;
   align-items: center;
 }
+
+/* Narrow panes: the title bar wraps instead of squeezing — the toolbar keeps its line and the header drops
+   below it, where its own chips wrap (name first, then identifier, type, extras). */
+.sideview-titlebar-overview {
+  flex-wrap: wrap;
+  /* A wider gap between the toolbar buttons and the status tells the two groups apart. */
+  column-gap: 1.25rem;
+}
+.sideview-titlebar-overview > .sia-hstack {
+  /* Basis = the whole header on one line: when that doesn't fit next to the toolbar, the status and every
+     chip drop together under it, and only then do the chips wrap among themselves. */
+  flex: 1 1 auto;
+  align-items: flex-start;
+  /* The status button already carries its own padding: no extra gap before the first chip. */
+  gap: 0;
+}
+
+/* A chip is never two lines: a long label is cut with an ellipsis (full text in the title attribute). */
+.entity-detail-header .p-chip.p-component {
+  max-width: 100%;
+  min-width: 0;
+  margin-right: 0 !important;
+}
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entity-detail-header .p-chip.p-component.entity-nav-chip { max-width: min(100%, 22rem); }
+.entity-detail-header .p-chip.p-component:not(.entity-nav-chip) { max-width: min(100%, 14rem); }
 
 /* The fiche's chips follow the list's: the identifier is the list's identifier chip (entity colour, bold) on a
    light tint of that colour; the other chips (second text, type, read-only ones) are the list's rectangle chip
@@ -1982,6 +2015,10 @@ body button.p-button.status-button.status-button-compact {
 .entity-detail-panel .panel-bc-row {
   display: flex;
   align-items: center;
+  background: var(--siamois-green-light-100, #e6f0e6);
+}
+.entity-detail-panel .panel-bc-row .p-breadcrumb.panel-bc {
+  background: transparent;
 }
 
 /* The chevron is an inline SVG, so it is centred by the button's own flex box whatever the icon font does. */
@@ -3132,4 +3169,100 @@ div#search-bar .sia-search {
 /* A card's actions are always at full strength: there is no row hover to reveal them. */
 .entity-card-actions .entity-list-panel-row-actions {
   opacity: 1;
+}
+
+/* The fiche's breadcrumb sits on the Siamois green light-100, the tab headers under it on its light-50. */
+.entity-detail-panel .p-breadcrumb.panel-bc {
+  background: var(--siamois-green-light-100, #e6f0e6);
+  box-sizing: border-box;
+  width: 100%;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs > .p-tabview-nav-container,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav-content,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* The tab strip's scroll arrows carry a huge white glow (theme: box-shadow 0 0 10px 50px) that blurs the tab
+   ends; they are plain buttons on the header's own tint instead. */
+.entity-detail-panel .p-tabview .p-tabview-nav-btn.p-link {
+  box-shadow: none;
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* Main panel header: the title (status + chips) on the left and the toolbar on the right, on one line while
+   the whole title fits. As soon as the title would need a second line, the toolbar no longer fits beside it and
+   wraps — wrap-reverse stacks the wrapped line ABOVE, so the action buttons end up over the title, as in the
+   overview. No width threshold: it follows what the title really needs. */
+.sideview-titlebar-main {
+  flex-wrap: wrap-reverse;
+  justify-content: flex-start;
+  column-gap: 1.25rem;
+  row-gap: 0.25rem;
+}
+.sideview-titlebar-main > .sia-hstack {
+  align-items: flex-start;
+}
+
+/* The status button never shrinks: in the (now nowrap) title it was squeezed into an oval when chips needed room. */
+.sideview-titlebar > .sia-hstack > .status-button {
+  flex: 0 0 auto;
+}
+
+/* Phone width: the search is only a button (the overlay is its field), square like the topbar's other buttons. */
+@media (max-width: 768px) {
+  div#search-bar .sia-search {
+    width: auto;
+    padding-left: 0;
+  }
+  .sia-search-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+  }
+  .sia-search-trigger .sia-search-trigger-text {
+    display: none;
+  }
+}
+
+/* Phone width: scrolling is the touch screen's own, so the desktop's always-visible scrollbars go, and the
+   frozen columns are released (they take a good part of a narrow screen). A frozen header cell stays
+   sticky at the top, with the rest of the header: only the sideways pinning is dropped. */
+@media (max-width: 768px) {
+  html,
+  html * {
+    scrollbar-width: none;
+  }
+  html ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    left: auto !important;
+  }
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    position: static;
+    z-index: auto;
+  }
+}
+
+/* Phone width: the top bar, panel header and breadcrumb slide off the top (mobileChrome.ts sets their negative
+   margin); the content under them takes the room as they go. */
+@media (max-width: 768px) {
+  #topbar-row,
+  .entity-list-panel.p-panel > .p-panel-header,
+  .entity-detail-panel.p-panel > .p-panel-header,
+  .entity-detail-panel .panel-bc-row,
+  .entity-detail-panel .p-breadcrumb.panel-bc {
+    transition: margin-top 0.25s ease;
+  }
 }

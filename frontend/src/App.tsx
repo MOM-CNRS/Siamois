@@ -1,3 +1,4 @@
+import { useHideChromeOnScroll } from "./mobileChrome";
 import { useEffect, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { NotifyProvider } from "./notify/NotifyProvider";
@@ -160,6 +161,7 @@ export function App({ options }: { options: MountOptions }) {
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
   const { state, navigate, openView, openOverview, openList, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
 
   // What the top search bar (its own React root) can drive.

@@ -18,6 +18,7 @@ import { ValidationStatusButton } from "../components/ValidationStatusButton";
 import { DetailBodySkeleton } from "../components/DetailSkeleton";
 import { recallListContext, rememberListContext, type ListContext } from "./listContext";
 import { siblingsQuery } from "./listSiblings";
+import { useSwipeSiblings } from "./useSwipeSiblings";
 
 import type { DetailTabDef, EntityPreview, EntitySibling, FilterValue } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
@@ -238,6 +239,18 @@ export function EntityDetailPanel({
   // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const panelRef = useRef<Panel>(null);
+  // The arrows' own jump, shared with the swipe: the neighbour carries on walking the same list, from its own position.
+  const goToSibling = (sibling: EntitySibling) => {
+    const context = neighbourContext(listContext, sibling);
+    if (context) rememberListContext(entityType, sibling.id, context);
+    onNavigateSibling?.(sibling.id, { label: sibling.label });
+  };
+  useSwipeSiblings(() => panelRef.current?.getElement(), {
+    previous: siblings?.previous,
+    next: siblings?.next,
+    go: goToSibling,
+    enabled: config?.api.siblings != null && onNavigateSibling != null && !siblingNavDisabled,
+  });
   function openCreate(event?: SyntheticEvent) {
     const clicked = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     const toolbarEl = panelRef.current?.getElement()?.querySelector<HTMLElement>(".panel-toolbar") ?? null;
@@ -270,12 +283,7 @@ export function EntityDetailPanel({
     config.api.siblings && onNavigateSibling ? (
       <SiblingNav
         siblings={siblings}
-        onNavigate={(sibling) => {
-          // The neighbour carries on walking the same list, from its own position.
-          const context = neighbourContext(listContext, sibling);
-          if (context) rememberListContext(entityType, sibling.id, context);
-          onNavigateSibling(sibling.id, { label: sibling.label });
-        }}
+        onNavigate={goToSibling}
         onPrefetch={prefetchSibling}
         disabled={siblingNavDisabled}
       />
