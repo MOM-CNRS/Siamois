@@ -27,16 +27,22 @@ export async function listHomeAccesses(organizationId: number): Promise<HomeAcce
   return apiFetch<HomeAccessList>(`/api/v1/home-accesses?organizationId=${organizationId}`);
 }
 
+// Either an existing view of the organization (`viewId`), or the table, title and state of a view to create.
 export async function createHomeAccess(body: {
   organizationId: number;
-  resourceType: string;
-  title: string;
-  label: string;
-  state: ViewTableState;
+  viewId?: number;
+  resourceType?: string;
+  title?: string;
+  label?: string;
+  state?: ViewTableState;
 }): Promise<HomeAccess> {
   return apiFetch<HomeAccess>("/api/v1/home-accesses", { method: "POST", body });
 }
 
 export async function deleteHomeAccess(organizationId: number, id: number): Promise<void> {
   await apiFetch<void>(`/api/v1/home-accesses/${id}?organizationId=${organizationId}`, { method: "DELETE" });
+}
+
+export async function reorderHomeAccesses(organizationId: number, ids: number[]): Promise<void> {
+  await apiFetch<void>("/api/v1/home-accesses/order", { method: "PUT", body: { organizationId, ids } });
 }

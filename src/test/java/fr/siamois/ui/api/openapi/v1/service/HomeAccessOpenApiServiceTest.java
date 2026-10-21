@@ -95,7 +95,7 @@ class HomeAccessOpenApiServiceTest {
             saved.setId(5L);
             return saved;
         });
-        HomeAccessRequest request = new HomeAccessRequest(100L, "recordingUnit", "US – Couche", "Couche", state);
+        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "US – Couche", "Couche", state);
 
         HomeAccessResource result = service.create(user, request);
 
@@ -107,6 +107,27 @@ class HomeAccessOpenApiServiceTest {
         ArgumentCaptor<HomeAccess> saved = ArgumentCaptor.forClass(HomeAccess.class);
         verify(homeAccessRepository).save(saved.capture());
         assertEquals(4, saved.getValue().getPosition());
+    }
+
+    @Test
+    void create_withAnExistingView_linksItWithoutCreatingOne_andRefusesAViewAlreadyFeatured() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        ViewResource existing = mock(ViewResource.class);
+        when(existing.id()).thenReturn(11L);
+        when(existing.resourceType()).thenReturn("find");
+        when(existing.title()).thenReturn("Mobiliers");
+        when(viewService.get(user, 11L)).thenReturn(existing);
+        when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> call.getArgument(0));
+        HomeAccessRequest request = new HomeAccessRequest(100L, 11L, null, null, null, null);
+
+        HomeAccessResource result = service.create(user, request);
+
+        assertEquals(11L, result.viewId());
+        assertEquals("Mobiliers", result.label());
+        verify(viewService, never()).create(any(UserInfo.class), any(ViewWriteRequest.class));
+
+        when(homeAccessRepository.existsByViewIdAndInstitutionId(11L, 100L)).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () -> service.create(user, request));
     }
 
     @Test
@@ -133,16 +154,16 @@ class HomeAccessOpenApiServiceTest {
         when(viewService.create(any(UserInfo.class), any(ViewWriteRequest.class))).thenReturn(created);
         when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> call.getArgument(0));
 
-        assertEquals("Mobiliers", service.create(user, new HomeAccessRequest(100L, "find", "Mobiliers", " ", new TableViewState())).label());
+        assertEquals("Mobiliers", service.create(user, new HomeAccessRequest(100L, null, "find", "Mobiliers", " ", new TableViewState())).label());
 
-        HomeAccessRequest tooLong = new HomeAccessRequest(100L, "find", "Mobiliers", "x".repeat(201), new TableViewState());
+        HomeAccessRequest tooLong = new HomeAccessRequest(100L, null, "find", "Mobiliers", "x".repeat(201), new TableViewState());
         assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class, () -> service.create(user, tooLong)).getStatusCode());
     }
 
     @Test
     void create_withoutThePermission_isForbiddenAndCreatesNothing() {
         when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(false);
-        HomeAccessRequest request = new HomeAccessRequest(100L, "recordingUnit", "x", "x", new TableViewState());
+        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "x", "x", new TableViewState());
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class, () -> service.create(user, request));
 

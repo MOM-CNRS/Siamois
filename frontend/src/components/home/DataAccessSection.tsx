@@ -2,14 +2,16 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
+import { Dialog } from "primereact/dialog";
 import { Panel } from "primereact/panel";
-import { deleteHomeAccess, listHomeAccesses, type HomeAccess } from "../../api/homeAccesses";
+import { deleteHomeAccess, listHomeAccesses, reorderHomeAccesses, type HomeAccess } from "../../api/homeAccesses";
 import { queryKeys } from "../../api/queryKeys";
 import { getEntityType } from "../../entities/registry";
 import type { HomeWidgetContext } from "../../entities/types";
 import { t } from "../../i18n";
 import { usePaneState } from "../../panels/paneState";
 import { AddDataAccessDialog } from "./AddDataAccessDialog";
+import { AddViewCard } from "./AddViewCard";
 import { ClickableCard } from "./ClickableCard";
 import { openSidebarDrawer } from "./sidebar";
 
@@ -21,6 +23,11 @@ import { openSidebarDrawer } from "./sidebar";
 export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetContext) {
   const [folded, setFolded] = usePaneState("dataAccessFolded", false);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState<HomeAccess | null>(null);
+  // Card being dragged, and the one it hovers.
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: queryKeys.homeAccesses(organizationId),
@@ -32,10 +39,34 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
     mutationFn: (id: number) => deleteHomeAccess(organizationId!, id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.homeAccesses(organizationId) }),
   });
+  const reorder = useMutation({
+    mutationFn: (ids: number[]) => reorderHomeAccesses(organizationId!, ids),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: queryKeys.homeAccesses(organizationId) }),
+  });
 
   const accesses = data?.data ?? [];
   const canEdit = data?.canEdit === true;
   if (organizationId == null || (accesses.length === 0 && !canEdit)) return null;
+  const editMode = editing && canEdit;
+
+  function endDrag() {
+    setDragging(null);
+    setOver(null);
+  }
+
+  // Moves the dragged card to the place of the one it is dropped on, at once, then tells the server.
+  function dropOn(targetId: number) {
+    if (dragging == null || dragging === targetId) return;
+    const ids = accesses.map((a) => a.id);
+    ids.splice(ids.indexOf(dragging), 1);
+    ids.splice(ids.indexOf(targetId), 0, dragging);
+    const byId = new Map(accesses.map((a) => [a.id, a]));
+    queryClient.setQueryData(queryKeys.homeAccesses(organizationId), {
+      data: ids.map((id) => byId.get(id)!),
+      canEdit,
+    });
+    reorder.mutate(ids);
+  }
 
   return (
     <>
@@ -43,7 +74,15 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
         header={
           <span className="home-section-title">
             {t("home.dataAccess")}
-            {canEdit && <Button text size="small" label={t("home.dataAccess.addButton")} icon="bi bi-plus-square" onClick={() => setAdding(true)} />}
+            {canEdit && (
+              <Button
+                text
+                size="small"
+                label={editMode ? t("home.dataAccess.done") : t("home.dataAccess.edit")}
+                icon={editMode ? "bi bi-check-lg" : "bi bi-pencil"}
+                onClick={() => setEditing(!editMode)}
+              />
+            )}
             <Button text size="small" label={t("home.dataAccess.seeAll")} icon="bi bi-file-earmark-spreadsheet" onClick={() => openSidebarDrawer("views")} />
           </span>
         }
@@ -52,22 +91,55 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
         onToggle={(e) => setFolded(e.value)}
         className="sia-form-panel"
       >
-        {accesses.length === 0 && <div>{t("home.dataAccess.empty")}</div>}
-        {accesses.length > 0 && (
+        {accesses.length === 0 && !editMode && <div>{t("home.dataAccess.empty")}</div>}
+        {(accesses.length > 0 || editMode) && (
           <div className="sia-card-grid">
             {accesses.map((access) => (
               <DataAccessCard
                 key={access.id}
                 access={access}
                 organizationId={organizationId}
-                canEdit={canEdit}
+                editing={editMode}
+                dragState={dragging === access.id ? "dragging" : over === access.id && dragging != null ? "target" : undefined}
+                onDragStart={() => setDragging(access.id)}
+                onDragOver={() => setOver(access.id)}
+                onDrop={() => {
+                  dropOn(access.id);
+                  endDrag();
+                }}
+                onDragEnd={endDrag}
                 onOpen={() => onOpenView?.(access.resourceType, access.viewId)}
-                onRemove={() => remove.mutate(access.id)}
+                onRemove={() => setRemoving(access)}
               />
             ))}
+            {editMode && <AddViewCard organizationId={organizationId} onCreate={() => setAdding(true)} />}
           </div>
         )}
       </Panel>
+      <Dialog
+        visible={removing != null}
+        onHide={() => setRemoving(null)}
+        modal
+        draggable={false}
+        header={t("home.dataAccess.remove")}
+        style={{ width: "min(28rem, 94vw)" }}
+        footer={
+          <>
+            <Button label={t("common.cancel")} text onClick={() => setRemoving(null)} />
+            <Button
+              label={t("home.dataAccess.remove")}
+              icon="bi bi-trash"
+              severity="danger"
+              onClick={() => {
+                if (removing) remove.mutate(removing.id);
+                setRemoving(null);
+              }}
+            />
+          </>
+        }
+      >
+        <p>{t("home.dataAccess.removeConfirm")}</p>
+      </Dialog>
       {adding && <AddDataAccessDialog organizationId={organizationId} onHide={() => setAdding(false)} />}
     </>
   );
@@ -77,13 +149,23 @@ export function DataAccessSection({ organizationId, onOpenView }: HomeWidgetCont
 function DataAccessCard({
   access,
   organizationId,
-  canEdit,
+  editing,
+  dragState,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
   onOpen,
   onRemove,
 }: {
   access: HomeAccess;
   organizationId: number;
-  canEdit: boolean;
+  editing: boolean;
+  dragState?: "dragging" | "target";
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
   onOpen: () => void;
   onRemove: () => void;
 }) {
@@ -96,13 +178,14 @@ function DataAccessCard({
     enabled: type != null,
     staleTime: 0,
   });
-  return (
+  const card = (
     <ClickableCard ariaLabel={access.label} onOpen={onOpen} className={`sia-welcome-card ${type?.cardClassName ?? ""}`}>
       <div className="sia-count-card-row">
+        {editing && <i className="bi bi-grip-vertical home-data-access-handle" title={t("home.dataAccess.drag")} />}
         <i className={type?.icon ?? "bi bi-table"} />
         <span className="sia-count-card-title">{access.label}</span>
         {count.data != null && <Chip label={String(count.data)} className={type?.countChipClassName} />}
-        {canEdit && (
+        {editing && (
           <Button
             text
             rounded
@@ -120,5 +203,29 @@ function DataAccessCard({
         )}
       </div>
     </ClickableCard>
+  );
+  if (!editing) return card;
+  return (
+    <div
+      className={`home-data-access-item${dragState ? ` is-${dragState}` : ""}`}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(access.id));
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        onDragOver();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={onDragEnd}
+    >
+      {card}
+    </div>
   );
 }

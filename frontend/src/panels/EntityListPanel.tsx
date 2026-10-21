@@ -20,6 +20,7 @@ import type {
 } from "../entities/types";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
+import { withLabels } from "../components/table/ColumnFilter";
 import type { FilterOption } from "../fields/optionSources";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { queryKeys } from "../api/queryKeys";
@@ -332,7 +333,7 @@ function EntityListPanelBody({
     options?: FilterOption[],
   ) {
     const next = { ...state.filters };
-    if (value) next[key] = value;
+    if (value) next[key] = withLabels(value, options);
     else delete next[key];
     setFilters(next);
     if (options)
@@ -468,7 +469,9 @@ function EntityListPanelBody({
                   optionsByKey={filterOptionsByKey}
                   value={state.search ?? ""}
                   onApply={(search, filters, options) => {
-                    setFilters(filters);
+                    setFilters(
+                      Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, withLabels(value, options[key])])),
+                    );
                     setSearch(search);
                     if (Object.keys(options).length > 0) setFilterOptionsByKey((byKey) => ({ ...byKey, ...options }));
                   }}

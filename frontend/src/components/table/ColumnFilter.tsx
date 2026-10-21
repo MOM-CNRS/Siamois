@@ -229,6 +229,18 @@ function OptionsFilter({
  * ids when no labels are known (a restored `?s=`/saved view carries ids only) rather than printing
  * nothing — a chip with no value at all reads as "filter not set", which would be wrong.
  */
+/** An "in" filter with the labels of its ids, so they are still known when it comes back from a saved view. */
+export function withLabels(value: FilterValue, options?: FilterOption[]): FilterValue {
+  if (value.op !== "in" || !options) return value;
+  const byId = new Map(options.map((o) => [o.id, o.label]));
+  const labels: Record<string, string> = { ...value.labels };
+  for (const id of value.v) {
+    const label = byId.get(id);
+    if (label != null) labels[id] = label;
+  }
+  return Object.keys(labels).length > 0 ? { ...value, labels } : value;
+}
+
 export function describeFilterValue(value: FilterValue | undefined, options?: FilterOption[]): string {
   if (!value) return "";
   switch (value.op) {
@@ -236,7 +248,7 @@ export function describeFilterValue(value: FilterValue | undefined, options?: Fi
       return value.v;
     case "in": {
       const byId = new Map((options ?? []).map((o) => [o.id, o.label]));
-      return value.v.map((id) => byId.get(id) ?? id).join(", ");
+      return value.v.map((id) => byId.get(id) ?? value.labels?.[id] ?? id).join(", ");
     }
     case "range": {
       if (value.from && value.to) return `${value.from} – ${value.to}`;

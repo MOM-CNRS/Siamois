@@ -11,8 +11,8 @@ import { t } from "../../i18n";
 import { useTableTypes } from "./useTableTypes";
 
 /**
- * « Ajouter un accès aux données »: a table and one of its types, both required. Adding creates the view that
- * shows exactly that — and the card of the home page that opens it. Nothing else to fill in.
+ * « Créer une nouvelle vue »: a table and one of its types, both required. Creates the view that shows exactly
+ * that, and its card on the home page.
  */
 export function AddDataAccessDialog({ organizationId, onHide }: { organizationId: number; onHide: () => void }) {
   const queryClient = useQueryClient();
@@ -35,7 +35,7 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
         title: `${tableName} – ${typeLabel}`,
         // The card says the type only.
         label: typeLabel!,
-        state: { listFilters: { [fieldId!]: { op: "in", v: [typeId!] } } },
+        state: { listFilters: { [fieldId!]: { op: "in", v: [typeId!], labels: { [typeId!]: typeLabel! } } } },
       });
     },
     onSuccess: () => {
@@ -47,7 +47,7 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
   });
 
   return (
-    <Dialog header={t("home.dataAccess.addTitle")} visible onHide={onHide} style={{ width: "min(28rem, 95vw)" }} draggable={false}>
+    <Dialog header={t("home.dataAccess.createView")} visible onHide={onHide} style={{ width: "min(28rem, 95vw)" }} draggable={false}>
       <div className="home-data-access-form">
         <label htmlFor="home-data-access-table">{t("home.dataAccess.table")}</label>
         <Dropdown

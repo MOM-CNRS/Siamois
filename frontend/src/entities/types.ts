@@ -30,7 +30,8 @@ export interface PagedResult<T> {
  */
 export type FilterValue =
   | { op: "contains"; v: string }
-  | { op: "in"; v: string[] }
+  // `labels`: what the ids were called when picked, kept with the filter so a saved view can show them.
+  | { op: "in"; v: string[]; labels?: Record<string, string> }
   | { op: "range"; from?: string; to?: string };
 
 // Scopes a list to one parent entity's own sub-collection — "the recording units OF this
