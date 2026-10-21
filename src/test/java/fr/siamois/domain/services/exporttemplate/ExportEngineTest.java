@@ -129,6 +129,27 @@ class ExportEngineTest {
     }
 
     @Test
+    void columnOfATechnicalRow_isReadOnTheRowItself_withoutPath() throws IOException {
+        Source relations = new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP");
+        ExportRow relation = ExportRow.technical(Map.of(), Map.of("relationType", "covers"));
+        rows(relations, relation);
+        lenient().when(valueReader.read(any(), any(), any(), any())).thenAnswer(i -> {
+            ExportRow r = i.getArgument(0);
+            FieldRef f = i.getArgument(1);
+            return f instanceof ColumnField c ? List.of(r.values().get(c.name())) : List.of();
+        });
+        Rule rule = new DirectRule(List.of(), new ColumnField("relationType"), List.of(), null);
+
+        ExportEngine.Result result = run(template(null, sheet("Relations", false, List.of(), List.of(relations),
+                column("type", OutputType.TEXT, rule))));
+
+        try (Workbook wb = open(result)) {
+            assertThat(wb.getSheet("Relations").getRow(1).getCell(0).getStringCellValue()).isEqualTo("covers");
+        }
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test
     void multipleValues_areJoined_andSortedWhenAsked() throws IOException {
         stubFieldReads();
         rows(UE, row(Map.of("1", List.of("b", "a"))));

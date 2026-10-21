@@ -8,6 +8,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.view.TableViewState;
 import fr.siamois.infrastructure.database.HomeAccessRepository;
+import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessOrderRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.ViewWriteRequest;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessListResponse;
@@ -128,6 +129,39 @@ class HomeAccessOpenApiServiceTest {
 
         when(homeAccessRepository.existsByViewIdAndInstitutionId(11L, 100L)).thenReturn(true);
         assertThrows(ResponseStatusException.class, () -> service.create(user, request));
+    }
+
+    @Test
+    void reorder_numbersTheNamedCardsInOrder_thenTheOthers() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        HomeAccess a = access(1, 11, "find", "A");
+        HomeAccess b = access(2, 12, "find", "B");
+        HomeAccess c = access(3, 13, "find", "C");
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of(a, b, c));
+
+        service.reorder(user, new HomeAccessOrderRequest(100L, List.of(3L, 1L)));
+
+        assertEquals(1, c.getPosition());
+        assertEquals(2, a.getPosition());
+        assertEquals(3, b.getPosition());
+        verify(homeAccessRepository).saveAll(List.of(a, b, c));
+    }
+
+    @Test
+    void reorder_withoutIds_keepsTheCurrentOrder_andNeedsThePermission() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        HomeAccess a = access(1, 11, "find", "A");
+        HomeAccess b = access(2, 12, "find", "B");
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of(a, b));
+
+        service.reorder(user, new HomeAccessOrderRequest(100L, null));
+
+        assertEquals(1, a.getPosition());
+        assertEquals(2, b.getPosition());
+
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(false);
+        HomeAccessOrderRequest request = new HomeAccessOrderRequest(100L, List.of(1L));
+        assertThrows(ResponseStatusException.class, () -> service.reorder(user, request));
     }
 
     @Test
