@@ -50,6 +50,12 @@
 
 /* ---------------------------------------------------------- column header lines */
 
+/* The field's type icon, before the header's name. */
+.entity-list-panel-column-icon {
+  margin-right: 0.4em;
+  color: var(--text-light, #6b7280);
+}
+
 /* One line, always: a wrapped header raises every row in the table. */
 .entity-list-panel-column-header {
   display: block;
@@ -815,10 +821,14 @@
   height: 16px;
 }
 
+/* The required mark follows the label's name, not the button's far edge; the label alone shrinks (ellipsis). */
 .sia-fiche-tab .required-btn::after {
-  content: " *";
-  position: absolute;
-  right: 6px;
+  content: "*";
+  flex: none;
+  margin-left: 0.25em;
+}
+.sia-fiche-tab .required-btn .p-button-label {
+  flex: 0 1 auto;
 }
 
 .sia-fiche-tab .field-hint {
@@ -857,6 +867,49 @@
 
 .sia-fiche-tab .field-value-cell-empty {
   color: var(--text-light, #6b7280);
+}
+
+/* Narrow fiche (a phone, or a squeezed overview): one field per row, the label on the left over a third of the
+   width and the value beside it, each on a single line cropped with an ellipsis. Keyed to the fiche's own width,
+   like the column grid above, below the 400px at which that grid starts putting fields side by side. */
+@container (max-width: 399px) {
+  .sia-fiche-tab .field-value-group {
+    display: grid;
+    grid-template-columns: 33% minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 0 0.5rem;
+  }
+  /* Tighter rows: the columns' own padding is halved between two fields. */
+  .sia-fiche-tab .project-fiche-tab-col {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .header-toggle-container {
+    min-width: 0;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button .p-button-label {
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sia-fiche-tab .field-value-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
@@ -1627,14 +1680,19 @@ body button.p-button.status-button.status-button-compact {
 }
 /* Home cards' counter: outlined in the entity colour (the theme's <entity>-count-chip), as big as the
    title, and see-through inside — the theme paints that chip white. */
-.sia-welcome-card .sia-count-card-row .p-chip {
+.sia-welcome-card .sia-count-card-row .p-chip,
+.entity-list-panel-header .p-chip {
+  border-radius: 999px;
+  min-width: 2.25rem;
+  justify-content: center;
   background-color: transparent;
   font-size: var(--font-size-title-card);
   font-weight: var(--font-weight-title);
   line-height: 1.2;
   padding: 0 0.6rem;
 }
-.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text,
+.entity-list-panel-header .p-chip .p-chip-text {
   margin: 0.15rem 0;
   line-height: inherit;
 }
@@ -1649,7 +1707,10 @@ body button.p-button.status-button.status-button-compact {
   font-size: var(--font-size-title-page);
   font-weight: var(--font-weight-title);
   color: var(--title-color);
-  padding-right: 0.5em;
+}
+/* Icon, title and count: evenly spaced, one gap between each. */
+.entity-list-panel-header.sia-hstack {
+  gap: 0.85rem;
 }
 /* The title of a list on one of the user's own views: a button that turns into a field. */
 .entity-list-panel-view-title {
@@ -3255,14 +3316,196 @@ div#search-bar .sia-search {
   }
 }
 
-/* Phone width: the top bar, panel header and breadcrumb slide off the top (mobileChrome.ts sets their negative
+/* Phone width: the top bar and breadcrumb slide off the top (mobileChrome.ts sets their negative
    margin); the content under them takes the room as they go. */
 @media (max-width: 768px) {
-  #topbar-row,
-  .entity-list-panel.p-panel > .p-panel-header,
-  .entity-detail-panel.p-panel > .p-panel-header,
-  .entity-detail-panel .panel-bc-row,
-  .entity-detail-panel .p-breadcrumb.panel-bc {
+  #topbar-row {
     transition: margin-top 0.25s ease;
   }
+  .entity-detail-panel .panel-bc-row,
+  .entity-detail-panel .p-breadcrumb.panel-bc {
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  /* The panel's header keeps the status and the title chip; its toolbar and the other chips go. */
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .panel-toolbar,
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .entity-detail-header > :not(.entity-nav-chip) {
+    display: none;
+  }
+}
+
+/* ── Bottom sheets (components/BottomSheet.tsx): overlays turned into drawers at phone width ──────── */
+.p-sidebar.bottom-sheet {
+  height: auto !important;
+  max-height: 85dvh !important;
+  width: 100%;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 18%);
+  border-radius: 16px 16px 0 0;
+  /* Room for the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The reference picker's field on a phone: looks like the input it replaces. */
+.resource-ref-sheet-trigger.p-inputtext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-token {
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ref-chip-color, var(--main-color)) 35%, transparent);
+  border-radius: 3px;
+  color: var(--ref-chip-color, var(--main-color));
+  font-weight: 600;
+}
+.resource-ref-sheet-placeholder {
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-chevron {
+  margin-left: auto;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-search.p-inputtext {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+.resource-ref-sheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.resource-ref-sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-option.is-chosen {
+  color: var(--main-color);
+  font-weight: 600;
+}
+.resource-ref-sheet-option-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.resource-ref-sheet-empty {
+  padding: 0.75rem 0.25rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+.p-sidebar.bottom-sheet {
+  transition: transform 0.2s ease, max-height 0.25s ease;
+}
+/* Dragged up: nearly the whole page. */
+.p-sidebar.bottom-sheet.is-expanded {
+  height: 95dvh !important;
+  max-height: 95dvh !important;
+}
+.p-sidebar.bottom-sheet .p-sidebar-header {
+  padding: 0;
+}
+/* The drag handle takes the header's whole width: a tall target for a thumb, the grip drawn in its middle. */
+.bottom-sheet-handle {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding: 0.6rem 0 0.4rem;
+  touch-action: none;
+  cursor: grab;
+}
+.bottom-sheet-grip {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-400, #bdbdbd);
+}
+/* The close cross is replaced by the handle. */
+.p-sidebar.bottom-sheet .p-sidebar-close {
+  display: none;
+}
+
+/* A form in a bottom sheet fills it edge to edge, with its footer pinned to the bottom (the sheet's full height
+   once expanded). */
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.p-sidebar.bottom-sheet .sia-create-form {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.p-sidebar.bottom-sheet .sia-create-form-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.p-sidebar.bottom-sheet .sia-create-form-footer {
+  flex-shrink: 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* Filters in a bottom sheet: the list of columns to add, and the editor of one filter. */
+.p-sidebar.filter-sheet .filter-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.p-sidebar.filter-sheet .filter-picker-item {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.filter-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}
+
+/* The cell editor in a bottom sheet: no floating-box chrome, the field's own label above the widget. */
+.cell-edit-overlay.cell-edit-overlay-sheet {
+  z-index: auto;
+  width: 100%;
+  padding: 0 0 0.5rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cell-edit-overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
 }

@@ -8,6 +8,8 @@ import { SelectButton } from "primereact/selectbutton";
 import type { FilterValue } from "../../panels/tableState";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
 import { t } from "../../i18n";
+import { ReferencePickerSheet } from "../../fields/ReferencePickerSheet";
+import { useIsMobile } from "../../viewport";
 
 /**
  * One filter widget, dispatching on {@link FilterKind} — the client-side counterpart of
@@ -196,6 +198,7 @@ function OptionsFilter({
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   const selected = selectedOptions ?? [];
   const { capTo, panelStyle } = useFieldWidthCap();
+  const mobile = useIsMobile();
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
@@ -205,6 +208,20 @@ function OptionsFilter({
 
   function commit(next: FilterOption[]) {
     onChange(next.length > 0 ? { op: "in", v: next.map((o) => o.id) } : undefined, next);
+  }
+
+  // Phone width: the options are picked in a drawer of their own (an autocomplete dropdown would sit under the keyboard).
+  if (mobile) {
+    return (
+      <ReferencePickerSheet
+        multiple
+        selected={selected}
+        placeholder={label}
+        loadOptions={loadOptions ?? null}
+        itemTemplate={(o) => <ConceptOptionItem option={o} />}
+        onCommit={commit}
+      />
+    );
   }
 
   return (

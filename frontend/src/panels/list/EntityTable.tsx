@@ -494,6 +494,10 @@ export function EntityTable({
         // tooltip. A wrapping header makes every row in the table taller for one long label.
         header={
           <span className="entity-list-panel-column-header" title={col.header}>
+            {/* The field's own type icon before its name, as on the fiche. */}
+            {fieldByColumn.get(col.key)?.icon && (
+              <i className={`${fieldByColumn.get(col.key)!.icon} entity-list-panel-column-icon`} aria-hidden="true" />
+            )}
             {col.header}
           </span>
         }

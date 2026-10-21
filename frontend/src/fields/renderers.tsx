@@ -1,5 +1,7 @@
 import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
 import { PlaceOptionItem } from "./PlaceOptionItem";
+import { ReferencePickerSheet } from "./ReferencePickerSheet";
+import { useIsMobile } from "../viewport";
 import { useRef, useState, type CSSProperties } from "react";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -222,6 +224,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       }
     : sourceOptions;
   const autoCompleteRef = useRef<AutoComplete>(null);
+  const mobile = useIsMobile();
   const { capTo, panelStyle } = useFieldWidthCap();
   const target = referenceTargetOf(field);
   const waitingForParent = optionsContext?.kind === "RELATED_CONCEPTS" && optionsContext.relatedTo == null;
@@ -370,9 +373,28 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         }
       : undefined;
 
+  // Phone width: the field is a button opening a drawer (a dropdown under the keyboard is unusable).
+  const sheet = (
+    <ReferencePickerSheet
+      multiple={multiple}
+      selected={(multiple ? selected : selected ? [selected] : []) as FilterOption[]}
+      disabled={readOnly || creatingPlace}
+      placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
+      emptyMessage={waitingForParent ? t("field.fillParentFirst") : undefined}
+      loadOptions={loadOptions}
+      itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
+      onSearched={(found) => setUnnarrowedSources(found.unnarrowedSources ?? [])}
+      hint={unnarrowedSources.length > 0 ? narrowHint : undefined}
+      onCommit={(next) => void commitPicked(multiple ? next : (next[0] ?? null))}
+      onNew={createConfig ? (trigger) => setCreateAnchor(trigger) : undefined}
+      newLabel={createConfig ? t("field.newLower", { label: createConfig.labels.singular.toLowerCase() }) : undefined}
+      style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
+    />
+  );
+
   return (
     <>
-      <AutoComplete
+      {mobile ? sheet : <AutoComplete
         ref={autoCompleteRef}
         // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
         className="resource-ref-picker"
@@ -407,7 +429,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
             void commitPicked(e.value as FilterOption[] | FilterOption | null);
           }
         }}
-      />
+      />}
       {createConfig && (
         // Opens next to the picker, in an overlay that stops key events from reaching the edit
         // overlay's own Escape/Enter handling (see CreateEntityOverlay).

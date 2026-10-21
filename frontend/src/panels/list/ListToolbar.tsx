@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
@@ -9,6 +9,8 @@ import { Tooltip } from "primereact/tooltip";
 import { queryKeys } from "../../api/queryKeys";
 import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/types";
 import { t } from "../../i18n";
+import { BottomSheet } from "../../components/BottomSheet";
+import { useIsMobile } from "../../viewport";
 
 export interface ListToolbarProps {
   entityType: string;
@@ -58,6 +60,10 @@ export function ListToolbar({
 }: ListToolbarProps) {
   const queryClient = useQueryClient();
   const createOverlayRef = useRef<OverlayPanel>(null);
+  // Phone width: the creation form is a drawer from the bottom rather than an overlay under the button.
+  const mobile = useIsMobile();
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const hideCreate = () => (mobile ? setCreateSheetOpen(false) : createOverlayRef.current?.hide());
   const blockedCreateRef = useRef<HTMLSpanElement>(null);
 
   function createButton(): ReactNode {
@@ -87,24 +93,41 @@ export function ListToolbar({
       );
     }
     if (config.list.createForm) {
+      const form = () =>
+        config.list.createForm!({
+          organizationId,
+          scope,
+          prefill: createPrefill,
+          onCreated: (id) => {
+            hideCreate();
+            void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+            // A linked create changes the parent's relation counts (its tab badges).
+            if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
+            onCreated(id);
+          },
+          onCancel: hideCreate,
+        });
       return (
         <>
-          <Button label={t("list.create")} icon="bi bi-plus-square" onClick={(e) => createOverlayRef.current?.toggle(e)} />
-          <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
-            {config.list.createForm({
-              organizationId,
-              scope,
-              prefill: createPrefill,
-              onCreated: (id) => {
-                createOverlayRef.current?.hide();
-                void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
-                // A linked create changes the parent's relation counts (its tab badges).
-                if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
-                onCreated(id);
-              },
-              onCancel: () => createOverlayRef.current?.hide(),
-            })}
-          </OverlayPanel>
+          <Button
+            label={t("list.create")}
+            icon="bi bi-plus-square"
+            onClick={(e) => (mobile ? setCreateSheetOpen(true) : createOverlayRef.current?.toggle(e))}
+          />
+          {mobile ? (
+            <BottomSheet
+              visible={createSheetOpen}
+              onHide={() => setCreateSheetOpen(false)}
+              ariaLabel={t("create.newOf", { label: config.labels.singular })}
+              className="create-entity-sheet"
+            >
+              {createSheetOpen && form()}
+            </BottomSheet>
+          ) : (
+            <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
+              {form()}
+            </OverlayPanel>
+          )}
         </>
       );
     }
