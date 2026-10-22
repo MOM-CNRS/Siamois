@@ -206,9 +206,12 @@ export function EntityDetailPanel({
 
   // The fil d'Ariane (project → parents → fiche), apart from the detail for the same reason: a slow
   // lookup leaves the home + « Tous les … » crumbs in place instead of blocking the fiche.
+  // Opened from a tab of another fiche (a scoped list), the trail goes through that fiche first.
+  const scope = listContext?.params.scope;
+  const via = scope ? { entityType: scope.entityType, id: scope.id } : undefined;
   const { data: breadcrumbs } = useQuery({
-    queryKey: queryKeys.entityBreadcrumbs(entityType, entityId),
-    queryFn: () => config!.api.breadcrumbs!(entityId),
+    queryKey: queryKeys.entityBreadcrumbs(entityType, entityId, via ? `${via.entityType}:${via.id}` : undefined),
+    queryFn: () => config!.api.breadcrumbs!(entityId, via),
     enabled: config?.api.breadcrumbs != null,
   });
 

@@ -32,7 +32,7 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   api: {
     delete: (id) => deleteEntity("containers", id),
     siblings: (id) => fetchSiblings("containers", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("containers", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("containers", id, via),
     get: getContainer,
     list: listContainers,
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),

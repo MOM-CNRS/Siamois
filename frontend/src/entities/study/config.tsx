@@ -31,7 +31,7 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   api: {
     delete: (id) => deleteEntity("studies", id),
     siblings: (id) => fetchSiblings("studies", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("studies", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("studies", id, via),
     get: getStudy,
     list: listStudies,
     patchAnswers: (id, answers) => patchStudyAnswers(id, answers),

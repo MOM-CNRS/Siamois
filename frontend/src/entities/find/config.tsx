@@ -32,7 +32,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   api: {
     delete: (id) => deleteEntity("finds", id),
     siblings: (id) => fetchSiblings("finds", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("finds", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("finds", id, via),
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),

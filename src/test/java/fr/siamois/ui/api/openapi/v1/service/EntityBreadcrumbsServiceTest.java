@@ -86,6 +86,9 @@ class EntityBreadcrumbsServiceTest {
     private final Map<Long, List<Long>> findParents = new HashMap<>();
     private final Map<Long, Long> containerParent = new HashMap<>();
     private final Map<Long, Long> findRu = new HashMap<>();
+    private final Map<Long, List<Long>> placeParents = new HashMap<>();
+    // "recordingUnits", "places"... -> document id -> linked ids
+    private final Map<String, Map<Long, List<Long>>> documentLinks = new HashMap<>();
     private Long projectId = 1L;
     private Long institutionId = 10L;
     private boolean entityExists = true;
@@ -116,6 +119,16 @@ class EntityBreadcrumbsServiceTest {
         }
         if (jpql.contains("from ActionUnit a")) {
             return List.<Object[]>of(new Object[]{id, projectName});
+        }
+        if (jpql.startsWith("select l.id from Document d join d.")) {
+            String link = jpql.substring("select l.id from Document d join d.".length(), jpql.indexOf(" l "));
+            return documentLinks.getOrDefault(link, Map.of()).getOrDefault(id, List.of());
+        }
+        if (jpql.contains("from SpatialUnit s join s.parents")) {
+            return placeParents.getOrDefault(id, List.of());
+        }
+        if (jpql.startsWith("select s.id, s.name from SpatialUnit")) {
+            return List.<Object[]>of(new Object[]{id, "L" + id});
         }
         if (jpql.startsWith("select e.recordingUnit.id from Specimen")) {
             return findRu.containsKey(id) ? List.of(findRu.get(id)) : List.of();
@@ -273,5 +286,43 @@ class EntityBreadcrumbsServiceTest {
 
         assertThat(result.paths()).hasSize(EntityBreadcrumbsService.MAX_PATHS);
         assertThat(result.truncated()).isTrue();
+    }
+
+    @Test
+    void findBreadcrumbs_document_hangsUnderEachLinkedFicheAndItsHierarchy() {
+        ruParents.put(5L, List.of(2L));
+        documentLinks.put("recordingUnits", Map.of(6L, List.of(5L)));
+        documentLinks.put("phases", Map.of(6L, List.of(8L)));
+        documentLinks.put("places", Map.of(6L, List.of(30L)));
+        placeParents.put(30L, List.of(20L));
+
+        assertThat(labels(service.findBreadcrumbs(EntityBreadcrumbsService.Kind.DOCUMENT, 6, ACCESSIBLE)))
+                .containsExactly(
+                        List.of("Fouille", "UE2", "UE5", "D6"),
+                        List.of("Fouille", "PH8", "D6"),
+                        List.of("Fouille", "L20", "L30", "D6"));
+    }
+
+    @Test
+    void findBreadcrumbs_via_putsThePathsThroughThatFicheFirst() {
+        documentLinks.put("recordingUnits", Map.of(6L, List.of(5L)));
+        documentLinks.put("phases", Map.of(6L, List.of(8L)));
+
+        BreadcrumbsResource result = service.findBreadcrumbs(
+                EntityBreadcrumbsService.Kind.DOCUMENT, 6, ACCESSIBLE, "phase:8");
+
+        assertThat(labels(result)).containsExactly(List.of("Fouille", "PH8", "D6"), List.of("Fouille", "UE5", "D6"));
+    }
+
+    @Test
+    void findBreadcrumbs_viaMalformedOrUnmatched_keepsTheDefaultOrder() {
+        documentLinks.put("recordingUnits", Map.of(6L, List.of(5L)));
+        documentLinks.put("phases", Map.of(6L, List.of(8L)));
+        List<List<String>> expected = List.of(List.of("Fouille", "UE5", "D6"), List.of("Fouille", "PH8", "D6"));
+
+        for (String via : new String[]{"nonsense", ":3", "phase:", "study:99"}) {
+            assertThat(labels(service.findBreadcrumbs(EntityBreadcrumbsService.Kind.DOCUMENT, 6, ACCESSIBLE, via)))
+                    .containsExactlyElementsOf(expected);
+        }
     }
 }
