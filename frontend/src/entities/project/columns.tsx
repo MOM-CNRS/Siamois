@@ -5,10 +5,10 @@ import { t } from "../../i18n";
 // Pinned, hand-written columns only — the identifier chip (also the navigation link), the name
 // (ActionUnitTableDefinitionFactory's own leading FormFieldColumn, kept hand-written rather than
 // catalog-driven because the table's own nameField (id -151) is a locally-built duplicate of the
-// fiche catalog's NAME_FIELD (id -102), not the same CustomField instance), and the recording-unit
-// relation count. Every other JSF list column (status, oaCode, mainLocation, openingRate, periods,
+// fiche catalog's NAME_FIELD (id -102), not the same CustomField instance). Every other JSF list column (status, oaCode, mainLocation, openingRate, periods,
 // subjects, scientificManager, and the ~20 more available via the column toggler) is now dynamic,
-// driven by ActionUnitTableColumnDefaults through EntityTypeConfig.list.schema — see config.tsx.
+// driven by ActionUnitTableColumnDefaults through EntityTypeConfig.list.schema — see config.tsx. That
+// includes the recording units, a relation column (chips and "+N") sortable by their count.
 //
 // Note this is a parity CORRECTION, not just an addition: the previous 7-column list showed `type`,
 // `beginDate` and `endDate`, none of which ActionUnitTableDefinitionFactory ever put in the JSF
@@ -24,14 +24,5 @@ export const projectColumns: ColumnDef<ProjectSummary>[] = [
     filterable: true,
     identifier: true,
     render: (row) => row.name,
-  },
-  {
-    // ProjectApiService.ALLOWED_PROJECT_SORT_FIELDS accepts "recordingUnitCount" as a synthetic
-    // sort key (ActionUnitSpec.orderByRecordingUnitCount) — using it as the column key makes
-    // DataTable's onSort send the right field even though the cell itself renders _counts directly.
-    key: "recordingUnitCount",
-    header: "UE",
-    sortable: true,
-    render: (row) => row._counts?.recordingUnits ?? 0,
   },
 ];

@@ -284,6 +284,16 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .build())
                                                 .build()
                                 )
+                                .addRow(
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
+                                                        .readOnly(true)
+                                                        .hidden(true)
+                                                        .width(ColumnWidth.FULL)
+                                                        .field(RECORDING_UNITS_FIELD)
+                                                        .build())
+                                                .build()
+                                )
                                 .build()
                 )
                 .build();

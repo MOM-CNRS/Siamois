@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
@@ -196,7 +197,8 @@ public class ProjectAnswersProjector {
      */
     static Object readBinding(ActionUnitDTO row, CustomField field) {
         String binding = field.getValueBinding();
-        if (binding == null || binding.isBlank()) {
+        // A relation field is never read from the row: MultiValueAnswers fills it from its own query.
+        if (binding == null || binding.isBlank() || RelationField.isRelation(ActionUnit.class, binding)) {
             return null;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(ActionUnitDTO.class, binding);
