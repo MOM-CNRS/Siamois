@@ -1777,7 +1777,6 @@ body button.p-button.status-button.status-button-compact {
 .sia-welcome-card .sia-count-card-row .p-chip,
 .entity-list-panel-header .p-chip {
   border-radius: 999px;
-  min-width: 2.25rem;
   justify-content: center;
   background-color: transparent;
   font-size: var(--font-size-title-card);
@@ -1792,12 +1791,13 @@ body button.p-button.status-button.status-button-compact {
 }
 /* On the home cards the counter stays a notch below the title, so it doesn't compete with it. */
 .sia-welcome-card .sia-count-card-row .p-chip {
-  min-width: 1.9rem;
-  font-size: calc(var(--font-size-title-card) * 0.75);
+  font-size: calc(var(--font-size-title-card) * 0.8);
   padding: 0 0.45rem;
 }
 .sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
   margin: 0.05rem 0;
+  /* The theme sets 14px on the text itself, which would ignore the chip's own size. */
+  font-size: inherit;
 }
 /* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
 .sia-welcome-card .sia-count-card-row + div small {
