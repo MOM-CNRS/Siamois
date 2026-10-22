@@ -1123,12 +1123,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     private void browseValues(String query, int offset) {
         clearValuesPage();
-        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<FormConfig> typeFormConfig = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
         Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftOriginalName);
-        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
+        if (typeFormConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
             return;
         }
-        Optional<ConceptFieldFormConfig> config = formConfigService.findConceptConfigFor(formConfig.get(), conceptField);
+        Optional<ConceptFieldFormConfig> config = formConfigService.findConceptConfigFor(typeFormConfig.get(), conceptField);
         if (config.isEmpty() || config.get().isNotValid()) {
             return;
         }

@@ -151,7 +151,7 @@ public class SettingsController {
         } catch (RuntimeException e) {
             throw new ForbiddenException();
         }
-        if (!profilePermissionService.hasProjectSettingsPermission(sessionSettingsBean.getUserInfo().getUser(), project)) {
+        if (!profilePermissionService.hasProjectSettingsPermission(sessionSettingsBean.getAuthenticatedUser(), project)) {
             throw new ForbiddenException();
         }
         return project;

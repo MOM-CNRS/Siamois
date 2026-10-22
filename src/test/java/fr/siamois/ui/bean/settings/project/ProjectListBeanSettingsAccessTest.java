@@ -46,8 +46,6 @@ class ProjectListBeanSettingsAccessTest {
     @InjectMocks
     private ProjectListBean bean;
 
-    private final UserInfo userInfo = new UserInfo(null, null, null);
-
     private static ActionUnitDTO project(long id) {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(id);
@@ -60,7 +58,7 @@ class ProjectListBeanSettingsAccessTest {
         ActionUnitDTO managed = project(7L);
         ActionUnitDTO other = project(8L);
         when(actionUnitService.findAllByTeamMember(any())).thenReturn(Set.of(managed, other));
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getUserInfo()).thenReturn(new UserInfo(null, null, null));
         when(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(any(), any())).thenReturn(Set.of(7L));
 
         bean.initFilteredByPerson(new PersonDTO());
@@ -72,7 +70,7 @@ class ProjectListBeanSettingsAccessTest {
     @Test
     void redirectToProject_opensTheSettingsOfAManagedProject() {
         ActionUnitDTO project = project(7L);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
 
         String path = bean.redirectToProject(project);
@@ -84,7 +82,7 @@ class ProjectListBeanSettingsAccessTest {
 
     @Test
     void redirectToProject_isRefusedWithoutProjectSettingsPermission() {
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
         try (MockedStatic<MessageUtils> messages = Mockito.mockStatic(MessageUtils.class)) {

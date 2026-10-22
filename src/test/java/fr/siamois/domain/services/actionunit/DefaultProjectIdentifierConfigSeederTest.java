@@ -13,6 +13,8 @@ import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.springframework.transaction.TransactionDefinition;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -266,5 +268,26 @@ class DefaultProjectIdentifierConfigSeederTest {
         } finally {
             ExecutionContextHolder.clear();
         }
+    }
+
+    @Test
+    void seed_shouldCommitTheConceptInATransactionOfItsOwn_beforeTheFormConfigIsSaved() throws Exception {
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
+        Vocabulary vocabulary = new Vocabulary();
+        Concept usConcept = new Concept();
+        usConcept.setId(1L);
+        when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
+        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenThrow(new InvalidEndpointException("unreachable"));
+        when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
+
+        seeder.seed(INFO, PROJECT_ID);
+
+        // the form config services open transactions of their own: they only see a concept that is committed
+        InOrder order = inOrder(transactionManager, tableFieldConfigService);
+        order.verify(transactionManager).commit(any());
+        order.verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), any());
+        ArgumentCaptor<TransactionDefinition> definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager, atLeastOnce()).getTransaction(definition.capture());
+        assertThat(definition.getValue().getPropagationBehavior()).isEqualTo(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 }

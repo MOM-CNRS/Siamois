@@ -81,7 +81,7 @@ public class ProjectDetailsBean {
             return;
         }
         if (!profilePermissionService.hasProjectSettingsPermission(
-                sessionSettingsBean.getUserInfo().getUser(), project)) {
+                sessionSettingsBean.getAuthenticatedUser(), project)) {
             redirectBean.redirectTo(HttpStatus.NOT_FOUND);
             return;
         }

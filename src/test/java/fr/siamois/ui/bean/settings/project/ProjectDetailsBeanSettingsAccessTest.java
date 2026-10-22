@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.dto.entity.PersonDTO;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.ArgumentMatchers.any;
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
@@ -35,7 +34,6 @@ class ProjectDetailsBeanSettingsAccessTest {
     @InjectMocks
     private ProjectDetailsBean bean;
 
-    private final UserInfo userInfo = new UserInfo(null, null, null);
 
     private ActionUnitDTO project() {
         ActionUnitDTO project = new ActionUnitDTO();
@@ -53,7 +51,7 @@ class ProjectDetailsBeanSettingsAccessTest {
     @Test
     void checkProjectOrRedirect_answersNotFoundWithoutProjectSettingsPermission() {
         bean.setProject(project());
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
         bean.checkProjectOrRedirect();
@@ -66,7 +64,7 @@ class ProjectDetailsBeanSettingsAccessTest {
     void checkProjectOrRedirect_resyncsTheUploadBeanForAProjectSettingsManager() {
         ActionUnitDTO project = project();
         bean.setProject(project);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
 
         bean.checkProjectOrRedirect();

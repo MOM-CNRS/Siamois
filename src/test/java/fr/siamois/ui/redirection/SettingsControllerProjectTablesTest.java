@@ -3,7 +3,6 @@ package fr.siamois.ui.redirection;
 import fr.siamois.dto.entity.PersonDTO;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.ArgumentMatchers.any;
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
@@ -48,13 +47,12 @@ class SettingsControllerProjectTablesTest {
     @InjectMocks
     private SettingsController controller;
 
-    private final UserInfo userInfo = new UserInfo(null, null, null);
 
     @Test
     void goToProjectTablesSettings_isForbiddenWithoutProjectSettingsPermission() {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(actionUnitService.findById(7L)).thenReturn(project);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
@@ -78,7 +76,7 @@ class SettingsControllerProjectTablesTest {
     void goToProjectTablesSettings_opensThePageForAProjectSettingsManager() {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
         when(actionUnitService.findById(7L)).thenReturn(project);
 
@@ -93,12 +91,39 @@ class SettingsControllerProjectTablesTest {
     void goToProjectTablesSettings_opensOnTheTypeAndFieldOfAFiche() {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
         when(actionUnitService.findById(7L)).thenReturn(project);
 
         controller.goToProjectTablesSettings(7L, "UE", 12L, 34L);
 
         verify(projectTableFieldSettingsBean).openOn(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, 12L, 34L);
+    }
+
+    @Test
+    void goToProjectSettings_isForbiddenForAnotherOrganisationManager() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        when(actionUnitService.findById(7L)).thenReturn(project);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
+
+        assertThrows(RuntimeException.class, () -> controller.goToProjectSettings(7L));
+
+        verify(projectDetailsBean, never()).setProject(any());
+    }
+
+    @Test
+    void goToProjectSettings_opensTheSettingsOfAManagedProject() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        when(actionUnitService.findById(7L)).thenReturn(project);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
+
+        String view = controller.goToProjectSettings(7L);
+
+        assertEquals("forward:/pages/settings/project/projectSettings.xhtml", view);
+        verify(projectDetailsBean).setProject(project);
     }
 }
