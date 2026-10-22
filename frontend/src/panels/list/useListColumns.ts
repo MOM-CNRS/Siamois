@@ -5,7 +5,7 @@ import type { ColumnTogglerOption } from "../../components/table/ColumnToggler";
 import type { FilterSpec } from "../../components/table/FilterChipBar";
 import { renderAnswerCell } from "../../fields/display";
 import { filterKindForField, optionSourceFor, type FilterKind } from "../../fields/optionSources";
-import { resolveValueBinding, type FieldResource } from "../../fields/types";
+import { isOwningProjectField, resolveValueBinding, type FieldResource } from "../../fields/types";
 import type { RowRecord } from "./useEntityListData";
 
 
@@ -16,6 +16,17 @@ export interface UseListColumnsOptions {
   pinnedFieldIds: Set<string>;
   organizationId?: number;
   scope?: ListScope;
+}
+
+/**
+ * A filter the scope already fixes has no use: the project's own recording units need no project filter, the
+ * finds of a recording unit no recording-unit one. They are left out rather than shown, as the table drops
+ * the matching columns of a scoped list.
+ */
+function impliedByScope(field: FieldResource, scope: ListScope | undefined): boolean {
+  if (!scope) return false;
+  if (scopeProjectId(scope) != null && isOwningProjectField(field)) return true;
+  return scope.entityType === "recordingUnit" && field.valueBinding === "recordingUnit";
 }
 
 /**
@@ -89,7 +100,7 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
       .sort((a, b) => a.order - b.order)
       .flatMap((c) => {
         const field = catalog.fields[c.fieldId];
-        if (!field) return [];
+        if (!field || impliedByScope(field, scope)) return [];
         // f.<fieldId>, whatever the field (system or additional): FieldQueryService resolves it.
         const kind = filterKindForField(field);
         if (!kind) return [];

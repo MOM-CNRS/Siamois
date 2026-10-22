@@ -49,6 +49,7 @@ export const fr = {
   "filter.from": "{label} (du)",
   "filter.to": "{label} (au)",
   "filter.remove": "Retirer le filtre {label}",
+  "filter.more": "{n} autres filtres",
   "filter.add": "Ajouter un filtre",
   "filter.one": "Filtre",
   "cell.loadFailed": "Impossible de charger toutes les valeurs.",

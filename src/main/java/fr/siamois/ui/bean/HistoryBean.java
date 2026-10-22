@@ -4,6 +4,7 @@ package fr.siamois.ui.bean;
 import fr.siamois.domain.models.UserHistoryEntry;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.UserHistoryService;
+import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
 import fr.siamois.ui.bean.panel.FlowBean;
 import lombok.Data;
 import lombok.Getter;
@@ -38,6 +39,7 @@ public class HistoryBean {
     private final UserHistoryService historyService;
     // Looked up when needed: SessionSettingsBean depends on FlowBean, which depends on this bean.
     private final ObjectProvider<SessionSettingsBean> sessionSettings;
+    private final EntityProjectResolver projectResolver;
 
     private List<HistoryItem> items = new ArrayList<>();
     private boolean loaded;
@@ -48,6 +50,7 @@ public class HistoryBean {
             loaded = true;
             List<HistoryItem> stored = loadStored();
             stored.addAll(items);
+            resolveProjects(stored);
             items = stored;
         }
         return items;
@@ -120,6 +123,34 @@ public class HistoryBean {
         }
     }
 
+    /** Names the project of each page's fiche (the overview's, else the main pane's), so « US 1012 » is not ambiguous. */
+    private void resolveProjects(List<HistoryItem> toResolve) {
+        UserInfo userInfo = currentUserInfo();
+        if (userInfo == null || projectResolver == null) {
+            return;
+        }
+        try {
+            List<String> uris = new ArrayList<>();
+            for (HistoryItem item : toResolve) {
+                uris.add(item.getMain().getUri());
+                if (item.getSecondary() != null) {
+                    uris.add(item.getSecondary().getUri());
+                }
+            }
+            var projects = projectResolver.resolve(uris, java.util.Set.of(userInfo.getInstitution().getId()));
+            for (HistoryItem item : toResolve) {
+                var project = item.getSecondary() != null ? projects.get(item.getSecondary().getUri()) : null;
+                if (project == null) {
+                    project = projects.get(item.getMain().getUri());
+                }
+                item.setProjectName(project == null ? null : project.name());
+            }
+        } catch (RuntimeException e) {
+            // A missing chip is never worth failing the sidebar.
+            log.warn("History projects could not be resolved", e);
+        }
+    }
+
     public void redirectToEntry(HistoryItem entry) throws IOException {
 
         flowBean.redirectToFocus(entry.main.uri, entry.secondary != null ? entry.secondary.uri :  null);
@@ -135,6 +166,7 @@ public class HistoryBean {
         }
         getItems();
         persist(item);
+        resolveProjects(List.of(item));
 
         // Remove any existing item with the same main URI and secondary URI
         items.removeIf(existingItem ->
@@ -158,6 +190,8 @@ public class HistoryBean {
     public static class HistoryItem {
         private HistoryItemComponent main;
         private HistoryItemComponent secondary;
+        /** Name of the project of the page's fiche; null when it has none. */
+        private String projectName;
 
         public String getTitle() {
             if(secondary != null) {
@@ -166,6 +200,11 @@ public class HistoryBean {
             else {
                 return main.getTitle();
             }
+        }
+
+        /** The button's text: the title, then the project name. */
+        public String getLabelHtml() {
+            return EntityProjectResolver.labelWithProject(getTitle(), projectName);
         }
 
         public String getIcon() {

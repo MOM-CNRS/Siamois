@@ -122,7 +122,7 @@ class BookmarkControllerApiTest {
                 bookmarkService,
                 historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
 
-        BookmarkControllerApi controller = new BookmarkControllerApi(projectApiService, bookmarkService);
+        BookmarkControllerApi controller = new BookmarkControllerApi(projectApiService, bookmarkService, mock(fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver.class));
 
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)

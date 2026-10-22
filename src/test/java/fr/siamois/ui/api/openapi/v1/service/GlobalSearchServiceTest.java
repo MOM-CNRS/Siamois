@@ -31,6 +31,8 @@ class GlobalSearchServiceTest {
     private SearchRepository searchRepository;
     @Mock
     private OrganizationListService organizationListService;
+    @Mock
+    private EntityProjectResolver projectResolver;
     @InjectMocks
     private GlobalSearchService service;
 

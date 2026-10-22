@@ -95,7 +95,9 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a href="https://siamois.eu" target="_blank" rel="noopener noreferrer">
+                            <!-- The logo leads home: the organisation's welcome page (what the « Accueil » link below opens). -->
+                            <a href="#{request.contextPath}/focus/L3dlbGNvbWU=" title="#{langBean.msg('nav.home.hint')}"
+                               aria-label="#{langBean.msg('nav.home')}">
                                 <h:graphicImage width="50px" style="padding-bottom:32px;"
                                                 library="img" name="siamois_logo.png" styleClass="logo"/>
                             </a>

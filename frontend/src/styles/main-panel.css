@@ -2604,6 +2604,38 @@ div#search-bar .sia-search {
   padding-right: 2.5rem;
 }
 
+/* The typed text is drawn by the mirror under the input, whose own text is transparent (the caret stays visible):
+   that is how a keyword's value gets its colour. Same box and font as the input so the two line up. */
+.sia-search-field {
+  background: var(--surface-card, #fff);
+  border-radius: var(--border-radius, 6px);
+}
+
+.sia-search-field > input.sia-search-input.p-inputtext {
+  position: relative;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text-main, #2a2c30);
+}
+
+.sia-search-mirror {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 2.5rem 0 2.5rem;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  font: inherit;
+  color: var(--text-main, #2a2c30);
+}
+
+.sia-search-kw-value {
+  color: var(--main-color, var(--siamois-green, #699369));
+}
+
 /* The browser draws its own clear button on a type=search input: ours is the only one. */
 .sia-search-input::-webkit-search-cancel-button,
 .sia-search-input::-webkit-search-decoration {
@@ -2650,6 +2682,10 @@ div#search-bar .sia-search {
   cursor: pointer;
 }
 
+.sia-search-keyword-more {
+  font-weight: 600;
+}
+
 .sia-search-status {
   padding: 10px 12px;
   color: var(--text-color-secondary, #6b7280);
@@ -2671,6 +2707,12 @@ div#search-bar .sia-search {
   padding: 8px 12px 4px;
   font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text-main, #2a2c30);
+}
+
+/* Only the icon takes the entity's colour. */
+.sia-search-section-title i,
+.sia-search-all i {
   color: var(--main-color);
 }
 
@@ -2705,7 +2747,7 @@ div#search-bar .sia-search {
 
 .sia-search-all {
   justify-content: space-between;
-  color: var(--main-color);
+  color: var(--text-main, #2a2c30);
   font-weight: 600;
 }
 
@@ -3622,4 +3664,81 @@ div#search-bar .sia-search {
   display: flex;
   justify-content: flex-end;
   padding-top: 0.75rem;
+}
+
+/* The project of a fiche listed outside it (history, bookmarks, search results): small secondary text in black. */
+.sia-project-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* On a card the project is plain black text. */
+.sia-welcome-card .sia-project-name {
+  color: var(--text-main, #2a2c30);
+}
+
+/* In search results and the sidebar it follows the entity's name after a dash, in the light tint. */
+.sia-search-row .sia-project-name::before,
+.bookmark-full-button .sia-project-name::before {
+  content: "- ";
+}
+
+/* In the sidebar's history and bookmarks the project name is part of the button's text: the name, then the project, on one line. */
+.bookmark-full-button .ui-button-text:has(.sia-entry-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.bookmark-full-button .sia-entry-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-full-button .sia-project-name {
+  flex: 0 1 auto;
+  color: var(--text-color-secondary, #6b7280) !important;
+}
+
+/* The sidebar's history, bookmarks and views: the name in black whatever the type; the icon keeps the button's own
+   colour, that of the entity's type. */
+body .sia-history-table .ui-button.bookmark-full-button .ui-button-text,
+body .sia-bookmarks-table .ui-button.bookmark-full-button .ui-button-text,
+body .sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-button-text {
+  color: var(--text-main, #2a2c30) !important;
+}
+
+/* « +N »: the filters that do not fit in the bar; clicked, they are listed. */
+.filter-chip-more {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-more-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+/* The clear icon of the list's search field in the toolbar: the wrapper is exactly as tall as the input, so 50% is its middle. */
+.p-input-icon-left.sia-list-search {
+  display: inline-flex;
+  align-items: center;
+}
+
+.p-input-icon-left.sia-list-search > .sia-search-clear {
+  top: 50%;
+  right: 0.75rem;
+  margin: 0;
+  transform: translateY(-50%);
+  line-height: 1;
 }

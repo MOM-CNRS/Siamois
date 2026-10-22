@@ -6,6 +6,8 @@ export interface SearchItem {
   label: string;
   subtitle?: string | null;
   projectId?: number | null;
+  // Name of that project, for the chip; absent for a project or a place.
+  projectName?: string | null;
 }
 
 export interface SearchSection {

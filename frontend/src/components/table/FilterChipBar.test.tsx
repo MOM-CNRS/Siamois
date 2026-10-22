@@ -42,4 +42,17 @@ describe("FilterChipBar", () => {
     expect(container.querySelector("[data-chip-key='kind']")).not.toBeNull();
     expect(document.querySelector(".entity-list-panel-filter-editor input")).not.toBeNull();
   });
+
+  it("keeps the first filters in the bar and folds the rest behind « +N »", () => {
+    const specs: FilterSpec[] = ["a", "b", "c", "d", "e"].map((key) => ({ key, label: key.toUpperCase(), kind: "contains" }));
+    const filters = Object.fromEntries(specs.map((s) => [s.key, { op: "contains" as const, v: "x" }]));
+    act(() => root.render(<FilterChipBar specs={specs} filters={filters} optionsByKey={{}} onChange={vi.fn()} />));
+
+    expect(container.querySelectorAll(".entity-list-panel-filter-chips > [data-chip-key]")).toHaveLength(3);
+    const more = container.querySelector(".filter-chip-more") as HTMLElement;
+    expect(more.textContent).toBe("+2");
+
+    act(() => more.click());
+    expect(document.querySelectorAll(".entity-list-panel-filter-more [data-chip-key]")).toHaveLength(2);
+  });
 });

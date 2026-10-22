@@ -90,7 +90,7 @@ export const ListSearchOverlayBox = memo(function ListSearchOverlayBox(props: Re
 
   return (
     <>
-      <span className="p-input-icon-left" ref={field}>
+      <span className="p-input-icon-left sia-list-search" ref={field}>
         <i className="bi bi-search" />
         <InputText
           readOnly
@@ -105,6 +105,16 @@ export const ListSearchOverlayBox = memo(function ListSearchOverlayBox(props: Re
             }
           }}
         />
+        {props.value !== "" && (
+          <i
+            className="bi bi-x-lg sia-search-clear"
+            role="button"
+            tabIndex={0}
+            aria-label={t("search.clear")}
+            onClick={() => props.onApply("", props.filters, {})}
+            onKeyDown={(event) => event.key === "Enter" && props.onApply("", props.filters, {})}
+          />
+        )}
       </span>
       {open && <ListSearchPanel {...props} anchor={anchor} onClose={() => setOpen(false)} />}
     </>
@@ -217,6 +227,14 @@ function ListSearchPanel({
     onClose();
   }
 
+  // Emptying the field also empties the search the table runs (#669): it keeps its filters, drops its text.
+  function clear() {
+    setInput("");
+    setPicked({});
+    inputRef.current?.focus();
+    if (value !== "") onApply("", filters, {});
+  }
+
   function run(row: Row) {
     if (row.kind === "suggestion") {
       const at = tail?.start ?? input.length;
@@ -262,6 +280,8 @@ function ListSearchPanel({
   return (
     <SearchOverlay
       anchor={anchor}
+      keywords={keywords}
+      onClear={clear}
       ariaLabel={t("list.search")}
       placeholder={t("list.search")}
       input={input}

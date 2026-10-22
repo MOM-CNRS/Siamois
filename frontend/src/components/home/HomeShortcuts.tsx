@@ -9,6 +9,7 @@ import type { HomeWidgetContext, HomeWidgetDef } from "../../entities/types";
 import { t } from "../../i18n";
 import { resolveEntityPath } from "../../navigation/paths";
 import { usePaneState } from "../../panels/paneState";
+import { ProjectName } from "../ProjectName";
 import { ClickableCard } from "./ClickableCard";
 import { DataAccessSection } from "./DataAccessSection";
 import { openSidebarDrawer } from "./sidebar";
@@ -85,10 +86,11 @@ function RecentlyViewed(ctx: HomeWidgetContext) {
                   <i className={type?.icon ?? page.icon ?? "bi bi-clock"} />
                   <span className="sia-count-card-title">{page.title}</span>
                 </div>
-                {/* A fiche opened next to a page: that page is the context. */}
-                {page.secondaryUri && (
+                {/* The context: the page a fiche was opened beside, and the project it belongs to (once if the same). */}
+                {(page.secondaryUri || page.project) && (
                   <div className="sia-row-gap">
-                    <small>{page.mainTitle}</small>
+                    {page.secondaryUri && page.mainTitle !== page.project?.name && <small>{page.mainTitle}</small>}
+                    <ProjectName project={page.project} />
                   </div>
                 )}
               </ClickableCard>

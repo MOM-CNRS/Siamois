@@ -66,6 +66,7 @@ describe("home history", () => {
           mainTitle: "Projet A",
           secondaryUri: "/recording-unit/9",
           secondaryTitle: "US 9",
+          project: { id: 2, name: "Projet A" },
         },
       ],
     });
@@ -77,6 +78,7 @@ describe("home history", () => {
     const row = container.querySelector<HTMLButtonElement>(".sia-clickable-card")!;
     expect(row.textContent).toContain("US 9");
     expect(row.textContent).toContain("Projet A");
+    expect(row.querySelector(".sia-project-name")?.textContent).toBe("Projet A");
 
     act(() => row.click());
     expect(ctx.onNavigate).toHaveBeenCalledWith("project", "2");

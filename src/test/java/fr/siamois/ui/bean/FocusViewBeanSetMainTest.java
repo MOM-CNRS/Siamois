@@ -31,7 +31,7 @@ class FocusViewBeanSetMainTest {
 
     private final PanelFactory panelFactory = mock(PanelFactory.class);
     private final ResourceInstitutionService resourceInstitutionService = mock(ResourceInstitutionService.class);
-    private final HistoryBean historyBean = new HistoryBean(null, null, null);
+    private final HistoryBean historyBean = new HistoryBean(null, null, null, null);
     private final Map<String, String> params = new HashMap<>();
     private MockedStatic<FacesContext> facesContextStatic;
     private FocusViewBean bean;

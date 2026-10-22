@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { t } from "../i18n";
-import { formatFilter, type SearchKeyword } from "./queryParser";
+import { formatFilter, highlightSegments, type SearchKeyword } from "./queryParser";
 
 const MIN_PANEL_WIDTH = 520;
 
@@ -63,15 +63,20 @@ export function SearchRow({
   );
 }
 
-/** The keyword buttons at the foot of the dropdown. */
+// Keyword buttons shown at the foot of the dropdown; the others are behind « +N ».
+export const MAX_KEYWORD_BUTTONS = 4;
+
+/** The keyword buttons at the foot of the dropdown: the first ones, then « +N » that shows the rest. */
 export function KeywordButtons({
   keywords,
   title,
   onInsert,
 }: Readonly<{ keywords: readonly SearchKeyword[]; title: (keyword: SearchKeyword) => string; onInsert: (key: string) => void }>) {
+  const [all, setAll] = useState(false);
+  const shown = all ? keywords : keywords.slice(0, MAX_KEYWORD_BUTTONS);
   return (
     <div className="sia-search-keywords">
-      {keywords.map((keyword) => (
+      {shown.map((keyword) => (
         <button
           type="button"
           key={keyword.key}
@@ -83,6 +88,16 @@ export function KeywordButtons({
           {formatFilter({ key: keyword.names[0] ?? keyword.key, value: "" })}
         </button>
       ))}
+      {keywords.length > shown.length && (
+        <button
+          type="button"
+          className="sia-search-keyword sia-search-keyword-more"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setAll(true)}
+        >
+          +{keywords.length - shown.length}
+        </button>
+      )}
     </div>
   );
 }
@@ -103,6 +118,10 @@ export interface SearchOverlayProps {
   onInput: (value: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   onClose: () => void;
+  // The clear button: defaults to emptying the input; the list also resets the search it runs.
+  onClear?: () => void;
+  // The keywords whose values the field draws in colour (the header search's `projet`, a list's own columns).
+  keywords?: readonly SearchKeyword[];
   // Content between the field and the dropdown (the list's filter chips).
   beforeDropdown?: ReactNode;
   children: ReactNode;
@@ -122,10 +141,13 @@ export function SearchOverlay({
   onInput,
   onKeyDown,
   onClose,
+  keywords,
+  onClear,
   beforeDropdown,
   children,
 }: Readonly<SearchOverlayProps>) {
   const focused = useRef(false);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!focused.current) {
       focused.current = true;
@@ -144,6 +166,18 @@ export function SearchOverlay({
       >
         <span className="sia-search-field">
           <i className="bi bi-search" />
+          {/* The typed text drawn under the (transparent-text) input, so keyword values can be coloured. */}
+          <div className="sia-search-mirror" aria-hidden="true" ref={mirrorRef}>
+            {highlightSegments(input, keywords).map((segment, index) =>
+              segment.value ? (
+                <span key={index} className="sia-search-kw-value">
+                  {segment.text}
+                </span>
+              ) : (
+                <span key={index}>{segment.text}</span>
+              ),
+            )}
+          </div>
           <input
             className="p-inputtext sia-search-input"
             type="search"
@@ -158,6 +192,9 @@ export function SearchOverlay({
             onChange={(event) => onInput(event.target.value)}
             ref={inputRef}
             onKeyDown={onKeyDown}
+            onScroll={(event) => {
+              if (mirrorRef.current) mirrorRef.current.scrollLeft = event.currentTarget.scrollLeft;
+            }}
           />
           {input && (
             <i
@@ -165,8 +202,8 @@ export function SearchOverlay({
               role="button"
               tabIndex={0}
               aria-label={t("search.clear")}
-              onClick={() => onInput("")}
-              onKeyDown={(event) => event.key === "Enter" && onInput("")}
+              onClick={() => (onClear ?? (() => onInput("")))()}
+              onKeyDown={(event) => event.key === "Enter" && (onClear ?? (() => onInput("")))()}
             />
           )}
         </span>

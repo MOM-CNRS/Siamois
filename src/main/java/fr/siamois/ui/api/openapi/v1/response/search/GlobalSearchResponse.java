@@ -18,6 +18,7 @@ public record GlobalSearchResponse(List<Section> sections) {
     }
 
     @Schema(description = "Une correspondance")
-    public record Item(Long id, String label, String subtitle, Long projectId) {
+    public record Item(Long id, String label, String subtitle, Long projectId,
+                       @Schema(description = "Nom du projet d'appartenance ; null pour un projet ou un lieu") String projectName) {
     }
 }

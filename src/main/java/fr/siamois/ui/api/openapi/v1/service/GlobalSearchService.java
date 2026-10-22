@@ -32,6 +32,7 @@ public class GlobalSearchService {
 
     private final SearchRepository searchRepository;
     private final OrganizationListService organizationListService;
+    private final EntityProjectResolver projectResolver;
 
     public GlobalSearchResponse search(ProjectApiCaller caller, InstitutionDTO institution, String q,
                                        Long projectId, List<String> filters, List<String> types, int limit) {
@@ -57,7 +58,14 @@ public class GlobalSearchService {
         // No requested type means every type: the SQL function reads NULL as "all".
         List<GlobalSearchRow> rows = searchRepository.searchSections(input, institution.getId(), projectIds, visible,
                 requestedTypes.isEmpty() ? null : requestedTypes, limit);
-        return toResponse(rows);
+        return toResponse(rows, projectNames(rows));
+    }
+
+    /** The names of the projects the found fiches belong to, in one query. */
+    private Map<Long, String> projectNames(List<GlobalSearchRow> rows) {
+        return projectResolver.names(rows.stream()
+                .filter(r -> !"project".equals(r.entityType()) && r.projectId() != null)
+                .map(GlobalSearchRow::projectId).collect(java.util.stream.Collectors.toSet()));
     }
 
     private static List<String> requireTypes(List<String> types) {
@@ -108,7 +116,7 @@ public class GlobalSearchService {
         return ids.stream().distinct().toList();
     }
 
-    private static GlobalSearchResponse toResponse(List<GlobalSearchRow> rows) {
+    private static GlobalSearchResponse toResponse(List<GlobalSearchRow> rows, Map<Long, String> projectNames) {
         Map<String, List<GlobalSearchRow>> byType = new LinkedHashMap<>();
         TYPES.forEach(type -> byType.put(type, new ArrayList<>()));
         rows.forEach(row -> byType.computeIfAbsent(row.entityType(), k -> new ArrayList<>()).add(row));
@@ -116,7 +124,8 @@ public class GlobalSearchService {
         byType.forEach((type, list) -> {
             if (!list.isEmpty()) {
                 sections.add(new GlobalSearchResponse.Section(type, list.get(0).total(), list.stream()
-                        .map(r -> new GlobalSearchResponse.Item(r.entityId(), r.label(), r.subtitle(), r.projectId()))
+                        .map(r -> new GlobalSearchResponse.Item(r.entityId(), r.label(), r.subtitle(), r.projectId(),
+                                projectNames.get(r.projectId())))
                         .toList()));
             }
         });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ProjectName } from "../components/ProjectName";
 import { getEntityType } from "../entities/registry";
 import { listProjects } from "../entities/project/api";
 import { queryKeys } from "../api/queryKeys";
@@ -29,6 +30,11 @@ type Row =
   | { kind: "all"; type: string; total: number }
   // A project offered while a `projet:` keyword is being typed: choosing it completes the keyword.
   | { kind: "suggestion"; item: SearchItem };
+
+/** The theme class that gives a section its entity colour (`--main-color`): the card class without its `sia-` prefix. */
+function sectionTheme(type: string): string {
+  return getEntityType(type)?.cardClassName?.replace(/^sia-/, "") ?? "";
+}
 
 /** The project every item of every section belongs to, when there is exactly one. */
 function commonProjectId(sections: SearchSection[]): string | undefined {
@@ -259,7 +265,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
           onClose={() => setOpen(false)}
         >
           {tail && suggestions.length > 0 && (
-            <div className="sia-search-section">
+            <div className={`sia-search-section ${sectionTheme("project")}`}>
               <div className="sia-search-section-title">
                 <i className={getEntityType("project")?.icon} />
                 {getEntityType("project")?.labels.plural}
@@ -282,7 +288,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
           )}
 
           {recent.length > 0 && (
-            <div className="sia-search-section">
+            <div className={`sia-search-section ${sectionTheme("project")}`}>
               <div className="sia-search-section-title">
                 <i className={getEntityType("project")?.icon} />
                 {t("home.recentProjects")}
@@ -305,7 +311,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
           {sections.map((section) => {
             const config = getEntityType(section.type);
             return (
-              <div className="sia-search-section" key={section.type}>
+              <div className={`sia-search-section ${sectionTheme(section.type)}`} key={section.type}>
                 <div className="sia-search-section-title">
                   <i className={config?.icon} />
                   {config?.labels.plural ?? section.type}
@@ -320,7 +326,12 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
                     <span className="sia-search-row-label">
                       <Highlighted text={item.label} term={parsed.text} />
                     </span>
-                    {item.subtitle && <span className="sia-search-row-sub">{item.subtitle}</span>}
+                    {/* The subtitle of a fiche is its project's identifier: the project name replaces it. */}
+                    {item.subtitle && !item.projectName && <span className="sia-search-row-sub">{item.subtitle}</span>}
+                    {/* With a project keyword every result is of that project: the name would repeat it on each row. */}
+                    {!projectFilter && item.projectName && item.projectId != null && (
+                      <ProjectName project={{ id: item.projectId, name: item.projectName }} />
+                    )}
                   </SearchRow>
                 ))}
                 <SearchRow

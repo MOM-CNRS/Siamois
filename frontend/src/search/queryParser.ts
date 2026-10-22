@@ -49,6 +49,39 @@ function tokenize(input: string): string[] {
   return tokens;
 }
 
+export interface InputSegment {
+  text: string;
+  // A keyword's value (`projet1` of `projet:projet1`): what the field draws in colour.
+  value: boolean;
+}
+
+/** The typed input cut for display, whitespace kept so the pieces join back to it: keyword values apart from the rest. */
+export function highlightSegments(input: string, keywords: readonly SearchKeyword[] = SEARCH_KEYWORDS): InputSegment[] {
+  const segments: InputSegment[] = [];
+  for (const piece of input.split(/(\s+)/)) {
+    if (!piece) continue;
+    segments.push({ text: piece, value: false });
+  }
+  // Re-join pieces inside a quoted value (`projet:"fouille 2024"`) before telling keyword tokens apart.
+  const merged: string[] = [];
+  let open = false;
+  for (const segment of segments) {
+    const quotes = (segment.text.match(/"/g) ?? []).length;
+    if (open) merged[merged.length - 1] += segment.text;
+    else merged.push(segment.text);
+    if (quotes % 2 === 1) open = !open;
+  }
+  return merged.flatMap<InputSegment>((token) => {
+    const colon = token.indexOf(":");
+    const keyword = colon > 0 ? keywordOf(token.slice(0, colon), keywords) : undefined;
+    if (!keyword || token.slice(colon + 1).replace(/"/g, "").trim() === "") return [{ text: token, value: false }];
+    return [
+      { text: token.slice(0, colon + 1), value: false },
+      { text: token.slice(colon + 1), value: true },
+    ];
+  });
+}
+
 export function parseQuery(input: string, keywords: readonly SearchKeyword[] = SEARCH_KEYWORDS): ParsedQuery {
   const words: string[] = [];
   const filters: SearchFilter[] = [];

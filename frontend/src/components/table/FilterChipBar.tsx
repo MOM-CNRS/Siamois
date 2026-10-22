@@ -39,6 +39,9 @@ export interface FilterChipBarProps {
   optionsByKey: Record<string, FilterOption[]>;
 }
 
+// Chips shown in the bar; the other active filters are behind a « +N » chip (clicked: they are listed there).
+export const MAX_VISIBLE_CHIPS = 3;
+
 export function FilterChipBar({ specs, filters, onChange, optionsByKey }: FilterChipBarProps) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
@@ -47,6 +50,8 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
   const addPanel = useRef<OverlayPanel>(null);
+  const morePanel = useRef<OverlayPanel>(null);
+  const moreChipRef = useRef<HTMLButtonElement>(null);
   const editPanel = useRef<OverlayPanel>(null);
   // Phone width: both panels are drawers from the bottom, opened by these flags instead of an anchored overlay.
   const mobile = useIsMobile();
@@ -63,6 +68,9 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   const activeKeys = specs
     .map((s) => s.key)
     .filter((key) => filters[key] != null || pendingKeys.includes(key));
+  // The first filters stay in the bar; a chip just added (still being filled in) always does, so it is never hidden under « +N ».
+  const shownKeys = activeKeys.filter((key, i) => i < MAX_VISIBLE_CHIPS || pendingKeys.includes(key));
+  const hiddenKeys = activeKeys.filter((key) => !shownKeys.includes(key));
   const availableSpecs = specs.filter((s) => !activeKeys.includes(s.key));
 
   function openEditor(e: ReactMouseEvent, key: string, anchor: HTMLElement) {
@@ -134,32 +142,51 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
     />
   );
 
+  function renderChip(key: string, anchorOverride?: () => HTMLElement | null) {
+    const spec = specs.find((s) => s.key === key)!;
+    const summary = describeFilterValue(filters[key], optionsByKey[key]);
+    return (
+      <span key={key} data-chip-key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
+        <button
+          type="button"
+          className="filter-chip-body"
+          onClick={(e) => {
+            const anchor = anchorOverride?.() ?? (e.currentTarget.parentElement as HTMLElement);
+            // From the « +N » list the editor opens over the « +N » chip, once the list is out of the way.
+            if (anchorOverride) morePanel.current?.hide();
+            openEditor(e, key, anchor);
+          }}
+        >
+          <span className="filter-chip-label">{spec.label}</span>
+          {summary && <span className="filter-chip-value">{summary}</span>}
+        </button>
+        <button
+          type="button"
+          className="filter-chip-remove"
+          aria-label={t("filter.remove", { label: spec.label })}
+          onClick={() => removeFilter(key)}
+        >
+          <i className="bi bi-x" />
+        </button>
+      </span>
+    );
+  }
+
   return (
     <div className="entity-list-panel-filter-chips" ref={barRef}>
-      {activeKeys.map((key) => {
-        const spec = specs.find((s) => s.key === key)!;
-        const summary = describeFilterValue(filters[key], optionsByKey[key]);
-        return (
-          <span key={key} data-chip-key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
-            <button
-              type="button"
-              className="filter-chip-body"
-              onClick={(e) => openEditor(e, key, e.currentTarget.parentElement as HTMLElement)}
-            >
-              <span className="filter-chip-label">{spec.label}</span>
-              {summary && <span className="filter-chip-value">{summary}</span>}
-            </button>
-            <button
-              type="button"
-              className="filter-chip-remove"
-              aria-label={t("filter.remove", { label: spec.label })}
-              onClick={() => removeFilter(key)}
-            >
-              <i className="bi bi-x" />
-            </button>
-          </span>
-        );
-      })}
+      {shownKeys.map((key) => renderChip(key))}
+
+      {hiddenKeys.length > 0 && (
+        <button
+          type="button"
+          ref={moreChipRef}
+          className="filter-chip filter-chip-more"
+          aria-label={t("filter.more", { n: hiddenKeys.length })}
+          onClick={(e) => morePanel.current?.toggle(e)}
+        >
+          +{hiddenKeys.length}
+        </button>
+      )}
 
       {availableSpecs.length > 0 && (
         <button
@@ -172,6 +199,10 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
           {activeKeys.length === 0 ? t("filter.add") : t("filter.one")}
         </button>
       )}
+
+      <OverlayPanel ref={morePanel} className="entity-list-panel-filter-more">
+        <div className="filter-more-list">{hiddenKeys.map((key) => renderChip(key, () => moreChipRef.current))}</div>
+      </OverlayPanel>
 
       {mobile ? (
         <BottomSheet visible={addSheetOpen} onHide={() => setAddSheetOpen(false)} ariaLabel={t("filter.add")} className="filter-sheet">

@@ -6,6 +6,8 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.bookmark.BookmarkCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.bookmark.BookmarkRenameRequest;
+import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
+import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver.ProjectRef;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +36,7 @@ public class BookmarkControllerApi {
 
     private final ProjectApiService projectApiService;
     private final BookmarkService bookmarkService;
+    private final EntityProjectResolver projectResolver;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Ajouter un favori",
@@ -61,7 +64,7 @@ public class BookmarkControllerApi {
     }
 
     /** A bookmark as the home page lists it. */
-    public record BookmarkItem(Long id, String title, String resourceUri) {
+    public record BookmarkItem(Long id, String title, String resourceUri, ProjectRef project) {
     }
 
     /** Body of {@link #latest}. */
@@ -81,8 +84,11 @@ public class BookmarkControllerApi {
             @RequestParam(defaultValue = "10") int limit,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         UserInfo userInfo = requireUserInfo(organizationId, acceptLanguage);
-        return new BookmarkListResponse(bookmarkService.latest(userInfo, limit).stream()
-                .map(b -> new BookmarkItem(b.getId(), b.getTitle(), b.getResourceUri()))
+        var bookmarks = bookmarkService.latest(userInfo, limit);
+        var projects = projectResolver.resolve(bookmarks.stream().map(b -> b.getResourceUri()).toList(),
+                projectApiService.requireCaller().accessibleInstitutionIds());
+        return new BookmarkListResponse(bookmarks.stream()
+                .map(b -> new BookmarkItem(b.getId(), b.getTitle(), b.getResourceUri(), projects.get(b.getResourceUri())))
                 .toList());
     }
 

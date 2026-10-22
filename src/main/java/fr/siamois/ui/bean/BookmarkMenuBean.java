@@ -6,6 +6,7 @@ import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.dto.entity.BookmarkDTO;
 import fr.siamois.dto.view.UITableViewDTO;
+import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.utils.FilterStateTooltipHelper;
 import jakarta.annotation.PostConstruct;
@@ -41,6 +42,7 @@ public class BookmarkMenuBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final transient UiViewService uiViewService;
     private final NavBean navBean;
+    private final transient EntityProjectResolver projectResolver;
 
     // PrimeFaces Lazy Model
     private LazyDataModel<BookmarkDTO> lazyModel;
@@ -85,6 +87,14 @@ public class BookmarkMenuBean implements Serializable {
                 // A bookmark made before names were stored as text still holds a message code: show (and edit) its text.
                 List<BookmarkDTO> bookmarks = resultPage.getContent();
                 bookmarks.forEach(bookmark -> bookmark.setTitle(navBean.bookmarkTitle(bookmark)));
+                // Which project each fiche belongs to, so « US 1012 » is not ambiguous between projects.
+                Map<String, EntityProjectResolver.ProjectRef> projects = projectResolver.resolve(
+                        bookmarks.stream().map(BookmarkDTO::getResourceUri).toList(),
+                        java.util.Set.of(currentUser.getInstitution().getId()));
+                bookmarks.forEach(bookmark -> {
+                    EntityProjectResolver.ProjectRef project = projects.get(bookmark.getResourceUri());
+                    bookmark.setProjectName(project == null ? null : project.name());
+                });
                 return bookmarks;
             }
         };
@@ -111,6 +121,11 @@ public class BookmarkMenuBean implements Serializable {
             return;
         }
         bookmarkService.rename(sessionSettingsBean.getUserInfo(), editedItem.getResourceUri(), editedItem.getTitle());
+    }
+
+    /** The button's text: the name, then the project name. */
+    public String resolveLabelHtml(BookmarkDTO bookmark) {
+        return EntityProjectResolver.labelWithProject(navBean.bookmarkTitle(bookmark), bookmark.getProjectName());
     }
 
     public String resolveName(BookmarkDTO bookmark) {

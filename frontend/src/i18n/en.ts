@@ -49,6 +49,7 @@ export const en: Record<MessageKey, string> = {
   "filter.from": "{label} (from)",
   "filter.to": "{label} (to)",
   "filter.remove": "Remove the {label} filter",
+  "filter.more": "{n} more filters",
   "filter.add": "Add a filter",
   "filter.one": "Filter",
   "cell.loadFailed": "Could not load all the values.",
