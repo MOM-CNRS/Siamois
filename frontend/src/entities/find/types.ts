@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/finds (list) and GET /api/v1/finds/{id} (detail) both return this
 // shape, like RecordingUnitResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../shared/common";
 
 export interface FindPermissions {
   canEdit: boolean;
@@ -37,6 +37,8 @@ export interface FindResource {
   _permissions?: FindPermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // The first image document linked to it, for the list's cards (list only).
+  firstImageDocumentId?: string | null;
   // Detail only: what the fiche's tab badges count.
   _counts?: { documents?: number | null };
   // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".

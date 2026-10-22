@@ -6,8 +6,9 @@ import { patchProject } from "./api";
 import { ProjectDetailHeader } from "./DetailHeader";
 import { getProjectTypes } from "./projectTypes";
 import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/writeMode";
+import { WriteModeProvider } from "../../panels/pane/writeMode";
 import type { ProjectDetail } from "./types";
+import { notifySpy } from "../../test/notifySpy";
 
 
 vi.mock("./api", () => ({ patchProject: vi.fn() }));
@@ -135,7 +136,7 @@ describe("ProjectDetailHeader", () => {
     await flush();
 
     expect(mockedPatchProject).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("L'identifiant est obligatoire");
+    expect(notifySpy.error).toHaveBeenCalledWith("L'identifiant est obligatoire");
   });
 
   it("saves every changed field with ONE validate button and one patch", async () => {

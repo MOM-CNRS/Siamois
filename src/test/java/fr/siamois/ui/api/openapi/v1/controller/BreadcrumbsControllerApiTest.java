@@ -42,10 +42,10 @@ class BreadcrumbsControllerApiTest {
         BreadcrumbsResource resource = new BreadcrumbsResource(
                 List.of(List.of(new BreadcrumbResource("project", "1", "Fouille"))), false);
         when(projectApiService.requireCaller()).thenReturn(caller);
-        when(entityBreadcrumbsService.findBreadcrumbs(EntityBreadcrumbsService.Kind.RECORDING_UNIT, 5L, Set.of(10L)))
+        when(entityBreadcrumbsService.findBreadcrumbs(EntityBreadcrumbsService.Kind.RECORDING_UNIT, 5L, Set.of(10L), "project:1"))
                 .thenReturn(resource);
 
-        ResponseEntity<BreadcrumbsResponse> response = controller.getBreadcrumbs("recording-units", 5L);
+        ResponseEntity<BreadcrumbsResponse> response = controller.getBreadcrumbs("recording-units", 5L, "project:1");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -56,9 +56,9 @@ class BreadcrumbsControllerApiTest {
     void getBreadcrumbs_unknownCollectionIsNotFound() {
         when(projectApiService.requireCaller()).thenReturn(caller);
 
-        assertThatThrownBy(() -> controller.getBreadcrumbs("places", 5L))
+        assertThatThrownBy(() -> controller.getBreadcrumbs("nope", 5L, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(entityBreadcrumbsService, never()).findBreadcrumbs(any(), anyLong(), any());
+        verify(entityBreadcrumbsService, never()).findBreadcrumbs(any(), anyLong(), any(), any());
     }
 }

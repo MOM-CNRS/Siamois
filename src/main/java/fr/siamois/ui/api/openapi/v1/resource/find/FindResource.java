@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.resource.find;
 
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+import fr.siamois.ui.api.openapi.v1.resource.FirstImageCarrier;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -22,7 +23,7 @@ import java.util.Map;
 
 @Data
 @NoArgsConstructor
-public class FindResource extends FindResourceIdentifier implements BookmarkableResource {
+public class FindResource extends FindResourceIdentifier implements BookmarkableResource, FirstImageCarrier {
 
     private String fullIdentifier;
     protected OffsetDateTime collectionDate;
@@ -69,6 +70,8 @@ public class FindResource extends FindResourceIdentifier implements Bookmarkable
 
     @Schema(description = "Le mobilier est dans les favoris du caller")
     private boolean bookmarked;
+
+    private String firstImageDocumentId;
 
     @Schema(description = "Statut de validation : INCOMPLETE (en cours), COMPLETE (terminé), VALIDATED (validé), CANCELLED (annulé)")
     private ValidationStatus validationStatus;

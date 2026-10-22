@@ -4,7 +4,7 @@
 // class if it changes.
 
 import type { FieldResource } from "../../fields/types";
-import type { OrganizationIdentifier, ResolvedConcept } from "../common";
+import type { OrganizationIdentifier, ResolvedConcept } from "../shared/common";
 
 export interface GeometryDTO {
   type?: string | null;
@@ -44,6 +44,10 @@ export interface PlaceResource {
   _permissions?: PlacePermissions;
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // Tree view only (?tree=true): has children to show, and matched the search (false = only an
+  // ancestor of a match; absent without a search, where every row counts as a match).
+  hasChildren?: boolean;
+  match?: boolean;
   // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
   validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   // Detail only — the fiche's tab badges (PlaceOpenApiService#getPlaceById).

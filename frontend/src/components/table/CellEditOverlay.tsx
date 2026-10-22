@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "primereact/button";
 import { ZIndexUtils } from "primereact/utils";
 import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
 import { renderAnswerCell } from "../../fields/display";
@@ -7,6 +8,7 @@ import { editContextOf } from "../../fields/editContext";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { getFieldRenderer } from "../../fields/registry";
 import { fetchAllValues } from "../../fields/multiValues";
+import { stratigraphyPositionOf } from "../../fields/stratigraphy";
 import {
   readMultiValue,
   resolveValueBinding,
@@ -15,8 +17,13 @@ import {
   type FieldResource,
 } from "../../fields/types";
 import { numberOf, type Bound, type FieldState } from "../../rules";
+import { StratigraphyEditor } from "../relationLinks/StratigraphyEditor";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
+import { useIsMobile } from "../../viewport";
+import { BottomSheet } from "../layout/BottomSheet";
+import { useToastOnChange } from "../../notify/NotifyProvider";
+import { useRestoreFocus } from "../../panels/pane/useRestoreFocus";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked
@@ -83,7 +90,11 @@ export interface CellEditOverlayProps<TRow extends { id?: string | number }> {
 // puts on its portalled root.
 // A reference picker's « Nouveau » opens the creation form in a PrimeReact OverlayPanel (portalled
 // too): the creation happens inside the edit, not after it.
-const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"], .p-overlaypanel, .p-dialog-mask';
+// The bottom sheets (a picker's, a creation form's) and their mask are part of the edit too, on a phone.
+// Edited in place on a phone too: a keyboard-driven widget needs no drawer.
+const STANDARD_TYPES = new Set(["TEXT", "INTEGER", "DECIMAL", "DATETIME", "BOOLEAN"]);
+
+const PRIMEREACT_POPUP_SELECTOR = '[class*="p-connected-overlay"], .p-overlaypanel, .p-dialog-mask, .bottom-sheet, .p-sidebar-mask';
 
 export function CellEditOverlay<TRow extends { id?: string | number }>({
   target,
@@ -96,12 +107,18 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const [draft, setDraft] = useState<unknown>(undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useToastOnChange(error);
+  useRestoreFocus(target != null);
   // A multi-valued answer that was only a preview (MultiValueAnswer.complete false) is fetched
   // whole before it can be edited: the picker must show every value to let one be removed.
   const [loadingValues, setLoadingValues] = useState(false);
   const loadingRef = useRef(false);
   loadingRef.current = loadingValues;
   const boxRef = useRef<HTMLDivElement>(null);
+  // Phone width: a picker, a measurement or a stratigraphic editor is a drawer from the bottom; the standard widgets
+  // (text, numbers, date, yes/no) stay in the box laid over the cell.
+  const phone = useIsMobile();
+  const mobile = phone && target != null && !STANDARD_TYPES.has(target.field.answerType);
 
   // The value the cell held when the overlay opened — the baseline every "did it actually change?"
   // check compares against, so closing an untouched overlay issues no PATCH at all.
@@ -242,16 +259,23 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // Not before a preview's whole list has loaded: the widget isn't there yet, so the focus (and
   // with it the picker's first search) waits for it.
   useEffect(() => {
-    if (!target || loadingValues) return;
-    const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
-    if (!control) return;
-    control.focus();
-    if (control instanceof HTMLInputElement && control.type !== "checkbox" && control.type !== "radio") {
-      control.select();
-    } else if (control instanceof HTMLTextAreaElement) {
-      control.select();
-    }
-  }, [target, loadingValues]);
+    // A stratigraphic field's search opens its list on focus: it is left to a click.
+    if (!target || loadingValues || stratigraphyPositionOf(target.field)) return;
+    const focusControl = () => {
+      const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
+      if (!control) return;
+      control.focus();
+      if (control instanceof HTMLInputElement && control.type !== "checkbox" && control.type !== "radio") {
+        control.select();
+      } else if (control instanceof HTMLTextAreaElement) {
+        control.select();
+      }
+    };
+    // A drawer mounts its content a moment after it opens.
+    if (!mobile) return focusControl();
+    const handle = setTimeout(focusControl, 300);
+    return () => clearTimeout(handle);
+  }, [target, loadingValues, mobile]);
 
   // Joins PrimeReact's own z-index stack (at 1200 or above, as its CSS used to fix it) rather than
   // sitting at a fixed value: every popup opened from inside the edit afterwards — the picker's
@@ -260,16 +284,16 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const hasTarget = target != null;
   useLayoutEffect(() => {
     const box = boxRef.current;
-    if (!hasTarget || !box) return;
+    if (!hasTarget || !box || mobile) return;
     ZIndexUtils.set("overlay", box, true, 1200);
     return () => ZIndexUtils.clear(box);
-  }, [hasTarget]);
+  }, [hasTarget, mobile]);
 
   // The overlay opens on its cell, but a cell near the bottom (or the right edge) of the window would
   // leave it cut off: after every render, shift it back inside the window, with a margin.
   useLayoutEffect(() => {
     const box = boxRef.current;
-    if (!box || !target) return;
+    if (!box || !target || mobile) return;
     const margin = 12;
     box.style.top = `${target.anchor.top}px`;
     box.style.left = `${target.anchor.left}px`;
@@ -308,6 +332,9 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
 
   const { field, anchor } = target;
   const Renderer = getFieldRenderer(field.answerType);
+  // The relationships of a unit are not answers: their editor writes through the unit's own endpoints.
+  const stratigraphyPosition = stratigraphyPositionOf(field);
+  const context = editContextOf(target.row, entityType, organizationId);
 
   // fields/commit.ts owns both rules, shared with the Project fiche's own autosave: save on change
   // for a widget whose one interaction yields one final value, and for a multi-valued one keep the
@@ -333,23 +360,28 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     }
   }
 
-  return createPortal(
+  const className = `cell-edit-overlay p-fluid${saving ? " cell-edit-overlay-saving" : ""}${mobile ? " cell-edit-overlay-sheet" : ""}`;
+  const boxStyle = mobile
+    ? undefined
+    : {
+        position: "fixed" as const,
+        top: `${anchor.top}px`,
+        left: `${anchor.left}px`,
+        minWidth: `${Math.max(anchor.width, (stratigraphyPosition ? 22 : 12) * 16)}px`,
+        // A yes/no is a small box and its label: it needs room around it, and enough height to hide the cell below.
+        ...(field.answerType === "BOOLEAN" ? { padding: "0.5rem 1rem", minHeight: "2.75rem", display: "flex", alignItems: "center" } : {}),
+        // A measurement is a small form: room around its fields.
+        ...(field.answerType === "MEASUREMENT" ? { padding: "0.75rem 1rem" } : {}),
+      };
+
+  const box = (
     <div
       ref={boxRef}
       // p-fluid is PrimeReact's own "inputs fill their container" class: it covers every widget,
       // including ones a renderer added to the registry later would use, which a hand-written list
       // of width rules per component would not.
-      className={`cell-edit-overlay p-fluid${saving ? " cell-edit-overlay-saving" : ""}`}
-      style={{
-        position: "fixed",
-        top: `${anchor.top}px`,
-        left: `${anchor.left}px`,
-        minWidth: `${Math.max(anchor.width, 12 * 16)}px`,
-        // A yes/no is a small box and its label: it needs room around it, and enough height to hide the cell below.
-        ...(field.answerType === "BOOLEAN" ? { padding: "0.5rem 1rem", minHeight: "2.75rem", display: "flex", alignItems: "center" } : {}),
-        // A measurement is a small form: room around its fields.
-        ...(field.answerType === "MEASUREMENT" ? { padding: "0.75rem 1rem" } : {}),
-      }}
+      className={className}
+      style={boxStyle}
       onKeyDown={onKeyDown}
     >
       {target.incoherences && target.incoherences.length > 0 && (
@@ -376,6 +408,17 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
             <span className="cell-edit-overlay-empty">Aucune valeur</span>
           )}
         </div>
+      ) : stratigraphyPosition && target.row.id != null ? (
+        <StratigraphyEditor
+          fieldId={field.id}
+          position={stratigraphyPosition}
+          unitId={target.row.id}
+          projectId={context.projectId}
+          organizationId={organizationId}
+          typeConceptId={context.typeConceptId}
+          onChanged={onSaved}
+          onClose={onClose}
+        />
       ) : (
         <Renderer
           field={field}
@@ -383,7 +426,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           readOnly={saving}
           required={target.required ?? false}
           organizationId={organizationId}
-          context={editContextOf(target.row, entityType, organizationId)}
+          context={context}
           bounds={target.fieldState?.bounds}
           optionsContext={target.fieldState?.optionsContext}
           placeContext={target.fieldState?.placeContext}
@@ -391,15 +434,28 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           onChange={onValueChange}
         />
       )}
-      {error && <div className="cell-edit-overlay-error">{error}</div>}
-    </div>,
-    document.body,
+      {mobile && !immediate && !target.readOnly && !stratigraphyPosition && (
+        <div className="cell-edit-overlay-actions">
+          <Button type="button" size="small" label={t("field.pickerDone")} disabled={saving} onClick={() => void saveAndClose(draft)} />
+        </div>
+      )}
+    </div>
+  );
+
+  // Dismissing the drawer (a tap outside, a drag down) ends the edit like a click elsewhere does: it saves.
+  return mobile ? (
+    <BottomSheet visible onHide={() => void saveAndClose(draftRef.current)} ariaLabel={field.label ?? ""} className="cell-edit-sheet">
+      {box}
+    </BottomSheet>
+  ) : (
+    createPortal(box, document.body)
   );
 }
 
 /** The target's answer when it is a multi-valued one the row only carries a preview of. */
 function partialAnswerOf<TRow>(target: CellEditTarget<TRow>) {
-  if (!target.field.answerType.startsWith("SELECT_MULTIPLE")) return null;
+  // A stratigraphic field's editor loads its own values (they are no draft to write back).
+  if (!target.field.answerType.startsWith("SELECT_MULTIPLE") || stratigraphyPositionOf(target.field)) return null;
   const answer = readMultiValue(resolveValueBinding(target.field).readRaw(target.row));
   return answer && !answer.complete && answer._links?.values ? answer : null;
 }

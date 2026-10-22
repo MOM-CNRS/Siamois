@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -24,6 +26,10 @@ import java.util.function.Function;
  * from one call to the next. A find is also anchored to the recording unit it belongs to, so its paths
  * go project → (recording unit's own paths) → recording unit → (find's own parents) → find. The number
  * of paths is capped so a densely connected graph cannot blow up the response.</p>
+ *
+ * <p>A document hangs under the fiches it is linked to: project → (a linked fiche's own paths, a place's
+ * hierarchy included) → document. The optional {@code via} context moves the paths through the fiche it
+ * was opened from to the front.</p>
  *
  * <p>Access: the project's institution must be one the caller can reach, same rule as the entities'
  * own endpoints; anything else is a 404.</p>
@@ -41,7 +47,9 @@ public class EntityBreadcrumbsService {
         CONTAINER("container", "Container", "e.identifier"),
         PHASE("phase", "Phase", "coalesce(e.identifier, e.title)"),
         DOCUMENT("document", "Document", "coalesce(e.identifier, e.title)"),
-        STUDY("study", "Study", "e.identifier");
+        STUDY("study", "Study", "e.identifier"),
+        /** Belongs to an institution, not a project: its paths start at its topmost place. */
+        PLACE("place", "SpatialUnit", "e.name");
 
         private final String type;
         private final String entity;
@@ -62,6 +70,7 @@ public class EntityBreadcrumbsService {
                 case "phases" -> PHASE;
                 case "documents" -> DOCUMENT;
                 case "studies" -> STUDY;
+                case "places" -> PLACE;
                 default -> null;
             };
         }
@@ -72,6 +81,22 @@ public class EntityBreadcrumbsService {
 
     @Transactional(readOnly = true)
     public BreadcrumbsResource findBreadcrumbs(Kind kind, long id, Set<Long> accessibleInstitutionIds) {
+        return find(kind, id, accessibleInstitutionIds, null);
+    }
+
+    /**
+     * @param via the context the fiche was opened from, as {@code type:id} (a registry key and an id):
+     *            the paths going through that fiche come first, so the default path matches the context
+     */
+    @Transactional(readOnly = true)
+    public BreadcrumbsResource findBreadcrumbs(Kind kind, long id, Set<Long> accessibleInstitutionIds, String via) {
+        return find(kind, id, accessibleInstitutionIds, via);
+    }
+
+    private BreadcrumbsResource find(Kind kind, long id, Set<Long> accessibleInstitutionIds, String via) {
+        if (kind == Kind.PLACE) {
+            return placeBreadcrumbs(id, accessibleInstitutionIds, via);
+        }
         List<Object[]> own = entityManager.createQuery(
                         "select e.actionUnit.id, e.actionUnit.createdByInstitution.id from " + kind.entity // NOSONAR S2077: constants of the Kind enum
                                 + " e where e.id = :id", Object[].class)
@@ -86,49 +111,145 @@ public class EntityBreadcrumbsService {
             throw notFound();
         }
 
-        return buildFor(kind, id, projectCrumb(projectId));
+        BreadcrumbsResource built = buildFor(kind, id, projectCrumb(projectId));
+        return viaFirst(built, via);
+    }
+
+    private BreadcrumbsResource placeBreadcrumbs(long id, Set<Long> accessibleInstitutionIds, String via) {
+        List<Long> owner = entityManager.createQuery(
+                        "select e.createdByInstitution.id from SpatialUnit e where e.id = :id", Long.class)
+                .setParameter("id", id)
+                .getResultList();
+        if (owner.isEmpty() || owner.get(0) == null || accessibleInstitutionIds == null
+                || !accessibleInstitutionIds.contains(owner.get(0))) {
+            throw notFound();
+        }
+        Chains own = below(Kind.PLACE, id);
+        return viaFirst(new BreadcrumbsResource(own.paths(), own.truncated()), via);
+    }
+
+    /** Stable: the paths holding the {@code via} crumb move up front, the others keep their order. */
+    private static BreadcrumbsResource viaFirst(BreadcrumbsResource built, String via) {
+        if (via == null) {
+            return built;
+        }
+        int sep = via.indexOf(':');
+        if (sep <= 0 || sep == via.length() - 1) {
+            return built;
+        }
+        String type = via.substring(0, sep);
+        String viaId = via.substring(sep + 1);
+        List<List<BreadcrumbResource>> through = new ArrayList<>();
+        List<List<BreadcrumbResource>> others = new ArrayList<>();
+        for (List<BreadcrumbResource> path : built.paths()) {
+            boolean holds = path.stream().limit(Math.max(0, path.size() - 1L))
+                    .anyMatch(c -> c.type().equals(type) && c.id().equals(viaId));
+            (holds ? through : others).add(path);
+        }
+        through.addAll(others);
+        return new BreadcrumbsResource(through, built.truncated());
     }
 
     private BreadcrumbsResource buildFor(Kind kind, long id, BreadcrumbResource project) {
-        Function<Long, BreadcrumbResource> crumbOf = nodeId -> crumb(kind, nodeId);
         List<List<BreadcrumbResource>> result = new ArrayList<>();
         boolean truncated;
+        if (kind == Kind.DOCUMENT) {
+            truncated = documentPaths(id, project, result);
+        } else {
+            Chains own = below(kind, id);
+            truncated = own.truncated();
+            own.paths().forEach(p -> result.add(prefixed(project, p)));
+        }
+        return new BreadcrumbsResource(result, truncated);
+    }
+
+    /** The fiche's own paths under its project (project excluded), itself last. */
+    private Chains below(Kind kind, long id) {
+        Function<Long, BreadcrumbResource> crumbOf = nodeId -> crumb(kind, nodeId);
         switch (kind) {
-            case RECORDING_UNIT -> {
-                Chains own = chains(id, this::recordingUnitParents, crumbOf);
-                truncated = own.truncated();
-                own.paths().forEach(p -> result.add(prefixed(project, p)));
-            }
-            case FIND -> {
+            case RECORDING_UNIT:
+                return chains(id, this::recordingUnitParents, crumbOf);
+            case FIND: {
                 Long ruId = one("select e.recordingUnit.id from Specimen e where e.id = :id", id);
                 Chains ruChains = ruId == null
                         ? new Chains(List.of(List.of()), false)
                         : chains(ruId, this::recordingUnitParents, nodeId -> crumb(Kind.RECORDING_UNIT, nodeId));
                 Chains findChains = chains(id, this::findParents, crumbOf);
-                truncated = ruChains.truncated() || findChains.truncated();
+                boolean truncated = ruChains.truncated() || findChains.truncated();
+                List<List<BreadcrumbResource>> out = new ArrayList<>();
                 for (List<BreadcrumbResource> ru : ruChains.paths()) {
                     for (List<BreadcrumbResource> find : findChains.paths()) {
-                        if (result.size() >= MAX_PATHS) {
+                        if (out.size() >= MAX_PATHS) {
                             truncated = true;
                             break;
                         }
                         List<BreadcrumbResource> path = new ArrayList<>(ru);
                         path.addAll(find);
-                        result.add(prefixed(project, path));
+                        out.add(path);
                     }
                 }
+                return new Chains(out, truncated);
             }
-            case CONTAINER -> {
-                Chains own = chains(id, this::containerParent, crumbOf);
-                truncated = own.truncated();
-                own.paths().forEach(p -> result.add(prefixed(project, p)));
-            }
-            default -> {
-                truncated = false;
-                result.add(prefixed(project, List.of(crumb(kind, id))));
+            case CONTAINER:
+                return chains(id, this::containerParent, crumbOf);
+            case PLACE:
+                return chains(id, this::placeParents, crumbOf);
+            default:
+                return new Chains(List.of(List.of(crumb(kind, id))), false);
+        }
+    }
+
+    /**
+     * A document sits under whichever fiche it is linked to: project → (that fiche's own hierarchy) →
+     * document. One group of paths per link, linked fiches ordered by kind then id; a document linked
+     * to nothing hangs straight under its project.
+     *
+     * @return true when the cap cut the paths short
+     */
+    private boolean documentPaths(long id, BreadcrumbResource project, List<List<BreadcrumbResource>> result) {
+        BreadcrumbResource self = crumb(Kind.DOCUMENT, id);
+        boolean truncated = false;
+        List<Chains> groups = new ArrayList<>();
+        List.of(Kind.RECORDING_UNIT, Kind.FIND, Kind.CONTAINER, Kind.PHASE, Kind.STUDY, Kind.PLACE)
+                .forEach(linked -> documentLinks(DOCUMENT_LINKS.get(linked), id)
+                        .forEach(linkedId -> groups.add(below(linked, linkedId))));
+        for (Chains group : groups) {
+            truncated |= group.truncated();
+            for (List<BreadcrumbResource> path : group.paths()) {
+                if (result.size() >= MAX_PATHS) {
+                    return true;
+                }
+                List<BreadcrumbResource> full = new ArrayList<>(path);
+                full.add(self);
+                result.add(prefixed(project, full));
             }
         }
-        return new BreadcrumbsResource(result, truncated);
+        if (result.isEmpty()) {
+            result.add(prefixed(project, List.of(self)));
+        }
+        return truncated;
+    }
+
+    /** Document → linked fiche join, by linked kind. */
+    private static final Map<Kind, String> DOCUMENT_LINKS = new EnumMap<>(Kind.class);
+
+    static {
+        DOCUMENT_LINKS.put(Kind.RECORDING_UNIT, "select l.id from Document d join d.recordingUnits l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.FIND, "select l.id from Document d join d.finds l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.CONTAINER, "select l.id from Document d join d.containers l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.PHASE, "select l.id from Document d join d.phases l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.STUDY, "select l.id from Document d join d.studies l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.PLACE, "select l.id from Document d join d.places l where d.id = :id order by l.id");
+    }
+
+    private List<Long> documentLinks(String jpql, long id) {
+        return entityManager.createQuery(jpql, Long.class).setParameter("id", id).getResultList(); // NOSONAR S2077: constants
+    }
+
+    private List<Long> placeParents(Long id) {
+        return entityManager.createQuery(
+                        "select p.id from SpatialUnit s join s.parents p where s.id = :id order by p.id", Long.class)
+                .setParameter("id", id).getResultList();
     }
 
     /** Result of a same-kind ancestor walk: root-first paths ending with the node itself. */

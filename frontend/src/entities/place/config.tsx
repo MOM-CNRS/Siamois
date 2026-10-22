@@ -1,16 +1,18 @@
-import type { EntityRef, EntityTypeConfig } from "../types";
-import { relationTab } from "../../panels/relationTab";
+import type { EntityRef, EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { relationTab } from "../../panels/detail/relationTab";
 import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
 import { PlaceDetailHeader } from "./DetailHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { PlaceDetail, PlaceSummary } from "./types";
 import { t } from "../../i18n";
 
@@ -24,13 +26,20 @@ function placeRef(place: PlaceSummary): EntityRef {
 
 export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   key: "place",
-  labels: { singular: t("entity.place.singular"), plural: t("entity.place.plural") },
+  labels: {
+    singular: t("entity.place.singular"),
+    plural: t("entity.place.plural"),
+  },
   collectionPath: "places",
   // Matches SpatialUnitPanel's own icon ("bi bi-geo-alt").
   icon: "bi bi-geo-alt",
   panelClass: "spatial-unit-panel",
+  cardClassName: "sia-spatial-unit",
+  countChipClassName: "spatial-unit-count-chip",
   api: {
+    delete: (id) => deleteEntity("places", id),
     siblings: (id) => fetchSiblings("places", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("places", id, via),
     get: getPlace,
     list: listPlaces,
     patchAnswers: (id, answers) => patchPlaceAnswers(id, answers),
@@ -43,6 +52,9 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     // Every list: newest first — the order the fiche's prev/next arrows walk (↓ = the row below).
     defaultSort: "creationTime:desc",
     searchable: true,
+    tree: true,
+    // The places below a place: its "Lieux" tab as a tree.
+    treeScopes: ["place:children"],
     // Places belong to the organization, not a project: the one organization-wide list whose
     // creation is allowed (see CreateForm.tsx).
     createForm: (ctx) => <PlaceCreateForm {...ctx} />,
@@ -52,19 +64,24 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         key: "new-parent",
         icon: "bi bi-node-plus-fill rotate-minus90",
         tooltip: t("row.newParentPlace"),
-        run: (row, ctx) => ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("place", { prefill: { child: placeRef(row) } }),
       },
       {
         key: "new-child",
         icon: "bi bi-node-plus-fill rotate-90",
         tooltip: t("row.newChildPlace"),
-        run: (row, ctx) => ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("place", { prefill: { parent: placeRef(row) } }),
       },
       {
         key: "new-project",
         icon: "bi bi-arrow-down-square",
         tooltip: t("row.newProject"),
-        run: (row, ctx) => ctx.openCreate("project", { prefill: { spatialContext: placeRef(row) } }),
+        run: (row, ctx) =>
+          ctx.openCreate("project", {
+            prefill: { spatialContext: placeRef(row) },
+          }),
       },
     ],
   },
@@ -74,7 +91,13 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         key: "fiche",
         label: t("common.details"),
         render: (entity, helpers) => (
-          <SchemaFicheTab entity={entity} entityType="place" isFieldShown={(field) => field.valueBinding !== "address"} save={patchPlaceAnswers} onSaved={helpers.refetch} />
+          <SchemaFicheTab
+            entity={entity}
+            entityType="place"
+            isFieldShown={(field) => field.valueBinding !== "address"}
+            save={patchPlaceAnswers}
+            onSaved={helpers.refetch}
+          />
         ),
       },
       // JSF's hierarchy tab, reduced to the places this one contains.
@@ -106,7 +129,9 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
         entityRef: placeRef,
       }),
     ],
-    header: (entity, helpers) => <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />,
+    header: (entity, helpers) => (
+      <PlaceDetailHeader entity={entity} onSaved={helpers.refetch} />
+    ),
     chrome: (entity) => bookmarkChrome(entity, entity.name),
   },
   routes: jsfRoutes("spatial-unit"),

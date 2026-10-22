@@ -1,5 +1,5 @@
-import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../types";
+import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
+import type { CreateFormContext } from "../shared/types";
 import { createContainer } from "./api";
 import { t } from "../../i18n";
 

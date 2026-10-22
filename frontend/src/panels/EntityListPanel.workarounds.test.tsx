@@ -3,10 +3,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import type { PagedResult } from "../entities/types";
+import type { PagedResult } from "../entities/shared/types";
 import { EntityListPanel } from "./EntityListPanel";
-import { SEARCH_DEBOUNCE_MS } from "./list/ListSearchBox";
-import { WriteModeProvider } from "./writeMode";
+import { WriteModeProvider } from "./pane/writeMode";
 
 // The list's own guarantees that are easy to lose in a refactor: what a keystroke re-renders, how many
 // requests a column change makes, and the PrimeReact behaviours the table works around.
@@ -103,31 +102,33 @@ afterEach(() => {
 });
 
 describe("EntityListPanel: the search box", () => {
-  it("re-renders only itself while typing — the table's cells are not rendered again", async () => {
+  it("types in its own overlay — the table is not queried until Enter", async () => {
     renderPanel();
     await flush();
     await flush();
-    const input = container.querySelector<HTMLInputElement>(".entity-list-panel-toolbar input")!;
-    const before = nameCellRender.mock.calls.length;
+    const trigger = container.querySelector<HTMLInputElement>(".entity-list-panel-toolbar input")!;
+    await act(async () => {
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    const field = document.body.querySelector<HTMLInputElement>('input[role="combobox"]')!;
 
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
     for (const typed of ["a", "ab", "abc"]) {
       await act(async () => {
-        setter.call(input, typed);
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+        setter.call(field, typed);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       });
     }
 
-    expect(input.value).toBe("abc");
-    expect(nameCellRender.mock.calls.length).toBe(before);
-    // The one request comes once typing pauses, carrying the whole word.
+    expect(field.value).toBe("abc");
+    // Typing never reaches the table's own query; Enter applies the whole word, once.
+    expect(listMock.mock.calls.filter(([p]) => (p as { search?: string; limit: number }).search && (p as { limit: number }).limit !== 8)).toHaveLength(0);
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50));
+      field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
     await flush();
     expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ search: "abc", offset: 0 }));
-    // One request for the whole word, none for its prefixes.
-    expect(listMock.mock.calls.filter(([p]) => (p as { search?: string }).search)).toHaveLength(1);
+    expect(listMock.mock.calls.filter(([p]) => (p as { search?: string; limit: number }).search === "abc" && (p as { limit: number }).limit !== 8)).toHaveLength(1);
   });
 });
 

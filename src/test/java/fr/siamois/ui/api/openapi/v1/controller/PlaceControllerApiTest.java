@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -210,7 +212,7 @@ class PlaceControllerApiTest {
 
     @Test
     void getChildren_delegatesToTheService() throws Exception {
-        when(placeOpenApiService.listChildren(any(), eq(5L), eq(0), eq(10), eq("name:asc"), eq("cave"), eq("fr"), any(), any()))
+        when(placeOpenApiService.listChildren(any(), eq(5L), eq(new ListWindow(0, 10, "name:asc", "cave")), eq("fr"), any(), any(), eq(TreeRequest.OFF)))
                 .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
                         List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
 
@@ -218,6 +220,48 @@ class PlaceControllerApiTest {
                         .param("search", "cave"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Total-Count", "0"));
+    }
+
+    @Test
+    void getChildren_withTree_asksTheServiceForTheTreeChildren() throws Exception {
+        when(placeOpenApiService.listChildren(any(), eq(5L), eq(new ListWindow(0, 10, "name:asc", "cave")), eq("fr"), any(), any(), eq(TreeRequest.tree(null).withMatchCount(true))))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse(
+                        List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 10, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/children")
+                        .param("search", "cave").param("tree", "true").param("matchCount", "true"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void getProjects_withTree_makesThePlaceTheContextNotAFilter() throws Exception {
+        fr.siamois.dto.entity.SpatialUnitDTO place = new fr.siamois.dto.entity.SpatialUnitDTO();
+        place.setId(5L);
+        fr.siamois.dto.entity.InstitutionDTO institution = new fr.siamois.dto.entity.InstitutionDTO();
+        institution.setId(10L);
+        place.setCreatedByInstitution(institution);
+        when(placeOpenApiService.requireAccessible(any(), eq(5L))).thenReturn(place);
+        fr.siamois.dto.TreePage<fr.siamois.dto.api.AccessibleProjectForApi> rows =
+                new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 20), 0, 0);
+        // The user's filters only: the place is passed apart, as the context the roots are computed in.
+        when(projectApiService.pageAccessibleProjectsTree(any(), eq(10L), eq(new ListWindow(0, 20, "name:asc", null)),
+                org.mockito.ArgumentMatchers.argThat(filter -> filter.conceptManyInFilters().get("spatialContext") == null),
+                org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(TreeRequest.tree(8L).inSpatialContext(5L))))
+                .thenReturn(rows);
+        when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))
+                .thenReturn(new fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse(
+                        List.of(), new fr.siamois.ui.api.openapi.v1.generic.response.ListMeta(0L, 20, 0L)));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/projects")
+                        .param("tree", "true").param("parent", "8"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void getProjects_parentWithoutTree_isABadRequest() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/places/5/projects")
+                        .param("parent", "8"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test

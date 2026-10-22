@@ -1,7 +1,14 @@
 package fr.siamois.domain.services;
 
 
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.dto.FieldQuery;
+import fr.siamois.domain.services.actionunit.ProjectTreeQuery;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
+import fr.siamois.domain.services.actionunit.template.EmptyProjectTemplateApplier;
+import fr.siamois.domain.services.actionunit.ProjectIdentifierService;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -43,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -86,6 +94,12 @@ class ActionUnitServiceTest {
     @Mock private ProfilePermissionService profilePermissionService;
     @Mock private InstitutionService institutionService;
     @Mock private DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    @Mock private ProjectIdentifierService projectIdentifierService;
+    @Spy private List<ProjectTemplateApplier> templateAppliers = new ArrayList<>();
+
+    @Mock
+    private fr.siamois.domain.services.actionunit.ProjectDeletionService projectDeletionService;
+
     @InjectMocks
     private ActionUnitService actionUnitService;
 
@@ -104,6 +118,8 @@ class ActionUnitServiceTest {
 
     @BeforeEach
     void setUp() {
+        // the "empty" template seeds the default configuration, as before templates existed
+        templateAppliers.add(new EmptyProjectTemplateApplier(defaultProjectIdentifierConfigSeeder));
 
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();
@@ -124,6 +140,7 @@ class ActionUnitServiceTest {
         lenient().when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         lenient().when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteProjectPermission(any(UserInfo.class), any())).thenReturn(true);
         c1 = new Concept();
         c2 = new Concept();
         c3 = new Concept();
@@ -327,6 +344,54 @@ class ActionUnitServiceTest {
         } finally {
             TransactionSynchronizationManager.clear();
         }
+    }
+
+    @Test
+    void save_creationWithoutIdentifier_numbersTheProjectAutomatically() throws Exception {
+        Creation creation = stubCreation();
+        // the generated value is the one stubCreation already knows, so the uniqueness lookups stay stubbed
+        String generated = creation.actionUnit().getIdentifier();
+        creation.actionUnit().setIdentifier("  ");
+        when(projectIdentifierService.generate(creation.userInfo()))
+                .thenReturn(new GeneratedIdentifier(4, generated));
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verify(projectIdentifierService).generate(creation.userInfo());
+        assertEquals(generated, creation.actionUnit().getIdentifier());
+    }
+
+    @Test
+    void save_creationWithAnIdentifier_doesNotConsumeTheCounter() throws Exception {
+        Creation creation = stubCreation();
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type());
+
+        verifyNoInteractions(projectIdentifierService);
+    }
+
+    @Test
+    void save_creationFromATransactionalTemplate_copiesInTheSameTransactionAndSkipsTheDefaultSeed() throws Exception {
+        Creation creation = stubCreation();
+        var copier = mock(ProjectTemplateApplier.class);
+        when(copier.supports("project:3")).thenReturn(true);
+        when(copier.transactional()).thenReturn(true);
+        templateAppliers.add(0, copier);
+
+        actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type(), "project:3");
+
+        verify(copier).apply(creation.userInfo(), "project:3", creation.expected().getId());
+        verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
+    }
+
+    @Test
+    void save_creationWithAnUnknownTemplate_fails() throws Exception {
+        Creation creation = stubCreation();
+        UserInfo creator = creation.userInfo();
+        ActionUnitDTO unit = creation.actionUnit();
+        ConceptDTO type = creation.type();
+
+        assertThrows(IllegalArgumentException.class, () -> actionUnitService.save(creator, unit, type, "store:1"));
     }
 
     @Test
@@ -941,77 +1006,115 @@ class ActionUnitServiceTest {
     }
 
     // ------------------------------------------------------------------
-    // deleteProjectWhenEmpty
+    // deleteProjectWithContent
     // ------------------------------------------------------------------
 
     @Test
-    void deleteProjectWhenEmpty_throwsForbidden_whenNoExecutionContext() {
+    void deleteProjectWithContent_throwsForbidden_whenNoExecutionContext() {
         ExecutionContextHolder.clear();
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+                () -> actionUnitService.deleteProjectWithContent(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWhenEmpty_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
-        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
-        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(false);
+    void deleteProjectWithContent_throwsForbidden_whenNeitherOrganizationNorProjectGrantsIt() {
+        when(profilePermissionService.hasDeleteProjectPermission(any(UserInfo.class), anyLong())).thenReturn(false);
 
         assertThrows(ForbiddenOperationException.class,
-                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+                () -> actionUnitService.deleteProjectWithContent(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWhenEmpty_throwsIllegalState_whenRecordingUnitsExist() {
-        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(2L);
-
-        assertThrows(IllegalStateException.class,
-                () -> actionUnitService.deleteProjectWhenEmpty(1L));
-
-        verify(actionUnitRepository, never()).deleteById(anyLong());
-    }
-
-    @Test
-    void deleteProjectWhenEmpty_throwsIllegalState_whenDocumentsExist() {
-        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
-        when(documentRepository.countByActionUnitId(1L)).thenReturn(2);
-
-        assertThrows(IllegalStateException.class,
-                () -> actionUnitService.deleteProjectWhenEmpty(1L));
-
-        verify(actionUnitRepository, never()).deleteById(anyLong());
-    }
-
-    @Test
-    void deleteProjectWhenEmpty_throwsIllegalState_whenChildActionUnitsExist() {
-        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
+    void deleteProjectWithContent_throwsIllegalState_whenChildActionUnitsExist() {
         when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
                 .thenReturn(Collections.singletonList(new Object[]{1L, 3L}));
 
         assertThrows(IllegalStateException.class,
-                () -> actionUnitService.deleteProjectWhenEmpty(1L));
+                () -> actionUnitService.deleteProjectWithContent(1L));
+
+        verify(projectDeletionService, never()).deleteContent(anyLong());
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteProjectWithContent_propagatesCrossProjectRefusal_andDeletesNothing() {
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(new ActionUnit()));
+        when(projectDeletionService.deleteContent(1L)).thenThrow(new IllegalStateException("liens"));
+
+        assertThrows(IllegalStateException.class,
+                () -> actionUnitService.deleteProjectWithContent(1L));
 
         verify(actionUnitRepository, never()).deleteById(anyLong());
     }
 
     @Test
-    void deleteProjectWhenEmpty_happyPath_deletesEverything() {
-        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
-        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L)))
-                .thenReturn(List.of());
+    void deleteProjectWithContent_happyPath_deletesEverything() {
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(new ActionUnit()));
+        when(projectDeletionService.deleteContent(1L)).thenReturn(List.of(9L));
 
-        actionUnitService.deleteProjectWhenEmpty(1L);
+        actionUnitService.deleteProjectWithContent(1L);
 
+        verify(projectDeletionService).deleteContent(1L);
         verify(personProfileAssignmentRepository).deleteAllByProfileActionUnitId(1L);
         verify(profileRepository).deleteAllByActionUnitId(1L);
         verify(recordingUnitIdLabelRepository).deleteAllByActionUnitId(1L);
         verify(actionUnitRepository).deleteHierarchyLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteSpatialContextLinksForActionUnit(1L);
         verify(actionUnitRepository).deleteById(1L);
+        verify(projectDeletionService).deleteArks(List.of(9L));
+    }
+
+    @Test
+    void deleteProjectWithContent_deletesTheProjectArkToo_whenItHasOne() {
+        ActionUnit project = new ActionUnit();
+        Ark ark = new Ark();
+        ark.setInternalId(5L);
+        project.setArk(ark);
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(projectDeletionService.deleteContent(1L)).thenReturn(List.of(9L));
+
+        actionUnitService.deleteProjectWithContent(1L);
+
+        verify(projectDeletionService).deleteArks(List.of(9L, 5L));
+    }
+
+    @Test
+    void deleteProjectWithContent_throwsNotFound_whenTheProjectIsGone() {
+        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.deleteProjectWithContent(1L));
+
+        verify(actionUnitRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenTheKeyIsNotANumber() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("abc", Set.of(1L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenTheKeyOverflowsALong() {
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("99999999999999999999", Set.of(1L)));
+    }
+
+    @Test
+    void findAccessibleProjectByKey_throwsNotFound_whenNoProjectHasThatId() {
+        when(actionUnitRepository.findById(42L)).thenReturn(Optional.empty());
+
+        assertThrows(ActionUnitNotFoundException.class,
+                () -> actionUnitService.findAccessibleProjectByKey("42", Set.of(1L)));
     }
 
     // ------------------------------------------------------------------
@@ -1580,6 +1683,116 @@ class ActionUnitServiceTest {
         verify(recordingUnitRepository).countRecordingUnitsGroupedByActionUnitIds(List.of(1L, 2L));
         verify(actionUnitRepository).countChildActionUnitsByParentIds(List.of(1L, 2L));
     }
+    // ------------------------------------------------------------------
+    // findAccessibleProjectsTree (vue arbre de la liste des projets)
+    // ------------------------------------------------------------------
+
+    private static ProjectTreeQuery projectTree(Set<Long> institutions, String search) {
+        return new ProjectTreeQuery(1L, institutions, null, null, null,
+                new ProjectTreeQuery.Selection(search, ProjectListFilter.EMPTY, FieldQuery.NONE, PageRequest.of(0, 20), null));
+    }
+
+    @Test
+    void findAccessibleProjectsTree_emptyInstitutions_returnsEmptyPageWithoutDb() {
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(), null));
+
+        assertThat(treePage.getContent()).isEmpty();
+        verifyNoInteractions(actionUnitRepository);
+    }
+
+    @Test
+    void findAccessibleProjectsTree_roots_flagsTheProjectsThatHaveAccessibleSubProjectsAndCountsTheWholeList() {
+        actionUnit1.setFullIdentifier("TREE-AU-1");
+        actionUnit2.setFullIdentifier("TREE-AU-2");
+        actionUnit1dto.setId(1L);
+        actionUnit2dto.setId(2L);
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1, actionUnit2), PageRequest.of(0, 20), 2));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitMapper.convert(actionUnit2)).thenReturn(actionUnit2dto);
+        // Project 1 has a sub-project 10, which the person can see; project 2 has a sub-project 20, which they cannot.
+        when(actionUnitRepository.findChildEdges(List.of(1L, 2L)))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 10L}, new Object[]{2L, 20L}));
+        ActionUnit visibleSubProject = new ActionUnit();
+        visibleSubProject.setId(10L);
+        visibleSubProject.setFullIdentifier("TREE-SUB-10");
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(visibleSubProject));
+        when(actionUnitRepository.count(any(Specification.class))).thenReturn(14L);
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(10L), null));
+
+        assertThat(treePage.getContent()).hasSize(2);
+        assertThat(treePage.hasChildren(1L)).isTrue();
+        assertThat(treePage.hasChildren(2L)).isFalse();
+        // No search: every project is a match, and the match count is every accessible project, not the roots.
+        assertThat(treePage.isMatch(2L)).isTrue();
+        assertThat(treePage.getMatchCount()).isEqualTo(14L);
+    }
+
+    @Test
+    void findAccessibleProjectsTree_search_marksTheParentThatOnlyLeadsToAMatchAsContext() {
+        actionUnit1.setFullIdentifier("TREE-CTX-1");
+        actionUnit2.setFullIdentifier("TREE-CTX-2");
+        actionUnit1.setId(1L);
+        actionUnit2.setId(2L);
+        actionUnit1dto.setId(1L);
+        // Searching "x": project 2 matches, and its accessible parent 1 is the only root of the closure.
+        // The calls, in order: the matches, then the accessible parents of 2 (1 has none, so the climb
+        // stops), then the children of 1 that are in the closure and accessible.
+        when(actionUnitRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(actionUnit2))
+                .thenReturn(List.of(actionUnit1))
+                .thenReturn(List.of(actionUnit2));
+        when(actionUnitRepository.findParentEdges(List.of(2L))).thenReturn(List.<Object[]>of(new Object[]{2L, 1L}));
+        when(actionUnitRepository.findParentEdges(List.of(1L))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(actionUnit1), PageRequest.of(0, 20), 1));
+        when(actionUnitMapper.convert(actionUnit1)).thenReturn(actionUnit1dto);
+        when(actionUnitRepository.findChildEdges(List.of(1L))).thenReturn(List.<Object[]>of(new Object[]{1L, 2L}));
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(projectTree(Set.of(10L), "x"));
+
+        assertThat(treePage.hasChildren(1L)).isTrue();
+        assertThat(treePage.isMatch(1L)).isFalse();
+        assertThat(treePage.getMatchCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void findAccessibleProjectsTree_inAPlaceWithFiltersAndASort_isNarrowedAndOrderedByTheCount() {
+        // The place is part of the context; the user's filters narrow; the recording-unit-count sort orders.
+        ProjectListFilter filter = ProjectListFilter.parse(
+                new org.springframework.util.LinkedMultiValueMap<>(Map.of("f.fullIdentifier", List.of("OA"))));
+        var query = new ProjectTreeQuery(1L, Set.of(10L), 10L, 5L, 8L,
+                new ProjectTreeQuery.Selection(null, filter, FieldQuery.NONE, PageRequest.of(0, 20), Sort.Direction.DESC));
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(query);
+
+        // Nothing matches: the page is empty, and no climb, no count of the context is asked for.
+        assertThat(treePage.getContent()).isEmpty();
+        assertThat(treePage.getMatchCount()).isZero();
+        verify(actionUnitRepository, never()).count(any(Specification.class));
+        verify(actionUnitRepository, never()).findParentEdges(any());
+    }
+
+    @Test
+    void findAccessibleProjectsTree_aFilterOnAFormField_narrowsLikeASearch() {
+        FieldQuery fieldFilter = new FieldQuery((root, query, cb) -> null, false, true, null);
+        var query = new ProjectTreeQuery(1L, Set.of(10L), null, null, null,
+                new ProjectTreeQuery.Selection(null, ProjectListFilter.EMPTY, fieldFilter, PageRequest.of(0, 20), null));
+        when(actionUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(actionUnitRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var treePage = actionUnitService.findAccessibleProjectsTree(query);
+
+        // Narrowed, so the match count is the (empty) match set's size, not a count of the whole list.
+        assertThat(treePage.getMatchCount()).isZero();
+        verify(actionUnitRepository, never()).count(any(Specification.class));
+    }
+
     // ------------------------------------------------------------------
     // findAccessibleProjectByKey
     // ------------------------------------------------------------------
@@ -2440,22 +2653,6 @@ class ActionUnitServiceTest {
 
         assertThat(result.recordingUnitCount()).isZero();
         assertThat(result.childActionUnitCount()).isZero();
-    }
-
-    // ------------------------------------------------------------------
-    // deleteProjectWhenEmpty — autorisation portée par le projet seul
-    // ------------------------------------------------------------------
-
-    @Test
-    void deleteProjectWhenEmpty_allowedByProjectPermissionOnly_deletesEverything() {
-        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), anyString())).thenReturn(false);
-        when(profilePermissionService.hasProjectPermission(any(), anyLong(), anyString())).thenReturn(true);
-        when(recordingUnitRepository.countByActionUnit_Id(1L)).thenReturn(0L);
-        when(actionUnitRepository.countChildActionUnitsByParentIds(List.of(1L))).thenReturn(List.of());
-
-        actionUnitService.deleteProjectWhenEmpty(1L);
-
-        verify(actionUnitRepository).deleteById(1L);
     }
 
     private void bindExecutionContext(UserInfo userInfo) {

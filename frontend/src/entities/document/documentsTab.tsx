@@ -1,6 +1,6 @@
-import { relationTab } from "../../panels/relationTab";
+import { relationTab } from "../../panels/detail/relationTab";
 import { t } from "../../i18n";
-import type { DetailTabDef, DocumentLinkField, EntityRef } from "../types";
+import type { DetailTabDef, DocumentLinkField, EntityRef } from "../shared/types";
 import { AssociateDocument } from "./AssociateDocument";
 import { BulkImportDocument } from "./BulkImportDocument";
 import { unlinkDocument } from "./api";

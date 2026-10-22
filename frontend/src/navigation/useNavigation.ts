@@ -3,14 +3,24 @@ import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import type { MountOptions } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
-import { withPanelTransition } from "../panels/panelTransition";
-import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
+import { withPanelTransition } from "../panels/pane/panelTransition";
+import type { ListSeed } from "./externalBus";
+import { isMobileViewport } from "../viewport";
+import { listPath } from "./paths";
+import { recordVisit } from "./navTrail";
+import { decodeUrl, encodeUrl, initialNavState, navReducer, overviewPath, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 
 export interface Navigation {
   state: NavState;
   // Stable identities: panels receive them, and must not re-render on every navigation.
   navigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   openOverview: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // The entity type's list in the main pane, on a saved view (or, without one, its default list).
+  openView: (entityType: string, viewId?: number) => void;
+  // The entity type's list in the overview pane, started on this search (the search bar's « Voir tout »).
+  openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
+  // The page at this address (a Back/Forward trail entry): the panes are rebuilt from it, no page load.
+  restoreUrl: (url: string) => void;
   closeOverview: () => void;
   enterFocus: () => void;
   closeFocus: () => void;
@@ -47,8 +57,25 @@ export function useNavigation(options: MountOptions): Navigation {
     },
     [send],
   );
+  const openView = useCallback<Navigation["openView"]>(
+    (entityType, viewId) => {
+      const path = listPath(entityType, viewId);
+      if (path == null) return;
+      send({ type: "navigate", path, view: { panelKind: "list", entityType, viewId } });
+    },
+    [send],
+  );
   const openOverview = useCallback<Navigation["openOverview"]>(
-    (entityType, id, preview) => send({ type: "openOverview", overview: { entityType, entityId: id, preview } }),
+    (entityType, id, preview) => {
+      // Phone width: no room for two panes, so whatever would open beside the list opens in the main pane.
+      if (isMobileViewport()) navigate(entityType, id, preview);
+      else send({ type: "openOverview", overview: { entityType, entityId: id, preview } });
+    },
+    [send, navigate],
+  );
+  const seedNonce = useRef(0);
+  const openList = useCallback<Navigation["openList"]>(
+    (entityType, seed) => send({ type: "openOverview", overview: { entityType, seed: { ...seed, nonce: ++seedNonce.current } } }),
     [send],
   );
   const closeOverview = useCallback(() => send({ type: "closeOverview" }), [send]);
@@ -62,6 +89,22 @@ export function useNavigation(options: MountOptions): Navigation {
     }
     send({ type: "closeFocus" });
   }, [send]);
+
+  const restoreUrl = useCallback<Navigation["restoreUrl"]>((url) => {
+    const restore = decodeUrl(new URL(url, window.location.origin), initialNavState(latest.current.options));
+    if (!restore) {
+      window.location.assign(url);
+      return;
+    }
+    window.history.pushState(null, "", url);
+    dispatch(restore);
+  }, []);
+
+  // Every page the user lands on goes in the header's Back/Forward trail.
+  useEffect(() => {
+    if (!state.mainPath) return;
+    recordVisit({ url: encodeUrl(state), mainPath: state.mainPath, overviewPath: overviewPath(state.overview) });
+  }, [state]);
 
   // The address bar follows every app-driven change; a Back/Forward already moved it.
   useEffect(() => {
@@ -92,5 +135,5 @@ export function useNavigation(options: MountOptions): Navigation {
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, openOverview, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
 }

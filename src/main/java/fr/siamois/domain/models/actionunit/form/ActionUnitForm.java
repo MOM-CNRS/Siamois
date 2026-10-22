@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
@@ -556,6 +557,23 @@ public abstract class ActionUnitForm {
             .id(-134L)
             .valueBinding("prescribedArea")
             .concept(PRESCRIBED_AREA_CONCEPT)
+            .build();
+
+    public static final Concept RECORDING_UNITS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("actionunit.recordingUnits")
+            .build();
+
+    // The recording units of the project: read-only (a unit belongs to its project from its own side),
+    // listed in the project list as relation chips and never shown on the fiche.
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldSelectMultipleRecordingUnit RECORDING_UNITS_FIELD = CustomFieldSelectMultipleRecordingUnit.builder()
+            .label("actionunit.field.recordingUnits")
+            .isSystemField(true)
+            .id(-135L)
+            .valueBinding("recordingUnitList")
+            .concept(RECORDING_UNITS_CONCEPT)
             .build();
 
 }

@@ -1,30 +1,12 @@
-div#search-bar form {
+// The header search bar is React (frontend/src/search); its own styles are in main-panel.css.
+div#search-bar {
     background-color: var(--siamois-green-light-100);
-    width: 100%;
-    margin: 0;
-    padding: 0;
     display: flex;
-    justify-content: center;
     align-items: center;
-    flex-direction: column;
+    padding: 5px;
+    min-width: 0;
 }
 
-div#search-bar form article {
-    display: flex;
-    gap: 1vw;
-    justify-content: center;
-    align-items: center;
-    margin: 5px;
-    width: 100%;
-}
-
-span:has(.searchInput) {
-    width: 100%;
-    margin-bottom: 5px;
-    margin-left: 5px;
-    margin-right: 5px;
-}
-
-.searchInput > * {
+div#search-bar .react-search-bar-mount {
     width: 100%;
 }

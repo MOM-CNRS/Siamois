@@ -163,6 +163,8 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private PhaseMapper phaseMapper;
     @Mock
+    private fr.siamois.domain.services.PhaseService phaseService;
+    @Mock
     private TableFieldConfigService tableFieldConfigService;
 
     @Mock
@@ -278,6 +280,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitResponseMapper.convert(ruDto)).thenReturn(ruResource);
         when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto)))
                 .thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(UserInfo.class), any())).thenReturn(true);
 
         RecordingUnitResource data = service.buildMobileDetail("1026", personDto, SCOPE, null, "fr");
 
@@ -573,7 +576,7 @@ class RecordingUnitOpenApiServiceTest {
 
     /**
      * Régression : les défauts de colonnes de la liste des projets doivent venir de la même source que
-     * la table JSF ({@code ActionUnitTableColumnDefaults}) — status/oaCode/mainLocation/openingRate/
+     * la table JSF ({@code ActionUnitTableColumnDefaults}) — recordingUnits/status/oaCode/mainLocation/openingRate/
      * periods/subjects/scientificManager visibles par défaut, le reste disponible mais masqué.
      */
     @Test
@@ -596,7 +599,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(ProjectTableColumnResource::visible)
                 .extracting(ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("status", "oaCode", "mainLocation", "openingRate",
+                .containsExactlyInAnyOrder("recordingUnits", "status", "oaCode", "mainLocation", "openingRate",
                         "periods", "subjects", "scientificManager");
         assertThat(tableColumns)
                 .extracting(ProjectTableColumnResource::columnId)
@@ -960,8 +963,8 @@ class RecordingUnitOpenApiServiceTest {
         su.setId(77L);
         when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
 
-        // Lenient: its metadata is read when the created UE's detail is rendered, which a rejected
-        // creation never reaches.
+        // Lenient: what happens once the UE is saved is not reached by a creation rejected before (a phase
+        // of another project…).
         CustomFieldInteger intField = mock(CustomFieldInteger.class, withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
         when(intField.getId()).thenReturn(8L);
         when(intField.getLabel()).thenReturn("n");
@@ -969,22 +972,22 @@ class RecordingUnitOpenApiServiceTest {
         when(intField.getValueBinding()).thenReturn(null);
         when(intField.getIsSystemField()).thenReturn(false);
         FormUiDto formUiDto = formUiDtoWithOneField(intField);
-        when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
+        lenient().when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(formUiDto);
 
         CustomFieldAnswerIntegerViewModel answerVm = new CustomFieldAnswerIntegerViewModel();
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         Map<CustomField, fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel> answers = new HashMap<>();
         answers.put(intField, answerVm);
         responseVm.setAnswers(answers);
-        when(formService.initOrReuseResponse(isNull(), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true)))
+        lenient().when(formService.initOrReuseResponse(isNull(), any(RecordingUnitDTO.class), any(FieldSource.class), eq(true)))
                 .thenReturn(responseVm);
 
         RecordingUnitDTO saved = new RecordingUnitDTO();
         saved.setId(3000L);
         saved.setActionUnit(new ActionUnitSummaryDTO(au));
-        when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(saved);
-        when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-3000");
-        when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(false);
+        lenient().when(recordingUnitService.save(any(RecordingUnitDTO.class))).thenReturn(saved);
+        lenient().when(recordingUnitService.generateFullIdentifier(any(ActionUnitSummaryDTO.class), any())).thenReturn("RU-3000");
+        lenient().when(recordingUnitService.fullIdentifierAlreadyExistInAction(saved)).thenReturn(false);
 
         ruDto.setCreatedByInstitution(inst);
         ruDto.setType(typeDto);
@@ -1037,6 +1040,82 @@ class RecordingUnitOpenApiServiceTest {
         service.createRecordingUnit(request, personDto, SCOPE, "fr");
 
         verify(recordingUnitService).addHierarchyChild(3000L, 13L);
+    }
+
+    private PhaseDTO phaseInProject(long phaseId, Long projectId) {
+        PhaseDTO phase = new PhaseDTO();
+        phase.setId(phaseId);
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(projectId);
+        phase.setActionUnit(project);
+        return phase;
+    }
+
+    @Test
+    void createRecordingUnit_withPhase_attachesItToTheUnitBeforeItIsSaved() {
+        stubSuccessfulCreation();
+        PhaseDTO phase = phaseInProject(21L, 5L);
+        when(phaseService.findById(21L)).thenReturn(phase);
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setPhaseId(21L);
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        ArgumentCaptor<RecordingUnitDTO> firstSave = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(firstSave.capture());
+        assertThat(firstSave.getAllValues().get(0).getPhases()).containsExactly(phase);
+    }
+
+    @Test
+    void createRecordingUnit_withoutPhase_leavesThePhasesAlone() {
+        stubSuccessfulCreation();
+
+        service.createRecordingUnit(creationRequest(), personDto, SCOPE, "fr");
+
+        ArgumentCaptor<RecordingUnitDTO> firstSave = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(firstSave.capture());
+        assertThat(firstSave.getAllValues().get(0).getPhases()).isNull();
+        verifyNoInteractions(phaseService);
+    }
+
+    @Test
+    void createRecordingUnit_unknownPhase_throws404_andNothingIsSaved() {
+        stubSuccessfulCreation();
+        when(phaseService.findById(21L)).thenReturn(null);
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setPhaseId(21L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(recordingUnitService, never()).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_phaseOfAnotherProject_throws400_andNothingIsSaved() {
+        stubSuccessfulCreation();
+        when(phaseService.findById(21L)).thenReturn(phaseInProject(21L, 6L));
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setPhaseId(21L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(recordingUnitService, never()).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_phaseWithoutProject_throws400() {
+        stubSuccessfulCreation();
+        PhaseDTO orphan = new PhaseDTO();
+        orphan.setId(21L);
+        when(phaseService.findById(21L)).thenReturn(orphan);
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setPhaseId(21L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
     @Test
@@ -2467,7 +2546,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::visible)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("isPartOf", "contains", "relationships", "specimen", "action", "type", "phases",
+                .containsExactlyInAnyOrder("isPartOf", "contains", "anterior", "posterior", "synchronous", "specimen", "action", "type", "phases",
                         "spatial", "author");
         assertThat(tableColumns)
                 .extracting(fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource::columnId)

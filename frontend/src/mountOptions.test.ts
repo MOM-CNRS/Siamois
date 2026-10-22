@@ -29,10 +29,19 @@ const dataset: MountDataset = {
   actionSetMain: "reactAction_setMain_7",
   overviewActionCloseOverview: "reactAction_overview_closeOverview_7",
   actionRefreshBookmarks: "reactAction_refreshBookmarks_7",
-  actionOpenProjectSettings: "reactAction_openProjectSettings_7",
 };
 
 const noActions = () => undefined;
+
+describe("parseMountOptions: the saved view of a list", () => {
+  it("reads the view a list page was loaded on (data-view-id)", () => {
+    expect(parseMountOptions({ ...dataset, panelKind: "list", entityId: "", viewId: "12" }, noActions).viewId).toBe(12);
+  });
+
+  it("has none when the attribute is empty, as Facelets renders a null", () => {
+    expect(parseMountOptions({ ...dataset, viewId: "" }, noActions).viewId).toBeUndefined();
+  });
+});
 
 describe("parseMountOptions", () => {
   it("reads the mount div's data-* attributes", () => {
@@ -65,7 +74,7 @@ describe("parseMountOptions", () => {
   it("turns the remoteCommands' named params into the bridge's positional arguments", () => {
     const called: Record<string, unknown> = {};
     const fns = Object.fromEntries(
-      ["setOverview", "setMain", "closeOverview", "refreshBookmarks", "openProjectSettings"].map((name) => [
+      ["setOverview", "setMain", "closeOverview", "refreshBookmarks", "refreshViews"].map((name) => [
         `reactAction_${name}`,
         vi.fn((params) => void (called[name] = params)),
       ]),
@@ -81,19 +90,19 @@ describe("parseMountOptions", () => {
         actionSetMain: "reactAction_setMain_7",
         overviewActionCloseOverview: "reactAction_closeOverview_7",
         actionRefreshBookmarks: "reactAction_refreshBookmarks_7",
-        actionOpenProjectSettings: "reactAction_openProjectSettings_7",
+        actionRefreshViews: "reactAction_refreshViews_7",
       },
       resolve,
     );
 
     bridge!.setOverview!("recordingUnit", 40);
     bridge!.setMain!("/action-unit/12");
-    bridge!.openProjectSettings!(12);
     bridge!.closeOverview!();
     expect(called.setOverview).toEqual({ entityType: "recordingUnit", id: 40 });
     expect(called.setMain).toEqual({ path: "/action-unit/12" });
-    expect(called.openProjectSettings).toEqual({ projectId: 12 });
     expect(fns.reactAction_closeOverview).toHaveBeenCalled();
+    bridge!.refreshViews!();
+    expect(fns.reactAction_refreshViews).toHaveBeenCalled();
   });
 
   it("leaves out the bridge calls the page didn't define", () => {
@@ -103,7 +112,7 @@ describe("parseMountOptions", () => {
       setMain: undefined,
       closeOverview: undefined,
       refreshBookmarks: undefined,
-      openProjectSettings: undefined,
+      refreshViews: undefined,
     });
   });
 

@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Backs the "motherlode" Snake easter egg dialog (see {@code SearchBean#completeText}, which opens
+ * Backs the "motherlode" Snake easter egg dialog (see the React header search bar, which opens
  * it) — persists each run's score for the current user and active institution via {@link GameScoreRepository}.
  */
 @Slf4j

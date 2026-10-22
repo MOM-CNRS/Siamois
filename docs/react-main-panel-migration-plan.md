@@ -134,7 +134,7 @@ Two scope decisions made with the user before finalizing:
 - **Becomes React** (Project only, this phase): the **entire panel body** rendered by `panelContent.xhtml` — both panes, in a resizable two-pane splitter (§3) — for three panel kinds: Home, List, Detail, gated on the main panel's entity type (§7, incl. the overview-pane fallback rule). Every other entity type keeps its JSF rendering unchanged.
 - **Explicitly excluded**: Documents tab, Stratigraphy tab, Project map, the Settings-level form *configuration UI* (only the read API is in scope), per-project custom field configuration.
 - **Included Project functionality**: list (search/sort/pagination/filter, columns, row actions, create — **flat table only**), detail (**fiche tab only** — identifier inline-edit, validate toggle, revision history, prev/next), Home (**recent/my projects + the Project card only**) minus the map, plus the panel toolbar actions (bookmark/duplicate/refresh/create/settings/close-overview/fullscreen) — bookmark via REST rather than the JSF bridge (§7.3).
-- **Deferred to a second pass**: the list's **tree/hierarchical view** (`ActionUnitTableViewModel.isTreeViewSupported() = true`, PrimeFaces `LazyTreeTable`). Phase 1 ships the flat table only; `EntityListPanel` has no tree mode. Needed later: a `rootOnly` param on `GET /api/v1/projects` (mirroring `BaseLazyDataModel.rootOnly`, same search/sort/paginate pipeline) and `GET /api/v1/projects/{id}/children` (URL already stubbed in `ProjectResourceLinks.children`, no controller behind it).
+- **Deferred to a second pass** (**done 2026-10-21, see `vue-arbre-listes.md`**): the list's **tree/hierarchical view** (`ActionUnitTableViewModel.isTreeViewSupported() = true`, PrimeFaces `LazyTreeTable`). Phase 1 ships the flat table only; `EntityListPanel` has no tree mode. Needed later: a `rootOnly` param on `GET /api/v1/projects` (mirroring `BaseLazyDataModel.rootOnly`, same search/sort/paginate pipeline) and `GET /api/v1/projects/{id}/children` (URL already stubbed in `ProjectResourceLinks.children`, no controller behind it).
 
 ---
 
@@ -322,7 +322,7 @@ today is a thin lazy `DataTable`: 7 hardcoded columns, free-text search, single-
 toggler, checkbox selection with a count chip, click-to-edit cells, and a row click that opens the project in
 the **right-hand overview pane** while the list stays put.
 
-This plan closes that gap. The treetable view is explicitly out of scope; saved views (`UiViewService`) are
+This plan closes that gap. The treetable view is explicitly out of scope (since delivered, see `vue-arbre-listes.md`); saved views (`UiViewService`) are
 deferred but the table state is designed so they bolt on later.
 
 Three exploration findings shape the plan:
@@ -700,7 +700,7 @@ Because the bean stays in sync, the three bean-bound overview actions keep worki
 | 4b | `CellEditOverlay`, `ProjectPatchRequest.answers`, `canEditIdentifier` | 4a | 2 d |
 | 5 | `setOverview` bridge, App overview state, chrome derivation, row classes | 2 | 2 d |
 
-Out of scope, tracked for later: treetable (`rootOnly` + the dangling `/projects/{id}/children` controller),
+Out of scope, tracked for later: ~~treetable (`rootOnly` + the dangling `/projects/{id}/children` controller)~~ (done 2026-10-21, `vue-arbre-listes.md`),
 saved views (`UiViewService` over REST), multi-sort, bulk actions on the selection, `row-newly-duplicated`.
 Export (CSV/XLS/PDF) does **not** exist in JSF — not a port target.
 

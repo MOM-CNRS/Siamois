@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.relation;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -10,7 +11,7 @@ import java.util.Optional;
 
 /**
  * The relation fields whose values are never loaded whole: a recording unit's parents, children,
- * finds and stratigraphic relationships, a phase's recording units, a container's finds. Each can
+ * finds and stratigraphic relationships (one field per side), a phase's recording units, a container's finds. Each can
  * run to hundreds of values, so a list only ever reads a preview of them and a count
  * ({@link RelationFieldRepository#previews}), and their full list is paged
  * ({@link RelationFieldRepository#page}).
@@ -37,16 +38,35 @@ public enum RelationField {
                     + " FROM specimen s",
             Target.FIND, true),
 
-    // Each stored relationship is seen from both of its units: once as unit1 (the owner is the
-    // relation's first unit), once as unit2.
-    RECORDING_UNIT_STRATIGRAPHY(RecordingUnit.class, "stratigraphicRelationships",
+    // A stored relationship is seen from both of its units, and from each it is one of three things
+    // by where the other unit stands: posterior (the owner is the first, older, unit of an
+    // asynchronous relationship), anterior (the owner is its second unit), or synchronous (either).
+    // An unknown order (null asynchronous) counts as asynchronous, as RelationFieldService does.
+    RECORDING_UNIT_POSTERIOR(RecordingUnit.class, "posteriorRelationships",
             "SELECT r.fk_recording_unit_1_id AS owner_id, r.fk_recording_unit_2_id AS target_id, "
-                    + "'unit1' AS role, r.fk_relationship_concept_id AS concept_id, r.asynchronous, "
-                    + "r.concept_direction, r.uncertain FROM stratigraphic_relationship r "
+                    + StratigraphyColumns.SELECT_UNIT1
+                    + " FROM stratigraphic_relationship r WHERE " + StratigraphyColumns.ASYNCHRONOUS,
+            Target.RECORDING_UNIT, true),
+
+    RECORDING_UNIT_ANTERIOR(RecordingUnit.class, "anteriorRelationships",
+            "SELECT r.fk_recording_unit_2_id AS owner_id, r.fk_recording_unit_1_id AS target_id, "
+                    + StratigraphyColumns.SELECT_UNIT2
+                    + " FROM stratigraphic_relationship r WHERE " + StratigraphyColumns.ASYNCHRONOUS,
+            Target.RECORDING_UNIT, true),
+
+    RECORDING_UNIT_SYNCHRONOUS(RecordingUnit.class, "synchronousRelationships",
+            "SELECT r.fk_recording_unit_1_id AS owner_id, r.fk_recording_unit_2_id AS target_id, "
+                    + StratigraphyColumns.SELECT_UNIT1
+                    + " FROM stratigraphic_relationship r WHERE NOT (" + StratigraphyColumns.ASYNCHRONOUS + ") "
                     + "UNION ALL "
-                    + "SELECT r.fk_recording_unit_2_id, r.fk_recording_unit_1_id, 'unit2', "
-                    + "r.fk_relationship_concept_id, r.asynchronous, r.concept_direction, r.uncertain "
-                    + "FROM stratigraphic_relationship r",
+                    + "SELECT r.fk_recording_unit_2_id, r.fk_recording_unit_1_id, "
+                    + StratigraphyColumns.SELECT_UNIT2
+                    + " FROM stratigraphic_relationship r WHERE NOT (" + StratigraphyColumns.ASYNCHRONOUS + ")",
+            Target.RECORDING_UNIT, true),
+
+    ACTION_UNIT_RECORDING_UNITS(ActionUnit.class, "recordingUnitList",
+            "SELECT ru.fk_action_unit_id AS owner_id, ru.recording_unit_id AS target_id, " + NoQualifier.COLUMNS
+                    + " FROM recording_unit ru WHERE ru.fk_action_unit_id IS NOT NULL",
             Target.RECORDING_UNIT, true),
 
     PHASE_RECORDING_UNITS(Phase.class, "recordingUnits",
@@ -107,8 +127,33 @@ public enum RelationField {
         return readOnly;
     }
 
+    /** Whether its references carry their relation's own columns (type, uncertainty): the stratigraphic ones. */
     public boolean qualified() {
-        return this == RECORDING_UNIT_STRATIGRAPHY;
+        return isStratigraphic();
+    }
+
+    /** One of the three sides of a recording unit's stratigraphic relationships. */
+    public boolean isStratigraphic() {
+        return stratigraphicPosition() != null;
+    }
+
+    /**
+     * Where the units of this field stand relative to the owner — {@code anterior}, {@code posterior}
+     * or {@code synchronous} — or null for a field that isn't stratigraphic.
+     */
+    @Nullable
+    public String stratigraphicPosition() {
+        return switch (this) {
+            case RECORDING_UNIT_ANTERIOR -> "anterior";
+            case RECORDING_UNIT_POSTERIOR -> "posterior";
+            case RECORDING_UNIT_SYNCHRONOUS -> "synchronous";
+            default -> null;
+        };
+    }
+
+    /** The stratigraphic field whose units stand at {@code position} relative to the owner, if there is one. */
+    public static Optional<RelationField> stratigraphic(@Nullable String position) {
+        return Arrays.stream(values()).filter(r -> r.stratigraphicPosition() != null && r.stratigraphicPosition().equals(position)).findFirst();
     }
 
     String pairsSql() {
@@ -142,6 +187,15 @@ public enum RelationField {
             this.label = label;
             this.resourceType = resourceType;
         }
+    }
+
+    /** The columns a stratigraphic relationship selects, and the test of its being asynchronous. */
+    private static final class StratigraphyColumns {
+        static final String SELECT_UNIT1 = "'unit1' AS role, r.fk_relationship_concept_id AS concept_id, r.asynchronous, "
+                + "r.concept_direction, r.uncertain";
+        static final String SELECT_UNIT2 = "'unit2' AS role, r.fk_relationship_concept_id AS concept_id, r.asynchronous, "
+                + "r.concept_direction, r.uncertain";
+        static final String ASYNCHRONOUS = "(r.asynchronous IS NULL OR r.asynchronous = TRUE)";
     }
 
     /** The relation columns a plain (unqualified) relation selects as nulls. */

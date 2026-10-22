@@ -38,12 +38,12 @@ body .settings-tabs.ui-tabs .ui-tabs-panels .ui-tabs-panel {
 
 .settings-tabs .dt-title {
     background: transparent;
-    font-size: 22px;
+    font-size: 1.375rem;
 }
 
 .settings-tabs .dt-desc {
     background: transparent;
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 
 /* page-level title ("Membres & profils") — give it room from the page edge */
@@ -389,7 +389,7 @@ main form.sia-profile-form .field-value-group {
     background-color: var(--siamois-green-light-50);
     border-color: var(--siamois-green-light-350);
     padding: 20px;
-    font-size: 20px;
+    font-size: 1.25rem;
     border-radius: 10px;
     border-width: 1px;
     border-style: solid;
@@ -477,12 +477,12 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
 }
 
 .chip {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     border-radius: 20px;
     padding: 2px 10px;
@@ -602,7 +602,7 @@ a:hover {
     gap: 6px;
     margin-top: 8px;
     color: var(--siamois-green-active);
-    font-size: 13.5px;
+    font-size: 0.8438rem;
     font-weight: 600;
     cursor: pointer;
 }
@@ -637,12 +637,12 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--siamois-green-active);
 }
 
 .csv-import-hint {
-    font-size: 13.5px;
+    font-size: 0.8438rem;
     color: #6b6b6b;
     margin: 0 0 10px;
 }
@@ -675,7 +675,7 @@ a:hover {
     border-radius: 8px;
     background-color: #fdecea;
     color: #b3261e;
-    font-size: 13.5px;
+    font-size: 0.8438rem;
 }
 
 .dialog-new-organization-member .dialog-buttons {
@@ -712,11 +712,11 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 
 .profile-card-name {
     font-weight: 600;
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 
 .profile-card-badge {
-    font-size: 10.5px;
+    font-size: 0.6562rem;
     color: #6a6a66;
     border: 1px solid #d8d8d2;
     border-radius: 5px;
@@ -725,7 +725,7 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 .profile-card-permcount {
-    font-size: 12.5px;
+    font-size: 0.7812rem;
     color: #999;
     white-space: nowrap;
 }
@@ -757,12 +757,12 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 .profile-drawer-title {
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: 600;
 }
 
 .profile-drawer-system-note {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #8a7d4a;
     margin-top: 2px;
 }
@@ -777,7 +777,7 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 .profile-readonly-value {
-    font-size: 15px;
+    font-size: 0.9375rem;
     border: 1px solid #d8d8d2;
     border-radius: 8px;
     padding: 9px 11px;
@@ -792,7 +792,7 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 .profile-permission-theme-title {
-    font-size: 12px;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: .04em;
     color: #a3a3a0;
@@ -806,7 +806,7 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
 }
 
 .profile-permission-row-label {
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #2b2b2b;
 }
 
@@ -832,7 +832,7 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #3a5a3c;
     background: var(--siamois-green-light-100);
     border: 1px solid var(--siamois-green-light-350);
@@ -1211,7 +1211,7 @@ main.ptc-fixed .settings-header {
     width: 24px;
     height: 24px;
     border-radius: 7px;
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 .member-email {
@@ -1295,7 +1295,7 @@ main.ptc-fixed .settings-header {
 }
 
 .profile-card-name {
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .dt-content .ui-datatable-data > tr.ui-state-highlight {

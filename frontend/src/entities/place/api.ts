@@ -1,7 +1,7 @@
 import { apiFetch } from "../../api/client";
-import { fetchList } from "../listApi";
+import { fetchList } from "../shared/listApi";
 import type { AnswerInputBody } from "../../fields/types";
-import type { ListParams, PagedResult } from "../types";
+import type { ListParams, PagedResult } from "../shared/types";
 import type { PlaceDetail, PlaceSummary } from "./types";
 
 interface PlaceResponseBody {

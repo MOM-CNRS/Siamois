@@ -1,4 +1,4 @@
-import { createEntityApi } from "../createEntityApi";
+import { createEntityApi } from "../shared/createEntityApi";
 import type { DocumentDetail, DocumentSummary } from "./types";
 import { apiBlob, apiFetch } from "../../api/client";
 
@@ -35,6 +35,11 @@ export function removeDocumentFile(id: string | number): Promise<unknown> {
 
 export function fetchDocumentFile(id: string | number, download = false): Promise<Blob> {
   return apiBlob(`/api/v1/documents/${id}/file${download ? "?download=true" : ""}`);
+}
+
+// A reduced copy of an image document, for a card: the server resizes to `width` pixels wide.
+export function fetchDocumentThumbnail(id: string | number, width: number): Promise<Blob> {
+  return apiBlob(`/api/v1/documents/${id}/file?w=${width}`);
 }
 
 // A document's link to an entity — a recording unit, a find, a place, a phase or a container —

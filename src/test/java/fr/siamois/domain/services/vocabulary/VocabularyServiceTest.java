@@ -220,4 +220,21 @@ class VocabularyServiceTest {
         assertEquals(1, result.size());
         assertEquals(vocabulary, result.get(0));
     }
+
+    @Test
+    void findAllThesaurusOf_shouldKeepEveryTypeOfThesaurus_whereThePublicListKeepsSiamoisOnes() throws InvalidEndpointException {
+        String server = "http://example.com";
+        ThesaurusDTO siamois = new ThesaurusDTO("1", List.of(new LabelDTO("fr", "Siamois")), "Siamois");
+        ThesaurusDTO other = new ThesaurusDTO("2", List.of(new LabelDTO("fr", "Autre")), "Autre");
+        ThesaurusDTO unlabelled = new ThesaurusDTO("3", List.of(), null);
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(siamois, other, unlabelled));
+
+        List<ThesaurusInfo> everything = vocabularyService.findAllThesaurusOf(server, "fr");
+        List<ThesaurusInfo> siamoisOnly = vocabularyService.findAllPublicThesaurusOf(server, "fr");
+
+        assertEquals(List.of("1", "2", "3"), everything.stream().map(ThesaurusInfo::idTheso).toList());
+        assertEquals("NULL", everything.get(2).label());
+        assertEquals("fr", everything.get(2).langLabel());
+        assertEquals(List.of("1"), siamoisOnly.stream().map(ThesaurusInfo::idTheso).toList());
+    }
 }

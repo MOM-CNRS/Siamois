@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -165,7 +166,7 @@ class ProjectControllerApiTest {
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
                 recordingUnitResourceMapper,
-                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                new RecordingUnitListProjectionService(new RecordingUnitAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers(), ListQueryStubs.noAdditionalAnswers()), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
 
         ProjectDocumentsControllerApi documentsController = new ProjectDocumentsControllerApi(
                 projectApiService,
@@ -288,6 +289,58 @@ class ProjectControllerApiTest {
                 any(Pageable.class),
                 isNull(),
                 any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
+    }
+
+    @Test
+    void getAllProjects_withTree_returnsTheFlagsAndTheMatchCount() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(1L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
+        // The page of roots: project 1 has sub-projects and is only context (the search matched below it); 37 match.
+        when(actionUnitService.findAccessibleProjectsTree(
+                org.mockito.ArgumentMatchers.argThat(q -> "fouille".equals(q.selection().search())
+                        && q.parentId() == null && q.spatialContextId() == null
+                        && Set.of(100L).equals(q.accessibleInstitutionIds()))))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(row), PageRequest.of(0, 20), 1, 37, Set.of(1L), Set.of(99L)));
+        ProjectResource resource = new ProjectResource();
+        resource.setResourceType("projects");
+        resource.setId("1");
+        when(projectResponseMapper.toResource(eq(row), anyString(), any(), anyBoolean(), any(), any())).thenReturn(resource);
+
+        mockMvc.perform(get("/api/v1/projects").param("tree", "true").param("search", "fouille"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].hasChildren").value(true))
+                .andExpect(jsonPath("$.data[0].match").value(false))
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.meta.matchCount").value(37));
+    }
+
+    @Test
+    void getAllProjects_withTreeAndParent_asksForThatProjectsChildren() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(actionUnitService.findAccessibleProjectsTree(
+                org.mockito.ArgumentMatchers.argThat(q -> Long.valueOf(5L).equals(q.parentId()))))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(), PageRequest.of(0, 20), 0, 0));
+
+        mockMvc.perform(get("/api/v1/projects").param("tree", "true").param("parent", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
+    void getAllProjects_parentWithoutTree_isABadRequest() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects").param("parent", "5"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -1043,7 +1096,7 @@ class ProjectControllerApiTest {
         saved.setName("Nouveau");
         saved.setIdentifier("NOU");
         saved.setCreatedByInstitution(institutionDto);
-        when(actionUnitService.save(any(), any(), any())).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), any(), any())).thenReturn(saved);
         when(actionUnitService.findAccessibleProjectByKey("77", Set.of(100L)))
                 .thenReturn(new AccessibleProjectForApi(saved, 0L, 0L));
 
@@ -1060,7 +1113,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Nouveau"));
 
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
-                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto));
+                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto), any());
         verify(recordingUnitOpenApiService).applySystemProjectFormFieldAnswers(any(), any(), same(personDto), anyString());
     }
 
@@ -1142,25 +1195,6 @@ class ProjectControllerApiTest {
     }
 
     @Test
-    void deleteProject_whenProjectHasRecordingUnits_returns409() throws Exception {
-        login();
-        when(personMapper.convert(person)).thenReturn(personDto);
-        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(3L);
-        au.setCreatedByInstitution(institutionDto);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("3", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-
-        mockMvc.perform(delete("/api/v1/projects/3"))
-                .andExpect(status().isConflict());
-
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
-    }
-
-    @Test
     void deleteProject_whenProjectHasChildProjects_returns409() throws Exception {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
@@ -1171,12 +1205,12 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 1L);
         when(actionUnitService.findAccessibleProjectByKey("4", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/4"))
                 .andExpect(status().isConflict());
 
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
     }
 
     @Test
@@ -1190,11 +1224,11 @@ class ProjectControllerApiTest {
         au.setCreatedByInstitution(institutionDto);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("9", Set.of(100L))).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         mockMvc.perform(delete("/api/v1/projects/9"))
                 .andExpect(status().isNoContent());
 
-        verify(actionUnitService).deleteProjectWhenEmpty(9L);
+        verify(actionUnitService).deleteProjectWithContent(9L);
     }
 }

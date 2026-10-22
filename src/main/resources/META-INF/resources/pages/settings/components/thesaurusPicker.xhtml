@@ -1,0 +1,76 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:h="http://xmlns.jcp.org/jsf/html"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+
+    <!-- Hint + main-thesaurus selector. Goes inside the settings form; "bean" is a thesaurus settings bean. -->
+    <cc:interface>
+        <cc:attribute name="bean" required="true"/>
+        <cc:attribute name="projectScope" type="boolean" default="false"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <style>
+            .thesaurus-hint { background: var(--surface-ground, #f3f7f4); border-left: 4px solid var(--primary-color, #5d9c6e);
+                              border-radius: 6px; padding: .75rem 1rem; margin-bottom: 1.5rem; font-size: .95rem; line-height: 1.5; }
+            .thesaurus-hint p { margin: 0; }
+            .thesaurus-hint p + p, .thesaurus-hint .ui-outputpanel p { margin-top: .5rem; }
+            .thesaurus-inactive-link { text-decoration: underline; opacity: .55; cursor: not-allowed; }
+            .thesaurus-picker-label { display: block; font-weight: 600; margin-bottom: .4rem; }
+            .thesaurus-picker-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+            .thesaurus-picker-row .thesaurus-select { flex: 1 1 280px; min-width: 0; width: auto !important; }
+            .thesaurus-picker-row .thesaurus-reload { flex: 0 0 auto; width: 2.5rem; min-width: 2.5rem; height: 2.5rem; padding: 0;
+                                                      display: inline-flex; align-items: center; justify-content: center; }
+            .thesaurus-picker-row .thesaurus-reload .ui-icon, .thesaurus-picker-row .thesaurus-reload .ui-button-icon-left { position: static; margin: 0; }
+            .thesaurus-picker-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; margin-top: .6rem; font-size: .95rem; }
+            .thesaurus-picker-actions a { text-decoration: none; }
+            .thesaurus-picker-actions a:hover { text-decoration: underline; }
+        </style>
+
+        <div class="thesaurus-hint">
+            <p>
+                #{langBean.msg('thesaurusMain.hint.siamois')}
+                <a class="thesaurus-inactive-link" aria-disabled="true">#{langBean.msg('thesaurusMain.hint.docLink')}</a>).
+                #{langBean.msg('thesaurusMain.hint.role')}
+            </p>
+            <p:outputPanel rendered="#{cc.attrs.projectScope}" layout="block">
+                <p>
+                    #{langBean.msg('thesaurusMain.hint.others')}
+                    <p:commandLink value="#{langBean.msg('thesaurusMain.hint.fieldsLink')}" immediate="true" ajax="false"
+                                   action="#{cc.attrs.bean.goToFieldsConfig()}"/>).
+                </p>
+            </p:outputPanel>
+        </div>
+
+        <div class="thesaurus-picker">
+            <p:outputLabel for="thesaurusSelect" styleClass="thesaurus-picker-label" value="#{langBean.msg('myThesaurus.url')}"/>
+            <div class="thesaurus-picker-row">
+                <p:selectOneMenu id="thesaurusSelect" styleClass="thesaurus-select" value="#{cc.attrs.bean.thesaurusUrl}"
+                                 filter="true" filterMatchMode="contains">
+                    <p:ajax event="change" update="@(.thesaurus-open-link)"/>
+                    <f:selectItem itemLabel="#{langBean.msg('thesaurusSelect.placeholder')}" itemValue="#{null}" noSelectionOption="true"/>
+                    <f:selectItems value="#{cc.attrs.bean.thesaurusOptions}" var="opt" itemValue="#{opt.url}"
+                                   itemLabel="#{opt.label} - #{opt.url}"/>
+                </p:selectOneMenu>
+                <p:commandButton icon="pi pi-refresh" type="submit" styleClass="thesaurus-reload"
+                                 title="#{langBean.msg('thesaurusReload.title')}"
+                                 action="#{cc.attrs.bean.saveConfig()}"
+                                 update="@(.thesaurus-progress-bar) @(.thesaurus-usages)"
+                                 onstart="startProgressBar()" oncomplete="endProgressBar()"/>
+            </div>
+            <div class="thesaurus-picker-actions">
+                <p:outputPanel layout="inline" styleClass="thesaurus-open-link">
+                    <h:outputLink value="#{cc.attrs.bean.thesaurusUrl}" target="_blank" rel="noopener noreferrer"
+                                  rendered="#{not empty cc.attrs.bean.thesaurusUrl}">
+                        <i class="pi pi-external-link"/> #{langBean.msg('thesaurusOpen.link')}
+                    </h:outputLink>
+                </p:outputPanel>
+                <a href="#" onclick="PF('addThesaurusDialog').show(); return false;">
+                    <i class="pi pi-plus"/> #{langBean.msg('thesaurusAdd.link')}
+                </a>
+            </div>
+        </div>
+    </cc:implementation>
+</ui:composition>

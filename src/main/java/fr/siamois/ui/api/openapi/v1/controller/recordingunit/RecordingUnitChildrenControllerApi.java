@@ -25,6 +25,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 
 @RestController
@@ -68,14 +70,19 @@ public class RecordingUnitChildrenControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "creationTime:desc") String sort,
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre : avec une recherche ou un filtre, seules les UE menant à une correspondance ; chaque UE porte hasChildren et match.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : meta.matchCount compte les UE sous celle-ci (à tout niveau) qui correspondent à la recherche ou aux filtres, toutes sans eux.")
+            @RequestParam(defaultValue = "false") boolean matchCount,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.ScopedRecordingUnitPage scoped = projectApiService.pageRecordingUnitChildren(
-                caller, id, offset, limit, sort, search, RecordingUnitListFilter.parse(queryParams),
-                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage));
+                caller, id, new ListWindow(offset, limit, sort, search), RecordingUnitListFilter.parse(queryParams),
+                fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage),
+                TreeRequest.of(tree, null).withMatchCount(matchCount));
         RecordingUnitListResponse body = recordingUnitListAssembler.assemble(
                 caller, scoped.page(), scoped.projectId(), fields, lang, limit, offset);
         return ResponseEntity.ok()

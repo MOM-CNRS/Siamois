@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
@@ -220,6 +221,18 @@ public class ProfilePermissionService {
                 PermissionConstants.PROJECT_MANAGE_SETTINGS);
     }
 
+    /**
+     * Same right, for a project given as a whole: the organisation-wide counterpart is checked against the
+     * institution that owns the project — never against whichever institution the caller has selected, which
+     * would let a manager of one organisation reach the settings of another's project by its id.
+     */
+    public boolean hasProjectSettingsPermission(PersonDTO person, ActionUnitDTO project) {
+        if (person == null || project == null || project.getId() == null || project.getCreatedByInstitution() == null) {
+            return false;
+        }
+        return hasProjectSettingsPermission(new UserInfo(project.getCreatedByInstitution(), person, null), project.getId());
+    }
+
     /** Bulk version of {@link #hasProjectSettingsPermission}: which of the given action units the user may manage. */
     public Set<Long> actionUnitIdsWithProjectSettingsPermission(UserInfo user, Collection<Long> actionUnitIds) {
         if (user == null) {
@@ -241,6 +254,75 @@ public class ProfilePermissionService {
                 PermissionConstants.INSTANCE_VALIDATE,
                 PermissionConstants.ORGANIZATION_VALIDATE,
                 PermissionConstants.PROJECT_VALIDATE);
+    }
+
+    /**
+     * The right to delete the records of a project (recording units, finds, phases, containers,
+     * documents, studies): {@code PROJECT_DELETE_ENTITIES} or its organisation/instance-wide counterparts.
+     * Separate from the edit rights, which never allow a deletion.
+     */
+    public boolean hasDeleteEntitiesPermission(UserInfo user, Long actionUnitId) {
+        if (user == null) {
+            return false;
+        }
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_DELETE_ENTITIES,
+                PermissionConstants.ORGANIZATION_DELETE_ENTITIES,
+                PermissionConstants.PROJECT_DELETE_ENTITIES);
+    }
+
+    /**
+     * The right to delete a whole project: {@code PROJECT_DELETE_PROJECT} or its organisation/instance-wide
+     * counterparts.
+     */
+    public boolean hasDeleteProjectPermission(UserInfo user, Long actionUnitId) {
+        if (user == null) {
+            return false;
+        }
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_DELETE_PROJECT,
+                PermissionConstants.ORGANIZATION_DELETE_PROJECT,
+                PermissionConstants.PROJECT_DELETE_PROJECT);
+    }
+
+    /** Same as {@link #hasDeleteProjectPermission(UserInfo, Long)}, for a project of any institution. */
+    public boolean hasDeleteProjectPermission(PersonDTO person, InstitutionDTO institution, Long actionUnitId) {
+        if (person == null || person.getId() == null) {
+            return false;
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_DELETE_PROJECT)
+                || hasOrganizationPermission(person, institution, PermissionConstants.ORGANIZATION_DELETE_PROJECT)) {
+            return true;
+        }
+        return actionUnitId != null
+                && assignmentRepository.personHasPermissionInActionUnit(person.getId(), actionUnitId, PermissionConstants.PROJECT_DELETE_PROJECT);
+    }
+
+    /** Bulk version of {@link #hasDeleteProjectPermission(PersonDTO, InstitutionDTO, Long)} for a list page. */
+    public Set<Long> actionUnitIdsWithDeleteProjectPermission(PersonDTO person, Map<Long, InstitutionDTO> institutionByActionUnitId) {
+        if (person == null || person.getId() == null || institutionByActionUnitId == null || institutionByActionUnitId.isEmpty()) {
+            return Set.of();
+        }
+        if (hasInstancePermission(person, PermissionConstants.INSTANCE_DELETE_PROJECT)) {
+            return new HashSet<>(institutionByActionUnitId.keySet());
+        }
+        Set<Long> orgGrantedInstitutionIds = institutionIdsWithOrganizationPermission(
+                person, institutionByActionUnitId.values(), PermissionConstants.ORGANIZATION_DELETE_PROJECT);
+        Set<Long> result = new HashSet<>();
+        Set<Long> remaining = new HashSet<>();
+        for (Map.Entry<Long, InstitutionDTO> entry : institutionByActionUnitId.entrySet()) {
+            InstitutionDTO institution = entry.getValue();
+            if (institution != null && institution.getId() != null && orgGrantedInstitutionIds.contains(institution.getId())) {
+                result.add(entry.getKey());
+            } else {
+                remaining.add(entry.getKey());
+            }
+        }
+        if (!remaining.isEmpty()) {
+            result.addAll(assignmentRepository.findActionUnitIdsWithPermission(
+                    person.getId(), remaining, PermissionConstants.PROJECT_DELETE_PROJECT));
+        }
+        return result;
     }
 
     /** The "validateur" right on a place, which belongs to its organisation rather than a project. */
@@ -369,6 +451,27 @@ public class ProfilePermissionService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
+    }
+
+    /**
+     * Checks if the user can edit the default list views, i.e. holds
+     * {@link PermissionConstants#PROJECT_EDIT_DEFAULT_VIEWS} on the project, or the organisation /
+     * instance counterpart. Without a project (e.g. the project list itself) only the organisation
+     * and instance codes are considered.
+     *
+     * @param user         the user information
+     * @param actionUnitId the project (action unit) id, or null for an organisation-level view
+     * @return true if the user can edit the default views
+     */
+    public boolean hasDefaultViewEditPermission(UserInfo user, Long actionUnitId) {
+        if (actionUnitId == null) {
+            return hasInstancePermission(user.getUser(), PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS)
+                    || hasOrganizationPermission(user, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS);
+        }
+        return hasProjectPermission(user, actionUnitId,
+                PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS,
+                PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS,
+                PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS);
     }
 
     /**

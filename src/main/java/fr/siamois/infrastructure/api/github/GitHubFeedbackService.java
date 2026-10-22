@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class GitHubFeedbackService {
 
+    private static final String REPOS = "/repos/";
     private static final String API_ROOT = "https://api.github.com";
 
     private final RestTemplate restTemplate;
@@ -88,7 +89,7 @@ public class GitHubFeedbackService {
     public void patchIssueBody(long issueNumber, String body) {
         try {
             restTemplate.exchange(
-                    API_ROOT + "/repos/" + repository + "/issues/" + issueNumber,
+                    API_ROOT + REPOS + repository + "/issues/" + issueNumber,
                     HttpMethod.PATCH,
                     new HttpEntity<>(Map.of("body", body), jsonHeaders()),
                     Map.class);
@@ -105,7 +106,7 @@ public class GitHubFeedbackService {
 
         try {
             Map<?, ?> response = restTemplate.postForObject(
-                    API_ROOT + "/repos/" + repository + "/issues",
+                    API_ROOT + REPOS + repository + "/issues",
                     new HttpEntity<>(payload, jsonHeaders()),
                     Map.class);
             Object htmlUrl = response == null ? null : response.get("html_url");
@@ -133,7 +134,7 @@ public class GitHubFeedbackService {
             payload.put("branch", screenshotBranch);
 
             restTemplate.exchange(
-                    API_ROOT + "/repos/" + repository + "/contents/" + path,
+                    API_ROOT + REPOS + repository + "/contents/" + path,
                     HttpMethod.PUT,
                     new HttpEntity<>(payload, jsonHeaders()),
                     Map.class);
@@ -151,7 +152,7 @@ public class GitHubFeedbackService {
 
         try {
             restTemplate.exchange(
-                    API_ROOT + "/repos/" + repository + "/branches/" + screenshotBranch,
+                    API_ROOT + REPOS + repository + "/branches/" + screenshotBranch,
                     HttpMethod.GET,
                     new HttpEntity<>(jsonHeaders()),
                     Map.class);
@@ -162,14 +163,14 @@ public class GitHubFeedbackService {
         }
 
         Map<?, ?> repoInfo = restTemplate.exchange(
-                API_ROOT + "/repos/" + repository,
+                API_ROOT + REPOS + repository,
                 HttpMethod.GET,
                 new HttpEntity<>(jsonHeaders()),
                 Map.class).getBody();
         String defaultBranch = repoInfo == null ? "main" : String.valueOf(repoInfo.get("default_branch"));
 
         Map<?, ?> refInfo = restTemplate.exchange(
-                API_ROOT + "/repos/" + repository + "/git/ref/heads/" + defaultBranch,
+                API_ROOT + REPOS + repository + "/git/ref/heads/" + defaultBranch,
                 HttpMethod.GET,
                 new HttpEntity<>(jsonHeaders()),
                 Map.class).getBody();
@@ -181,7 +182,7 @@ public class GitHubFeedbackService {
         newRefPayload.put("sha", sha);
 
         restTemplate.postForObject(
-                API_ROOT + "/repos/" + repository + "/git/refs",
+                API_ROOT + REPOS + repository + "/git/refs",
                 new HttpEntity<>(newRefPayload, jsonHeaders()),
                 Map.class);
 

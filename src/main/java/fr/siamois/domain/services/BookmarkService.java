@@ -10,12 +10,16 @@ import fr.siamois.mapper.BookmarkMapper;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +35,7 @@ public class BookmarkService {
     private final PersonMapper personMapper;
     private final InstitutionMapper institutionMapper;
     private final BookmarkMapper bookmarkMapper;
+    private final LangService langService;
 
 
     /**
@@ -42,6 +47,10 @@ public class BookmarkService {
      */
     @Transactional(readOnly = true)
     public Page<BookmarkDTO> findAll(UserInfo userInfo, Pageable pageable) {
+        return pageOf(userInfo, pageable);
+    }
+
+    private Page<BookmarkDTO> pageOf(UserInfo userInfo, Pageable pageable) {
         Person person = personMapper.invertConvert(userInfo.getUser());
         Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
 
@@ -52,6 +61,15 @@ public class BookmarkService {
         return entitiesPage.map(bookmarkMapper::toDto);
     }
 
+
+    /** The user's latest bookmarks in the organisation (most recent first), their names as text in the user's language. */
+    @Transactional(readOnly = true)
+    public List<BookmarkDTO> latest(UserInfo userInfo, int limit) {
+        Page<BookmarkDTO> page = pageOf(userInfo,
+                PageRequest.of(0, Math.max(1, Math.min(limit, 50)), Sort.by(Sort.Direction.DESC, "createdAt")));
+        page.forEach(bookmark -> bookmark.setTitle(resolveTitle(bookmark.getTitle(), userInfo.getLang())));
+        return page.getContent();
+    }
 
     @Transactional
     public BookmarkDTO update(BookmarkDTO bookmarkDTO) {
@@ -82,7 +100,9 @@ public class BookmarkService {
      *
      * @param userInfo         the user information containing the user and institution
      * @param ressourceUri     the URI of the resource to bookmark
-     * @param titleCodeOrTitle The title code if the panel has a generic name, or the title of the resource
+     * @param titleCodeOrTitle The title code if the panel has a generic name, or the title of the resource;
+     *                         a code is stored as its text in the user's language: the bookmark's name is its own
+     *                         from then on (the user renames it, the language of a later session does not change it)
      * @return the saved bookmark
      */
     @Transactional
@@ -94,7 +114,7 @@ public class BookmarkService {
         bookmark.setPerson(person);
         bookmark.setInstitution(institution);
         bookmark.setResourceUri(ressourceUri);
-        bookmark.setTitleCode(titleCodeOrTitle);
+        bookmark.setTitleCode(resolveTitle(titleCodeOrTitle, userInfo.getLang()));
         return bookmarkRepository.save(bookmark);
     }
 
@@ -157,5 +177,38 @@ public class BookmarkService {
                 institution,
                 ressourceUri
         );
+    }
+
+    /**
+     * Gives a bookmark its own name. The name is the user's: it no longer follows the page (or the view) it points to.
+     *
+     * @param userInfo     the user information containing the user and institution
+     * @param resourceUri  the URI the bookmark points to
+     * @param title        the new name (not blank)
+     * @return whether the user has such a bookmark
+     */
+    @Transactional
+    public boolean rename(UserInfo userInfo, String resourceUri, String title) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("A bookmark needs a name");
+        }
+        Person person = personMapper.invertConvert(userInfo.getUser());
+        Institution institution = institutionMapper.invertConvert(userInfo.getInstitution());
+        var bookmarks = bookmarkRepository.findByPersonAndInstitutionAndResourceUri(person, institution, resourceUri);
+        bookmarks.forEach(bookmark -> bookmark.setTitleCode(title.trim()));
+        bookmarkRepository.saveAll(bookmarks);
+        return !bookmarks.isEmpty();
+    }
+
+    /** A message code becomes its text in {@code lang}; anything else (a title, an unknown code) is kept as it is. */
+    private String resolveTitle(String titleCodeOrTitle, String lang) {
+        if (titleCodeOrTitle == null || titleCodeOrTitle.isBlank()) {
+            return titleCodeOrTitle;
+        }
+        try {
+            return langService.msg(titleCodeOrTitle, langService.localeForApiLang(lang));
+        } catch (NoSuchMessageException e) {
+            return titleCodeOrTitle;
+        }
     }
 }

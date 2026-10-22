@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
+import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
 import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -94,7 +97,7 @@ class OrganizationListsControllerApiTest {
                 phaseOpenApiMapper, documentOpenApiMapper, documentListProjectionService,
                 studyOpenApiMapper, studyListProjectionService,
                 phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
-                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), ListQueryStubs.none());
+                mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new RestExceptionHandler())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))
@@ -128,7 +131,7 @@ class OrganizationListsControllerApiTest {
         RecordingUnitDTO readOnly = new RecordingUnitDTO();
         readOnly.setId(2L);
         readOnly.setActionUnit(readOnlyProject);
-        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(0), eq(10), eq("creationTime:desc"), eq("US"), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(organizationListService.pageRecordingUnits(eq(caller), eq(institution), eq(new ListWindow(0, 10, "creationTime:desc", "US")), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class), eq(false)))
                 .thenReturn(new PageImpl<>(List.of(editable, readOnly), PageRequest.of(0, 10), 2));
         permissions(OrganizationListService.EditPermissions.RECORDING_UNITS);
         when(recordingUnitListProjectionService.build(any(), isNull(), any()))
@@ -287,13 +290,31 @@ class OrganizationListsControllerApiTest {
         when(projectApiService.requireCaller()).thenReturn(caller);
         PlaceResource place = new PlaceResource();
         place.setName("Cave A");
-        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(0), eq(10), eq("name:asc"), eq("cave"), any(), any(), any()))
+        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(new ListWindow(0, 10, "name:asc", "cave")), any(), any(), any(), eq(TreeRequest.OFF)))
                 .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 10, 0L)));
 
         mockMvc.perform(get("/api/v1/places").param("organizationId", "10").param("search", "cave"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("X-Total-Count", "1"))
                 .andExpect(jsonPath("$.data[0].name").value("Cave A"));
+    }
+
+    @Test
+    void listPlaces_withTree_asksTheServiceForTheTreeAndExposesTheMatchCount() throws Exception {
+        when(projectApiService.requireCaller()).thenReturn(caller);
+        PlaceResource place = new PlaceResource();
+        place.setName("Cave A");
+        place.setHasChildren(true);
+        place.setMatch(false);
+        when(placeOpenApiService.listByOrganization(eq(caller), eq(10L), eq(new ListWindow(0, 10, "name:asc", "cave")), any(), any(), any(), eq(TreeRequest.tree(null))))
+                .thenReturn(new PlaceListResponse(List.of(place), new ListMeta(1L, 10, 0L, 37L)));
+
+        mockMvc.perform(get("/api/v1/places").param("organizationId", "10").param("search", "cave").param("tree", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].hasChildren").value(true))
+                .andExpect(jsonPath("$.data[0].match").value(false))
+                .andExpect(jsonPath("$.meta.total").value(1))
+                .andExpect(jsonPath("$.meta.matchCount").value(37));
     }
 
     @Test

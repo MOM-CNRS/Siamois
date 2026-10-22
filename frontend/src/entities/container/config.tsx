@@ -1,15 +1,16 @@
-import type { EntityTypeConfig } from "../types";
-import { loadTypeCatalog } from "../typeCatalog";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import type { EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { loadTypeCatalog } from "../shared/typeCatalog";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { getContainer, listContainers, patchContainer, patchContainerAnswers } from "./api";
 import { containerColumns } from "./columns";
 import { ContainerCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import { documentsTab } from "../document/documentsTab";
 import type { ContainerDetail, ContainerSummary } from "./types";
 import { t } from "../../i18n";
@@ -18,7 +19,7 @@ import { t } from "../../i18n";
 // looked up by key ("container") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
+// Its dynamic column catalog comes from the project's forms (entities/shared/typeCatalog.ts).
 export const containerEntityConfig: EntityTypeConfig<ContainerSummary, ContainerDetail> = {
   key: "container",
   labels: { singular: t("entity.container.singular"), plural: t("entity.container.plural") },
@@ -26,9 +27,12 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
   // Matches ContainerTableDefinitionFactory/ContainerPanel's own icon.
   icon: "bi bi-box-seam",
   panelClass: "container-panel",
+  cardClassName: "sia-container",
+  countChipClassName: "container-count-chip",
   api: {
+    delete: (id) => deleteEntity("containers", id),
     siblings: (id) => fetchSiblings("containers", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("containers", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("containers", id, via),
     get: getContainer,
     list: listContainers,
     patchAnswers: (id, answers) => patchContainerAnswers(id, answers),

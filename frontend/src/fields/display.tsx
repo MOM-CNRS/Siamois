@@ -4,11 +4,12 @@
 import { Checkbox } from "primereact/checkbox";
 import { TriStateCheckbox } from "primereact/tristatecheckbox";
 import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
+import { isTypeField } from "./typeField";
 import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
 import { getEntityType } from "../entities/registry";
 import { isEntityKey, type EntityKey } from "../entities/keys";
-import { useOpenEntity } from "../panels/entityNavigation";
+import { useOpenEntity } from "../panels/pane/entityNavigation";
 import { t } from "../i18n";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.
@@ -46,7 +47,8 @@ function isResolvedResource(value: unknown): value is ResolvedResourceLike {
  * A qualified reference's label: the relationship's concept before the other unit ("coupe US 12"),
  * a "?" after it when the relationship is uncertain.
  */
-function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
+/** A stratigraphic unit as its chip reads: « coupe US 5 », with a « ? » when the relation is uncertain. */
+export function qualifiedLabel(label: string, qualifier: StratigraphicQualifier | null | undefined): string {
   if (!qualifier) return label;
   const concept = qualifier.concept?.label;
   return `${concept ? `${concept} ` : ""}${label}${qualifier.uncertain ? " ?" : ""}`;
@@ -120,6 +122,14 @@ export function refColor(resourceType: string): string {
   return REF_KINDS[resourceType]?.color ?? DEFAULT_REF_COLOR;
 }
 
+/** The custom properties a `.ref-chip` takes its colours from, by what it points at. */
+export function refChipStyle(resourceType: string): CSSProperties {
+  return {
+    "--ref-chip-color": refColor(resourceType),
+    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
+  } as CSSProperties;
+}
+
 /**
  * A read-only reference: a light outlined chip in its type's colour — the same token the
  * reference picker shows in edit mode, minus the remove button. With `onOpen`, a reference to an
@@ -132,19 +142,28 @@ function RefChip({
   id,
   resourceType,
   onOpen,
+  inPanelColor,
 }: {
   label: string;
   id: string;
   resourceType: string;
   onOpen?: () => void;
+  // The entity's type column: the chip takes the colour of the table it sits in, not the vocabulary's green.
+  inPanelColor?: boolean;
 }) {
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
-  const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
-  const style = {
-    "--ref-chip-color": refColor(resourceType),
-    "--ref-chip-border": REF_KINDS[resourceType]?.border ?? GREEN_BORDER,
-  } as CSSProperties;
+  const config = entityType ? getEntityType(entityType) : undefined;
+  const icon = config?.icon;
+  const linkable = onOpen != null && entityType != null && openEntity != null && config != null;
+  const style = inPanelColor
+    ? ({
+        // A list sets --row-entity-color to the colour of what its rows are (an embedded one sits in another
+        // entity's panel, whose --main-color is not theirs); a fiche has none, and its own panel is the entity's.
+        "--ref-chip-color": "var(--row-entity-color, var(--main-color, #80b480))",
+        "--ref-chip-border": "color-mix(in srgb, var(--row-entity-color, var(--main-color, #80b480)) 35%, transparent)",
+      } as CSSProperties)
+    : refChipStyle(resourceType);
 
   function open(e: SyntheticEvent) {
     e.stopPropagation();
@@ -166,11 +185,13 @@ function RefChip({
         if (e.key === "Enter") open(e);
       }}
     >
-      {label}
+      {icon && <i className={`${icon} ref-chip-icon`} aria-hidden="true" />}
+      <span className="ref-chip-label">{label}</span>
     </span>
   ) : (
     <span className="ref-chip" style={style} title={label}>
-      {label}
+      {icon && <i className={`${icon} ref-chip-icon`} aria-hidden="true" />}
+      <span className="ref-chip-label">{label}</span>
     </span>
   );
 }
@@ -257,7 +278,7 @@ export function renderAnswerCell(
 
   const render = (item: unknown, key?: number): ReactNode => {
     const ref = asRef(item);
-    return ref ? <RefChip key={key} {...ref} onOpen={options.onOpenLink} /> : formatOne(field, item);
+    return ref ? <RefChip key={key} {...ref} onOpen={options.onOpenLink} inPanelColor={isTypeField(field)} /> : formatOne(field, item);
   };
 
   if (items.length === 1 && total === 1) return render(items[0]);
@@ -270,8 +291,18 @@ export function renderAnswerCell(
   return (
     <span className={options.all ? "cell-multi cell-multi-all" : "cell-multi"}>
       {options.all
-        ? shown.map((item, i) => render(item, i))
+        ? shown.map((item, i) => (
+            <span key={i} className="cell-multi-item">
+              {render(item)}
+            </span>
+          ))
         : shown.length > 0 && <span className="cell-multi-first">{render(shown[0])}</span>}
+      {/* Only a narrow fiche shows it (main-panel.css): the first value and this count, instead of every value. */}
+      {options.all && shown.length > 1 && (
+        <span className="cell-multi-fold" title={title}>
+          +{shown.length - 1}
+        </span>
+      )}
       {hidden > 0 && (
         <span className="cell-multi-more" title={title}>
           +{hidden}

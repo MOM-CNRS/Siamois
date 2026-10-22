@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { EntityDetailHeader, type HeaderChanges } from "../../components/EntityDetailHeader";
+import { EntityDetailHeader, type HeaderChanges } from "../../components/detail/EntityDetailHeader";
 import { toAnswerInput } from "../../fields/types";
 import type { AnswerInputBody, FieldResource } from "../../fields/types";
 import { patchRecordingUnit } from "./api";
-import { useDeclaredTypes } from "../useDeclaredTypes";
+import { useDeclaredTypes } from "../shared/useDeclaredTypes";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { RecordingUnitDetail } from "./types";
 import { queryKeys } from "../../api/queryKeys";

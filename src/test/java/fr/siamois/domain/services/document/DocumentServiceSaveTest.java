@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,11 +71,13 @@ class DocumentServiceSaveTest {
     private Document entity;
     private ActionUnit project;
 
+    private final fr.siamois.domain.services.EntityLinkGuard entityLinkGuard = mock(fr.siamois.domain.services.EntityLinkGuard.class);
+
     @BeforeEach
     void setUp() {
         service = new DocumentService(documentRepository, personMapper, institutionMapper, documentMapper,
                 identifierGenerator, profilePermissionService, customFieldAnswerService, tableFieldConfigService,
-                documentStorage, List.of());
+                documentStorage, List.of(), entityLinkGuard);
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
 
         project = new ActionUnit();

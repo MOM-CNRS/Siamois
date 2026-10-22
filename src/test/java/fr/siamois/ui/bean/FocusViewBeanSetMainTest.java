@@ -31,7 +31,7 @@ class FocusViewBeanSetMainTest {
 
     private final PanelFactory panelFactory = mock(PanelFactory.class);
     private final ResourceInstitutionService resourceInstitutionService = mock(ResourceInstitutionService.class);
-    private final HistoryBean historyBean = new HistoryBean(null);
+    private final HistoryBean historyBean = new HistoryBean(null, null, null, null);
     private final Map<String, String> params = new HashMap<>();
     private MockedStatic<FacesContext> facesContextStatic;
     private FocusViewBean bean;
@@ -61,6 +61,7 @@ class FocusViewBeanSetMainTest {
         AbstractPanel panel = mock(AbstractPanel.class);
         when(panel.resolveTitleOrTitleCode()).thenReturn(title);
         when(panel.ressourceUri()).thenReturn(uri);
+        when(panel.reactResourceUri()).thenReturn(uri);
         return panel;
     }
 
@@ -96,6 +97,34 @@ class FocusViewBeanSetMainTest {
         verify(next).setParentOrOverview(overview);
         verify(overview).setParentOrOverview(next);
         assertThat(historyBean.getItems().get(0).getSecondary().getUri()).isEqualTo("/action-unit/3");
+    }
+
+    @Test
+    void tellsTheListPanelTheSavedViewItOpensOn() {
+        bean.setMainPanel(panel("Projets", "/action-unit"));
+        AbstractPanel next = panel("UE", "/recording-unit");
+        when(panelFactory.create("recording-unit", null)).thenReturn(next);
+        params.put("path", "/recording-unit?viewId=7");
+
+        bean.setMainFromRequest();
+
+        verify(next).setViewId(7L);
+    }
+
+    @Test
+    void readsNoViewFromAnEntityPathOrANonNumericViewId() {
+        bean.setMainPanel(panel("Projets", "/action-unit"));
+        AbstractPanel entity = panel("UE-12", "/recording-unit/12");
+        when(panelFactory.create("recording-unit", 12L)).thenReturn(entity);
+        params.put("path", "/recording-unit/12?viewId=7");
+        bean.setMainFromRequest();
+        verify(entity).setViewId(null);
+
+        AbstractPanel list = panel("UE", "/recording-unit");
+        when(panelFactory.create("recording-unit", null)).thenReturn(list);
+        params.put("path", "/recording-unit?viewId=abc");
+        bean.setMainFromRequest();
+        verify(list).setViewId(null);
     }
 
     @Test

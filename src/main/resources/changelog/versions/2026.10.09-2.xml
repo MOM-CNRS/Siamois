@@ -14,6 +14,7 @@
     -->
 
     <changeSet id="2026.10.09-2-category-to-type" author="Gregory Bliault" dbms="postgresql">
+        <validCheckSum>ANY</validCheckSum>
         <sql splitStatements="false">
             DO $$
             DECLARE
@@ -41,12 +42,17 @@
             END $$;
 
             -- -409: find type, -201: place type, -101: project type (it shared the find label), -704: document type
-            UPDATE custom_field SET label = 'specimen.field.type', value_binding = 'type'
-            WHERE custom_field_id IN (-409, -201) AND is_system_field;
-            UPDATE custom_field SET label = 'specimen.field.type'
-            WHERE custom_field_id = -101 AND is_system_field;
-            UPDATE custom_field SET label = 'document.field.type', value_binding = 'type'
-            WHERE custom_field_id = -704 AND is_system_field;
+            DO $$
+            BEGIN
+                IF to_regclass('public.custom_field') IS NOT NULL THEN
+                    UPDATE custom_field SET label = 'specimen.field.type', value_binding = 'type'
+                    WHERE custom_field_id IN (-409, -201) AND is_system_field;
+                    UPDATE custom_field SET label = 'specimen.field.type'
+                    WHERE custom_field_id = -101 AND is_system_field;
+                    UPDATE custom_field SET label = 'document.field.type', value_binding = 'type'
+                    WHERE custom_field_id = -704 AND is_system_field;
+                END IF;
+            END $$;
         </sql>
     </changeSet>
 

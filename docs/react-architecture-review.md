@@ -53,7 +53,7 @@ Ranked by value for the effort. **Bold** items are the ones I would do first.
 
 ### 2.1 The entity registry is still string-keyed and untyped
 
-- `registry.ts` is `Map<string, EntityTypeConfig<any, any>>`, with 4 `eslint-disable no-explicit-any`, plus 2 more in `panels/listSiblings.ts`. `getEntityType(key)` returns a config whose row and detail types are `any`; every panel therefore works on `any` data.
+- `registry.ts` is `Map<string, EntityTypeConfig<any, any>>`, with 4 `eslint-disable no-explicit-any`, plus 2 more in `panels/detail/listSiblings.ts`. `getEntityType(key)` returns a config whose row and detail types are `any`; every panel therefore works on `any` data.
 - `EntityKey` types the colour/route maps but not the lookup.
 - **Improvement:** make the registry a mapped type `{ [K in EntityKey]: EntityTypeConfig<Row[K], Detail[K]> }` and give `getEntityType<K extends EntityKey>` a precise return. Panels stay generic by taking `EntityTypeConfig<unknown, unknown>` through a single, documented widening point instead of six `any`s. Removes the largest remaining source of unchecked code.
 - **Effort:** medium (2–3 days). **Risk:** low, the compiler finds every site.
@@ -99,9 +99,9 @@ Ranked by value for the effort. **Bold** items are the ones I would do first.
 
 ### 2.8 Remaining large files
 
-`panels/list/EntityTable.tsx` (490), `fields/renderers.tsx` (438), `components/table/CellEditOverlay.tsx` (405), `entities/types.ts` (380), `panels/EntityDetailPanel.tsx` (373), `panels/useRowActions.tsx` (313).
+`panels/list/EntityTable.tsx` (490), `fields/renderers.tsx` (438), `components/table/CellEditOverlay.tsx` (405), `entities/shared/types.ts` (380), `panels/EntityDetailPanel.tsx` (373), `panels/list/useRowActions.tsx` (313).
 
-- `entities/types.ts` mixes the config contract, list contract, duplication contract and shared DTOs. Splitting it by contract (`config`, `list`, `detail`, `duplication`) makes each panel import what it uses and makes the contract reviewable.
+- `entities/shared/types.ts` mixes the config contract, list contract, duplication contract and shared DTOs. Splitting it by contract (`config`, `list`, `detail`, `duplication`) makes each panel import what it uses and makes the contract reviewable.
 - `renderers.tsx` holds every field renderer in one file; one file per family (text, number, date, reference, concept) keeps each testable alone and is the natural place for lazy loading.
 - `useRowActions` has an `exhaustive-deps` suppression (line ~168); the same rule is suppressed in `useRowRules`, `useTypeRules`, `frozenColumns`. Each suppression is a stale-closure risk; worth revisiting one by one (usually a ref or an event-handler pattern removes it).
 - **Effort:** small each; no behavior change.

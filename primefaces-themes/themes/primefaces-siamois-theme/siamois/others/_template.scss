@@ -37,6 +37,18 @@
     margin-right: 8px;
 }
 
+/*
+ * A sidebar entry that is a p:commandLink (ajax: it opens a drawer) carries PrimeFaces' own ui-widget
+ * typography, smaller than the h:commandLink entries (home, settings) that follow the page's. Same text for all.
+ */
+.sidebar .nav-link.ui-commandlink {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    text-decoration: none;
+}
+
 /* The settings sidebar: tighter rows, so the menu takes less room. */
 #sidebarSettings .nav-link {
     padding-top: 0.35rem;
@@ -131,6 +143,55 @@
 
     .hide-small-screen {
       display: none;
+    }
+
+    // The top bar never overflows: the menu button and the read/write switch keep their size, the
+    // organisation selector (the only one — no duplicate for small screens) takes what is left and shrinks.
+    #topbar-row {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+
+      #smallScreenToolbar {
+        flex: 0 0 auto !important;
+        padding-right: 0 !important;
+      }
+
+      // Menu button first, then the organisation, then the search (a lone button: the overlay is its field).
+      #smallScreenToolbar {
+        order: 0;
+      }
+
+      #search-bar {
+        order: 2;
+        flex: 0 0 auto !important;
+        align-content: center;
+        padding: 0.5em 0.5em 0.5em 0;
+        background: var(--siamois-green-light-100);
+      }
+
+      #organisation-select {
+        order: 1;
+        flex: 1 1 auto !important;
+        min-width: 0;
+
+        form {
+          width: 100% !important;
+          max-width: none !important;
+          min-width: 0;
+        }
+
+        .ui-selectonemenu {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+
+      #read-write-switch {
+        order: 3;
+        flex: 0 0 auto !important;
+      }
     }
 
 }

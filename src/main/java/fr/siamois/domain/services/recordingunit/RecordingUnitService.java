@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.recordingunit;
 
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -26,6 +27,8 @@ import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.domain.services.tree.HierarchyTreeQuery;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -76,6 +79,8 @@ import static fr.siamois.domain.models.ValidationStatus.*;
 @Service
 @RequiredArgsConstructor
 public class RecordingUnitService implements ArkEntityService {
+
+    private final EntityLinkGuard entityLinkGuard;
 
     static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
@@ -558,10 +563,10 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une UE sans mobiliers, sans études liées et sans UE filles en hiérarchie.
-     * Nettoie les liaisons (stratigraphie, documents, identifiants, formulaire, ARK).
+     * Supprime une UE qui n'a aucune relation avec une autre entité (hiérarchie, stratigraphie,
+     * mobiliers, documents, phases, études).
      *
-     * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
+     * @throws IllegalStateException si l'UE a encore des relations
      */
     @Transactional
     @CacheEvict({
@@ -575,67 +580,21 @@ public class RecordingUnitService implements ArkEntityService {
 
         UserInfo info = ExecutionContextHolder.get();
         Long actionUnitId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
-        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS)) {
+        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
             throw new ForbiddenOperationException("You are not allowed to delete this recording unit");
         }
 
-        validateDeletable(ru, recordingUnitId);
-        unlinkParentChildRelations(ru);
-        clearStratigraphicRelationships(ru, recordingUnitId);
-        deleteLinkedData(recordingUnitId, ru);
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.RECORDING_UNIT, recordingUnitId, "l'unité d'enregistrement");
+
+        recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
+        if (ru.getContributors() != null) {
+            ru.getContributors().clear();
+        }
 
         Long arkId = ru.getArk() != null ? ru.getArk().getInternalId() : null;
-
-        recordingUnitRepository.save(ru);
-
         recordingUnitRepository.delete(ru);
         if (arkId != null) {
             arkRepository.deleteById(arkId);
-        }
-    }
-
-    private void validateDeletable(RecordingUnit ru, long recordingUnitId) {
-        Long specimenCount = recordingUnitRepository.countSpecimensByRecordingUnitId(recordingUnitId);
-        if (specimenCount != null && specimenCount > 0) {
-            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement contient des mobiliers");
-        }
-        if (ru.getChildren() != null && !ru.getChildren().isEmpty()) {
-            throw new IllegalStateException("Impossible de supprimer : l'unité d'enregistrement possède des unités filles");
-        }
-    }
-
-    private void unlinkParentChildRelations(RecordingUnit ru) {
-        if (ru.getParents() != null) {
-            for (RecordingUnit parent : new HashSet<>(ru.getParents())) {
-                if (parent.getChildren() != null) {
-                    parent.getChildren().remove(ru);
-                }
-            }
-            ru.getParents().clear();
-        }
-        if (ru.getChildren() != null) {
-            ru.getChildren().clear();
-        }
-    }
-
-    private void clearStratigraphicRelationships(RecordingUnit ru, long recordingUnitId) {
-        List<StratigraphicRelationship> rels = stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(recordingUnitId);
-        if (!rels.isEmpty()) {
-            stratigraphicRelationshipRepository.deleteAll(rels);
-        }
-        if (ru.getRelationshipsAsUnit1() != null) {
-            ru.getRelationshipsAsUnit1().clear();
-        }
-        if (ru.getRelationshipsAsUnit2() != null) {
-            ru.getRelationshipsAsUnit2().clear();
-        }
-    }
-
-    private void deleteLinkedData(long recordingUnitId, RecordingUnit ru) {
-        recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
-        documentRepository.deleteAllRecordingUnitDocumentLinksByRecordingUnitId(recordingUnitId);
-        if (ru.getContributors() != null) {
-            ru.getContributors().clear();
         }
     }
 
@@ -1327,7 +1286,177 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
         Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
-        return pageAndEnrich(specs, pageable, includeFullRelations);
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations);
+        if (filters.isRootOnly()) {
+            applyTreeFlags(page, filters);
+            return TreePage.of(page, countTreeMatches(institution, filters));
+        }
+        return page;
+    }
+
+    /**
+     * The entities that match, for the tree view: with a search or a filter, the match set already
+     * computed to find the roots; without, every recording unit of the context.
+     */
+    private long countTreeMatches(InstitutionDTO institution, FilterDTO filters) {
+        if (filters.hasUserFilters() && filters.getMatchIds() != null) {
+            return filters.getMatchIds().size();
+        }
+        filters.setRootOnly(false);
+        try {
+            return countSearchResults(institution, filters);
+        } finally {
+            filters.setRootOnly(true);
+        }
+    }
+
+    /**
+     * Direct children of a recording unit for the tree view: with a search or a filter, only the
+     * children leading to a match (the matches and their ancestors, as for the roots), each flagged
+     * {@code treeHasChildren}/{@code treeMatch}.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                     Sort sort, FilterDTO filters) {
+        return childrenOfTree(institution, parentId, limit, offset, sort, filters, false);
+    }
+
+    /**
+     * {@code withMatchCount}: the list is the tree of everything below {@code parentId} (a unit's "UE" tab),
+     * so the page carries the number of units below it that match — all of them without a search. The
+     * count costs one query: it is asked for only by the call that shows it.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordingUnitDTO> findChildrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                     Sort sort, FilterDTO filters, boolean withMatchCount) {
+        return childrenOfTree(institution, parentId, limit, offset, sort, filters, withMatchCount);
+    }
+
+    private Page<RecordingUnitDTO> childrenOfTree(InstitutionDTO institution, Long parentId, int limit, int offset,
+                                                  Sort sort, FilterDTO filters, boolean withMatchCount) {
+        Specification<RecordingUnit> specs = Specification.where(RecordingUnitSpec.hasParent(parentId))
+                .and(filters.getFieldQuery().orderingSpecificationFor());
+        if (filters.hasUserFilters()) {
+            java.util.Collection<Long> closure = recordingUnitSortFilterService.ancestorClosure(institution, filters);
+            specs = specs.and(closure.isEmpty() ? (root, query, cb) -> cb.disjunction() : RecordingUnitSpec.idIn(closure));
+        }
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        applyTreeFlags(page, filters);
+        return withMatchCount ? TreePage.of(page, countMatchesBelow(parentId, filters)) : page;
+    }
+
+    /** Which of {@code ids} have children — only among {@code closure} when it is not null (a search narrowed the tree). */
+    private java.util.List<Long> parentsHavingChildren(java.util.List<Long> ids, java.util.Collection<Long> closure) {
+        if (closure == null) {
+            return recordingUnitRepository.findParentIdsHavingChildren(ids);
+        }
+        return closure.isEmpty() ? java.util.List.of() : recordingUnitRepository.findParentIdsHavingChildrenAmong(ids, closure);
+    }
+
+    private long countMatchesBelow(Long parentId, FilterDTO filters) {
+        if (!filters.hasUserFilters()) {
+            return recordingUnitRepository.countDescendants(parentId);
+        }
+        Set<Long> matchIds = filters.getMatchIds();
+        return matchIds == null || matchIds.isEmpty() ? 0L : recordingUnitRepository.countDescendantsAmong(parentId, matchIds);
+    }
+
+    /**
+     * The tree view of a list inside a context — {@code scope} is the context (the recording units of a
+     * project…). Roots are the units of the context none of whose parents is in it; {@code parentId}
+     * asks for the children of one unit instead, still inside the context. With a search or a filter,
+     * the matches are taken in the context and only their ancestors <em>in the context</em> are kept
+     * (an ancestor outside it is never shown). Each row is flagged {@code treeHasChildren} (children in
+     * the context, among the closure when narrowed) and {@code treeMatch}.
+     *
+     * <p>The page's total counts the roots (or the children) it pages; the {@link TreePage#getMatchCount}
+     * is the number of units of the context that match.</p>
+     */
+    @Transactional(readOnly = true)
+    public TreePage<RecordingUnitDTO> findTreeInScope(Specification<RecordingUnit> scope, int limit, int offset, Sort sort,
+                                                      FilterDTO filters, Long parentId) {
+        Specification<RecordingUnit> matches = filters.hasUserFilters()
+                ? RecordingUnitSortFilterService.userFilterSpecs(filters)
+                : null;
+        return new HierarchyTreeQuery<>(recordingUnitHierarchy()).page(
+                scope, matches, filters.getFieldQuery().orderingSpecificationFor(), parentId,
+                PageRequest.of(offset / limit, limit, sort));
+    }
+
+    /** Recording units as {@link HierarchyTreeQuery} sees a hierarchical type. */
+    private HierarchyTreeQuery.Hierarchy<RecordingUnit, RecordingUnitDTO> recordingUnitHierarchy() {
+        return new HierarchyTreeQuery.Hierarchy<>() {
+            @Override
+            public Specification<RecordingUnit> hasParent(long parentId) {
+                return RecordingUnitSpec.hasParent(parentId);
+            }
+
+            @Override
+            public Specification<RecordingUnit> hasNoParentIn(Specification<RecordingUnit> scope) {
+                return RecordingUnitSpec.hasNoParentIn(scope);
+            }
+
+            @Override
+            public Specification<RecordingUnit> idIn(Collection<Long> ids) {
+                return RecordingUnitSpec.idIn(ids);
+            }
+
+            @Override
+            public List<Object[]> parentEdges(Collection<Long> childIds) {
+                return recordingUnitRepository.findParentEdges(childIds);
+            }
+
+            @Override
+            public List<Object[]> childEdges(Collection<Long> parentIds) {
+                return recordingUnitRepository.findChildEdges(parentIds);
+            }
+
+            @Override
+            public List<Long> ids(Specification<RecordingUnit> specs) {
+                return recordingUnitRepository.findAll(specs).stream().map(RecordingUnit::getId).toList();
+            }
+
+            @Override
+            public long count(Specification<RecordingUnit> specs) {
+                return recordingUnitRepository.count(specs);
+            }
+
+            @Override
+            public Page<RecordingUnitDTO> page(Specification<RecordingUnit> specs, Pageable pageable) {
+                return pageAndEnrich(specs, pageable, false);
+            }
+
+            @Override
+            public Long idOf(RecordingUnitDTO row) {
+                return row.getId();
+            }
+
+            @Override
+            public void flag(RecordingUnitDTO row, boolean hasChildren, boolean match) {
+                row.setTreeHasChildren(hasChildren);
+                row.setTreeMatch(match);
+            }
+        };
+    }
+
+    /**
+     * What the tree needs of a page of rows: which have children to show (all their children, or only
+     * those in the search's closure) and which actually matched the search (every row, without one).
+     */
+    private void applyTreeFlags(Page<RecordingUnitDTO> page, FilterDTO filters) {
+        java.util.List<Long> ids = page.getContent().stream().map(RecordingUnitDTO::getId)
+                .filter(java.util.Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        java.util.Collection<Long> closure = filters.getAncestorClosure();
+        boolean narrowed = filters.hasUserFilters() && closure != null;
+        java.util.Set<Long> withChildren = new java.util.HashSet<>(parentsHavingChildren(ids, narrowed ? closure : null));
+        java.util.Set<Long> matches = narrowed ? filters.getMatchIds() : null;
+        for (RecordingUnitDTO dto : page.getContent()) {
+            dto.setTreeHasChildren(withChildren.contains(dto.getId()));
+            dto.setTreeMatch(matches == null || matches.contains(dto.getId()));
+        }
     }
 
     /**
@@ -1354,6 +1483,9 @@ public class RecordingUnitService implements ArkEntityService {
         hydrateCounts(page.getContent(), ids);
         if (includeFullRelations) {
             hydrateFullRelations(page.getContent(), ids);
+        } else {
+            // Not a relation field of the REST list's answers: the "phases" column reads them off the row.
+            hydratePhases(page.getContent(), ids);
         }
 
         return page;
@@ -1370,6 +1502,13 @@ public class RecordingUnitService implements ArkEntityService {
         for (RecordingUnitDTO dto : rows) {
             dto.setParents(parentsByOwner.getOrDefault(dto.getId(), Set.of()));
             dto.setChildren(childrenByOwner.getOrDefault(dto.getId(), Set.of()));
+            dto.setPhases(phasesByOwner.getOrDefault(dto.getId(), Set.of()));
+        }
+    }
+
+    private void hydratePhases(List<RecordingUnitDTO> rows, List<Long> ids) {
+        Map<Long, Set<PhaseDTO>> phasesByOwner = groupPhasesByOwner(phaseRepository.findPhaseEdges(ids));
+        for (RecordingUnitDTO dto : rows) {
             dto.setPhases(phasesByOwner.getOrDefault(dto.getId(), Set.of()));
         }
     }

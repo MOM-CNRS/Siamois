@@ -6,6 +6,7 @@ import fr.siamois.domain.services.BookmarkService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.dto.entity.BookmarkDTO;
 import fr.siamois.dto.view.UITableViewDTO;
+import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.utils.FilterStateTooltipHelper;
 import jakarta.annotation.PostConstruct;
@@ -28,7 +29,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Component
@@ -42,6 +42,7 @@ public class BookmarkMenuBean implements Serializable {
     private final transient BookmarkService bookmarkService;
     private final transient UiViewService uiViewService;
     private final NavBean navBean;
+    private final transient EntityProjectResolver projectResolver;
 
     // PrimeFaces Lazy Model
     private LazyDataModel<BookmarkDTO> lazyModel;
@@ -83,8 +84,18 @@ public class BookmarkMenuBean implements Serializable {
 
                 this.setRowCount(cachedTotalRows);
 
-                // Return the localized raw collection list back to the virtual scroll datatable renderer
-                return resultPage.getContent();
+                // A bookmark made before names were stored as text still holds a message code: show (and edit) its text.
+                List<BookmarkDTO> bookmarks = resultPage.getContent();
+                bookmarks.forEach(bookmark -> bookmark.setTitle(navBean.bookmarkTitle(bookmark)));
+                // Which project each fiche belongs to, so « US 1012 » is not ambiguous between projects.
+                Map<String, EntityProjectResolver.ProjectRef> projects = projectResolver.resolve(
+                        bookmarks.stream().map(BookmarkDTO::getResourceUri).toList(),
+                        java.util.Set.of(currentUser.getInstitution().getId()));
+                bookmarks.forEach(bookmark -> {
+                    EntityProjectResolver.ProjectRef project = projects.get(bookmark.getResourceUri());
+                    bookmark.setProjectName(project == null ? null : project.name());
+                });
+                return bookmarks;
             }
         };
     }
@@ -103,38 +114,21 @@ public class BookmarkMenuBean implements Serializable {
         // Simply delete from the database and refresh the PrimeFaces component grid.
     }
 
+    /** The name is the bookmark's own: renaming it leaves the view (or page) it points to as it is. */
     public void onRowEdit(RowEditEvent<BookmarkDTO> event) {
         BookmarkDTO editedItem = event.getObject();
-        Long viewId = resolveViewId(editedItem.getResourceUri());
-        if(viewId == null) { return ;}
-        // If view exist, get it
-        UITableViewDTO view = uiViewService.findOne(viewId);
-        if(view == null) { return ;}
-        view.setTitle(editedItem.getTitle());
-        uiViewService.save(view);
+        if (editedItem.getTitle() == null || editedItem.getTitle().isBlank()) {
+            return;
+        }
+        bookmarkService.rename(sessionSettingsBean.getUserInfo(), editedItem.getResourceUri(), editedItem.getTitle());
+    }
+
+    /** The button's text: the name, then the project name. */
+    public String resolveLabelHtml(BookmarkDTO bookmark) {
+        return EntityProjectResolver.labelWithProject(navBean.bookmarkTitle(bookmark), bookmark.getProjectName());
     }
 
     public String resolveName(BookmarkDTO bookmark) {
-
-        Long viewId = resolveViewId(bookmark.getResourceUri());
-
-        if (viewId == null) {
-            return navBean.bookmarkTitle(bookmark);
-        }
-
-        UITableViewDTO view = uiViewService.findOne(viewId);
-
-        if (view != null
-                && Objects.equals(
-                view.getOwner().getId(),
-                sessionSettingsBean.getUserInfo().getUser().getId()
-        )
-                && view.getTitle() != null
-                && !view.getTitle().isBlank()) {
-
-            return view.getTitle();
-        }
-
         return navBean.bookmarkTitle(bookmark);
     }
 
@@ -144,13 +138,13 @@ public class BookmarkMenuBean implements Serializable {
         // No database action required here, JSF rolls back the local property changes natively
     }
 
-    public Boolean canEditViewNameOfBookmark(BookmarkDTO bookmark) {
-        Long viewId = resolveViewId(bookmark.getResourceUri());
-        if(viewId == null) { return false ;}
-        // If view exist, get it and check author
-        UITableViewDTO view = uiViewService.findOne(viewId);
-        // Can edit if it's the same user
-        return view != null && Objects.equals(view.getOwner().getId(), sessionSettingsBean.getUserInfo().getUser().getId());
+    /** The view, or null when it no longer exists (a view deleted since the bookmark was made). */
+    private UITableViewDTO findViewOrNull(Long viewId) {
+        try {
+            return uiViewService.findOne(viewId);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private Long resolveViewId(String path) {
@@ -183,7 +177,7 @@ public class BookmarkMenuBean implements Serializable {
         Long viewId = resolveViewId(bookmark.getResourceUri());
         if(viewId == null) { return null;}
         // If view exist, get it
-        UITableViewDTO view = uiViewService.findOne(viewId);
+        UITableViewDTO view = findViewOrNull(viewId);
         if(view == null) { return null;}
         return FilterStateTooltipHelper.buildTooltip(view.getState().getFilters());
     }

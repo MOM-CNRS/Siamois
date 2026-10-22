@@ -12,7 +12,9 @@ export interface PanelActions {
   // Receives the click, so the creation form can open in an overlay next to what was clicked.
   create?: (event?: SyntheticEvent) => void;
   duplicate?: () => void;
-  // Project only: opens its settings page (a JSF redirect, through PanelBridge.openProjectSettings).
+  // Permanently deletes the displayed entity (opens the confirmation first).
+  delete?: () => void;
+  // Project only: opens its settings page (a navigation to the JSF settings route).
   settings?: () => void;
   // Main panel titlebar only, and only in focus mode (an overview entity promoted to main):
   // puts it back in the overview and restores the previous main — legacy focus.xhtml's
@@ -56,14 +58,14 @@ export interface PanelBridge {
   // 5), for F5 and the history — fire-and-forget.
   setOverview?: (entityType: string, id: string | number) => void;
   closeOverview?: () => void;
-  // NavBean#redirectToActionUnitSettingsFromRequest: a server-side mode switch + redirect.
-  openProjectSettings?: (projectId: string | number) => void;
   // FocusViewBean#setMainFromRequest: the main pane moved client-side to this resource path
   // ("/action-unit/12", "/action-unit") — the server follows it and records it in the history
   // sidebar, like a page load would. Fire-and-forget.
   setMain?: (path: string) => void;
   // Redraws the JSF sidebar's bookmarks list after React added or removed a bookmark (REST).
   refreshBookmarks?: () => void;
+  // Redraws the JSF sidebar's views list after React created, renamed or updated a view (REST).
+  refreshViews?: () => void;
 }
 
 export interface MountOptions {
@@ -72,6 +74,8 @@ export interface MountOptions {
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;
+  // The saved view a "list" panel opens on (the page was loaded on `…?viewId=`).
+  viewId?: number;
   overviewEntityType?: string;
   overviewEntityId?: string | number;
   organizationId?: number;
@@ -136,13 +140,13 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
   const action = (key: string) => resolveAction(dataset[key]);
   const setOverview = action("actionSetOverview");
   const setMain = action("actionSetMain");
-  const openProjectSettings = action("actionOpenProjectSettings");
 
   return {
     panelIndex: text("panelIndex"),
     panelKind,
     entityType: dataset.entityType ?? "",
     entityId: text("entityId"),
+    viewId: number("viewId"),
     overviewEntityType: text("overviewEntityType"),
     overviewEntityId: text("overviewEntityId"),
     organizationId: number("organizationId"),
@@ -176,7 +180,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
       closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
       setMain: setMain && ((path) => setMain({ path })),
       refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
-      openProjectSettings: openProjectSettings && ((projectId) => openProjectSettings({ projectId })),
+      refreshViews: action("actionRefreshViews") as PanelBridge["refreshViews"],
     },
   };
 }

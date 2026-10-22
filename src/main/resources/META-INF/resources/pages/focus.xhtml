@@ -61,7 +61,7 @@
                     <div id="historyDiv" style="background: white; width: 100%; border: 1px solid #dee2e6;">
                         <p:commandButton
                                 id="toggle-sidebar-btn"
-                                value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : 'Favoris'}"
+                                value="#{sidebarBean.currentMode == 'HISTORIQUE' ? 'Historique' : (sidebarBean.currentMode == 'VIEWS' ? langBean.msg('views.sidebar.title') : 'Favoris')}"
                                 style="width: 100%"
                                 icon="bi bi-chevron-double-left"
                                 action="#{sidebarBean.close()}"
@@ -95,7 +95,7 @@
                                                                      action="#{historyBean.redirectToEntry(historyItem)}"
                                                                      icon="#{historyItem.icon}"
                                                                      process="@this"
-                                                                     value="#{historyItem.title}"
+                                                                     value="#{historyItem.labelHtml}" escape="false"
                                                                      styleClass="#{historyItem.styleClass} nav-link ui-button-flat bookmark-full-button"
                                                                      style="width:100%">
                                                     </p:commandButton>
@@ -134,7 +134,7 @@
                                                                      action="#{bookmarkMenuBean.redirectToEntry(bkm)}"
                                                                      icon="#{bkm.bookmarkIcon}"
                                                                      process="@this"
-                                                                     value="#{bookmarkMenuBean.resolveName(bkm)}"
+                                                                     value="#{bookmarkMenuBean.resolveLabelHtml(bkm)}" escape="false"
                                                                      styleClass="nav-link ui-button-flat bookmark-full-button"
                                                                      style="color: #{bkm.bookmarkColor} !important; width:100%">
                                                     </p:commandButton>
@@ -155,8 +155,7 @@
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
-                                        <p:rowEditor rendered="#{bookmarkMenuBean.canEditViewNameOfBookmark(bkm)}"
-                                                     editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
+                                        <p:rowEditor editTitle="Modifier" saveTitle="Valider" cancelTitle="Annuler" />
                                     </p:column>
 
                                     <p:column style="width: 40px; text-align: center; vertical-align: middle;">
@@ -168,6 +167,52 @@
                                                          styleClass="ui-button-flat ui-button-danger rounded-button"/>
                                     </p:column>
                                 </p:dataTable>
+                        </p:outputPanel>
+
+                        <p:outputPanel id="viewsPanel" style="height: 100%; display: flex; flex-direction: column;"
+                                       rendered="#{sidebarBean.currentMode == 'VIEWS'}">
+                            <div style="padding: 6px 8px;">
+                                <p:inputText id="viewsSearch" value="#{viewMenuBean.search}" style="width: 100%;"
+                                             placeholder="#{langBean.msg('views.sidebar.search')}">
+                                    <p:ajax event="keyup" delay="400" process="@this" update="viewsTable"/>
+                                </p:inputText>
+                            </div>
+                            <div style="flex: 1; min-height: 0;">
+                                <p:dataTable id="viewsTable"
+                                             value="#{viewMenuBean.lazyModel}"
+                                             var="viewRow"
+                                             lazy="true"
+                                             rowKey="#{viewRow.id}"
+                                             scrollable="true"
+                                             scrollRows="40"
+                                             scrollHeight="100%"
+                                             virtualScroll="true"
+                                             emptyMessage="#{langBean.msg('views.sidebar.empty')}"
+                                             styleClass="ui-datatable-invisible-header panel-menu sia-views-table">
+                                    <p:column style="vertical-align: middle; width:100%">
+                                        <div class="bookmark-row" style="width: 100%;">
+                                            <p:commandButton id="viewLink"
+                                                             action="#{viewMenuBean.redirectToEntry(viewRow)}"
+                                                             icon="#{viewRow.icon}"
+                                                             process="@this"
+                                                             value="#{viewRow.title}"
+                                                             disabled="#{viewRow.listUri == null}"
+                                                             styleClass="nav-link ui-button-flat bookmark-full-button"
+                                                             style="--sia-row-color: #{viewRow.color}; width:100%"/>
+                                            <p:tooltip for="viewLink" value="#{viewMenuBean.tooltipOf(viewRow)}"/>
+                                        </div>
+                                    </p:column>
+                                    <p:column style="width: 40px; text-align: center; vertical-align: middle;">
+                                        <p:commandButton action="#{viewMenuBean.deleteItem(viewRow)}"
+                                                         rendered="#{viewRow.canEdit}"
+                                                         icon="bi bi-trash"
+                                                         title="#{langBean.msg('views.sidebar.delete')}"
+                                                         update="viewsTable"
+                                                         process="@this"
+                                                         styleClass="ui-button-flat ui-button-danger rounded-button"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
                         </p:outputPanel>
 
                     </p:outputPanel>

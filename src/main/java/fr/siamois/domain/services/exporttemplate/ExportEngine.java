@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTechnicalSource;
 import fr.siamois.domain.models.exporttemplate.InvalidExportTemplateException;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Column;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ColumnField;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptField;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConcatPart;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConcatRule;
@@ -232,7 +233,8 @@ public class ExportEngine {
 
     /** Valeurs d'un champ pour chaque ligne de la source, après suivi du chemin. */
     private List<List<Object>> fieldValues(Where where, FieldRef field, List<String> path) {
-        List<Optional<ExportRow>> targets = where.rows().stream().map(r -> ExportNavigations.follow(r, path)).toList();
+        List<Optional<ExportRow>> targets = where.rows().stream()
+                .map(r -> field instanceof ColumnField ? Optional.of(r) : ExportNavigations.follow(r, path)).toList();
         List<CustomField> candidates = List.of();
         ExportValueReader.AnswerCache cache = ExportValueReader.AnswerCache.EMPTY;
         if (field instanceof ConceptField conceptField) {

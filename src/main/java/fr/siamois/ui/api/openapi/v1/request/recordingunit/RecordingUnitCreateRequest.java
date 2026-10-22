@@ -39,6 +39,9 @@ public class RecordingUnitCreateRequest {
     @Schema(description = "UE existante (recording_unit_id) dont la nouvelle UE devient le parent direct ; même projet obligatoire")
     private Long childRecordingUnitId;
 
+    @Schema(description = "Phase existante (phase_id) à laquelle la nouvelle UE est rattachée ; même projet obligatoire")
+    private Long phaseId;
+
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.
      * Stockage interne uniquement — désérialisé via {@link #setFieldAnswers(Map)}.

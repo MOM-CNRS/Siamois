@@ -52,23 +52,13 @@
                     formId="thesaurusForm"
                     saveMethod="#{projectThesaurusSettingsBean.saveConfig()}"
                     cancelMethod="#{projectDetailsBean.backToProjectSettings()}"
-                    update="pbAjaxThesaurusLoad"
+                    update="pbAjaxThesaurusLoad @(.thesaurus-usages)"
                     onstart="startProgressBar()"
                     oncomplete="endProgressBar()"
             >
                 <p:messages showDetail="true" autoUpdate="true" closable="true" id="messages"/>
 
-                <div>
-                    <p style="font-style: italic">
-                        #{langBean.msg('thesaurusConfig.hint')}
-                    </p>
-                    <h:graphicImage styleClass="config-example" library="img" name="opentheso_config_example.png" alt="Example configuration on OpenTheso"/>
-                </div>
-                <hr/>
-
-                <settingscomp:fieldValueRow label="#{langBean.msg('myThesaurus.url')}" inputId="project-thesaurus" >
-                    <p:inputText id="project-thesaurus" value="#{projectThesaurusSettingsBean.thesaurusUrl}"/>
-                </settingscomp:fieldValueRow>
+                <settingscomp:thesaurusPicker bean="#{projectThesaurusSettingsBean}" projectScope="true"/>
 
                 <p:progressBar widgetVar="pbAjaxThesaurusLoadWidget"
                                id="pbAjaxThesaurusLoad"
@@ -82,6 +72,9 @@
                 />
 
             </settingscomp:fieldValue>
+
+            <settingscomp:thesaurusUsages usages="#{projectThesaurusSettingsBean.usages}"/>
+            <settingscomp:addThesaurusDialog bean="#{projectThesaurusSettingsBean}" update="@(.sia-settings-form)"/>
         </main>
     </ui:define>
 

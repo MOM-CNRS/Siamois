@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
@@ -7,8 +7,10 @@ import { Skeleton } from "primereact/skeleton";
 import { Toolbar } from "primereact/toolbar";
 import { Tooltip } from "primereact/tooltip";
 import { queryKeys } from "../../api/queryKeys";
-import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/types";
+import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/shared/types";
 import { t } from "../../i18n";
+import { BottomSheet } from "../../components/layout/BottomSheet";
+import { useIsMobile } from "../../viewport";
 
 export interface ListToolbarProps {
   entityType: string;
@@ -17,6 +19,8 @@ export interface ListToolbarProps {
   scope?: ListScope;
   // The left group: the gear, the search box, the filter chips.
   start: ReactNode;
+  // The filter chips: after the group above, and the first thing to drop to a second line when the toolbar is narrow.
+  startFilters?: ReactNode;
   isLoading: boolean;
   // The size of the filtered result set, and how many of its rows are ticked.
   totalCount: number;
@@ -45,6 +49,7 @@ export function ListToolbar({
   organizationId,
   scope,
   start,
+  startFilters,
   isLoading,
   totalCount,
   selectedCount,
@@ -58,6 +63,10 @@ export function ListToolbar({
 }: ListToolbarProps) {
   const queryClient = useQueryClient();
   const createOverlayRef = useRef<OverlayPanel>(null);
+  // Phone width: the creation form is a drawer from the bottom rather than an overlay under the button.
+  const mobile = useIsMobile();
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const hideCreate = () => (mobile ? setCreateSheetOpen(false) : createOverlayRef.current?.hide());
   const blockedCreateRef = useRef<HTMLSpanElement>(null);
 
   function createButton(): ReactNode {
@@ -87,24 +96,41 @@ export function ListToolbar({
       );
     }
     if (config.list.createForm) {
+      const form = () =>
+        config.list.createForm!({
+          organizationId,
+          scope,
+          prefill: createPrefill,
+          onCreated: (id) => {
+            hideCreate();
+            void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+            // A linked create changes the parent's relation counts (its tab badges).
+            if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
+            onCreated(id);
+          },
+          onCancel: hideCreate,
+        });
       return (
         <>
-          <Button label={t("list.create")} icon="bi bi-plus-square" onClick={(e) => createOverlayRef.current?.toggle(e)} />
-          <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
-            {config.list.createForm({
-              organizationId,
-              scope,
-              prefill: createPrefill,
-              onCreated: (id) => {
-                createOverlayRef.current?.hide();
-                void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
-                // A linked create changes the parent's relation counts (its tab badges).
-                if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
-                onCreated(id);
-              },
-              onCancel: () => createOverlayRef.current?.hide(),
-            })}
-          </OverlayPanel>
+          <Button
+            label={t("list.create")}
+            icon="bi bi-plus-square"
+            onClick={(e) => (mobile ? setCreateSheetOpen(true) : createOverlayRef.current?.toggle(e))}
+          />
+          {mobile ? (
+            <BottomSheet
+              visible={createSheetOpen}
+              onHide={() => setCreateSheetOpen(false)}
+              ariaLabel={t("create.newOf", { label: config.labels.singular })}
+              className="create-entity-sheet"
+            >
+              {createSheetOpen && form()}
+            </BottomSheet>
+          ) : (
+            <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
+              {form()}
+            </OverlayPanel>
+          )}
         </>
       );
     }
@@ -114,29 +140,36 @@ export function ListToolbar({
   return (
     <Toolbar
       className="entity-list-panel-toolbar"
-      start={start}
+      start={
+        <>
+          <div className="entity-list-panel-toolbar-main">
+            {/* selectedCountChip (tableToolbar.xhtml): first in the toolbar, before the table's gear: selected / total of the FILTERED result set —
+                the only place that total shows in a relation tab, whose badge counts every related
+                row. Here rather than in the selection column's header, which it widened. Its ×
+                (only once rows are selected) clears the selection. */}
+            {isLoading ? (
+              <Skeleton width="3rem" height="1.5rem" borderRadius="16px" />
+            ) : (
+              <Chip
+                // Remounted when the selection empties or fills: PrimeReact's Chip hides itself on
+                // remove and would otherwise stay hidden.
+                key={selectedCount > 0 ? "selected" : "none"}
+                className="entity-list-panel-selection-count"
+                label={`${selectedCount}/${totalCount}`}
+                removable={selectedCount > 0}
+                onRemove={() => {
+                  onClearSelection();
+                  return false;
+                }}
+              />
+            )}
+            {start}
+          </div>
+          {startFilters}
+        </>
+      }
       end={
         <>
-          {/* selectedCountChip (tableToolbar.xhtml): selected / total of the FILTERED result set —
-              the only place that total shows in a relation tab, whose badge counts every related
-              row. Here rather than in the selection column's header, which it widened. Its ×
-              (only once rows are selected) clears the selection. */}
-          {isLoading ? (
-            <Skeleton width="3rem" height="1.5rem" borderRadius="16px" />
-          ) : (
-            <Chip
-              // Remounted when the selection empties or fills: PrimeReact's Chip hides itself on
-              // remove and would otherwise stay hidden.
-              key={selectedCount > 0 ? "selected" : "none"}
-              className="entity-list-panel-selection-count"
-              label={`${selectedCount}/${totalCount}`}
-              removable={selectedCount > 0}
-              onRemove={() => {
-                onClearSelection();
-                return false;
-              }}
-            />
-          )}
           {endExtra}
           {createButton()}
         </>

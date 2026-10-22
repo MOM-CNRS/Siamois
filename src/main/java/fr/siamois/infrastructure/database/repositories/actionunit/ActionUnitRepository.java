@@ -140,6 +140,22 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
     List<ActionUnit> findChildrenByParentAndInstitution(@Param("parentId") Long parentId,
                                                         @Param("institutionId") Long institutionId);
 
+    /** {@code [childId, parentId]} for each of {@code childIds}, for the tree view. */
+    @Query(value = """
+            SELECT h.fk_child_id AS owner_id, h.fk_parent_id AS related_id
+            FROM action_hierarchy h
+            WHERE h.fk_child_id IN (:childIds)
+            """, nativeQuery = true)
+    List<Object[]> findParentEdges(@Param("childIds") Collection<Long> childIds);
+
+    /** {@code [parentId, childId]} for each of {@code parentIds}, for the tree view. */
+    @Query(value = """
+            SELECT h.fk_parent_id AS owner_id, h.fk_child_id AS related_id
+            FROM action_hierarchy h
+            WHERE h.fk_parent_id IN (:parentIds)
+            """, nativeQuery = true)
+    List<Object[]> findChildEdges(@Param("parentIds") Collection<Long> parentIds);
+
     @Query(value = """
             SELECT COUNT(1) > 0
             FROM action_unit au

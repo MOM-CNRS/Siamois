@@ -66,7 +66,7 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
 
     private boolean isNotProjectManager(ActionUnitDTO project) {
         return !profilePermissionService.hasProjectSettingsPermission(
-                sessionSettingsBean.getUserInfo(), project.getId());
+                sessionSettingsBean.getAuthenticatedUser(), project);
     }
 
     /**

@@ -56,7 +56,7 @@ public class SystemFieldInitializer implements DatabaseInitializer {
                 .forEach(field -> existing.putIfAbsent(field.getId(), field));
 
         int created = 0;
-        for (ConfigurableTable table : ConfigurableTable.values()) {
+        for (ConfigurableTable table : ConfigurableTable.projectScopedTables()) {
             for (CustomField definition : SystemFieldCatalog.fieldsOf(table)) {
                 Long id = Objects.requireNonNull(definition.getId(),
                         () -> "System field '" + definition.getLabel() + "' of table " + table + " has no id");

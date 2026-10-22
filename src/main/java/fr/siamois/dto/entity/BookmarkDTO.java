@@ -19,6 +19,8 @@ public class BookmarkDTO {
     private String resourceUri;
     private PersonDTO person;
     private InstitutionDTO institution;
+    /** Name of the project of the bookmarked fiche, read when the bookmarks are listed; null when it has none. */
+    private String projectName;
 
     // Static mapping configurations moved cleanly into presentation layer constants
     private static final Map<String, String> COLOR_MAP = Map.of(

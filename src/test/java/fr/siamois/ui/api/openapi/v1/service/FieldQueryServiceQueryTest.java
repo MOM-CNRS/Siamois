@@ -32,6 +32,8 @@ import jakarta.persistence.metamodel.Type;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -194,6 +196,30 @@ class FieldQueryServiceQueryTest {
     // ---------- system scalar columns ----------
 
     @Test
+    void aFilterMarksTheQueryFiltered_aSortAloneDoesNot() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        // The tree view treats a filtered list like a searched one; a mere sort narrows nothing.
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).filtered()).isTrue();
+        assertThat(build(RecordingUnit.class, sort(true)).filtered()).isFalse();
+        assertThat(build(RecordingUnit.class, sort(true)).ordered()).isTrue();
+        assertThat(FieldQuery.NONE.filtered()).isFalse();
+    }
+
+    @Test
+    void theOrderingIsKeptApartFromTheFilters() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        // The tree view orders every level by the sort but must not narrow its parents by the filters.
+        assertThat(build(RecordingUnit.class, sort(true)).ordering()).isNotNull();
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).ordering()).isNull();
+        assertThat(build(RecordingUnit.class, filter(values("AB"))).<RecordingUnit>orderingSpecificationFor()).isNotNull();
+        assertThat(FieldQuery.NONE.<Object>orderingSpecificationFor()).isNotNull();
+    }
+
+    @Test
     void textColumn_filterContains_andSortLowercased() {
         field(new CustomFieldText(), true, "fullIdentifier");
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
@@ -350,15 +376,16 @@ class FieldQueryServiceQueryTest {
         badRequest(RecordingUnit.class, sort(true));
     }
 
-    @Test
-    void stratigraphyIsRelatedThroughEitherSide() {
-        field(new CustomFieldSelectOneActionUnit(), true, "stratigraphicRelationships");
+    @ParameterizedTest
+    @ValueSource(strings = {"anteriorRelationships", "posteriorRelationships", "synchronousRelationships"})
+    void eachSideOfTheStratigraphyIsFilteredAndSortedOnItsOwn(String binding) {
+        field(new CustomFieldSelectOneActionUnit(), true, binding);
 
         run(build(RecordingUnit.class, filter(values("3"))));
         run(build(RecordingUnit.class, sort(true)));
 
         verify(cb, atLeastOnce()).exists(any());
-        verify(cb, atLeastOnce()).sum(any(jakarta.persistence.criteria.Expression.class), any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).count(any());
     }
 
     @Test

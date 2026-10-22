@@ -6,11 +6,12 @@ import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { ProjectCreateForm } from "./CreateForm";
 import { getProjectTypes } from "./projectTypes";
-import { createProject } from "./api";
+import { createProject, getNextProjectIdentifier, listProjectTemplates } from "./api";
+import { notifySpy } from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
-vi.mock("./api", () => ({ createProject: vi.fn() }));
+vi.mock("./api", () => ({ createProject: vi.fn(), getNextProjectIdentifier: vi.fn(), listProjectTemplates: vi.fn() }));
 
 // The concept autocomplete (AutoComplete + its async option source) is exercised by
 // fields/renderers.test.tsx already — mocked here to a plain, directly-clickable stand-in so this
@@ -45,6 +46,8 @@ vi.mock("../../fields/renderers", () => ({
 
 const mockedGetProjectTypes = vi.mocked(getProjectTypes);
 const mockedCreateProject = vi.mocked(createProject);
+const mockedNextIdentifier = vi.mocked(getNextProjectIdentifier);
+const mockedTemplates = vi.mocked(listProjectTemplates);
 
 const typeField: FieldResource = {
   id: "-101",
@@ -98,6 +101,11 @@ beforeEach(() => {
     fields: { "-101": typeField },
   });
   mockedCreateProject.mockReset();
+  // by default an organization that cannot number its projects, offering only the empty template
+  mockedNextIdentifier.mockReset();
+  mockedNextIdentifier.mockResolvedValue(null);
+  mockedTemplates.mockReset();
+  mockedTemplates.mockResolvedValue([{ id: "empty", label: "", kind: "empty" }]);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -150,6 +158,7 @@ describe("ProjectCreateForm", () => {
       organizationId: "7",
       name: "Fouille 2026",
       identifier: "F2026",
+      templateId: "empty",
       typeId: "9",
     });
     expect(onCreated).toHaveBeenCalledWith("55");
@@ -196,10 +205,43 @@ describe("ProjectCreateForm", () => {
       organizationId: "7",
       name: "Fouille",
       identifier: "F1",
+      templateId: "empty",
       typeId: "9",
       mainLocationId: "31",
       spatialContextSpatialUnitIds: ["32", "33"],
     });
+  });
+
+  it("prefills the next identifier and leaves its allocation to the server unless edited", async () => {
+    mockedNextIdentifier.mockResolvedValue("PROJ4");
+    mockedCreateProject.mockResolvedValue({ resourceType: "projects", id: "57", name: "Auto" } as never);
+    render();
+    await flush();
+
+    const inputs = Array.from(container.querySelectorAll("input")) as HTMLInputElement[];
+    expect(inputs[1].value).toBe("PROJ4");
+    await act(async () => setInputValue(inputs[0], "Auto"));
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateProject).toHaveBeenCalledWith({
+      organizationId: "7",
+      name: "Auto",
+      identifier: undefined,
+      templateId: "empty",
+      typeId: "9",
+    });
+  });
+
+  it("offers the existing projects as templates only when there are some", async () => {
+    render();
+    await flush();
+    expect(container.textContent).not.toContain("Modèle");
   });
 
   it("shows the server's error message instead of calling onCreated on failure", async () => {
@@ -219,7 +261,7 @@ describe("ProjectCreateForm", () => {
     });
     await flush();
 
-    expect(container.textContent).toContain("Identifiant déjà utilisé");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Identifiant déjà utilisé"));
     expect(onCreated).not.toHaveBeenCalled();
   });
 

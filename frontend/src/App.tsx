@@ -1,21 +1,30 @@
-import { useEffect } from "react";
+import { useHideChromeOnScroll } from "./mobileChrome";
+import { useEffect, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { NotifyProvider } from "./notify/NotifyProvider";
-import { PaneErrorBoundary } from "./components/PaneErrorBoundary";
+import { PaneErrorBoundary } from "./components/layout/PaneErrorBoundary";
 import { queryClient } from "./api/queryClient";
 import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
+import { homeShortcutWidgets } from "./components/home/HomeShortcuts";
 import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
 import { EntityDetailPanel, type EntityPreview } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
-import { WriteModeProvider } from "./panels/writeMode";
-import { BridgeProvider } from "./panels/bridge";
-import { EntityNavigationProvider } from "./panels/entityNavigation";
-import { paneTransitionName } from "./panels/panelTransition";
-import { PaneSplit } from "./panels/PaneSplit";
-import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
+import { WriteModeProvider } from "./panels/pane/writeMode";
+import { BridgeProvider } from "./panels/pane/bridge";
+import { EntityNavigationProvider } from "./panels/pane/entityNavigation";
+import { paneTransitionName } from "./panels/pane/panelTransition";
+import { PaneSplit } from "./panels/pane/PaneSplit";
+import { useRestoreFocus } from "./panels/pane/useRestoreFocus";
+import { OverviewOpenProvider } from "./panels/pane/overviewOpen";
+import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/pane/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
+import { registerNavigation } from "./navigation/externalBus";
+import { onEntityDeleted } from "./panels/detail/entityDeleted";
+import { ContextPublisher } from "./navigation/ContextPublisher";
+import { PROJECT_KEY } from "./entities/keys";
+import type { ListScope } from "./entities/shared/types";
 import { t } from "./i18n";
 
 // One cache for the whole app: see api/queryClient.ts.
@@ -41,9 +50,12 @@ function PanelContent({
   overview,
   onCreate,
   toolbar,
+  onOpenView,
 }: {
   view: NavigationView;
   organizationId?: number;
+  // Opens a saved view of the list in this pane (without an id, the default list).
+  onOpenView?: (entityType: string, viewId?: number) => void;
   onNavigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // Only meaningful for a "list" view — opens the entity in the overview pane instead of
   // navigating the main pane away from the list (plan §8 phase 5).
@@ -64,9 +76,11 @@ function PanelContent({
       // Assembled from every registered entity's own `home.widgets` (plan §8 phase 7) — not a
       // switch/import per entity, same "registry, not a switch" principle List/Detail already
       // follow. Most entities won't declare `home` at all yet, so this stays empty until they do.
-      const widgets = getAllEntityTypes().flatMap(
-        (config) => config.home?.widgets({ organizationId, onNavigate }) ?? [],
-      );
+      const home = { organizationId, onNavigate, onOpenView, onOpenOverview };
+      const widgets = [
+        ...getAllEntityTypes().flatMap((config) => config.home?.widgets(home) ?? []),
+        ...homeShortcutWidgets(home),
+      ];
       return <HomePanel widgets={widgets} toolbar={toolbar} />;
     }
     case "list":
@@ -79,6 +93,8 @@ function PanelContent({
           overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
           onCreate={onCreate}
           toolbar={toolbar}
+          viewId={view.viewId}
+          onViewChange={onOpenView && ((viewId) => onOpenView(view.entityType, viewId))}
         />
       );
     case "detail":
@@ -94,7 +110,8 @@ function PanelContent({
           onNavigate={onNavigate}
           organizationId={organizationId}
           onOpenOverview={onOpenOverview}
-          overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
+          overviewEntityId={overview?.entityId}
+          overviewEntityType={overview?.entityType}
           // A sibling jump on the MAIN pane's own fiche is a same-pane navigation — the same
           // `navigate` a list row click or the breadcrumb already use, just staying on "detail".
           onNavigateSibling={(id, preview) => onNavigate(view.entityType, id, preview)}
@@ -112,7 +129,7 @@ function PanelContent({
  * - No overview open (options.overviewEntityType unset): renders only the main pane, no
  *   splitter/gutter — mirrors JSF's own p:splitter today, which has a single splitterPanel
  *   when panelModel.parentOrOverview is null.
- * - Overview open: PaneSplit (panels/PaneSplit.tsx) is the equivalent of JSF's
+ * - Overview open: PaneSplit (panels/pane/PaneSplit.tsx) is the equivalent of JSF's
  *   p:splitter/p:splitterPanel, built so the main pane is never remounted when the overview
  *   opens or closes — left pane = the main panel's entity, right pane =
  *   parentOrOverview's entity. Class names (panel-splitter-panel-l/-r, sideview,
@@ -146,14 +163,37 @@ export function App({ options }: { options: MountOptions }) {
   // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
-  const { state, navigate, openOverview, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  const { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
+  useRestoreFocus(overview != null);
+
+  // What the top search bar (its own React root) can drive.
+  const external = useMemo(() => ({ navigate, openOverview, openList, restoreUrl }), [navigate, openOverview, openList, restoreUrl]);
+  useEffect(() => registerNavigation(external), [external]);
+
+  // A deleted entity can no longer be shown: close the overview that displays it, and leave a main
+  // pane showing its fiche for the list of its type.
+  useEffect(
+    () =>
+      onEntityDeleted((entityType, id) => {
+        if (overview?.entityType === entityType && overview.entityId != null && String(overview.entityId) === String(id)) {
+          closeOverview();
+        }
+        if (view.panelKind === "detail" && view.entityType === entityType && view.entityId != null && String(view.entityId) === String(id)) {
+          navigate(entityType);
+        }
+      }),
+    [overview, view, closeOverview, navigate],
+  );
 
   // options.overview is the chrome of the overview JSF mounted with — only valid for that entity.
   // For anything else it's a placeholder until EntityDetailPanel derives the real one from
   // config.detail.chrome once its data loads.
   const overviewChromeFor = (entity: OverviewState): PanelChrome =>
-    options.overview &&
+    entity.entityId == null
+      ? { resourceUri: getEntityType(entity.entityType)?.routes.list ?? "", title: getEntityType(entity.entityType)?.labels.plural ?? "" }
+      : options.overview &&
     sameEntity(entity, options.overviewEntityType != null && options.overviewEntityId != null
       ? { entityType: options.overviewEntityType, entityId: options.overviewEntityId }
       : null)
@@ -191,15 +231,17 @@ export function App({ options }: { options: MountOptions }) {
         organizationId: options.overviewOrganizationId ?? options.organizationId,
         // closeOverview is App's own wrapper (it also clears the React overview state and the
         // URL); fullscreen is App's client-side focus swap (enterFocus).
-        actions: { closeOverview, fullscreen: enterFocus },
+        // A list has no fiche to promote to the main pane.
+        actions: overview.entityId == null ? { closeOverview } : { closeOverview, fullscreen: enterFocus },
       }
     : undefined;
 
   // Named per shown entity (see paneTransitionName). The overview gets a suffix only in the odd
   // case both panes show the very same entity — names must be unique on the page.
   const mainPaneName = paneTransitionName(view.panelKind, view.entityType, view.entityId);
+  const overviewKind = overview?.entityId == null ? "list" : "detail";
   const overviewPaneName = overview
-    ? paneTransitionName("detail", overview.entityType, overview.entityId)
+    ? paneTransitionName(overviewKind, overview.entityType, overview.entityId)
     : undefined;
   const overviewPaneStyleName = overviewPaneName === mainPaneName ? `${overviewPaneName}-overview` : overviewPaneName;
 
@@ -220,6 +262,7 @@ export function App({ options }: { options: MountOptions }) {
   }, [paneStateStore, liveScopes]);
 
   const mainPane = (
+    <OverviewOpenProvider value={overview != null}>
     <PaneErrorBoundary label={t("pane.main")} resetKey={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}>
     <PaneStateScope name={mainPaneName}>
     <PanelContent
@@ -227,17 +270,30 @@ export function App({ options }: { options: MountOptions }) {
       view={view}
       organizationId={options.organizationId}
       onNavigate={navigate}
+      onOpenView={openView}
       onOpenOverview={openOverview}
       overview={overview}
       toolbar={mainToolbar}
     />
     </PaneStateScope>
     </PaneErrorBoundary>
+    </OverviewOpenProvider>
   );
 
   const overviewPane = overview && (
-    <PaneErrorBoundary label={t("pane.overview")} resetKey={`${overview.entityType}:${overview.entityId}`}>
+    <PaneErrorBoundary label={t("pane.overview")} resetKey={`${overview.entityType}:${overview.entityId ?? ""}`}>
     <PaneStateScope name={overviewPaneStyleName ?? ""}>
+    {overview.entityId == null ? (
+      <EntityListPanel
+        entityType={overview.entityType}
+        organizationId={options.overviewOrganizationId ?? options.organizationId}
+        scope={seedScope(overview)}
+        seed={overview.seed}
+        onNavigate={(entityType, id) => openOverview(entityType, id)}
+        onOpenOverview={openOverview}
+        toolbar={overviewToolbar}
+      />
+    ) : (
     <EntityDetailPanel
       entityType={overview.entityType}
       entityId={overview.entityId}
@@ -257,6 +313,7 @@ export function App({ options }: { options: MountOptions }) {
       // `navigate`, which would move the MAIN pane instead.
       onNavigateSibling={(id, preview) => openOverview(overview.entityType, id, preview)}
     />
+    )}
     </PaneStateScope>
     </PaneErrorBoundary>
   );
@@ -270,15 +327,16 @@ export function App({ options }: { options: MountOptions }) {
       mainClassName={`panel-splitter-panel-l ${paneClassName(view.panelKind, view.entityType)}`}
       mainStyle={{ borderTop: "3px solid var(--main-color)", viewTransitionName: mainPaneName }}
       overview={overviewPane || null}
-      overviewClassName={`panel-splitter-panel-r sideview ${overview ? paneClassName("detail", overview.entityType) : ""}`}
+      overviewClassName={`panel-splitter-panel-r sideview ${overview ? paneClassName(overviewKind, overview.entityType) : ""}`}
       overviewStyle={{ viewTransitionName: overviewPaneStyleName }}
     />
   );
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ContextPublisher view={view} organizationId={options.organizationId} />
       <NotifyProvider>
-      {/* FlowBean.isWriteMode, for every panel below — see panels/writeMode.tsx for why this is a
+      {/* FlowBean.isWriteMode, for every panel below — see panels/pane/writeMode.tsx for why this is a
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>
         <BridgeProvider value={options.bridge}>
@@ -290,4 +348,14 @@ export function App({ options }: { options: MountOptions }) {
       </NotifyProvider>
     </QueryClientProvider>
   );
+}
+
+// The sub-collection of a project a list opened with a project filter is read from: only the kinds
+// the API serves under /projects/{id}/… (the others are searched organization-wide).
+const PROJECT_SCOPED_LISTS = new Set(["recordingUnit", "find"]);
+
+function seedScope(overview: OverviewState): ListScope | undefined {
+  const projectId = overview.seed?.projectId;
+  if (projectId == null || !PROJECT_SCOPED_LISTS.has(overview.entityType)) return undefined;
+  return { entityType: PROJECT_KEY, id: projectId };
 }

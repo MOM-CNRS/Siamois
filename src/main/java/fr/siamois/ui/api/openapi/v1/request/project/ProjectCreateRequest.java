@@ -20,8 +20,13 @@ public class ProjectCreateRequest {
     @Schema(description = "Nom du projet", requiredMode = Schema.RequiredMode.REQUIRED)
     private String name;
 
-    @Schema(description = "Identifiant unique du projet dans l'organisation", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Identifiant unique du projet dans l'organisation. Optionnel : généré automatiquement "
+            + "(PROJ1, PROJ2...) selon la configuration de l'organisation s'il est absent.")
     private String identifier;
+
+    @Schema(description = "Modèle de départ : 'empty' (défaut) ou 'project:<id>' pour copier la configuration d'un projet existant",
+            example = "project:42")
+    private String templateId;
 
     @Schema(description = "Identifiant du concept du type de projet", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("typeConceptId")

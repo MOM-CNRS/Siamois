@@ -1,15 +1,16 @@
-import type { EntityTypeConfig } from "../types";
-import { loadTypeCatalog } from "../typeCatalog";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import type { EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { loadTypeCatalog } from "../shared/typeCatalog";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { getStudy, listStudies, patchStudy, patchStudyAnswers } from "./api";
 import { studyColumns } from "./columns";
 import { StudyCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { StudyDetail, StudySummary } from "./types";
 import { t } from "../../i18n";
 
@@ -17,7 +18,7 @@ import { t } from "../../i18n";
 // project list, and a fiche composed from the project's configuration of the study table. Its
 // "type" decides which fields the form shows: a study of finds or of recording units links them, a
 // treatment carries the columns of the SDA's "traitement" sheet. Its dynamic column catalog comes
-// from the project's forms (entities/typeCatalog.ts).
+// from the project's forms (entities/shared/typeCatalog.ts).
 export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   key: "study",
   labels: { singular: t("entity.study.singular"), plural: t("entity.study.plural"), all: t("entity.study.all") },
@@ -25,9 +26,12 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   // Matches StudyPanel's own icon.
   icon: "bi bi-clipboard-data",
   panelClass: "study-panel",
+  cardClassName: "sia-study",
+  countChipClassName: "study-count-chip",
   api: {
+    delete: (id) => deleteEntity("studies", id),
     siblings: (id) => fetchSiblings("studies", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("studies", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("studies", id, via),
     get: getStudy,
     list: listStudies,
     patchAnswers: (id, answers) => patchStudyAnswers(id, answers),

@@ -140,6 +140,27 @@ class RecordingUnitSortFilterServiceTest {
     }
 
     @Test
+    void ancestorClosure_resolvesTheMatchesAndTheirAncestorsAndKeepsThemOnTheFilter() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(1L);
+        FilterDTO filters = new FilterDTO(false);
+        filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+        RecordingUnit match = new RecordingUnit();
+        match.setId(42L);
+        match.setFullIdentifier("M42");
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
+        when(recordingUnitRepository.findAncestorClosure(new Long[]{42L})).thenReturn(List.of(42L, 1L));
+
+        java.util.Collection<Long> closure = recordingUnitSortFilterService.ancestorClosure(institution, filters);
+
+        assertEquals(Set.of(42L, 1L), Set.copyOf(closure));
+        assertEquals(Set.of(42L), filters.getMatchIds());
+        // Asked again for the same filter, it is not computed again.
+        recordingUnitSortFilterService.ancestorClosure(institution, filters);
+        verify(recordingUnitRepository).findAncestorClosure(any());
+    }
+
+    @Test
     void computeAncestorClosure_notRootOnly_returnsEmptySet() {
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(1L);

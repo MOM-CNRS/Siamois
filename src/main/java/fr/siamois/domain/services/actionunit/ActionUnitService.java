@@ -15,6 +15,7 @@ import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -22,6 +23,8 @@ import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.domain.services.tree.HierarchyTreeQuery;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
@@ -69,7 +72,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ActionUnitService implements ArkEntityService {
 
+    private static final String NOT_FOUND_BY_ID = "ActionUnit not found with ID: ";
+
+
     private final ActionUnitRepository actionUnitRepository;
+    private final ProjectDeletionService projectDeletionService;
     private final RecordingUnitRepository recordingUnitRepository;
     private final ConceptService conceptService;
     private final ActionUnitMapper actionUnitMapper;
@@ -85,7 +92,8 @@ public class ActionUnitService implements ArkEntityService {
     private final ProfileMapper profileMapper;
     private final ProfilePermissionService profilePermissionService;
     private final InstitutionService institutionService;
-    private final DefaultProjectIdentifierConfigSeeder defaultProjectIdentifierConfigSeeder;
+    private final ProjectIdentifierService projectIdentifierService;
+    private final List<ProjectTemplateApplier> templateAppliers;
 
 
     /**
@@ -100,7 +108,7 @@ public class ActionUnitService implements ArkEntityService {
     public ActionUnitDTO findById(long id) {
         try {
             ActionUnit actionUnit = actionUnitRepository.findById(id)
-                    .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + id));
+                    .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + id));
             return convertWithCount(actionUnit);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
@@ -243,25 +251,69 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, null);
+    }
+
+    /**
+     * Save an ActionUnit with a transaction. A new project with no identifier is numbered automatically
+     * ({@link ProjectIdentifierService}), and is configured from the given template.
+     *
+     * @param templateId the project template to configure a new project from, null or {@code empty} for none
+     */
+    @Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
+    public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId)
+            throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, templateId);
+    }
+
+    // Shared by both transactional save entry points: a call through `this` from one to the other would skip the proxy.
+    private ActionUnitDTO saveWithTemplate(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept,
+                                           String templateId) throws ActionUnitAlreadyExistsException {
         boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
+        if (isCreation && (actionUnit.getIdentifier() == null || actionUnit.getIdentifier().isBlank())) {
+            actionUnit.setIdentifier(projectIdentifierService.generate(info).value());
+            actionUnit.setFullIdentifier(null);
+        }
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         if (isCreation) {
             assignRoles(info, savedDTO);
-            seedIdentifierConfigAfterCommit(info, savedDTO.getId());
+            applyTemplate(info, templateId, savedDTO.getId());
         }
         return savedDTO;
     }
 
-    private void seedIdentifierConfigAfterCommit(UserInfo info, Long projectId) {
+    /** Whether a project of the institution already carries this name (names are unique per institution). */
+    @Transactional(readOnly = true)
+    public boolean projectNameExists(Long institutionId, String name) {
+        return actionUnitRepository.findByNameAndCreatedByInstitutionId(name, institutionId).isPresent();
+    }
+
+    /** The identifier the next project of the institution would get, without reserving it. */
+    @Transactional(readOnly = true)
+    public Optional<String> previewNextProjectIdentifier(UserInfo info) {
+        return projectIdentifierService.preview(info);
+    }
+
+    private void applyTemplate(UserInfo info, String templateId, Long projectId) {
+        ProjectTemplateApplier applier = templateAppliers.stream()
+                .filter(candidate -> candidate.supports(templateId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown project template: " + templateId));
+        if (applier.transactional()) {
+            applier.apply(info, templateId, projectId);
+            return;
+        }
+        // the default configuration is seeded after commit and never cancels the creation
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+            applier.apply(info, templateId, projectId);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                defaultProjectIdentifierConfigSeeder.seed(info, projectId);
+                applier.apply(info, templateId, projectId);
             }
         });
     }
@@ -814,8 +866,11 @@ public class ActionUnitService implements ArkEntityService {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
         }
 
-        Page<ActionUnit> page = actionUnitRepository.findAll(spec, pageable);
+        return toAccessibleProjects(actionUnitRepository.findAll(spec, pageable), pageable);
+    }
 
+    /** A page of projects with what the API lists of each: its recording-unit and child counts, its forms warmed. */
+    private Page<AccessibleProjectForApi> toAccessibleProjects(Page<ActionUnit> page, Pageable pageable) {
         List<Long> ids = page.getContent().stream().map(ActionUnit::getId).toList();
         warmFormCollections(ids);
         Map<Long, Long> ruByProject = ids.isEmpty()
@@ -833,6 +888,99 @@ public class ActionUnitService implements ArkEntityService {
                 .toList();
 
         return new PageImpl<>(mapped, pageable, page.getTotalElements());
+    }
+
+    /**
+     * The tree view of the accessible projects: the projects none of whose parents is accessible (a project
+     * under one the person cannot see is a root for them), or with {@code parentId} that project's accessible
+     * children. A search or a filter keeps the matches and their accessible ancestors
+     * ({@link HierarchyTreeQuery}); the page carries the tree flags of its rows and the match count.
+     */
+    @Transactional(readOnly = true)
+    public TreePage<AccessibleProjectForApi> findAccessibleProjectsTree(ProjectTreeQuery query) {
+        ProjectTreeQuery.Selection selection = query.selection();
+        Pageable pageable = selection.pageable();
+        Set<Long> institutions = query.accessibleInstitutionIds();
+        if (institutions == null || institutions.isEmpty()) {
+            return new TreePage<>(List.of(), pageable, 0, 0);
+        }
+        Collection<Long> institutionScope = query.organizationId() != null ? List.of(query.organizationId()) : institutions;
+        Specification<ActionUnit> scope = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
+                .and(ActionUnitSpec.visibleToPerson(query.personId()));
+        if (query.spatialContextId() != null) {
+            scope = scope.and(ActionUnitSpec.actionUnitInSpatialUnit(query.spatialContextId()));
+        }
+
+        FieldQuery fieldQuery = selection.fieldQuery();
+        String search = selection.search();
+        ProjectListFilter filter = selection.filter();
+        boolean narrowed = (search != null && !search.isBlank())
+                || (filter != null && !filter.isEmpty())
+                || fieldQuery.filtered();
+        Specification<ActionUnit> matches = narrowed ? matchesOf(search, filter, fieldQuery) : null;
+        Specification<ActionUnit> ordering = Specification.where(fieldQuery.<ActionUnit>orderingSpecificationFor());
+        if (selection.recordingUnitCountOrder() != null) {
+            ordering = ordering.and(ActionUnitSpec.orderByRecordingUnitCount(selection.recordingUnitCountOrder()));
+        }
+        return new HierarchyTreeQuery<>(actionUnitHierarchy()).page(scope, matches, ordering, query.parentId(), pageable);
+    }
+
+    private static Specification<ActionUnit> matchesOf(String search, ProjectListFilter filter, FieldQuery fieldQuery) {
+        Specification<ActionUnit> matches = Specification.where(ActionUnitSpec.projectSearch(search));
+        if (filter != null && !filter.isEmpty()) {
+            matches = matches.and(ActionUnitFilterSpec.fromFilter(filter));
+        }
+        return matches.and(fieldQuery.specificationFor());
+    }
+
+    /** Projects as {@link HierarchyTreeQuery} sees a hierarchical type. */
+    private HierarchyTreeQuery.Hierarchy<ActionUnit, AccessibleProjectForApi> actionUnitHierarchy() {
+        return new HierarchyTreeQuery.Hierarchy<>() {
+            @Override
+            public Specification<ActionUnit> hasParent(long parentId) {
+                return ActionUnitSpec.hasParent(parentId);
+            }
+
+            @Override
+            public Specification<ActionUnit> hasNoParentIn(Specification<ActionUnit> scope) {
+                return ActionUnitSpec.hasNoParentIn(scope);
+            }
+
+            @Override
+            public Specification<ActionUnit> idIn(Collection<Long> ids) {
+                return ActionUnitSpec.idIn(ids);
+            }
+
+            @Override
+            public List<Object[]> parentEdges(Collection<Long> childIds) {
+                return actionUnitRepository.findParentEdges(childIds);
+            }
+
+            @Override
+            public List<Object[]> childEdges(Collection<Long> parentIds) {
+                return actionUnitRepository.findChildEdges(parentIds);
+            }
+
+            @Override
+            public List<Long> ids(Specification<ActionUnit> specs) {
+                return actionUnitRepository.findAll(specs).stream().map(ActionUnit::getId).toList();
+            }
+
+            @Override
+            public long count(Specification<ActionUnit> specs) {
+                return actionUnitRepository.count(specs);
+            }
+
+            @Override
+            public Page<AccessibleProjectForApi> page(Specification<ActionUnit> specs, Pageable page) {
+                return toAccessibleProjects(actionUnitRepository.findAll(specs, page), page);
+            }
+
+            @Override
+            public Long idOf(AccessibleProjectForApi row) {
+                return row.actionUnit().getId();
+            }
+        };
     }
 
     /**
@@ -981,8 +1129,9 @@ public class ActionUnitService implements ArkEntityService {
     }
 
     /**
-     * Supprime une unité d'action (projet) vide : aucune unité d'enregistrement, aucun document, aucun enfant dans la hiérarchie.
-     * Nettoie les lignes dépendantes pour respecter les contraintes de clés étrangères.
+     * Supprime une unité d'action (projet) et tout son contenu (unités d'enregistrement, mobiliers, documents,
+     * phases, contenants, études, configuration du projet, membres).
+     * Refuse s'il existe des sous-projets ou si du contenu est lié à un autre projet.
      *
      * @throws IllegalStateException si le projet n'est pas supprimable
      */
@@ -994,47 +1143,49 @@ public class ActionUnitService implements ArkEntityService {
             }),
             @CacheEvict(value = "MyActionUnits", allEntries = true)
     })
-    public void deleteProjectWhenEmpty(long actionUnitId) {
+    @Transactional
+    public void deleteProjectWithContent(long actionUnitId) {
         UserInfo info = ExecutionContextHolder.get();
-        boolean allowed = info != null
-                && (profilePermissionService.hasOrganizationPermission(info, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS)
-                || profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
-        if (!allowed) {
+        if (!profilePermissionService.hasDeleteProjectPermission(info, actionUnitId)) {
             throw new ForbiddenOperationException("You are not allowed to delete this action unit");
-        }
-        if (recordingUnitRepository.countByActionUnit_Id(actionUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le projet contient des unités d'enregistrement");
-        }
-        if (documentRepository.countByActionUnitId(actionUnitId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le projet contient des documents");
         }
         Map<Long, Long> childrenByProject = countingMap(
                 actionUnitRepository.countChildActionUnitsByParentIds(List.of(actionUnitId)));
         if (childrenByProject.getOrDefault(actionUnitId, 0L) > 0) {
             throw new IllegalStateException("Impossible de supprimer : le projet contient des sous-projets");
         }
+        ActionUnit project = actionUnitRepository.findById(actionUnitId)
+                .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + actionUnitId));
+        Long projectArkId = project.getArk() != null ? project.getArk().getInternalId() : null;
+
+        List<Long> arkIds = new ArrayList<>(projectDeletionService.deleteContent(actionUnitId));
+        if (projectArkId != null) {
+            arkIds.add(projectArkId);
+        }
+
         personProfileAssignmentRepository.deleteAllByProfileActionUnitId(actionUnitId);
         profileRepository.deleteAllByActionUnitId(actionUnitId);
         recordingUnitIdLabelRepository.deleteAllByActionUnitId(actionUnitId);
         actionUnitRepository.deleteHierarchyLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteSpatialContextLinksForActionUnit(actionUnitId);
         actionUnitRepository.deleteById(actionUnitId);
+        projectDeletionService.deleteArks(arkIds);
     }
 
     /** The project of a database id; anything else (a full identifier, a short one) is not a key of the API. */
     private ActionUnitDTO loadProjectDtoForLookupKey(String id) {
         String key = id == null ? "" : id.trim();
         if (key.isEmpty() || !key.chars().allMatch(Character::isDigit)) {
-            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
+            throw new ActionUnitNotFoundException(NOT_FOUND_BY_ID + key);
         }
         long projectId;
         try {
             projectId = Long.parseLong(key);
         } catch (NumberFormatException e) {
-            throw new ActionUnitNotFoundException("ActionUnit not found with ID: " + key);
+            throw new ActionUnitNotFoundException(NOT_FOUND_BY_ID + key);
         }
         ActionUnit actionUnit = actionUnitRepository.findById(projectId)
-                .orElseThrow(() -> new ActionUnitNotFoundException("ActionUnit not found with ID: " + projectId));
+                .orElseThrow(() -> new ActionUnitNotFoundException(NOT_FOUND_BY_ID + projectId));
         return convertWithCount(actionUnit);
     }
 

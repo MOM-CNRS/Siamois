@@ -3,17 +3,17 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import { DEFAULT_LIMIT } from "./tableState";
+import { DEFAULT_LIMIT } from "./list/tableState";
 import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
 
 registerDefaultFieldRenderers();
-import type { EntityTypeConfig, PagedResult } from "../entities/types";
-import { recallListContext } from "./listContext";
+import type { EntityTypeConfig, PagedResult } from "../entities/shared/types";
+import { recallListContext } from "./list/listContext";
 import { EntityListPanel } from "./EntityListPanel";
-import { WriteModeProvider } from "./writeMode";
-import { searchCreatableProjects } from "../entities/creatableProjects";
+import { WriteModeProvider } from "./pane/writeMode";
+import { searchCreatableProjects } from "../entities/shared/creatableProjects";
 
-vi.mock("../entities/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../entities/shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 const mockedSearchCreatableProjects = vi.mocked(searchCreatableProjects);
 
 // Some PrimeReact internals (ripple, resize listeners) schedule state updates outside any act()
@@ -57,7 +57,8 @@ registerEntityType(fakeConfig);
 // The list's page requests — not the one-row count behind the titlebar's unfiltered total, which a
 // search or a filter also triggers.
 function pageCalls(): Record<string, unknown>[] {
-  return listMock.mock.calls.map(([p]) => p as Record<string, unknown>).filter((p) => p.limit !== 1);
+  // Not the count request (limit 1) nor the search overlay's preview (limit 8).
+  return listMock.mock.calls.map(([p]) => p as Record<string, unknown>).filter((p) => p.limit !== 1 && p.limit !== 8);
 }
 
 function lastPageCall(): Record<string, unknown> | undefined {
@@ -111,11 +112,37 @@ function renderPanel(
   });
 }
 
+// Twice, each in its own act(): the list waits for the user's saved state (GET /view-states) before its
+// first fetch, and what that read changes is committed when its act ends.
 async function flush() {
+  for (let round = 0; round < 2; round++) {
+    await act(async () => {
+      for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    });
+  }
+}
+
+
+// The list's search happens in an overlay: open it from the toolbar field, type in its own field.
+async function typeInSearchOverlay(text: string) {
+  const trigger = container.querySelector<HTMLInputElement>(".entity-list-panel-toolbar input")!;
   await act(async () => {
-    for (let i = 0; i < 5; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  const field = document.body.querySelector<HTMLInputElement>('input[role="combobox"]')!;
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+  await act(async () => {
+    nativeSetter.call(field, text);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  return field;
+}
+
+async function pressEnter(field: HTMLInputElement) {
+  await act(async () => {
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
   });
 }
 
@@ -155,55 +182,47 @@ describe("EntityListPanel", () => {
     expect(container.textContent).toContain("Row A");
   });
 
-  it("resets the offset and passes the typed value when searching", async () => {
+  it("resets the offset and passes the typed value when the search is applied", async () => {
     renderPanel();
     await flush();
 
-    const input = container.querySelector("input") as HTMLInputElement;
-    expect(input).toBeTruthy();
-
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "abc");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    // The query itself doesn't fire until the debounce settles — a bare flush() would still see
-    // the previous, un-searched call.
+    const field = await typeInSearchOverlay("abc");
     await flushDebounce();
+    await flush();
+    // Nothing is applied while typing: the preview is not the table.
+    expect(lastPageCall()).not.toEqual(expect.objectContaining({ search: "abc" }));
+
+    await pressEnter(field);
     await flush();
 
     expect(lastPageCall()).toEqual(expect.objectContaining({ offset: 0, search: "abc" }));
+    expect(document.body.querySelector('input[role="combobox"]')).toBeNull();
   });
 
-  it("does not fire a new query on every keystroke while still typing (debounced search)", async () => {
+  it("previews the search with the list's own query, without touching the table until Enter", async () => {
     renderPanel();
     await flush();
     listMock.mockClear();
 
-    const input = container.querySelector("input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "a");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    });
-    await act(async () => {
-      nativeSetter.call(input, "ab");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    // Still well within the debounce window from the second keystroke.
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    });
-    expect(listMock).not.toHaveBeenCalled();
-
+    await typeInSearchOverlay("ab");
     await flushDebounce();
     await flush();
-    expect(pageCalls()).toHaveLength(1);
-    expect(lastPageCall()).toEqual(expect.objectContaining({ search: "ab" }));
+
+    expect(pageCalls()).toHaveLength(0);
+    expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ search: "ab", offset: 0, limit: 8 }));
+  });
+
+  it("closes the search overlay on Escape without applying", async () => {
+    renderPanel();
+    await flush();
+    const field = await typeInSearchOverlay("zz");
+    await act(async () => {
+      field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    await flush();
+
+    expect(document.body.querySelector('input[role="combobox"]')).toBeNull();
+    expect(pageCalls().some((p) => p.search === "zz")).toBe(false);
   });
 
   it("calls onNavigate with the row's entity type and id when the identifier cell is clicked and no onOpenOverview is supplied", async () => {
@@ -356,13 +375,8 @@ describe("EntityListPanel", () => {
     expect(titleCount()).toBe("40");
     expect(toolbarCount()).toContain("0/40");
 
-    const input = container.querySelector("input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "al");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await flushDebounce();
+    const field = await typeInSearchOverlay("al");
+    await pressEnter(field);
     await flush();
 
     expect(titleCount()).toBe("40");
@@ -444,14 +458,14 @@ describe("EntityListPanel", () => {
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
-  it("paginates 25 rows per page by default, with 25/50/100/200 to choose from", async () => {
+  it("paginates 100 rows per page by default, with 25/50/100/200 to choose from", async () => {
     renderPanel();
     await flush();
 
     expect(container.querySelector(".p-paginator")).toBeTruthy();
     expect(container.querySelector(".p-virtualscroller")).toBeNull();
     const dropdown = container.querySelector(".p-paginator .p-dropdown");
-    expect(dropdown?.textContent).toContain("25");
+    expect(dropdown?.textContent).toContain("100");
   });
 
   it("fetches the page the user moves to, and counts the whole result set", async () => {
@@ -1123,58 +1137,6 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     // Cache invalidation triggers a refetch of the list.
     expect(schemaListMock).toHaveBeenCalled();
   });
-
-  // Rows being (re)fetched in the background get a visible signal — the same thin progress bar the
-  // JSF panels use — without it replacing the rows already on screen.
-  it("animates the progress bar only while rows are being fetched in the background", async () => {
-    schemaListMock.mockResolvedValue({
-      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
-      totalCount: 1,
-      limit: 10,
-      offset: 0,
-    });
-    renderSchemaPanel();
-    await flush();
-    await flush();
-
-    const bar = () => container.querySelector(".entity-list-panel-progressbar") as HTMLElement;
-    expect(bar()).toBeTruthy();
-    expect(bar().classList.contains("is-active")).toBe(false);
-
-    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
-    await act(async () => {
-      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    await flush();
-    const input = document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "Terminé");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    // The refetch the save triggers hangs until released, so its in-flight state is observable.
-    let release!: () => void;
-    schemaListMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          release = () =>
-            resolve({ data: [{ id: "1", name: "Row A", answers: {}, _permissions: { canEdit: true } }], totalCount: 1, limit: 10, offset: 0 });
-        }),
-    );
-    await act(async () => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    });
-    await flush();
-
-    expect(bar().classList.contains("is-active")).toBe(true);
-    // The rows already loaded stay on screen meanwhile.
-    expect(container.textContent).toContain("Row A");
-
-    await act(async () => release());
-    await flush();
-    expect(bar().classList.contains("is-active")).toBe(false);
-  });
 });
 
 describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
@@ -1732,7 +1694,7 @@ describe("EntityListPanel pinned columns backed by a catalog field", () => {
   });
 });
 
-// The fiche's previous/next arrows walk the list it was opened from (panels/listContext.ts).
+// The fiche's previous/next arrows walk the list it was opened from (panels/list/listContext.ts).
 describe("EntityListPanel remembers where a row was opened from", () => {
   function renderList(props: Record<string, unknown> = {}) {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -1997,5 +1959,23 @@ describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
     expect(document.body.querySelector(".cell-edit-overlay-readonly")).toBeTruthy();
     expect(document.body.querySelector(".cell-edit-overlay-incoherent")?.textContent).toContain("ne s'applique plus");
     expect(document.body.querySelector(".cell-edit-overlay-clear")).toBeTruthy();
+  });
+
+  it("starts on the search it was opened with, and follows a new one", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const render = (nonce: number, search: string) =>
+      act(() => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <EntityListPanel entityType="fake-entity" seed={{ nonce, search }} />
+          </QueryClientProvider>,
+        );
+      });
+    render(1, "mur");
+    await flushDebounce();
+    expect(lastPageCall()).toMatchObject({ search: "mur" });
+    render(2, "four");
+    await flushDebounce();
+    expect(lastPageCall()).toMatchObject({ search: "four" });
   });
 });

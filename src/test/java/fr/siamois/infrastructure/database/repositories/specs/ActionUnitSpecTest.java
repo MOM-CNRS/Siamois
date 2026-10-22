@@ -43,6 +43,10 @@ class ActionUnitSpecTest {
     private Expression<Integer> sizeExpr;
     @Mock
     private Order order;
+    @Mock
+    private Order idOrder;
+    @Mock
+    private Path<Long> idPath;
 
     @Test
     void orderByRecordingUnitCount_ascending_setsAscOrderOnQuery() {
@@ -50,11 +54,13 @@ class ActionUnitSpecTest {
         when(cb.size(collectionPath)).thenReturn(sizeExpr);
         when(cb.asc(sizeExpr)).thenReturn(order);
         when(cb.conjunction()).thenReturn(null);
+        when(root.<Long>get("id")).thenReturn(idPath);
+        when(cb.asc(idPath)).thenReturn(idOrder);
 
         Specification<ActionUnit> spec = ActionUnitSpec.orderByRecordingUnitCount(Sort.Direction.ASC);
         spec.toPredicate(root, query, cb);
 
-        verify(query).orderBy(order);
+        verify(query).orderBy(order, idOrder);
         verify(cb).asc(sizeExpr);
     }
 
@@ -64,11 +70,13 @@ class ActionUnitSpecTest {
         when(cb.size(collectionPath)).thenReturn(sizeExpr);
         when(cb.desc(sizeExpr)).thenReturn(order);
         when(cb.conjunction()).thenReturn(null);
+        when(root.<Long>get("id")).thenReturn(idPath);
+        when(cb.asc(idPath)).thenReturn(idOrder);
 
         Specification<ActionUnit> spec = ActionUnitSpec.orderByRecordingUnitCount(Sort.Direction.DESC);
         spec.toPredicate(root, query, cb);
 
-        verify(query).orderBy(order);
+        verify(query).orderBy(order, idOrder);
         verify(cb).desc(sizeExpr);
     }
 

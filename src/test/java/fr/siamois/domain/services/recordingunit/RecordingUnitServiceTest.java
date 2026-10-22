@@ -119,6 +119,9 @@ class RecordingUnitServiceTest {
     @Mock
     private RecordingUnitSortFilterService recordingUnitSortFilterService;
 
+    @Mock
+    private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 
@@ -127,6 +130,7 @@ class RecordingUnitServiceTest {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), new PersonDTO(), "fr"));
         lenient().when(profilePermissionService.hasRecordingUnitWritePermission(any(), any())).thenReturn(true);
         lenient().when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(true);
+        lenient().when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
         // @InjectMocks uses constructor injection here, which skips leftover fields like the
         // @PersistenceContext EntityManager - wire it explicitly so save() can call it.
         org.springframework.test.util.ReflectionTestUtils.setField(recordingUnitService, "entityManager", entityManager);
@@ -1349,7 +1353,7 @@ class RecordingUnitServiceTest {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(profilePermissionService.hasProjectPermission(any(), any(), anyString())).thenReturn(false);
+            when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
 
             assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
@@ -1358,85 +1362,47 @@ class RecordingUnitServiceTest {
         }
 
         @Test
-        void deleteRecordingUnitById_hasSpecimens_throwsIllegalState() {
+        void deleteRecordingUnitById_withLinks_throwsIllegalStateAndDeletesNothing() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             ru.setFullIdentifier("RU-1");
-
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(3L);
+            doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                    .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.RECORDING_UNIT, 1L,
+                            "l'unité d'enregistrement");
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
+
+            verify(recordingUnitRepository, never()).delete(any(RecordingUnit.class));
         }
 
         @Test
-        void deleteRecordingUnitById_hasChildren_throwsIllegalState() {
+        void deleteRecordingUnitById_unlinked_deletesTheUnitAndItsArk() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(1L);
             ru.setFullIdentifier("RU-1");
-            RecordingUnit child = new RecordingUnit();
-            child.setId(2L);
-            child.setFullIdentifier("RU-2");
-            ru.setChildren(new HashSet<>(Set.of(child)));
-
-            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
-
-            assertThrows(IllegalStateException.class,
-                    () -> recordingUnitService.deleteRecordingUnitById(1L));
-        }
-
-        @Test
-        void deleteRecordingUnitById_happyPath_deletesAllLinkedDataAndTheUnit() {
-            RecordingUnit ru = new RecordingUnit();
-            ru.setId(1L);
-            ru.setFullIdentifier("RU-1");
-
-            RecordingUnit parent = new RecordingUnit();
-            parent.setId(2L);
-            parent.setFullIdentifier("RU-2");
-            parent.setChildren(new HashSet<>(Set.of(ru)));
-            ru.setParents(new HashSet<>(Set.of(parent)));
-
-            StratigraphicRelationship rel = new StratigraphicRelationship();
-            ru.setRelationshipsAsUnit1(new HashSet<>(Set.of(rel)));
-
             Ark ark = new Ark();
             ark.setInternalId(99L);
             ru.setArk(ark);
-
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(1L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(rel));
-            when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(1L);
 
-            assertFalse(parent.getChildren().contains(ru));
-            assertTrue(ru.getParents().isEmpty());
-            assertTrue(ru.getRelationshipsAsUnit1().isEmpty());
-            verify(stratigraphicRelationshipRepository).deleteAll(List.of(rel));
             verify(recordingUnitRepository).deleteContributorLinksForRecordingUnit(1L);
-            verify(documentRepository).deleteAllRecordingUnitDocumentLinksByRecordingUnitId(1L);
             verify(recordingUnitRepository).delete(ru);
             verify(arkRepository).deleteById(99L);
         }
 
         @Test
-        void deleteRecordingUnitById_noArkNoIdInfo_skipsOptionalDeletes() {
+        void deleteRecordingUnitById_noArk_skipsArkDeletion() {
             RecordingUnit ru = new RecordingUnit();
             ru.setId(5L);
             ru.setFullIdentifier("RU-5");
-
             when(recordingUnitRepository.findById(5L)).thenReturn(Optional.of(ru));
-            when(recordingUnitRepository.countSpecimensByRecordingUnitId(5L)).thenReturn(0L);
-            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(5L)).thenReturn(List.of());
-            when(recordingUnitRepository.save(ru)).thenReturn(ru);
 
             recordingUnitService.deleteRecordingUnitById(5L);
 
-            verify(stratigraphicRelationshipRepository, never()).deleteAll(anyList());
             verify(arkRepository, never()).deleteById(any());
             verify(recordingUnitRepository).delete(ru);
         }
@@ -2067,6 +2033,240 @@ class RecordingUnitServiceTest {
             verify(phaseRepository, never()).findByRecordingUnitId(any());
         }
 
+        // ---------- tree view (rootOnly) ----------
+
+        private RecordingUnit unit(long id) {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(id);
+            ru.setFullIdentifier("RU-" + id);
+            return ru;
+        }
+
+        private RecordingUnitDTO dto(long id) {
+            RecordingUnitDTO dto = new RecordingUnitDTO();
+            dto.setId(id);
+            return dto;
+        }
+
+        @Test
+        void searchRecordingUnit_rootOnlyWithoutAFilter_flagsWhichRowsHaveChildrenAndCountsEveryRowAsAMatch() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            RecordingUnit a = unit(1L);
+            RecordingUnit b = unit(2L);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(a, b)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+            when(recordingUnitMapper.toLightDto(b)).thenReturn(dto(2L));
+            when(recordingUnitRepository.findParentIdsHavingChildren(List.of(1L, 2L))).thenReturn(List.of(1L));
+            // No filter: every recording unit of the context is a result, not just the roots on this page.
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(7L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(true), pageable);
+
+            assertEquals(7L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+
+            assertEquals(true, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(false, result.getContent().get(1).getTreeHasChildren());
+            assertEquals(true, result.getContent().get(0).getTreeMatch());
+            assertEquals(true, result.getContent().get(1).getTreeMatch());
+        }
+
+        @Test
+        void searchRecordingUnit_rootOnlyWithAFilter_marksTheParentsThatOnlyLeadToAMatchAsContext() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            RecordingUnit root = unit(1L);
+            RecordingUnit match = unit(5L);
+            // 5 matches; its closure is 5 and its ancestor 1, the only root.
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(match));
+            when(recordingUnitRepository.findAncestorClosure(new Long[]{5L})).thenReturn(List.of(5L, 1L));
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(root)));
+            when(recordingUnitMapper.toLightDto(root)).thenReturn(dto(1L));
+            when(recordingUnitRepository.findParentIdsHavingChildrenAmong(eq(List.of(1L)), any())).thenReturn(List.of(1L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable);
+
+            RecordingUnitDTO row = result.getContent().get(0);
+            assertEquals(true, row.getTreeHasChildren());
+            assertEquals(false, row.getTreeMatch());
+            // The one match, not the one root: counted from the match set, without another query.
+            assertEquals(1L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+            verify(recordingUnitRepository, never()).count(any(Specification.class));
+            verify(recordingUnitRepository, never()).findParentIdsHavingChildren(any());
+        }
+
+        // ---------- tree view inside a context (findTreeInScope) ----------
+
+        private final Specification<RecordingUnit> scope = (root, query, cb) -> null;
+
+        @Test
+        void findTreeInScope_withoutAFilter_flagsTheRootsByTheirChildrenInTheContextAndCountsTheContext() {
+            RecordingUnit a = unit(1L);
+            RecordingUnit b = unit(2L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(a, b)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+            when(recordingUnitMapper.toLightDto(b)).thenReturn(dto(2L));
+            // 1 has child 10 (in the context); 2 has child 20 (in another project: not in the context).
+            when(recordingUnitRepository.findChildEdges(List.of(1L, 2L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{1L, 10L}, new Object[]{2L, 20L}));
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(unit(10L)));
+            when(recordingUnitRepository.count(any(Specification.class))).thenReturn(40L);
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), new FilterDTO(), null);
+
+            assertEquals(true, page.getContent().get(0).getTreeHasChildren());
+            assertEquals(false, page.getContent().get(1).getTreeHasChildren());
+            assertEquals(true, page.getContent().get(0).getTreeMatch());
+            assertEquals(40L, page.getMatchCount());
+        }
+
+        @Test
+        void findTreeInScope_withAFilter_keepsOnlyTheAncestorsInTheContextAndMarksThemAsContext() {
+            FilterDTO filters = new FilterDTO();
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            RecordingUnit match = unit(5L);
+            RecordingUnit parentInContext = unit(3L);
+            // Unit 5 matches; its parent 3 is in the context; 3's parent 1 is not. The lookups, in order: the
+            // matches; the parents of 5 that are in the context ({3}); the parents of 3 that are in the context
+            // (none); the children of 3 that are in the closure and the context ({5}).
+            when(recordingUnitRepository.findAll(any(Specification.class)))
+                    .thenReturn(List.of(match), List.of(parentInContext), List.of(), List.of(match));
+            when(recordingUnitRepository.findParentEdges(List.of(5L))).thenReturn(List.<Object[]>of(new Object[]{5L, 3L}));
+            when(recordingUnitRepository.findParentEdges(List.of(3L))).thenReturn(List.<Object[]>of(new Object[]{3L, 1L}));
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(parentInContext)));
+            when(recordingUnitMapper.toLightDto(parentInContext)).thenReturn(dto(3L));
+            when(recordingUnitRepository.findChildEdges(List.of(3L))).thenReturn(List.<Object[]>of(new Object[]{3L, 5L}, new Object[]{3L, 6L}));
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), filters, null);
+
+            RecordingUnitDTO row = page.getContent().get(0);
+            assertEquals(true, row.getTreeHasChildren());
+            assertEquals(false, row.getTreeMatch());
+            assertEquals(1L, page.getMatchCount());
+            verify(recordingUnitRepository, never()).count(any(Specification.class));
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void findTreeInScope_withAFilterThatMatchesNothing_isEmpty() {
+            FilterDTO filters = new FilterDTO();
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+            var page = recordingUnitService.findTreeInScope(scope, 10, 0, Sort.unsorted(), filters, null);
+
+            assertEquals(0, page.getTotalElements());
+            assertEquals(0L, page.getMatchCount());
+        }
+
+        @Test
+        void searchRecordingUnit_notRootOnly_addsNoTreeFlags() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            Pageable pageable = PageRequest.of(0, 10);
+            RecordingUnit a = unit(1L);
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(new PageImpl<>(List.of(a)));
+            when(recordingUnitMapper.toLightDto(a)).thenReturn(dto(1L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, new FilterDTO(false), pageable);
+
+            assertEquals(null, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(null, result.getContent().get(0).getTreeMatch());
+            verify(recordingUnitRepository, never()).findParentIdsHavingChildren(any());
+        }
+
+        @Test
+        void findChildrenOfTree_withoutAFilter_returnsEveryChildFlagged() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            when(recordingUnitRepository.findParentIdsHavingChildren(List.of(10L))).thenReturn(List.of());
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true));
+
+            assertEquals(1, result.getTotalElements());
+            assertEquals(false, result.getContent().get(0).getTreeHasChildren());
+            assertEquals(true, result.getContent().get(0).getTreeMatch());
+            verify(recordingUnitRepository, never()).findAncestorClosure(any());
+        }
+
+        @Test
+        void findChildrenOfTree_withMatchCount_countsEveryUnitBelowWithoutAFilter() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            when(recordingUnitRepository.countDescendants(1L)).thenReturn(12L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true), true);
+
+            assertEquals(12L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+        }
+
+        @Test
+        void findChildrenOfTree_withMatchCountAndAFilter_countsTheMatchesBelow() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitSortFilterService.ancestorClosure(any(), any())).thenAnswer(inv -> {
+                FilterDTO f = inv.getArgument(1);
+                f.setAncestorClosure(Set.of(10L, 11L));
+                f.setMatchIds(Set.of(11L, 50L));
+                return Set.<Long>of(10L, 11L);
+            });
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+            // 50 matches but is not below unit 1: only the matches the database finds below it count.
+            when(recordingUnitRepository.countDescendantsAmong(1L, Set.of(11L, 50L))).thenReturn(1L);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), filters, true);
+
+            assertEquals(1L, ((fr.siamois.dto.TreePage<RecordingUnitDTO>) result).getMatchCount());
+        }
+
+        @Test
+        void findChildrenOfTree_withoutMatchCount_isAPlainPage() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            RecordingUnit child = unit(10L);
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(child)));
+            when(recordingUnitMapper.toLightDto(child)).thenReturn(dto(10L));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), new FilterDTO(true));
+
+            assertEquals(false, result instanceof fr.siamois.dto.TreePage);
+            verify(recordingUnitRepository, never()).countDescendants(any());
+        }
+
+        @Test
+        void findChildrenOfTree_withAFilterThatMatchesNothing_isEmptyWithoutQueryingTheChildren() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(true);
+            filters.add(RecordingUnitSpec.AUTHOR_FILTER, List.of(9L), FilterDTO.FilterType.EQUAL);
+            when(recordingUnitSortFilterService.ancestorClosure(any(), any())).thenAnswer(inv -> {
+                FilterDTO f = inv.getArgument(1);
+                f.setAncestorClosure(Set.of());
+                f.setMatchIds(Set.of());
+                return Set.<Long>of();
+            });
+            when(recordingUnitRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+            Page<RecordingUnitDTO> result = recordingUnitService.findChildrenOfTree(institution, 1L, 200, 0, Sort.unsorted(), filters);
+
+            assertEquals(0, result.getTotalElements());
+        }
+
         @Test
         void searchRecordingUnit_withSpecimenCountSort_stripsSortFromPageable() {
             InstitutionDTO institution = new InstitutionDTO();
@@ -2116,6 +2316,40 @@ class RecordingUnitServiceTest {
         }
 
         @Test
+        void searchRecordingUnit_countsOnly_loadsEachRowsOwnPhases() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit withPhase = new RecordingUnit();
+            withPhase.setId(7L);
+            RecordingUnit withoutPhase = new RecordingUnit();
+            withoutPhase.setId(8L);
+            RecordingUnitDTO withPhaseDto = new RecordingUnitDTO();
+            withPhaseDto.setId(7L);
+            RecordingUnitDTO withoutPhaseDto = new RecordingUnitDTO();
+            withoutPhaseDto.setId(8L);
+            Phase phase = new Phase();
+            phase.setId(11L);
+            PhaseDTO phaseDto = new PhaseDTO();
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(withPhase, withoutPhase)));
+            when(recordingUnitMapper.toLightDto(withPhase)).thenReturn(withPhaseDto);
+            when(recordingUnitMapper.toLightDto(withoutPhase)).thenReturn(withoutPhaseDto);
+            when(phaseRepository.findPhaseEdges(List.of(7L, 8L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 11L}));
+            when(phaseRepository.findAllById(List.of(11L))).thenReturn(List.of(phase));
+            when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable, false);
+
+            assertEquals(Set.of(phaseDto), result.getContent().get(0).getPhases());
+            assertTrue(result.getContent().get(1).getPhases().isEmpty());
+        }
+
+        @Test
         void searchRecordingUnit_countsOnly_populatesCountsNotFullCollections() {
             InstitutionDTO institution = new InstitutionDTO();
             institution.setId(1L);
@@ -2148,10 +2382,11 @@ class RecordingUnitServiceTest {
             assertEquals(6L, dto.getRelationshipCount());
             assertNull(dto.getParents());
             assertNull(dto.getChildren());
-            assertNull(dto.getPhases());
+            // Phases are not a relation field of the REST list: they are loaded (empty here) for its "phases" column.
+            assertTrue(dto.getPhases().isEmpty());
             verify(recordingUnitRepository, never()).findParentEdges(any());
             verify(recordingUnitRepository, never()).findChildEdges(any());
-            verify(phaseRepository, never()).findPhaseEdges(any());
+            verify(phaseRepository).findPhaseEdges(any());
         }
 
         @Test

@@ -1,6 +1,6 @@
-import { CreateLinkField } from "../../components/CreateLinkField";
-import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../types";
+import { CreateLinkField } from "../../components/create/CreateLinkField";
+import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
+import type { CreateFormContext } from "../shared/types";
 import { createRecordingUnit } from "./api";
 import { t } from "../../i18n";
 
@@ -21,10 +21,12 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
           typeId,
           parentRecordingUnitId: prefill?.parent?.id,
           childRecordingUnitId: prefill?.child?.id,
+          phaseId: prefill?.phase?.id,
         })
       }
     >
       {prefill?.parent && <CreateLinkField label={t("create.containedInF")} entityType="recordingUnit" value={prefill.parent} />}
+      {prefill?.phase && <CreateLinkField label={t("create.inPhase")} entityType="phase" value={prefill.phase} />}
       {prefill?.child && <CreateLinkField label={t("create.contains")} entityType="recordingUnit" value={prefill.child} />}
     </TypeOnlyCreateForm>
   );

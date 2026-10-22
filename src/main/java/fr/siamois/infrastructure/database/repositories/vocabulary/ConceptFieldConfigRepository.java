@@ -25,4 +25,6 @@ public interface ConceptFieldConfigRepository extends CrudRepository<ConceptFiel
     List<String> findDistinctFieldCodesForInstitution(Long institutionId);
 
     Optional<ConceptFieldConfig> findOneByFieldCodeAndActionUnitId(String fieldCode, Long actionUnitId);
+
+    List<ConceptFieldConfig> findAllByActionUnitId(Long actionUnitId);
 }

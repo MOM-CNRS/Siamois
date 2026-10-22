@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.document.ImageThumbnailer;
 import fr.siamois.domain.services.document.compressor.FileCompressor;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -32,6 +34,7 @@ public class DocumentContentOpenApiService {
 
     private final DocumentService documentService;
     private final ProfilePermissionService profilePermissionService;
+    private final ImageThumbnailer imageThumbnailer;
 
     @Value("${server.servlet.context-path:}")
     private String contextPath;
@@ -80,6 +83,22 @@ public class DocumentContentOpenApiService {
         // The user gets the file under its own name; the stored name (a generated code) is a storage detail.
         String name = StringUtils.hasText(doc.getFileName()) ? doc.getFileName() : doc.contentFileName();
         return new DocumentFilePayload(stream, mediaType, name);
+    }
+
+    /**
+     * A reduced JPEG copy of an image payload (consumes its stream), or empty when the payload is not an
+     * image the JDK can decode: the caller then serves the original. {@code null} stream stays closed.
+     */
+    public Optional<DocumentFilePayload> thumbnailOf(DocumentFilePayload payload, int width) {
+        if (!"image".equals(payload.mediaType().getType())) {
+            return Optional.empty();
+        }
+        try (InputStream in = payload.inputStream()) {
+            return imageThumbnailer.thumbnail(in, width).map(bytes -> new DocumentFilePayload(
+                    new java.io.ByteArrayInputStream(bytes), MediaType.IMAGE_JPEG, payload.fileName()));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
     }
 
     private static MediaType resolveMediaType(String rawMime) {
@@ -151,12 +170,23 @@ public class DocumentContentOpenApiService {
     }
 
     /**
-     * Supprime le document et son fichier : l'institution de création doit être dans le périmètre JWT et
-     * l'appelant doit pouvoir éditer les documents du projet.
+     * Supprime le document et son fichier (409 s'il est encore lié à une entité) : l'institution de création doit être dans le périmètre JWT et
+     * l'appelant doit pouvoir supprimer les fiches du projet.
      */
     @Transactional
     public void deleteAccessibleDocument(long documentId, ProjectApiCaller caller) {
-        Document doc = resolveWritableDocument(documentId, caller);
-        documentService.deleteDocument(doc);
+        Document doc = resolveAccessibleDocument(documentId, caller.accessibleInstitutionIds());
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(doc.getCreatedByInstitution().getId());
+        UserInfo info = new UserInfo(institution, caller.person(), null);
+        Long projectId = doc.getActionUnit() == null ? null : doc.getActionUnit().getId();
+        if (!profilePermissionService.hasDeleteEntitiesPermission(info, projectId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de document non autorisée");
+        }
+        try {
+            documentService.deleteDocument(doc);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
     }
 }

@@ -1,13 +1,13 @@
-import type { HomeWidgetDef } from "../entities/types";
+import type { HomeWidgetDef } from "../entities/shared/types";
 import { Panel } from "primereact/panel";
-import { PanelHeaderBar } from "../components/PanelHeaderBar";
+import { PanelHeaderBar } from "../components/layout/PanelHeaderBar";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { t } from "../i18n";
-import { usePaneState } from "./paneState";
+import { usePaneState } from "./pane/paneState";
 
 // Widget-slot design (plan §3/§8 phase 2): HomePanel itself never knows about "recent projects"
 // or "Project card" — those are widgets each entity's config.tsx contributes via its optional
-// `home.widgets` factory (entities/types.ts), assembled in App.tsx via getAllEntityTypes()
+// `home.widgets` factory (entities/shared/types.ts), assembled in App.tsx via getAllEntityTypes()
 // (phase 7). Adding a future map widget, or another entity's count card, is then a config-only
 // change, not an edit to HomePanel.
 export interface HomePanelProps {

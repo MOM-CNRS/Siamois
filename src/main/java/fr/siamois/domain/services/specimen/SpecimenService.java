@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.specimen;
 
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -55,6 +56,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SpecimenService implements ArkEntityService {
+
+    private final EntityLinkGuard entityLinkGuard;
 
     private final SpecimenRepository specimenRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
@@ -693,8 +696,8 @@ public class SpecimenService implements ArkEntityService {
     }
 
     /**
-     * Supprime un mobilier (spécimen) sans mouvements ni rattachement à un groupe.
-     * Détache les documents (sans les supprimer) et supprime l'ARK associé.
+     * Supprime un mobilier (spécimen) qui n'a aucune relation avec une autre entité.
+     * Supprime l'ARK associé.
      *
      * @throws IllegalArgumentException si le spécimen n'existe pas
      * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
@@ -712,18 +715,11 @@ public class SpecimenService implements ArkEntityService {
             actionUnit = specimen.getRecordingUnit() != null ? specimen.getRecordingUnit().getActionUnit() : null;
         }
         Long actionUnitId = actionUnit != null ? actionUnit.getId() : null;
-        if (info == null || !profilePermissionService.hasProjectPermission(info, actionUnitId, PermissionConstants.PROJECT_EDIT_FINDS)) {
+        if (info == null || !profilePermissionService.hasDeleteEntitiesPermission(info, actionUnitId)) {
             throw new ForbiddenOperationException("You are not allowed to delete this specimen");
         }
 
-        if (specimenRepository.countMovementsBySpecimenId(specimenId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le mobilier a des mouvements associés");
-        }
-        if (specimenRepository.countGroupAttributionsBySpecimenId(specimenId) > 0) {
-            throw new IllegalStateException("Impossible de supprimer : le mobilier appartient à un ou plusieurs groupes");
-        }
-
-        documentRepository.deleteAllSpecimenDocumentLinksBySpecimenId(specimenId);
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPECIMEN, specimenId, "le mobilier");
 
         if (specimen.getAuthors() != null) {
             specimen.getAuthors().clear();

@@ -1,8 +1,9 @@
 import type { MountOptions, PanelKind } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
-import type { PanelTransitionKind } from "../panels/panelTransition";
+import type { PanelTransitionKind } from "../panels/pane/panelTransition";
 import { entityPath, resolveEntityPath } from "./paths";
 import { decodeFocusUrl, encodeFocusUrl } from "./url";
+import type { ListSeed } from "./externalBus";
 
 // What's actually on screen in the main pane right now: starts from the mount options JSF gave us,
 // but from then on this is owned entirely client-side. Deliberately NOT the same object as
@@ -11,16 +12,25 @@ export interface NavigationView {
   panelKind: PanelKind;
   entityType: string;
   entityId?: string | number;
+  // The saved view a "list" view shows (its path carries `?viewId=`): the main pane's list state.
+  viewId?: number;
   // What the opener already knew about the entity (a list row, a sibling's label): shown in the
   // fiche's header while the entity itself loads.
   preview?: EntityPreview;
 }
 
-// What's open in the right-hand overview pane right now.
+// What's open in the right-hand overview pane right now: an entity's fiche, or (no entityId) an
+// entity type's list, opened from the search bar with the search that found it.
 export interface OverviewState {
   entityType: string;
-  entityId: string | number;
+  entityId?: string | number;
   preview?: EntityPreview;
+  seed?: ListSeed;
+}
+
+/** The overview as the JSF session can know it: it has no list overview, only fiches. */
+export function fiche(overview: OverviewState | null | undefined): (OverviewState & { entityId: string | number }) | null {
+  return overview?.entityId != null ? (overview as OverviewState & { entityId: string | number }) : null;
 }
 
 // One level of focus mode: the overview entity was promoted to the main pane, and this is what
@@ -65,16 +75,18 @@ export type NavAction =
   | { type: "restore"; state: Pick<NavState, "view" | "mainPath" | "overview" | "backUrl" | "navigatedAway"> };
 
 export function sameEntity(a: OverviewState | null | undefined, b: OverviewState | null | undefined): boolean {
-  return a != null && b != null && a.entityType === b.entityType && String(a.entityId) === String(b.entityId);
+  return a != null && b != null && a.entityType === b.entityType && String(a.entityId ?? "") === String(b.entityId ?? "");
 }
 
+// A list overview has no address of its own: an F5 (or the JSF session) only knows fiches.
 export function overviewPath(overview: OverviewState | null): string | undefined {
-  return overview ? entityPath(overview.entityType, overview.entityId) : undefined;
+  const shown = fiche(overview);
+  return shown ? entityPath(shown.entityType, shown.entityId) : undefined;
 }
 
 export function initialNavState(options: MountOptions): NavState {
   return {
-    view: { panelKind: options.panelKind, entityType: options.entityType, entityId: options.entityId },
+    view: { panelKind: options.panelKind, entityType: options.entityType, entityId: options.entityId, viewId: options.viewId },
     mainPath: options.main.resourceUri,
     // Not `?? ""`: a null overview must render no overview pane at all.
     overview:
@@ -146,7 +158,7 @@ export function navReducer(state: NavState, action: NavAction): NavState {
 
     case "enterFocus": {
       // The overview entity becomes the main pane, the current main is remembered on the stack.
-      const promoted = state.overview;
+      const promoted = fiche(state.overview);
       const path = overviewPath(promoted);
       if (!promoted || !path) return state;
       return {
@@ -204,7 +216,7 @@ export function transitionOf(state: NavState, action: NavAction): PanelTransitio
 export interface ServerSync {
   closeOverview: boolean;
   setMain?: string;
-  setOverview?: OverviewState;
+  setOverview?: OverviewState & { entityId: string | number };
 }
 
 /**
@@ -214,10 +226,13 @@ export interface ServerSync {
  * is paired with the main pane on screen).
  */
 export function serverSync(server: Pick<NavState, "mainPath" | "overview">, next: Pick<NavState, "mainPath" | "overview">): ServerSync {
-  const overviewChanged = !sameEntity(server.overview, next.overview) && (server.overview != null || next.overview != null);
+  // A list overview does not exist for the server: it is told the overview is gone (or never there).
+  const before = fiche(server.overview);
+  const after = fiche(next.overview);
+  const overviewChanged = !sameEntity(before, after) && (before != null || after != null);
   return {
-    closeOverview: overviewChanged && next.overview == null,
+    closeOverview: overviewChanged && after == null,
     setMain: next.mainPath !== server.mainPath ? next.mainPath : undefined,
-    setOverview: overviewChanged && next.overview ? next.overview : undefined,
+    setOverview: overviewChanged && after ? after : undefined,
   };
 }

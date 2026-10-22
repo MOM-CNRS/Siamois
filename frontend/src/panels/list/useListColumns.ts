@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import { scopeProjectId } from "../../entities/scope";
-import type { ColumnDef, EntityTypeConfig, FieldCatalog, ListScope } from "../../entities/types";
+import { scopeProjectId } from "../../entities/shared/scope";
+import type { ColumnDef, EntityTypeConfig, FieldCatalog, ListScope } from "../../entities/shared/types";
 import type { ColumnTogglerOption } from "../../components/table/ColumnToggler";
 import type { FilterSpec } from "../../components/table/FilterChipBar";
 import { renderAnswerCell } from "../../fields/display";
 import { filterKindForField, optionSourceFor, type FilterKind } from "../../fields/optionSources";
-import { resolveValueBinding, type FieldResource } from "../../fields/types";
+import { isOwningProjectField, resolveValueBinding, type FieldResource } from "../../fields/types";
 import type { RowRecord } from "./useEntityListData";
 
 
@@ -16,6 +16,17 @@ export interface UseListColumnsOptions {
   pinnedFieldIds: Set<string>;
   organizationId?: number;
   scope?: ListScope;
+}
+
+/**
+ * A filter the scope already fixes has no use: the project's own recording units need no project filter, the
+ * finds of a recording unit no recording-unit one. They are left out rather than shown, as the table drops
+ * the matching columns of a scoped list.
+ */
+function impliedByScope(field: FieldResource, scope: ListScope | undefined): boolean {
+  if (!scope) return false;
+  if (scopeProjectId(scope) != null && isOwningProjectField(field)) return true;
+  return scope.entityType === "recordingUnit" && field.valueBinding === "recordingUnit";
 }
 
 /**
@@ -75,23 +86,21 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
   }, [catalog, pinnedFieldIds]);
 
   // Filterable columns: pinned ones marked `filterable` (their own key doubles as the f.<key>
-  // query param — see ColumnDef.filterable) plus visible catalog columns whose answerType maps to
-  // a FilterKind. A column not currently visible gets no filter widget, same as it gets no cell:
-  // requesting f.<key> for a column ProjectListFilter doesn't know about is a 400, and a column
-  // that isn't shown has nothing for the user to correlate the filter with anyway.
+  // query param — see ColumnDef.filterable) plus every catalog field whose answerType maps to a
+  // FilterKind, shown as a column or not: what can be filtered on doesn't depend on what is displayed.
   const filterSpecs = useMemo<FilterSpec[]>(() => {
     const pinned = (config?.list.columns ?? [])
       .filter((c) => c.filterable === true)
       .map((c): FilterSpec => ({ key: c.key, label: c.header, kind: "contains" as FilterKind }));
 
     if (!catalog) return pinned;
-    const byFieldId = new Map(catalog.columns.map((c) => [c.fieldId, c]));
-    const dynamic = visibleColumns
-      .map((fieldId) => byFieldId.get(fieldId))
-      .filter((c): c is NonNullable<typeof c> => c != null)
+    const dynamic = catalog.columns
+      .filter((c) => !pinnedFieldIds.has(c.fieldId))
+      .slice()
+      .sort((a, b) => a.order - b.order)
       .flatMap((c) => {
         const field = catalog.fields[c.fieldId];
-        if (!field) return [];
+        if (!field || impliedByScope(field, scope)) return [];
         // f.<fieldId>, whatever the field (system or additional): FieldQueryService resolves it.
         const kind = filterKindForField(field);
         if (!kind) return [];
@@ -100,7 +109,7 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
         return [{ key: field.id, label: field.label, kind, loadOptions } satisfies FilterSpec];
       });
     return [...pinned, ...dynamic];
-  }, [config, catalog, visibleColumns, organizationId, scope]);
+  }, [config, catalog, pinnedFieldIds, organizationId, scope]);
 
   // A column that only makes sense across several parents (the row's project, on an
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the

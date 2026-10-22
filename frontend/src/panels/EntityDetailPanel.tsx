@@ -1,27 +1,43 @@
-import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { isValidElement, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
-import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
+import { PaneErrorBoundary } from "../components/layout/PaneErrorBoundary";
 import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
+import { openProjectSettings, openTablesSettings, settingsTableOf } from "./detail/projectSettings";
+import { FieldConfigProvider } from "../fields/fieldConfigContext";
 import { getEntityType } from "../entities/registry";
-import { PanelHeaderBar } from "../components/PanelHeaderBar";
-import { SiblingNav } from "../components/SiblingNav";
-import { EntityBreadcrumbTrail } from "../components/EntityBreadcrumbTrail";
-import { CreateEntityOverlay } from "../components/CreateEntityOverlay";
+import { PanelHeaderBar } from "../components/layout/PanelHeaderBar";
+import { SiblingNav } from "../components/layout/SiblingNav";
+import { EntityBreadcrumbTrail } from "../components/detail/EntityBreadcrumbTrail";
+import { CreateEntityOverlay } from "../components/create/CreateEntityOverlay";
 import type { PanelActions, PanelToolbarSlot } from "../mountOptions";
-import { useBridge } from "./bridge";
-import { PaneStateScope, usePaneState } from "./paneState";
-import { useCanEdit, useWriteMode } from "./writeMode";
-import { ValidationStatusButton } from "../components/ValidationStatusButton";
-import { DetailBodySkeleton } from "../components/DetailSkeleton";
-import { recallListContext, rememberListContext, type ListContext } from "./listContext";
-import { siblingsQuery } from "./listSiblings";
+import { PaneStateScope, usePaneState } from "./pane/paneState";
+import { useCanEdit, useWriteMode } from "./pane/writeMode";
+import { ValidationStatusButton } from "../components/detail/ValidationStatusButton";
+import { DetailBodySkeleton } from "../components/layout/DetailSkeleton";
+import { recallListContext, rememberListContext, type ListContext } from "./list/listContext";
+import { siblingsQuery } from "./detail/listSiblings";
+import { useSwipeSiblings } from "./detail/useSwipeSiblings";
 
-import type { EntityPreview, EntitySibling } from "../entities/types";
+import type { DetailTabDef, EntityPreview, EntitySibling, FilterValue } from "../entities/shared/types";
 import { queryKeys } from "../api/queryKeys";
 import { t } from "../i18n";
+import { useDeleteEntity } from "./detail/useDeleteEntity";
+import { useUserViewState } from "./list/useUserViewState";
+import { resolveTabs, useFicheConfig, ficheScopeOf } from "./detail/ficheConfig";
+import { FicheTabsProvider } from "./detail/ficheTabsContext";
+import { FicheTabsEditor } from "./detail/FicheTabsEditor";
+import { AddListTabDialog } from "./detail/AddListTabDialog";
+import { TabCount } from "./detail/TabCount";
+import { editableTabs, relationTargets, restorableTabs, restoreTab, type EditableTab } from "./detail/ficheTabsModel";
+import { addTabItems } from "./detail/addTabMenu";
+import { Menu } from "primereact/menu";
+import { useFicheTabsSave } from "./detail/useFicheTabsSave";
+import { messageForError } from "../api/errors";
+import { useNotify, useToastOnChange } from "../notify/NotifyProvider";
+import { PersistedTabState } from "./pane/persistedPaneState";
 
 export type { EntityPreview };
 
@@ -52,6 +68,7 @@ export interface EntityDetailPanelProps {
   organizationId?: number;
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   overviewEntityId?: string | number;
+  overviewEntityType?: string;
   // "Fiche précédente/suivante" (plan: prev/next navigation). Deliberately NOT `onNavigate`: that
   // callback also drives the breadcrumb's "Tous les <plural>" crumb, which must switch the PANE
   // this panel is in to a list — a sibling jump must instead stay a same-kind detail navigation
@@ -79,6 +96,15 @@ export interface EntityDetailPanelProps {
  * the toolbar (prev/next inside its navigation group) sits on the right in the main pane and
  * first in the overview pane — one node, not split across <Panel>'s header/icons props.
  */
+function asRecord(value: unknown): Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+// The pieces of state a tab kept, out of the fiche's saved state ({ tab, tabs: { <tabKey>: { <name>: … } } }).
+function tabPieces(state: Record<string, unknown> | undefined, tabKey: string): Record<string, unknown> {
+  return asRecord(asRecord(state?.tabs)[tabKey]);
+}
+
 export function EntityDetailPanel({
   entityType,
   entityId,
@@ -87,6 +113,7 @@ export function EntityDetailPanel({
   organizationId,
   onOpenOverview,
   overviewEntityId,
+  overviewEntityType,
   onNavigateSibling,
   siblingNavDisabled,
   preview,
@@ -113,11 +140,61 @@ export function EntityDetailPanel({
     setRenderedForType(entityType);
     setActiveTabIndex(0);
   }
-
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.entityDetail(entityType, entityId),
     queryFn: () => config!.api.get(entityId),
     enabled: config != null,
+  });
+
+  // The tabs of this fiche: the code's, as its project arranged them (hidden, renamed, reordered, list tabs
+  // added). Known once the entity is, since the configuration is that of its project and sub-type.
+  const ficheConfig = useFicheConfig(entityType, data, organizationId);
+  const tabs = useMemo(
+    () => (config ? resolveTabs(config.detail.tabs as DetailTabDef<{ id: string | number }>[], ficheConfig.tabs, entityType) : []),
+    [config, ficheConfig.tabs, entityType],
+  );
+
+  // The tabs editor, and the list the user is looking at that they keep as a tab (« Enregistrer comme onglet… »).
+  const notify = useNotify();
+  useToastOnChange(error ? (error as Error).message : null);
+  const [tabsEditorOpen, setTabsEditorOpen] = useState(false);
+  // `{}` is a new list tab started from scratch; with a target and filters, the list the user is looking at.
+  const [tabDraft, setTabDraft] = useState<{ target?: string; filters?: Record<string, FilterValue> } | null>(null);
+  const addMenu = useRef<Menu>(null);
+  const ficheScope = ficheScopeOf(entityType, data);
+  const tabsSave = useFicheTabsSave(entityType, organizationId ?? 0, ficheScope);
+  // A preview naming a tab (the relation graph opens a unit on its own graph) opens the fiche on it —
+  // each time a preview arrives, not only on the first mount; same render-time adjustment.
+  const [appliedPreview, setAppliedPreview] = useState<EntityPreview | undefined>(undefined);
+  if (ficheConfig.settled && preview !== appliedPreview) {
+    setAppliedPreview(preview);
+    const tabIndex = preview?.tab ? tabs.findIndex((tab) => tab.key === preview.tab) : -1;
+    if (tabIndex >= 0) setActiveTabIndex(tabIndex);
+  }
+
+  // The tab the user was on last time they opened this very fiche, kept server-side per fiche (one
+  // fiche's arrangement says nothing about another's). Applied once per fiche, unless a preview names
+  // its own tab; the fiche waits for it rather than opening on the first tab and jumping.
+  const ficheKey = `${entityType}:${entityId}`;
+  const tabState = useUserViewState(`detail:${ficheKey}`, organizationId);
+  const [tabAppliedFor, setTabAppliedFor] = usePaneState<string | undefined>("detailTabAppliedFor", undefined);
+  if (tabAppliedFor !== ficheKey && tabState.settled && ficheConfig.settled) {
+    setTabAppliedFor(ficheKey);
+    const savedTab = tabState.saved?.tab;
+    const savedIndex = typeof savedTab === "string" ? tabs.findIndex((tab) => tab.key === savedTab) : -1;
+    if (savedIndex >= 0 && !preview?.tab) setActiveTabIndex(savedIndex);
+  }
+  const tabPending = tabAppliedFor !== ficheKey && !error;
+  // What a tab keeps for the user — the folded sections of its form, the mode of its relations… —
+  // lives in the same state as the active tab, under the tab's own key: a tab only writes its own pieces.
+  const persistedTabState = (tabKey: string) => ({
+    read: (name: string) => tabPieces(tabState.saved, tabKey)[name],
+    write: (name: string, value: unknown) =>
+      tabState.update((s) => ({
+        ...s,
+        v: 1,
+        tabs: { ...asRecord(s.tabs), [tabKey]: { ...tabPieces(s, tabKey), [name]: value } },
+      })),
   });
 
   // Separate from the detail query so a slow/failed siblings lookup never blocks the fiche itself
@@ -133,9 +210,12 @@ export function EntityDetailPanel({
 
   // The fil d'Ariane (project → parents → fiche), apart from the detail for the same reason: a slow
   // lookup leaves the home + « Tous les … » crumbs in place instead of blocking the fiche.
+  // Opened from a tab of another fiche (a scoped list), the trail goes through that fiche first.
+  const scope = listContext?.params.scope;
+  const via = scope ? { entityType: scope.entityType, id: scope.id } : undefined;
   const { data: breadcrumbs } = useQuery({
-    queryKey: queryKeys.entityBreadcrumbs(entityType, entityId),
-    queryFn: () => config!.api.breadcrumbs!(entityId),
+    queryKey: queryKeys.entityBreadcrumbs(entityType, entityId, via ? `${via.entityType}:${via.id}` : undefined),
+    queryFn: () => config!.api.breadcrumbs!(entityId, via),
     enabled: config?.api.breadcrumbs != null,
   });
 
@@ -144,30 +224,23 @@ export function EntityDetailPanel({
   // stay above the early returns below.
   const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
   const writeMode = useWriteMode();
-  const bridge = useBridge();
   const queryClient = useQueryClient();
-  // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
-  // cache, so the jump usually lands on data that is already there — no skeleton at all.
-  const prefetchSibling = useCallback(
-    (sibling: EntitySibling) => {
-      if (!config) return;
-      void queryClient.prefetchQuery({
-        queryKey: queryKeys.entityDetail(entityType, sibling.id),
-        queryFn: () => config.api.get(sibling.id),
-      });
-      if (config.api.siblings) {
-        // The context the sibling will have once opened (see the arrow's click), so this lands on
-        // the entry its own render asks for.
-        const context = neighbourContext(listContext, sibling);
-        void queryClient.prefetchQuery(siblingsQuery(config, entityType, sibling.id, organizationId, context));
-      }
-    },
-    [config, entityType, organizationId, queryClient, listContext],
-  );
   // Where the creation overlay opens (null = closed): the clicked "Créer" button, or the panel's
   // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const panelRef = useRef<Panel>(null);
+  // The arrows' own jump, shared with the swipe: the neighbour carries on walking the same list, from its own position.
+  const goToSibling = (sibling: EntitySibling) => {
+    const context = neighbourContext(listContext, sibling);
+    if (context) rememberListContext(entityType, sibling.id, context);
+    onNavigateSibling?.(sibling.id, { label: sibling.label });
+  };
+  useSwipeSiblings(() => panelRef.current?.getElement(), {
+    previous: siblings?.previous,
+    next: siblings?.next,
+    go: goToSibling,
+    enabled: config?.api.siblings != null && onNavigateSibling != null && !siblingNavDisabled,
+  });
   function openCreate(event?: SyntheticEvent) {
     const clicked = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     const toolbarEl = panelRef.current?.getElement()?.querySelector<HTMLElement>(".panel-toolbar") ?? null;
@@ -182,6 +255,8 @@ export function EntityDetailPanel({
       (onOpenOverview ?? onNavigate)?.(entityType, copy.id);
     },
   });
+
+  const deletion = useDeleteEntity(entityType, config, organizationId);
 
   // The main pane's fiche names the browser tab after its entity (focus.xhtml's <title> only knows
   // the entity JSF rendered). The overview's fiche doesn't.
@@ -198,19 +273,13 @@ export function EntityDetailPanel({
     config.api.siblings && onNavigateSibling ? (
       <SiblingNav
         siblings={siblings}
-        onNavigate={(sibling) => {
-          // The neighbour carries on walking the same list, from its own position.
-          const context = neighbourContext(listContext, sibling);
-          if (context) rememberListContext(entityType, sibling.id, context);
-          onNavigateSibling(sibling.id, { label: sibling.label });
-        }}
-        onPrefetch={prefetchSibling}
+        onNavigate={goToSibling}
         disabled={siblingNavDisabled}
       />
     ) : undefined;
   const headerLayout = toolbar?.actions?.closeOverview ? "overview" : "main";
 
-  if (isLoading) {
+  if (isLoading || tabPending) {
     // Same frame as the loaded fiche — panel, header, toolbar — so nothing jumps when the data
     // arrives: the identifier from the preview (or a skeleton), the rest as skeletons.
     return (
@@ -247,7 +316,7 @@ export function EntityDetailPanel({
     );
   }
   if (error) {
-    return <div className="entity-detail-panel-error">{(error as Error).message}</div>;
+    return null;
   }
   if (!data) {
     return null;
@@ -260,7 +329,7 @@ export function EntityDetailPanel({
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityBreadcrumbs(entityType, entityId) });
   };
-  const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId };
+  const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId, overviewEntityType };
 
   // A toolbar built server-side (MountOptions) has no entity data to derive chrome from at that
   // point — it's the initial mount's own entity. Once we have the fetched entity, prefer chrome
@@ -269,6 +338,33 @@ export function EntityDetailPanel({
   // onOpenOverview — no server round-trip to build a toolbar from) possible at all, and it also
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
   const settingsProjectId = config.detail.settingsProjectId?.(data);
+  // Every other fiche of the project (not the project itself, not a place) leads to the configuration of its
+  // type, and of its fields, for whoever may manage the project's settings.
+  const settingsTable = settingsTableOf(entityType);
+  const configurable = data as { projectId?: string | number | null; type?: { id?: string | number } | null; _permissions?: { canManageSettings?: boolean } };
+  const configureProjectId =
+    settingsTable != null && configurable._permissions?.canManageSettings === true ? configurable.projectId ?? undefined : undefined;
+  const configureTypeId = configurable.type?.id;
+  // Whoever may edit the default views of this project arranges its fiches' tabs, in edit mode like the other changes.
+  const canConfigureTabs = ficheConfig.canEdit && writeMode && organizationId != null;
+  // The project's configuration with `rows`, saved at once, and the fiche opened on the tab `openKey`.
+  const saveRows = async (rows: EditableTab[], openKey: string) => {
+    const subTypeOnly = ficheScope.typeId != null;
+    try {
+      await tabsSave.save(rows, subTypeOnly);
+      setTabDraft(null);
+      notify.success(t("tabs.saved"));
+      setActiveTabIndex(Math.max(0, rows.filter((row) => !row.hidden).findIndex((row) => row.key === openKey)));
+    } catch (failure) {
+      notify.error(messageForError(failure, t("tabs.failed")));
+    }
+  };
+  const currentRows = () => editableTabs(config.detail.tabs as DetailTabDef<never>[], ficheConfig.tabs);
+  const addDraftTab = (tab: EditableTab) => saveRows([...currentRows(), tab], tab.key);
+  const restoreBuiltIn = (key: string) => saveRows(restoreTab(currentRows(), key), key);
+  const listTargets = relationTargets(config.detail.tabs as DetailTabDef<never>[]);
+  const restorable = restorableTabs(currentRows());
+  const addItems = addTabItems(restorable, listTargets.length > 0, (key) => void restoreBuiltIn(key), () => setTabDraft({}));
   // Every entity resource carries its TraceableEntity status and the validator right.
   const validation = data as { validationStatus?: string | null; _permissions?: { canValidate?: boolean } };
   const entityActions: PanelActions = {
@@ -276,8 +372,18 @@ export function EntityDetailPanel({
     duplicate:
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
-      settingsProjectId != null && bridge.openProjectSettings
-        ? () => bridge.openProjectSettings!(settingsProjectId)
+      settingsProjectId != null
+        ? () => openProjectSettings(settingsProjectId)
+        : configureProjectId != null && settingsTable != null
+          ? () => openTablesSettings(configureProjectId, settingsTable, configureTypeId)
+          : undefined,
+    delete:
+      writeMode && deletion.canDelete && (data as { _permissions?: { canDelete?: boolean } })._permissions?.canDelete === true
+        ? () =>
+            deletion.requestDelete({
+              id: entityId,
+              name: String((data as { name?: unknown }).name ?? config.detail.chrome?.(data).title ?? entityId),
+            })
         : undefined,
   };
   const resolvedToolbar: PanelToolbarSlot | undefined = toolbar && {
@@ -352,34 +458,115 @@ export function EntityDetailPanel({
           (onOpenOverview ?? onNavigate)?.(entityType, id);
         }}
       />
-      <TabView
-        className="entity-detail-panel-tabs"
-        // One line, scrolled with ‹ › when the tabs don't fit (the narrow overview pane).
-        scrollable
-        activeIndex={activeTabIndex}
-        onTabChange={(e) => setActiveTabIndex(e.index)}
+      {deletion.dialog}
+      {tabsEditorOpen && canConfigureTabs && (
+        <FicheTabsEditor
+          entityType={entityType}
+          entityId={entityId}
+          organizationId={organizationId}
+          scope={ficheScope}
+          codeTabs={config.detail.tabs as DetailTabDef<never>[]}
+          saved={ficheConfig.tabs}
+          savedTypeId={ficheConfig.typeId}
+          onHide={() => setTabsEditorOpen(false)}
+          onChanged={() => setActiveTabIndex(0)}
+        />
+      )}
+      {tabDraft && canConfigureTabs && (
+        <AddListTabDialog
+          entityType={entityType}
+          entityId={entityId}
+          projectId={ficheScope.projectId}
+          organizationId={organizationId}
+          targets={relationTargets(config.detail.tabs as DetailTabDef<never>[])}
+          initial={tabDraft.target && tabDraft.filters ? { target: tabDraft.target, filters: tabDraft.filters } : undefined}
+          onHide={() => setTabDraft(null)}
+          onAdd={(tab) => void addDraftTab(tab)}
+        />
+      )}
+      <Menu ref={addMenu} popup model={addItems} />
+      <FieldConfigProvider
+        value={
+          configureProjectId != null && settingsTable != null && configureTypeId != null
+            ? { configure: (field) => openTablesSettings(configureProjectId, settingsTable, configureTypeId, field.id) }
+            : undefined
+        }
       >
-        {config.detail.tabs.map((tab) => {
-          const badge = tab.badge?.(data);
-          return (
+      <FicheTabsProvider value={canConfigureTabs ? { saveAsTab: (target, filters) => setTabDraft({ target, filters }) } : undefined}>
+        <TabView
+          className="entity-detail-panel-tabs"
+          // One line, scrolled with ‹ › when the tabs don't fit (the narrow overview pane).
+          scrollable
+          activeIndex={activeTabIndex}
+          onTabChange={(e) => {
+            // The two shortcuts after the last tab are buttons, not tabs.
+            if (canConfigureTabs && addItems.length > 0 && e.index === tabs.length) {
+              if (restorable.length > 0) addMenu.current?.toggle(e.originalEvent);
+              else if (listTargets.length > 0) setTabDraft({});
+              return;
+            }
+            // The TabView counts an absent « Ajouter » (a false child) too: « Modifier » is at tabs.length + 1 either way.
+            if (canConfigureTabs && e.index === tabs.length + 1) {
+              setTabsEditorOpen(true);
+              return;
+            }
+            setActiveTabIndex(e.index);
+            const tab = tabs[e.index];
+            // Merged: the state the other tabs kept stays.
+            if (tab) tabState.update((s) => ({ ...s, v: 1, tab: tab.key }));
+          }}
+        >
+          {tabs.map((tab) => {
+            const badge = tab.badge?.(data, helpers);
+            // Resolved here: the registry is complete by now, not when the tab was defined.
+            const icon = tab.icon ?? (tab.relation ? getEntityType(tab.relation.target)?.icon : undefined);
+            return (
+              <TabPanel
+                key={tab.key}
+                header={
+                  // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
+                  // bold label, then the count in parentheses when the tab has one.
+                  <div className="sia-tab-title">
+                    {icon && <i className={`${icon} sia-tab-icon`} aria-hidden="true" />}
+                    {tab.label}
+                    {badge != null && (isValidElement(badge) ? badge : <TabCount value={String(badge)} />)}
+                  </div>
+                }
+              >
+                <PaneErrorBoundary label={t("detail.tabError", { label: tab.label })} resetKey={`${entityType}:${entityId}`}>
+                  <PersistedTabState value={persistedTabState(tab.key)}>
+                    <PaneStateScope name={`tab:${tab.key}`}>{tab.render(data, helpers)}</PaneStateScope>
+                  </PersistedTabState>
+                </PaneErrorBoundary>
+              </TabPanel>
+            );
+          })}
+          {canConfigureTabs && addItems.length > 0 && (
             <TabPanel
-              key={tab.key}
+              key="__add"
+              headerClassName="fiche-tabs-shortcut"
               header={
-                // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
-                // bold label, then the count in parentheses when the tab has one.
-                <div className="sia-tab-title">
-                  {tab.label}
-                  {badge != null && <span>{` (${badge})`}</span>}
+                // The same title markup as the tabs themselves, so both read the same.
+                <div className="sia-tab-title fiche-tabs-shortcut-label" title={t("tabs.add")}>
+                  <i className="bi bi-plus-lg" aria-hidden="true" /> {t("tabs.addShortcut")}
                 </div>
               }
-            >
-              <PaneErrorBoundary label={t("detail.tabError", { label: tab.label })} resetKey={`${entityType}:${entityId}`}>
-                <PaneStateScope name={`tab:${tab.key}`}>{tab.render(data, helpers)}</PaneStateScope>
-              </PaneErrorBoundary>
-            </TabPanel>
-          );
-        })}
-      </TabView>
+            />
+          )}
+          {canConfigureTabs && (
+            <TabPanel
+              key="__edit"
+              headerClassName="fiche-tabs-shortcut"
+              header={
+                <div className="sia-tab-title fiche-tabs-shortcut-label" title={t("tabs.editorTitle")}>
+                  <i className="bi bi-pencil" aria-hidden="true" /> {t("tabs.editShortcut")}
+                </div>
+              }
+            />
+          )}
+        </TabView>
+      </FicheTabsProvider>
+      </FieldConfigProvider>
     </Panel>
   );
 }

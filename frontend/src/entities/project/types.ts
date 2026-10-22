@@ -3,9 +3,13 @@
 // detail entity are the same resource, unlike some entities with separate summary/detail DTOs).
 // Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept } from "../common";
+import type { OrganizationIdentifier, ResolvedConcept } from "../shared/common";
 
-export type { OrganizationIdentifier, ProjectRef, ResolvedConcept } from "../common";
+export type {
+  OrganizationIdentifier,
+  ProjectRef,
+  ResolvedConcept,
+} from "../shared/common";
 
 export interface PlaceLight {
   resourceType: string;
@@ -37,10 +41,15 @@ export interface ProjectPermissions {
 // Mirrors fr.siamois.domain.models.ValidationStatus — the merged "statut + identifiant" column's
 // left-hand badge (JSF: /panel/header/validationButton.xhtml). Read-only on the API: toggling it
 // is still a JSF-side action (panelModel.toggleValidate()).
-export type ValidationStatus = "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED";
+export type ValidationStatus =
+  "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED";
 
 export interface ProjectResource {
   resourceType: string;
+  // Tree view only (?tree=true): has sub-projects to show, and matched the search (false = only a parent
+  // of a match; absent without a search, where every row counts as a match).
+  hasChildren?: boolean;
+  match?: boolean;
   id: string;
   name: string;
   fullIdentifier: string;
@@ -79,4 +88,3 @@ export interface ResourceRef {
 // summary/detail shapes isn't awkward to compare this config against.
 export type ProjectSummary = ProjectResource;
 export type ProjectDetail = ProjectResource;
-

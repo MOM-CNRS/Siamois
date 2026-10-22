@@ -16,8 +16,10 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
+import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.form.layout.FormLayoutService;
@@ -26,6 +28,7 @@ import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -88,11 +91,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public static final String ID_UA = "ID_UA";
     public static final String NUM_UE = "NUM_UE";
     public static final String BRANCHE = "branche";
+    /** The OpenTheso instance offered when no thesaurus is known yet. */
+    private static final String DEFAULT_THESAURUS_SERVER = "https://thesaurus.mom.fr";
     private static final String INTERNAL_ERROR = "common.error.internal";
     public static final String COLLECTION = "collection";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
+    private final transient FieldConfigurationService fieldConfigurationService;
     private final transient ConceptService conceptService;
     private final transient ConceptCollectionService conceptCollectionService;
     private final transient VocabularyService vocabularyService;
@@ -155,6 +161,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private String draftCollectionName;
     private transient VocabularyDTO draftVocabulary;
 
+    /** The OpenTheso instance picked, the thesauri it publishes and the one picked among them. */
+    private String draftServerUrl;
+    private transient ThesaurusInfo draftThesaurus;
+    private String newServerUrl;
+    private transient List<String> draftServerOptions;
+    private transient List<ThesaurusInfo> draftThesaurusOptions = new ArrayList<>();
+
     /**
      * Progress of the branch/collection import {@link #saveDrawer()} triggers when saving a branch or
      * collection source — a large collection resolves its concepts one HTTP call at a time (see
@@ -207,9 +220,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          VocabularyMapper vocabularyMapper,
                                          LabelService labelService,
                                          LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry,
-                                         FormLayoutService formLayoutService) {
+                                         FormLayoutService formLayoutService,
+                                         FieldConfigurationService fieldConfigurationService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
+        this.fieldConfigurationService = fieldConfigurationService;
         this.conceptService = conceptService;
         this.conceptCollectionService = conceptCollectionService;
         this.vocabularyService = vocabularyService;
@@ -280,9 +295,38 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      */
     public void selectTableOnly(ConfigurableTable table) {
         selectedTable = table;
-        expandedNodes.add(tableNode(table));
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
         selectType(null);
+    }
+
+    /**
+     * Opens the page on a type — given by its concept — of a table, and on one of its fields when asked: where
+     * a fiche's gear and its fields' "configure" lead. The tree is unfolded down to what is opened; a type or
+     * a field that is not found leaves the page on the table.
+     */
+    public void openOn(ConfigurableTable table, Long typeConceptId, Long fieldId) {
+        selectTableOnly(table);
+        Optional<Concept> concept = conceptService.findById(typeConceptId);
+        if (concept.isEmpty()) {
+            return;
+        }
+        String label = labelService.findLabelOf(concept.get(), langBean.getLanguageCode()).getLabel();
+        Optional<String> typeName = typesForSelectedTable.stream()
+                .map(TypeSummary::getName)
+                .filter(name -> name.equalsIgnoreCase(label))
+                .findFirst();
+        if (typeName.isEmpty()) {
+            return;
+        }
+        selectType(typeName.get());
+        expandedNodes.add(tableNode(table));
+        expandedNodes.add(typeNode(table, typeName.get()));
+        if (fieldId != null && fieldsConfig != null) {
+            fieldsConfig.getFields().stream()
+                    .filter(candidate -> fieldId.equals(candidate.getId()))
+                    .findFirst()
+                    .ifPresent(this::openDrawerForEdit);
+        }
     }
 
     /** What the selected table is for, shown on its page. */
@@ -305,8 +349,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             layoutRows = new ArrayList<>();
             return;
         }
-        expandedNodes.add(tableNode(selectedTable));
-        expandedNodes.add(typeNode(selectedTable, typeName));
         loadConfigs();
     }
 
@@ -859,6 +901,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftSource = draftIsSystem && field.getType().isConfigurable() ? "principal" : null;
         if (isDraftConfigurable()) {
             prefillVocabularyConfig();
+            browseValues("", 0);
         }
         drawerOpen = true;
         announceOpenField(field);
@@ -909,6 +952,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftVocabulary = vocabularyMapper.convert(branchTopTerm.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
+        selectServerOf(draftVocabulary);
 
         String label = labelService.findLabelOf(branchTopTerm, langBean.getLanguageCode()).getLabel();
         ConceptLabelDTO labelDTO = new ConceptPrefLabelDTO();
@@ -932,6 +976,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftVocabulary = vocabularyMapper.convert(collection.getVocabulary());
         draftThesaurusUrl = draftVocabulary.completeUri();
         draftConnectionTested = true;
+        selectServerOf(draftVocabulary);
 
         ConceptCollectionDetachedDTO match = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(draftVocabulary).stream()
                 .filter(c -> c.getExternalId().equals(collection.getExternalId()))
@@ -983,6 +1028,12 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftThesaurusUrl = null;
         draftConnectionTested = false;
         draftVocabulary = null;
+        draftServerUrl = null;
+        draftThesaurus = null;
+        clearValuesPage();
+        newServerUrl = null;
+        draftServerOptions = null;
+        draftThesaurusOptions = new ArrayList<>();
         drawerErrorMessage = null;
         clearSourceSelection();
     }
@@ -1043,6 +1094,186 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             draftVocabulary = null;
             showDrawerError("projectTables.drawer.params.connectionFailed");
         }
+    }
+
+    /** Page size of the list of values the saved configuration offers. */
+    public static final int VALUES_PAGE_SIZE = 20;
+
+    private transient List<ConceptAutocompleteDTO> valuesItems = new ArrayList<>();
+    private String valuesQuery;
+    private int valuesOffset;
+    private boolean valuesHasNext;
+    private int valuesTotal;
+    private boolean valuesTotalCapped;
+    private boolean valuesAvailable;
+
+    private void clearValuesPage() {
+        valuesItems = new ArrayList<>();
+        valuesQuery = null;
+        valuesOffset = 0;
+        valuesHasNext = false;
+        valuesTotal = 0;
+        valuesTotalCapped = false;
+        valuesAvailable = false;
+    }
+
+    /**
+     * Reads a page of the values the field's saved configuration offers. Nothing is listed until a
+     * branch or collection has been saved, as the list comes from the database.
+     */
+    private void browseValues(String query, int offset) {
+        clearValuesPage();
+        Optional<FormConfig> typeFormConfig = tableFieldConfigService.findFormConfig(project.getId(), selectedTable, selectedTypeName);
+        Optional<CustomField> field = tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftOriginalName);
+        if (typeFormConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
+            return;
+        }
+        Optional<ConceptFieldFormConfig> config = formConfigService.findConceptConfigFor(typeFormConfig.get(), conceptField);
+        if (config.isEmpty() || config.get().isNotValid()) {
+            return;
+        }
+        try {
+            FieldConfigurationService.ValuesPage page = fieldConfigurationService.fetchValuesPage(
+                    conceptField, config.get(), langBean.getLanguageCode(), query, offset, VALUES_PAGE_SIZE);
+            valuesItems = new ArrayList<>(page.items());
+            valuesHasNext = page.hasNext();
+            valuesTotal = page.total();
+            valuesTotalCapped = page.totalCapped();
+            valuesQuery = query;
+            valuesOffset = offset;
+            valuesAvailable = true;
+        } catch (RuntimeException e) {
+            log.error("Could not list the values of field {}", draftOriginalName, e);
+        }
+    }
+
+    public void searchValues() {
+        browseValues(valuesQuery == null ? "" : valuesQuery, 0);
+    }
+
+    public void nextValuesPage() {
+        browseValues(valuesQuery == null ? "" : valuesQuery, valuesOffset + VALUES_PAGE_SIZE);
+    }
+
+    public void previousValuesPage() {
+        browseValues(valuesQuery == null ? "" : valuesQuery, Math.max(0, valuesOffset - VALUES_PAGE_SIZE));
+    }
+
+    public boolean isValuesHasPrevious() {
+        return valuesOffset > 0;
+    }
+
+    public int getValuesFirstRank() {
+        return valuesOffset + 1;
+    }
+
+    public int getValuesLastRank() {
+        return valuesOffset + valuesItems.size();
+    }
+
+    /** The instances to pick from: those of the thesauri the database knows, plus the default one. */
+    public List<String> getDraftServerOptions() {
+        if (draftServerOptions == null) {
+            Set<String> servers = new LinkedHashSet<>();
+            servers.add(DEFAULT_THESAURUS_SERVER);
+            vocabularyService.findAll().forEach(v -> servers.add(normalizeServer(v.getBaseUri())));
+            draftServerOptions = new ArrayList<>(servers);
+        }
+        return draftServerOptions;
+    }
+
+    private static String normalizeServer(String url) {
+        String trimmed = url.trim();
+        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+    }
+
+    private void selectServerOf(VocabularyDTO vocabulary) {
+        draftServerUrl = normalizeServer(vocabulary.getBaseUri());
+        draftThesaurus = null;
+        if (!getDraftServerOptions().contains(draftServerUrl)) {
+            draftServerOptions.add(draftServerUrl);
+        }
+        loadDraftThesaurusOptions();
+        draftThesaurus = draftThesaurusOptions.stream()
+                .filter(info -> info.idTheso().equals(vocabulary.getExternalVocabularyId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean loadDraftThesaurusOptions() {
+        draftThesaurusOptions = new ArrayList<>();
+        if (draftServerUrl == null || draftServerUrl.isBlank()) {
+            return true;
+        }
+        try {
+            draftThesaurusOptions = new ArrayList<>(
+                    vocabularyService.findAllThesaurusOf(draftServerUrl, langBean.getLanguageCode()));
+            return true;
+        } catch (InvalidEndpointException e) {
+            log.error("Could not list the thesauri of {}", draftServerUrl, e);
+            return false;
+        }
+    }
+
+    /** Another instance was picked: its thesauri are listed, and nothing is loaded until one is picked. */
+    public void onDraftServerChange() {
+        drawerErrorMessage = null;
+        draftThesaurus = null;
+        draftThesaurusUrl = null;
+        draftConnectionTested = false;
+        draftVocabulary = null;
+        clearSourceSelection();
+        if (!loadDraftThesaurusOptions()) {
+            showDrawerError("projectTables.drawer.params.serverUnreachable");
+        }
+    }
+
+    /** The instances matching what was typed. */
+    public List<String> completeDraftServers(String query) {
+        String needle = query == null ? "" : query.trim().toLowerCase();
+        return getDraftServerOptions().stream().filter(server -> server.toLowerCase().contains(needle)).toList();
+    }
+
+    /** The thesauri of the picked instance matching what was typed, by label or identifier. */
+    public List<ThesaurusInfo> completeDraftThesauri(String query) {
+        String needle = query == null ? "" : query.trim().toLowerCase();
+        return draftThesaurusOptions.stream()
+                .filter(info -> info.label().toLowerCase().contains(needle) || info.idTheso().toLowerCase().contains(needle))
+                .toList();
+    }
+
+    /** A thesaurus of the instance was picked: it is loaded so its branches and collections can be searched. */
+    public void onDraftThesaurusChange() {
+        clearSourceSelection();
+        draftConnectionTested = false;
+        draftVocabulary = null;
+        draftThesaurusUrl = draftThesaurus == null || draftThesaurus.idTheso().isBlank()
+                ? null : draftThesaurus.completeThesaurusUrl();
+        if (draftThesaurusUrl != null) {
+            testThesaurusConnection();
+        }
+    }
+
+    /** Registers an instance typed by the user, once it answers, and selects it. */
+    public void addDraftServer() {
+        drawerErrorMessage = null;
+        if (newServerUrl == null || newServerUrl.isBlank()) {
+            return;
+        }
+        String server = normalizeServer(newServerUrl);
+        try {
+            vocabularyService.findAllThesaurusOf(server, langBean.getLanguageCode());
+        } catch (InvalidEndpointException e) {
+            log.error("Could not reach the OpenTheso instance {}", server, e);
+            showDrawerError("projectTables.drawer.params.serverUnreachable");
+            return;
+        }
+        if (!getDraftServerOptions().contains(server)) {
+            draftServerOptions.add(server);
+        }
+        newServerUrl = null;
+        draftServerUrl = server;
+        onDraftServerChange();
     }
 
     private void preselectDesignatedConcept(String resolvedUrl) {
@@ -1650,6 +1881,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             case PHASE -> 2;
             case DOCUMENT -> 15;
             case STUDY -> 4;
+            case PROJECT -> 3;
         });
         values.put(ID_UA, "UA1");
         return new MapIdentifierRenderContext(values);

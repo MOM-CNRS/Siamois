@@ -26,6 +26,8 @@
    the right. */
 .entity-list-panel-toolbar.p-toolbar {
   flex-wrap: nowrap;
+  /* Top, not centre: when the filters drop to a second line, « Créer » stays on the first one. */
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
@@ -36,6 +38,32 @@
 .entity-list-panel-toolbar .entity-list-panel-filter-chips {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* Narrow toolbar: the filter chips are the first to drop to a second line; then the search field narrows,
+   down to its icon alone. */
+.entity-list-panel-toolbar-main {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.entity-list-panel-toolbar-main > * {
+  flex: none;
+}
+
+.entity-list-panel-toolbar-main > .sia-list-search {
+  flex: 0 1 16rem;
+  min-width: 2.75rem;
+}
+
+.entity-list-panel-toolbar-main > .sia-list-search > input {
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  text-overflow: clip;
 }
 
 /* The gear acts on the table's whole shape, so it reads larger than the search box next to it. */
@@ -49,6 +77,12 @@
 }
 
 /* ---------------------------------------------------------- column header lines */
+
+/* The field's type icon, before the header's name. */
+.entity-list-panel-column-icon {
+  margin-right: 0.4em;
+  color: var(--text-light, #6b7280);
+}
 
 /* One line, always: a wrapped header raises every row in the table. */
 .entity-list-panel-column-header {
@@ -140,6 +174,16 @@
   min-width: 14rem;
   max-height: 20rem;
   overflow: auto;
+}
+
+.filter-picker-search {
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+
+.filter-picker-empty {
+  padding: 0.4rem 0.6rem;
+  color: var(--text-color-secondary, #6c757d);
 }
 
 .filter-picker-item {
@@ -259,9 +303,13 @@
   gap: 0.35rem;
   padding: 0.1rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* The outline is kept (the chip's size does not change) but transparent: only the colour of the text and
+     icon, and the fill on hover, show the entity. */
+  border: 1px solid transparent;
   background: transparent;
   color: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
+  /* With no outline left, the weight is what makes the chip stand out of the row. */
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -339,7 +387,8 @@
 .entity-list-panel.p-panel,
 .entity-list-panel.p-panel > .p-toggleable-content,
 .entity-list-panel.p-panel > .p-toggleable-content > .p-panel-content,
-.entity-list-panel .p-datatable {
+.entity-list-panel .p-datatable,
+.entity-list-panel .p-treetable {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -391,9 +440,20 @@
   min-height: 0;
 }
 
+/* A tab holding a list or the relation graph has no padding of its own: the table runs edge to edge, as the full list does. Only a tab
+   of ordinary content (the details fiche) keeps the tab panel's padding. */
+.entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
+  padding: 0;
+}
+/* Beats the theme's `body .p-tabview .p-tabview-panels .p-tabview-panel` padding, which the :has() above already outweighs. */
+body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .sia-relation-graph) {
+  padding: 0;
+}
+
 /* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
    are siblings of it, so they stay put. */
-.entity-list-panel .p-datatable-wrapper {
+.entity-list-panel .p-datatable-wrapper,
+.entity-list-panel .p-treetable-wrapper {
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -402,38 +462,45 @@
    sideways — which is the situation frozen columns exist for. Excludes the selection box, which
    is pinned at 3rem, and the frozen identifier, sized just below. */
 .entity-list-panel .p-datatable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
-.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
-  min-width: 9rem;
+.entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-treetable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
+.entity-list-panel .p-treetable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
+  min-width: 13rem;
 }
 
-/* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
+/* Frozen columns (panels/list/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
    table's scroll box, at the `left` offset their inline style takes from the CSS variables that
    file keeps on the table root. Below: the stacking order between the frozen columns and the
    sticky header, an opaque background, and a width floor. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   position: sticky;
 }
 
 /* Frozen cells must sit above the columns sliding underneath them, and the header above both —
    otherwise the frozen identifier paints over the header it is supposed to pass beneath. */
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   z-index: 1;
 }
-
-.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen {
   z-index: 2;
 }
 
 /* The columns sliding underneath must not show through. A body cell takes its row's background,
    so a row this app paints itself (the overview-open highlight, a search hit) stays painted; a
    header cell keeps the theme's own header background — its row has none to inherit. */
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   background: inherit;
 }
-
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
   background-clip: padding-box;
 }
 
@@ -442,13 +509,15 @@
    here a cell's max-width is advisory and would silently do nothing — long values are already
    ellipsised by .entity-list-panel-cell-value instead. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
   min-width: 11rem;
 }
-
-
 .entity-list-panel .p-datatable-thead > tr > th,
-.entity-list-panel .p-datatable-tbody > tr > td {
+.entity-list-panel .p-datatable-tbody > tr > td,
+.entity-list-panel .p-treetable-thead > tr > th,
+.entity-list-panel .p-treetable-tbody > tr > td {
   padding: var(--cell-pad-y) var(--cell-pad-x);
 }
 
@@ -456,40 +525,22 @@
    is served first in the auto table layout, the others then get their content width), and has no
    padding of its own so it's truly empty once the columns overflow. */
 .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-filler-cell,
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell {
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-filler-cell,
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-filler-cell,
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-filler-cell {
   width: 100%;
   padding: 0;
 }
-
-.entity-list-panel .p-datatable-tbody > tr {
+.entity-list-panel .p-datatable-tbody > tr,
+.entity-list-panel .p-treetable-tbody > tr {
   height: var(--entity-list-row-height);
 }
-
-.entity-list-panel .p-datatable-tbody > tr > td {
+.entity-list-panel .p-datatable-tbody > tr > td,
+.entity-list-panel .p-treetable-tbody > tr > td {
   box-sizing: border-box;
   height: var(--entity-list-row-height);
   max-height: var(--entity-list-row-height);
 }
-
-/* Mirrors the JSF panels' .panel-progressbar (primefaces-siamois-theme styles.scss): a thin,
-   always-present track, whose moving value only shows while a page or a column is loading. */
-.entity-list-panel-progressbar.p-progressbar {
-  flex: 0 0 3px;
-  height: 3px;
-  border-radius: 0;
-  background-color: var(--siamois-green-light-100, #e6f0e6);
-}
-
-.entity-list-panel-progressbar.p-progressbar .p-progressbar-value {
-  background-color: var(--main-color, #80b480);
-  visibility: hidden;
-}
-
-.entity-list-panel-progressbar.p-progressbar.is-active .p-progressbar-value {
-  visibility: visible;
-}
-
-
 
 /* ------------------------------------------------------------ click-to-edit cell */
 
@@ -798,10 +849,14 @@
   height: 16px;
 }
 
+/* The required mark follows the label's name, not the button's far edge; the label alone shrinks (ellipsis). */
 .sia-fiche-tab .required-btn::after {
-  content: " *";
-  position: absolute;
-  right: 6px;
+  content: "*";
+  flex: none;
+  margin-left: 0.25em;
+}
+.sia-fiche-tab .required-btn .p-button-label {
+  flex: 0 1 auto;
 }
 
 .sia-fiche-tab .field-hint {
@@ -842,6 +897,93 @@
   color: var(--text-light, #6b7280);
 }
 
+/* Narrow fiche (a phone, or a squeezed overview): one field per row, the label on the left over a third of the
+   width and the value beside it, each on a single line cropped with an ellipsis. Keyed to the fiche's own width,
+   like the column grid above, below the 400px at which that grid starts putting fields side by side. */
+@container (max-width: 399px) {
+  .sia-fiche-tab .field-value-group {
+    display: grid;
+    grid-template-columns: 33% minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 0 0.5rem;
+  }
+  /* Tighter rows: the columns' own padding is halved between two fields. */
+  .sia-fiche-tab .project-fiche-tab-col {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .header-toggle-container {
+    min-width: 0;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button .p-button-label {
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sia-fiche-tab .field-value-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A row's negative top margin pulls it over the previous row, but not a field wrapped inside the same row:
+     the spacing then depended on how the form groups its fields. One field per line, so no overlap at all. */
+  .sia-fiche-tab .sia-grid {
+    margin: 0;
+  }
+  /* Every field is the same height whatever it holds (chips, a measurement, a checkbox): the row's height is
+     fixed, its contents are cropped to it. */
+  .sia-fiche-tab .field-value-group {
+    height: 2.1rem;
+    overflow: hidden;
+  }
+  .sia-fiche-tab .field-value-cell {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* A multi-valued field: its first value, then how many more. */
+  .sia-fiche-tab .cell-multi-all {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:nth-child(n + 2) {
+    display: none;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-fold {
+    display: inline;
+    flex: none;
+  }
+}
+.cell-multi-fold {
+  display: none;
+}
+
 /* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
 .project-fiche-tab-footer {
   display: flex;
@@ -872,7 +1014,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Create forms (components/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
+   Create forms (components/create/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
    lighter — the entity's icon and title in its colour, the fields labelled like a fiche's, a light
    footer with « Annuler » / « Créer ». --entity-chip-color is the entity's, set on the form. */
 /* Beats the theme's `body .p-overlaypanel .p-overlaypanel-content` padding: header and footer
@@ -994,7 +1136,48 @@
   outline-offset: 2px;
 }
 
-/* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
+/* The row open in the overview: framed in the colour of what the rows are (the theme's own frame is Siamois green). */
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td {
+  border-top-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+  border-bottom-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:first-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:first-child {
+  border-left-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:last-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:last-child {
+  border-right-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+
+/* A focused list row: the ring is the colour of the entity the rows are (--row-entity-color, set on the list
+   by EntityListPanel), not the theme's blue — in a fiche's tab too, where the list sits inside another entity's panel. */
+body .entity-list-panel .p-datatable.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row:focus-visible,
+body .entity-list-panel .p-datatable.p-datatable-hoverable-rows .p-datatable-tbody > tr:not(.p-highlight):focus-visible,
+body .entity-list-panel .p-datatable .p-datatable-tbody > tr:focus-visible,
+body .entity-list-panel .p-treetable .p-treetable-tbody > tr:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+}
+
+/* The same for a focused cell's content and a sortable header, which the theme rings in the primary / lavender colour. */
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"]:focus,
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"] [tabindex="0"]:focus-visible {
+  outline-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-checkbox:not(.p-disabled):has(.p-checkbox-input:focus-visible) .p-checkbox-box,
+body .entity-list-panel .p-checkbox .p-checkbox-box.p-focus {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+  border-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-datatable thead th.p-sortable-column:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+}
+
+/* A list row's action buttons (panels/list/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
    compact so the row stays at --entity-list-row-height, and dimmed until the row is hovered so a
    long list doesn't read as a wall of icons. */
 .entity-list-panel .entity-list-panel-row-actions {
@@ -1005,9 +1188,9 @@
   opacity: 0.45;
   transition: opacity 0.15s ease;
 }
-
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-actions,
-.entity-list-panel .entity-list-panel-row-actions:focus-within {
+.entity-list-panel .entity-list-panel-row-actions:focus-within,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-actions {
   opacity: 1;
 }
 
@@ -1033,7 +1216,7 @@
   transform: rotate(-90deg);
 }
 
-/* A create form's pre-set link (components/CreateLinkField.tsx). */
+/* A create form's pre-set link (components/create/CreateLinkField.tsx). */
 .create-link-field .create-link-field-value {
   align-self: flex-start;
   color: var(--text-color);
@@ -1054,18 +1237,21 @@
    overview; while its row is hovered it fills in the entity's color (inverted). Only that chip —
    a linked entity's chip in another column keeps its outline. */
 .entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip,
-.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
+.entity-list-panel .entity-list-panel-row-identifier.entity-nav-chip:focus-visible,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip {
   background: var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480)));
   color: var(--primary-color-text, #ffffff);
 }
-
-.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
+.entity-list-panel .p-datatable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover,
+.entity-list-panel .p-treetable-tbody > tr:hover .entity-list-panel-row-identifier.entity-nav-chip:hover {
   filter: brightness(1.1);
 }
 
 /* Selection checkboxes aligned to the left of their cell. */
 .entity-list-panel .p-datatable-thead > tr > th.p-selection-column,
-.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column {
+.entity-list-panel .p-datatable-tbody > tr > td.p-selection-column,
+.entity-list-panel .p-treetable-thead > tr > th.p-selection-column,
+.entity-list-panel .p-treetable-tbody > tr > td.p-selection-column {
   text-align: left;
 }
 
@@ -1213,12 +1399,6 @@
   padding-bottom: var(--panel-scroll-end-gap);
 }
 
-/* A list (standalone or embedded): the paginator is its last element, below the scrolling table
-   wrapper — the room goes under the paginator, not between the rows and it. */
-.entity-list-panel .p-paginator-bottom {
-  margin-bottom: var(--panel-scroll-end-gap);
-}
-
 /* Home scrolls in its pane. */
 .home-panel {
   padding-bottom: var(--panel-scroll-end-gap);
@@ -1283,7 +1463,7 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* ---------------------------------------------------------------------------
-   Loading skeletons (components/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
+   Loading skeletons (components/layout/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
    in only after a short delay: a fast response never shows them, so nothing flashes; a slow one
    shows the page's shape instead of an empty box. */
 @keyframes loading-skeleton-appear {
@@ -1301,11 +1481,12 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* A placeholder row is not selectable and has no hover state. */
-.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox,
+.entity-list-panel .p-treetable-tbody > tr.entity-list-panel-skeleton-row .p-checkbox {
   visibility: hidden;
 }
-
-.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover {
+.entity-list-panel .p-datatable-tbody > tr.entity-list-panel-skeleton-row:hover,
+.entity-list-panel .p-treetable-tbody > tr.entity-list-panel-skeleton-row:hover {
   background: inherit;
 }
 
@@ -1350,7 +1531,7 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* ---------------------------------------------------------------------------
-   PaneSplit (panels/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
+   PaneSplit (panels/pane/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
    no text selection while dragging it. */
 .pane-split.p-splitter-resizing {
   user-select: none;
@@ -1396,6 +1577,26 @@ body button.p-button.status-button.status-button-compact {
   vertical-align: middle;
 }
 
+/* The name is its own box: text-overflow does not reach text that is a direct child of a flex container, so a
+   long name was cut square against the border instead of ending in an ellipsis. */
+.ref-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The referenced entity's icon, before its name. */
+.ref-chip-icon {
+  flex: none;
+  margin-right: 0.35em;
+  font-size: 0.9em;
+}
+
+.resource-ref-token-link .ref-chip-icon {
+  margin-right: 0.35em;
+}
+
 /* A chip that opens its fiche (the overlay's): the edit-mode token's look — full-colour border,
    label underlined on hover — rather than the plain chip's light one. */
 .ref-chip-link {
@@ -1424,7 +1625,7 @@ body button.p-button.status-button.status-button-compact {
   color: var(--ref-chip-color);
 }
 
-/* "Dupliquer la structure" (components/DuplicateStructureOverlay.tsx), in the create overlay's
+/* "Dupliquer la structure" (components/duplicate/DuplicateStructureOverlay.tsx), in the create overlay's
    frame: how many exemplars, then what to include. */
 .duplicate-structure {
   display: flex;
@@ -1563,7 +1764,29 @@ body button.p-button.status-button.status-button-compact {
 .sia-titlebar-split {
   justify-content: space-between;
 }
+/* The tab's entity icon, and its count as a light grey pill. */
+.sia-tab-icon {
+  flex: none;
+  margin-right: 0.15em;
+}
+
+.sia-tab-count {
+  flex: none;
+  margin-left: 0.3em;
+  padding: 0 0.5em;
+  min-width: 1.6em;
+  border-radius: 999px;
+  background: var(--surface-200, #e9ecef);
+  color: var(--text-color-secondary, #4b5563);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .sia-tab-title {
+  /* The same height with or without a count pill, so every tab's underline sits on one line. */
+  min-height: 1.3rem;
   display: flex;
   gap: 0.2em;
   align-items: center;
@@ -1576,10 +1799,11 @@ body button.p-button.status-button.status-button-compact {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
 }
+/* One gap between icon, title and counter — the same on the home cards and the list/view panel titles. */
 .sia-count-card-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 .sia-row-gap {
   display: flex;
@@ -1591,9 +1815,22 @@ body button.p-button.status-button.status-button-compact {
 .sia-icon-ground {
   color: var(--ground-main-color);
 }
+/* Icon, title and counter share one size per level (home card: title-card, list/view panel: title-page);
+   the icon sits in a fixed 1em square (no side padding, so the gap to the title stays the one gap) so glyphs of different shapes (box, layers, pencil…) weigh the same. */
 .sia-list-title-icon {
-  font-size: 2rem;
+  flex: none;
+  width: 1em;
+  font-size: var(--font-size-title-page);
+  line-height: 1;
+  text-align: center;
   color: var(--main-color);
+}
+.sia-count-card-row > i:not(.home-data-access-handle) {
+  flex: none;
+  width: 1em;
+  font-size: var(--font-size-title-card);
+  line-height: 1;
+  text-align: center;
 }
 /* Count-card title: title-card level, same weight as the counter chip next to it. It does not grow:
    the chip sits right after it, on the same line. */
@@ -1606,16 +1843,30 @@ body button.p-button.status-button.status-button-compact {
 }
 /* Home cards' counter: outlined in the entity colour (the theme's <entity>-count-chip), as big as the
    title, and see-through inside — the theme paints that chip white. */
-.sia-welcome-card .sia-count-card-row .p-chip {
+.sia-welcome-card .sia-count-card-row .p-chip,
+.entity-list-panel-header .p-chip {
+  border-radius: 999px;
+  justify-content: center;
   background-color: transparent;
   font-size: var(--font-size-title-card);
   font-weight: var(--font-weight-title);
   line-height: 1.2;
   padding: 0 0.6rem;
 }
-.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text,
+.entity-list-panel-header .p-chip .p-chip-text {
   margin: 0.15rem 0;
   line-height: inherit;
+}
+/* On the home cards the counter stays a notch below the title, so it doesn't compete with it. */
+.sia-welcome-card .sia-count-card-row .p-chip {
+  font-size: calc(var(--font-size-title-card) * 0.85);
+  padding: 0 0.6rem;
+}
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+  margin: 0.15rem 0;
+  /* The theme sets 14px on the text itself, which would ignore the chip's own size. */
+  font-size: inherit;
 }
 /* Home cards: the title keeps the entity colour; sub-titles and detail lines are grey/dark text. */
 .sia-welcome-card .sia-count-card-row + div small {
@@ -1624,11 +1875,40 @@ body button.p-button.status-button.status-button-compact {
 .sia-welcome-card .sia-row-gap span {
   color: var(--text-main);
 }
+.entity-list-panel-header .p-chip {
+  font-size: var(--font-size-title-page);
+}
 .sia-list-title-text {
   font-size: var(--font-size-title-page);
   font-weight: var(--font-weight-title);
   color: var(--title-color);
-  padding-right: 0.5em;
+}
+/* Icon, title and count: evenly spaced, one gap between each. */
+.entity-list-panel-header.sia-hstack {
+  gap: 0.6rem;
+}
+/* The title of a list on one of the user's own views: a button that turns into a field. */
+.entity-list-panel-view-title {
+  border: 0;
+  background: transparent;
+  cursor: text;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.entity-list-panel-view-title-icon {
+  font-size: 0.7em;
+  opacity: 0;
+}
+.entity-list-panel-view-title:hover .entity-list-panel-view-title-icon,
+.entity-list-panel-view-title:focus-visible .entity-list-panel-view-title-icon {
+  opacity: 0.6;
+}
+.entity-list-panel-view-title-input {
+  font-size: var(--font-size-title-page);
+  font-weight: var(--font-weight-title);
+  min-width: 12rem;
 }
 .entity-list-panel.embedded {
   display: flex;
@@ -1647,10 +1927,38 @@ body button.p-button.status-button.status-button-compact {
   align-items: center;
   gap: 0.25rem;
 }
+.validation-status-title {
+  padding: 0 0.5rem 0.5rem;
+  font-weight: 600;
+}
 .validation-status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 11rem;
   list-style: none;
   margin: 0;
   padding: 0;
+}
+/* The four options line up: same box, icons in one column, labels starting at the same place. */
+.validation-status-overlay .validation-status-option.p-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+}
+.validation-status-overlay .validation-status-option .p-button-icon {
+  flex: none;
+  width: 1.25rem;
+  margin: 0;
+  text-align: center;
+}
+.validation-status-overlay .validation-status-option .p-button-label {
+  flex: 1 1 auto;
+  text-align: left;
 }
 
 /* Concept suggestion (fields/ConceptOptionItem.tsx) */
@@ -1700,13 +2008,89 @@ body button.p-button.status-button.status-button-compact {
    an edit; in edit mode it is the one validate button and stays visible. */
 .sideview-titlebar > .sia-hstack {
   flex: 1 1 auto;
+  /* The status button stays on the main chip's line; only the header's own chips wrap, inside it. */
+  flex-wrap: nowrap;
 }
 
 .entity-detail-header {
   flex: 1 1 auto;
   flex-wrap: nowrap;
+  gap: 0.25rem 0.75rem;
   min-width: 0;
   align-items: center;
+}
+
+/* The title bar is always ONE line. The title (status + chips) gives way to the toolbar: whatever does not fit is
+   cut at the toolbar's edge, as if the chips slid under the buttons (a short fade marks the cut). Neither wraps. */
+.sideview-titlebar-overview {
+  flex-wrap: nowrap;
+  /* A wider gap between the toolbar buttons and the status tells the two groups apart. */
+  column-gap: 1.25rem;
+}
+.sideview-titlebar-overview > .sia-hstack {
+  flex: 1 1 0;
+  align-items: center;
+  /* The status button already carries its own padding: no extra gap before the first chip. */
+  gap: 0;
+}
+
+/* The title never forces the bar wider: it is the part that is cut. */
+.sideview-titlebar > .sia-hstack {
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}
+.sideview-titlebar > .sia-hstack .entity-detail-header > * {
+  flex: 0 0 auto;
+}
+.sideview-titlebar > .panel-toolbar,
+.sideview-titlebar > .p-toolbar {
+  flex: 0 0 auto;
+}
+
+/* A chip is never two lines: a long label is cut with an ellipsis (full text in the title attribute). */
+.entity-detail-header .p-chip.p-component {
+  max-width: 100%;
+  min-width: 0;
+  margin-right: 0 !important;
+}
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entity-detail-header .p-chip.p-component.entity-nav-chip { max-width: min(100%, 22rem); }
+.entity-detail-header .p-chip.p-component:not(.entity-nav-chip) { max-width: min(100%, 14rem); }
+
+/* The fiche's chips follow the list's: the identifier is the list's identifier chip (entity colour, bold) on a
+   light tint of that colour; the other chips (second text, type, read-only ones) are the list's rectangle chip
+   (.ref-chip: small radius, light outline, no fill). All share one box (padding, border, line-height, font
+   size) so they have the same height. */
+.entity-detail-header .p-chip.p-component,
+.p-chip.p-component.entity-detail-panel-preview-chip {
+  box-sizing: border-box;
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--main-color) 35%, transparent);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--main-color);
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.entity-detail-header .p-chip.p-component.entity-nav-chip {
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 1px 0.7rem;
+  background: color-mix(in srgb, var(--main-color) 12%, transparent);
+}
+
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  margin: 0;
+  color: inherit;
+  line-height: inherit;
 }
 
 .entity-detail-header-primary-input {
@@ -1753,6 +2137,8 @@ body button.p-button.status-button.status-button-compact {
 .panel-docked.siamois-panel:has(> .react-main-panel-mount) {
   border: none;
   border-radius: 0;
+}
+
 /* A place suggestion in a picker: icon, name, type and code, and the source it comes from. */
 .place-item {
   display: flex;
@@ -1878,6 +2264,10 @@ body button.p-button.status-button.status-button-compact {
 .entity-detail-panel .panel-bc-row {
   display: flex;
   align-items: center;
+  background: var(--siamois-green-light-100, #e6f0e6);
+}
+.entity-detail-panel .panel-bc-row .p-breadcrumb.panel-bc {
+  background: transparent;
 }
 
 /* The chevron is an inline SVG, so it is centred by the button's own flex box whatever the icon font does. */
@@ -1940,4 +2330,1581 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
    never see the hover. */
 .entity-list-panel-create-blocked .p-button {
   pointer-events: none;
+}
+
+/* ---- Relation graph of a recording unit (entities/recordingUnit/graph) and the link forms
+   (components/relationLinks) ---- */
+.sia-relation-graph {
+  display: flex;
+  flex-direction: column;
+  /* The fiche scrolls inside its own box (no page scroll): the graph takes what is left of the window. */
+  height: calc(100vh - 230px);
+  min-height: 420px;
+}
+
+.sia-relation-graph-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.sia-relation-graph-message {
+  padding: 16px;
+}
+
+.sia-relation-graph-failure {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  z-index: 10;
+  color: var(--red-500, #c0392b);
+}
+
+.sia-graph-node-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.sia-graph-node {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 6px;
+  background: var(--surface-card, #fff);
+  color: var(--text-color, #212529);
+  font-size: 13px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sia-graph-node-unit {
+  cursor: pointer;
+}
+
+/* The unit the graph is drawn around, framed in the recording unit's colour. */
+.sia-graph-node-center {
+  border: 2px solid var(--entity-chip-color, var(--primary-color, #1976d2));
+  font-weight: 600;
+}
+
+.sia-graph-node-zone {
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.sia-graph-node-more {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+/* The frame around a zone: a quiet background so where one relation kind ends reads at a glance. */
+.sia-graph-frame {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--surface-border, #ced4da);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-ground, #f8f9fa) 60%, transparent);
+  pointer-events: none;
+}
+
+.sia-graph-frame-muted {
+  opacity: 0.55;
+}
+
+.sia-graph-handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Touches the node, so the pointer has no gap to cross between the node and its buttons. */
+.sia-graph-node-actions {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 4px;
+  background: var(--surface-card, #fff);
+  color: var(--text-color, #212529);
+}
+
+.sia-graph-icon-button {
+  padding: 2px 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sia-graph-icon-button i {
+  font-size: 12px;
+}
+
+.sia-graph-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* The display settings stack: the view (graph or list), then the graph's own options. */
+.sia-graph-setting-title {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.sia-graph-setting + .sia-graph-setting,
+.sia-graph-setting-group + .sia-graph-setting {
+  margin-top: 8px;
+}
+
+.sia-relation-uncertain {
+  margin-left: 0.4rem;
+  opacity: 0.7;
+}
+
+.sia-graph-fit {
+  overflow-y: auto;
+}
+
+.sia-inline-picker input {
+  width: 100%;
+}
+
+.sia-inline-picker-list {
+  max-height: 152px;
+  margin: 4px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 6px;
+  list-style: none;
+}
+
+.sia-inline-picker-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sia-inline-picker-item:hover,
+.sia-inline-picker-item:focus-visible {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+.sia-inline-picker-item-selected {
+  font-weight: 600;
+}
+
+.sia-inline-picker-empty {
+  padding: 7px 10px;
+  opacity: 0.6;
+}
+
+.sia-inline-picker-footer {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--surface-border, #ced4da);
+  background: var(--surface-card, #fff);
+}
+
+.sia-create-form-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The editor of a stratigraphic field (components/relationLinks/StratigraphyEditor.tsx): the field's
+   chips, with a pencil and a cross each, and what edits a link under them. */
+.sia-strati-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.sia-strati-editor-busy {
+  opacity: 0.7;
+}
+
+.sia-strati-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.sia-strati-chips:empty {
+  display: none;
+}
+
+.sia-strati-chip {
+  gap: 0.35rem;
+  border-color: var(--ref-chip-color);
+}
+
+.sia-strati-chip-edited {
+  background: var(--surface-100, #f3f4f6);
+}
+
+.sia-strati-chip-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75em;
+  cursor: pointer;
+}
+
+.sia-strati-chip-button:hover:not(:disabled) {
+  opacity: 0.6;
+}
+
+.sia-strati-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sia-strati-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+/* ── Header search bar (src/search/GlobalSearchBar.tsx) ───────────────────────────────────────── */
+.sia-search {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Room between the institution select and the button (the id outweighs the host theme's own padding). */
+div#search-bar .sia-search {
+  padding-left: 24px;
+}
+
+/* What the topbar shows: a field-looking button, the way into the overlay below. */
+.sia-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--surface-300, #ced4da);
+  border-radius: 6px;
+  background: var(--surface-0, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+
+.sia-search-trigger-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sia-search-trigger-text {
+  color: var(--text-color-secondary, #6b7280);
+}
+
+/* The overlay sits above the whole page, the institution select included. */
+.sia-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgb(0 0 0 / 25%);
+}
+
+/* Placed (left, top, width) from the button it covers; the defaults only matter before that. */
+.sia-search-panel {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: min(760px, calc(100vw - 16px));
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 12px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 25%);
+}
+
+/* The field is the click target: the icons never take the click from the input. */
+.sia-search-field {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin: 8px;
+}
+
+.sia-search-field > .bi-search {
+  position: absolute;
+  left: 0.75rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Both selectors: the host theme's own padding on .p-inputtext would otherwise put the text under the icon. */
+.sia-search-field > input.sia-search-input.p-inputtext {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+/* The typed text is drawn by the mirror under the input, whose own text is transparent (the caret stays visible):
+   that is how a keyword's value gets its colour. Same box and font as the input so the two line up. */
+.sia-search-field {
+  background: var(--surface-card, #fff);
+  border-radius: var(--border-radius, 6px);
+}
+
+.sia-search-field > input.sia-search-input.p-inputtext {
+  position: relative;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text-main, #2a2c30);
+}
+
+.sia-search-mirror {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 2.5rem 0 2.5rem;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  font: inherit;
+  color: var(--text-main, #2a2c30);
+}
+
+.sia-search-kw-value {
+  color: var(--main-color, var(--siamois-green, #699369));
+}
+
+/* The browser draws its own clear button on a type=search input: ours is the only one. */
+.sia-search-input::-webkit-search-cancel-button,
+.sia-search-input::-webkit-search-decoration {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.sia-search-clear {
+  position: absolute;
+  right: 0.75rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.sia-search-dropdown {
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--surface-200, #eee);
+}
+
+.sia-search-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--surface-200, #eee);
+}
+
+.sia-search-keyword {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 999px;
+  background: var(--siamois-green-light-100, #eef5f0);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.sia-search-keyword {
+  font-family: monospace;
+  cursor: pointer;
+}
+
+.sia-search-keyword-more {
+  font-weight: 600;
+}
+
+.sia-search-status {
+  padding: 10px 12px;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.9rem;
+}
+
+.sia-search-status.is-error {
+  color: var(--red-600, #c0392b);
+}
+
+.sia-search-section + .sia-search-section {
+  border-top: 1px solid var(--surface-200, #eee);
+}
+
+.sia-search-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main, #2a2c30);
+}
+
+/* Only the icon takes the entity's colour. */
+.sia-search-section-title i,
+.sia-search-all i {
+  color: var(--main-color);
+}
+
+.sia-search-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px 6px 28px;
+  cursor: pointer;
+}
+
+.sia-search-row.is-active,
+.sia-search-row:hover {
+  background: var(--siamois-green-light-100, #eef5f0);
+}
+
+.sia-search-row-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.sia-search-row-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
+.sia-search-all {
+  justify-content: space-between;
+  color: var(--text-main, #2a2c30);
+  font-weight: 600;
+}
+
+.sia-search-mark {
+  padding: 0;
+  border-radius: 3px;
+  background: var(--siamois-green-light-100, #dcebe1);
+  color: inherit;
+}
+
+.sia-search-autocomplete {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8rem;
+}
+
+/* The permanent-deletion confirmation (components/detail/DeleteEntityDialog.tsx). */
+.delete-entity-dialog .delete-entity-dialog-message {
+  margin: 0 0 1rem;
+}
+
+.delete-entity-dialog .delete-entity-dialog-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.delete-entity-dialog .delete-entity-dialog-error {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: var(--red-50, #fdecea);
+  color: var(--red-700, #b3261e);
+}
+
+/* The list's tree view (EntityTable's TreeTable): the same rows as the flat list — the selectors
+   above are doubled for p-treetable — with the one scroll box and sticky header DataTable's
+   scrollable mode gives. TreeTable's own scrollable mode splits header and body into two tables,
+   which would break the frozen columns, so it is left off and the wrapper scrolls instead. */
+.entity-list-panel .p-treetable-wrapper {
+  overflow: auto;
+}
+/* TreeTable's theme lays the table out as `fixed`, which would split the width evenly (and give the
+   filler column all of it); the list's columns size to their content, as DataTable's do. */
+.entity-list-panel .p-treetable-table {
+  table-layout: auto;
+}
+/* DataTable's header lays the title and the sort icon on one line; TreeTable's leaves them as blocks. */
+.entity-list-panel .p-treetable-thead .p-column-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.entity-list-panel .p-treetable-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen {
+  z-index: 3;
+}
+.entity-list-panel .p-treetable-tbody > tr > td .p-treetable-toggler {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-right: 0.25rem;
+}
+/* The expander and the cell's own content share one line. */
+.entity-list-panel .p-treetable-tbody > tr > td > .p-treetable-toggler + .entity-list-panel-cell {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.entity-list-panel .p-treetable-tbody > tr > td:has(> .p-treetable-toggler) {
+  white-space: nowrap;
+}
+/* A parent shown only because a match is below it: its identifier chip is written in a lighter tint of
+   the entity colour (the matches keep the full colour), the rest of the row is left alone. */
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip {
+  --context-chip-color: color-mix(in srgb, var(--entity-chip-color, var(--context-main-color, var(--main-color, #80b480))) 55%, transparent);
+  color: var(--context-chip-color);
+}
+/* On hover the chip fills with the entity colour (rule above): the label goes back to white, or it
+   would vanish into the fill. */
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row:hover .entity-list-panel-row-identifier.entity-nav-chip,
+.entity-list-panel .p-treetable-tbody > tr.entity-tree-context-row .entity-list-panel-row-identifier.entity-nav-chip:focus-visible {
+  color: var(--primary-color-text, #ffffff);
+}
+
+/* The theme styles only DataTable's header and cells: TreeTable's get the same look. */
+.entity-list-panel .p-treetable-thead > tr > th {
+  background: var(--siamois-green-light-100, #e6f0e6);
+  color: var(--text-color, #2a2c30);
+  border: 0 solid #e9ecef;
+  border-bottom-width: 1px;
+  text-align: left;
+  box-sizing: border-box;
+}
+.entity-list-panel .p-treetable-thead > tr > th .p-column-title {
+  font-weight: 600;
+}
+.entity-list-panel .p-treetable-tbody > tr > td {
+  border: 0 solid rgba(0, 0, 0, 0.08);
+  border-bottom-width: 1px;
+  text-align: start;
+}
+.entity-list-panel .p-treetable-tbody > tr {
+  background: #fff;
+}
+
+/* The gear's display modes (list, tree, cards…): a grid of tiles in its overlay, the one in use outlined. */
+.entity-list-panel-view-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.entity-list-panel-view-mode-title {
+  font-weight: 600;
+}
+.entity-list-panel-view-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+.entity-list-panel-gear-panel .p-overlaypanel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.entity-list-panel-gear-menu {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--surface-border, #dee2e6);
+  padding-top: 0.5rem;
+}
+.entity-list-panel-gear-menu .p-menuitem-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.4rem;
+  cursor: pointer;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+.entity-list-panel-gear-menu .p-menuitem-link:hover {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.04));
+}
+.entity-list-panel-view-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  background: transparent;
+}
+.entity-list-panel-view-tile i {
+  font-size: 1.4rem;
+}
+.entity-list-panel-view-tile:hover {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.04));
+}
+.entity-list-panel-view-tile.is-active {
+  color: var(--main-color, #80b480);
+  border: 2px solid var(--main-color, #80b480);
+}
+
+/* The header's view button and the dialog naming a new view (panels/list/ViewActions.tsx). */
+/* A light split button: transparent, outlined and written in the Siamois green, its two halves joined. */
+.entity-list-panel-views-button.p-splitbutton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-right: 0.25rem;
+}
+.entity-list-panel-views-button .p-button-label {
+  white-space: nowrap;
+}
+.entity-list-panel-views-button .p-button {
+  background: transparent;
+  border: 1px solid var(--primary-color, #669966);
+  color: var(--primary-color, #669966);
+  box-shadow: none;
+}
+.entity-list-panel-views-button .p-button .p-button-label,
+.entity-list-panel-views-button .p-button .p-button-icon {
+  color: inherit;
+}
+.entity-list-panel-views-button .p-splitbutton-defaultbutton {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.entity-list-panel-views-button .p-splitbutton-menubutton {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -1px;
+}
+.entity-list-panel-views-button .p-button:hover,
+.entity-list-panel-views-button .p-button:focus-visible {
+  background: color-mix(in srgb, var(--primary-color, #669966) 10%, transparent);
+  border-color: var(--primary-color, #669966);
+  color: var(--primary-color, #669966);
+}
+/* The split button's menu is a PrimeReact TieredMenu rendered in the body: the host theme gives its entries
+   no padding, so the look is set here. */
+.entity-list-panel-views-menu {
+  min-width: 12rem;
+  padding: 0.25rem;
+  border: 1px solid var(--siamois-green-light-200, #cfe2cf);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+.entity-list-panel-views-menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entity-list-panel-views-menu .p-menuitem-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  color: var(--text-color, #2a2c30);
+  text-decoration: none;
+  outline: none;
+  cursor: pointer;
+}
+.entity-list-panel-views-menu .p-menuitem-link .p-menuitem-icon {
+  color: var(--primary-color, #669966);
+}
+.entity-list-panel-views-menu .p-menuitem.p-focus > .p-menuitem-content .p-menuitem-link,
+.entity-list-panel-views-menu .p-menuitem-link:hover {
+  background: var(--siamois-green-light-100, #e6f0e6);
+}
+.entity-list-panel-views-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.entity-list-panel-views-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* The tabs editor (« Configurer les onglets ») and the list-tab dialog. The dialogs scroll inside themselves. */
+.fiche-tabs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fiche-tabs-editor-hint,
+.fiche-tabs-add-hint {
+  margin: 0;
+  color: var(--text-color-secondary);
+}
+.fiche-tabs-editor-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.fiche-tabs-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0.25rem;
+  border-radius: var(--border-radius, 6px);
+  border-top: 2px solid transparent;
+}
+.fiche-tabs-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.fiche-tabs-editor-head .fiche-tabs-editor-hint {
+  flex: 1 1 auto;
+}
+.fiche-tabs-editor-row.is-dragging {
+  opacity: 0.45;
+}
+.fiche-tabs-editor-row.is-drop-target {
+  border-top-color: var(--primary-color, #6b9e6b);
+  background: var(--surface-50, rgb(0 0 0 / 3%));
+}
+.fiche-tabs-editor-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 2rem;
+  color: var(--text-color-secondary);
+  cursor: grab;
+  border-radius: var(--border-radius, 6px);
+  user-select: none;
+}
+.fiche-tabs-editor-handle:hover,
+.fiche-tabs-editor-handle:focus-visible {
+  background: var(--surface-100, rgb(0 0 0 / 6%));
+  color: var(--text-color);
+}
+.fiche-tabs-editor-handle:active {
+  cursor: grabbing;
+}
+/* Keeps the names aligned when a built-in tab has no delete button. */
+.fiche-tabs-editor-remove-spacer {
+  flex: 0 0 2.1rem;
+}
+.fiche-tabs-editor-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fiche-tabs-editor-kind {
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.fiche-tabs-editor-subtype {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fiche-tabs-editor-warning {
+  margin: 0;
+  color: var(--red-500, #c0392b);
+}
+.fiche-tabs-editor-actions,
+.fiche-tabs-add-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.fiche-tabs-editor-spacer {
+  flex: 1 1 auto;
+}
+.fiche-tabs-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fiche-tabs-add-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.fiche-tabs-add-preview {
+  height: 45vh;
+  min-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+}
+
+/* « Ajouter » and « Modifier », the two buttons after a fiche's last tab (not tabs themselves): the tabs' own
+   look, a quieter colour. */
+.entity-detail-panel-tabs .fiche-tabs-shortcut .p-tabview-nav-link .sia-tab-title {
+  color: var(--text-color-secondary);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+
+/* Home sections: the title, then its actions beside it, icons centred on the text. */
+.home-section-title { display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.home-section-title .p-button { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.5rem; }
+.home-section-title .p-button .p-button-icon { display: inline-flex; align-items: center; margin: 0; line-height: 1; }
+.home-section-title .p-button .p-button-label { line-height: 1; }
+
+/* Home: the « Ajouter un accès aux données » form, and the remove button of a card. */
+.home-data-access-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.home-data-access-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+.home-data-access-error { color: var(--red-500, #c0392b); }
+.home-data-access-remove { margin-left: auto; }
+.home-data-access-handle { cursor: grab; color: var(--text-light); }
+.home-data-access-item.is-dragging { opacity: 0.4; }
+.home-data-access-item.is-target { outline: 2px dashed var(--primary-color); outline-offset: 2px; border-radius: 6px; }
+/* The « add » slot at the end of the cards: transparent, its button centred. */
+.home-data-access-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 5rem;
+  padding: 0.75rem;
+  background: transparent;
+  border: 2px dashed var(--surface-border, #ccc);
+  border-radius: 6px;
+  transition: border-color 0.15s;
+}
+.home-data-access-add:hover,
+.home-data-access-add:focus-within { border-color: var(--primary-color); }
+.home-data-access-dropdown.p-dropdown {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.home-data-access-dropdown .p-dropdown-label {
+  text-align: center;
+  color: var(--text-light);
+  font-weight: 500;
+}
+.home-data-access-dropdown:hover .p-dropdown-label,
+.home-data-access-dropdown.p-focus .p-dropdown-label { color: var(--primary-color); }
+.home-data-access-dropdown .p-dropdown-trigger { color: var(--text-light); }
+
+/* The list's filters, shown between the field of the list search overlay and its results. */
+.sia-search-chips {
+  padding: 0.4rem 0.75rem 0;
+}
+
+/* The panel of the featured-views picker: wide enough to read a title and its table on one line. */
+.home-data-access-panel { min-width: 22rem; }
+.home-data-access-panel .p-dropdown-items .p-dropdown-item { padding: 0.55rem 1rem; }
+.home-data-access-view-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+.home-data-access-view-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-data-access-view-table {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-ground, #f1f3f5);
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+.home-data-access-create-footer { border-top: 1px solid var(--surface-border, #ddd); padding: 0.25rem; }
+.home-data-access-create {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--primary-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.home-data-access-create:hover { background: var(--surface-hover, rgba(0, 0, 0, 0.05)); }
+
+/* The list as a grid of cards (panels/list/EntityCardGrid.tsx). The panel never scrolls as a
+   document: the grid is its own overflow box, the paginator stays below it. */
+.entity-card-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.entity-card-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.entity-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  background: var(--surface-card, #fff);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.entity-card:hover,
+.entity-card:focus-visible {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+/* The entity open in the overview pane. */
+.entity-card.is-selected {
+  border-color: var(--entity-chip-color, var(--main-color));
+  box-shadow: 0 0 0 2px var(--entity-chip-color, var(--main-color));
+}
+.entity-card-media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--entity-chip-color, #80b480) 14%, transparent);
+}
+/* The picture fills the box whatever its own proportions: it never sets the card's height, so the cards of a
+   row stay the same size. */
+.entity-card-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.entity-card-placeholder {
+  font-size: 3rem;
+  color: var(--entity-chip-color, #80b480);
+  opacity: 0.8;
+}
+.entity-card-typeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-height: 2rem;
+  /* Same side margins as the footer, so the zoom lines up over the "…" and the type over the status. */
+  padding: 0 0.4rem 0 0.6rem;
+}
+.entity-card-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #6c757d);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-card-zoom.p-button {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-left: auto;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+/* The selection box, in the picture's top-left corner. */
+.entity-card-select {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+}
+.entity-card-select .p-checkbox-box:not(.p-highlight) {
+  background: var(--surface-card, #fff);
+}
+.entity-card-image-full {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+.entity-card-image-dialog {
+  width: min(90vw, 70rem);
+}
+.entity-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  /* The footer sits at the bottom of the card: the cards of a row line their footers up. */
+  margin-top: auto;
+  padding: 0.4rem 0.4rem 0.5rem 0.6rem;
+}
+/* The status (a button or a badge) is a box of its own, centred, with no margin of the table's cell. */
+.entity-card-footer .status-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+}
+.entity-card-footer .entity-card-chip {
+  margin: 0;
+  padding-left: 0.4rem;
+}
+.entity-card-chip {
+  min-width: 0;
+  cursor: pointer;
+}
+/* A long identifier gives way (an ellipsis) rather than pushing the actions out. */
+.entity-card-chip .entity-nav-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The actions sit at the right end of the line. */
+.entity-card-footer .entity-card-actions {
+  margin-left: auto;
+}
+.entity-card-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  /* Always Siamois green, whatever the panel (as the table's row actions). */
+  --p-button-text-primary-color: var(--siamois-green, #80b480);
+}
+.entity-card-actions .p-button.p-button-sm {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  color: var(--siamois-green, #80b480);
+}
+.entity-card-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-color-secondary, #6c757d);
+}
+/* A card's actions are always at full strength: there is no row hover to reveal them. */
+.entity-card-actions .entity-list-panel-row-actions {
+  opacity: 1;
+}
+
+/* The fiche's breadcrumb sits on the Siamois green light-100, the tab headers under it on its light-50. */
+.entity-detail-panel .p-breadcrumb.panel-bc {
+  background: var(--siamois-green-light-100, #e6f0e6);
+  box-sizing: border-box;
+  width: 100%;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs > .p-tabview-nav-container,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav-content,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* The strip's own line is the only one under the tabs: an inactive tab carries none, the active one a 2px green. */
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  border-bottom: 2px solid transparent;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  border-bottom-color: var(--siamois-green, #669966);
+}
+
+/* The tab strip's scroll arrows carry a huge white glow (theme: box-shadow 0 0 10px 50px) that blurs the tab
+   ends; they are plain buttons on the header's own tint instead. */
+.entity-detail-panel .p-tabview .p-tabview-nav-btn.p-link {
+  box-shadow: none;
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* Main panel header: the title (status + chips) on the left and the toolbar on the right, always on one line;
+   a title too long for the room is cut under the toolbar (see the title bar rules above). */
+.sideview-titlebar-main {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  column-gap: 1.25rem;
+}
+.sideview-titlebar-main > .sia-hstack {
+  flex: 1 1 0;
+  align-items: center;
+}
+
+/* The status button never shrinks: in the (now nowrap) title it was squeezed into an oval when chips needed room. */
+.sideview-titlebar > .sia-hstack > .status-button {
+  flex: 0 0 auto;
+}
+
+/* Phone width: the search is only a button (the overlay is its field), square like the topbar's other buttons. */
+@media (max-width: 768px) {
+  div#search-bar .sia-search {
+    width: auto;
+    padding-left: 0;
+  }
+  .sia-search-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+  }
+  .sia-search-trigger .sia-search-trigger-text {
+    display: none;
+  }
+}
+
+/* Phone width: scrolling is the touch screen's own, so the desktop's always-visible scrollbars go, and the
+   frozen columns are released (they take a good part of a narrow screen). A frozen header cell stays
+   sticky at the top, with the rest of the header: only the sideways pinning is dropped. */
+@media (max-width: 768px) {
+  html,
+  html * {
+    scrollbar-width: none;
+  }
+  html ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    left: auto !important;
+  }
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    position: static;
+    z-index: auto;
+  }
+}
+
+/* Phone width: the top bar and breadcrumb slide off the top (mobileChrome.ts sets their negative
+   margin); the content under them takes the room as they go. */
+@media (max-width: 768px) {
+  #topbar-row {
+    transition: margin-top 0.25s ease;
+  }
+  .entity-detail-panel .panel-bc-row,
+  .entity-detail-panel .p-breadcrumb.panel-bc {
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  /* The panel's header keeps the status and the title chip; its toolbar and the other chips go. */
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .panel-toolbar,
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .entity-detail-header > :not(.entity-nav-chip) {
+    display: none;
+  }
+}
+
+/* ── Bottom sheets (components/layout/BottomSheet.tsx): overlays turned into drawers at phone width ──────── */
+.p-sidebar.bottom-sheet {
+  height: auto !important;
+  max-height: 85dvh !important;
+  width: 100%;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 18%);
+  border-radius: 16px 16px 0 0;
+  /* Room for the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The reference picker's field on a phone: looks like the input it replaces. */
+.resource-ref-sheet-trigger.p-inputtext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-token {
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ref-chip-color, var(--main-color)) 35%, transparent);
+  border-radius: 3px;
+  color: var(--ref-chip-color, var(--main-color));
+  font-weight: 600;
+}
+.resource-ref-sheet-placeholder {
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-chevron {
+  margin-left: auto;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-search.p-inputtext {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+.resource-ref-sheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.resource-ref-sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-option.is-chosen {
+  color: var(--main-color);
+  font-weight: 600;
+}
+.resource-ref-sheet-option-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.resource-ref-sheet-empty {
+  padding: 0.75rem 0.25rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+.p-sidebar.bottom-sheet {
+  transition: transform 0.2s ease, max-height 0.25s ease;
+}
+/* Dragged up: nearly the whole page. */
+.p-sidebar.bottom-sheet.is-expanded {
+  height: 95dvh !important;
+  max-height: 95dvh !important;
+}
+.p-sidebar.bottom-sheet .p-sidebar-header {
+  padding: 0;
+}
+/* The drag handle takes the header's whole width: a tall target for a thumb, the grip drawn in its middle. */
+.bottom-sheet-handle {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding: 0.6rem 0 0.4rem;
+  touch-action: none;
+  cursor: grab;
+}
+.bottom-sheet-grip {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-400, #bdbdbd);
+}
+/* The close cross is replaced by the handle. */
+.p-sidebar.bottom-sheet .p-sidebar-close {
+  display: none;
+}
+
+/* A form in a bottom sheet fills it edge to edge, with its footer pinned to the bottom (the sheet's full height
+   once expanded). */
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.p-sidebar.bottom-sheet .sia-create-form {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.p-sidebar.bottom-sheet .sia-create-form-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.p-sidebar.bottom-sheet .sia-create-form-footer {
+  flex-shrink: 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* Filters in a bottom sheet: the list of columns to add, and the editor of one filter. */
+.p-sidebar.filter-sheet .filter-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.p-sidebar.filter-sheet .filter-picker-item {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.filter-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}
+
+/* The cell editor in a bottom sheet: no floating-box chrome, the field's own label above the widget. */
+.cell-edit-overlay.cell-edit-overlay-sheet {
+  z-index: auto;
+  width: 100%;
+  padding: 0 0 0.5rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cell-edit-overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}
+
+/* The project of a fiche listed outside it (history, bookmarks, search results): small secondary text in black. */
+.sia-project-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* On a card the project is plain black text. */
+.sia-welcome-card .sia-project-name {
+  color: var(--text-main, #2a2c30);
+}
+
+/* In search results and the sidebar it follows the entity's name after a dash, in the light tint. */
+.sia-search-row .sia-project-name::before,
+.bookmark-full-button .sia-project-name::before {
+  content: "- ";
+}
+
+/* In the sidebar's history and bookmarks the project name is part of the button's text: the name, then the project, on one line. */
+.bookmark-full-button .ui-button-text:has(.sia-entry-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.bookmark-full-button .sia-entry-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bookmark-full-button .sia-project-name {
+  flex: 0 1 auto;
+  color: var(--text-color-secondary, #6b7280) !important;
+}
+
+/* The sidebar's history, bookmarks and views: the name in black whatever the type; the icon keeps the button's own
+   colour, that of the entity's type. */
+body .sia-history-table .ui-button.bookmark-full-button .ui-button-text,
+body .sia-bookmarks-table .ui-button.bookmark-full-button .ui-button-text,
+body .sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-button-text {
+  color: var(--text-main, #2a2c30) !important;
+}
+
+/* « +N »: the filters that do not fit in the bar; clicked, they are listed. */
+.filter-chip-more {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-more-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+/* The clear icon of the list's search field in the toolbar: the wrapper is exactly as tall as the input, so 50% is its middle. */
+.p-input-icon-left.sia-list-search {
+  display: inline-flex;
+  align-items: center;
+}
+
+.p-input-icon-left.sia-list-search > .sia-list-search-icon {
+  cursor: pointer;
+}
+
+.p-input-icon-left.sia-list-search > .sia-search-clear {
+  top: 50%;
+  right: 0.75rem;
+  margin: 0;
+  transform: translateY(-50%);
+  line-height: 1;
+}
+
+/* The topbar: Back / Forward arrows, then the search field taking the rest of the row. */
+.sia-topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.sia-topbar-search-field {
+  flex: 1;
+  min-width: 0;
+  /* A flex box, not a block: an inline button in a block leaves a descender gap below it, which makes the box
+     taller than the field and pulls the arrows' centre off the field's. */
+  display: flex;
+  align-items: center;
+}
+
+.sia-topbar-search-field > .sia-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.sia-topbar-search-field .sia-search-trigger {
+  display: flex;
+}
+
+/* The room the field kept from the organisation select is now the arrows' (the id outweighs the rule above). */
+div#search-bar .sia-topbar-search-field .sia-search {
+  padding-left: 0;
+}
+
+/* Clear of the organisation select on its left. */
+.sia-history-nav {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.25rem;
+  /* Equal room on both sides: centred between the organisation select and the search field. */
+  margin: 0 12px;
+}
+
+.sia-history-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-main, #2a2c30);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* The icon font's own line box sits high: make the glyph's box the icon's size, centred by the button. */
+.sia-history-nav-button i {
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.sia-history-nav-button:enabled:hover {
+  background: var(--siamois-green-light-100, #eef5f0);
+}
+
+/* No page behind or ahead: greyed. */
+.sia-history-nav-button:disabled {
+  color: var(--text-color-secondary, #6b7280);
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The search button is as tall as the organisation select next to it (2.4rem), so the two read as one row. */
+.sia-topbar-search-field .sia-search-trigger {
+  box-sizing: border-box;
+  height: 2.4rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }

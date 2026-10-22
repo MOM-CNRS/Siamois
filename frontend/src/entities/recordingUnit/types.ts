@@ -2,7 +2,7 @@
 // /api/v1/projects/{id}/recording-units (list) and GET /api/v1/recording-units/{id} (detail) both
 // return this shape, like ProjectResource. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../common";
+import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../shared/common";
 
 export interface RecordingUnitCounts {
   children?: number | null;
@@ -21,6 +21,10 @@ export interface RecordingUnitPermissions {
 
 export interface RecordingUnitResource {
   resourceType: string;
+  // Tree view only (?tree=true): has children to show, and matched the search (false = only an
+  // ancestor of a match; absent without a search, where every row counts as a match).
+  hasChildren?: boolean;
+  match?: boolean;
   id: string;
   syncRevision?: number | null;
   identifier?: string | null;
@@ -28,6 +32,8 @@ export interface RecordingUnitResource {
   // Navigation/bookmark URI ("/recording-unit/42") and the caller's bookmark flag.
   resourceUri?: string | null;
   bookmarked?: boolean;
+  // The first image document linked to it, for the list's cards (list only).
+  firstImageDocumentId?: string | null;
   // TraceableEntity.validationStatus — "en cours", "terminé", "validé", "annulé".
   validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED" | null;
   projectId?: string | null;

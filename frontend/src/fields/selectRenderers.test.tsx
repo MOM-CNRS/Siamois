@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneRefRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
 import { registerEntityType } from "../entities/registry";
-import { EntityNavigationProvider } from "../panels/entityNavigation";
+import { EntityNavigationProvider } from "../panels/pane/entityNavigation";
 import type { FieldRendererProps } from "./registry";
 import type { FieldResource } from "./types";
 

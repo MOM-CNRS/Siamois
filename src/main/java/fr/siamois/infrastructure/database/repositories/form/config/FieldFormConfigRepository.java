@@ -110,4 +110,45 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
     )
     Optional<ConceptFieldFormConfig> findDefaultByFieldAndActionUnit(@Param("conceptField") CustomFieldConcept conceptField,
                                                                      @Param("actionUnitId") Long actionUnitId);
+
+    /**
+     * The branch and collection restrictions configured for a project: one row per field and per
+     * entity type, with the source they draw their list from.
+     *
+     * @param actionUnitId the project
+     * @return the vocabulary-restricted field configurations of the project
+     */
+    @Query("""
+            SELECT ffc
+            FROM ConceptFieldFormConfig ffc
+            JOIN FETCH ffc.field
+            JOIN FETCH ffc.formConfig fc
+            LEFT JOIN FETCH ffc.branchTopTerm
+            LEFT JOIN FETCH ffc.collection
+            LEFT JOIN FETCH fc.valueConcept
+            WHERE fc.actionUnit.id = :actionUnitId
+              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL)
+            """)
+    List<ConceptFieldFormConfig> findVocabularyRestrictionsOfActionUnit(@Param("actionUnitId") Long actionUnitId);
+
+    /**
+     * Same as {@link #findVocabularyRestrictionsOfActionUnit} for the configurations set at the
+     * organisation level, i.e. carrying no project.
+     *
+     * @param institutionId the organisation
+     * @return the vocabulary-restricted field configurations of the organisation
+     */
+    @Query("""
+            SELECT ffc
+            FROM ConceptFieldFormConfig ffc
+            JOIN FETCH ffc.field
+            JOIN FETCH ffc.formConfig fc
+            LEFT JOIN FETCH ffc.branchTopTerm
+            LEFT JOIN FETCH ffc.collection
+            LEFT JOIN FETCH fc.valueConcept
+            WHERE fc.institution.id = :institutionId
+              AND fc.actionUnit IS NULL
+              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL)
+            """)
+    List<ConceptFieldFormConfig> findVocabularyRestrictionsOfInstitution(@Param("institutionId") Long institutionId);
 }

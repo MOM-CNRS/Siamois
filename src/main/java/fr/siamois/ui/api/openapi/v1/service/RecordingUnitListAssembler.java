@@ -26,6 +26,7 @@ public class RecordingUnitListAssembler {
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final RecordingUnitListProjectionService recordingUnitListProjectionService;
     private final ResourceBookmarkService resourceBookmarkService;
+    private final FirstImageService firstImageService;
 
     public RecordingUnitListResponse assemble(ProjectApiCaller caller, Page<RecordingUnitDTO> page, Long projectId,
                                               String fields, String lang, int limit, int offset) {
@@ -33,7 +34,9 @@ public class RecordingUnitListAssembler {
                 && projectApiService.canEditRecordingUnitsForProject(caller, String.valueOf(projectId), lang);
         boolean canValidate = projectId != null
                 && projectApiService.canValidateForProject(caller, String.valueOf(projectId), lang);
-        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate);
+        boolean canDelete = projectId != null
+                && projectApiService.canDeleteEntitiesForProject(caller, String.valueOf(projectId), lang);
+        ProjectResourcePermissions permissions = ProjectResourcePermissions.of(canEdit).withValidate(canValidate).withDelete(canDelete);
         RecordingUnitListProjectionService.RecordingUnitListProjection projection =
                 recordingUnitListProjectionService.build(page.getContent(), fields, lang);
 
@@ -42,12 +45,15 @@ public class RecordingUnitListAssembler {
                     RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
                     resource.setAnswers(projection.answersFor(dto.getId()));
                     resource.setPermissions(permissions);
+                    resource.setHasChildren(dto.getTreeHasChildren());
+                    resource.setMatch(dto.getTreeMatch());
                     return resource;
                 })
                 .toList();
         if (!page.isEmpty()) {
             resourceBookmarkService.markBookmarked(caller.person(), page.getContent().get(0).getCreatedByInstitution(), resources, lang);
         }
-        return new RecordingUnitListResponse(resources, new ListMeta(page.getTotalElements(), limit, (long) offset));
+        firstImageService.markRecordingUnits(resources);
+        return new RecordingUnitListResponse(resources, ListMeta.of(page, limit, offset));
     }
 }

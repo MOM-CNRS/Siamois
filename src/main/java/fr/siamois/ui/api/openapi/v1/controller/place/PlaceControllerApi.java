@@ -38,6 +38,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/places")
@@ -132,7 +134,7 @@ public class PlaceControllerApi {
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Supprimer un lieu",
-            description = "Uniquement si le lieu n'est pas référencé (enfants, UE, projets, contenants). "
+            description = "Uniquement si le lieu n'a aucune relation (lieux parents/enfants, UE, projets, contenants, documents). "
                     + "Droit requis : gestionnaire d'institution ou gestionnaire d'action."
     )
     @ApiResponses(value = {
@@ -173,12 +175,18 @@ public class PlaceControllerApi {
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @Parameter(description = "Projection des champs de formulaire dans answers : \"all\" ou une liste d'identifiants de champ séparés par des virgules.")
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre : avec une recherche ou un filtre, seuls les enfants menant à une correspondance ; chaque lieu porte hasChildren et match.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : meta.matchCount compte les lieux sous celui-ci (à tout niveau) qui correspondent à la recherche ou aux filtres, tous sans eux.")
+            @RequestParam(defaultValue = "false") boolean matchCount,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        PlaceListResponse body = placeOpenApiService.listChildren(caller, id, offset, limit, sort, search, lang,
-                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields);
+        PlaceListResponse body = placeOpenApiService.listChildren(caller, id,
+                new ListWindow(offset, limit, sort, search), lang,
+                fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage), fields,
+                TreeRequest.of(tree, null).withMatchCount(matchCount));
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(body.getMeta().total()))
                 .body(body);
@@ -203,16 +211,30 @@ public class PlaceControllerApi {
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "name:asc") String sort,
             @RequestParam(required = false) String fields,
+            @Parameter(description = "Vue arbre des projets de ce lieu : ceux dont aucun parent n'est dans ce lieu ; "
+                    + "hasChildren, match et meta.matchCount comme GET /api/v1/projects?tree=true.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : l'id d'un projet, pour avoir ses sous-projets de ce lieu.")
+            @RequestParam(required = false) Long parent,
             @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         projectApiService.validatePagedListRequest(offset, limit);
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        if (parent != null && !tree) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "parent n'a de sens qu'avec tree=true");
+        }
         SpatialUnitDTO place = placeOpenApiService.requireAccessible(caller, id);
-        ProjectListFilter filter = ProjectListFilter.parse(queryParams).withSpatialContext(place.getId());
-        Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort, filter,
-                fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage));
+        fr.siamois.dto.FieldQuery fieldQuery = fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage);
+        // In the tree the place is part of the context (the projects of this place), not a filter.
+        Page<AccessibleProjectForApi> rows = tree
+                ? projectApiService.pageAccessibleProjectsTree(
+                        caller, place.getCreatedByInstitution().getId(), new ListWindow(offset, limit, sort, search),
+                        ProjectListFilter.parse(queryParams), fieldQuery,
+                        TreeRequest.tree(parent).inSpatialContext(place.getId()))
+                : projectApiService.pageAccessibleProjects(
+                        caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
+                        ProjectListFilter.parse(queryParams).withSpatialContext(place.getId()), fieldQuery);
         ProjectListResponse body = projectListAssembler.assemble(caller, rows, fields, lang, limit, offset);
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))

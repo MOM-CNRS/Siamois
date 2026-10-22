@@ -226,12 +226,13 @@ export function referenceTargetOf(field: FieldResource): ReferenceTarget {
 }
 
 /**
- * A legacy vocabulary field (SELECT_ONE / SELECT_MULTIPLE, no fieldCode): its suggestions come from
- * its own branch/collection restrictions, resolved server side by field id
+ * A vocabulary field whose list is its own — SELECT_ONE / SELECT_MULTIPLE with no fieldCode, or a field
+ * a project restricts to a branch or collection (a stratigraphic side): its suggestions come from
+ * its own restrictions, resolved server side by field id
  * (OrganizationProjectsControllerApi#getConcepts' fieldId mode), scoped to the edited entity's
  * project when there is one.
  */
-async function fetchFieldConceptOptions(
+export async function fetchFieldConceptOptions(
   organizationId: number,
   fieldId: string,
   projectId?: string,

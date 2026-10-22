@@ -6,7 +6,7 @@ import { patchRecordingUnit } from "./api";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { getRecordingUnitTypes } from "./recordingUnitTypes";
 import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/writeMode";
+import { WriteModeProvider } from "../../panels/pane/writeMode";
 import type { RecordingUnitDetail } from "./types";
 
 

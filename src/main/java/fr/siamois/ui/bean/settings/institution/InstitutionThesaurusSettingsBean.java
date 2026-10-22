@@ -5,14 +5,15 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
-import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.domain.services.vocabulary.ThesaurusUsageService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
-import fr.siamois.utils.MessageUtils;
+import fr.siamois.ui.bean.settings.AbstractThesaurusSettingsBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
@@ -32,29 +34,26 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Getter
 @Setter
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
-public class InstitutionThesaurusSettingsBean implements Serializable {
+public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsBean implements Serializable {
 
     private final transient FieldConfigurationService fieldConfigurationService;
     private final SessionSettingsBean sessionSettingsBean;
-    private final transient VocabularyService vocabularyService;
-    private final LangBean langBean;
-    private String thesaurusUrl;
+    private final transient ThesaurusUsageService thesaurusUsageService;
     private InstitutionDTO institution;
 
-    private ProgressWrapper progressWrapper = new ProgressWrapper();
-
-    public InstitutionThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean, VocabularyService vocabularyService, LangBean langBean) {
+    public InstitutionThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, SessionSettingsBean sessionSettingsBean,
+                                            VocabularyService vocabularyService, LabelService labelService,
+                                            ThesaurusUsageService thesaurusUsageService, LangBean langBean) {
+        super(vocabularyService, labelService, langBean);
         this.fieldConfigurationService = fieldConfigurationService;
         this.sessionSettingsBean = sessionSettingsBean;
-        this.vocabularyService = vocabularyService;
-        this.langBean = langBean;
+        this.thesaurusUsageService = thesaurusUsageService;
     }
 
     @EventListener(LoginEvent.class)
     public void reset() {
-        thesaurusUrl = null;
+        resetState();
         institution = null;
-        progressWrapper.reset();
     }
 
     public void init(InstitutionDTO institution) {
@@ -62,7 +61,8 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
         this.institution = institution;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitutionId(institution.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
-        progressWrapper.reset();
+        loadOptions();
+        usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
     }
 
     public void saveConfig() {
@@ -73,7 +73,8 @@ public class InstitutionThesaurusSettingsBean implements Serializable {
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary, progressWrapper);
-            MessageUtils.displayInfoMessage(langBean, "myProfile.thesaurus.message.success");
+            notifySaved();
+            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

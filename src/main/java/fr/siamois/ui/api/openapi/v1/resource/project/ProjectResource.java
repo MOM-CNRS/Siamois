@@ -79,6 +79,14 @@ public class ProjectResource extends ProjectResourceIdentifier {
     @Schema(description = "URI de navigation/favori du projet", example = "/action-unit/42")
     private String resourceUri;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @io.swagger.v3.oas.annotations.media.Schema(description = "Mode arbre seulement : le projet a des sous-projets à afficher (tous ceux accessibles, ou ceux menant à une correspondance pendant une recherche).")
+    private Boolean hasChildren;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @io.swagger.v3.oas.annotations.media.Schema(description = "Mode arbre seulement : le projet correspond à la recherche ou aux filtres (false : parent qui ne sert que de contexte). Absent sans recherche ni filtre.")
+    private Boolean match;
+
     /**
      * Réponses aux champs de formulaire, par id de champ — valeurs brutes, sans enveloppe
      * {@code FieldAnswer} : scalaire pour TEXT/INTEGER/DECIMAL/DATETIME, {@code ResourceRef} pour les

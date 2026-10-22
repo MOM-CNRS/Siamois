@@ -1,4 +1,4 @@
-import { createEntityApi } from "../createEntityApi";
+import { createEntityApi } from "../shared/createEntityApi";
 import type { PhaseDetail, PhaseSummary } from "./types";
 
 // Mirrors PhaseCreateRequest's required pair (the title is editable afterwards, on the fiche).

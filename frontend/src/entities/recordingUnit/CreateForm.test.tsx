@@ -5,13 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { RecordingUnitCreateForm } from "./CreateForm";
-import { getEffectiveForm } from "../typeCatalog";
+import { fetchTypesCatalog, getEffectiveForm } from "../shared/typeCatalog";
 import { createRecordingUnit } from "./api";
 
 
-vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
+vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
 vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
-vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 
 // The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
 // project 8, same stand-in as FindCreateForm's own recording-unit picker test.
@@ -83,6 +83,8 @@ beforeEach(() => {
   mockedGetRecordingUnitTypes.mockReset();
   mockedGetRecordingUnitTypes.mockResolvedValue({ layoutJson: "[]", fields: { "-101": typeField } });
   mockedCreateRecordingUnit.mockReset();
+  vi.mocked(fetchTypesCatalog).mockReset();
+  vi.mocked(fetchTypesCatalog).mockRejectedValue(new Error("not needed here"));
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -163,6 +165,42 @@ describe("RecordingUnitCreateForm", () => {
     expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({ projectId: "5", typeId: "9", parentRecordingUnitId: "12", childRecordingUnitId: undefined });
   });
 
+  it("attaches the new UE to the phase a phase's tab creates it from, and shows that phase in the form", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "79", fullIdentifier: "INST-PROJ-UE3" } as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <RecordingUnitCreateForm
+            organizationId={7}
+            scope={{ entityType: "project", id: 5 }}
+            prefill={{ phase: { id: "21", label: "Phase par défaut" } }}
+            onCreated={vi.fn()}
+            onCancel={vi.fn()}
+          />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain("Phase par défaut");
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({
+      projectId: "5",
+      typeId: "9",
+      parentRecordingUnitId: undefined,
+      childRecordingUnitId: undefined,
+      phaseId: "21",
+    });
+  });
+
   it("creates in the project picked in the form when the list has no project of its own", async () => {
     mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "79", fullIdentifier: "INST-P8-UE1" } as never);
     const { onCreated } = render(vi.fn(), vi.fn(), null);
@@ -204,5 +242,28 @@ describe("RecordingUnitCreateForm", () => {
     await act(async () => cancelButton.click());
 
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("is created of the type a list tab filtered on one type fixes, still changeable", async () => {
+    vi.mocked(fetchTypesCatalog).mockResolvedValue({ data: [{ id: 9, concept: { resolvedLabel: "US" } }, { id: 10, concept: { resolvedLabel: "Mur" } }] } as never);
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "79", fullIdentifier: "INST-PROJ-UE3" } as never);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <RecordingUnitCreateForm organizationId={7} scope={{ entityType: "project", id: 5 }} prefill={{ typeId: "9" }} onCreated={vi.fn()} onCancel={vi.fn()} />
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+
+    // No type picked by hand: the tab's one is already there.
+    expect(submitButton().disabled).toBe(false);
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith(expect.objectContaining({ projectId: "5", typeId: "9" }));
   });
 });

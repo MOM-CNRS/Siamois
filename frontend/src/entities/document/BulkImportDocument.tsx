@@ -2,7 +2,7 @@ import { Button } from "primereact/button";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../api/queryKeys";
-import { useWriteMode } from "../../panels/writeMode";
+import { useWriteMode } from "../../panels/pane/writeMode";
 import { t } from "../../i18n";
 
 export interface BulkImportDocumentProps {

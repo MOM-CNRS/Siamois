@@ -1,14 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "primereact/button";
+import { OverlayPanel } from "primereact/overlaypanel";
 import { Panel } from "primereact/panel";
 import { Skeleton } from "primereact/skeleton";
 import { ClickableCard } from "../../components/home/ClickableCard";
 import { EntityCountCard } from "../../components/home/EntityCountCard";
-import { useOrganizationCounts } from "../organizationCounts";
-import type { HomeWidgetContext, HomeWidgetDef } from "../types";
+import { useOrganizationCounts } from "../shared/organizationCounts";
+import { useOrganizationPermissions } from "../shared/organizationPermissions";
+import { ProjectCreateForm } from "./CreateForm";
+import type { HomeWidgetContext, HomeWidgetDef } from "../shared/types";
 import { listProjects } from "./api";
 import { queryKeys } from "../../api/queryKeys";
 import { t } from "../../i18n";
-import { usePaneState } from "../../panels/paneState";
+import { usePaneState } from "../../panels/pane/paneState";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:
@@ -46,10 +51,28 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
   const { data, isLoading } = useRecentProjects(organizationId);
   const projects = data?.data ?? [];
   const [folded, setFolded] = usePaneState("recentProjectsFolded", false);
+  const canCreate = useOrganizationPermissions(organizationId).data?.canCreateProjects === true;
+  const createOverlayRef = useRef<OverlayPanel>(null);
+  const queryClient = useQueryClient();
 
   return (
     <Panel
-      header={t("home.recentProjects")}
+      header={
+        <span className="home-section-title">
+          {t("home.recentProjects")}
+          <Button text size="small" label={t("home.allProjects")} icon="bi bi-list-ul" onClick={() => onNavigate?.("project")} />
+          {canCreate && (
+            // The projects list's creation overlay, opened on the button; then the new project's fiche.
+            <Button
+              text
+              size="small"
+              label={t("home.createProject")}
+              icon="bi bi-plus-square"
+              onClick={(e) => createOverlayRef.current?.toggle(e)}
+            />
+          )}
+        </span>
+      }
       toggleable
       collapsed={folded}
       onToggle={(e) => setFolded(e.value)}
@@ -87,6 +110,20 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
             </ClickableCard>
           ))}
         </div>
+      )}
+      {canCreate && (
+        <OverlayPanel ref={createOverlayRef} className="entity-list-panel-create-overlay">
+          <ProjectCreateForm
+            organizationId={organizationId}
+            onCreated={(id) => {
+              createOverlayRef.current?.hide();
+              void queryClient.invalidateQueries({ queryKey: queryKeys.entityList("project") });
+              void queryClient.invalidateQueries({ queryKey: queryKeys.projectHomeRecent(organizationId) });
+              onNavigate?.("project", id);
+            }}
+            onCancel={() => createOverlayRef.current?.hide()}
+          />
+        </OverlayPanel>
       )}
     </Panel>
   );

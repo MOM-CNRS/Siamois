@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
@@ -98,6 +100,46 @@ class OrganizationListServiceTest {
         assertThat(filter.getValue().containsColumn(RecordingUnitSpec.ACTION_UNIT_FILTER)).isFalse();
         assertThat(filter.getValue().valueOfAsString(RecordingUnitSpec.FULL_IDENTIFIER)).isEqualTo("US-1");
         verifyNoInteractions(actionUnitService);
+    }
+
+    @Test
+    void pageRecordingUnits_withTree_asksForTheRootsOnly() {
+        when(profilePermissionService.canViewInstitutionData(caller.person(), institution)).thenReturn(true);
+        when(recordingUnitService.searchRecordingUnit(eq(institution), any(), any(), eq(false))).thenReturn(Page.empty());
+
+        service.pageRecordingUnits(caller, institution, new ListWindow(20, 10, "creationTime:desc", "US"),
+                RecordingUnitListFilter.EMPTY, FieldQuery.NONE, true);
+
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(recordingUnitService).searchRecordingUnit(eq(institution), filter.capture(), pageable.capture(), eq(false));
+        assertThat(filter.getValue().isRootOnly()).isTrue();
+        assertThat(pageable.getValue().getPageNumber()).isEqualTo(2);
+    }
+
+    @Test
+    void pageRecordingUnits_withoutTree_isTheFlatList() {
+        when(profilePermissionService.canViewInstitutionData(caller.person(), institution)).thenReturn(true);
+        when(recordingUnitService.searchRecordingUnit(eq(institution), any(), any(), eq(false))).thenReturn(Page.empty());
+
+        service.pageRecordingUnits(caller, institution, new ListWindow(0, 10, "creationTime:desc", null),
+                RecordingUnitListFilter.EMPTY, FieldQuery.NONE, false);
+
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        verify(recordingUnitService).searchRecordingUnit(eq(institution), filter.capture(), any(), eq(false));
+        assertThat(filter.getValue().isRootOnly()).isFalse();
+    }
+
+    @Test
+    void pageRecordingUnits_projectOnlyMemberWithNoProject_getsAnEmptyPageWithoutQueryingInTreeMode() {
+        when(profilePermissionService.canViewInstitutionData(caller.person(), institution)).thenReturn(false);
+        when(actionUnitService.findMemberProjectIds(1L, 10L)).thenReturn(List.of());
+
+        Page<?> page = service.pageRecordingUnits(caller, institution, new ListWindow(0, 10, "creationTime:desc", null),
+                RecordingUnitListFilter.EMPTY, FieldQuery.NONE, true);
+
+        assertThat(page.getContent()).isEmpty();
+        verifyNoInteractions(recordingUnitService);
     }
 
     @Test
@@ -294,5 +336,19 @@ class OrganizationListServiceTest {
         ActionUnitSummaryDTO dto = new ActionUnitSummaryDTO();
         dto.setId(id);
         return dto;
+    }
+
+    @Test
+    void canDeleteByProject_asksOncePerPage_withTheDeleteCodes() {
+        ActionUnitSummaryDTO p7 = project(7L);
+        ActionUnitSummaryDTO p8 = project(8L);
+        when(profilePermissionService.actionUnitIdsGranting(any(UserInfo.class), any(), any(), any())).thenReturn(Set.of(8L));
+
+        Map<Long, Boolean> result = service.canDeleteByProject(caller, institution, Arrays.asList(p7, p8, p7), "fr");
+
+        assertThat(result).containsEntry(7L, false).containsEntry(8L, true).hasSize(2);
+        verify(profilePermissionService, times(1)).actionUnitIdsGranting(any(UserInfo.class),
+                eq(PermissionConstants.INSTANCE_DELETE_ENTITIES), eq(PermissionConstants.ORGANIZATION_DELETE_ENTITIES),
+                eq(PermissionConstants.PROJECT_DELETE_ENTITIES));
     }
 }

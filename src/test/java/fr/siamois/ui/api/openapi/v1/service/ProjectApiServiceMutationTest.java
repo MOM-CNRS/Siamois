@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -173,7 +175,7 @@ class ProjectApiServiceMutationTest {
 
         ActionUnitDTO saved = new ActionUnitDTO();
         saved.setId(77L);
-        when(actionUnitService.save(any(), any(), eq(typeDto))).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), eq(typeDto), any())).thenReturn(saved);
         AccessibleProjectForApi row = new AccessibleProjectForApi(saved, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("77", SCOPE)).thenReturn(row);
 
@@ -189,7 +191,7 @@ class ProjectApiServiceMutationTest {
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
-        when(actionUnitService.save(any(), any(), any()))
+        when(actionUnitService.save(any(), any(), any(), any()))
                 .thenThrow(new ActionUnitAlreadyExistsException("identifier", "exists"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))
@@ -643,29 +645,16 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void deleteProject_withRecordingUnits_throws409() {
-        ActionUnitDTO au = projectWithInstitution();
-        au.setId(7L);
-        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 2L, 0L);
-        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-
-        assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
-    }
-
-    @Test
-    void deleteProject_success_deletesWhenEmpty() {
+    void deleteProject_success_deletesWithContent() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
 
         service.deleteProject(caller, "7", "fr");
 
-        verify(actionUnitService).deleteProjectWhenEmpty(7L);
+        verify(actionUnitService).deleteProjectWithContent(7L);
     }
 
     @Test
@@ -674,8 +663,8 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
-        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWhenEmpty(7L);
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any())).thenReturn(true);
+        doThrow(new IllegalStateException("blocked")).when(actionUnitService).deleteProjectWithContent(7L);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1046,7 +1035,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(false);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1059,7 +1048,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
         doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L);
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
@@ -1117,6 +1106,109 @@ class ProjectApiServiceMutationTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").getDirection())
                 .isEqualTo(Sort.Direction.DESC);
+    }
+
+    // ---- pageAccessibleProjectsTree ----
+
+    private fr.siamois.domain.services.actionunit.ProjectTreeQuery treeQueryAsked(TreeRequest tree, fr.siamois.dto.FieldQuery fieldQuery,
+                                                                                    String sort) {
+        when(actionUnitService.findAccessibleProjectsTree(any()))
+                .thenReturn(new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 10), 0, 0));
+
+        service.pageAccessibleProjectsTree(caller, 10L, new ListWindow(20, 10, sort, "fouille"),
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fieldQuery, tree);
+
+        ArgumentCaptor<fr.siamois.domain.services.actionunit.ProjectTreeQuery> asked =
+                ArgumentCaptor.forClass(fr.siamois.domain.services.actionunit.ProjectTreeQuery.class);
+        verify(actionUnitService).findAccessibleProjectsTree(asked.capture());
+        return asked.getValue();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_forwardsWhoAsksAndWhatIsAsked() {
+        var query = treeQueryAsked(TreeRequest.tree(8L).inSpatialContext(5L), fr.siamois.dto.FieldQuery.NONE, "name:desc");
+
+        assertThat(query.personId()).isEqualTo(1L);
+        assertThat(query.accessibleInstitutionIds()).isEqualTo(SCOPE);
+        assertThat(query.organizationId()).isEqualTo(10L);
+        assertThat(query.parentId()).isEqualTo(8L);
+        assertThat(query.spatialContextId()).isEqualTo(5L);
+        assertThat(query.selection().search()).isEqualTo("fouille");
+        assertThat(query.selection().recordingUnitCountOrder()).isNull();
+        Pageable pageable = query.selection().pageable();
+        assertThat(pageable.getPageNumber()).isEqualTo(2);
+        assertThat(pageable.getPageSize()).isEqualTo(10);
+        assertThat(pageable.getSort().getOrderFor("name").getDirection()).isEqualTo(Sort.Direction.DESC);
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_theRecordingUnitCountSortIsASpecificationNotAPageableSort() {
+        var query = treeQueryAsked(TreeRequest.tree(null), fr.siamois.dto.FieldQuery.NONE, "recordingUnitCount:desc");
+
+        assertThat(query.selection().recordingUnitCountOrder()).isEqualTo(Sort.Direction.DESC);
+        assertThat(query.selection().pageable().getSort().getOrderFor("recordingUnitCount")).isNull();
+        // The id tie-break lives in the specification: a sorted Pageable would override its orderBy.
+        assertThat(query.selection().pageable().getSort().isSorted()).isFalse();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_aSortOnAFormFieldLeavesThePageableUnsorted() {
+        fr.siamois.dto.FieldQuery ordered = new fr.siamois.dto.FieldQuery((r, q, c) -> null, true, false, (r, q, c) -> null);
+
+        var query = treeQueryAsked(TreeRequest.tree(null), ordered, "name:asc");
+
+        assertThat(query.selection().pageable().getSort().isSorted()).isFalse();
+        assertThat(query.selection().recordingUnitCountOrder()).isNull();
+    }
+
+    @Test
+    void pageAccessibleProjectsTree_anOrganizationOutOfScopeIsRefused() {
+        ProjectApiCaller outsider = new ProjectApiCaller(personDto, Set.of(99L), List.of());
+
+        assertThatThrownBy(() -> service.pageAccessibleProjectsTree(outsider, 10L, new ListWindow(0, 10, "name:asc", null),
+                fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE, TreeRequest.tree(null)))
+                .isInstanceOf(ResponseStatusException.class);
+
+        verifyNoInteractions(actionUnitService);
+    }
+
+    // ---- pageRecordingUnitChildren ----
+
+    private RecordingUnitDTO viewableUnit() {
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(2L);
+        ru.setCreatedByInstitution(projectWithInstitution().getCreatedByInstitution());
+        when(recordingUnitService.findAccessibleRecordingUnitByKey(eq("2"), eq(SCOPE), isNull())).thenReturn(ru);
+        when(profilePermissionService.canViewRecordingUnit(any(), any())).thenReturn(true);
+        return ru;
+    }
+
+    @Test
+    void pageRecordingUnitChildren_withTree_asksForTheTreeChildrenAndTheMatchCount() {
+        RecordingUnitDTO ru = viewableUnit();
+        Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
+        when(recordingUnitService.findChildrenOfTree(eq(ru.getCreatedByInstitution()), eq(2L), eq(200), eq(0), any(Sort.class),
+                any(FilterDTO.class), eq(true))).thenReturn(expected);
+
+        ProjectApiService.ScopedRecordingUnitPage result = service.pageRecordingUnitChildren(
+                caller, "2", new ListWindow(0, 200, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.tree(null).withMatchCount(true));
+
+        assertThat(result.page()).isSameAs(expected);
+        verify(recordingUnitService, never()).findChildrenOf(any(), anyInt(), anyInt(), any(Sort.class), any(FilterDTO.class));
+    }
+
+    @Test
+    void pageRecordingUnitChildren_withoutTree_listsTheDirectChildren() {
+        viewableUnit();
+        Page<RecordingUnitDTO> expected = new PageImpl<>(List.of());
+        when(recordingUnitService.findChildrenOf(eq(2L), eq(200), eq(0), any(Sort.class), any(FilterDTO.class))).thenReturn(expected);
+
+        ProjectApiService.ScopedRecordingUnitPage result = service.pageRecordingUnitChildren(
+                caller, "2", new ListWindow(0, 200, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.OFF);
+
+        assertThat(result.page()).isSameAs(expected);
     }
 
     @Test
@@ -1202,7 +1294,8 @@ class ProjectApiServiceMutationTest {
                 any(), any(), any(), any(), pageableCaptor.capture(), eq(Sort.Direction.DESC), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         Sort sort = pageableCaptor.getValue().getSort();
         assertThat(sort.getOrderFor("recordingUnitCount")).isNull();
-        assertThat(sort.getOrderFor("id")).isNotNull();
+        // A sorted Pageable would override the specification's orderBy (count, then id).
+        assertThat(sort.isSorted()).isFalse();
     }
 
     @Test
@@ -1250,6 +1343,33 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void pageRecordingUnitsForProject_withTree_asksForTheTreeInsideTheProjectAndItsChildren() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        fr.siamois.dto.TreePage<RecordingUnitDTO> expected = new fr.siamois.dto.TreePage<>(List.of(), org.springframework.data.domain.PageRequest.of(0, 10), 0, 0);
+        when(recordingUnitService.findTreeInScope(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class), eq(55L)))
+                .thenReturn(expected);
+
+        Page<RecordingUnitDTO> result = service.pageRecordingUnitsForProject(
+                caller, "7", new ListWindow(0, 10, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                TreeRequest.tree(55L));
+
+        assertThat(result).isSameAs(expected);
+        verify(recordingUnitService, never()).findByActionUnitId(any(), eq(10), eq(0), any(Sort.class), any(FilterDTO.class));
+    }
+
+    @Test
+    void pageRecordingUnitsForProject_parentWithoutTreeIsABadRequest() {
+        assertThatThrownBy(() -> service.pageRecordingUnitsForProject(
+                caller, "7", new ListWindow(0, 10, null, null), RecordingUnitListFilter.EMPTY, fr.siamois.dto.FieldQuery.NONE,
+                new TreeRequest(false, 55L, null, false)))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+        verifyNoInteractions(recordingUnitService);
+    }
+
+    @Test
     void pageRecordingUnitsForProject_requiresAccessibleProjectBeforeAnyPaging() {
         when(actionUnitService.findAccessibleProjectByKey("404", SCOPE))
                 .thenThrow(new fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException("missing"));
@@ -1285,7 +1405,7 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
-    void createProject_blankNameOrIdentifierOrMissingType_throws400() {
+    void createProject_blankNameOrMissingType_throws400() {
         when(institutionService.findById(10L)).thenReturn(institution);
         when(profilePermissionService.hasActionUnitCreatePermission(any()))
                 .thenReturn(true);
@@ -1296,13 +1416,6 @@ class ProjectApiServiceMutationTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("name est obligatoire");
-
-        ProjectCreateRequest blankId = validCreateRequest();
-        blankId.setIdentifier("");
-        assertThatThrownBy(() -> service.createProject(caller, blankId, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getReason())
-                .isEqualTo("identifier est obligatoire");
 
         ProjectCreateRequest missingType = validCreateRequest();
         missingType.setTypeId(null);
@@ -1320,14 +1433,14 @@ class ProjectApiServiceMutationTest {
         au.setId(7L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 2L);
         when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
-        when(profilePermissionService.hasActionUnitWritePermission(any(), any()))
+        when(profilePermissionService.hasDeleteProjectPermission(any(), any()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.deleteProject(caller, "7", "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
 
-        verify(actionUnitService, never()).deleteProjectWhenEmpty(anyLong());
+        verify(actionUnitService, never()).deleteProjectWithContent(anyLong());
     }
 
     @Test
@@ -1336,7 +1449,7 @@ class ProjectApiServiceMutationTest {
         dto.setId(5L);
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
-        when(profilePermissionService.hasRecordingUnitWritePermission(any(), same(dto))).thenReturn(true);
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
 
         service.deleteRecordingUnit(caller, 5L, "fr");
 
@@ -1445,5 +1558,45 @@ class ProjectApiServiceMutationTest {
         long result = service.countFindsForProject(row);
 
         assertThat(result).isEqualTo(5L);
+    }
+
+    @Test
+    void canDeleteEntitiesForProject_followsTheDeleteEntitiesRight() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(true);
+
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isTrue();
+
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(7L))).thenReturn(false);
+        assertThat(service.canDeleteEntitiesForProject(caller, "7", "fr")).isFalse();
+    }
+
+    @Test
+    void permissionsFor_oneProject_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(profilePermissionService.hasActionUnitWritePermission(any(PersonDTO.class), any(), any())).thenReturn(true);
+        when(profilePermissionService.hasDeleteProjectPermission(any(PersonDTO.class), any(), any())).thenReturn(false);
+
+        var permissions = service.permissionsFor(caller, row);
+
+        assertThat(permissions.canEdit()).isTrue();
+        assertThat(permissions.canDelete()).isFalse();
+    }
+
+    @Test
+    void permissionsFor_aPage_takesTheDeleteRightFromItsOwnPermission() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        when(profilePermissionService.actionUnitIdsWithWritePermission(any(), any())).thenReturn(java.util.Set.of(7L));
+        when(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(any(), any())).thenReturn(java.util.Set.of());
+
+        var permissions = service.permissionsFor(caller, List.of(new AccessibleProjectForApi(au, 0L, 0L)));
+
+        assertThat(permissions.get(7L).canEdit()).isTrue();
+        assertThat(permissions.get(7L).canDelete()).isFalse();
     }
 }

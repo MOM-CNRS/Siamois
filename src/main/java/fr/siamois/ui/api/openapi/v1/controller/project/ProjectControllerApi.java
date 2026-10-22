@@ -14,6 +14,8 @@ import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectNextIdentifierResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectTemplatesResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
 import fr.siamois.ui.api.openapi.v1.response.project.ProjectSiblingsResponse;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
@@ -37,9 +39,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import fr.siamois.dto.TreePage;
+import fr.siamois.dto.FieldQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -81,6 +87,13 @@ public class ProjectControllerApi {
                     + "find, phase ou container (exige organizationId). Sert au choix du projet d'un "
                     + "formulaire de création.")
             @RequestParam(required = false) String canCreate,
+            @Parameter(description = "Vue arbre : les projets accessibles dont aucun parent n'est accessible (avec une "
+                    + "recherche ou un filtre, ceux qui mènent à une correspondance) ; chaque projet porte hasChildren "
+                    + "et match, et meta.matchCount compte les projets qui correspondent.")
+            @RequestParam(defaultValue = "false") boolean tree,
+            @Parameter(description = "Avec tree=true : l'id d'un projet, pour avoir ses sous-projets accessibles "
+                    + "(restreints à ceux menant à une correspondance quand la liste est filtrée).")
+            @RequestParam(required = false) Long parent,
             @Parameter(hidden = true)
             @RequestParam MultiValueMap<String, String> queryParams,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
@@ -95,9 +108,16 @@ public class ProjectControllerApi {
             filter = projectApiService.restrictToCreatable(caller, organizationId, filter,
                     ProjectApiService.CreatableKind.parse(canCreate));
         }
-        Page<AccessibleProjectForApi> rows = projectApiService.pageAccessibleProjects(
-                caller, organizationId, search, offset, limit, sort, filter,
-                fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage));
+        if (parent != null && !tree) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "parent n'a de sens qu'avec tree=true");
+        }
+        FieldQuery fieldQuery = fieldQueryService.parse(ActionUnit.class, queryParams, sort, acceptLanguage);
+        Page<AccessibleProjectForApi> rows = tree
+                ? projectApiService.pageAccessibleProjectsTree(
+                        caller, organizationId, new ListWindow(offset, limit, sort, search), filter, fieldQuery,
+                        TreeRequest.tree(parent))
+                : projectApiService.pageAccessibleProjects(
+                        caller, organizationId, search, offset, limit, sort, filter, fieldQuery);
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
@@ -116,12 +136,17 @@ public class ProjectControllerApi {
                     ProjectResourcePermissions permissions = permissionsByActionUnitId.getOrDefault(
                             id, ProjectResourcePermissions.of(false));
                     boolean bookmarked = bookmarkedUris.contains(ProjectApiService.actionUnitResourceUri(id));
-                    return projectResponseMapper.toResource(row, lang, permissions, bookmarked,
+                    ProjectResource resource = projectResponseMapper.toResource(row, lang, permissions, bookmarked,
                             projection.resolvedLabels(), projection.answersFor(id));
+                    if (rows instanceof TreePage<AccessibleProjectForApi> treePage) {
+                        resource.setHasChildren(treePage.hasChildren(id));
+                        resource.setMatch(treePage.isMatch(id));
+                    }
+                    return resource;
                 })
                 .toList();
 
-        ListMeta meta = new ListMeta(rows.getTotalElements(), limit, (long) offset);
+        ListMeta meta = ListMeta.of(rows, limit, offset);
 
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(rows.getTotalElements()))
@@ -202,6 +227,48 @@ public class ProjectControllerApi {
                 projectApiService.findSiblings(caller, id, organizationId, search, sort, filter)));
     }
 
+    @GetMapping("/templates")
+    @Operation(
+            summary = "Modèles de départ d'un projet",
+            description = "Les modèles proposés à la création d'un projet de l'organisation : vide, "
+                    + "ou la configuration d'un projet existant accessible."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Organisation hors périmètre")
+    })
+    public ResponseEntity<ProjectTemplatesResponse> templates(
+            @Parameter(description = "Organisation dans laquelle le projet sera créé", required = true)
+            @RequestParam("organizationId") String organizationId) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return ResponseEntity.ok(new ProjectTemplatesResponse(
+                projectApiService.listProjectTemplates(caller, organizationId).stream()
+                        .map(t -> new ProjectTemplatesResponse.Template(
+                                t.id(), t.label(), t.kind().name().toLowerCase(java.util.Locale.ROOT)))
+                        .toList()));
+    }
+
+    @GetMapping("/next-identifier")
+    @Operation(
+            summary = "Prochain identifiant de projet",
+            description = "Aperçu, sans le réserver, de l'identifiant automatique du prochain projet de l'organisation."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OK"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée ou organisation hors périmètre")
+    })
+    public ResponseEntity<ProjectNextIdentifierResponse> nextIdentifier(
+            @Parameter(description = "Organisation dans laquelle le projet sera créé", required = true)
+            @RequestParam("organizationId") String organizationId,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return ResponseEntity.ok(new ProjectNextIdentifierResponse(
+                projectApiService.previewNextProjectIdentifier(caller, organizationId, lang).orElse(null)));
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Créer un projet",
@@ -225,6 +292,32 @@ public class ProjectControllerApi {
         AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang);
         ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
         // A just-created project is never already bookmarked.
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @Operation(
+            summary = "Dupliquer un projet",
+            description = "Crée un projet de même organisation et type (sans ses lieux), nommé « nom (n) », numéroté automatiquement "
+                    + "et configuré comme le projet source (types, champs, règles) — sans ses données, membres ni compteurs. "
+                    + "Droit requis : celui de la création d'un projet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Copie créée"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Création non autorisée"),
+            @ApiResponse(responseCode = "404", description = "Projet introuvable"),
+            @ApiResponse(responseCode = "409", description = "Aucun nom libre pour la copie"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<ProjectResponse> duplicate(
+            @PathVariable("id") String id,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        AccessibleProjectForApi row = projectApiService.duplicateProject(caller, id, lang);
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
     }
@@ -257,7 +350,8 @@ public class ProjectControllerApi {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Supprimer un projet",
-            description = "Uniquement si le projet n'a ni unité d'enregistrement ni sous-projet. "
+            description = "Supprime le projet et tout son contenu (UE, mobiliers, documents, phases, contenants, études). Refus (409) "
+                    + "s'il a des sous-projets ou si son contenu est lié à un autre projet. "
                     + "Même clé de projet que GET /api/v1/projects/{id}. Droit de suppression requis.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Supprimé"),

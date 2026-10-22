@@ -2,9 +2,9 @@ package fr.siamois.ui.bean.dialog.feedback;
 
 import fr.siamois.infrastructure.api.github.GitHubFeedbackAsyncRunner;
 import fr.siamois.infrastructure.api.github.GitHubFeedbackService;
-import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
+import org.primefaces.PrimeFaces;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
@@ -44,10 +44,6 @@ public class FeedbackBean implements Serializable {
         return gitHubFeedbackService.getIssuesUrl();
     }
 
-    /** Client id the dedicated {@code feedbackGrowl} listens to, so the app-wide growl in the
-     * template doesn't also render (and HTML-escape) these messages. */
-    private static final String GROWL_CLIENT_ID = "feedbackToast";
-
     /** Called by the client-side capture overlay's {@code p:remoteCommand}; image, description and
      * the optional reporter identity are forwarded as request params, the page URL is read from the
      * browser location so it always matches what the user actually saw. */
@@ -62,8 +58,7 @@ public class FeedbackBean implements Serializable {
         byte[] screenshot = decodeImage(imageDataUrl);
 
         if (description == null || description.isBlank() || screenshot.length == 0) {
-            context.addMessage(GROWL_CLIENT_ID, new FacesMessage(FacesMessage.SEVERITY_WARN,
-                    "Retour non enregistré", "La description et la capture d'écran sont obligatoires."));
+            notify("warn", "Retour non enregistré", "La description et la capture d'écran sont obligatoires.", null);
             return;
         }
 
@@ -75,12 +70,20 @@ public class FeedbackBean implements Serializable {
         if (issue.isPresent() && issue.get().htmlUrl().startsWith("https://github.com/")) {
             gitHubFeedbackAsyncRunner.attachScreenshotAsync(issue.get().number(), body, screenshot);
 
-            String detail = "Merci pour votre retour ! <a href=\"" + issue.get().htmlUrl() + "\" target=\"_blank\" rel=\"noopener\">Voir l'issue sur GitHub →</a>";
-            context.addMessage(GROWL_CLIENT_ID, new FacesMessage(FacesMessage.SEVERITY_INFO, "Retour enregistré", detail));
+            notify("info", "Retour enregistré", "Merci pour votre retour !", issue.get().htmlUrl());
         } else {
-            context.addMessage(GROWL_CLIENT_ID, new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                    "Retour non enregistré", "La création de l'issue GitHub a échoué. Merci de réessayer plus tard."));
+            notify("error", "Retour non enregistré", "La création de l'issue GitHub a échoué. Merci de réessayer plus tard.", null);
         }
+    }
+
+    /** The outcome goes back as ajax callback params, rendered client-side by the feedback growl: a
+     * FacesMessage would also be picked up (and HTML-escaped) by the app-wide growl. */
+    private static void notify(String severity, String summary, String detail, String issueUrl) {
+        var ajax = PrimeFaces.current().ajax();
+        ajax.addCallbackParam("feedbackSeverity", severity);
+        ajax.addCallbackParam("feedbackSummary", summary);
+        ajax.addCallbackParam("feedbackDetail", detail);
+        if (issueUrl != null) ajax.addCallbackParam("feedbackIssueUrl", issueUrl);
     }
 
     private String buildTitle(String description) {

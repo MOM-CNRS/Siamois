@@ -6,7 +6,7 @@ import { OverlayPanel } from "primereact/overlaypanel";
 import { messageForError } from "../../api/errors";
 import { queryKeys } from "../../api/queryKeys";
 import { useNotify } from "../../notify/NotifyProvider";
-import { useWriteMode } from "../../panels/writeMode";
+import { useWriteMode } from "../../panels/pane/writeMode";
 import { t } from "../../i18n";
 import { linkDocument, listDocuments } from "./api";
 import type { DocumentSummary } from "./types";

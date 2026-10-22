@@ -21,17 +21,6 @@
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
         <!--
-        Project settings: a server-side mode switch + redirect (NavBean#redirectToActionUnitSettings),
-        not something REST can do. Called as reactAction_openProjectSettings_N({projectId: ...});
-        React only shows the button when the project's _permissions.canManageSettings is true, and
-        the bean re-checks it anyway.
-        -->
-        <p:remoteCommand name="reactAction_openProjectSettings_${panelModel.jsPanelIndex}"
-                          action="#{navBean.redirectToActionUnitSettingsFromRequest()}"
-                          process="@this"
-                          update="@none"/>
-
-        <!--
         Keeps FlowBean's parentOrOverview in sync with a client-side-opened overview (plan §8 phase
         5), for F5 and the navigation history. Takes the target entity type and id as remoteCommand
         params (reactAction_setOverview_N({entityType: ..., id: ...})) — see
@@ -72,6 +61,15 @@
                           process="@this"
                           global="false"
                           update="@(.sia-bookmarks-table)"/>
+
+        <!--
+        A view created, renamed or updated by React (REST): only the sidebar's views list needs
+        redrawing (focus.xhtml, .sia-views-table) — its lazy model reloads on render.
+        -->
+        <p:remoteCommand name="reactAction_refreshViews_${panelModel.jsPanelIndex}"
+                          process="@this"
+                          global="false"
+                          update="@(.sia-views-table)"/>
     </h:form>
 
 </ui:composition>

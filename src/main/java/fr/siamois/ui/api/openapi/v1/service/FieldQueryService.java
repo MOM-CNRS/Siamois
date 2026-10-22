@@ -86,6 +86,9 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FieldQueryService {
 
+    private static final String IS_ASYNCHRONOUS = "isAsynchronous";
+
+
     /** The {@link fr.siamois.domain.models.form.config.FormConfigAnswer} property naming each owner. */
     private static final Map<Class<?>, String> ANSWER_OWNERS = Map.of(
             RecordingUnit.class, "recordingUnit",
@@ -274,14 +277,16 @@ public class FieldQueryService {
             parts.add(filter(target, e.getKey(), e.getValue()));
         }
         boolean ordered = false;
+        Specification<E> ordering = null;
         if (query.sortFieldId() != null) {
             Target target = requireTarget(entityType, query.sortFieldId());
-            parts.add(orderBy(target, query.sortFieldId(), query.ascending(), query.lang()));
+            ordering = orderBy(target, query.sortFieldId(), query.ascending(), query.lang());
+            parts.add(ordering);
             ordered = true;
         }
         Specification<E> spec = (root, q, cb) -> null;
         for (Specification<E> part : parts) spec = spec.and(part);
-        return new FieldQuery(spec, ordered);
+        return new FieldQuery(spec, ordered, !query.filters().isEmpty(), ordering);
     }
 
     /**
@@ -317,7 +322,7 @@ public class FieldQueryService {
     @Nullable
     private Target resolveSystem(Class<?> entityType, String formBinding) {
         String binding = entityAttribute(entityType, formBinding);
-        if (isStratigraphy(entityType, binding)) {
+        if (stratigraphicPosition(entityType, binding) != null) {
             // Not a property: a unit's relationships are split over relationshipsAsUnit1/2.
             return new Target(true, binding, Kind.REFERENCES, RecordingUnit.class, null, false, "fullIdentifier", true);
         }
@@ -438,9 +443,36 @@ public class FieldQueryService {
         return type;
     }
 
-    /** A recording unit's stratigraphic relationships: one field, two JPA collections. */
-    private static boolean isStratigraphy(Class<?> entityType, String binding) {
-        return RelationField.of(entityType, binding).filter(r -> r == RelationField.RECORDING_UNIT_STRATIGRAPHY).isPresent();
+    /**
+     * Where the units of a recording unit's stratigraphic field stand relative to it — anterior,
+     * posterior or synchronous — or null for any other field. These are not properties: a unit's
+     * relationships are split over two JPA collections, whichever side it is on.
+     */
+    @Nullable
+    private static String stratigraphicPosition(Class<?> entityType, String binding) {
+        return RelationField.of(entityType, binding).map(RelationField::stratigraphicPosition).orElse(null);
+    }
+
+    /**
+     * The stratigraphic relationships of {@code unit} whose other unit stands at {@code position}
+     * relative to it, and, when {@code otherIds} is given, is one of those. A relationship whose order
+     * is unknown (null asynchronous) counts as asynchronous, as everywhere else.
+     */
+    private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<StratigraphicRelationship> rel,
+                                                    Path<?> unit, String position, @Nullable List<Long> otherIds) {
+        Predicate asynchronous = cb.or(cb.isNull(rel.get(IS_ASYNCHRONOUS)), cb.isTrue(rel.get(IS_ASYNCHRONOUS)));
+        Predicate unit1IsOwner = cb.and(cb.equal(rel.get("unit1"), unit), otherIs(rel, "unit2", otherIds));
+        Predicate unit2IsOwner = cb.and(cb.equal(rel.get("unit2"), unit), otherIs(rel, "unit1", otherIds));
+        return switch (position) {
+            // The owner is the older, first, unit: the other one is posterior to it.
+            case "posterior" -> cb.and(asynchronous, unit1IsOwner);
+            case "anterior" -> cb.and(asynchronous, unit2IsOwner);
+            default -> cb.and(cb.isFalse(rel.get(IS_ASYNCHRONOUS)), cb.or(unit1IsOwner, unit2IsOwner));
+        };
+    }
+
+    private static Predicate otherIs(Root<StratigraphicRelationship> rel, String otherUnit, @Nullable List<Long> otherIds) {
+        return otherIds == null ? rel.get(otherUnit).isNotNull() : rel.get(otherUnit).get("id").in(otherIds);
     }
 
     // ========== Filter ==========
@@ -474,13 +506,12 @@ public class FieldQueryService {
         List<Boolean> flags = target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
 
         return (root, query, cb) -> {
-            if (isStratigraphy(root.getJavaType(), target.attribute)) {
-                // Related to at least one of them, from either side of the relationship.
+            String position = stratigraphicPosition(root.getJavaType(), target.attribute);
+            if (position != null) {
+                // Related to at least one of them, at that position.
                 Subquery<Integer> related = query.subquery(Integer.class);
                 Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
-                related.select(cb.literal(1)).where(cb.or(
-                        cb.and(cb.equal(rel.get("unit1"), root), rel.get("unit2").get("id").in(ids)),
-                        cb.and(cb.equal(rel.get("unit2"), root), rel.get("unit1").get("id").in(ids))));
+                related.select(cb.literal(1)).where(stratigraphicPredicate(cb, rel, root, position, ids));
                 return cb.exists(related);
             }
             if (target.system && target.kind == Kind.REFERENCES) {
@@ -567,9 +598,12 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> sortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query,
                                   CriteriaBuilder cb, String lang) {
-        if (isStratigraphy(root.getJavaType(), target.attribute)) {
-            return cb.sum(cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit1")),
-                    cb.size((Expression<Collection<?>>) (Expression) root.get("relationshipsAsUnit2")));
+        String position = stratigraphicPosition(root.getJavaType(), target.attribute);
+        if (position != null) {
+            Subquery<Long> count = query.subquery(Long.class);
+            Root<StratigraphicRelationship> rel = count.from(StratigraphicRelationship.class);
+            count.select(cb.count(rel)).where(stratigraphicPredicate(cb, rel, root, position, null));
+            return count;
         }
         if (target.system) {
             return systemSortKey(target, root, query, cb, lang);

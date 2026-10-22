@@ -174,8 +174,8 @@ public class FindControllerApi {
             summary = "Supprimer un mobilier",
             description = "Supprime le spécimen identifié par `specimen_id` (identifiant numérique). "
                     + "Droit d'écriture requis sur l'UE parente. "
-                    + "Refus (409) si le mobilier a des mouvements ou appartient à un groupe de spécimens. "
-                    + "Les documents liés sont détachés mais non supprimés."
+                    + "Refus (409) si le mobilier a encore des relations avec d'autres entités (hiérarchie, mouvements, "
+                    + "groupes, documents, contenants, phases, études) : les retirer d'abord."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Supprimé"),

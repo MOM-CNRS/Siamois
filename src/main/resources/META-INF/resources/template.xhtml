@@ -75,6 +75,9 @@
 <ui:insert name="metadata"/>
 
 <h:body>
+    <!-- Before the template growl: the feedback toast must be rendered (unescaped) by its own growl first,
+         otherwise the app-wide growl consumes it and shows the raw HTML of the issue link. -->
+    <ui:include src="/dialog/feedback/feedbackDialogs.xhtml"/>
 
     <ui:debug/>
 
@@ -92,7 +95,9 @@
 
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a href="https://siamois.eu" target="_blank" rel="noopener noreferrer">
+                            <!-- The logo leads home: the organisation's welcome page (what the « Accueil » link below opens). -->
+                            <a href="#{request.contextPath}/focus/L3dlbGNvbWU=" title="#{langBean.msg('nav.home.hint')}"
+                               aria-label="#{langBean.msg('nav.home')}">
                                 <h:graphicImage width="50px" style="padding-bottom:32px;"
                                                 library="img" name="siamois_logo.png" styleClass="logo"/>
                             </a>
@@ -127,7 +132,7 @@
                                 </script>
                             </li>
                             <li class="nav-item">
-                                <h:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
+                                <p:commandLink action="#{sidebarBean.toggleMode('HISTORIQUE')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="historyLinkNav"
@@ -136,10 +141,10 @@
                                     <i class="bi bi-clock-fill"/>
                                     <span class="menu-text">Historique</span>
                                     <p:tooltip for="historyLinkNav" value="Historique"/>
-                                </h:commandLink>
+                                </p:commandLink>
                             </li>
                             <li class="nav-item">
-                                <h:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
+                                <p:commandLink action="#{sidebarBean.toggleMode('BOOKMARKS')}"
                                                update="subSidebarForm:sidebarAnimatedInner"
                                                process="@this"
                                                id="bookmarksLinkNav"
@@ -148,7 +153,19 @@
                                     <i class="bi bi-bookmark-fill"/>
                                     <span class="menu-text">Favoris</span>
                                     <p:tooltip for="bookmarksLinkNav" value="Favoris"/>
-                                </h:commandLink>
+                                </p:commandLink>
+                            </li>
+                            <li class="nav-item">
+                                <p:commandLink action="#{sidebarBean.toggleMode('VIEWS')}"
+                                               update="subSidebarForm:sidebarAnimatedInner"
+                                               process="@this"
+                                               id="viewsLinkNav"
+                                               oncomplete="handleSidebarToggle('VIEWS');"
+                                               styleClass="nav-link">
+                                    <i class="bi bi-file-earmark-spreadsheet-fill"/>
+                                    <span class="menu-text">#{langBean.msg('nav.views')}</span>
+                                    <p:tooltip for="viewsLinkNav" value="#{langBean.msg('nav.views.hint')}"/>
+                                </p:commandLink>
                             </li>
                             <p:divider/>
 
@@ -170,13 +187,20 @@
                         </li>
 
                         <li class="nav-item">
-                            <h:outputLink
-                                    value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105"
-                                    styleClass="nav-link" target="_blank"
-                                    id="bugLink">
-                                <i class="bi bi-bug-fill"/>
+                            <h:outputLink value="#" id="bugLink" styleClass="nav-link"
+                                          onclick="siaFeedbackStartCapture();return false;">
+                                <i class="bi bi-camera"/>
                                 <span class="menu-text">#{langBean.msg('nav.bug')}</span>
                                 <p:tooltip for="bugLink" value="#{langBean.msg('nav.bug')}"/>
+                            </h:outputLink>
+                        </li>
+                        <li class="nav-item">
+                            <h:outputLink value="https://siamois.eu" styleClass="nav-link"
+                                          target="_blank" id="projectLink">
+                                <img src="#{request.contextPath}/resources/img/siamois_logo.png"
+                                     style="height:20px; margin-right: 7px;" alt="SIAMOIS"/>
+                                <span class="menu-text">#{langBean.msg('nav.project')}</span>
+                                <p:tooltip for="projectLink" value="#{langBean.msg('nav.project')}"/>
                             </h:outputLink>
                         </li>
                         <li class="nav-item">
@@ -367,6 +391,5 @@
 
     <h:outputScript library="js" name="template.js"/>
 
-    <ui:include src="/dialog/feedback/feedbackDialogs.xhtml"/>
 </h:body>
 </html>

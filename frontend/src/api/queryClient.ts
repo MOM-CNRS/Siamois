@@ -14,6 +14,8 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 // a catalog fetched for a list is the one its fiches and create forms read.
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: shouldRetry },
+    // No refetch when the tab regains focus: the data that changes under the user's feet is rare here, and
+    // every refetch re-renders big tables. A query that wants fresh data on mount says so with its own staleTime.
+    queries: { retry: shouldRetry, refetchOnWindowFocus: false },
   },
 });

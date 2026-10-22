@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../api/client";
-import type { HomeWidgetContext, HomeWidgetDef } from "./types";
+import type { HomeWidgetContext, HomeWidgetDef } from "./shared/types";
 import { placeEntityConfig } from "./place/config";
 import { recordingUnitEntityConfig } from "./recordingUnit/config";
 import { findEntityConfig } from "./find/config";

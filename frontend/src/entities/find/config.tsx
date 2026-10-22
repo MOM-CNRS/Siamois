@@ -1,15 +1,16 @@
-import type { EntityTypeConfig } from "../types";
-import { loadTypeCatalog } from "../typeCatalog";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import type { EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { loadTypeCatalog } from "../shared/typeCatalog";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { duplicateFind, getFind, listFinds, patchFind, patchFindAnswers } from "./api";
 import { findColumns } from "./columns";
 import { FindCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import { documentsTab } from "../document/documentsTab";
 import type { FindDetail, FindSummary } from "./types";
 import { t } from "../../i18n";
@@ -18,7 +19,7 @@ import { t } from "../../i18n";
 // up by key ("find") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
+// Its dynamic column catalog comes from the project's forms (entities/shared/typeCatalog.ts).
 export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   key: "find",
   labels: { singular: t("entity.find.singular"), plural: t("entity.find.plural"), all: t("entity.find.all") },
@@ -26,9 +27,12 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   // Matches SpecimenTableDefinitionFactory/SpecimenPanel's own icon.
   icon: "bi bi-bucket",
   panelClass: "specimen-panel",
+  cardClassName: "sia-specimen",
+  countChipClassName: "specimen-count-chip",
   api: {
+    delete: (id) => deleteEntity("finds", id),
     siblings: (id) => fetchSiblings("finds", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("finds", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("finds", id, via),
     get: getFind,
     list: listFinds,
     patchAnswers: (id, answers) => patchFindAnswers(id, answers),
@@ -47,6 +51,10 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     createForm: (ctx) => <FindCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "find",
+    card: {
+      image: (r) => (r.firstImageDocumentId ? { documentId: r.firstImageDocumentId } : null),
+      subtitle: (r) => r.type?.resolvedLabel,
+    },
     // Created from a recording unit's field: ON that recording unit, as JSF's "new find" row action.
     createPrefillFrom: ({ entityType, entityId, entityLabel }) =>
       entityType === "recordingUnit" && entityId != null

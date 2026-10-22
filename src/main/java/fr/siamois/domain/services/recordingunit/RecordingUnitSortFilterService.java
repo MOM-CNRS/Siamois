@@ -95,7 +95,9 @@ public class RecordingUnitSortFilterService {
             // Scope filters (e.g. "this action unit") are always part of the fixed query context,
             // even when there is no active user search — unlike user filters, they must never be
             // dropped in root-mode, otherwise roots from other contexts leak into the tree.
-            Specification<RecordingUnit> scoped = base.and(scopeFilterSpecs(filters));
+            // The tree is ordered by the list's sort on a form field too, at every level.
+            Specification<RecordingUnit> scoped = base.and(scopeFilterSpecs(filters))
+                    .and(filters.getFieldQuery().orderingSpecificationFor());
             if (filters.hasUserFilters()) {
                 Collection<Long> closure = resolveAncestorClosure(institution, filters);
                 if (closure.isEmpty()) {
@@ -140,6 +142,11 @@ public class RecordingUnitSortFilterService {
         filters.setAncestorClosure(closure);
         filters.setMatchIds(new HashSet<>(matchIds));
         return closure;
+    }
+
+    /** The matches of the user filters and all their ancestors (sets {@code filters}' closure and match ids). */
+    Collection<Long> ancestorClosure(InstitutionDTO institution, FilterDTO filters) {
+        return resolveAncestorClosure(institution, filters);
     }
 
     Set<Long> computeAncestorClosure(InstitutionDTO institution, FilterDTO filters) {

@@ -1,0 +1,34 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+
+    <cc:interface>
+        <cc:attribute name="usages" required="true"/>
+    </cc:interface>
+
+    <cc:implementation>
+        <p:outputPanel layout="block" styleClass="thesaurus-usages">
+        <h3>#{langBean.msg('thesaurusUsages.title')}</h3>
+        <p style="font-style: italic">#{langBean.msg('thesaurusUsages.hint')}</p>
+        <p:dataTable value="#{cc.attrs.usages}" var="usage" emptyMessage="#{langBean.msg('thesaurusUsages.empty')}">
+            <p:column headerText="#{langBean.msg('common.label.thesaurus')}">
+                #{usage.thesaurusLabel}
+            </p:column>
+            <p:column headerText="#{langBean.msg('thesaurusUsages.source')}">
+                #{langBean.msg(usage.kind == 'BRANCH' ? 'thesaurusUsages.kind.branch' : 'thesaurusUsages.kind.collection')} :
+                #{usage.sourceLabel}
+            </p:column>
+            <p:column headerText="#{langBean.msg('thesaurusUsages.field')}">
+                #{usage.fieldLabel}
+            </p:column>
+            <p:column headerText="#{langBean.msg('thesaurusUsages.type')}">
+                #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}
+            </p:column>
+            <p:column headerText="#{langBean.msg('thesaurusUsages.mode')}">
+                #{langBean.msg(usage.frozen ? 'thesaurusUsages.mode.frozen' : 'thesaurusUsages.mode.follow')}
+            </p:column>
+        </p:dataTable>
+            </p:outputPanel>
+    </cc:implementation>
+</ui:composition>

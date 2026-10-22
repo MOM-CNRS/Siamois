@@ -54,6 +54,7 @@ en plus du contrôle organisationnel.
 | `PROJECT_EDIT_PHASES` | Créer/modifier les phases. |
 | `PROJECT_EDIT_CONTAINERS` | Créer/modifier les contenants. |
 | `PROJECT_EDIT_STUDIES` | Créer/modifier/supprimer les études et traitements du projet (une étude appartient à un seul projet). Contreparties `ORGANIZATION_EDIT_STUDIES` et `INSTANCE_EDIT_STUDIES`. Les profils de projet déjà créés reçoivent ce droit au démarrage (`ProfileService.addMissingDefaultPermissionsToProjectProfiles`, ajout seul). |
+| `PROJECT_EDIT_DEFAULT_VIEWS` | Modifier les vues de liste **par défaut** (colonnes, tri, filtres, onglets) des fiches du projet : ce que chaque membre voit avant toute modification personnelle. Contreparties `ORGANIZATION_EDIT_DEFAULT_VIEWS` et `INSTANCE_EDIT_DEFAULT_VIEWS`; sans projet (liste des projets), seuls ces deux codes comptent. Donné à `PROJECT_MANAGER` et aux administrateurs, propagé aux profils existants au démarrage. |
 | `PROJECT_EDIT_DOCUMENTS` | Créer/modifier/supprimer les documents du projet (un document appartient à un seul projet). Contreparties `ORGANIZATION_EDIT_DOCUMENTS` et `INSTANCE_EDIT_DOCUMENTS`. Exigé pour modifier un document, envoyer, remplacer ou retirer son fichier (`PUT`/`DELETE /documents/{id}/file`), et lier ou délier un document d'une entité (`PUT`/`DELETE /{collection}/{id}/documents/{documentId}`, droit testé sur le projet **du document**). Voir une liste de documents, ou en télécharger un, demande seulement de voir l'entité ou le projet. Les profils de projet déjà créés reçoivent ce droit au démarrage (`ProfileService.addMissingDefaultPermissionsToProjectProfiles`, ajout seul). |
 
 > `ORGANIZATION_LIST_ACCESS` a été supprimée : elle n'était jamais assignée à un profil ni vérifiée nulle part.
@@ -69,7 +70,7 @@ portée correspondante :
 | `ORGANIZATION_MANAGER` | Organisation | `ORGANIZATION_MANAGE_SETTINGS`, `ORGANIZATION_MANAGE_ACTIONS`, `ORGANIZATION_MANAGE_PLACES`, `ORGANIZATION_ACCESS` |
 | `ORGANIZATION_PROJECT_MANAGER` | Organisation | `ORGANIZATION_MANAGE_ACTIONS`, `ORGANIZATION_MANAGE_PLACES`, `ORGANIZATION_ACCESS` |
 | `ORGANIZATION_MEMBER` | Organisation | `ORGANIZATION_ACCESS` |
-| `PROJECT_MANAGER` | Projet | `PROJECT_MANAGE_SETTINGS`, `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS`, `PROJECT_EDIT_DOCUMENTS`, `PROJECT_EDIT_STUDIES` |
+| `PROJECT_MANAGER` | Projet | `PROJECT_MANAGE_SETTINGS`, `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS`, `PROJECT_EDIT_DOCUMENTS`, `PROJECT_EDIT_STUDIES`, `PROJECT_EDIT_DEFAULT_VIEWS` |
 | `PROJECT_MEMBER` | Projet | `PROJECT_EDIT_RECORDING_UNITS`, `PROJECT_EDIT_FINDS`, `PROJECT_EDIT_PHASES`, `PROJECT_EDIT_CONTAINERS`, `PROJECT_EDIT_DOCUMENTS`, `PROJECT_EDIT_STUDIES` |
 
 Défini dans `ProfileService` (`fr.siamois.domain.services.permissions.ProfileService`).

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -24,6 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -354,6 +358,39 @@ class ProfilePermissionServiceTest {
     }
 
     @Test
+    void hasProjectSettingsPermission_forAProjectChecksTheOrganisationRightOnTheInstitutionOwningIt() {
+        InstitutionDTO owner = new InstitutionDTO();
+        owner.setId(20L);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        project.setCreatedByInstitution(owner);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS))
+                .thenReturn(false);
+        // the person manages the projects of institution 12 only, not of the one owning this project
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 20L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 7L, PermissionConstants.PROJECT_MANAGE_SETTINGS))
+                .thenReturn(false);
+
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, project));
+        verify(assignmentRepository, never()).personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 20L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(person, project));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_forAProjectIsDeniedWithoutPersonOrOwningInstitution() {
+        ActionUnitDTO orphan = new ActionUnitDTO();
+        orphan.setId(7L);
+
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, orphan));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission((fr.siamois.dto.entity.PersonDTO) null, orphan));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, (ActionUnitDTO) null));
+    }
+
+    @Test
     void hasProjectSettingsPermission_shouldBeDeniedWithoutUser() {
         assertFalse(profilePermissionService.hasProjectSettingsPermission(null, 7L));
     }
@@ -393,5 +430,163 @@ class ProfilePermissionServiceTest {
 
         assertThat(profilePermissionService.actionUnitIdsWithProjectSettingsPermission(user, Set.of(7L, 8L)))
                 .containsExactly(7L);
+    }
+
+    // ---- deletion rights: the records of a project, and the project itself -------------------
+
+    private UserInfo userInfo() {
+        return new UserInfo(institution, person, "fr");
+    }
+
+    private void denyEverythingByDefault() {
+        lenient().when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        lenient().when(assignmentRepository.personHasPermissionInInstitution(eq(3L), eq(12L), anyString())).thenReturn(false);
+        lenient().when(assignmentRepository.personHasPermissionInActionUnit(eq(3L), eq(99L), anyString())).thenReturn(false);
+    }
+
+    @Test
+    void hasDeleteEntitiesPermission_nullUser_isFalse() {
+        assertFalse(profilePermissionService.hasDeleteEntitiesPermission(null, 99L));
+    }
+
+    @Test
+    void hasDeleteEntitiesPermission_noGrant_isFalse() {
+        denyEverythingByDefault();
+        assertFalse(profilePermissionService.hasDeleteEntitiesPermission(userInfo(), 99L));
+    }
+
+    @Test
+    void hasDeleteEntitiesPermission_instanceGrant_isTrue() {
+        denyEverythingByDefault();
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_DELETE_ENTITIES)).thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteEntitiesPermission(userInfo(), 99L));
+    }
+
+    @Test
+    void hasDeleteEntitiesPermission_organizationGrant_isTrue() {
+        denyEverythingByDefault();
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_DELETE_ENTITIES))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteEntitiesPermission(userInfo(), 99L));
+    }
+
+    @Test
+    void hasDeleteEntitiesPermission_projectGrant_isTrue_andEditRightAloneIsNot() {
+        denyEverythingByDefault();
+        lenient().when(assignmentRepository.personHasPermissionInActionUnit(3L, 99L, PermissionConstants.PROJECT_EDIT_RECORDING_UNITS))
+                .thenReturn(true);
+        assertFalse(profilePermissionService.hasDeleteEntitiesPermission(userInfo(), 99L));
+
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 99L, PermissionConstants.PROJECT_DELETE_ENTITIES))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteEntitiesPermission(userInfo(), 99L));
+    }
+
+    @Test
+    void hasDeleteProjectPermission_userInfo_nullUser_isFalse() {
+        assertFalse(profilePermissionService.hasDeleteProjectPermission((UserInfo) null, 99L));
+    }
+
+    @Test
+    void hasDeleteProjectPermission_userInfo_projectGrant_isTrue() {
+        denyEverythingByDefault();
+        assertFalse(profilePermissionService.hasDeleteProjectPermission(userInfo(), 99L));
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 99L, PermissionConstants.PROJECT_DELETE_PROJECT))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteProjectPermission(userInfo(), 99L));
+    }
+
+    @Test
+    void hasDeleteProjectPermission_person_nullPerson_isFalse() {
+        assertFalse(profilePermissionService.hasDeleteProjectPermission(null, institution, 99L));
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void hasDeleteProjectPermission_person_instanceOrganizationOrProject() {
+        denyEverythingByDefault();
+        assertFalse(profilePermissionService.hasDeleteProjectPermission(person, institution, 99L));
+        assertFalse(profilePermissionService.hasDeleteProjectPermission(person, institution, null));
+
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 99L, PermissionConstants.PROJECT_DELETE_PROJECT))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteProjectPermission(person, institution, 99L));
+    }
+
+    @Test
+    void hasDeleteProjectPermission_person_instanceGrant_isTrue() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_DELETE_PROJECT)).thenReturn(true);
+        assertTrue(profilePermissionService.hasDeleteProjectPermission(person, institution, 99L));
+    }
+
+    @Test
+    void actionUnitIdsWithDeleteProjectPermission_emptyOrNull_returnsEmptyWithoutQuerying() {
+        assertThat(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(person, Map.of())).isEmpty();
+        assertThat(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(null, Map.of(1L, institution))).isEmpty();
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
+    void actionUnitIdsWithDeleteProjectPermission_instanceGrant_grantsAll() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_DELETE_PROJECT)).thenReturn(true);
+        Map<Long, InstitutionDTO> byActionUnit = new LinkedHashMap<>();
+        byActionUnit.put(1L, institution);
+        byActionUnit.put(2L, institution);
+
+        assertThat(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(person, byActionUnit))
+                .containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
+    void actionUnitIdsWithDeleteProjectPermission_mixed_appliesOrganizationGrantThenProjectGrant() {
+        InstitutionDTO other = new InstitutionDTO();
+        other.setId(77L);
+        Map<Long, InstitutionDTO> byActionUnit = new LinkedHashMap<>();
+        byActionUnit.put(1L, institution); // organisation grant
+        byActionUnit.put(2L, other);       // project grant
+        byActionUnit.put(3L, other);       // nothing
+
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.findInstitutionIdsWithPermission(eq(3L), anySet(), eq(PermissionConstants.ORGANIZATION_DELETE_PROJECT)))
+                .thenReturn(Set.of(12L));
+        when(assignmentRepository.findActionUnitIdsWithPermission(eq(3L), anySet(), eq(PermissionConstants.PROJECT_DELETE_PROJECT)))
+                .thenReturn(Set.of(2L));
+
+        assertThat(profilePermissionService.actionUnitIdsWithDeleteProjectPermission(person, byActionUnit))
+                .containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_withoutProject_needsTheInstanceOrOrganizationRight() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), null));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_withoutProjectAndWithoutAnyRight_isFalse() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+
+        assertFalse(profilePermissionService.hasDefaultViewEditPermission(userInfo(), null));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_onAProject_acceptsAProjectGrant() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 40L, PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), 40L));
+    }
+
+    @Test
+    void hasDefaultViewEditPermission_onAProject_acceptsTheOrganizationGrantWithoutLookingAtTheProject() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS)).thenReturn(true);
+
+        assertTrue(profilePermissionService.hasDefaultViewEditPermission(userInfo(), 40L));
     }
 }

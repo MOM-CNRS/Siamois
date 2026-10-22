@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { PagedResult } from "../entities/types";
+import type { PagedResult } from "../entities/shared/types";
 import { queryKeys } from "./queryKeys";
 
 /**
