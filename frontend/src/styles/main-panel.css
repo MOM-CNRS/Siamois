@@ -430,6 +430,12 @@
   min-height: 0;
 }
 
+/* The tab's own 1rem of padding-top comes on top of the toolbar's 0.5em: the toolbar would sit twice as far from
+   the tab headers as from the table below it. Without it both gaps are the toolbar's own. */
+.entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
+  padding-top: 0;
+}
+
 /* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
    are siblings of it, so they stay put. */
 .entity-list-panel .p-datatable-wrapper,
@@ -521,26 +527,6 @@
   height: var(--entity-list-row-height);
   max-height: var(--entity-list-row-height);
 }
-
-/* Mirrors the JSF panels' .panel-progressbar (primefaces-siamois-theme styles.scss): a thin,
-   always-present track, whose moving value only shows while a page or a column is loading. */
-.entity-list-panel-progressbar.p-progressbar {
-  flex: 0 0 3px;
-  height: 3px;
-  border-radius: 0;
-  background-color: var(--siamois-green-light-100, #e6f0e6);
-}
-
-.entity-list-panel-progressbar.p-progressbar .p-progressbar-value {
-  background-color: var(--main-color, #80b480);
-  visibility: hidden;
-}
-
-.entity-list-panel-progressbar.p-progressbar.is-active .p-progressbar-value {
-  visibility: visible;
-}
-
-
 
 /* ------------------------------------------------------------ click-to-edit cell */
 

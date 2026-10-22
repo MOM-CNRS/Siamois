@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { PaneStateScope, usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
-import { ProgressBar } from "primereact/progressbar";
 import { Panel } from "primereact/panel";
 import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
@@ -269,7 +268,7 @@ function EntityListPanelBody({
     limit: state.limit,
     enabled: showTree && listReady,
   });
-  const { rows, totalCount, isLoading, isFetching, error } = showTree
+  const { rows, totalCount, isLoading, error } = showTree
     ? treeRows
     : page;
 
@@ -525,16 +524,6 @@ function EntityListPanelBody({
           onClose={rowActions.clearNotice}
         />
       )}
-      {/* A page or a column arriving: the previous page stays on screen meanwhile (and a new
-          column shows skeleton cells), so this is what says something is loading. Same convention as the
-          JSF panels' own p:progressBar (panelContent.xhtml's panel-progressbar): a 3px track that
-          is always there, so showing it never shifts the table, animated only while loading.
-          Not during the very first load — the table's own loading overlay covers that. */}
-      <ProgressBar
-        mode="indeterminate"
-        className={`panel-progressbar entity-list-panel-progressbar${isFetching && !isLoading ? " is-active" : ""}`}
-        aria-hidden={!(isFetching && !isLoading)}
-      />
       {showCards ? (
         <EntityCardGrid
           entityType={entityType}
