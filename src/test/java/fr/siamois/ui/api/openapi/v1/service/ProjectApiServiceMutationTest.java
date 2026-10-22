@@ -1147,7 +1147,8 @@ class ProjectApiServiceMutationTest {
 
         assertThat(query.selection().recordingUnitCountOrder()).isEqualTo(Sort.Direction.DESC);
         assertThat(query.selection().pageable().getSort().getOrderFor("recordingUnitCount")).isNull();
-        assertThat(query.selection().pageable().getSort().getOrderFor("id")).isNotNull();
+        // The id tie-break lives in the specification: a sorted Pageable would override its orderBy.
+        assertThat(query.selection().pageable().getSort().isSorted()).isFalse();
     }
 
     @Test
@@ -1293,7 +1294,8 @@ class ProjectApiServiceMutationTest {
                 any(), any(), any(), any(), pageableCaptor.capture(), eq(Sort.Direction.DESC), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         Sort sort = pageableCaptor.getValue().getSort();
         assertThat(sort.getOrderFor("recordingUnitCount")).isNull();
-        assertThat(sort.getOrderFor("id")).isNotNull();
+        // A sorted Pageable would override the specification's orderBy (count, then id).
+        assertThat(sort.isSorted()).isFalse();
     }
 
     @Test

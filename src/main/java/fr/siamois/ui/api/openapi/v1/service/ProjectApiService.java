@@ -259,8 +259,11 @@ public class ProjectApiService {
         // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
         // retiré du Pageable, sinon Hibernate échoue sur une propriété inconnue.
         Sort.Direction countDirection = recordingUnitCountSortDirection(sortParam);
-        Pageable pageable = PageRequest.of(pageNumber, limit,
-                countDirection != null ? Sort.by(Sort.Direction.ASC, "id") : parseProjectSort(sortParam));
+        // Un Pageable trié écraserait l'orderBy de la Specification : le tri par nombre d'UE (et son tri
+        // secondaire par id) vit entièrement dans la Specification, le Pageable reste donc non trié.
+        Pageable pageable = countDirection != null
+                ? PageRequest.of(pageNumber, limit)
+                : PageRequest.of(pageNumber, limit, parseProjectSort(sortParam));
 
         return actionUnitService.findAccessibleProjects(
                 caller.person().getId(),
@@ -292,8 +295,9 @@ public class ProjectApiService {
         if (fieldQuery.ordered()) {
             pageable = PageRequest.of(pageNumber, window.limit());
         } else {
-            pageable = PageRequest.of(pageNumber, window.limit(),
-                    countDirection != null ? Sort.by(Sort.Direction.ASC, "id") : parseProjectSort(window.sort()));
+            pageable = countDirection != null
+                    ? PageRequest.of(pageNumber, window.limit())
+                    : PageRequest.of(pageNumber, window.limit(), parseProjectSort(window.sort()));
         }
         return actionUnitService.findAccessibleProjectsTree(new ProjectTreeQuery(
                 caller.person().getId(), caller.accessibleInstitutionIds(), organizationId,

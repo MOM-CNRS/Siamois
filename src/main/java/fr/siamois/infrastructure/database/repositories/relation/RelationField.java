@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.relation;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -61,6 +62,11 @@ public enum RelationField {
                     + "SELECT r.fk_recording_unit_2_id, r.fk_recording_unit_1_id, "
                     + StratigraphyColumns.SELECT_UNIT2
                     + " FROM stratigraphic_relationship r WHERE NOT (" + StratigraphyColumns.ASYNCHRONOUS + ")",
+            Target.RECORDING_UNIT, true),
+
+    ACTION_UNIT_RECORDING_UNITS(ActionUnit.class, "recordingUnitList",
+            "SELECT ru.fk_action_unit_id AS owner_id, ru.recording_unit_id AS target_id, " + NoQualifier.COLUMNS
+                    + " FROM recording_unit ru WHERE ru.fk_action_unit_id IS NOT NULL",
             Target.RECORDING_UNIT, true),
 
     PHASE_RECORDING_UNITS(Phase.class, "recordingUnits",

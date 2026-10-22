@@ -25,8 +25,8 @@ function renderCell(key: string, row: ProjectSummary): string {
 }
 
 describe("projectColumns", () => {
-  it("is exactly the two pinned, non-form columns", () => {
-    expect(projectColumns.map((c) => c.key)).toEqual(["name", "recordingUnitCount"]);
+  it("is exactly the one pinned, non-form column", () => {
+    expect(projectColumns.map((c) => c.key)).toEqual(["name"]);
   });
 
   it("makes the name column the identifier (chip) column", () => {
@@ -38,18 +38,7 @@ describe("projectColumns", () => {
     expect(renderCell("name", row)).toBe("Fouille B");
   });
 
-  it("defaults the recording-unit count to 0 when _counts is absent", () => {
-    const row = project({ _counts: undefined });
-    expect(renderCell("recordingUnitCount", row)).toBe("0");
-  });
-
-  it("renders the actual recording-unit count when present", () => {
-    const row = project({ _counts: { children: 0, recordingUnits: 7 } });
-    expect(renderCell("recordingUnitCount", row)).toBe("7");
-  });
-
-  it("marks every pinned column as sortable, matching ALLOWED_PROJECT_SORT_FIELDS", () => {
+  it("marks the pinned name column as sortable", () => {
     expect(findColumn("name").sortable).toBe(true);
-    expect(findColumn("recordingUnitCount").sortable).toBe(true);
   });
 });

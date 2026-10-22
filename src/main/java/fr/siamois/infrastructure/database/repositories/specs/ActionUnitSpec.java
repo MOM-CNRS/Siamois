@@ -292,7 +292,7 @@ public class ActionUnitSpec {
     public static Specification<ActionUnit> orderByRecordingUnitCount(Sort.Direction direction) {
         return (root, query, cb) -> {
             var countExpr = cb.size(root.get("recordingUnitList"));
-            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(countExpr) : cb.desc(countExpr));
+            query.orderBy(direction == Sort.Direction.ASC ? cb.asc(countExpr) : cb.desc(countExpr), cb.asc(root.get("id")));
             return cb.conjunction();
         };
     }
