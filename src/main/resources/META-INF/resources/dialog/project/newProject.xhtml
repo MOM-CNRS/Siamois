@@ -27,8 +27,8 @@
                         <p:selectOneMenu id="organisation" value="#{newProjectDialogBean.institutionId}" required="true">
                             <f:selectItems value="#{newProjectDialogBean.creatableInstitutions}" var="org"
                                            itemValue="#{org.id}" itemLabel="#{org.name}"/>
-                            <p:ajax event="change" listener="#{newProjectDialogBean.loadTypes()}" process="@this"
-                                    update="type"/>
+                            <p:ajax event="change" listener="#{newProjectDialogBean.onOrganisationChange()}" process="@this"
+                                    update="type identifier"/>
                         </p:selectOneMenu>
                     </div>
 
@@ -41,8 +41,7 @@
                     <div class="sia-create-form-field">
                         <p:outputLabel for="identifier" value="#{langBean.msg('common.label.identifier')}"
                                        styleClass="sia-create-form-label"/>
-                        <p:inputText id="identifier" value="#{newProjectDialogBean.identifier}" required="true"
-                                     maxlength="50"/>
+                        <p:inputText id="identifier" value="#{newProjectDialogBean.identifier}" maxlength="50"/>
                     </div>
 
                     <div class="sia-create-form-field">

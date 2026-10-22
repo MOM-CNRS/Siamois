@@ -12,7 +12,8 @@ import java.util.Objects;
 
 @Data
 @Entity
-@Table(name = "vocabulary", schema = "public")
+@Table(name = "vocabulary", schema = "public", uniqueConstraints = @UniqueConstraint(
+        name = "uk_vocabulary_base_uri_external_id", columnNames = {"base_uri", "external_id"}))
 @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class Vocabulary implements Serializable {
     @Id

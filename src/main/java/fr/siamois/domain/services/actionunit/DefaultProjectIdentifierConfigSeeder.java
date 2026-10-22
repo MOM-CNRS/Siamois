@@ -1,10 +1,10 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.study.form.StudyDefaults;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,9 @@ import java.util.List;
  * <p>The table configuration is read and written in the context of a user (their institution and language),
  * which a REST request does not bind to its thread the way a JSF one does: the caller hands it over, and it
  * is bound here for the duration of the seeding.</p>
+ * <p>The seeding runs after the creation's transaction committed, when its entity manager is still bound but
+ * would never flush: the vocabulary and concept of each type are therefore created in a transaction of
+ * their own, committed before the form config services (which open theirs) run.</p>
  */
 @Slf4j
 @Service
@@ -53,6 +59,7 @@ public class DefaultProjectIdentifierConfigSeeder {
     private final VocabularyService vocabularyService;
     private final ConceptService conceptService;
     private final TableFieldConfigService tableFieldConfigService;
+    private final PlatformTransactionManager transactionManager;
 
     /** The concept of each table's standard type in the system thesaurus: "Mobilier standard"… */
     @Value("${siamois.default-types.ue:}")
@@ -88,6 +95,23 @@ public class DefaultProjectIdentifierConfigSeeder {
         }
     }
 
+    /**
+     * Finds or creates the concept of a URI (and its vocabulary) in a transaction of its own, committed on
+     * return: the form config services open transactions of their own, which must see the concept.
+     */
+    private Long conceptIdOf(String uri) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return template.execute(status -> {
+            try {
+                Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(uri);
+                return conceptService.saveOrGetConceptFromUri(vocabulary, uri, null).getId();
+            } catch (InvalidEndpointException e) {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
     private void seedAll(Long projectId) {
         seedTypes(projectId, ConfigurableTable.UE, DEFAULT_RECORDING_UNIT_TYPES);
         seedStandardType(projectId, ConfigurableTable.UE, ueTypeUri);
@@ -111,17 +135,16 @@ public class DefaultProjectIdentifierConfigSeeder {
         }
         ConfigurableTable table = ConfigurableTable.STUDY;
         try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(uri.trim());
-            Concept concept = conceptService.saveOrGetConceptFromUri(vocabulary, uri.trim(), null);
-            tableFieldConfigService.saveFormConfig(projectId, table, concept.getId(), TypeFormConfig.builder()
+            Long conceptId = conceptIdOf(uri.trim());
+            tableFieldConfigService.saveFormConfig(projectId, table, conceptId, TypeFormConfig.builder()
                     .identifierFormat(table.getDefaultIdentifierFormat())
                     .minCode(MIN_CODE)
                     .maxCode(MAX_CODE)
                     .build());
             for (String binding : StudyDefaults.ALL_BINDINGS) {
                 String label = StudyDefaults.labelOf(binding);
-                tableFieldConfigService.setFieldActive(projectId, table, concept.getId(), label, type.isActive(binding));
-                tableFieldConfigService.setFieldMandatory(projectId, table, concept.getId(), label, type.isMandatory(binding));
+                tableFieldConfigService.setFieldActive(projectId, table, conceptId, label, type.isActive(binding));
+                tableFieldConfigService.setFieldMandatory(projectId, table, conceptId, label, type.isMandatory(binding));
             }
         } catch (Exception e) {
             log.warn("Could not seed the default study type {} from {} for project {}",
@@ -142,14 +165,13 @@ public class DefaultProjectIdentifierConfigSeeder {
     private void seedTypes(Long projectId, ConfigurableTable table, List<DefaultType> types) {
         for (DefaultType type : types) {
             try {
-                Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(type.uri());
-                Concept concept = conceptService.saveOrGetConceptFromUri(vocabulary, type.uri(), null);
+                Long conceptId = conceptIdOf(type.uri());
                 TypeFormConfig config = TypeFormConfig.builder()
                         .identifierFormat(type.identifierFormat())
                         .minCode(MIN_CODE)
                         .maxCode(MAX_CODE)
                         .build();
-                tableFieldConfigService.saveFormConfig(projectId, table, concept.getId(), config);
+                tableFieldConfigService.saveFormConfig(projectId, table, conceptId, config);
             } catch (Exception e) {
                 log.warn("Could not seed the default {} type from {} for project {}",
                         table, type.uri(), projectId, e);
