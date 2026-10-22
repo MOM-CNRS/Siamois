@@ -84,7 +84,7 @@ beforeEach(() => {
   } as never);
   navigate.mockReset();
   openList.mockReset();
-  unregister = registerNavigation({ navigate, openOverview: vi.fn(), openList });
+  unregister = registerNavigation({ navigate, openOverview: vi.fn(), openList, restoreUrl: vi.fn() });
   publishContext({});
   container = document.createElement("div");
   document.body.appendChild(container);

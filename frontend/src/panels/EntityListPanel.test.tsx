@@ -1137,58 +1137,6 @@ describe("EntityListPanel click-to-edit (plan phase 4b)", () => {
     // Cache invalidation triggers a refetch of the list.
     expect(schemaListMock).toHaveBeenCalled();
   });
-
-  // Rows being (re)fetched in the background get a visible signal — the same thin progress bar the
-  // JSF panels use — without it replacing the rows already on screen.
-  it("animates the progress bar only while rows are being fetched in the background", async () => {
-    schemaListMock.mockResolvedValue({
-      data: [{ id: "1", name: "Row A", answers: { "-118": "En cours" }, _permissions: { canEdit: true } }],
-      totalCount: 1,
-      limit: 10,
-      offset: 0,
-    });
-    renderSchemaPanel();
-    await flush();
-    await flush();
-
-    const bar = () => container.querySelector(".entity-list-panel-progressbar") as HTMLElement;
-    expect(bar()).toBeTruthy();
-    expect(bar().classList.contains("is-active")).toBe(false);
-
-    const cell = container.querySelector(".entity-list-panel-editable-cell") as HTMLElement;
-    await act(async () => {
-      cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-    await flush();
-    const input = document.body.querySelector(".cell-edit-overlay input") as HTMLInputElement;
-    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
-    await act(async () => {
-      nativeSetter.call(input, "Terminé");
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-
-    // The refetch the save triggers hangs until released, so its in-flight state is observable.
-    let release!: () => void;
-    schemaListMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          release = () =>
-            resolve({ data: [{ id: "1", name: "Row A", answers: {}, _permissions: { canEdit: true } }], totalCount: 1, limit: 10, offset: 0 });
-        }),
-    );
-    await act(async () => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    });
-    await flush();
-
-    expect(bar().classList.contains("is-active")).toBe(true);
-    // The rows already loaded stay on screen meanwhile.
-    expect(container.textContent).toContain("Row A");
-
-    await act(async () => release());
-    await flush();
-    expect(bar().classList.contains("is-active")).toBe(false);
-  });
 });
 
 describe("EntityListPanel scrolling: sticky header and frozen columns", () => {

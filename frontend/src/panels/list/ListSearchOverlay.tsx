@@ -91,7 +91,8 @@ export const ListSearchOverlayBox = memo(function ListSearchOverlayBox(props: Re
   return (
     <>
       <span className="p-input-icon-left sia-list-search" ref={field}>
-        <i className="bi bi-search" />
+        {/* The icon is part of the clickable field: it sits over the input, so it opens the search too. */}
+        <i className="bi bi-search sia-list-search-icon" onClick={openOverlay} />
         <InputText
           readOnly
           placeholder={t("list.search")}

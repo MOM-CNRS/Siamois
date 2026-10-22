@@ -49,4 +49,42 @@ class EntityProjectResolverTest {
         assertThat(resolver.resolve(List.of("/recording-unit/12"), Set.of())).isEmpty();
         verify(entityManager, never()).createQuery(anyString(), eq(Object[].class));
     }
+
+    @Test
+    void resolve_ignoresNothingToResolve() {
+        assertThat(resolver.resolve(null, Set.of(7L))).isEmpty();
+        assertThat(resolver.resolve(List.of(), Set.of(7L))).isEmpty();
+        assertThat(resolver.resolve(List.of("/recording-unit/12"), null)).isEmpty();
+        assertThat(resolver.resolve(java.util.Collections.singletonList(null), Set.of(7L))).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void names_readsTheNameOfEachProject() {
+        when(entityManager.createQuery(anyString(), eq(Object[].class))).thenReturn(query);
+        when(query.setParameter(anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(query);
+        when(query.getResultList()).thenReturn(List.<Object[]>of(new Object[]{3L, "Cuzco"}, new Object[]{4L, "Chartres"}));
+
+        assertThat(resolver.names(List.of(3L, 4L))).containsEntry(3L, "Cuzco").containsEntry(4L, "Chartres");
+    }
+
+    @Test
+    void names_withoutProjectsNeverQueries() {
+        assertThat(resolver.names(null)).isEmpty();
+        assertThat(resolver.names(List.of())).isEmpty();
+        verify(entityManager, never()).createQuery(anyString(), eq(Object[].class));
+    }
+
+    @Test
+    void labelWithProject_putsTheProjectAfterTheNameAndEscapesBoth() {
+        assertThat(EntityProjectResolver.labelWithProject("US <1>", "Cuzco & Co"))
+                .isEqualTo("<span class=\"sia-entry-title\">US &lt;1&gt;</span>"
+                        + "<span class=\"sia-project-name\">Cuzco &amp; Co</span>");
+    }
+
+    @Test
+    void labelWithProject_withoutProjectIsTheNameOnly() {
+        assertThat(EntityProjectResolver.labelWithProject("US 1", null)).isEqualTo("<span class=\"sia-entry-title\">US 1</span>");
+        assertThat(EntityProjectResolver.labelWithProject(null, " ")).isEqualTo("<span class=\"sia-entry-title\"></span>");
+    }
 }

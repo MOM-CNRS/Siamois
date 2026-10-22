@@ -7,7 +7,8 @@ import { withPanelTransition } from "../panels/panelTransition";
 import type { ListSeed } from "./externalBus";
 import { isMobileViewport } from "../viewport";
 import { listPath } from "./paths";
-import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
+import { recordVisit } from "./navTrail";
+import { decodeUrl, encodeUrl, initialNavState, navReducer, overviewPath, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 
 export interface Navigation {
   state: NavState;
@@ -18,6 +19,8 @@ export interface Navigation {
   openView: (entityType: string, viewId?: number) => void;
   // The entity type's list in the overview pane, started on this search (the search bar's « Voir tout »).
   openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
+  // The page at this address (a Back/Forward trail entry): the panes are rebuilt from it, no page load.
+  restoreUrl: (url: string) => void;
   closeOverview: () => void;
   enterFocus: () => void;
   closeFocus: () => void;
@@ -87,6 +90,22 @@ export function useNavigation(options: MountOptions): Navigation {
     send({ type: "closeFocus" });
   }, [send]);
 
+  const restoreUrl = useCallback<Navigation["restoreUrl"]>((url) => {
+    const restore = decodeUrl(new URL(url, window.location.origin), initialNavState(latest.current.options));
+    if (!restore) {
+      window.location.assign(url);
+      return;
+    }
+    window.history.pushState(null, "", url);
+    dispatch(restore);
+  }, []);
+
+  // Every page the user lands on goes in the header's Back/Forward trail.
+  useEffect(() => {
+    if (!state.mainPath) return;
+    recordVisit({ url: encodeUrl(state), mainPath: state.mainPath, overviewPath: overviewPath(state.overview) });
+  }, [state]);
+
   // The address bar follows every app-driven change; a Back/Forward already moved it.
   useEffect(() => {
     if (state.urlOwner === "app" && state.mainPath) window.history.pushState(null, "", encodeUrl(state));
@@ -116,5 +135,5 @@ export function useNavigation(options: MountOptions): Navigation {
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, openView, openOverview, openList, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
 }

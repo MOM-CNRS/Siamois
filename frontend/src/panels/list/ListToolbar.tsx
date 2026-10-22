@@ -19,6 +19,8 @@ export interface ListToolbarProps {
   scope?: ListScope;
   // The left group: the gear, the search box, the filter chips.
   start: ReactNode;
+  // The filter chips: after the group above, and the first thing to drop to a second line when the toolbar is narrow.
+  startFilters?: ReactNode;
   isLoading: boolean;
   // The size of the filtered result set, and how many of its rows are ticked.
   totalCount: number;
@@ -47,6 +49,7 @@ export function ListToolbar({
   organizationId,
   scope,
   start,
+  startFilters,
   isLoading,
   totalCount,
   selectedCount,
@@ -137,29 +140,36 @@ export function ListToolbar({
   return (
     <Toolbar
       className="entity-list-panel-toolbar"
-      start={start}
+      start={
+        <>
+          <div className="entity-list-panel-toolbar-main">
+            {/* selectedCountChip (tableToolbar.xhtml): first in the toolbar, before the table's gear: selected / total of the FILTERED result set —
+                the only place that total shows in a relation tab, whose badge counts every related
+                row. Here rather than in the selection column's header, which it widened. Its ×
+                (only once rows are selected) clears the selection. */}
+            {isLoading ? (
+              <Skeleton width="3rem" height="1.5rem" borderRadius="16px" />
+            ) : (
+              <Chip
+                // Remounted when the selection empties or fills: PrimeReact's Chip hides itself on
+                // remove and would otherwise stay hidden.
+                key={selectedCount > 0 ? "selected" : "none"}
+                className="entity-list-panel-selection-count"
+                label={`${selectedCount}/${totalCount}`}
+                removable={selectedCount > 0}
+                onRemove={() => {
+                  onClearSelection();
+                  return false;
+                }}
+              />
+            )}
+            {start}
+          </div>
+          {startFilters}
+        </>
+      }
       end={
         <>
-          {/* selectedCountChip (tableToolbar.xhtml): selected / total of the FILTERED result set —
-              the only place that total shows in a relation tab, whose badge counts every related
-              row. Here rather than in the selection column's header, which it widened. Its ×
-              (only once rows are selected) clears the selection. */}
-          {isLoading ? (
-            <Skeleton width="3rem" height="1.5rem" borderRadius="16px" />
-          ) : (
-            <Chip
-              // Remounted when the selection empties or fills: PrimeReact's Chip hides itself on
-              // remove and would otherwise stay hidden.
-              key={selectedCount > 0 ? "selected" : "none"}
-              className="entity-list-panel-selection-count"
-              label={`${selectedCount}/${totalCount}`}
-              removable={selectedCount > 0}
-              onRemove={() => {
-                onClearSelection();
-                return false;
-              }}
-            />
-          )}
           {endExtra}
           {createButton()}
         </>
