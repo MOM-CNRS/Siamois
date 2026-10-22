@@ -169,6 +169,7 @@ public class StudyOpenApiService {
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, study.getActionUnit().getId()))
+                .withManageSettings(profilePermissionService.hasProjectSettingsPermission(userInfo, study.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, study.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;

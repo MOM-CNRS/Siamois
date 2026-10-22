@@ -200,6 +200,7 @@ public class DocumentOpenApiService {
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId()))
+                .withManageSettings(profilePermissionService.hasProjectSettingsPermission(userInfo, document.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, document.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;

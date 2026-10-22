@@ -1321,4 +1321,96 @@ class FieldConfigurationServiceTest {
 
         assertThat(service.describeVocabulary(field, 42L, null)).isNull();
     }
+
+    // ---- fetchValuesPage: the values a saved configuration offers, page by page ----------------------------
+
+    private List<ConceptAutocompleteDTO> sourceOfFiveWithOneDisabled(CustomFieldSelectOne field, ConceptFieldFormConfig config, Concept topTerm) {
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, config.getFormConfig()))
+                .thenReturn(List.of(state(conceptWithId(101L), ConceptState.DISABLED)));
+        List<ConceptAutocompleteDTO> source = List.of(candidate(100L, "A"), candidate(101L, "B"), candidate(102L, "C"),
+                candidate(103L, "D"), candidate(104L, "E"));
+        when(autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "q", FieldConfigurationService.FROZEN_SCAN_LIMIT))
+                .thenReturn(source);
+        return source;
+    }
+
+    private static List<Long> idsOf(FieldConfigurationService.ValuesPage page) {
+        return page.items().stream().map(r -> r.getConceptLabelToDisplay().getConcept().getId()).toList();
+    }
+
+    @Test
+    void fetchValuesPage_shouldCutTheOfferedValuesIntoPages_andCountThem() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        Concept topTerm = conceptWithId(99L);
+        ConceptFieldFormConfig config = branchConfig(field, VocabularyMode.FOLLOW, new FormConfig(), topTerm);
+        sourceOfFiveWithOneDisabled(field, config, topTerm);
+
+        FieldConfigurationService.ValuesPage first = service.fetchValuesPage(field, config, "fr", " q ", 0, 2);
+        FieldConfigurationService.ValuesPage second = service.fetchValuesPage(field, config, "fr", "q", 2, 2);
+        FieldConfigurationService.ValuesPage beyond = service.fetchValuesPage(field, config, "fr", "q", 40, 2);
+
+        assertThat(idsOf(first)).containsExactly(100L, 102L);
+        assertThat(first.total()).isEqualTo(4);
+        assertThat(first.hasNext()).isTrue();
+        assertThat(first.totalCapped()).isFalse();
+        assertThat(idsOf(second)).containsExactly(103L, 104L);
+        assertThat(second.hasNext()).isFalse();
+        assertThat(beyond.items()).isEmpty();
+        assertThat(beyond.hasNext()).isFalse();
+    }
+
+    @Test
+    void fetchValuesPage_shouldKeepOnlyEnabledConcepts_whenListIsFrozen() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        ConceptCollection collection = new ConceptCollection();
+        collection.setId(55L);
+        FormConfig formConfig = new FormConfig();
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setCollection(collection);
+        config.setVocabularyMode(VocabularyMode.FROZEN);
+        config.setFormConfig(formConfig);
+        when(conceptFieldStateRepository.findAllByFieldAndFormConfig(field, formConfig))
+                .thenReturn(List.of(state(conceptWithId(100L), ConceptState.ENABLED), state(conceptWithId(101L), ConceptState.DISABLED)));
+        when(autocompleteRepository.findMatchingConceptsInCollection(collection, "fr", null, FieldConfigurationService.FROZEN_SCAN_LIMIT))
+                .thenReturn(List.of(candidate(100L, "A"), candidate(101L, "B"), candidate(102L, "C")));
+
+        FieldConfigurationService.ValuesPage page = service.fetchValuesPage(field, config, "fr", "  ", 0, 20);
+
+        assertThat(idsOf(page)).containsExactly(100L);
+        assertThat(page.total()).isEqualTo(1);
+    }
+
+    @Test
+    void fetchValuesPage_shouldFlagACountThatHitTheReadLimit() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        Concept topTerm = conceptWithId(99L);
+        ConceptFieldFormConfig config = branchConfig(field, VocabularyMode.FOLLOW, new FormConfig(), topTerm);
+        List<ConceptAutocompleteDTO> saturated = new java.util.ArrayList<>();
+        for (long id = 0; id < FieldConfigurationService.FROZEN_SCAN_LIMIT; id++) {
+            saturated.add(candidate(id, "v" + id));
+        }
+        when(autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", null, FieldConfigurationService.FROZEN_SCAN_LIMIT))
+                .thenReturn(saturated);
+
+        FieldConfigurationService.ValuesPage page = service.fetchValuesPage(field, config, "fr", null, 0, 20);
+
+        assertThat(page.totalCapped()).isTrue();
+        assertThat(page.total()).isEqualTo(FieldConfigurationService.FROZEN_SCAN_LIMIT);
+        assertThat(page.items()).hasSize(20);
+    }
+
+    @Test
+    void fetchValuesPage_shouldOfferNothing_whenTheConfigurationHoldsNeitherBranchNorCollection() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+
+        FieldConfigurationService.ValuesPage page = service.fetchValuesPage(field, new ConceptFieldFormConfig(), "fr", null, 0, 20);
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.total()).isZero();
+        verify(autocompleteRepository, never()).findMatchingConceptsInBranchOf(any(), anyString(), any(), anyInt());
+    }
 }

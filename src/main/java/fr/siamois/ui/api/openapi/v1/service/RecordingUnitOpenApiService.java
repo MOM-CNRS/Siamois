@@ -170,6 +170,7 @@ public class RecordingUnitOpenApiService {
         resource.setPermissions(ProjectResourcePermissions.of(
                 profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto))
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, projectId))
+                .withManageSettings(projectId != null && profilePermissionService.hasProjectSettingsPermission(userInfo, projectId))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, projectId)));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
@@ -721,6 +722,8 @@ public class RecordingUnitOpenApiService {
                 specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null);
         resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit)
                 .withValidate(canValidate)
+                .withManageSettings(specimen.getActionUnit() != null
+                        && profilePermissionService.hasProjectSettingsPermission(userInfo, specimen.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo,
                         specimen.getActionUnit() != null ? specimen.getActionUnit().getId() : null)));
         if (specimen.getId() != null) {

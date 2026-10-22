@@ -631,6 +631,41 @@ public class FieldConfigurationService {
     }
 
     /**
+     * One page of the values a configured field offers, how many it offers in all (a lower bound when
+     * {@code totalCapped}: the read stops at {@link #FROZEN_SCAN_LIMIT}) and whether more follow the page.
+     */
+    public record ValuesPage(List<ConceptAutocompleteDTO> items, int total, boolean totalCapped, boolean hasNext) {
+    }
+
+    /**
+     * One page of the values a saved branch/collection configuration offers, read from the database with the
+     * same states as {@link #fetchAutocomplete(CustomFieldConcept, String, Long, Long)} applies, to browse them.
+     *
+     * @param offset   how many offered values to skip
+     * @param pageSize how many to return
+     */
+    @NonNull
+    @Transactional(readOnly = true)
+    public ValuesPage fetchValuesPage(@NonNull CustomFieldConcept conceptField, @NonNull ConceptFieldFormConfig config,
+                                      @NonNull String lang, @Nullable String input, int offset, int pageSize) {
+        if (config.isNotValid()) {
+            return new ValuesPage(List.of(), 0, false, false);
+        }
+        String text = StringUtils.isBlank(input) ? null : input.trim();
+        Map<Long, ConceptState> states = statesOf(conceptField, config);
+        int limit = FROZEN_SCAN_LIMIT;
+        List<ConceptAutocompleteDTO> candidates = config.isBranchConfig()
+                ? autocompleteRepository.findMatchingConceptsInBranchOf(config.getBranchTopTerm(), lang, text, limit)
+                : autocompleteRepository.findMatchingConceptsInCollection(config.getCollection(), lang, text, limit);
+        List<ConceptAutocompleteDTO> offered = candidates.stream()
+                .filter(candidate -> isOffered(candidate, config, states))
+                .toList();
+        int from = Math.min(offset, offered.size());
+        int to = Math.min(from + pageSize, offered.size());
+        return new ValuesPage(offered.subList(from, to), offered.size(), candidates.size() >= limit, offered.size() > to);
+    }
+
+    /**
      * The explicit states of the concepts of a restricted field, by concept id. Empty for a field
      * whose list has never been customised.
      */

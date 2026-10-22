@@ -182,6 +182,8 @@ public class FindOpenApiService {
                 dto.getActionUnit() != null ? dto.getActionUnit().getId() : null);
         resource.setPermissions(fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions.of(canEdit)
                 .withValidate(canValidate)
+                .withManageSettings(dto.getActionUnit() != null
+                        && profilePermissionService.hasProjectSettingsPermission(userInfo, dto.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo,
                         dto.getActionUnit() != null ? dto.getActionUnit().getId() : null)));
         if (dto.getId() != null) {

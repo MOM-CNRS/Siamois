@@ -11,14 +11,19 @@ import { WriteModeProvider } from "./writeMode";
 import { onEntityDeleted } from "./entityDeleted";
 import { BridgeProvider } from "./bridge";
 import type { PanelBridge } from "../mountOptions";
-import { openProjectSettings } from "./projectSettings";
+import { openProjectSettings, openTablesSettings } from "./projectSettings";
 import { getViewState, putViewState } from "../api/views";
 import { getFicheConfig } from "../api/ficheConfigs";
 import { SAVE_DELAY_MS } from "./useUserViewState";
 import { usePersistedPaneState } from "./persistedPaneState";
 
-vi.mock("./projectSettings", () => ({ openProjectSettings: vi.fn() }));
+vi.mock("./projectSettings", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./projectSettings")>()),
+  openProjectSettings: vi.fn(),
+  openTablesSettings: vi.fn(),
+}));
 const mockedOpenProjectSettings = vi.mocked(openProjectSettings);
+const mockedOpenTablesSettings = vi.mocked(openTablesSettings);
 
 // Generic-component test (plan §8 phase 6), registered against a throwaway fake entity type —
 // entities/project/config.tsx and FicheTab.tsx already have their own coverage. This exercises
@@ -775,6 +780,59 @@ describe("EntityDetailPanel entity actions", () => {
       container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(mockedOpenProjectSettings).toHaveBeenCalledWith("7");
+  });
+});
+
+// A fiche of the project (not the project, not a place): the gear leads to the configuration of its type,
+// for whoever may manage the project's settings.
+describe("EntityDetailPanel configuration of a project fiche", () => {
+  interface PhaseLike {
+    id: string;
+    name: string;
+    projectId: string;
+    type: { id: string };
+    _permissions?: { canEdit: boolean; canManageSettings?: boolean };
+  }
+  const phaseGet = vi.fn<(id: string | number) => Promise<PhaseLike>>();
+  registerEntityType({
+    key: "phase",
+    labels: { singular: "Phase", plural: "Phases" },
+    collectionPath: "phases",
+    icon: "bi bi-question",
+    api: { list: vi.fn(), get: phaseGet },
+    list: { columns: [], searchable: false },
+    detail: { tabs: [{ key: "fiche", label: "Fiche", render: (e: PhaseLike) => <span>{e.name}</span> }] },
+    routes: { list: "/phase", detail: (id) => `/phase/${id}` },
+  } as EntityTypeConfig<PhaseLike, PhaseLike>);
+
+  function renderPhase() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={false}>
+            <EntityDetailPanel entityType="phase" entityId="5" toolbar={{ chrome: { resourceUri: "", title: "" } }} />
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+  }
+
+  it("opens the project's tables on the fiche's type with the settings right, and offers nothing without it", async () => {
+    phaseGet.mockResolvedValue({ id: "5", name: "P", projectId: "3", type: { id: "9" }, _permissions: { canEdit: false } });
+    renderPhase();
+    await flush();
+    expect(container.querySelector(".bi-gear")).toBeNull();
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    phaseGet.mockResolvedValue({ id: "5", name: "P", projectId: "3", type: { id: "9" }, _permissions: { canEdit: false, canManageSettings: true } });
+    renderPhase();
+    await flush();
+    await act(async () => {
+      container.querySelector(".bi-gear")!.closest("button")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mockedOpenTablesSettings).toHaveBeenCalledWith("3", "PHASE", "9");
   });
 });
 

@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.settings.project;
 
-import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.PersonDTO;
+import static org.mockito.ArgumentMatchers.nullable;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -41,9 +42,8 @@ class ProjectMembersListBeanSettingsAccessTest {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
         bean.setProject(project);
-        UserInfo userInfo = new UserInfo(null, null, null);
-        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
-        when(profilePermissionService.hasProjectSettingsPermission(userInfo, 7L)).thenReturn(false);
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
         ProjectMemberDTO member = Mockito.mock(ProjectMemberDTO.class);
 
         try (MockedStatic<MessageUtils> messages = Mockito.mockStatic(MessageUtils.class)) {

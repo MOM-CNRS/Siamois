@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -25,6 +26,8 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -352,6 +355,39 @@ class ProfilePermissionServiceTest {
 
         assertTrue(profilePermissionService.hasProjectSettingsPermission(user, 7L));
         assertFalse(profilePermissionService.hasProjectSettingsPermission(user, 8L));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_forAProjectChecksTheOrganisationRightOnTheInstitutionOwningIt() {
+        InstitutionDTO owner = new InstitutionDTO();
+        owner.setId(20L);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        project.setCreatedByInstitution(owner);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS))
+                .thenReturn(false);
+        // the person manages the projects of institution 12 only, not of the one owning this project
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 20L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(false);
+        when(assignmentRepository.personHasPermissionInActionUnit(3L, 7L, PermissionConstants.PROJECT_MANAGE_SETTINGS))
+                .thenReturn(false);
+
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, project));
+        verify(assignmentRepository, never()).personHasPermissionInInstitution(3L, 12L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS);
+
+        when(assignmentRepository.personHasPermissionInInstitution(3L, 20L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(true);
+        assertTrue(profilePermissionService.hasProjectSettingsPermission(person, project));
+    }
+
+    @Test
+    void hasProjectSettingsPermission_forAProjectIsDeniedWithoutPersonOrOwningInstitution() {
+        ActionUnitDTO orphan = new ActionUnitDTO();
+        orphan.setId(7L);
+
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, orphan));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission((fr.siamois.dto.entity.PersonDTO) null, orphan));
+        assertFalse(profilePermissionService.hasProjectSettingsPermission(person, (ActionUnitDTO) null));
     }
 
     @Test
