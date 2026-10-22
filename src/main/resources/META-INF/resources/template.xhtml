@@ -75,6 +75,9 @@
 <ui:insert name="metadata"/>
 
 <h:body>
+    <!-- Before the template growl: the feedback toast must be rendered (unescaped) by its own growl first,
+         otherwise the app-wide growl consumes it and shows the raw HTML of the issue link. -->
+    <ui:include src="/dialog/feedback/feedbackDialogs.xhtml"/>
 
     <ui:debug/>
 
@@ -182,11 +185,9 @@
                         </li>
 
                         <li class="nav-item">
-                            <h:outputLink
-                                    value="https://amplified-trampoline-ee0.notion.site/1de32b90b4818066a0dac416da8255e3?pvs=105"
-                                    styleClass="nav-link" target="_blank"
-                                    id="bugLink">
-                                <i class="bi bi-bug-fill"/>
+                            <h:outputLink value="#" id="bugLink" styleClass="nav-link"
+                                          onclick="siaFeedbackStartCapture();return false;">
+                                <i class="bi bi-camera"/>
                                 <span class="menu-text">#{langBean.msg('nav.bug')}</span>
                                 <p:tooltip for="bugLink" value="#{langBean.msg('nav.bug')}"/>
                             </h:outputLink>
@@ -388,6 +389,5 @@
 
     <h:outputScript library="js" name="template.js"/>
 
-    <ui:include src="/dialog/feedback/feedbackDialogs.xhtml"/>
 </h:body>
 </html>

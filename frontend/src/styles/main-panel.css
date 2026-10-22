@@ -1330,12 +1330,6 @@
   padding-bottom: var(--panel-scroll-end-gap);
 }
 
-/* A list (standalone or embedded): the paginator is its last element, below the scrolling table
-   wrapper — the room goes under the paginator, not between the rows and it. */
-.entity-list-panel .p-paginator-bottom {
-  margin-bottom: var(--panel-scroll-end-gap);
-}
-
 /* Home scrolls in its pane. */
 .home-panel {
   padding-bottom: var(--panel-scroll-end-gap);
