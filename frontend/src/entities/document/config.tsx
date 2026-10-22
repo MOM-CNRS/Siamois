@@ -6,6 +6,7 @@ import { fetchSiblings } from "../shared/siblingsApi";
 import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
+import { BulkImportDocument } from "./BulkImportDocument";
 import { DocumentCreateForm } from "./CreateForm";
 import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
 import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
@@ -46,6 +47,8 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
     createForm: (ctx) => <DocumentCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "document",
+    // Same Import massif as on a fiche Documents tab, but no project pre-selected.
+    toolbarExtra: <BulkImportDocument />,
     // Documents are looked at before they are read: their lists start as cards.
     defaultView: "cards",
     // An image document is its own picture.

@@ -366,6 +366,8 @@ function EntityListPanelBody({
   // A preview being configured has no row actions to arrange.
   const hasActionBarSettings = rowActions.items.length > 0 && !volatile;
   const hasGear = hasSchema || hasActionBarSettings;
+  // Relation tabs pass `toolbarExtra`; the entity's own list may declare `config.list.toolbarExtra`.
+  const resolvedToolbarExtra = toolbarExtra ?? config.list.toolbarExtra;
 
   const body = (
     <>
@@ -373,7 +375,8 @@ function EntityListPanelBody({
         onCreate ||
         config.list.createForm ||
         hasGear ||
-        filterSpecs.length > 0) && (
+        filterSpecs.length > 0 ||
+        resolvedToolbarExtra) && (
         <ListToolbar
           entityType={entityType}
           config={config}
@@ -386,9 +389,9 @@ function EntityListPanelBody({
           creatable={creatable}
           createPrefill={createPrefillWithType}
           endExtra={
-            toolbarExtra || saveAsTabButton ? (
+            resolvedToolbarExtra || saveAsTabButton ? (
               <>
-                {toolbarExtra}
+                {resolvedToolbarExtra}
                 {saveAsTabButton}
               </>
             ) : undefined

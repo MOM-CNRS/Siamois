@@ -463,6 +463,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     }) => CreatePrefill | undefined;
     // Entity-specific row actions (see RowActionDef), after the generic bookmark/duplicate.
     rowActions?: RowActionDef<TSummary>[];
+    // Extra controls next to « Créer » on this entity's own list toolbar (e.g. Documents → Import massif).
+    // Relation tabs pass their own `toolbarExtra` prop to EntityListPanel instead.
+    toolbarExtra?: ReactNode;
     // Present: the list can also be shown as a grid of cards (a « Vignettes » choice in the gear menu).
     card?: CardDef<TSummary>;
     // The display mode a list starts in when the user has chosen none (the flat list when absent).

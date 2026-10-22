@@ -1,10 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchManifestRequest;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
+import fr.siamois.ui.api.openapi.v1.response.document.DocumentBatchResponse;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentResponse;
 import fr.siamois.ui.api.openapi.v1.service.*;
@@ -24,8 +26,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -39,6 +46,46 @@ public class DocumentsControllerApi {
     private final DocumentFormOpenApiService documentFormOpenApiService;
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
     private final DocumentOpenApiService documentOpenApiService;
+    private final DocumentBulkOpenApiService documentBulkOpenApiService;
+
+    @PostMapping(value = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "Upload massif de documents (multi-cibles)",
+            description = "Crée plusieurs documents en un appel. "
+                    + "Part `manifest` (JSON DocumentBatchManifestRequest) : items indexés. "
+                    + "Parts fichiers : `file_0`, `file_1`, … alignés sur l'index du manifeste. "
+                    + "Chaque item peut être rattaché à plusieurs cibles "
+                    + "(projects, recording-units, finds, places). "
+                    + "Réponse 200 avec statut par item (created/failed) ; liens MD5 déjà présents sont listés dans skippedTargets."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lot traité (voir results[].status)"),
+            @ApiResponse(responseCode = "400", description = "Manifeste invalide"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<DocumentBatchResponse> batchUpload(
+            @RequestPart("manifest") String manifestJson,
+            MultipartHttpServletRequest request,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        DocumentBatchManifestRequest manifest = documentBulkOpenApiService.parseManifest(manifestJson);
+
+        Map<String, MultipartFile> files = new HashMap<>();
+        Iterator<String> names = request.getFileNames();
+        while (names.hasNext()) {
+            String name = names.next();
+            MultipartFile file = request.getFile(name);
+            if (file != null) {
+                files.put(name, file);
+            }
+        }
+
+        DocumentBatchResponse body = documentBulkOpenApiService.processBatch(caller, manifest, files, lang);
+        return ResponseEntity.ok(body);
+    }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.DETAIL_DEFAULT)
     @GetMapping("/{id}")

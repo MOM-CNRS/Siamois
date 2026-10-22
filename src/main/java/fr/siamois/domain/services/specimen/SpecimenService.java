@@ -685,6 +685,16 @@ public class SpecimenService implements ArkEntityService {
                 .toList();
     }
 
+    public List<SpecimenSummaryDTO> findMatchingInInstitutionByFullIdentifier(
+            InstitutionDTO institution, String query, int limit) {
+        var specs = SpecimenSpec.specimenInInstitution(institution.getId())
+                .and(SpecimenSpec.fullIdentifierContaining(query));
+        return specimenRepository.findAll(specs, PageRequest.ofSize(limit))
+                .stream()
+                .map(specimenSummaryMapper::convert)
+                .toList();
+    }
+
     /**
      * Supprime un mobilier (spécimen) qui n'a aucune relation avec une autre entité.
      * Supprime l'ARK associé.

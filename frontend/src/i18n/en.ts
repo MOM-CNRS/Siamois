@@ -20,6 +20,7 @@ export const en: Record<MessageKey, string> = {
   "docs.unlinkConfirm": "Remove the link with this document? The document itself is not deleted.",
   "docs.linkFailed": "Linking the document failed.",
   "docs.unlinkFailed": "Removing the link failed.",
+  "docs.bulkImport": "Bulk import",
   "create.linkedTo": "Linked to",
   "common.project": "Project",
   "common.type": "Type",
