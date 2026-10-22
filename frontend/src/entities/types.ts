@@ -199,6 +199,8 @@ export interface CreatePrefill {
   parent?: EntityRef;
   // ...or its direct parent.
   child?: EntityRef;
+  // Recording unit: the phase it is attached to.
+  phase?: EntityRef;
   // Find: the recording unit it is created on (no UE picker then).
   recordingUnit?: EntityRef;
   // Project: the place it is attached to (spatial context).
@@ -242,6 +244,8 @@ export interface DetailTabHelpers {
     preview?: EntityPreview,
   ) => void;
   overviewEntityId?: string | number;
+  // Its entity type: a list tab highlights the row only when it lists that type.
+  overviewEntityType?: string;
 }
 
 export interface DetailTabDef<TDetail> {

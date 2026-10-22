@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../api/client";
 import { registerEntityType } from "../registry";
 import {
+  createRecordingUnit,
   duplicateRecordingUnitStructure,
   getRecordingUnit,
   getRecordingUnitStructure,
@@ -106,5 +107,28 @@ describe("structure duplication", () => {
       body: { copies: 2, descendantIds: [2, 3] },
     });
     expect(result.createdCount).toBe(3);
+  });
+});
+
+describe("createRecordingUnit", () => {
+  it("posts the links to a parent, a child and a phase as numbers", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "9" } });
+
+    await createRecordingUnit({ projectId: "5", typeId: "42", parentRecordingUnitId: "12", childRecordingUnitId: 13, phaseId: "21" });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units", {
+      method: "POST",
+      body: { projectId: "5", typeId: "42", parentRecordingUnitId: 12, childRecordingUnitId: 13, phaseId: 21 },
+    });
+  });
+
+  it("leaves the links out when none is given", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "9" } });
+
+    await createRecordingUnit({ projectId: "5", typeId: "42" });
+
+    const body = (mockedApiFetch.mock.calls[0][1] as { body: Record<string, unknown> }).body;
+    expect(body.phaseId).toBeUndefined();
+    expect(body.parentRecordingUnitId).toBeUndefined();
   });
 });

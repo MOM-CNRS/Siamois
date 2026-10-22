@@ -430,10 +430,14 @@
   min-height: 0;
 }
 
-/* The tab's own 1rem of padding-top comes on top of the toolbar's 0.5em: the toolbar would sit twice as far from
-   the tab headers as from the table below it. Without it both gaps are the toolbar's own. */
+/* A tab holding a list or the relation graph has no padding of its own: the table runs edge to edge, as the full list does. Only a tab
+   of ordinary content (the details fiche) keeps the tab panel's padding. */
 .entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
-  padding-top: 0;
+  padding: 0;
+}
+/* Beats the theme's `body .p-tabview .p-tabview-panels .p-tabview-panel` padding, which the :has() above already outweighs. */
+body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .sia-relation-graph) {
+  padding: 0;
 }
 
 /* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
@@ -1120,6 +1124,47 @@
 .sia-clickable-card:focus-visible {
   outline: 2px solid var(--primary-color, #669966);
   outline-offset: 2px;
+}
+
+/* The row open in the overview: framed in the colour of what the rows are (the theme's own frame is Siamois green). */
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td {
+  border-top-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+  border-bottom-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:first-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:first-child {
+  border-left-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:last-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:last-child {
+  border-right-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+
+/* A focused list row: the ring is the colour of the entity the rows are (--row-entity-color, set on the list
+   by EntityListPanel), not the theme's blue — in a fiche's tab too, where the list sits inside another entity's panel. */
+body .entity-list-panel .p-datatable.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row:focus-visible,
+body .entity-list-panel .p-datatable.p-datatable-hoverable-rows .p-datatable-tbody > tr:not(.p-highlight):focus-visible,
+body .entity-list-panel .p-datatable .p-datatable-tbody > tr:focus-visible,
+body .entity-list-panel .p-treetable .p-treetable-tbody > tr:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+}
+
+/* The same for a focused cell's content and a sortable header, which the theme rings in the primary / lavender colour. */
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"]:focus,
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"] [tabindex="0"]:focus-visible {
+  outline-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-checkbox:not(.p-disabled):has(.p-checkbox-input:focus-visible) .p-checkbox-box,
+body .entity-list-panel .p-checkbox .p-checkbox-box.p-focus {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+  border-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-datatable thead th.p-sortable-column:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
 }
 
 /* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept

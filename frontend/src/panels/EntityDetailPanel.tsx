@@ -68,6 +68,7 @@ export interface EntityDetailPanelProps {
   organizationId?: number;
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   overviewEntityId?: string | number;
+  overviewEntityType?: string;
   // "Fiche précédente/suivante" (plan: prev/next navigation). Deliberately NOT `onNavigate`: that
   // callback also drives the breadcrumb's "Tous les <plural>" crumb, which must switch the PANE
   // this panel is in to a list — a sibling jump must instead stay a same-kind detail navigation
@@ -112,6 +113,7 @@ export function EntityDetailPanel({
   organizationId,
   onOpenOverview,
   overviewEntityId,
+  overviewEntityType,
   onNavigateSibling,
   siblingNavDisabled,
   preview,
@@ -346,7 +348,7 @@ export function EntityDetailPanel({
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
     void queryClient.invalidateQueries({ queryKey: queryKeys.entityBreadcrumbs(entityType, entityId) });
   };
-  const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId };
+  const helpers = { refetch: afterSave, organizationId, onNavigate, onOpenOverview, overviewEntityId, overviewEntityType };
 
   // A toolbar built server-side (MountOptions) has no entity data to derive chrome from at that
   // point — it's the initial mount's own entity. Once we have the fetched entity, prefer chrome

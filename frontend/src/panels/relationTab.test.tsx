@@ -71,6 +71,33 @@ describe("relationTab", () => {
     badge: (entity) => (entity.id === "with-badge" ? 3 : undefined),
   });
 
+  async function renderWithOverview(overviewEntityType: string, overviewEntityId: string | number) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    act(() => {
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <WriteModeProvider value={true}>
+            {tab.render({ id: 5 }, { refetch: () => {}, organizationId: 42, overviewEntityType, overviewEntityId })}
+          </WriteModeProvider>
+        </QueryClientProvider>,
+      );
+    });
+    await flush();
+  }
+
+  it("frames the row of the entity open in the overview when the tab lists that entity type", async () => {
+    // The overview's id may come as a number where the row's is a string.
+    await renderWithOverview("fake-child-entity", 9);
+
+    expect(container.querySelectorAll("tr.overview-open")).toHaveLength(1);
+  });
+
+  it("frames nothing when the overview shows another entity type, even under the same id", async () => {
+    await renderWithOverview("fake-parent-entity", "9");
+
+    expect(container.querySelectorAll("tr.overview-open")).toHaveLength(0);
+  });
+
   it("renders an embedded EntityListPanel scoped to the parent entity's id", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {

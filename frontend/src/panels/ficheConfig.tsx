@@ -145,7 +145,7 @@ function listTab<TDetail extends { id: string | number }>(
         organizationId={helpers.organizationId}
         onNavigate={helpers.onNavigate}
         onOpenOverview={helpers.onOpenOverview}
-        overviewEntityId={helpers.overviewEntityId}
+        overviewEntityId={helpers.overviewEntityType === target ? helpers.overviewEntityId : undefined}
       />
     ),
   };

@@ -21,10 +21,12 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
           typeId,
           parentRecordingUnitId: prefill?.parent?.id,
           childRecordingUnitId: prefill?.child?.id,
+          phaseId: prefill?.phase?.id,
         })
       }
     >
       {prefill?.parent && <CreateLinkField label={t("create.containedInF")} entityType="recordingUnit" value={prefill.parent} />}
+      {prefill?.phase && <CreateLinkField label={t("create.inPhase")} entityType="phase" value={prefill.phase} />}
       {prefill?.child && <CreateLinkField label={t("create.contains")} entityType="recordingUnit" value={prefill.child} />}
     </TypeOnlyCreateForm>
   );

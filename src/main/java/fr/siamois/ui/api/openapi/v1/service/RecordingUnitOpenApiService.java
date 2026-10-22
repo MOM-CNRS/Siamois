@@ -14,6 +14,7 @@ import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -128,6 +129,7 @@ public class RecordingUnitOpenApiService {
     private final ValidationOpenApiService validationOpenApiService;
     private final MultiValueAnswers multiValueAnswers;
     private final DocumentService documentService;
+    private final PhaseService phaseService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -967,6 +969,9 @@ public class RecordingUnitOpenApiService {
 
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
         shell.setGeom(request.getGeom());
+        if (request.getPhaseId() != null) {
+            shell.setPhases(new HashSet<>(Set.of(requirePhaseInProject(request.getPhaseId(), au.getId()))));
+        }
 
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
@@ -1023,6 +1028,17 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> saveWithGeneratedIdentifier(copy));
 
         return resolveMobileDetail(String.valueOf(created.getId()), personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    private PhaseDTO requirePhaseInProject(long phaseId, Long projectId) {
+        PhaseDTO phase = phaseService.findById(phaseId);
+        if (phase == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Phase introuvable : " + phaseId);
+        }
+        if (phase.getActionUnit() == null || !Objects.equals(phase.getActionUnit().getId(), projectId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phase hors projet : " + phaseId);
+        }
+        return phase;
     }
 
     private RecordingUnitDTO initRecordingUnitShell(ConceptDTO typeDto, ActionUnitDTO au,

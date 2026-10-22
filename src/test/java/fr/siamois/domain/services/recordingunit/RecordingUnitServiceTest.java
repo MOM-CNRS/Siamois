@@ -2316,6 +2316,40 @@ class RecordingUnitServiceTest {
         }
 
         @Test
+        void searchRecordingUnit_countsOnly_loadsEachRowsOwnPhases() {
+            InstitutionDTO institution = new InstitutionDTO();
+            institution.setId(1L);
+            FilterDTO filters = new FilterDTO(false);
+            Pageable pageable = PageRequest.of(0, 10);
+
+            RecordingUnit withPhase = new RecordingUnit();
+            withPhase.setId(7L);
+            RecordingUnit withoutPhase = new RecordingUnit();
+            withoutPhase.setId(8L);
+            RecordingUnitDTO withPhaseDto = new RecordingUnitDTO();
+            withPhaseDto.setId(7L);
+            RecordingUnitDTO withoutPhaseDto = new RecordingUnitDTO();
+            withoutPhaseDto.setId(8L);
+            Phase phase = new Phase();
+            phase.setId(11L);
+            PhaseDTO phaseDto = new PhaseDTO();
+
+            when(recordingUnitRepository.findAll(any(Specification.class), eq(pageable)))
+                    .thenReturn(new PageImpl<>(List.of(withPhase, withoutPhase)));
+            when(recordingUnitMapper.toLightDto(withPhase)).thenReturn(withPhaseDto);
+            when(recordingUnitMapper.toLightDto(withoutPhase)).thenReturn(withoutPhaseDto);
+            when(phaseRepository.findPhaseEdges(List.of(7L, 8L)))
+                    .thenReturn(List.<Object[]>of(new Object[]{7L, 11L}));
+            when(phaseRepository.findAllById(List.of(11L))).thenReturn(List.of(phase));
+            when(phaseMapper.convert(phase)).thenReturn(phaseDto);
+
+            Page<RecordingUnitDTO> result = recordingUnitService.searchRecordingUnit(institution, filters, pageable, false);
+
+            assertEquals(Set.of(phaseDto), result.getContent().get(0).getPhases());
+            assertTrue(result.getContent().get(1).getPhases().isEmpty());
+        }
+
+        @Test
         void searchRecordingUnit_countsOnly_populatesCountsNotFullCollections() {
             InstitutionDTO institution = new InstitutionDTO();
             institution.setId(1L);
@@ -2348,10 +2382,11 @@ class RecordingUnitServiceTest {
             assertEquals(6L, dto.getRelationshipCount());
             assertNull(dto.getParents());
             assertNull(dto.getChildren());
-            assertNull(dto.getPhases());
+            // Phases are not a relation field of the REST list: they are loaded (empty here) for its "phases" column.
+            assertTrue(dto.getPhases().isEmpty());
             verify(recordingUnitRepository, never()).findParentEdges(any());
             verify(recordingUnitRepository, never()).findChildEdges(any());
-            verify(phaseRepository, never()).findPhaseEdges(any());
+            verify(phaseRepository).findPhaseEdges(any());
         }
 
         @Test

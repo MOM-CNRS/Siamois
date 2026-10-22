@@ -75,7 +75,9 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
         scopeEntityType: "phase",
         path: "recording-units",
         projectId: (entity) => entity.projectId,
-        creatable: false,
+        createPrefill: (entity) => ({
+          phase: { id: entity.id, label: entity.label || entity.identifier || String(entity.id) },
+        }),
       }),
     ],
     header: (entity, helpers) => (

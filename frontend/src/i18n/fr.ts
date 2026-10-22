@@ -289,6 +289,7 @@ export const fr = {
   "create.newContainer": "Nouveau contenant",
   "create.newPlace": "Nouveau lieu",
   "create.containedInF": "Contenue dans",
+  "create.inPhase": "Phase",
   "create.containedIn": "Contenu dans",
   "create.contains": "Contient",
   "create.noTypeDeclared": "Aucun type n'est configuré pour cette table dans ce projet.",

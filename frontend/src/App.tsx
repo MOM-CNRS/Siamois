@@ -110,7 +110,8 @@ function PanelContent({
           onNavigate={onNavigate}
           organizationId={organizationId}
           onOpenOverview={onOpenOverview}
-          overviewEntityId={overview?.entityType === view.entityType ? overview.entityId : undefined}
+          overviewEntityId={overview?.entityId}
+          overviewEntityType={overview?.entityType}
           // A sibling jump on the MAIN pane's own fiche is a same-pane navigation — the same
           // `navigate` a list row click or the breadcrumb already use, just staying on "detail".
           onNavigateSibling={(id, preview) => onNavigate(view.entityType, id, preview)}

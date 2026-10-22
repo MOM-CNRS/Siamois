@@ -289,6 +289,7 @@ export const en: Record<MessageKey, string> = {
   "create.newContainer": "New container",
   "create.newPlace": "New place",
   "create.containedInF": "Contained in",
+  "create.inPhase": "Phase",
   "create.containedIn": "Contained in",
   "create.contains": "Contains",
   "create.noTypeDeclared": "No type is configured for this table in this project.",
