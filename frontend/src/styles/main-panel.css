@@ -1122,6 +1122,21 @@
   outline-offset: 2px;
 }
 
+/* The row open in the overview: framed in the colour of what the rows are (the theme's own frame is Siamois green). */
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td {
+  border-top-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+  border-bottom-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:first-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:first-child {
+  border-left-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+body .entity-list-panel .p-datatable-tbody > tr.overview-open > td:last-child,
+body .entity-list-panel .p-treetable-tbody > tr.overview-open > td:last-child {
+  border-right-color: var(--row-entity-color, var(--siamois-green-active)) !important;
+}
+
 /* A focused list row: the ring is the colour of the entity the rows are (--row-entity-color, set on the list
    by EntityListPanel), not the theme's blue — in a fiche's tab too, where the list sits inside another entity's panel. */
 body .entity-list-panel .p-datatable.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row:focus-visible,

@@ -446,7 +446,7 @@ export function EntityTable({
   const rowStateClasses = (row: RowRecord): string[] => {
     const classes: string[] = [];
     if (tree?.isContext(row)) classes.push("entity-tree-context-row");
-    if (overviewEntityId != null && row.id === overviewEntityId)
+    if (overviewEntityId != null && String(row.id) === String(overviewEntityId))
       classes.push("overview-open");
     if (search && !tree?.isContext(row)) classes.push("search-match");
     return classes;

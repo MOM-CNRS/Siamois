@@ -55,7 +55,7 @@ export function relationTab<TDetail extends { id: string | number }>(spec: {
         organizationId={helpers.organizationId}
         onNavigate={helpers.onNavigate}
         onOpenOverview={helpers.onOpenOverview}
-        overviewEntityId={helpers.overviewEntityId}
+        overviewEntityId={helpers.overviewEntityType === spec.target ? helpers.overviewEntityId : undefined}
       />
     ),
   };
