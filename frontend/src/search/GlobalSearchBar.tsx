@@ -18,6 +18,7 @@ import {
   type SearchAnchor,
 } from "./SearchOverlay";
 import { fetchGlobalSearch, type SearchItem, type SearchSection } from "./searchApi";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 const SECTION_LIMIT = 5;
@@ -103,6 +104,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
     staleTime: 15_000,
     retry: false,
   });
+  useToastOnChange(search.isError ? t("search.error") : null);
   const sections = useMemo(() => (hasQuery && !tail ? (search.data ?? []) : []), [hasQuery, tail, search.data]);
 
   // Projects matching what follows `projet:` (identifier or name).
@@ -303,7 +305,6 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
           )}
 
           {search.isFetching && hasQuery && !tail && <div className="sia-search-status">{t("search.loading")}</div>}
-          {search.isError && <div className="sia-search-status is-error">{t("search.error")}</div>}
           {!tail && !search.isFetching && !search.isError && hasQuery && debouncedHasQuery && sections.length === 0 && (
             <div className="sia-search-status">{t("search.empty", { q: parsed.text || input })}</div>
           )}

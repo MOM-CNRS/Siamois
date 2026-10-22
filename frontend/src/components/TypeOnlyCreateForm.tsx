@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Message } from "primereact/message";
 import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../entities/types";
@@ -13,6 +12,7 @@ import { CreateFormField, CreateFormShell } from "./CreateFormShell";
 import { useCreateProject } from "./useCreateProject";
 import { messageForError } from "../api/errors";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 interface ConceptPick {
   resourceId: string;
@@ -89,6 +89,7 @@ export function TypeOnlyCreateForm({
 
   const canSubmit = projectId != null && type != null && !mutation.isPending;
 
+  useToastOnChange(projectId == null && !projectPicker ? t("create.unknownProject") : null, "warn");
   return (
     <CreateFormShell
       entityType={entityType}
@@ -100,7 +101,6 @@ export function TypeOnlyCreateForm({
       onCancel={onCancel}
     >
       {projectPicker}
-      {projectId == null && !projectPicker && <Message severity="warn" text={t("create.unknownProject")} />}
 
       <CreateFormField label={t("common.type")} required>
         {projectId != null && typesLoaded && declaredTypes.length === 0 ? (

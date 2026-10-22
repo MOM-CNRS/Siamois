@@ -10,6 +10,7 @@ import { registerEntityType } from "../../entities/registry";
 import type { EntityTypeConfig } from "../../entities/types";
 import { EntityNavigationProvider } from "../../panels/entityNavigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { notifySpy } from "../../test/notifySpy";
 
 
 const { fetchAllValues } = vi.hoisted(() => ({ fetchAllValues: vi.fn() }));
@@ -410,7 +411,7 @@ describe("CellEditOverlay", () => {
     });
     await flush();
 
-    expect(overlayEl()!.textContent).toContain("Identifiant déjà utilisé");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Identifiant déjà utilisé"));
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });

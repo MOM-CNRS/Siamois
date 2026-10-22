@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Checkbox } from "primereact/checkbox";
 import { InputNumber } from "primereact/inputnumber";
 import { Skeleton } from "primereact/skeleton";
-import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import type { DuplicationConfig, DuplicationResult, DuplicationStructure } from "../entities/types";
 import { entityChipStyle } from "../fields/display";
@@ -13,6 +12,7 @@ import { check, createdCount, indexStructure, selectAll, uncheck } from "./dupli
 import { queryKeys } from "../api/queryKeys";
 import { messageForError } from "../api/errors";
 import { t, tn } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 export interface DuplicateStructureOverlayProps {
   entityType: string;
@@ -113,6 +113,7 @@ function DuplicateForm({
     </span>
   );
 
+  useToastOnChange(data?.truncated ? t("dup.truncated") : null, "warn");
   return (
     <CreateFormShell
       entityType={entityType}
@@ -176,9 +177,6 @@ function DuplicateForm({
               ))}
             </ul>
           ) : null}
-          {data?.truncated && (
-            <Message severity="warn" text={t("dup.truncated")} />
-          )}
         </section>
       </div>
     </CreateFormShell>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { DeleteEntityDialog } from "./DeleteEntityDialog";
+import { notifySpy } from "../test/notifySpy";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -64,6 +65,6 @@ describe("DeleteEntityDialog", () => {
 
   it("shows the server's refusal and stays open", () => {
     render({ error: "Impossible de supprimer : le lieu est lié à des documents. Retirez d'abord ces relations." });
-    expect(document.querySelector(".delete-entity-dialog-error")?.textContent).toContain("Retirez d'abord");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Retirez d'abord"));
   });
 });

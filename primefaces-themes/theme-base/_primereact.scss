@@ -1335,6 +1335,90 @@ body {
         }
     }
 
+    // PrimeReact's <Toast> (PrimeFaces' p:growl), in the look of PrimeReact's Lara theme: a translucent tinted
+    // card with a thick accent edge on the left. Success is the app's green; the colors are written here
+    // rather than taken from the JSF message variables, which are tuned for opaque PrimeFaces messages.
+    .p-toast {
+        .p-toast-message {
+            margin: 0 0 1rem 0;
+            border-radius: 6px;
+            border-width: 0 0 0 6px;
+            border-style: solid;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, .1);
+            backdrop-filter: blur(10px);
+
+            .p-toast-message-content {
+                display: flex;
+                align-items: flex-start;
+                gap: .75rem;
+                padding: 1rem;
+            }
+
+            .p-toast-message-text {
+                flex: 1 1 auto;
+                margin: 0;
+            }
+
+            .p-toast-summary {
+                font-weight: 700;
+            }
+
+            .p-toast-detail {
+                margin: 0;
+            }
+
+            .p-toast-summary + .p-toast-detail {
+                margin-top: .5rem;
+            }
+
+            .p-toast-message-icon {
+                flex: 0 0 auto;
+                font-size: 1.5rem;
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+
+            .p-toast-icon-close {
+                flex: 0 0 auto;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 2rem;
+                height: 2rem;
+                border: 0;
+                border-radius: 50%;
+                background: transparent;
+                color: inherit;
+                cursor: pointer;
+
+                &:hover {
+                    background: rgba(255, 255, 255, .5);
+                }
+
+                &:focus-visible {
+                    @include focused();
+                }
+            }
+
+            @each $severity, $bg, $accent, $text in (
+                (success, rgba(232, 245, 233, .85), #2e7d32, #1b5e20),
+                (info, rgba(233, 247, 254, .85), #0891cf, #055a82),
+                (warn, rgba(255, 242, 226, .85), #f19e38, #8a4b00),
+                (error, rgba(255, 231, 230, .85), #e53935, #8c1c1a)
+            ) {
+                &.p-toast-message-#{$severity} {
+                    background: $bg;
+                    border-color: $accent;
+                    color: $text;
+
+                    .p-toast-message-icon {
+                        color: $accent;
+                    }
+                }
+            }
+        }
+    }
+
     // ------------------------------------------------------------------------------------------ misc
     .p-chip {
         display: inline-flex;

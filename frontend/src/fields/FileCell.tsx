@@ -4,6 +4,7 @@ import { Dialog } from "primereact/dialog";
 import { messageForError } from "../api/errors";
 import { fetchDocumentFile, removeDocumentFile, uploadDocumentFile } from "../entities/document/api";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 /** What the server shows of a document's stored file (DocumentAnswersProjector's FILE value). */
 export interface StoredFile {
@@ -44,6 +45,7 @@ export function FileCell({ documentId, file, editable, onChanged }: FileCellProp
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useToastOnChange(error);
   const [confirming, setConfirming] = useState(false);
   const [preview, setPreview] = useState<{ url: string; kind: "image" | "pdf" } | null>(null);
   // The preview shown in the form itself, loaded as soon as the file is known to be an image or a PDF.
@@ -175,7 +177,6 @@ export function FileCell({ documentId, file, editable, onChanged }: FileCellProp
           </>
         )}
       </span>
-      {error && <small className="p-error file-cell-error">{error}</small>}
 
       {inline && kind === "image" && (
         <button type="button" className="file-cell-inline file-cell-inline-image" title={t("file.preview")} onClick={openPreview}>

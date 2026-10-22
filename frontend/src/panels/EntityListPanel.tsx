@@ -5,7 +5,6 @@ import { Skeleton } from "primereact/skeleton";
 import { Panel } from "primereact/panel";
 import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
-import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import { scopeProjectId } from "../entities/scope";
 import { searchCreatableProjects } from "../entities/creatableProjects";
@@ -33,7 +32,7 @@ import { ViewActions } from "./list/ViewActions";
 import { ViewTitle } from "./list/ViewTitle";
 import { fixedTypeOf } from "./list/fixedType";
 import { toViewState } from "./listState";
-import { useNotify } from "../notify/NotifyProvider";
+import { useNotify, useToastOnChange } from "../notify/NotifyProvider";
 import { t } from "../i18n";
 import { useFicheTabsActions } from "./ficheTabsContext";
 import { listPath } from "../navigation/paths";
@@ -107,37 +106,6 @@ export interface EntityListPanelProps {
   volatile?: boolean;
   initialFilters?: Record<string, FilterValue>;
   onFiltersChange?: (filters: Record<string, FilterValue>) => void;
-}
-
-/** A dismissable line under the toolbar: what a row action just did, or why it failed. */
-function ActionMessage({
-  severity,
-  text,
-  onClose,
-}: {
-  severity: "success" | "error";
-  text: string;
-  onClose: () => void;
-}) {
-  return (
-    <Message
-      severity={severity}
-      className="entity-list-panel-action-error"
-      content={
-        <span className="sia-filled-row">
-          <span className="sia-grow">{text}</span>
-          <Button
-            icon="bi bi-x"
-            text
-            rounded
-            size="small"
-            aria-label="Fermer"
-            onClick={onClose}
-          />
-        </span>
-      }
-    />
-  );
 }
 
 /**
@@ -374,6 +342,8 @@ function EntityListPanelBody({
 
   // A view that no longer exists (deleted since a bookmark or a link to it was made): the default list.
   const notify = useNotify();
+  useToastOnChange(error ? (error as Error).message : null);
+  useToastOnChange(showTree ? treeRows.notice : null, "info");
   useEffect(() => {
     if (viewId == null || !viewMissing) return;
     notify.error(t("views.missing"));
@@ -503,25 +473,6 @@ function EntityListPanelBody({
               )}
             </>
           }
-        />
-      )}
-      {error && (
-        <div className="entity-list-panel-error">
-          {(error as Error).message}
-        </div>
-      )}
-      {showTree && treeRows.notice && (
-        <Message
-          severity="info"
-          className="entity-list-panel-action-error"
-          text={treeRows.notice}
-        />
-      )}
-      {rowActions.notice && (
-        <ActionMessage
-          severity="success"
-          text={rowActions.notice}
-          onClose={rowActions.clearNotice}
         />
       )}
       {showCards ? (

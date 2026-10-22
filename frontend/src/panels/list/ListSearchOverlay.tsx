@@ -18,6 +18,7 @@ import {
   type SearchAnchor,
 } from "../../search/SearchOverlay";
 import type { RowRecord } from "./useEntityListData";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 export const PREVIEW_DEBOUNCE_MS = 250;
 const PREVIEW_LIMIT = 8;
@@ -186,6 +187,7 @@ function ListSearchPanel({
     staleTime: 15_000,
     retry: false,
   });
+  useToastOnChange(preview.isError ? t("search.error") : null);
   const previewRows = preview.data?.data;
   const rowsData = useMemo(() => (hasQuery ? (previewRows ?? []) : []), [hasQuery, previewRows]);
   const total = hasQuery ? (preview.data?.totalCount ?? 0) : 0;
@@ -324,7 +326,6 @@ function ListSearchPanel({
       ))}
 
       {suggestions.length === 0 && preview.isFetching && hasQuery && <div className="sia-search-status">{t("search.loading")}</div>}
-      {preview.isError && <div className="sia-search-status is-error">{t("search.error")}</div>}
       {suggestions.length === 0 && !preview.isFetching && !preview.isError && hasQuery && debounced.search === wanted.search && rowsData.length === 0 && (
         <div className="sia-search-status">{t("search.empty", { q: parsed.text || input })}</div>
       )}

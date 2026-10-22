@@ -36,7 +36,7 @@ import { addTabItems } from "./addTabMenu";
 import { Menu } from "primereact/menu";
 import { useFicheTabsSave } from "./useFicheTabsSave";
 import { messageForError } from "../api/errors";
-import { useNotify } from "../notify/NotifyProvider";
+import { useNotify, useToastOnChange } from "../notify/NotifyProvider";
 import { PersistedTabState } from "./persistedPaneState";
 
 export type { EntityPreview };
@@ -154,6 +154,7 @@ export function EntityDetailPanel({
 
   // The tabs editor, and the list the user is looking at that they keep as a tab (« Enregistrer comme onglet… »).
   const notify = useNotify();
+  useToastOnChange(error ? (error as Error).message : null);
   const [tabsEditorOpen, setTabsEditorOpen] = useState(false);
   // `{}` is a new list tab started from scratch; with a target and filters, the list the user is looking at.
   const [tabDraft, setTabDraft] = useState<{ target?: string; filters?: Record<string, FilterValue> } | null>(null);
@@ -332,7 +333,7 @@ export function EntityDetailPanel({
     );
   }
   if (error) {
-    return <div className="entity-detail-panel-error">{(error as Error).message}</div>;
+    return null;
   }
   if (!data) {
     return null;

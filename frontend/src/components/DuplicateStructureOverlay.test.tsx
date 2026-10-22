@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
 import type { DuplicationResult, DuplicationStructure, EntityTypeConfig } from "../entities/types";
 import { DuplicateStructureOverlay } from "./DuplicateStructureOverlay";
+import { notifySpy } from "../test/notifySpy";
 
 
 const loadMock = vi.fn<(id: string | number) => Promise<DuplicationStructure>>();
@@ -155,7 +156,7 @@ describe("DuplicateStructureOverlay", () => {
     await act(async () => submit().click());
     await flush();
 
-    expect(document.body.textContent).toContain("Identifiant généré déjà attribué : UE-9");
+    expect(notifySpy.error).toHaveBeenCalledWith("Identifiant généré déjà attribué : UE-9");
     expect(onDone).not.toHaveBeenCalled();
   });
 
@@ -163,6 +164,6 @@ describe("DuplicateStructureOverlay", () => {
     loadMock.mockResolvedValue({ ...structure, truncated: true });
     await open();
 
-    expect(document.body.textContent).toContain("trop grande");
+    expect(notifySpy.warn).toHaveBeenCalledWith(expect.stringContaining("trop grande"));
   });
 });

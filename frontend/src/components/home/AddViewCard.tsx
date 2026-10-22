@@ -7,6 +7,7 @@ import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
 import { getAllEntityTypes } from "../../entities/registry";
 import { t } from "../../i18n";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 /**
  * The last slot of the featured views, in edit mode: a transparent card holding the search of the organization's
@@ -26,6 +27,7 @@ export function AddViewCard({ organizationId, onCreate }: { organizationId: numb
   });
   const tableName = (key: string) => getAllEntityTypes().find((config) => config.key === key)?.labels.plural ?? key;
 
+  useToastOnChange(add.isError ? messageForError(add.error, t("home.dataAccess.addFailed")) : null);
   return (
     <div className="home-data-access-add">
       <Dropdown
@@ -57,7 +59,6 @@ export function AddViewCard({ organizationId, onCreate }: { organizationId: numb
           </div>
         }
       />
-      {add.isError && <small className="home-data-access-error">{messageForError(add.error, t("home.dataAccess.addFailed"))}</small>}
     </div>
   );
 }

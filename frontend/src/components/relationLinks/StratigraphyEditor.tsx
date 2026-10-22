@@ -12,6 +12,7 @@ import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";
 import { canCreateUnit, NewUnitForm, NewUnitItem } from "./NewUnit";
 import { QualifierFields, type Qualifier } from "./QualifierFields";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 interface StratigraphyRef {
   resourceId: string;
@@ -56,6 +57,7 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useToastOnChange(error);
 
   const values = useQuery({
     queryKey: queryKeys.stratigraphyValues(unitId, fieldId),
@@ -168,7 +170,6 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
             </div>
           </div>
         )}
-        {error && <div className="cell-edit-overlay-error" role="alert">{error}</div>}
       </div>
     </FitToViewport>
   );

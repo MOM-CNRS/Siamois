@@ -7,6 +7,7 @@ import type { FieldRendererProps } from "../../fields/registry";
 import { ProjectCreateForm } from "./CreateForm";
 import { getProjectTypes } from "./projectTypes";
 import { createProject, getNextProjectIdentifier, listProjectTemplates } from "./api";
+import { notifySpy } from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
@@ -260,7 +261,7 @@ describe("ProjectCreateForm", () => {
     });
     await flush();
 
-    expect(container.textContent).toContain("Identifiant déjà utilisé");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Identifiant déjà utilisé"));
     expect(onCreated).not.toHaveBeenCalled();
   });
 

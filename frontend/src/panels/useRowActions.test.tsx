@@ -16,6 +16,7 @@ vi.mock("../api/bookmarks", () => ({
   getBookmarkStatus: vi.fn().mockResolvedValue(false),
 }));
 import { createBookmark, deleteBookmark } from "../api/bookmarks";
+import { notifySpy } from "../test/notifySpy";
 
 
 // The row actions column as the generic mechanism it is — a throwaway entity with a duplicate
@@ -216,7 +217,7 @@ describe("list row actions", () => {
 
       expect(duplication.run).toHaveBeenCalledWith("1", { copies: 1, descendantIds: [] });
       expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "42");
-      expect(container.textContent).toContain("Chose Row B créée");
+      expect(notifySpy.success).toHaveBeenCalledWith(expect.stringContaining("Chose Row B créée"));
     } finally {
       registerEntityType(config as EntityTypeConfig<unknown, unknown>);
     }
@@ -385,7 +386,7 @@ describe("list row actions", () => {
     await click([...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
       .find((b) => b.textContent?.includes("Supprimer définitivement"))!);
 
-    expect(document.querySelector(".delete-entity-dialog-error")?.textContent).toContain("Retirez d'abord");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Retirez d'abord"));
     expect(announced).not.toHaveBeenCalled();
     stop();
   });
@@ -398,6 +399,6 @@ describe("list row actions", () => {
     await click([...document.querySelectorAll<HTMLButtonElement>(".delete-entity-dialog button")]
       .find((b) => b.textContent?.includes("Supprimer définitivement"))!);
 
-    expect(document.querySelector(".delete-entity-dialog-error")).not.toBeNull();
+    expect(notifySpy.error).toHaveBeenCalled();
   });
 });

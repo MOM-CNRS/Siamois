@@ -15,6 +15,7 @@ import { isHierarchy, isStratigraphy, useRelationLinkEditor } from "./useRelatio
 import { useRelationGraph } from "./useRelationGraph";
 import { useRelationList } from "./useRelationList";
 import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
+import { useToastOnChange } from "../../../notify/NotifyProvider";
 
 // What a node can do. Absent when the caller cannot write (a read-only graph still opens units).
 interface NodeActions {
@@ -188,6 +189,8 @@ export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOve
     onChanged,
   });
   const { add, edit, remove } = editor;
+  useToastOnChange(list.error != null ? t("recordingUnit.relations.error") : null);
+  useToastOnChange(editor.failure);
 
   const open = useMemo(
     () => (unitId: string, label: string) => (onOpenOverview ?? onNavigate)?.("recordingUnit", unitId, { label, tab: "graph" }),
@@ -216,7 +219,6 @@ export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOve
       <div className="sia-relation-graph" style={entityChipStyle("recordingUnit")}>
         {toolbar}
         <div className="entity-list-panel embedded">
-          {list.error != null && <div className="entity-list-panel-error">{t("recordingUnit.relations.error")}</div>}
           <RelationsList list={list} onOpen={open} editor={canEdit ? editor : undefined} />
         </div>
         {editor.overlays}
@@ -231,7 +233,6 @@ export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOve
     <div className="sia-relation-graph" style={entityChipStyle("recordingUnit")}>
       {toolbar}
       <div className="sia-relation-graph-canvas">
-      {editor.failure && <small role="alert" className="sia-relation-graph-failure">{editor.failure}</small>}
       <ReactFlow
         // Remounted with the display mode, so the view fits the new layout.
         key={showLinks ? "links" : "grid"}

@@ -82,8 +82,6 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   render: (row: Row, compact?: boolean) => ReactNode;
   dialog: ReactNode;
   // What the last action did, when it has something to say (a duplication).
-  notice: string | null;
-  clearNotice: () => void;
   // The configurable actions (for the settings overlay), and their current layout.
   items: RowActionItem[];
   actionBar: ActionBarPrefs;
@@ -92,7 +90,6 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
   const queryClient = useQueryClient();
   const [pendingCreate, setPendingCreate] = useState<PendingCreate | null>(null);
   const notify = useNotify();
-  const [notice, setNotice] = useState<string | null>(null);
   // The row whose structure the duplication overlay is open for, next to the button that opened it.
   const [pendingDuplicate, setPendingDuplicate] = useState<{ id: string | number; anchor: HTMLElement | null } | null>(null);
   const menuRef = useRef<Menu>(null);
@@ -340,7 +337,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
         refreshAfterChange();
         const unit = config?.duplication?.unit ?? "";
         const copies = result.copies.length;
-        setNotice(
+        notify.success(
           copies === 1
             ? t("dup.created", { unit, label: result.copies[0].label })
             : t("dup.duplicatedTimes", { unit, label: source.label, count: copies }),
@@ -362,5 +359,5 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
     </>
   );
 
-  return { render, dialog: shared, notice, clearNotice: () => setNotice(null), items, actionBar, setActionBar };
+  return { render, dialog: shared, items, actionBar, setActionBar };
 }

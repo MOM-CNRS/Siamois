@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Message } from "primereact/message";
 import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import { FormLayoutView } from "../fields/FormLayoutView";
@@ -9,6 +8,7 @@ import type { AnswerInputBody, FieldResource } from "../fields/types";
 import { useCanEdit } from "../panels/writeMode";
 import { FormSkeleton } from "./DetailSkeleton";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 /** What the fiche reads off an entity: its project and type, or the form served with it. */
 export interface SchemaFicheEntity {
@@ -70,11 +70,11 @@ export function SchemaFicheTab<TEntity extends SchemaFicheEntity>({
   const missingProject = perType && entity.projectId == null;
   const formError = perType ? formQuery.error : !entity.formBundle;
 
+  useToastOnChange(missingProject ? t("fiche.unknownProject") : null, "warn");
+  useToastOnChange(formError ? t("fiche.formConfigError") : null);
   return (
     <div className="sia-fiche-tab">
-      {missingProject && <Message severity="warn" text={t("fiche.unknownProject")} />}
       {perType && formQuery.isLoading && <FormSkeleton />}
-      {formError && <Message severity="error" text={t("fiche.formConfigError")} />}
       {form && (
         <FormLayoutView
           entity={entity}

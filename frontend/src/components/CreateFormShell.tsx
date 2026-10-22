@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Button } from "primereact/button";
-import { Message } from "primereact/message";
 import { getEntityType } from "../entities/registry";
 import { entityChipStyle } from "../fields/display";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 /**
  * The frame every entity's create form shares — JSF's newUnitDialog.xhtml, as an overlay: a header
@@ -41,6 +41,7 @@ export function CreateFormShell({
   children: ReactNode;
 }) {
   const icon = iconOverride ?? getEntityType(entityType)?.icon;
+  useToastOnChange(error);
   return (
     <form
       className="sia-create-form"
@@ -57,7 +58,6 @@ export function CreateFormShell({
 
       <div className="sia-create-form-body">
         {children}
-        {error && <Message severity="error" text={error} />}
       </div>
 
       <div className="sia-create-form-footer">
