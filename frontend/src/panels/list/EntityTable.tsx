@@ -7,6 +7,7 @@ import {
   type ReactNode,
   type SyntheticEvent,
 } from "react";
+import { onGridKeyDown } from "../../components/table/gridNavigation";
 import { Column } from "primereact/column";
 import {
   DataTable,
@@ -569,6 +570,7 @@ export function EntityTable({
         className="sia-contents"
         onDragOverCapture={blockDropOnFrozenHeader}
         onDropCapture={blockDropOnFrozenHeader}
+        onKeyDown={onGridKeyDown}
       >
         {tree ? (
           // Not `scrollable`: that mode splits the header and the body into two tables, which the

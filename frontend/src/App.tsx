@@ -15,6 +15,8 @@ import { BridgeProvider } from "./panels/bridge";
 import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName } from "./panels/panelTransition";
 import { PaneSplit } from "./panels/PaneSplit";
+import { useRestoreFocus } from "./panels/useRestoreFocus";
+import { OverviewOpenProvider } from "./panels/overviewOpen";
 import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
@@ -163,6 +165,7 @@ export function App({ options }: { options: MountOptions }) {
   const { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
+  useRestoreFocus(overview != null);
 
   // What the top search bar (its own React root) can drive.
   const external = useMemo(() => ({ navigate, openOverview, openList, restoreUrl }), [navigate, openOverview, openList, restoreUrl]);
@@ -258,6 +261,7 @@ export function App({ options }: { options: MountOptions }) {
   }, [paneStateStore, liveScopes]);
 
   const mainPane = (
+    <OverviewOpenProvider value={overview != null}>
     <PaneErrorBoundary label={t("pane.main")} resetKey={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}>
     <PaneStateScope name={mainPaneName}>
     <PanelContent
@@ -272,6 +276,7 @@ export function App({ options }: { options: MountOptions }) {
     />
     </PaneStateScope>
     </PaneErrorBoundary>
+    </OverviewOpenProvider>
   );
 
   const overviewPane = overview && (

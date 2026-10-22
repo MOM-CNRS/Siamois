@@ -23,6 +23,7 @@ import { t } from "../../i18n";
 import { useIsMobile } from "../../viewport";
 import { BottomSheet } from "../BottomSheet";
 import { useToastOnChange } from "../../notify/NotifyProvider";
+import { useRestoreFocus } from "../../panels/useRestoreFocus";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked
@@ -107,6 +108,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useToastOnChange(error);
+  useRestoreFocus(target != null);
   // A multi-valued answer that was only a preview (MultiValueAnswer.complete false) is fetched
   // whole before it can be edited: the picker must show every value to let one be removed.
   const [loadingValues, setLoadingValues] = useState(false);
