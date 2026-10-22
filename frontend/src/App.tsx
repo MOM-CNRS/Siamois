@@ -15,6 +15,7 @@ import { BridgeProvider } from "./panels/bridge";
 import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName } from "./panels/panelTransition";
 import { PaneSplit } from "./panels/PaneSplit";
+import { OverviewOpenProvider } from "./panels/overviewOpen";
 import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
@@ -258,6 +259,7 @@ export function App({ options }: { options: MountOptions }) {
   }, [paneStateStore, liveScopes]);
 
   const mainPane = (
+    <OverviewOpenProvider value={overview != null}>
     <PaneErrorBoundary label={t("pane.main")} resetKey={`${view.panelKind}:${view.entityType}:${view.entityId ?? ""}`}>
     <PaneStateScope name={mainPaneName}>
     <PanelContent
@@ -272,6 +274,7 @@ export function App({ options }: { options: MountOptions }) {
     />
     </PaneStateScope>
     </PaneErrorBoundary>
+    </OverviewOpenProvider>
   );
 
   const overviewPane = overview && (

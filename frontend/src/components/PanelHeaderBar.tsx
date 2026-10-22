@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PanelToolbar } from "./PanelToolbar";
+import { useOverviewOpen } from "../panels/overviewOpen";
 import type { PanelToolbarSlot } from "../mountOptions";
 
 // The real JSF titlebar (focus.xhtml's `sideview-titlebar`, and panelContent.xhtml's overview
@@ -26,6 +27,9 @@ export interface PanelHeaderBarProps {
 
 export function PanelHeaderBar({ title, toolbar, navigation, toolbarExtra, layout = "main" }: PanelHeaderBarProps) {
   const overview = layout === "overview";
+  // The main pane next to an open overview has no more room than the overview itself.
+  const besideOverview = useOverviewOpen();
+  const compact = overview || besideOverview;
   // No toolbar (a pane rendered without one): prev/next still show, on their own.
   const toolbarNode = toolbar ? (
     <PanelToolbar
@@ -34,7 +38,7 @@ export function PanelHeaderBar({ title, toolbar, navigation, toolbarExtra, layou
       actions={toolbar.actions}
       navigation={navigation}
       beforeBookmark={toolbarExtra}
-      compact={overview}
+      compact={compact}
     />
   ) : (
     <>

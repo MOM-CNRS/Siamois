@@ -1959,26 +1959,39 @@ body button.p-button.status-button.status-button-compact {
 
 .entity-detail-header {
   flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.25rem 0.75rem;
   min-width: 0;
   align-items: center;
 }
 
-/* Narrow panes: the title bar wraps instead of squeezing — the toolbar keeps its line and the header drops
-   below it, where its own chips wrap (name first, then identifier, type, extras). */
+/* The title bar is always ONE line. The title (status + chips) gives way to the toolbar: whatever does not fit is
+   cut at the toolbar's edge, as if the chips slid under the buttons (a short fade marks the cut). Neither wraps. */
 .sideview-titlebar-overview {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   /* A wider gap between the toolbar buttons and the status tells the two groups apart. */
   column-gap: 1.25rem;
 }
 .sideview-titlebar-overview > .sia-hstack {
-  /* Basis = the whole header on one line: when that doesn't fit next to the toolbar, the status and every
-     chip drop together under it, and only then do the chips wrap among themselves. */
-  flex: 1 1 auto;
-  align-items: flex-start;
+  flex: 1 1 0;
+  align-items: center;
   /* The status button already carries its own padding: no extra gap before the first chip. */
   gap: 0;
+}
+
+/* The title never forces the bar wider: it is the part that is cut. */
+.sideview-titlebar > .sia-hstack {
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}
+.sideview-titlebar > .sia-hstack .entity-detail-header > * {
+  flex: 0 0 auto;
+}
+.sideview-titlebar > .panel-toolbar,
+.sideview-titlebar > .p-toolbar {
+  flex: 0 0 auto;
 }
 
 /* A chip is never two lines: a long label is cut with an ellipsis (full text in the title attribute). */
@@ -3422,18 +3435,16 @@ div#search-bar .sia-search {
   background: var(--siamois-green-light-50, #f3f7f3);
 }
 
-/* Main panel header: the title (status + chips) on the left and the toolbar on the right, on one line while
-   the whole title fits. As soon as the title would need a second line, the toolbar no longer fits beside it and
-   wraps — wrap-reverse stacks the wrapped line ABOVE, so the action buttons end up over the title, as in the
-   overview. No width threshold: it follows what the title really needs. */
+/* Main panel header: the title (status + chips) on the left and the toolbar on the right, always on one line;
+   a title too long for the room is cut under the toolbar (see the title bar rules above). */
 .sideview-titlebar-main {
-  flex-wrap: wrap-reverse;
+  flex-wrap: nowrap;
   justify-content: flex-start;
   column-gap: 1.25rem;
-  row-gap: 0.25rem;
 }
 .sideview-titlebar-main > .sia-hstack {
-  align-items: flex-start;
+  flex: 1 1 0;
+  align-items: center;
 }
 
 /* The status button never shrinks: in the (now nowrap) title it was squeezed into an oval when chips needed room. */
