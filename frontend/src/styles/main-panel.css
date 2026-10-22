@@ -176,6 +176,16 @@
   overflow: auto;
 }
 
+.filter-picker-search {
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+
+.filter-picker-empty {
+  padding: 0.4rem 0.6rem;
+  color: var(--text-color-secondary, #6c757d);
+}
+
 .filter-picker-item {
   display: block;
   width: 100%;

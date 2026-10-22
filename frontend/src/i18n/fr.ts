@@ -52,6 +52,8 @@ export const fr = {
   "filter.more": "{n} autres filtres",
   "filter.add": "Ajouter un filtre",
   "filter.one": "Filtre",
+  "filter.search": "Rechercher une colonne…",
+  "filter.noMatch": "Aucune colonne correspondante",
   "cell.loadFailed": "Impossible de charger toutes les valeurs.",
   "cell.required": "Ce champ est obligatoire",
   "cell.saveFailed": "La modification a échoué.",

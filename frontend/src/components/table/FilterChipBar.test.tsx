@@ -55,4 +55,19 @@ describe("FilterChipBar", () => {
     act(() => more.click());
     expect(document.querySelectorAll(".entity-list-panel-filter-more [data-chip-key]")).toHaveLength(2);
   });
+
+  it("narrows the « add a filter » list with the typed text, ignoring case and accents", () => {
+    const specs: FilterSpec[] = ["État", "Type", "Période"].map((label) => ({ key: label, label, kind: "contains" }));
+    act(() => root.render(<FilterChipBar specs={specs} filters={{}} optionsByKey={{}} onChange={vi.fn()} />));
+    act(() => (container.querySelector(".filter-chip-add") as HTMLElement).click());
+    const items = () => [...document.querySelectorAll(".filter-picker-item")].map((el) => el.textContent);
+    expect(items()).toEqual(["État", "Type", "Période"]);
+
+    const input = document.querySelector(".filter-picker-search") as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "etat");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(items()).toEqual(["État"]);
+  });
 });
