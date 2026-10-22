@@ -9,8 +9,6 @@ export interface SiblingNavProps {
   siblings: EntitySiblings | undefined;
   // The whole sibling, not just its id: its label lets the next fiche draw its header at once.
   onNavigate: (sibling: EntitySibling) => void;
-  // Hover/focus on an arrow: warm that fiche in the cache before the click.
-  onPrefetch?: (sibling: EntitySibling) => void;
   // True while the overview pane's own setOverview bridge call is in flight (App.tsx's
   // overviewBusy) — same reason the overview toolbar's own actions are withheld then.
   disabled?: boolean;
@@ -24,7 +22,7 @@ export interface SiblingNavProps {
  * every entity's fiche without per-entity work. Same PrimeReact buttons as the rest of the
  * panel toolbar, whose navigation group they sit in.
  */
-export function SiblingNav({ siblings, onNavigate, onPrefetch, disabled }: SiblingNavProps) {
+export function SiblingNav({ siblings, onNavigate, disabled }: SiblingNavProps) {
   const previous = siblings?.previous;
   const next = siblings?.next;
 
@@ -40,8 +38,6 @@ export function SiblingNav({ siblings, onNavigate, onPrefetch, disabled }: Sibli
         tooltipOptions={{ position: "bottom" }}
         disabled={previous == null || disabled}
         onClick={() => previous && onNavigate(previous)}
-        onMouseEnter={() => previous && onPrefetch?.(previous)}
-        onFocus={() => previous && onPrefetch?.(previous)}
       />
       <Button
         icon="bi bi-caret-down"
@@ -53,8 +49,6 @@ export function SiblingNav({ siblings, onNavigate, onPrefetch, disabled }: Sibli
         tooltipOptions={{ position: "bottom" }}
         disabled={next == null || disabled}
         onClick={() => next && onNavigate(next)}
-        onMouseEnter={() => next && onPrefetch?.(next)}
-        onFocus={() => next && onPrefetch?.(next)}
       />
     </>
   );

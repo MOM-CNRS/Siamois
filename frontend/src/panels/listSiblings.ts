@@ -56,7 +56,7 @@ export async function fetchListSiblings(
 /**
  * The arrows' query for `id`: the neighbours in the list it was opened from when there is one that
  * still holds, the entity's default order (`config.api.siblings`) otherwise. One definition for the
- * query and for the hover prefetch, so both land on the same cache entry.
+ * query and for anything else that needs the same cache entry.
  */
 export function siblingsQuery(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as the registry's configs (entities/registry.ts)

@@ -1,4 +1,4 @@
-import { isValidElement, useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { isValidElement, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
@@ -225,24 +225,6 @@ export function EntityDetailPanel({
   const canEdit = useCanEdit(data as { _permissions?: { canEdit?: boolean } } | undefined);
   const writeMode = useWriteMode();
   const queryClient = useQueryClient();
-  // Hovering or focusing a prev/next arrow warms that fiche (and its own neighbours) in the query
-  // cache, so the jump usually lands on data that is already there — no skeleton at all.
-  const prefetchSibling = useCallback(
-    (sibling: EntitySibling) => {
-      if (!config) return;
-      void queryClient.prefetchQuery({
-        queryKey: queryKeys.entityDetail(entityType, sibling.id),
-        queryFn: () => config.api.get(sibling.id),
-      });
-      if (config.api.siblings) {
-        // The context the sibling will have once opened (see the arrow's click), so this lands on
-        // the entry its own render asks for.
-        const context = neighbourContext(listContext, sibling);
-        void queryClient.prefetchQuery(siblingsQuery(config, entityType, sibling.id, organizationId, context));
-      }
-    },
-    [config, entityType, organizationId, queryClient, listContext],
-  );
   // Where the creation overlay opens (null = closed): the clicked "Créer" button, or the panel's
   // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
@@ -292,7 +274,6 @@ export function EntityDetailPanel({
       <SiblingNav
         siblings={siblings}
         onNavigate={goToSibling}
-        onPrefetch={prefetchSibling}
         disabled={siblingNavDisabled}
       />
     ) : undefined;
