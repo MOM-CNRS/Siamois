@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,9 @@ public class EntityBreadcrumbsService {
         CONTAINER("container", "Container", "e.identifier"),
         PHASE("phase", "Phase", "coalesce(e.identifier, e.title)"),
         DOCUMENT("document", "Document", "coalesce(e.identifier, e.title)"),
-        STUDY("study", "Study", "e.identifier");
+        STUDY("study", "Study", "e.identifier"),
+        /** Belongs to an institution, not a project: its paths start at its topmost place. */
+        PLACE("place", "SpatialUnit", "e.name");
 
         private final String type;
         private final String entity;
@@ -68,6 +70,7 @@ public class EntityBreadcrumbsService {
                 case "phases" -> PHASE;
                 case "documents" -> DOCUMENT;
                 case "studies" -> STUDY;
+                case "places" -> PLACE;
                 default -> null;
             };
         }
@@ -87,6 +90,9 @@ public class EntityBreadcrumbsService {
      */
     @Transactional(readOnly = true)
     public BreadcrumbsResource findBreadcrumbs(Kind kind, long id, Set<Long> accessibleInstitutionIds, String via) {
+        if (kind == Kind.PLACE) {
+            return placeBreadcrumbs(id, accessibleInstitutionIds, via);
+        }
         List<Object[]> own = entityManager.createQuery(
                         "select e.actionUnit.id, e.actionUnit.createdByInstitution.id from " + kind.entity // NOSONAR S2077: constants of the Kind enum
                                 + " e where e.id = :id", Object[].class)
@@ -103,6 +109,19 @@ public class EntityBreadcrumbsService {
 
         BreadcrumbsResource built = buildFor(kind, id, projectCrumb(projectId));
         return viaFirst(built, via);
+    }
+
+    private BreadcrumbsResource placeBreadcrumbs(long id, Set<Long> accessibleInstitutionIds, String via) {
+        List<Long> owner = entityManager.createQuery(
+                        "select e.createdByInstitution.id from SpatialUnit e where e.id = :id", Long.class)
+                .setParameter("id", id)
+                .getResultList();
+        if (owner.isEmpty() || owner.get(0) == null || accessibleInstitutionIds == null
+                || !accessibleInstitutionIds.contains(owner.get(0))) {
+            throw notFound();
+        }
+        Chains own = below(Kind.PLACE, id);
+        return viaFirst(new BreadcrumbsResource(own.paths(), own.truncated()), via);
     }
 
     /** Stable: the paths holding the {@code via} crumb move up front, the others keep their order. */
@@ -169,6 +188,8 @@ public class EntityBreadcrumbsService {
             }
             case CONTAINER:
                 return chains(id, this::containerParent, crumbOf);
+            case PLACE:
+                return chains(id, this::placeParents, crumbOf);
             default:
                 return new Chains(List.of(List.of(crumb(kind, id))), false);
         }
@@ -190,8 +211,8 @@ public class EntityBreadcrumbsService {
                 groups.add(below(linked, linkedId));
             }
         }
-        for (Long placeId : documentLinks(DOCUMENT_LINKS.get(null), id)) {
-            groups.add(chains(placeId, this::placeParents, this::placeCrumb));
+        for (Long placeId : documentLinks(DOCUMENT_LINKS.get(Kind.PLACE), id)) {
+            groups.add(below(Kind.PLACE, placeId));
         }
         for (Chains group : groups) {
             truncated |= group.truncated();
@@ -210,8 +231,8 @@ public class EntityBreadcrumbsService {
         return truncated;
     }
 
-    /** Document → linked fiche join, by linked kind ({@code null}: places, which belong to no project). */
-    private static final Map<Kind, String> DOCUMENT_LINKS = new HashMap<>();
+    /** Document → linked fiche join, by linked kind. */
+    private static final Map<Kind, String> DOCUMENT_LINKS = new EnumMap<>(Kind.class);
 
     static {
         DOCUMENT_LINKS.put(Kind.RECORDING_UNIT, "select l.id from Document d join d.recordingUnits l where d.id = :id order by l.id");
@@ -219,7 +240,7 @@ public class EntityBreadcrumbsService {
         DOCUMENT_LINKS.put(Kind.CONTAINER, "select l.id from Document d join d.containers l where d.id = :id order by l.id");
         DOCUMENT_LINKS.put(Kind.PHASE, "select l.id from Document d join d.phases l where d.id = :id order by l.id");
         DOCUMENT_LINKS.put(Kind.STUDY, "select l.id from Document d join d.studies l where d.id = :id order by l.id");
-        DOCUMENT_LINKS.put(null, "select l.id from Document d join d.places l where d.id = :id order by l.id");
+        DOCUMENT_LINKS.put(Kind.PLACE, "select l.id from Document d join d.places l where d.id = :id order by l.id");
     }
 
     private List<Long> documentLinks(String jpql, long id) {
@@ -230,14 +251,6 @@ public class EntityBreadcrumbsService {
         return entityManager.createQuery(
                         "select p.id from SpatialUnit s join s.parents p where s.id = :id order by p.id", Long.class)
                 .setParameter("id", id).getResultList();
-    }
-
-    private BreadcrumbResource placeCrumb(Long id) {
-        Object[] row = entityManager.createQuery(
-                        "select s.id, s.name from SpatialUnit s where s.id = :id", Object[].class)
-                .setParameter("id", id)
-                .getSingleResult();
-        return toCrumb("place", row);
     }
 
     /** Result of a same-kind ancestor walk: root-first paths ending with the node itself. */

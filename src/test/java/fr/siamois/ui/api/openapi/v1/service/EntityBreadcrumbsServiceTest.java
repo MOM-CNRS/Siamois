@@ -127,7 +127,10 @@ class EntityBreadcrumbsServiceTest {
         if (jpql.contains("from SpatialUnit s join s.parents")) {
             return placeParents.getOrDefault(id, List.of());
         }
-        if (jpql.startsWith("select s.id, s.name from SpatialUnit")) {
+        if (jpql.startsWith("select e.createdByInstitution.id from SpatialUnit")) {
+            return entityExists ? List.of(institutionId) : List.of();
+        }
+        if (jpql.contains("from SpatialUnit e")) {
             return List.<Object[]>of(new Object[]{id, "L" + id});
         }
         if (jpql.startsWith("select e.recordingUnit.id from Specimen")) {
@@ -160,7 +163,8 @@ class EntityBreadcrumbsServiceTest {
         assertThat(EntityBreadcrumbsService.Kind.ofCollection("phases")).isEqualTo(EntityBreadcrumbsService.Kind.PHASE);
         assertThat(EntityBreadcrumbsService.Kind.ofCollection("documents")).isEqualTo(EntityBreadcrumbsService.Kind.DOCUMENT);
         assertThat(EntityBreadcrumbsService.Kind.ofCollection("studies")).isEqualTo(EntityBreadcrumbsService.Kind.STUDY);
-        assertThat(EntityBreadcrumbsService.Kind.ofCollection("places")).isNull();
+        assertThat(EntityBreadcrumbsService.Kind.ofCollection("places")).isEqualTo(EntityBreadcrumbsService.Kind.PLACE);
+        assertThat(EntityBreadcrumbsService.Kind.ofCollection("nope")).isNull();
     }
 
     @Test
@@ -324,5 +328,23 @@ class EntityBreadcrumbsServiceTest {
             assertThat(labels(service.findBreadcrumbs(EntityBreadcrumbsService.Kind.DOCUMENT, 6, ACCESSIBLE, via)))
                     .containsExactlyElementsOf(expected);
         }
+    }
+
+    @Test
+    void findBreadcrumbs_place_followsItsHierarchyWithoutAProject() {
+        placeParents.put(30L, List.of(20L, 21L));
+        placeParents.put(20L, List.of(10L));
+
+        assertThat(labels(service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, ACCESSIBLE)))
+                .containsExactly(List.of("L10", "L20", "L30"), List.of("L21", "L30"));
+    }
+
+    @Test
+    void findBreadcrumbs_place_outOfScopeOrUnknown_isNotFound() {
+        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, Set.of(99L)))
+                .isInstanceOf(ResponseStatusException.class);
+        entityExists = false;
+        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, ACCESSIBLE))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }

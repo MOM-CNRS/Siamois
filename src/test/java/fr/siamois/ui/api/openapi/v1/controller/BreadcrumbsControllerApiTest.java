@@ -56,7 +56,7 @@ class BreadcrumbsControllerApiTest {
     void getBreadcrumbs_unknownCollectionIsNotFound() {
         when(projectApiService.requireCaller()).thenReturn(caller);
 
-        assertThatThrownBy(() -> controller.getBreadcrumbs("places", 5L, null))
+        assertThatThrownBy(() -> controller.getBreadcrumbs("nope", 5L, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         verify(entityBreadcrumbsService, never()).findBreadcrumbs(any(), anyLong(), any(), any());

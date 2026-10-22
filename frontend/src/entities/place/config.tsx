@@ -4,6 +4,7 @@ import { relationTab } from "../../panels/relationTab";
 import { documentsTab } from "../document/documentsTab";
 import { bookmarkChrome } from "../chrome";
 import { fetchSiblings } from "../siblingsApi";
+import { fetchBreadcrumbs } from "../breadcrumbsApi";
 import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
@@ -38,6 +39,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   api: {
     delete: (id) => deleteEntity("places", id),
     siblings: (id) => fetchSiblings("places", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("places", id, via),
     get: getPlace,
     list: listPlaces,
     patchAnswers: (id, answers) => patchPlaceAnswers(id, answers),

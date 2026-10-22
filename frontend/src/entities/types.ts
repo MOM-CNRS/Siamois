@@ -387,8 +387,8 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       id: string | number,
       ctx: { organizationId?: number },
     ): Promise<EntitySiblings>;
-    // The fil d'Ariane (project → parents → fiche). Optional: an entity type without it (project,
-    // place) keeps the home + « Tous les … » crumbs.
+    // The fil d'Ariane (project → parents → fiche; a place's starts at its topmost place).
+    // Optional: an entity type without it (project) keeps the home + « Tous les … » crumbs.
     // `via`: the fiche it was opened from (a tab's parent), whose paths come first.
     breadcrumbs?(id: string | number, via?: { entityType: string; id: string | number }): Promise<EntityBreadcrumbs>;
     // The titlebar's "Dupliquer" (JSF's panelModel.canDuplicate() — recording units only today).
