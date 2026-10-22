@@ -1,6 +1,7 @@
 import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { flushSync } from "react-dom";
 import { Button } from "primereact/button";
+import { InputText } from "primereact/inputtext";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { BottomSheet } from "../BottomSheet";
 import { useIsMobile } from "../../viewport";
@@ -42,12 +43,17 @@ export interface FilterChipBarProps {
 // Chips shown in the bar; the other active filters are behind a « +N » chip (clicked: they are listed there).
 export const MAX_VISIBLE_CHIPS = 3;
 
+// Case- and accent-insensitive, so « etat » finds « État ».
+const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
 export function FilterChipBar({ specs, filters, onChange, optionsByKey }: FilterChipBarProps) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
   // filled in.
   const [pendingKeys, setPendingKeys] = useState<string[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  // What is typed in the « add a filter » list to narrow the columns down; cleared each time the list closes.
+  const [pickerQuery, setPickerQuery] = useState("");
 
   const addPanel = useRef<OverlayPanel>(null);
   const morePanel = useRef<OverlayPanel>(null);
@@ -106,10 +112,22 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   const addChipRef = useRef<HTMLButtonElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
+  const matchingSpecs = availableSpecs.filter((s) => fold(s.label).includes(fold(pickerQuery.trim())));
   const addList = (
-    <ul className="filter-picker-list">
-      {availableSpecs.map((spec) => (
-        <li key={spec.key}>
+    <>
+      <InputText
+        type="search"
+        className="filter-picker-search"
+        value={pickerQuery}
+        placeholder={t("filter.search")}
+        aria-label={t("filter.search")}
+        autoFocus={!mobile}
+        onChange={(e) => setPickerQuery(e.target.value)}
+      />
+      <ul className="filter-picker-list">
+        {matchingSpecs.length === 0 && <li className="filter-picker-empty">{t("filter.noMatch")}</li>}
+        {matchingSpecs.map((spec) => (
+          <li key={spec.key}>
           <button
             type="button"
             className="filter-picker-item"
@@ -118,8 +136,9 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
             {spec.label}
           </button>
         </li>
-      ))}
-    </ul>
+        ))}
+      </ul>
+    </>
   );
 
   // A chip the user opened but left empty disappears on close — an empty chip that survives is
@@ -205,11 +224,11 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       </OverlayPanel>
 
       {mobile ? (
-        <BottomSheet visible={addSheetOpen} onHide={() => setAddSheetOpen(false)} ariaLabel={t("filter.add")} className="filter-sheet">
+        <BottomSheet visible={addSheetOpen} onHide={() => { setAddSheetOpen(false); setPickerQuery(""); }} ariaLabel={t("filter.add")} className="filter-sheet">
           {addList}
         </BottomSheet>
       ) : (
-        <OverlayPanel ref={addPanel} className="entity-list-panel-filter-picker">
+        <OverlayPanel ref={addPanel} className="entity-list-panel-filter-picker" onHide={() => setPickerQuery("")}>
           {addList}
         </OverlayPanel>
       )}

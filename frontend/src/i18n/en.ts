@@ -52,6 +52,8 @@ export const en: Record<MessageKey, string> = {
   "filter.more": "{n} more filters",
   "filter.add": "Add a filter",
   "filter.one": "Filter",
+  "filter.search": "Search a column…",
+  "filter.noMatch": "No matching column",
   "cell.loadFailed": "Could not load all the values.",
   "cell.required": "This field is required",
   "cell.saveFailed": "The change failed.",

@@ -524,7 +524,8 @@ export function EntityDetailPanel({
               else if (listTargets.length > 0) setTabDraft({});
               return;
             }
-            if (canConfigureTabs && e.index === tabs.length + (addItems.length > 0 ? 1 : 0)) {
+            // The TabView counts an absent « Ajouter » (a false child) too: « Modifier » is at tabs.length + 1 either way.
+            if (canConfigureTabs && e.index === tabs.length + 1) {
               setTabsEditorOpen(true);
               return;
             }
