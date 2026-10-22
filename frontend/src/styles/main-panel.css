@@ -26,6 +26,8 @@
    the right. */
 .entity-list-panel-toolbar.p-toolbar {
   flex-wrap: nowrap;
+  /* Top, not centre: when the filters drop to a second line, « Créer » stays on the first one. */
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
@@ -36,6 +38,32 @@
 .entity-list-panel-toolbar .entity-list-panel-filter-chips {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* Narrow toolbar: the filter chips are the first to drop to a second line; then the search field narrows,
+   down to its icon alone. */
+.entity-list-panel-toolbar-main {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.entity-list-panel-toolbar-main > * {
+  flex: none;
+}
+
+.entity-list-panel-toolbar-main > .sia-list-search {
+  flex: 0 1 16rem;
+  min-width: 2.75rem;
+}
+
+.entity-list-panel-toolbar-main > .sia-list-search > input {
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  text-overflow: clip;
 }
 
 /* The gear acts on the table's whole shape, so it reads larger than the search box next to it. */
@@ -3735,10 +3763,96 @@ body .sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-button-
   align-items: center;
 }
 
+.p-input-icon-left.sia-list-search > .sia-list-search-icon {
+  cursor: pointer;
+}
+
 .p-input-icon-left.sia-list-search > .sia-search-clear {
   top: 50%;
   right: 0.75rem;
   margin: 0;
   transform: translateY(-50%);
   line-height: 1;
+}
+
+/* The topbar: Back / Forward arrows, then the search field taking the rest of the row. */
+.sia-topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.sia-topbar-search-field {
+  flex: 1;
+  min-width: 0;
+  /* A flex box, not a block: an inline button in a block leaves a descender gap below it, which makes the box
+     taller than the field and pulls the arrows' centre off the field's. */
+  display: flex;
+  align-items: center;
+}
+
+.sia-topbar-search-field > .sia-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.sia-topbar-search-field .sia-search-trigger {
+  display: flex;
+}
+
+/* The room the field kept from the organisation select is now the arrows' (the id outweighs the rule above). */
+div#search-bar .sia-topbar-search-field .sia-search {
+  padding-left: 0;
+}
+
+/* Clear of the organisation select on its left. */
+.sia-history-nav {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.25rem;
+  /* Equal room on both sides: centred between the organisation select and the search field. */
+  margin: 0 12px;
+}
+
+.sia-history-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-main, #2a2c30);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* The icon font's own line box sits high: make the glyph's box the icon's size, centred by the button. */
+.sia-history-nav-button i {
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.sia-history-nav-button:enabled:hover {
+  background: var(--siamois-green-light-100, #eef5f0);
+}
+
+/* No page behind or ahead: greyed. */
+.sia-history-nav-button:disabled {
+  color: var(--text-color-secondary, #6b7280);
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The search button is as tall as the organisation select next to it (2.4rem), so the two read as one row. */
+.sia-topbar-search-field .sia-search-trigger {
+  box-sizing: border-box;
+  height: 2.4rem;
+  padding-top: 0;
+  padding-bottom: 0;
 }

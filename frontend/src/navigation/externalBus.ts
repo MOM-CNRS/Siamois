@@ -15,6 +15,8 @@ export interface ExternalNavigation {
   navigate: (entityType: string, id?: string | number) => void;
   openOverview: (entityType: string, id: string | number) => void;
   openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
+  // Opens a page of the Back/Forward trail from its address, like the browser's own Back would.
+  restoreUrl: (url: string) => void;
 }
 
 /** Where the user is, as far as a search needs to know. */

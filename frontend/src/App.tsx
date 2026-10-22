@@ -160,12 +160,12 @@ export function App({ options }: { options: MountOptions }) {
   // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
-  const { state, navigate, openView, openOverview, openList, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  const { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
 
   // What the top search bar (its own React root) can drive.
-  const external = useMemo(() => ({ navigate, openOverview, openList }), [navigate, openOverview, openList]);
+  const external = useMemo(() => ({ navigate, openOverview, openList, restoreUrl }), [navigate, openOverview, openList, restoreUrl]);
   useEffect(() => registerNavigation(external), [external]);
 
   // A deleted entity can no longer be shown: close the overview that displays it, and leave a main

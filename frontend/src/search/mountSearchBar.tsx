@@ -7,6 +7,7 @@ import { configureBasePath } from "../api/basePath";
 import { configureCsrf } from "../auth/sessionAuth";
 import { setLocale, resolveLocale } from "../i18n";
 import { GlobalSearchBar } from "./GlobalSearchBar";
+import { HistoryNav } from "./HistoryNav";
 
 const roots = new Map<HTMLElement, Root>();
 
@@ -29,7 +30,17 @@ export function mountSearchBar(container: HTMLElement): void {
     createElement(
       PrimeReactProvider,
       null,
-      createElement(QueryClientProvider, { client: queryClient }, createElement(GlobalSearchBar, { organizationId })),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        // Back / Forward arrows, then the search: the topbar's own order after the organisation select.
+        createElement(
+          "div",
+          { className: "sia-topbar-search" },
+          createElement(HistoryNav, { organizationId }),
+          createElement("div", { className: "sia-topbar-search-field" }, createElement(GlobalSearchBar, { organizationId })),
+        ),
+      ),
     ),
   );
 }

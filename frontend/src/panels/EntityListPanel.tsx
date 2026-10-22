@@ -436,6 +436,16 @@ function EntityListPanelBody({
           // Gear (table settings) then search then the filter chips on the left, create on the
           // right. The gear leads because it acts on the table's shape, which the search box and
           // filters do not.
+          startFilters={
+            filterSpecs.length > 0 ? (
+              <FilterChipBar
+                specs={filterSpecs}
+                filters={state.filters}
+                optionsByKey={filterOptionsByKey}
+                onChange={onFilterChange}
+              />
+            ) : undefined
+          }
           start={
             <>
               <EntityTableSettings
@@ -490,17 +500,6 @@ function EntityListPanelBody({
                   }}
                   onFilterRemove={(key) => onFilterChange(key, undefined)}
                   onOpenRow={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id)}
-                />
-              )}
-              {/* The filters narrow the same result set as the search box, so they sit right after
-                  it, in the toolbar — not in a strip of their own above the columns. Rendered only
-                  when there is at least one filterable column. */}
-              {filterSpecs.length > 0 && (
-                <FilterChipBar
-                  specs={filterSpecs}
-                  filters={state.filters}
-                  optionsByKey={filterOptionsByKey}
-                  onChange={onFilterChange}
                 />
               )}
             </>
