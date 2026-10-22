@@ -15,6 +15,7 @@ import { BridgeProvider } from "./panels/bridge";
 import { EntityNavigationProvider } from "./panels/entityNavigation";
 import { paneTransitionName } from "./panels/panelTransition";
 import { PaneSplit } from "./panels/PaneSplit";
+import { useRestoreFocus } from "./panels/useRestoreFocus";
 import { OverviewOpenProvider } from "./panels/overviewOpen";
 import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
@@ -164,6 +165,7 @@ export function App({ options }: { options: MountOptions }) {
   const { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
+  useRestoreFocus(overview != null);
 
   // What the top search bar (its own React root) can drive.
   const external = useMemo(() => ({ navigate, openOverview, openList, restoreUrl }), [navigate, openOverview, openList, restoreUrl]);
