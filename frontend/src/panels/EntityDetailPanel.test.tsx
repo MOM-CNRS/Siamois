@@ -1176,7 +1176,17 @@ describe("EntityDetailPanel's tab shortcuts (Ajouter, Modifier)", () => {
   };
   registerEntityType(configurableConfig);
 
-  async function renderPanel(opts: { writeMode: boolean; canEdit: boolean }) {
+  // A fiche that lists nothing (a document): no « Ajouter », « Modifier » alone after its only tab.
+  const singleTabConfig: EntityTypeConfig<FakeEntity, FakeEntity> = {
+    ...configurableConfig,
+    key: "fake-single-tab-entity",
+    collectionPath: "fake-single-tab-entities",
+    detail: { tabs: [{ key: "fiche", label: "Fiche", render: () => <span /> }] },
+    routes: { list: "/single", detail: (id) => `/single/${id}` },
+  };
+  registerEntityType(singleTabConfig);
+
+  async function renderPanel(opts: { writeMode: boolean; canEdit: boolean; entityType?: string }) {
     vi.mocked(getFicheConfig).mockResolvedValue({ tabs: null, canEdit: opts.canEdit });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
@@ -1184,7 +1194,7 @@ describe("EntityDetailPanel's tab shortcuts (Ajouter, Modifier)", () => {
         <QueryClientProvider client={queryClient}>
           <WriteModeProvider value={opts.writeMode}>
             <EntityDetailPanel
-              entityType="fake-configurable-entity"
+              entityType={opts.entityType ?? "fake-configurable-entity"}
               entityId="7"
               organizationId={4}
               toolbar={{ chrome: { resourceUri: "", title: "" } }}
@@ -1237,5 +1247,17 @@ describe("EntityDetailPanel's tab shortcuts (Ajouter, Modifier)", () => {
     expect(document.body.querySelector(".fiche-tabs-editor")).not.toBeNull();
     expect(shortcut("Modifier")!.getAttribute("aria-selected")).not.toBe("true");
     expect(container.querySelector("a.p-tabview-nav-link")!.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("« Modifier » opens the tabs editor on a fiche with no list to add", async () => {
+    await renderPanel({ writeMode: true, canEdit: true, entityType: "fake-single-tab-entity" });
+    expect(shortcut("Ajouter")).toBeUndefined();
+
+    await act(async () => {
+      shortcut("Modifier")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await flush();
+
+    expect(document.body.querySelector(".fiche-tabs-editor")).not.toBeNull();
   });
 });
