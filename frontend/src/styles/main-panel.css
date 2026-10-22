@@ -430,10 +430,14 @@
   min-height: 0;
 }
 
-/* The tab's own 1rem of padding-top comes on top of the toolbar's 0.5em: the toolbar would sit twice as far from
-   the tab headers as from the table below it. Without it both gaps are the toolbar's own. */
+/* A tab holding a list or the relation graph has no padding of its own: the table runs edge to edge, as the full list does. Only a tab
+   of ordinary content (the details fiche) keeps the tab panel's padding. */
 .entity-detail-panel .p-tabview-panel:has(> .entity-list-panel.embedded) {
-  padding-top: 0;
+  padding: 0;
+}
+/* Beats the theme's `body .p-tabview .p-tabview-panels .p-tabview-panel` padding, which the :has() above already outweighs. */
+body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .sia-relation-graph) {
+  padding: 0;
 }
 
 /* The one element that actually scrolls. The toolbar, the filter-chip header and the paginator
