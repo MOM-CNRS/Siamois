@@ -45,7 +45,7 @@ const entityLayers = ENTITY_FOLDERS.map((folder) => ({
 }));
 
 export default tseslint.config(
-  { ignores: ["dist/**", "dev/**", "node_modules/**"] },
+  { ignores: ["dist/**", "dev/**", "node_modules/**", "src/api/generated/schema.d.ts"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -56,6 +56,10 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
+  },
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: { ...globals.node } },
   },
   {
     files: ["**/*.test.{ts,tsx}"],

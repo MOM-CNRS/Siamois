@@ -1,4 +1,5 @@
-import type { EntitySibling, EntitySiblings, EntityTypeConfig, PagedResult } from "../../entities/shared/types";
+import type { AnyEntityTypeConfig } from "../../entities/registry";
+import type { EntitySibling, EntitySiblings, PagedResult } from "../../entities/shared/types";
 import { entityRowLabel } from "../../fields/optionSources";
 import type { ListContext } from "../list/listContext";
 import { queryKeys } from "../../api/queryKeys";
@@ -19,8 +20,7 @@ type Row = { id?: string | number | null } & Record<string, unknown>;
  * caller then falls back to the entity's default order rather than walking a stale list.
  */
 export async function fetchListSiblings(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as the registry's configs (entities/registry.ts)
-  config: EntityTypeConfig<any, any>,
+  config: AnyEntityTypeConfig,
   id: string | number,
   context: ListContext,
 ): Promise<EntitySiblings | null> {
@@ -59,8 +59,7 @@ export async function fetchListSiblings(
  * query and for anything else that needs the same cache entry.
  */
 export function siblingsQuery(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as the registry's configs (entities/registry.ts)
-  config: EntityTypeConfig<any, any>,
+  config: AnyEntityTypeConfig,
   entityType: string,
   id: string | number,
   organizationId: number | undefined,

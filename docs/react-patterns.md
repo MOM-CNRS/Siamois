@@ -133,3 +133,21 @@ Choix à connaître :
 - `components/ProjectName.tsx` reste à la racine : il est utilisé par `search/`, `components/home/` et par un type de `api/resources/homeShortcuts`. C'est un reliquat, pas une décision.
 - `entities/shared/types.ts` (500 lignes) n'est pas encore découpé par contrat (config, liste, détail, duplication) : le fichier a seulement changé de dossier.
 - Les règles de couches d'ESLint n'ont pas eu besoin de changer : leurs globs couvrent les sous-dossiers.
+
+## 8. Types générés depuis l'OpenAPI et registre typé (2026-10-22)
+
+**Cache.** `queryClient.ts` désactive `refetchOnWindowFocus` par défaut. Les catalogues, règles et formulaires avaient déjà `staleTime: Infinity` requête par requête ; une requête qui veut du frais au montage garde son propre `staleTime`.
+
+**Types générés.**
+
+- `frontend/openapi/openapi.json` : instantané du spec (`/siamois/v3/api-docs`), commité.
+- `frontend/src/api/generated/schema.d.ts` : types générés par `openapi-typescript`, commités.
+- `npm run api:pull` récupère le spec d'un backend lancé (`OPENAPI_URL` pour une autre adresse) puis régénère ; `npm run api:gen` régénère seul.
+- `schema.test.ts` (Vitest, donc dans la phase Maven `test`) échoue si `schema.d.ts` ne correspond pas à l'instantané.
+- `src/entities/apiConformance.ts` vérifie à la compilation que chaque DTO écrit à la main (projet, UE, mobilier, phase, contenant, lieu, document, étude, champ, et leurs permissions/compteurs) ne déclare que des champs présents dans le schéma. Un champ renommé ou supprimé côté Java fait échouer `tsc` en nommant le champ. Vérifié par un test négatif.
+
+Springdoc marque presque toutes les propriétés de réponse comme optionnelles : les types générés servent donc à **contrôler** les DTO manuels, pas à les remplacer (sinon chaque accès demanderait une garde `undefined`).
+
+**Limite connue.** Rien ne compare encore l'instantané au backend courant : il faut lancer `npm run api:pull` après une modification d'un DTO Java. Un test côté Java (ou une étape CI qui démarre l'application et compare) fermerait ce trou.
+
+**Registre typé.** `entities/registry.ts` expose `EntityTypeMap` (un `EntityTypeConfig<Summary, Detail>` par `EntityKey`, vérifié exhaustif à la compilation) et une surcharge `getEntityType<K extends EntityKey>(key: K)`. Un appel avec une clé littérale (`getEntityType("recordingUnit")`) est précisément typé ; une clé `string` (URL, pont JSF, cible de relation) renvoie `AnyEntityTypeConfig`, l'unique endroit où les génériques sont effacés. Les `any` du registre et de `listSiblings.ts` sont passés de 6 à 1. `registerEntityType` ne vérifie pas que la config enregistrée correspond à la clé.
