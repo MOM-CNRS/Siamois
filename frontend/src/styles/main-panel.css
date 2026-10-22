@@ -50,6 +50,12 @@
 
 /* ---------------------------------------------------------- column header lines */
 
+/* The field's type icon, before the header's name. */
+.entity-list-panel-column-icon {
+  margin-right: 0.4em;
+  color: var(--text-light, #6b7280);
+}
+
 /* One line, always: a wrapped header raises every row in the table. */
 .entity-list-panel-column-header {
   display: block;
@@ -411,7 +417,7 @@
 .entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
 .entity-list-panel .p-treetable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
 .entity-list-panel .p-treetable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
-  min-width: 9rem;
+  min-width: 13rem;
 }
 
 /* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
@@ -815,10 +821,14 @@
   height: 16px;
 }
 
+/* The required mark follows the label's name, not the button's far edge; the label alone shrinks (ellipsis). */
 .sia-fiche-tab .required-btn::after {
-  content: " *";
-  position: absolute;
-  right: 6px;
+  content: "*";
+  flex: none;
+  margin-left: 0.25em;
+}
+.sia-fiche-tab .required-btn .p-button-label {
+  flex: 0 1 auto;
 }
 
 .sia-fiche-tab .field-hint {
@@ -857,6 +867,93 @@
 
 .sia-fiche-tab .field-value-cell-empty {
   color: var(--text-light, #6b7280);
+}
+
+/* Narrow fiche (a phone, or a squeezed overview): one field per row, the label on the left over a third of the
+   width and the value beside it, each on a single line cropped with an ellipsis. Keyed to the fiche's own width,
+   like the column grid above, below the 400px at which that grid starts putting fields side by side. */
+@container (max-width: 399px) {
+  .sia-fiche-tab .field-value-group {
+    display: grid;
+    grid-template-columns: 33% minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 0 0.5rem;
+  }
+  /* Tighter rows: the columns' own padding is halved between two fields. */
+  .sia-fiche-tab .project-fiche-tab-col {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  .sia-fiche-tab .header-toggle-container {
+    min-width: 0;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .sia-fiche-tab .ellipsis-btn.p-button .p-button-label {
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sia-fiche-tab .field-value-cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A row's negative top margin pulls it over the previous row, but not a field wrapped inside the same row:
+     the spacing then depended on how the form groups its fields. One field per line, so no overlap at all. */
+  .sia-fiche-tab .sia-grid {
+    margin: 0;
+  }
+  /* Every field is the same height whatever it holds (chips, a measurement, a checkbox): the row's height is
+     fixed, its contents are cropped to it. */
+  .sia-fiche-tab .field-value-group {
+    height: 2.1rem;
+    overflow: hidden;
+  }
+  .sia-fiche-tab .field-value-cell {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* A multi-valued field: its first value, then how many more. */
+  .sia-fiche-tab .cell-multi-all {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:nth-child(n + 2) {
+    display: none;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-item:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sia-fiche-tab .cell-multi-all > .cell-multi-fold {
+    display: inline;
+    flex: none;
+  }
+}
+.cell-multi-fold {
+  display: none;
 }
 
 /* singleUnitPanel.xhtml's footer toolbar: one row of small italic history lines. */
@@ -1233,12 +1330,6 @@
   padding-bottom: var(--panel-scroll-end-gap);
 }
 
-/* A list (standalone or embedded): the paginator is its last element, below the scrolling table
-   wrapper — the room goes under the paginator, not between the rows and it. */
-.entity-list-panel .p-paginator-bottom {
-  margin-bottom: var(--panel-scroll-end-gap);
-}
-
 /* Home scrolls in its pane. */
 .home-panel {
   padding-bottom: var(--panel-scroll-end-gap);
@@ -1417,6 +1508,26 @@ body button.p-button.status-button.status-button-compact {
   vertical-align: middle;
 }
 
+/* The name is its own box: text-overflow does not reach text that is a direct child of a flex container, so a
+   long name was cut square against the border instead of ending in an ellipsis. */
+.ref-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The referenced entity's icon, before its name. */
+.ref-chip-icon {
+  flex: none;
+  margin-right: 0.35em;
+  font-size: 0.9em;
+}
+
+.resource-ref-token-link .ref-chip-icon {
+  margin-right: 0.35em;
+}
+
 /* A chip that opens its fiche (the overlay's): the edit-mode token's look — full-colour border,
    label underlined on hover — rather than the plain chip's light one. */
 .ref-chip-link {
@@ -1584,7 +1695,29 @@ body button.p-button.status-button.status-button-compact {
 .sia-titlebar-split {
   justify-content: space-between;
 }
+/* The tab's entity icon, and its count as a light grey pill. */
+.sia-tab-icon {
+  flex: none;
+  margin-right: 0.15em;
+}
+
+.sia-tab-count {
+  flex: none;
+  margin-left: 0.3em;
+  padding: 0 0.5em;
+  min-width: 1.6em;
+  border-radius: 999px;
+  background: var(--surface-200, #e9ecef);
+  color: var(--text-color-secondary, #4b5563);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .sia-tab-title {
+  /* The same height with or without a count pill, so every tab's underline sits on one line. */
+  min-height: 1.3rem;
   display: flex;
   gap: 0.2em;
   align-items: center;
@@ -1627,14 +1760,19 @@ body button.p-button.status-button.status-button-compact {
 }
 /* Home cards' counter: outlined in the entity colour (the theme's <entity>-count-chip), as big as the
    title, and see-through inside — the theme paints that chip white. */
-.sia-welcome-card .sia-count-card-row .p-chip {
+.sia-welcome-card .sia-count-card-row .p-chip,
+.entity-list-panel-header .p-chip {
+  border-radius: 999px;
+  min-width: 2.25rem;
+  justify-content: center;
   background-color: transparent;
   font-size: var(--font-size-title-card);
   font-weight: var(--font-weight-title);
   line-height: 1.2;
   padding: 0 0.6rem;
 }
-.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text {
+.sia-welcome-card .sia-count-card-row .p-chip .p-chip-text,
+.entity-list-panel-header .p-chip .p-chip-text {
   margin: 0.15rem 0;
   line-height: inherit;
 }
@@ -1649,7 +1787,10 @@ body button.p-button.status-button.status-button-compact {
   font-size: var(--font-size-title-page);
   font-weight: var(--font-weight-title);
   color: var(--title-color);
-  padding-right: 0.5em;
+}
+/* Icon, title and count: evenly spaced, one gap between each. */
+.entity-list-panel-header.sia-hstack {
+  gap: 0.85rem;
 }
 /* The title of a list on one of the user's own views: a button that turns into a field. */
 .entity-list-panel-view-title {
@@ -1772,24 +1913,76 @@ body button.p-button.status-button.status-button-compact {
    an edit; in edit mode it is the one validate button and stays visible. */
 .sideview-titlebar > .sia-hstack {
   flex: 1 1 auto;
+  /* The status button stays on the main chip's line; only the header's own chips wrap, inside it. */
+  flex-wrap: nowrap;
 }
 
 .entity-detail-header {
   flex: 1 1 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
   min-width: 0;
   align-items: center;
 }
 
-/* The fiche's chips (the identifier, the second text, the type, the read-only ones) like the list's: no outline
-   and no fill, the text and icon in the panel's colour, in bold. The theme paints them filled (-chip-alt) or
-   outlined (-type-chip) with their own --main-color, which is what the text takes here. */
+/* Narrow panes: the title bar wraps instead of squeezing — the toolbar keeps its line and the header drops
+   below it, where its own chips wrap (name first, then identifier, type, extras). */
+.sideview-titlebar-overview {
+  flex-wrap: wrap;
+  /* A wider gap between the toolbar buttons and the status tells the two groups apart. */
+  column-gap: 1.25rem;
+}
+.sideview-titlebar-overview > .sia-hstack {
+  /* Basis = the whole header on one line: when that doesn't fit next to the toolbar, the status and every
+     chip drop together under it, and only then do the chips wrap among themselves. */
+  flex: 1 1 auto;
+  align-items: flex-start;
+  /* The status button already carries its own padding: no extra gap before the first chip. */
+  gap: 0;
+}
+
+/* A chip is never two lines: a long label is cut with an ellipsis (full text in the title attribute). */
+.entity-detail-header .p-chip.p-component {
+  max-width: 100%;
+  min-width: 0;
+  margin-right: 0 !important;
+}
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entity-detail-header .p-chip.p-component.entity-nav-chip { max-width: min(100%, 22rem); }
+.entity-detail-header .p-chip.p-component:not(.entity-nav-chip) { max-width: min(100%, 14rem); }
+
+/* The fiche's chips follow the list's: the identifier is the list's identifier chip (entity colour, bold) on a
+   light tint of that colour; the other chips (second text, type, read-only ones) are the list's rectangle chip
+   (.ref-chip: small radius, light outline, no fill). All share one box (padding, border, line-height, font
+   size) so they have the same height. */
 .entity-detail-header .p-chip.p-component,
 .p-chip.p-component.entity-detail-panel-preview-chip {
+  box-sizing: border-box;
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--main-color) 35%, transparent);
+  border-radius: 3px;
   background: transparent;
-  border-color: transparent;
   color: var(--main-color);
+  font-size: 1em;
   font-weight: 600;
+  line-height: 1.5;
+}
+
+.entity-detail-header .p-chip.p-component.entity-nav-chip {
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 1px 0.7rem;
+  background: color-mix(in srgb, var(--main-color) 12%, transparent);
+}
+
+.entity-detail-header .p-chip.p-component .p-chip-text {
+  margin: 0;
+  color: inherit;
+  line-height: inherit;
 }
 
 .entity-detail-header-primary-input {
@@ -1963,6 +2156,10 @@ body button.p-button.status-button.status-button-compact {
 .entity-detail-panel .panel-bc-row {
   display: flex;
   align-items: center;
+  background: var(--siamois-green-light-100, #e6f0e6);
+}
+.entity-detail-panel .panel-bc-row .p-breadcrumb.panel-bc {
+  background: transparent;
 }
 
 /* The chevron is an inline SVG, so it is centred by the button's own flex box whatever the icon font does. */
@@ -3113,4 +3310,290 @@ div#search-bar .sia-search {
 /* A card's actions are always at full strength: there is no row hover to reveal them. */
 .entity-card-actions .entity-list-panel-row-actions {
   opacity: 1;
+}
+
+/* The fiche's breadcrumb sits on the Siamois green light-100, the tab headers under it on its light-50. */
+.entity-detail-panel .p-breadcrumb.panel-bc {
+  background: var(--siamois-green-light-100, #e6f0e6);
+  box-sizing: border-box;
+  width: 100%;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs > .p-tabview-nav-container,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav-content,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav,
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* The strip's own line is the only one under the tabs: an inactive tab carries none, the active one a 2px green. */
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  border-bottom: 2px solid transparent;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  border-bottom-color: var(--siamois-green, #669966);
+}
+
+/* The tab strip's scroll arrows carry a huge white glow (theme: box-shadow 0 0 10px 50px) that blurs the tab
+   ends; they are plain buttons on the header's own tint instead. */
+.entity-detail-panel .p-tabview .p-tabview-nav-btn.p-link {
+  box-shadow: none;
+  background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* Main panel header: the title (status + chips) on the left and the toolbar on the right, on one line while
+   the whole title fits. As soon as the title would need a second line, the toolbar no longer fits beside it and
+   wraps — wrap-reverse stacks the wrapped line ABOVE, so the action buttons end up over the title, as in the
+   overview. No width threshold: it follows what the title really needs. */
+.sideview-titlebar-main {
+  flex-wrap: wrap-reverse;
+  justify-content: flex-start;
+  column-gap: 1.25rem;
+  row-gap: 0.25rem;
+}
+.sideview-titlebar-main > .sia-hstack {
+  align-items: flex-start;
+}
+
+/* The status button never shrinks: in the (now nowrap) title it was squeezed into an oval when chips needed room. */
+.sideview-titlebar > .sia-hstack > .status-button {
+  flex: 0 0 auto;
+}
+
+/* Phone width: the search is only a button (the overlay is its field), square like the topbar's other buttons. */
+@media (max-width: 768px) {
+  div#search-bar .sia-search {
+    width: auto;
+    padding-left: 0;
+  }
+  .sia-search-trigger {
+    width: 2.5rem;
+    height: 2.5rem;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+  }
+  .sia-search-trigger .sia-search-trigger-text {
+    display: none;
+  }
+}
+
+/* Phone width: scrolling is the touch screen's own, so the desktop's always-visible scrollbars go, and the
+   frozen columns are released (they take a good part of a narrow screen). A frozen header cell stays
+   sticky at the top, with the rest of the header: only the sideways pinning is dropped. */
+@media (max-width: 768px) {
+  html,
+  html * {
+    scrollbar-width: none;
+  }
+  html ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    left: auto !important;
+  }
+  .entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen,
+  .entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen {
+    position: static;
+    z-index: auto;
+  }
+}
+
+/* Phone width: the top bar and breadcrumb slide off the top (mobileChrome.ts sets their negative
+   margin); the content under them takes the room as they go. */
+@media (max-width: 768px) {
+  #topbar-row {
+    transition: margin-top 0.25s ease;
+  }
+  .entity-detail-panel .panel-bc-row,
+  .entity-detail-panel .p-breadcrumb.panel-bc {
+    transition: max-height 0.25s ease, padding 0.25s ease;
+  }
+
+  /* The panel's header keeps the status and the title chip; its toolbar and the other chips go. */
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .panel-toolbar,
+  html[data-mobile-chrome="hidden"] .sideview-titlebar .entity-detail-header > :not(.entity-nav-chip) {
+    display: none;
+  }
+}
+
+/* ── Bottom sheets (components/BottomSheet.tsx): overlays turned into drawers at phone width ──────── */
+.p-sidebar.bottom-sheet {
+  height: auto !important;
+  max-height: 85dvh !important;
+  width: 100%;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 18%);
+  border-radius: 16px 16px 0 0;
+  /* Room for the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The reference picker's field on a phone: looks like the input it replaces. */
+.resource-ref-sheet-trigger.p-inputtext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 2.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-token {
+  padding: 1px 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--ref-chip-color, var(--main-color)) 35%, transparent);
+  border-radius: 3px;
+  color: var(--ref-chip-color, var(--main-color));
+  font-weight: 600;
+}
+.resource-ref-sheet-placeholder {
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-chevron {
+  margin-left: auto;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-search.p-inputtext {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+.resource-ref-sheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.resource-ref-sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.resource-ref-sheet-option.is-chosen {
+  color: var(--main-color);
+  font-weight: 600;
+}
+.resource-ref-sheet-option-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.resource-ref-sheet-empty {
+  padding: 0.75rem 0.25rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+.resource-ref-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+.p-sidebar.bottom-sheet {
+  transition: transform 0.2s ease, max-height 0.25s ease;
+}
+/* Dragged up: nearly the whole page. */
+.p-sidebar.bottom-sheet.is-expanded {
+  height: 95dvh !important;
+  max-height: 95dvh !important;
+}
+.p-sidebar.bottom-sheet .p-sidebar-header {
+  padding: 0;
+}
+/* The drag handle takes the header's whole width: a tall target for a thumb, the grip drawn in its middle. */
+.bottom-sheet-handle {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding: 0.6rem 0 0.4rem;
+  touch-action: none;
+  cursor: grab;
+}
+.bottom-sheet-grip {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-400, #bdbdbd);
+}
+/* The close cross is replaced by the handle. */
+.p-sidebar.bottom-sheet .p-sidebar-close {
+  display: none;
+}
+
+/* A form in a bottom sheet fills it edge to edge, with its footer pinned to the bottom (the sheet's full height
+   once expanded). */
+.p-sidebar.bottom-sheet .p-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.p-sidebar.bottom-sheet .sia-create-form {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.p-sidebar.bottom-sheet .sia-create-form-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.p-sidebar.bottom-sheet .sia-create-form-footer {
+  flex-shrink: 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* Filters in a bottom sheet: the list of columns to add, and the editor of one filter. */
+.p-sidebar.filter-sheet .filter-picker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.p-sidebar.filter-sheet .filter-picker-item {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--surface-border, #dee2e6);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.filter-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+}
+
+/* The cell editor in a bottom sheet: no floating-box chrome, the field's own label above the widget. */
+.cell-edit-overlay.cell-edit-overlay-sheet {
+  z-index: auto;
+  width: 100%;
+  padding: 0 0 0.5rem;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cell-edit-overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
 }

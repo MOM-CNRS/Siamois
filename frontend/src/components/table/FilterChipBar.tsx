@@ -1,6 +1,9 @@
 import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { flushSync } from "react-dom";
+import { Button } from "primereact/button";
 import { OverlayPanel } from "primereact/overlaypanel";
+import { BottomSheet } from "../BottomSheet";
+import { useIsMobile } from "../../viewport";
 import { ColumnFilter, describeFilterValue } from "./ColumnFilter";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
 import type { FilterValue } from "../../panels/tableState";
@@ -45,6 +48,17 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   const addPanel = useRef<OverlayPanel>(null);
   const editPanel = useRef<OverlayPanel>(null);
+  // Phone width: both panels are drawers from the bottom, opened by these flags instead of an anchored overlay.
+  const mobile = useIsMobile();
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const hideAdd = () => (mobile ? setAddSheetOpen(false) : addPanel.current?.hide());
+  // Only the pickers go in a drawer; a text, number or date filter is typed into the overlay, as on a desktop.
+  const sheetKinds = (key: string) => mobile && !["contains", "range", "date-range"].includes(specs.find((s) => s.key === key)?.kind ?? "");
+  const hideEditor = () => {
+    setEditSheetOpen(false);
+    editPanel.current?.hide();
+  };
 
   const activeKeys = specs
     .map((s) => s.key)
@@ -53,11 +67,12 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function openEditor(e: ReactMouseEvent, key: string, anchor: HTMLElement) {
     setEditingKey(key);
-    editPanel.current?.show(e, anchor);
+    if (sheetKinds(key)) setEditSheetOpen(true);
+    else editPanel.current?.show(e, anchor);
   }
 
   function addFilter(e: ReactMouseEvent, spec: FilterSpec, anchor: HTMLElement) {
-    addPanel.current?.hide();
+    hideAdd();
     const addKey = (keys: string[]) => (keys.includes(spec.key) ? keys : [...keys, spec.key]);
     if (availableSpecs.length > 1) {
       setPendingKeys(addKey);
@@ -74,7 +89,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
     setPendingKeys((keys) => keys.filter((k) => k !== key));
     if (editingKey === key) {
       setEditingKey(null);
-      editPanel.current?.hide();
+      hideEditor();
     }
     if (filters[key] != null) onChange(key, undefined);
   }
@@ -82,6 +97,42 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   const editingSpec = specs.find((s) => s.key === editingKey);
   const addChipRef = useRef<HTMLButtonElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
+
+  const addList = (
+    <ul className="filter-picker-list">
+      {availableSpecs.map((spec) => (
+        <li key={spec.key}>
+          <button
+            type="button"
+            className="filter-picker-item"
+            onClick={(e) => addFilter(e, spec, addChipRef.current ?? (e.currentTarget as HTMLElement))}
+          >
+            {spec.label}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+
+  // A chip the user opened but left empty disappears on close — an empty chip that survives is
+  // indistinguishable from a real, unset filter and would accumulate.
+  function onEditorHidden() {
+    setPendingKeys((keys) => keys.filter((k) => filters[k] != null));
+    setEditingKey(null);
+  }
+
+  const editor = editingSpec && (
+    <ColumnFilter
+      key={editingSpec.key}
+      label={editingSpec.label}
+      kind={editingSpec.kind}
+      value={filters[editingSpec.key]}
+      selectedOptions={optionsByKey[editingSpec.key]}
+      loadOptions={editingSpec.loadOptions}
+      autoFocus={!editSheetOpen}
+      onChange={(value, options) => onChange(editingSpec.key, value, options)}
+    />
+  );
 
   return (
     <div className="entity-list-panel-filter-chips" ref={barRef}>
@@ -115,52 +166,49 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
           type="button"
           ref={addChipRef}
           className="filter-chip filter-chip-add"
-          onClick={(e) => addPanel.current?.toggle(e)}
+          onClick={(e) => (mobile ? setAddSheetOpen(true) : addPanel.current?.toggle(e))}
         >
           <i className="bi bi-plus" />
           {activeKeys.length === 0 ? t("filter.add") : t("filter.one")}
         </button>
       )}
 
-      <OverlayPanel ref={addPanel} className="entity-list-panel-filter-picker">
-        <ul className="filter-picker-list">
-          {availableSpecs.map((spec) => (
-            <li key={spec.key}>
-              <button
-                type="button"
-                className="filter-picker-item"
-                onClick={(e) => addFilter(e, spec, addChipRef.current ?? (e.currentTarget as HTMLElement))}
-              >
-                {spec.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </OverlayPanel>
+      {mobile ? (
+        <BottomSheet visible={addSheetOpen} onHide={() => setAddSheetOpen(false)} ariaLabel={t("filter.add")} className="filter-sheet">
+          {addList}
+        </BottomSheet>
+      ) : (
+        <OverlayPanel ref={addPanel} className="entity-list-panel-filter-picker">
+          {addList}
+        </OverlayPanel>
+      )}
 
-      <OverlayPanel
-        ref={editPanel}
-        className="entity-list-panel-filter-editor"
-        onHide={() => {
-          // A chip the user opened but left empty disappears on close — an empty chip that
-          // survives is indistinguishable from a real, unset filter and would accumulate.
-          setPendingKeys((keys) => keys.filter((k) => filters[k] != null));
-          setEditingKey(null);
-        }}
-      >
-        {editingSpec && (
-          <ColumnFilter
-            key={editingSpec.key}
-            label={editingSpec.label}
-            kind={editingSpec.kind}
-            value={filters[editingSpec.key]}
-            selectedOptions={optionsByKey[editingSpec.key]}
-            loadOptions={editingSpec.loadOptions}
-            autoFocus
-            onChange={(value, options) => onChange(editingSpec.key, value, options)}
-          />
-        )}
-      </OverlayPanel>
+      {mobile && (
+        <BottomSheet
+          visible={editSheetOpen}
+          onHide={() => {
+            setEditSheetOpen(false);
+            onEditorHidden();
+          }}
+          ariaLabel={editingSpec?.label ?? t("filter.add")}
+          className="filter-sheet"
+        >
+          {editor}
+          <div className="filter-sheet-actions">
+            <Button type="button" size="small" label={t("field.pickerDone")}
+              onClick={() => {
+                setEditSheetOpen(false);
+                onEditorHidden();
+              }}
+            />
+          </div>
+        </BottomSheet>
+      )}
+      {!(mobile && editSheetOpen) && (
+        <OverlayPanel ref={editPanel} className="entity-list-panel-filter-editor" onHide={onEditorHidden}>
+          {editor}
+        </OverlayPanel>
+      )}
     </div>
   );
 }

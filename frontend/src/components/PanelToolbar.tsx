@@ -8,6 +8,7 @@ import type { PanelActions, PanelChrome } from "../mountOptions";
 import { useBridge } from "../panels/bridge";
 import { queryKeys } from "../api/queryKeys";
 import { t } from "../i18n";
+import { useIsMobile } from "../viewport";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions
@@ -34,7 +35,9 @@ export interface PanelToolbarProps {
   compact?: boolean;
 }
 
-export function PanelToolbar({ chrome, organizationId, actions, navigation, beforeBookmark, compact }: PanelToolbarProps) {
+export function PanelToolbar({ chrome, organizationId, actions, navigation, beforeBookmark, compact: compactProp }: PanelToolbarProps) {
+  const isMobile = useIsMobile();
+  const compact = compactProp || isMobile;
   // chrome.bookmarked is unknown for a list/Home reached client-side — ask the server then.
   const statusKnown = chrome.bookmarked !== undefined;
   const { data: fetchedBookmarked } = useQuery({

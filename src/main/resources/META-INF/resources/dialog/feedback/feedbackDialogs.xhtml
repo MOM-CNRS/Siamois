@@ -4,13 +4,12 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:f="http://java.sun.com/jsf/core"
 >
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-            integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+    <!-- html2canvas-pro: drop-in fork of html2canvas that understands modern CSS colors (color-mix, oklch,
+         color()), which the original 1.4.1 rejects, making every capture fail. -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"
+            integrity="sha384-QbVSYhU9faw2C7l92rI0Dmke8Yod6KaOixC1kkbO/dGnMDKtbWhwcxSSOkmHXWom"
             crossorigin="anonymous"></script>
     <h:outputScript library="js" name="feedback.js"/>
-    <h:outputScript>
-        var SIA_FEEDBACK_ISSUES_URL = '#{feedbackBean.issuesUrl}';
-    </h:outputScript>
 
     <style>
         .sia-feedback-label {
@@ -48,35 +47,13 @@
         }
     </style>
 
-    <!-- Floating feedback launcher, fixed to the bottom-right corner of every page -->
-    <div id="siaFeedbackButtonGroup" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:1500;
-            display:flex;flex-direction:column;gap:0.6rem;align-items:flex-end;">
-        <button type="button" class="ui-button ui-widget ui-state-default ui-corner-all"
-                title="Ouvre la liste des retours (issues GitHub) dans un nouvel onglet"
-                style="padding:0.5rem 1rem;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,0.2);
-                        display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;white-space:nowrap;"
-                onclick="siaFeedbackOpenList();">
-            Voir les retours
-        </button>
-        <button type="button" id="siaFeedbackButton" class="ui-button ui-widget ui-state-default ui-corner-all"
-                title="Laisser un retour"
-                style="padding:0.6rem 1.2rem;border-radius:22px;background:var(--main-color, #2e7d32);color:#fff;
-                        box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;gap:0.5rem;
-                        font-size:0.95rem;font-weight:600;white-space:nowrap;"
-                onclick="siaFeedbackStartCapture();">
-            <i class="bi bi-camera" style="font-size:1.1rem;"></i>
-            Commenter
-        </button>
-    </div>
-
     <h:form id="feedbackCreateForm">
         <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
 
-        <!-- Dedicated growl, scoped to the "feedbackToast" client id set by FeedbackBean, with HTML
-             escaping disabled so the GitHub issue link renders as a real link — the app-wide growl in
-             the template keeps escaping everything else, this one only ever renders our own messages. -->
-        <p:growl id="feedbackGrowl" for="feedbackToast" showDetail="true" showSummary="true"
-                 escape="false" closable="true"/>
+        <!-- Dedicated growl, fed from the callback params of the remote command (see feedback.js), with HTML
+             escaping disabled so the GitHub issue link renders as a real link — the app-wide growl keeps
+             escaping everything else. -->
+        <p:growl id="feedbackGrowl" widgetVar="feedbackGrowlVar" escape="false" closable="true"/>
 
         <p:dialog widgetVar="feedbackCreateDiag" id="feedbackCreateDiag" showEffect="fade"
                   closeOnEscape="true" appendToBody="true" modal="true" width="460" resizable="false"
@@ -141,7 +118,7 @@
 
         <p:remoteCommand name="siaSubmitFeedbackRemote"
                           action="#{feedbackBean.saveFeedbackFromRequest}"
-                          process="@this" update="feedbackCreateForm:feedbackGrowl"
-                          oncomplete="siaFeedbackOnSendComplete();"/>
+                          process="@this"
+                          oncomplete="siaFeedbackOnSendComplete(xhr, status, args);"/>
     </h:form>
 </ui:fragment>

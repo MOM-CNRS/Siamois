@@ -249,7 +249,9 @@ export interface DetailTabDef<TDetail> {
   label: string;
   // A count pastille on the tab header itself (actionUnitTabView.xhtml's
   // panelModel.unit.recordingUnitCount badge) — optional, most tabs (the fiche) have none.
-  badge?: (entity: TDetail) => ReactNode;
+  badge?: (entity: TDetail, helpers?: DetailTabHelpers) => ReactNode;
+  // The icon shown before the label: a tab listing entities of a type carries that type's.
+  icon?: string;
   // Set on a tab that lists the entities of type `target` related to this fiche (see relationTab): the
   // types a project may add as list tabs of its own, with filters of their own.
   // `creatable`/`createPrefill` are those of its « Créer »: a list tab the project adds on the same target gets them too.

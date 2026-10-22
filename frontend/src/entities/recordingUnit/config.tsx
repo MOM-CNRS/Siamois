@@ -185,6 +185,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
       {
         key: "graph",
         label: t("recordingUnit.tab.graph"),
+        badge: (entity) => entity._counts?.relationships ?? 0,
         render: (entity, helpers) => (
           <RelationGraphTab
             entity={entity}

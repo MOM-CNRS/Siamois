@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PaneStateScope, usePaneState } from "./paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
@@ -22,6 +22,7 @@ import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
 import { withLabels } from "../components/table/ColumnFilter";
 import type { FilterOption } from "../fields/optionSources";
+import { entityColor } from "../fields/display";
 import type { PanelToolbarSlot } from "../mountOptions";
 import { queryKeys } from "../api/queryKeys";
 import { EntityCardGrid } from "./list/EntityCardGrid";
@@ -588,11 +589,18 @@ function EntityListPanelBody({
     </>
   );
 
+  const rowEntityColor = entityColor(entityType);
+  const rowEntityStyle = rowEntityColor ? ({ "--row-entity-color": rowEntityColor } as CSSProperties) : undefined;
+
   if (embedded) {
     // No <Panel>/PanelHeaderBar — the flex chain that gives scrollHeight="flex" its bound
     // otherwise comes from that <Panel>; reproduce it directly (styles/main-panel.css has the
     // matching `.entity-list-panel.embedded` rule for the tab body wrapping this).
-    return <div className="entity-list-panel embedded">{body}</div>;
+    return (
+      <div className="entity-list-panel embedded" style={rowEntityStyle}>
+        {body}
+      </div>
+    );
   }
 
   return (
@@ -601,6 +609,7 @@ function EntityListPanelBody({
     // real markup's one sideview-titlebar div rather than a separate strip above this component.
     <Panel
       className="entity-list-panel"
+      style={rowEntityStyle}
       header={
         <PanelHeaderBar
           title={

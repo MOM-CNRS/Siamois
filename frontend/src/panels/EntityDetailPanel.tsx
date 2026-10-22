@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { isValidElement, useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
@@ -18,6 +18,7 @@ import { ValidationStatusButton } from "../components/ValidationStatusButton";
 import { DetailBodySkeleton } from "../components/DetailSkeleton";
 import { recallListContext, rememberListContext, type ListContext } from "./listContext";
 import { siblingsQuery } from "./listSiblings";
+import { useSwipeSiblings } from "./useSwipeSiblings";
 
 import type { DetailTabDef, EntityPreview, EntitySibling, FilterValue } from "../entities/types";
 import { queryKeys } from "../api/queryKeys";
@@ -28,6 +29,7 @@ import { resolveTabs, useFicheConfig, ficheScopeOf } from "./ficheConfig";
 import { FicheTabsProvider } from "./ficheTabsContext";
 import { FicheTabsEditor } from "./FicheTabsEditor";
 import { AddListTabDialog } from "./AddListTabDialog";
+import { TabCount } from "./TabCount";
 import { editableTabs, relationTargets, restorableTabs, restoreTab, type EditableTab } from "./ficheTabsModel";
 import { addTabItems } from "./addTabMenu";
 import { Menu } from "primereact/menu";
@@ -238,6 +240,18 @@ export function EntityDetailPanel({
   // own toolbar when it was picked from the "…" menu, which is gone by the time the overlay opens.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
   const panelRef = useRef<Panel>(null);
+  // The arrows' own jump, shared with the swipe: the neighbour carries on walking the same list, from its own position.
+  const goToSibling = (sibling: EntitySibling) => {
+    const context = neighbourContext(listContext, sibling);
+    if (context) rememberListContext(entityType, sibling.id, context);
+    onNavigateSibling?.(sibling.id, { label: sibling.label });
+  };
+  useSwipeSiblings(() => panelRef.current?.getElement(), {
+    previous: siblings?.previous,
+    next: siblings?.next,
+    go: goToSibling,
+    enabled: config?.api.siblings != null && onNavigateSibling != null && !siblingNavDisabled,
+  });
   function openCreate(event?: SyntheticEvent) {
     const clicked = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     const toolbarEl = panelRef.current?.getElement()?.querySelector<HTMLElement>(".panel-toolbar") ?? null;
@@ -270,12 +284,7 @@ export function EntityDetailPanel({
     config.api.siblings && onNavigateSibling ? (
       <SiblingNav
         siblings={siblings}
-        onNavigate={(sibling) => {
-          // The neighbour carries on walking the same list, from its own position.
-          const context = neighbourContext(listContext, sibling);
-          if (context) rememberListContext(entityType, sibling.id, context);
-          onNavigateSibling(sibling.id, { label: sibling.label });
-        }}
+        onNavigate={goToSibling}
         onPrefetch={prefetchSibling}
         disabled={siblingNavDisabled}
       />
@@ -501,7 +510,9 @@ export function EntityDetailPanel({
           }}
         >
           {tabs.map((tab) => {
-            const badge = tab.badge?.(data);
+            const badge = tab.badge?.(data, helpers);
+            // Resolved here: the registry is complete by now, not when the tab was defined.
+            const icon = tab.icon ?? (tab.relation ? getEntityType(tab.relation.target)?.icon : undefined);
             return (
               <TabPanel
                 key={tab.key}
@@ -509,8 +520,9 @@ export function EntityDetailPanel({
                   // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
                   // bold label, then the count in parentheses when the tab has one.
                   <div className="sia-tab-title">
+                    {icon && <i className={`${icon} sia-tab-icon`} aria-hidden="true" />}
                     {tab.label}
-                    {badge != null && <span>{` (${badge})`}</span>}
+                    {badge != null && (isValidElement(badge) ? badge : <TabCount value={String(badge)} />)}
                   </div>
                 }
               >

@@ -4,9 +4,6 @@
 let siaFeedbackImageData = null;
 
 function siaFeedbackStartCapture() {
-    const btn = document.getElementById('siaFeedbackButton');
-    if (btn) btn.style.display = 'none';
-
     const overlay = document.createElement('div');
     overlay.id = 'siaFeedbackOverlay';
     overlay.style.position = 'fixed';
@@ -73,7 +70,6 @@ function siaFeedbackStartCapture() {
         overlay.removeEventListener('mouseup', onMouseUp);
         document.removeEventListener('keydown', onKeyDown);
         if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        if (btn) btn.style.display = '';
     }
 
     function onMouseUp() {
@@ -150,7 +146,13 @@ function siaFeedbackSubmit() {
 
 /* Called once the save ajax call completes (success or failure) — the growl has already been
  * updated by then, so closing the dialog now reveals the result immediately, no dead air. */
-function siaFeedbackOnSendComplete() {
+function siaFeedbackEscape(text) {
+    const div = document.createElement('div');
+    div.textContent = text == null ? '' : String(text);
+    return div.innerHTML;
+}
+
+function siaFeedbackOnSendComplete(xhr, status, args) {
     const sendBtn = document.getElementById('feedbackSendBtn');
     const cancelBtn = document.getElementById('feedbackCancelBtn');
     if (sendBtn) {
@@ -161,10 +163,17 @@ function siaFeedbackOnSendComplete() {
 
     siaFeedbackImageData = null;
     PF('feedbackCreateDiag').hide();
-}
 
-function siaFeedbackOpenList() {
-    if (typeof SIA_FEEDBACK_ISSUES_URL === 'string' && SIA_FEEDBACK_ISSUES_URL) {
-        window.open(SIA_FEEDBACK_ISSUES_URL, '_blank');
+    if (args && args.feedbackSummary) {
+        let detail = siaFeedbackEscape(args.feedbackDetail);
+        if (args.feedbackIssueUrl) {
+            detail += ' <a href="' + siaFeedbackEscape(args.feedbackIssueUrl).replace(/"/g, '&quot;')
+                + '" target="_blank" rel="noopener" style="color:inherit;font-weight:600;text-decoration:underline;white-space:nowrap;">Voir le retour →</a>';
+        }
+        PF('feedbackGrowlVar').renderMessage({
+            summary: siaFeedbackEscape(args.feedbackSummary),
+            detail: detail,
+            severity: args.feedbackSeverity || 'info'
+        });
     }
 }

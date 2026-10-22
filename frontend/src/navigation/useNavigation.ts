@@ -5,6 +5,7 @@ import type { MountOptions } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
 import { withPanelTransition } from "../panels/panelTransition";
 import type { ListSeed } from "./externalBus";
+import { isMobileViewport } from "../viewport";
 import { listPath } from "./paths";
 import { decodeUrl, encodeUrl, initialNavState, navReducer, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
 
@@ -62,8 +63,12 @@ export function useNavigation(options: MountOptions): Navigation {
     [send],
   );
   const openOverview = useCallback<Navigation["openOverview"]>(
-    (entityType, id, preview) => send({ type: "openOverview", overview: { entityType, entityId: id, preview } }),
-    [send],
+    (entityType, id, preview) => {
+      // Phone width: no room for two panes, so whatever would open beside the list opens in the main pane.
+      if (isMobileViewport()) navigate(entityType, id, preview);
+      else send({ type: "openOverview", overview: { entityType, entityId: id, preview } });
+    },
+    [send, navigate],
   );
   const seedNonce = useRef(0);
   const openList = useCallback<Navigation["openList"]>(
