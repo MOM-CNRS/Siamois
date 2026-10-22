@@ -341,7 +341,8 @@ class EntityBreadcrumbsServiceTest {
 
     @Test
     void findBreadcrumbs_place_outOfScopeOrUnknown_isNotFound() {
-        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, Set.of(99L)))
+        Set<Long> otherInstitutions = Set.of(99L);
+        assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, otherInstitutions))
                 .isInstanceOf(ResponseStatusException.class);
         entityExists = false;
         assertThatThrownBy(() -> service.findBreadcrumbs(EntityBreadcrumbsService.Kind.PLACE, 30, ACCESSIBLE))

@@ -81,7 +81,7 @@ public class EntityBreadcrumbsService {
 
     @Transactional(readOnly = true)
     public BreadcrumbsResource findBreadcrumbs(Kind kind, long id, Set<Long> accessibleInstitutionIds) {
-        return findBreadcrumbs(kind, id, accessibleInstitutionIds, null);
+        return find(kind, id, accessibleInstitutionIds, null);
     }
 
     /**
@@ -90,6 +90,10 @@ public class EntityBreadcrumbsService {
      */
     @Transactional(readOnly = true)
     public BreadcrumbsResource findBreadcrumbs(Kind kind, long id, Set<Long> accessibleInstitutionIds, String via) {
+        return find(kind, id, accessibleInstitutionIds, via);
+    }
+
+    private BreadcrumbsResource find(Kind kind, long id, Set<Long> accessibleInstitutionIds, String via) {
         if (kind == Kind.PLACE) {
             return placeBreadcrumbs(id, accessibleInstitutionIds, via);
         }
@@ -206,14 +210,9 @@ public class EntityBreadcrumbsService {
         BreadcrumbResource self = crumb(Kind.DOCUMENT, id);
         boolean truncated = false;
         List<Chains> groups = new ArrayList<>();
-        for (Kind linked : List.of(Kind.RECORDING_UNIT, Kind.FIND, Kind.CONTAINER, Kind.PHASE, Kind.STUDY)) {
-            for (Long linkedId : documentLinks(DOCUMENT_LINKS.get(linked), id)) {
-                groups.add(below(linked, linkedId));
-            }
-        }
-        for (Long placeId : documentLinks(DOCUMENT_LINKS.get(Kind.PLACE), id)) {
-            groups.add(below(Kind.PLACE, placeId));
-        }
+        List.of(Kind.RECORDING_UNIT, Kind.FIND, Kind.CONTAINER, Kind.PHASE, Kind.STUDY, Kind.PLACE)
+                .forEach(linked -> documentLinks(DOCUMENT_LINKS.get(linked), id)
+                        .forEach(linkedId -> groups.add(below(linked, linkedId))));
         for (Chains group : groups) {
             truncated |= group.truncated();
             for (List<BreadcrumbResource> path : group.paths()) {
