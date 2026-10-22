@@ -33,7 +33,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   api: {
     delete: (id) => deleteEntity("phases", id),
     siblings: (id) => fetchSiblings("phases", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("phases", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("phases", id, via),
     get: getPhase,
     list: listPhases,
     patchAnswers: (id, answers) => patchPhaseAnswers(id, answers),

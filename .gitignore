@@ -37,3 +37,6 @@ frontend/dev/.generated/
 
 # scripts Python
 __pycache__/
+
+# Dossier créé par erreur (chemin Windows pris comme nom de dossier)
+C:\\Users\\pccnr\\Documents\\SiamoisDevStorage\\Document/

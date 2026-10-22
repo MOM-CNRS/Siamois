@@ -30,7 +30,7 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
   api: {
     delete: (id) => deleteEntity("documents", id),
     siblings: (id) => fetchSiblings("documents", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("documents", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("documents", id, via),
     get: getDocument,
     list: listDocuments,
     patchAnswers: (id, answers) => patchDocumentAnswers(id, answers),

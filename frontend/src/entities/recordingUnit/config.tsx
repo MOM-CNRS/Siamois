@@ -65,7 +65,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
   api: {
     delete: (id) => deleteEntity("recording-units", id),
     siblings: (id) => fetchSiblings("recording-units", id),
-    breadcrumbs: (id) => fetchBreadcrumbs("recording-units", id),
+    breadcrumbs: (id, via) => fetchBreadcrumbs("recording-units", id, via),
     get: getRecordingUnit,
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),

@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,7 +32,9 @@ public class BreadcrumbsControllerApi {
     @Operation(summary = "Fil d'Ariane d'une fiche",
             description = "Tous les chemins du projet jusqu'à la fiche (collections : recording-units, finds, containers, "
                     + "phases, documents, studies). Le premier chemin est celui par défaut ; les parents sont parcourus par "
-                    + "identifiant croissant. Pour un mobilier, l'unité d'enregistrement d'appartenance précède la fiche.")
+                    + "identifiant croissant. Pour un mobilier, l'unité d'enregistrement d'appartenance précède la fiche. "
+                    + "Un document est placé sous chaque fiche à laquelle il est lié. Le paramètre optionnel via=type:id "
+                    + "(clé du registre front) place en premier les chemins passant par la fiche d'où l'on vient.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
@@ -39,13 +42,14 @@ public class BreadcrumbsControllerApi {
             @ApiResponse(responseCode = "500", description = "Erreur interne")
     })
     public ResponseEntity<BreadcrumbsResponse> getBreadcrumbs(@PathVariable("collection") String collection,
-                                                              @PathVariable("id") long id) {
+                                                              @PathVariable("id") long id,
+                                                              @RequestParam(name = "via", required = false) String via) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         EntityBreadcrumbsService.Kind kind = EntityBreadcrumbsService.Kind.ofCollection(collection);
         if (kind == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection inconnue");
         }
         return ResponseEntity.ok(new BreadcrumbsResponse(
-                entityBreadcrumbsService.findBreadcrumbs(kind, id, caller.accessibleInstitutionIds())));
+                entityBreadcrumbsService.findBreadcrumbs(kind, id, caller.accessibleInstitutionIds(), via)));
     }
 }

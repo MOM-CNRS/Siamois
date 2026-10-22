@@ -36,7 +36,8 @@ export const queryKeys = {
   stratigraphyTypes: (organizationId: number | undefined, fieldId: string, projectId?: string | null, valueConceptId?: string) =>
     ["stratigraphy-types", organizationId, fieldId, projectId ?? null, valueConceptId ?? null] as const,
 
-  entityBreadcrumbs: (entityType: string, id: string | number) => ["entity-breadcrumbs", entityType, id] as const,
+  entityBreadcrumbs: (entityType: string, id: string | number, via?: string) =>
+    via ? (["entity-breadcrumbs", entityType, id, via] as const) : (["entity-breadcrumbs", entityType, id] as const),
 
   bookmarks: () => ["bookmark-status"] as const,
   bookmark: (resourceUri: string | undefined, organizationId: number | undefined) =>
