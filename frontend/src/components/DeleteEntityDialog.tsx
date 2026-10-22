@@ -3,6 +3,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 export interface DeleteEntityDialogProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export function DeleteEntityDialog({ visible, confirmName, error, busy, onConfir
   const needsName = confirmName != null;
   const canConfirm = !busy && (!needsName || typed.trim() === confirmName.trim());
 
+  useToastOnChange(error);
   return (
     <Dialog
       visible={visible}
@@ -68,11 +70,6 @@ export function DeleteEntityDialog({ visible, confirmName, error, busy, onConfir
             className="w-full"
           />
         </div>
-      )}
-      {error && (
-        <p className="delete-entity-dialog-error" role="alert">
-          {error}
-        </p>
       )}
     </Dialog>
   );

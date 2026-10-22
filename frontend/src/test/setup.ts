@@ -1,5 +1,6 @@
 import { afterEach, vi } from "vitest";
 import { queryClient } from "../api/queryClient";
+import { notifySpy } from "./notifySpy";
 
 // Vitest setup shared by every test file.
 
@@ -18,7 +19,25 @@ console.error = (...args: unknown[]) => {
 };
 
 // The app's shared cache (catalogs are fetched through it) must not carry one test's data into the next.
-afterEach(() => queryClient.clear());
+afterEach(() => {
+  queryClient.clear();
+  Object.values(notifySpy).forEach((spy) => spy.mockClear());
+});
+
+// Toasts are recorded in `notifySpy` rather than drawn: a test asserts on what the user was told.
+vi.mock("../notify/NotifyProvider", async () => {
+  const { useEffect } = await import("react");
+  const { notifySpy: spy } = await import("./notifySpy");
+  return {
+    NotifyProvider: ({ children }: { children: unknown }) => children,
+    useNotify: () => spy,
+    useToastOnChange: (message: string | null | undefined, severity: keyof typeof spy = "error") => {
+      useEffect(() => {
+        if (message) spy[severity](message);
+      }, [message, severity]);
+    },
+  };
+});
 
 // No test reaches the server for what a user kept on a view (GET/PUT /api/v1/view-states) or for the saved
 // views (/api/v1/views): by default nothing was kept and there is no view. A test of that state overrides these mocks.

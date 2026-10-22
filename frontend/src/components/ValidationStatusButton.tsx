@@ -11,6 +11,7 @@ import {
   type ValidationStatusValue,
 } from "./table/ValidationStatusBadge";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 export interface ValidationStatusButtonProps {
   // The registry key: the cached list rows and fiche are keyed by it.
@@ -47,6 +48,7 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
     },
   });
 
+  useToastOnChange(mutation.error ? (mutation.error as Error).message : null);
   return (
     <>
       <Button
@@ -88,11 +90,6 @@ export function ValidationStatusButton({ entityType, collectionPath, entityId, s
             );
           })}
         </ul>
-        {mutation.error && (
-          <div className="validation-status-error" role="alert">
-            {(mutation.error as Error).message}
-          </div>
-        )}
       </OverlayPanel>
     </>
   );

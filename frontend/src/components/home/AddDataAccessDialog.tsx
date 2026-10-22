@@ -10,6 +10,7 @@ import { messageForError } from "../../api/errors";
 import { getAllEntityTypes } from "../../entities/registry";
 import { t } from "../../i18n";
 import { useTableTypes } from "./useTableTypes";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 /**
  * « Créer une nouvelle vue »: a table and one of its types, both required, and the view's name (« Table – Type »
@@ -50,6 +51,7 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
     },
   });
 
+  useToastOnChange(add.isError ? messageForError(add.error, t("home.dataAccess.addFailed")) : null);
   return (
     <Dialog header={t("home.dataAccess.createView")} visible onHide={onHide} style={{ width: "min(28rem, 95vw)" }} draggable={false}>
       <div className="home-data-access-form">
@@ -80,7 +82,6 @@ export function AddDataAccessDialog({ organizationId, onHide }: { organizationId
           maxLength={200}
           onChange={(e) => setTypedName(e.target.value)}
         />
-        {add.isError && <small className="home-data-access-error">{messageForError(add.error, t("home.dataAccess.addFailed"))}</small>}
         <div className="home-data-access-actions">
           <Button type="button" text label={t("tabs.cancel")} onClick={onHide} />
           <Button type="button" label={t("home.dataAccess.add")} disabled={table == null || typeId == null || name.trim() === "" || add.isPending} onClick={() => add.mutate()} />

@@ -7,6 +7,7 @@ import type { FieldResource } from "../fields/types";
 import { WriteModeProvider } from "../panels/writeMode";
 import { getEffectiveForm } from "../entities/typeCatalog";
 import { SchemaFicheTab, type SchemaFicheEntity } from "./SchemaFicheTab";
+import { notifySpy } from "../test/notifySpy";
 
 vi.mock("../entities/typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 const mockedGetEffectiveForm = vi.mocked(getEffectiveForm);
@@ -176,7 +177,7 @@ describe("SchemaFicheTab — form configured per type", () => {
     render({ entity: entity({ projectId: null }), typesSegment: "phase-types" });
     await flush();
 
-    expect(container.textContent).toContain("Projet inconnu");
+    expect(notifySpy.warn).toHaveBeenCalledWith(expect.stringContaining("Projet inconnu"));
     expect(mockedGetEffectiveForm).not.toHaveBeenCalled();
   });
 });
@@ -202,6 +203,6 @@ describe("SchemaFicheTab — form served with the detail", () => {
     render({ entity: entity({ formBundle: null }) });
     await flush();
 
-    expect(container.textContent).toContain("Impossible de charger la configuration du formulaire");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Impossible de charger la configuration du formulaire"));
   });
 });

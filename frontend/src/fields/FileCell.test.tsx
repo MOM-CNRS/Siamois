@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FileCell, formatFileSize } from "./FileCell";
 import { fetchDocumentFile, removeDocumentFile, uploadDocumentFile } from "../entities/document/api";
+import { notifySpy } from "../test/notifySpy";
 
 vi.mock("../entities/document/api", () => ({
   fetchDocumentFile: vi.fn(),
@@ -130,7 +131,7 @@ describe("FileCell", () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
     await flush();
-    expect(container.textContent).toContain("Fichier trop gros");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Fichier trop gros"));
   });
 
   it("offers a preview of an image and not of an archive", () => {

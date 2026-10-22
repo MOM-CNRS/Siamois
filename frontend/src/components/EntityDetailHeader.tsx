@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "primereact/button";
 import { Chip } from "primereact/chip";
 import { InputText } from "primereact/inputtext";
-import { Message } from "primereact/message";
 import { messageForError } from "../api/errors";
 import { queryKeys } from "../api/queryKeys";
 import { getEffectiveForm } from "../entities/typeCatalog";
@@ -14,6 +13,7 @@ import type { FilterOption } from "../fields/optionSources";
 import { isTypeField } from "../fields/typeField";
 import { useCanEdit } from "../panels/writeMode";
 import { t } from "../i18n";
+import { useToastOnChange } from "../notify/NotifyProvider";
 
 /** A text shown as a chip, edited in place as a text input. */
 export interface HeaderText {
@@ -90,6 +90,7 @@ export function EntityDetailHeader({
   const [secondaryDraft, setSecondaryDraft] = useState(secondary?.value ?? "");
   const [typeDraft, setTypeDraft] = useState<unknown>(type?.value);
   const [error, setError] = useState<string | null>(null);
+  useToastOnChange(error);
   const isEditing = editing && canEdit;
 
   const typeValue = type?.value;
@@ -190,7 +191,6 @@ export function EntityDetailHeader({
         )
       )}
       {!isEditing && extra}
-      {error && <Message severity="error" text={error} />}
       {canEdit && (
         <Button
           icon={isEditing ? "pi pi-check" : "pi pi-pencil"}

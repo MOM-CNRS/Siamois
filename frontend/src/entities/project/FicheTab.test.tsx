@@ -11,6 +11,7 @@ import { getProjectTypes } from "./projectTypes";
 import { getProjectHistory } from "./history";
 import { patchProject } from "./api";
 import type { ProjectDetail } from "./types";
+import { notifySpy } from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
@@ -503,7 +504,7 @@ describe("ProjectFicheTab — per-field click-to-edit", () => {
     await typeInto("");
     await flush();
 
-    expect(overlayEl()!.textContent).toContain("obligatoire");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("obligatoire"));
     expect(mockedPatchProject).not.toHaveBeenCalled();
     // Kept open with the error, exactly like a failed save — not silently discarded.
     expect(overlayEl()).not.toBeNull();
@@ -519,7 +520,7 @@ describe("ProjectFicheTab — per-field click-to-edit", () => {
     await clickOutsideOverlay();
     await flush();
 
-    expect(overlayEl()!.textContent).toContain("Identifiant déjà utilisé");
+    expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Identifiant déjà utilisé"));
     expect(overlayInput().value).toBe("OA-DUP");
   });
 });

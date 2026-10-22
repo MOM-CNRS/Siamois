@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { Message } from "primereact/message";
 import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
 import { CreateLinkField } from "../../components/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
@@ -16,6 +15,7 @@ import { queryKeys } from "../../api/queryKeys";
 import { useCreateProject } from "../../components/useCreateProject";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -93,6 +93,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
 
   const canSubmit = projectId != null && recordingUnitId != null && type != null && !mutation.isPending;
 
+  useToastOnChange(projectId == null && !projectPicker ? t("create.unknownProject") : null, "warn");
   return (
     <CreateFormShell
       entityType="find"
@@ -104,7 +105,6 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
       onCancel={onCancel}
     >
       {projectPicker}
-      {projectId == null && !projectPicker && <Message severity="warn" text={t("create.unknownProject")} />}
 
       {fixedRecordingUnit ? (
         <CreateLinkField label={t("entity.recordingUnit.singular")} entityType="recordingUnit" value={fixedRecordingUnit} />

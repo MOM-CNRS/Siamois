@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Message } from "primereact/message";
 import { Toolbar } from "primereact/toolbar";
 import { FormLayoutView } from "../../fields/FormLayoutView";
 import { isEmptyValue } from "../../fields/FieldLabel";
@@ -15,6 +14,7 @@ import type { ProjectDetail } from "./types";
 import { FormSkeleton } from "../../components/DetailSkeleton";
 import { queryKeys } from "../../api/queryKeys";
 import { t, intlLocale } from "../../i18n";
+import { useToastOnChange } from "../../notify/NotifyProvider";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
 // panel/row/field ActionUnit.DETAILS_FORM's layout defines (4 panels, 33 fields), same as JSF's
@@ -116,16 +116,14 @@ export function ProjectFicheTab({ entity, onSaved }: ProjectFicheTabProps) {
     [fields],
   );
 
+  useToastOnChange(organizationIdRaw == null ? t("fiche.unknownOrganization") : null, "warn");
+  useToastOnChange(typesQuery.error ? t("fiche.formConfigError") : null);
   return (
     <div className="project-fiche-tab sia-fiche-tab">
       {/* No edit/save toolbar: the app's own read/write switch decides, and each field persists
           itself. The identifier and type chips keep their explicit pencil/apply/cancel, in
           ProjectDetailHeader — that is what JSF does too (headerEditControls.xhtml). */}
-      {organizationIdRaw == null && (
-        <Message severity="warn" text={t("fiche.unknownOrganization")} />
-      )}
       {typesQuery.isLoading && <FormSkeleton />}
-      {typesQuery.error && <Message severity="error" text={t("fiche.formConfigError")} />}
       {fields && (
         <FormLayoutView
           entity={entity}
