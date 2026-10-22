@@ -153,11 +153,15 @@ function RefChip({
 }) {
   const openEntity = useOpenEntity();
   const entityType = REF_KINDS[resourceType]?.entityType;
-  const linkable = onOpen != null && entityType != null && openEntity != null && getEntityType(entityType) != null;
+  const config = entityType ? getEntityType(entityType) : undefined;
+  const icon = config?.icon;
+  const linkable = onOpen != null && entityType != null && openEntity != null && config != null;
   const style = inPanelColor
     ? ({
-        "--ref-chip-color": "var(--main-color, #80b480)",
-        "--ref-chip-border": "color-mix(in srgb, var(--main-color, #80b480) 35%, transparent)",
+        // A list sets --row-entity-color to the colour of what its rows are (an embedded one sits in another
+        // entity's panel, whose --main-color is not theirs); a fiche has none, and its own panel is the entity's.
+        "--ref-chip-color": "var(--row-entity-color, var(--main-color, #80b480))",
+        "--ref-chip-border": "color-mix(in srgb, var(--row-entity-color, var(--main-color, #80b480)) 35%, transparent)",
       } as CSSProperties)
     : refChipStyle(resourceType);
 
@@ -181,11 +185,13 @@ function RefChip({
         if (e.key === "Enter") open(e);
       }}
     >
-      {label}
+      {icon && <i className={`${icon} ref-chip-icon`} aria-hidden="true" />}
+      <span className="ref-chip-label">{label}</span>
     </span>
   ) : (
     <span className="ref-chip" style={style} title={label}>
-      {label}
+      {icon && <i className={`${icon} ref-chip-icon`} aria-hidden="true" />}
+      <span className="ref-chip-label">{label}</span>
     </span>
   );
 }

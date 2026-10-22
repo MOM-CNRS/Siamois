@@ -192,6 +192,15 @@
                             </h:outputLink>
                         </li>
                         <li class="nav-item">
+                            <h:outputLink value="https://siamois.eu" styleClass="nav-link"
+                                          target="_blank" id="projectLink">
+                                <img src="#{request.contextPath}/resources/img/siamois_logo.png"
+                                     style="height:20px; margin-right: 7px;" alt="SIAMOIS"/>
+                                <span class="menu-text">#{langBean.msg('nav.project')}</span>
+                                <p:tooltip for="projectLink" value="#{langBean.msg('nav.project')}"/>
+                            </h:outputLink>
+                        </li>
+                        <li class="nav-item">
                             <h:outputLink value="https://github.com/MOM-CNRS/Siamois" styleClass="nav-link"
                                           target="_blank" id="githubLink">
                                 <i class="bi bi-github" style="color:#000000;"/>

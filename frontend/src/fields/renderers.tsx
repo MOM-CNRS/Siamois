@@ -347,6 +347,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     : undefined;
 
   // A picked entity's chip label opens its fiche.
+  const entityIcon = linkEntityType ? getEntityType(linkEntityType)?.icon : undefined;
   const renderToken =
     asTokens && linkEntityType && openEntity
       ? (item: unknown) => {
@@ -367,6 +368,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
                 openEntity(linkEntityType, option.id);
               }}
             >
+              {entityIcon && <i className={`${entityIcon} ref-chip-icon`} aria-hidden="true" />}
               {option.label}
             </span>
           );

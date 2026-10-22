@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import { isValidElement, useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Panel } from "primereact/panel";
 import { TabView, TabPanel } from "primereact/tabview";
@@ -29,6 +29,7 @@ import { resolveTabs, useFicheConfig, ficheScopeOf } from "./ficheConfig";
 import { FicheTabsProvider } from "./ficheTabsContext";
 import { FicheTabsEditor } from "./FicheTabsEditor";
 import { AddListTabDialog } from "./AddListTabDialog";
+import { TabCount } from "./TabCount";
 import { editableTabs, relationTargets, restorableTabs, restoreTab, type EditableTab } from "./ficheTabsModel";
 import { addTabItems } from "./addTabMenu";
 import { Menu } from "primereact/menu";
@@ -509,7 +510,9 @@ export function EntityDetailPanel({
           }}
         >
           {tabs.map((tab) => {
-            const badge = tab.badge?.(data);
+            const badge = tab.badge?.(data, helpers);
+            // Resolved here: the registry is complete by now, not when the tab was defined.
+            const icon = tab.icon ?? (tab.relation ? getEntityType(tab.relation.target)?.icon : undefined);
             return (
               <TabPanel
                 key={tab.key}
@@ -517,8 +520,9 @@ export function EntityDetailPanel({
                   // pages/shared/tab/tabTitle.xhtml's markup, as every JSF tab renders its title:
                   // bold label, then the count in parentheses when the tab has one.
                   <div className="sia-tab-title">
+                    {icon && <i className={`${icon} sia-tab-icon`} aria-hidden="true" />}
                     {tab.label}
-                    {badge != null && <span>{` (${badge})`}</span>}
+                    {badge != null && (isValidElement(badge) ? badge : <TabCount value={String(badge)} />)}
                   </div>
                 }
               >

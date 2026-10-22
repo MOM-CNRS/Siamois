@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getFicheConfig } from "../api/ficheConfigs";
 import { queryKeys } from "../api/queryKeys";
+import { ListTabCount } from "./TabCount";
 import { getEntityType } from "../entities/registry";
 import { PROJECT_KEY } from "../entities/keys";
 import type { DetailTabDef, FilterValue } from "../entities/types";
@@ -121,6 +122,15 @@ function listTab<TDetail extends { id: string | number }>(
   return {
     key: tab.key,
     label: tab.label ?? target,
+    icon: getEntityType(target)?.icon,
+    badge: (entity, helpers) => (
+      <ListTabCount
+        target={target}
+        scope={{ entityType, id: entity.id, projectId: ficheScopeOf(entityType, entity).projectId }}
+        filters={tab.baseFilters}
+        organizationId={helpers?.organizationId}
+      />
+    ),
     render: (entity, helpers) => (
       <EntityListPanel
         embedded

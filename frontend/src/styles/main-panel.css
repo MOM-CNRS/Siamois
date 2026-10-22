@@ -417,7 +417,7 @@
 .entity-list-panel .p-datatable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
 .entity-list-panel .p-treetable-thead > tr > th:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell),
 .entity-list-panel .p-treetable-tbody > tr > td:not(.p-selection-column):not(.entity-list-panel-frozen):not(.entity-list-panel-filler-cell) {
-  min-width: 9rem;
+  min-width: 13rem;
 }
 
 /* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
@@ -1514,6 +1514,26 @@ body button.p-button.status-button.status-button-compact {
   vertical-align: middle;
 }
 
+/* The name is its own box: text-overflow does not reach text that is a direct child of a flex container, so a
+   long name was cut square against the border instead of ending in an ellipsis. */
+.ref-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The referenced entity's icon, before its name. */
+.ref-chip-icon {
+  flex: none;
+  margin-right: 0.35em;
+  font-size: 0.9em;
+}
+
+.resource-ref-token-link .ref-chip-icon {
+  margin-right: 0.35em;
+}
+
 /* A chip that opens its fiche (the overlay's): the edit-mode token's look — full-colour border,
    label underlined on hover — rather than the plain chip's light one. */
 .ref-chip-link {
@@ -1681,7 +1701,29 @@ body button.p-button.status-button.status-button-compact {
 .sia-titlebar-split {
   justify-content: space-between;
 }
+/* The tab's entity icon, and its count as a light grey pill. */
+.sia-tab-icon {
+  flex: none;
+  margin-right: 0.15em;
+}
+
+.sia-tab-count {
+  flex: none;
+  margin-left: 0.3em;
+  padding: 0 0.5em;
+  min-width: 1.6em;
+  border-radius: 999px;
+  background: var(--surface-200, #e9ecef);
+  color: var(--text-color-secondary, #4b5563);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .sia-tab-title {
+  /* The same height with or without a count pill, so every tab's underline sits on one line. */
+  min-height: 1.3rem;
   display: flex;
   gap: 0.2em;
   align-items: center;
@@ -3287,6 +3329,14 @@ div#search-bar .sia-search {
 .entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav,
 .entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
   background: var(--siamois-green-light-50, #f3f7f3);
+}
+
+/* The strip's own line is the only one under the tabs: an inactive tab carries none, the active one a 2px green. */
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li .p-tabview-nav-link {
+  border-bottom: 2px solid transparent;
+}
+.entity-detail-panel .p-tabview.entity-detail-panel-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+  border-bottom-color: var(--siamois-green, #669966);
 }
 
 /* The tab strip's scroll arrows carry a huge white glow (theme: box-shadow 0 0 10px 50px) that blurs the tab
