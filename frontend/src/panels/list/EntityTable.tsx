@@ -30,7 +30,7 @@ import type {
   EntityPreview,
   EntityTypeConfig,
   ListParams,
-} from "../../entities/types";
+} from "../../entities/shared/types";
 import { entityChipStyle, renderAnswerValue } from "../../fields/display";
 import { describeIncoherence } from "../../fields/incoherence";
 import { entityRowLabel } from "../../fields/optionSources";
@@ -42,11 +42,11 @@ import {
   FROZEN_COLUMN_CLASS,
   frozenColumnStyle,
   useFrozenColumnOffsets,
-} from "../frozenColumns";
-import { rememberListContext } from "../listContext";
-import { PAGE_SIZE_OPTIONS } from "../tableState";
-import { useWriteMode } from "../writeMode";
-import { isFieldPending } from "../usePagedList";
+} from "./frozenColumns";
+import { rememberListContext } from "./listContext";
+import { PAGE_SIZE_OPTIONS } from "./tableState";
+import { useWriteMode } from "../pane/writeMode";
+import { isFieldPending } from "./usePagedList";
 import type { RowRecord } from "./useEntityListData";
 import { buildTreeSelectionColumn } from "./treeSelectionColumn";
 import type { EntityTableTree } from "./useTreeRows";
@@ -282,7 +282,7 @@ export function EntityTable({
     e.stopPropagation();
     if (row.id == null) return;
     // The fiche's previous/next arrows walk THIS list — its sort, filters, search and scope — from
-    // this row's position (panels/listContext.ts).
+    // this row's position (panels/list/listContext.ts).
     const at = rows.findIndex((r) => String(r.id) === String(row.id));
     if (at >= 0)
       rememberListContext(entityType, row.id, { params, index: offset + at });

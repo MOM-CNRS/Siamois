@@ -5,13 +5,13 @@ import { FormLayoutView } from "../../fields/FormLayoutView";
 import { isEmptyValue } from "../../fields/FieldLabel";
 import { toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/types";
 import type { FieldResource } from "../../fields/types";
-import { useCanEdit } from "../../panels/writeMode";
+import { useCanEdit } from "../../panels/pane/writeMode";
 import { getProjectHistory, type ProjectHistoryEntry } from "./history";
 import { parseLayout } from "../../fields/layout";
 import { getProjectTypes } from "./projectTypes";
 import { patchProject, type ProjectPatch } from "./api";
 import type { ProjectDetail } from "./types";
-import { FormSkeleton } from "../../components/DetailSkeleton";
+import { FormSkeleton } from "../../components/layout/DetailSkeleton";
 import { queryKeys } from "../../api/queryKeys";
 import { t, intlLocale } from "../../i18n";
 import { useToastOnChange } from "../../notify/NotifyProvider";
@@ -30,7 +30,7 @@ import { useToastOnChange } from "../../notify/NotifyProvider";
 //   topbar toggle) AND the user's own right on this project (_permissions.canEdit, the same
 //   permission canUserEditUnit() checks — see headerEditControls.xhtml and bug #448). In JSF the
 //   switch is literally what FlowBean.getInPlaceFieldMode() reads to hand every field "input" or
-//   "output"; here it arrives as WriteModeProvider (panels/writeMode.tsx).
+//   "output"; here it arrives as WriteModeProvider (panels/pane/writeMode.tsx).
 // - HOW a field is edited is now identical to the list's own table cells (plan follow-up: "fiche
 //   fields edit on click, like the table"): a field is a plain value until clicked, and
 //   FieldEditCell then opens CellEditOverlay — the exact same component the list uses, not a

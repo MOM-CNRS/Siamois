@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HomePanel } from "./HomePanel";
-import { PaneStateProvider, PaneStateStore } from "./paneState";
+import { PaneStateProvider, PaneStateStore } from "./pane/paneState";
 
 describe("HomePanel", () => {
   it("renders an empty shell when there are no widgets", () => {

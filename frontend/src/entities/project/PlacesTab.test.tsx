@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { DetailTabHelpers } from "../types";
+import type { DetailTabHelpers } from "../shared/types";
 import { PlacesTab } from "./PlacesTab";
 import type { ProjectDetail } from "./types";
 

@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../../api/queryKeys";
-import { usePersistedPaneState } from "../../../panels/persistedPaneState";
-import { DEFAULT_LIMIT, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/tableState";
+import { usePersistedPaneState } from "../../../panels/pane/persistedPaneState";
+import { DEFAULT_LIMIT, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/list/tableState";
 import { getRelationList, type RelationListParams } from "./api";
 import type { RelationKind, RelationRow } from "./types";
 

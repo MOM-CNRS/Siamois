@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBreadcrumbs } from "../entities/breadcrumbsApi";
+import { fetchBreadcrumbs } from "../entities/shared/breadcrumbsApi";
 import { PROJECT_KEY } from "../entities/keys";
 import { getEntityType } from "../entities/registry";
 import { publishContext } from "./externalBus";

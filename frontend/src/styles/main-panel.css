@@ -468,7 +468,7 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
   min-width: 13rem;
 }
 
-/* Frozen columns (panels/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
+/* Frozen columns (panels/list/frozenColumns.ts, not PrimeReact's own `frozen`): sticky against the
    table's scroll box, at the `left` offset their inline style takes from the CSS variables that
    file keeps on the table root. Below: the stacking order between the frozen columns and the
    sticky header, an opaque background, and a width floor. */
@@ -1014,7 +1014,7 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
 }
 
 /* ---------------------------------------------------------------------------
-   Create forms (components/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
+   Create forms (components/create/CreateFormShell.tsx), in their overlay: JSF's newUnitDialog.xhtml made
    lighter — the entity's icon and title in its colour, the fields labelled like a fiche's, a light
    footer with « Annuler » / « Créer ». --entity-chip-color is the entity's, set on the form. */
 /* Beats the theme's `body .p-overlaypanel .p-overlaypanel-content` padding: header and footer
@@ -1177,7 +1177,7 @@ body .entity-list-panel .p-datatable thead th.p-sortable-column:focus-visible {
   box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
 }
 
-/* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
+/* A list row's action buttons (panels/list/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
    compact so the row stays at --entity-list-row-height, and dimmed until the row is hovered so a
    long list doesn't read as a wall of icons. */
 .entity-list-panel .entity-list-panel-row-actions {
@@ -1216,7 +1216,7 @@ body .entity-list-panel .p-datatable thead th.p-sortable-column:focus-visible {
   transform: rotate(-90deg);
 }
 
-/* A create form's pre-set link (components/CreateLinkField.tsx). */
+/* A create form's pre-set link (components/create/CreateLinkField.tsx). */
 .create-link-field .create-link-field-value {
   align-self: flex-start;
   color: var(--text-color);
@@ -1463,7 +1463,7 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* ---------------------------------------------------------------------------
-   Loading skeletons (components/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
+   Loading skeletons (components/layout/DetailSkeleton.tsx, EntityListPanel's first-load rows). They fade
    in only after a short delay: a fast response never shows them, so nothing flashes; a slow one
    shows the page's shape instead of an empty box. */
 @keyframes loading-skeleton-appear {
@@ -1531,7 +1531,7 @@ body button.p-button.status-button.status-button-compact {
 }
 
 /* ---------------------------------------------------------------------------
-   PaneSplit (panels/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
+   PaneSplit (panels/pane/PaneSplit.tsx): the gutter the theme paints as .p-splitter-gutter, kept thin;
    no text selection while dragging it. */
 .pane-split.p-splitter-resizing {
   user-select: none;
@@ -1625,7 +1625,7 @@ body button.p-button.status-button.status-button-compact {
   color: var(--ref-chip-color);
 }
 
-/* "Dupliquer la structure" (components/DuplicateStructureOverlay.tsx), in the create overlay's
+/* "Dupliquer la structure" (components/duplicate/DuplicateStructureOverlay.tsx), in the create overlay's
    frame: how many exemplars, then what to include. */
 .duplicate-structure {
   display: flex;
@@ -2847,7 +2847,7 @@ div#search-bar .sia-search {
   font-size: 0.8rem;
 }
 
-/* The permanent-deletion confirmation (components/DeleteEntityDialog.tsx). */
+/* The permanent-deletion confirmation (components/detail/DeleteEntityDialog.tsx). */
 .delete-entity-dialog .delete-entity-dialog-message {
   margin: 0 0 1rem;
 }
@@ -3570,7 +3570,7 @@ div#search-bar .sia-search {
   }
 }
 
-/* ── Bottom sheets (components/BottomSheet.tsx): overlays turned into drawers at phone width ──────── */
+/* ── Bottom sheets (components/layout/BottomSheet.tsx): overlays turned into drawers at phone width ──────── */
 .p-sidebar.bottom-sheet {
   height: auto !important;
   max-height: 85dvh !important;

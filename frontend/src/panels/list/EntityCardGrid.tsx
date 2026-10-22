@@ -5,12 +5,12 @@ import { Dialog } from "primereact/dialog";
 import { Paginator, type PaginatorPageChangeEvent } from "primereact/paginator";
 import { Skeleton } from "primereact/skeleton";
 import { ValidationStatusCell, type ValidationStatusCellProps } from "../../components/table/ValidationStatusCell";
-import type { EntityPreview, EntityTypeConfig, ListParams } from "../../entities/types";
+import type { EntityPreview, EntityTypeConfig, ListParams } from "../../entities/shared/types";
 import { entityChipStyle } from "../../fields/display";
 import { entityRowLabel } from "../../fields/optionSources";
 import { t } from "../../i18n";
-import { rememberListContext } from "../listContext";
-import { PAGE_SIZE_OPTIONS } from "../tableState";
+import { rememberListContext } from "./listContext";
+import { PAGE_SIZE_OPTIONS } from "./tableState";
 import type { RowRecord } from "./useEntityListData";
 import { useDocumentFullImage, useDocumentThumbnail } from "./useDocumentThumbnail";
 
@@ -206,7 +206,7 @@ export function EntityCardGrid({
 
   function open(row: RowRecord) {
     if (row.id == null) return;
-    // The fiche's previous/next arrows walk THIS list from this row's position (panels/listContext.ts).
+    // The fiche's previous/next arrows walk THIS list from this row's position (panels/list/listContext.ts).
     const at = rows.findIndex((r) => String(r.id) === String(row.id));
     if (at >= 0) rememberListContext(entityType, row.id, { params, index: offset + at });
     if (onOpenOverview) {

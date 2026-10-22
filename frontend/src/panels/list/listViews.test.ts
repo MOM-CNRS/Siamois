@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EntityTypeConfig } from "../../entities/types";
+import type { EntityTypeConfig } from "../../entities/shared/types";
 import {
   availableViews,
   DEFAULT_LIST_VIEW,

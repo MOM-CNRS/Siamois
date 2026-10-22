@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
-import { BottomSheet } from "../components/BottomSheet";
+import { BottomSheet } from "../components/layout/BottomSheet";
 import { useDebounced } from "../search/SearchOverlay";
 import { t } from "../i18n";
 import type { FilterOption, OptionList } from "./optionSources";

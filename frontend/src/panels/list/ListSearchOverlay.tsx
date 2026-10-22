@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { describeFilterValue } from "../../components/table/ColumnFilter";
 import type { FilterSpec } from "../../components/table/FilterChipBar";
 import type { FilterOption } from "../../fields/optionSources";
-import type { EntityTypeConfig, FilterValue, ListParams, PagedResult } from "../../entities/types";
+import type { EntityTypeConfig, FilterValue, ListParams, PagedResult } from "../../entities/shared/types";
 import { t } from "../../i18n";
 import { formatFilter, keywordCompletion, parseQuery, tailKeyword, type SearchKeyword } from "../../search/queryParser";
 import {

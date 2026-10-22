@@ -37,7 +37,7 @@ Trois choses distinctes, qui partagent un même modèle d'état :
 
 ### Ce qui est enregistré
 
-**Une liste** (`panels/listState.ts`) : la taille de page, le tri, les filtres, les colonnes visibles (et
+**Une liste** (`panels/list/listState.ts`) : la taille de page, le tri, les filtres, les colonnes visibles (et
 leur ordre) et le mode liste/arbre. **Pas** la page courante ni le texte de recherche : revenir à la page 7
 d'une recherche d'hier surprend, revenir à ses filtres et à son tri est le but.
 
@@ -77,7 +77,7 @@ Contrat dans OpenAPI (tag « Vues »).
 
 ### Côté front
 
-- `api/views.ts` : les appels. `useUserViewState(viewKey, organizationId)` (`panels/useUserViewState.ts`) :
+- `api/resources/views.ts` : les appels. `useUserViewState(viewKey, organizationId)` (`panels/list/useUserViewState.ts`) :
   lecture (React Query, mise en cache à vie, écrite à chaque sauvegarde), `save`, `update` (fusion avec le
   dernier état), `reset`. Les modifications partent **600 ms après la dernière**, et aussi à la fermeture du
   panneau et au `pagehide`.
@@ -86,7 +86,7 @@ Contrat dans OpenAPI (tag « Vues »).
   liste/arbre fait partie de `TableState` (`viewMode`).
 - Fiches : `EntityDetailPanel` lit `detail:<type>:<id>` et n'affiche la fiche qu'une fois l'état lu, pour ne pas
   s'ouvrir sur le premier onglet puis sauter. Un aperçu qui nomme un onglet reste prioritaire.
-  `usePersistedPaneState` (`panels/persistedPaneState.tsx`) remplace `usePaneState` dans un composant
+  `usePersistedPaneState` (`panels/pane/persistedPaneState.tsx`) remplace `usePaneState` dans un composant
   d'onglet qui veut garder un morceau d'état. Hors d'une fiche, c'est un `usePaneState`.
 - En échec (réseau, serveur), l'état est lu comme « rien d'enregistré » et la liste s'affiche avec ses
   défauts. Une écriture perdue est remplacée par la suivante, qui renvoie l'état entier.
@@ -100,7 +100,7 @@ plus déclarée, un formulaire gagne ou perd une section. Ce qui était enregist
 casser l'écran. Le serveur répond **400 « Champ inconnu »** à un filtre ou à un tri sur un champ disparu, et
 un filtre que personne ne voit ne peut pas être enlevé : il faut donc le retirer avant la première requête.
 
-**Listes** (`panels/listStateValidity.ts`, appelé par `useEntityListData` une fois le catalogue chargé) :
+**Listes** (`panels/list/listStateValidity.ts`, appelé par `useEntityListData` une fois le catalogue chargé) :
 
 - un **filtre** n'est gardé que s'il porte sur une colonne épinglée déclarée filtrable ou sur un champ du
   catalogue qui accepte encore un filtre ;
@@ -284,7 +284,7 @@ les filtres de l'utilisateur s'ajoutent par-dessus et sont enregistrés dans l'�
 **API** : `GET|PUT|DELETE /api/v1/fiche-configs` (`organizationId`, `resourceType`, `projectId?`, `typeId?`).
 `GET` renvoie aussi `canEdit`.
 
-**Lecture dans la fiche** (`panels/ficheConfig.tsx`) : `useFicheConfig` interroge la configuration une fois la
+**Lecture dans la fiche** (`panels/detail/ficheConfig.tsx`) : `useFicheConfig` interroge la configuration une fois la
 fiche chargée (le projet et le sous-type viennent d'elle : `projectId`, `type.id`), `resolveTabs` produit la
 liste d'onglets. La fiche attend la configuration, comme l'état de l'utilisateur, pour ne pas changer d'onglets
 après coup. Si la lecture échoue, la fiche garde les onglets du code. L'onglet enregistré par l'utilisateur ou
@@ -334,14 +334,14 @@ déjà dans le paramétrage du projet et les vues nommées couvrent le partage d
 - Backend : `domain/models/uiview/` (`UiTableView`, `UiViewKind`, `UserViewState`),
   `infrastructure/database/UiViewRepository`, `UserViewStateRepository`,
   `ui/api/openapi/v1/service/ViewOpenApiService`, `controller/ViewControllerApi`, `dto/view/TableViewState` ;
-  onglets configurés : `FicheConfig`, `FicheConfigRepository`, `FicheConfigOpenApiService`, `FicheConfigControllerApi` ; front `api/ficheConfigs.ts`, `panels/ficheConfig.tsx`, `panels/ficheTabsModel.ts`, `FicheTabsEditor.tsx`, `AddListTabDialog.tsx`.
-- Front : `api/views.ts`, `panels/useUserViewState.ts`, `panels/listState.ts`, `panels/listStateValidity.ts`,
-  `panels/persistedPaneState.tsx`, `panels/useTableState.ts`, `panels/list/useEntityListData.ts`,
+  onglets configurés : `FicheConfig`, `FicheConfigRepository`, `FicheConfigOpenApiService`, `FicheConfigControllerApi` ; front `api/resources/ficheConfigs.ts`, `panels/detail/ficheConfig.tsx`, `panels/detail/ficheTabsModel.ts`, `FicheTabsEditor.tsx`, `AddListTabDialog.tsx`.
+- Front : `api/resources/views.ts`, `panels/list/useUserViewState.ts`, `panels/list/listState.ts`, `panels/list/listStateValidity.ts`,
+  `panels/pane/persistedPaneState.tsx`, `panels/list/useTableState.ts`, `panels/list/useEntityListData.ts`,
   `panels/EntityDetailPanel.tsx`.
 - Harnais de maquette : `frontend/dev/panels/mockApi.ts` simule `/view-states` en mémoire.
 - Tests : `ViewOpenApiServiceTest`, `ViewMenuBeanTest` ; côté front `useUserViewState.test.tsx`, `listState.test.ts`,
   `listStateValidity.test.ts`, `persistedPaneState.test.tsx`, `EntityListPanel.userState.test.tsx`,
-  `EntityDetailPanel.test.tsx`. Un mock global de `api/views` est déclaré dans `src/test/setup.ts`. Les
+  `EntityDetailPanel.test.tsx`. Un mock global de `api/resources/views` est déclaré dans `src/test/setup.ts`. Les
   tests de panneaux attendent deux cycles `act` (`flush`) : la liste lit l'état avant son premier
   chargement.
 

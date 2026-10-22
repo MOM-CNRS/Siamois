@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dropdown } from "primereact/dropdown";
-import { createHomeAccess } from "../../api/homeAccesses";
-import { listViews } from "../../api/views";
+import { createHomeAccess } from "../../api/resources/homeAccesses";
+import { listViews } from "../../api/resources/views";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
 import { getAllEntityTypes } from "../../entities/registry";

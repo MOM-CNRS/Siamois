@@ -7,9 +7,9 @@ import { Skeleton } from "primereact/skeleton";
 import { Toolbar } from "primereact/toolbar";
 import { Tooltip } from "primereact/tooltip";
 import { queryKeys } from "../../api/queryKeys";
-import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/types";
+import type { CreatePrefill, EntityTypeConfig, ListScope } from "../../entities/shared/types";
 import { t } from "../../i18n";
-import { BottomSheet } from "../../components/BottomSheet";
+import { BottomSheet } from "../../components/layout/BottomSheet";
 import { useIsMobile } from "../../viewport";
 
 export interface ListToolbarProps {

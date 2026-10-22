@@ -7,8 +7,8 @@ import { ApiError } from "../../api/client";
 import { CellEditOverlay, type CellEditTarget } from "./CellEditOverlay";
 import type { FieldResource } from "../../fields/types";
 import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig } from "../../entities/types";
-import { EntityNavigationProvider } from "../../panels/entityNavigation";
+import type { EntityTypeConfig } from "../../entities/shared/types";
+import { EntityNavigationProvider } from "../../panels/pane/entityNavigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { notifySpy } from "../../test/notifySpy";
 

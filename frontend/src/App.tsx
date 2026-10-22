@@ -2,7 +2,7 @@ import { useHideChromeOnScroll } from "./mobileChrome";
 import { useEffect, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { NotifyProvider } from "./notify/NotifyProvider";
-import { PaneErrorBoundary } from "./components/PaneErrorBoundary";
+import { PaneErrorBoundary } from "./components/layout/PaneErrorBoundary";
 import { queryClient } from "./api/queryClient";
 import type { MountOptions, PanelChrome, PanelKind, PanelToolbarSlot } from "./mountOptions";
 import { homeShortcutWidgets } from "./components/home/HomeShortcuts";
@@ -10,21 +10,21 @@ import { getAllEntityTypes, getEntityType } from "./entities/registry";
 import { EntityListPanel } from "./panels/EntityListPanel";
 import { EntityDetailPanel, type EntityPreview } from "./panels/EntityDetailPanel";
 import { HomePanel } from "./panels/HomePanel";
-import { WriteModeProvider } from "./panels/writeMode";
-import { BridgeProvider } from "./panels/bridge";
-import { EntityNavigationProvider } from "./panels/entityNavigation";
-import { paneTransitionName } from "./panels/panelTransition";
-import { PaneSplit } from "./panels/PaneSplit";
-import { useRestoreFocus } from "./panels/useRestoreFocus";
-import { OverviewOpenProvider } from "./panels/overviewOpen";
-import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/paneState";
+import { WriteModeProvider } from "./panels/pane/writeMode";
+import { BridgeProvider } from "./panels/pane/bridge";
+import { EntityNavigationProvider } from "./panels/pane/entityNavigation";
+import { paneTransitionName } from "./panels/pane/panelTransition";
+import { PaneSplit } from "./panels/pane/PaneSplit";
+import { useRestoreFocus } from "./panels/pane/useRestoreFocus";
+import { OverviewOpenProvider } from "./panels/pane/overviewOpen";
+import { PaneStateProvider, PaneStateScope, usePaneStateStore } from "./panels/pane/paneState";
 import { sameEntity, type NavigationView, type OverviewState } from "./navigation/reducer";
 import { useNavigation } from "./navigation/useNavigation";
 import { registerNavigation } from "./navigation/externalBus";
-import { onEntityDeleted } from "./panels/entityDeleted";
+import { onEntityDeleted } from "./panels/detail/entityDeleted";
 import { ContextPublisher } from "./navigation/ContextPublisher";
 import { PROJECT_KEY } from "./entities/keys";
-import type { ListScope } from "./entities/types";
+import type { ListScope } from "./entities/shared/types";
 import { t } from "./i18n";
 
 // One cache for the whole app: see api/queryClient.ts.
@@ -129,7 +129,7 @@ function PanelContent({
  * - No overview open (options.overviewEntityType unset): renders only the main pane, no
  *   splitter/gutter — mirrors JSF's own p:splitter today, which has a single splitterPanel
  *   when panelModel.parentOrOverview is null.
- * - Overview open: PaneSplit (panels/PaneSplit.tsx) is the equivalent of JSF's
+ * - Overview open: PaneSplit (panels/pane/PaneSplit.tsx) is the equivalent of JSF's
  *   p:splitter/p:splitterPanel, built so the main pane is never remounted when the overview
  *   opens or closes — left pane = the main panel's entity, right pane =
  *   parentOrOverview's entity. Class names (panel-splitter-panel-l/-r, sideview,
@@ -336,7 +336,7 @@ export function App({ options }: { options: MountOptions }) {
     <QueryClientProvider client={queryClient}>
       <ContextPublisher view={view} organizationId={options.organizationId} />
       <NotifyProvider>
-      {/* FlowBean.isWriteMode, for every panel below — see panels/writeMode.tsx for why this is a
+      {/* FlowBean.isWriteMode, for every panel below — see panels/pane/writeMode.tsx for why this is a
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>
         <BridgeProvider value={options.bridge}>

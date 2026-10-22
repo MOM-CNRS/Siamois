@@ -1,11 +1,11 @@
-import type { EntityRef, EntityTypeConfig, ListScope } from "../types";
-import { deleteEntity } from "../deleteApi";
-import { relationTab } from "../../panels/relationTab";
+import type { EntityRef, EntityTypeConfig, ListScope } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { relationTab } from "../../panels/detail/relationTab";
 import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
-import { scopeProjectId } from "../scope";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
+import { scopeProjectId } from "../shared/scope";
 import {
   duplicateRecordingUnit,
   duplicateRecordingUnitStructure,
@@ -18,13 +18,13 @@ import { recordingUnitColumns } from "./columns";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { RecordingUnitDetailHeader } from "./DetailHeader";
 import { RelationGraphTab } from "./graph/RelationGraphTab";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
 import {
   getOrganizationRecordingUnitTypes,
   getRecordingUnitTypes,
 } from "./recordingUnitTypes";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 import { t } from "../../i18n";
 

@@ -1,4 +1,4 @@
-import type { EntityTypeConfig, ListScope } from "../../entities/types";
+import type { EntityTypeConfig, ListScope } from "../../entities/shared/types";
 import { t, type MessageKey } from "../../i18n";
 
 /**

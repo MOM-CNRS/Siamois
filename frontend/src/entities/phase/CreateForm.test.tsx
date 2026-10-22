@@ -5,14 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { PhaseCreateForm } from "./CreateForm";
-import { getEffectiveForm } from "../typeCatalog";
+import { getEffectiveForm } from "../shared/typeCatalog";
 import { createPhase } from "./api";
 
 
-vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
+vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createPhase: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
-vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
+vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (

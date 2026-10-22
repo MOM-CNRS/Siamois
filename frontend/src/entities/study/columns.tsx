@@ -1,9 +1,9 @@
-import type { ColumnDef } from "../types";
+import type { ColumnDef } from "../shared/types";
 import type { StudySummary } from "./types";
 import { t } from "../../i18n";
 
 // The pinned columns; the rest of the table comes from the project's study forms (the dynamic
-// catalog, entities/typeCatalog.ts). Field ids are the study table's system fields (StudyForm).
+// catalog, entities/shared/typeCatalog.ts). Field ids are the study table's system fields (StudyForm).
 export const studyColumns: ColumnDef<StudySummary>[] = [
   {
     key: "identifier",

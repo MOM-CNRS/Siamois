@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldRendererProps } from "../../fields/registry";
 import { PlaceCreateForm } from "./CreateForm";
-import type { CreatePrefill } from "../types";
+import type { CreatePrefill } from "../shared/types";
 import { createPlace } from "./api";
 
 

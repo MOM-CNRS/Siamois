@@ -21,9 +21,9 @@ import { StratigraphyEditor } from "../relationLinks/StratigraphyEditor";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
 import { useIsMobile } from "../../viewport";
-import { BottomSheet } from "../BottomSheet";
+import { BottomSheet } from "../layout/BottomSheet";
 import { useToastOnChange } from "../../notify/NotifyProvider";
-import { useRestoreFocus } from "../../panels/useRestoreFocus";
+import { useRestoreFocus } from "../../panels/pane/useRestoreFocus";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked

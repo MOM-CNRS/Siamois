@@ -1,4 +1,4 @@
-import type { EntityTypeConfig } from "./types";
+import type { EntityTypeConfig } from "./shared/types";
 
 // One module per entity registers itself here (entities/project/config.tsx is the first, phase
 // 4). This registry is a deliberate generics-erasure boundary: EntityTypeConfig<TSummary,

@@ -3,7 +3,7 @@ import { Checkbox } from "primereact/checkbox";
 import { queryKeys } from "../../api/queryKeys";
 import { fetchFieldConceptOptions } from "../../fields/optionSources";
 import { t } from "../../i18n";
-import { CreateFormField } from "../CreateFormShell";
+import { CreateFormField } from "../create/CreateFormShell";
 import { InlinePicker, type PickerOption } from "./InlinePicker";
 
 // Where the types of a stratigraphic link come from: the list of the field that holds the link (its

@@ -1,6 +1,6 @@
 import { apiFetch } from "../../api/client";
-import { fetchList } from "../listApi";
-import type { EntitySiblings, ListParams, PagedResult } from "../types";
+import { fetchList } from "../shared/listApi";
+import type { EntitySiblings, ListParams, PagedResult } from "../shared/types";
 import type { AnswerInputBody } from "../../fields/types";
 import type { ProjectDetail, ProjectSummary } from "./types";
 

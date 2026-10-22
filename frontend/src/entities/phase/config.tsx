@@ -1,18 +1,18 @@
-import type { EntityTypeConfig } from "../types";
-import { deleteEntity } from "../deleteApi";
-import { loadTypeCatalog } from "../typeCatalog";
-import { relationTab } from "../../panels/relationTab";
+import type { EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { loadTypeCatalog } from "../shared/typeCatalog";
+import { relationTab } from "../../panels/detail/relationTab";
 import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { getPhase, listPhases, patchPhase, patchPhaseAnswers } from "./api";
 import { phaseColumns } from "./columns";
 import { PhaseCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { PhaseDetail, PhaseSummary } from "./types";
 import { t } from "../../i18n";
 
@@ -20,7 +20,7 @@ import { t } from "../../i18n";
 // up by key ("phase") both by the registry's generics-erasure boundary and by
 // entities/project/config.tsx's relationTab, which only ever references it by that string.
 //
-// Its dynamic column catalog comes from the project's forms (entities/typeCatalog.ts).
+// Its dynamic column catalog comes from the project's forms (entities/shared/typeCatalog.ts).
 export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   key: "phase",
   labels: { singular: t("entity.phase.singular"), plural: t("entity.phase.plural"), all: t("entity.phase.all") },

@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import type { EntityTypeConfig } from "../entities/types";
+import type { EntityTypeConfig } from "../entities/shared/types";
 import { publishContext, registerNavigation } from "../navigation/externalBus";
 import { GlobalSearchBar } from "./GlobalSearchBar";
 import { listProjects } from "../entities/project/api";

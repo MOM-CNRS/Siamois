@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { EntityTypeConfig } from "../../entities/types";
+import type { EntityTypeConfig } from "../../entities/shared/types";
 import { EntityCardGrid, type EntityCardGridProps } from "./EntityCardGrid";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -5,7 +5,7 @@ import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import { SelectButton } from "primereact/selectbutton";
-import type { FilterValue } from "../../panels/tableState";
+import type { FilterValue } from "../../panels/list/tableState";
 import type { FilterKind, FilterOption } from "../../fields/optionSources";
 import { t } from "../../i18n";
 import { ReferencePickerSheet } from "../../fields/ReferencePickerSheet";

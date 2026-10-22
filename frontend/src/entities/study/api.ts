@@ -1,4 +1,4 @@
-import { createEntityApi } from "../createEntityApi";
+import { createEntityApi } from "../shared/createEntityApi";
 import type { StudyDetail, StudySummary } from "./types";
 
 // Mirrors StudyCreateRequest's required pair.

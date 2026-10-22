@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { usePersistedPaneState } from "../panels/persistedPaneState";
+import { usePersistedPaneState } from "../panels/pane/persistedPaneState";
 import { Panel } from "primereact/panel";
 import { evaluateForm, type FieldState } from "../rules";
 import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../../api/client";
 import { configureBasePath } from "../../api/basePath";
 import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig } from "../../entities/types";
+import type { EntityTypeConfig } from "../../entities/shared/types";
 import { homeShortcutWidgets } from "./HomeShortcuts";
 import { openSidebarDrawer } from "./sidebar";
 

@@ -3,7 +3,7 @@ import { apiUrl } from "../api/basePath";
 import { getEntityType } from "../entities/registry";
 import type { MountOptions } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
-import { withPanelTransition } from "../panels/panelTransition";
+import { withPanelTransition } from "../panels/pane/panelTransition";
 import type { ListSeed } from "./externalBus";
 import { isMobileViewport } from "../viewport";
 import { listPath } from "./paths";

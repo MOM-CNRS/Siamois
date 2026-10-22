@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { InputText } from "primereact/inputtext";
-import { CreateFormField, CreateFormShell } from "../../components/CreateFormShell";
-import { CreateLinkField } from "../../components/CreateLinkField";
+import { CreateFormField, CreateFormShell } from "../../components/create/CreateFormShell";
+import { CreateLinkField } from "../../components/create/CreateLinkField";
 import { SelectOneConceptRenderer } from "../../fields/renderers";
 import type { FieldResource } from "../../fields/types";
-import type { CreateFormContext } from "../types";
+import type { CreateFormContext } from "../shared/types";
 import { createPlace } from "./api";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
