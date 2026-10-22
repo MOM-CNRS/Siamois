@@ -35,7 +35,7 @@ import java.util.Set;
 
 /**
  * The "new project" dialog of the project settings list: the organisation (among those the user may
- * create projects in), a name, an identifier and the project type. Creation goes through
+ * create projects in), a name, an identifier (proposed automatically, editable) and the project type. Creation goes through
  * {@link ProjectApiService#createProject}, the same use case the REST API and the React app use, so the
  * rights check, the uniqueness check and the default form answers are the same everywhere.
  */
@@ -110,8 +110,29 @@ public class NewProjectDialogBean implements Serializable {
                 .findFirst()
                 .orElse(creatableInstitutions.get(0).getId());
         loadTypes();
+        proposeIdentifier();
         PrimeFaces.current().ajax().update("newProjectDialog");
         PrimeFaces.current().executeScript("PF('newProjectDialog').show();");
+    }
+
+    /** The organisation changed: its types and its next identifier differ. */
+    public void onOrganisationChange() {
+        loadTypes();
+        proposeIdentifier();
+    }
+
+    /** Proposes the identifier the next project of the chosen organisation would get; the user may change it. */
+    public void proposeIdentifier() {
+        identifier = null;
+        if (institutionId == null) {
+            return;
+        }
+        try {
+            identifier = projectApiService.previewNextProjectIdentifier(
+                    projectApiService.requireCaller(), String.valueOf(institutionId), langBean.getLanguageCode()).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Could not preview the next project identifier of institution {}", institutionId, e);
+        }
     }
 
     /** The project types of the chosen organisation's vocabulary. */
@@ -146,7 +167,6 @@ public class NewProjectDialogBean implements Serializable {
             ProjectCreateRequest request = new ProjectCreateRequest();
             request.setOrganizationId(String.valueOf(institutionId));
             request.setName(name);
-            request.setIdentifier(identifier);
             request.setTypeId(typeId);
             projectApiService.createProject(projectApiService.requireCaller(), request, langBean.getLanguageCode());
             created = true;

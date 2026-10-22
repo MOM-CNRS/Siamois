@@ -38,6 +38,7 @@ class DefaultProjectIdentifierConfigSeederTest {
     @Mock private VocabularyService vocabularyService;
     @Mock private ConceptService conceptService;
     @Mock private TableFieldConfigService tableFieldConfigService;
+    @Mock private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     private static final UserInfo INFO = mock(UserInfo.class);
 
@@ -45,7 +46,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldCreateBothTypesWithTheirPrefixedFormat() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
         Vocabulary vocabulary = new Vocabulary();
         Concept usConcept = new Concept();
@@ -73,7 +74,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldSkipATypeWhenTheVocabularyCannotBeResolved_andStillProcessTheOther() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
         Vocabulary vocabulary = new Vocabulary();
         Concept fConcept = new Concept();
@@ -91,7 +92,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldSkipATypeWhenNoVocabularyIsConfiguredForTheProject() {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
         Vocabulary vocabulary = new Vocabulary();
         Concept usConcept = new Concept();
@@ -117,7 +118,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldGiveEveryConfiguredTableItsStandardType_withTheTablesOwnIdentifierFormat() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         String standardUri = "https://opentheso2.mom.fr/?idc=1&idt=th277";
         org.springframework.test.util.ReflectionTestUtils.setField(seeder, "mobilierTypeUri", standardUri);
 
@@ -142,7 +143,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldLeaveATableWithoutAStandardTypeWhenNoneIsConfigured() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         Vocabulary vocabulary = new Vocabulary();
         Concept concept = new Concept();
         concept.setId(1L);
@@ -157,7 +158,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldCreateTheThreeStudyTypes_eachWithItsOwnActiveFields() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         String findUri = "https://example.org/?idc=1&idt=th1";
         String ueUri = "https://example.org/?idc=2&idt=th1";
         String treatmentUri = "https://example.org/?idc=3&idt=th1";
@@ -199,7 +200,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldSkipAStudyTypeThatCannotBeSeeded_andStillSeedTheOthers() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         String brokenUri = "https://example.org/?idc=1&idt=th1";
         String goodUri = "https://example.org/?idc=2&idt=th1";
         org.springframework.test.util.ReflectionTestUtils.setField(seeder, "studyFindTypeUri", brokenUri);
@@ -222,7 +223,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldLeaveTheStudyTableWithoutTypesWhenNoUriIsConfigured() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         Vocabulary vocabulary = new Vocabulary();
         Concept concept = new Concept();
         concept.setId(1L);
@@ -236,7 +237,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldBindTheUserToTheThreadWhileSeeding_andUnbindItAfterwards() throws Exception {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         Vocabulary vocabulary = new Vocabulary();
         Concept concept = new Concept();
         concept.setId(1L);
@@ -255,7 +256,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
     @Test
     void seed_shouldPutBackTheUserThatWasBoundBeforeIt() {
-        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService);
+        seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
         UserInfo caller = mock(UserInfo.class);
         ExecutionContextHolder.set(caller);
         try {
