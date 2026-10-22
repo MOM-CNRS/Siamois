@@ -1122,6 +1122,32 @@
   outline-offset: 2px;
 }
 
+/* A focused list row: the ring is the colour of the entity the rows are (--row-entity-color, set on the list
+   by EntityListPanel), not the theme's blue — in a fiche's tab too, where the list sits inside another entity's panel. */
+body .entity-list-panel .p-datatable.p-datatable-selectable .p-datatable-tbody > tr.p-selectable-row:focus-visible,
+body .entity-list-panel .p-datatable.p-datatable-hoverable-rows .p-datatable-tbody > tr:not(.p-highlight):focus-visible,
+body .entity-list-panel .p-datatable .p-datatable-tbody > tr:focus-visible,
+body .entity-list-panel .p-treetable .p-treetable-tbody > tr:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+}
+
+/* The same for a focused cell's content and a sortable header, which the theme rings in the primary / lavender colour. */
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"]:focus,
+body .entity-list-panel .p-datatable-tbody td[role="gridcell"] [tabindex="0"]:focus-visible {
+  outline-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-checkbox:not(.p-disabled):has(.p-checkbox-input:focus-visible) .p-checkbox-box,
+body .entity-list-panel .p-checkbox .p-checkbox-box.p-focus {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+  border-color: var(--row-entity-color, var(--primary-color, #669966));
+}
+
+body .entity-list-panel .p-datatable thead th.p-sortable-column:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--row-entity-color, var(--primary-color, #669966));
+}
+
 /* A list row's action buttons (panels/useRowActions.tsx) — JSF's statusIdActionsCol icons. Kept
    compact so the row stays at --entity-list-row-height, and dimmed until the row is hovered so a
    long list doesn't read as a wall of icons. */
