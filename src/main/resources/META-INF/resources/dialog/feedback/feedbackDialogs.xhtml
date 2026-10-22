@@ -4,8 +4,10 @@
              xmlns:p="http://primefaces.org/ui"
              xmlns:f="http://java.sun.com/jsf/core"
 >
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-            integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H"
+    <!-- html2canvas-pro: drop-in fork of html2canvas that understands modern CSS colors (color-mix, oklch,
+         color()), which the original 1.4.1 rejects, making every capture fail. -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@1.5.8/dist/html2canvas-pro.min.js"
+            integrity="sha384-QbVSYhU9faw2C7l92rI0Dmke8Yod6KaOixC1kkbO/dGnMDKtbWhwcxSSOkmHXWom"
             crossorigin="anonymous"></script>
     <h:outputScript library="js" name="feedback.js"/>
 
