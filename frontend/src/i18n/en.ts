@@ -153,6 +153,7 @@ export const en: Record<MessageKey, string> = {
   "dup.summarySuffix_one": " new {unit}",
   "dup.summarySuffix_other": " new {unit}s",
   "field.thesaurus": "View in the thesaurus",
+  "field.configure": "Configure the field",
   "field.notApplicable": "Does not apply with the current answers",
   "field.newLower": "New: {label}",
   "field.open": "Open “{label}”",

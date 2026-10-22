@@ -14,8 +14,8 @@
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
         <style>
-            .ptc-title { font-size: 34px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.02em; }
-            .ptc-description { font-size: 15px; color: #777; margin: 0 0 24px; max-width: 760px; }
+            .ptc-title { font-size: var(--font-size-title-page, 1.5rem); font-weight: 600; margin: 0 0 4px; letter-spacing: -0.02em; }
+            .ptc-description { font-size: 0.9375rem; color: #777; margin: 0 0 24px; max-width: 760px; }
 
             .ptc-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
             .ptc-topbar > form { width: auto !important; margin: 0 !important; }
@@ -36,24 +36,24 @@
             /* ── tree ───────────────────────────────────── */
             .ptc-tree { width: 280px; flex: none; border: none; border-right: 1px solid #e7e7e3; border-radius: 0; background: #fff; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: none; min-height: 0; height: 100%; overflow: auto; box-sizing: border-box; }
             .ptc-tree-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-            .ptc-tree-title { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: #a3a3a0; }
+            .ptc-tree-title { font-size: 0.7188rem; letter-spacing: .06em; text-transform: uppercase; color: #a3a3a0; }
             .ptc-tree-node { display: flex; align-items: center; gap: 2px; }
-            .ptc-tree-chevron.ui-commandlink { flex: none; width: 22px; text-align: center; color: #8c8c8c; font-size: 12px; text-decoration: none; }
+            .ptc-tree-chevron.ui-commandlink { flex: none; width: 22px; text-align: center; color: #8c8c8c; font-size: 0.75rem; text-decoration: none; }
             .ptc-tree-label.ui-commandlink { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-decoration: none; color: inherit; overflow: hidden; }
-            .ptc-field-icon { color: #8c8c8c; margin-right: 6px; font-size: 13px; }
+            .ptc-field-icon { color: #8c8c8c; margin-right: 6px; font-size: 0.8125rem; }
             .ptc-tree-field-row .ptc-field-icon { flex: none; }
-            .ptc-tree-table-row { display: flex !important; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 14.5px; width: 100%; text-align: left; text-decoration: none; color: #2b2b2b; }
+            .ptc-tree-table-row { display: flex !important; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 0.9062rem; width: 100%; text-align: left; text-decoration: none; color: #2b2b2b; }
             .ptc-tree-table-row.ptc-selected { background: var(--sia-accent-soft, #eaf3ea); font-weight: 600; }
-            .ptc-count-badge { font-size: 11.5px; color: #999; border: 1px solid #e7e7e3; border-radius: 20px; padding: 0 8px; background: #fafafa; }
+            .ptc-count-badge { font-size: 0.7188rem; color: #999; border: 1px solid #e7e7e3; border-radius: 20px; padding: 0 8px; background: #fafafa; }
             .ptc-tree-types { margin: 1px 0 6px 7px; border-left: 1px solid #ececec; padding-left: 11px; display: flex; flex-direction: column; gap: 3px; }
             .ptc-tree-fields { margin: 1px 0 4px 8px; border-left: 1px solid #ececec; padding-left: 10px; display: flex; flex-direction: column; gap: 1px; }
-            .ptc-tree-field-row { display: block !important; padding: 4px 8px; border-radius: 6px; font-size: 13px; color: #444; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .ptc-tree-field-row { display: block !important; padding: 4px 8px; border-radius: 6px; font-size: 0.8125rem; color: #444; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .ptc-tree-field-row.ptc-selected { background: var(--sia-accent-soft, #eaf3ea); font-weight: 600; }
             .ptc-tree-field-static { color: #9a9a96; cursor: default; }
             .ptc-tree-field-off { text-decoration: line-through; color: #a3a3a0; }
-            .ptc-tree-type-row { display: flex !important; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; font-size: 14px; width: 100%; text-align: left; text-decoration: none; color: #2b2b2b; }
+            .ptc-tree-type-row { display: flex !important; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; font-size: 0.875rem; width: 100%; text-align: left; text-decoration: none; color: #2b2b2b; }
             .ptc-tree-type-row.ptc-selected { background: var(--sia-accent-soft, #eaf3ea); font-weight: 600; }
-            .ptc-new-type-btn.ui-button { border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 7px !important; color: #999 !important; font-size: 13px !important; width: 100%; }
+            .ptc-new-type-btn.ui-button { border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 7px !important; color: #999 !important; font-size: 0.8125rem !important; width: 100%; }
 
             /* Below this breakpoint the mobile selector bar replaces the tree entirely — declared
                after every .ptc-tree rule above so display:none actually wins the cascade. */
@@ -82,36 +82,36 @@
             .ptc-champs .ptc-table-scroll .ui-datatable, .ptc-champs .ptc-table-scroll .ui-datatable-tablewrapper { overflow: visible; }
             .ptc-champs .ui-datatable thead th { position: sticky; top: 0; z-index: 3; background: #f6f6f4; }
             .ptc-row-hidden { display: none; }
-            .ptc-rules-flag { color: var(--siamois-green-active, #5e8c61); margin-left: 6px; font-size: 12px; }
+            .ptc-rules-flag { color: var(--siamois-green-active, #5e8c61); margin-left: 6px; font-size: 0.75rem; }
             .ptc-field-search { position: relative; display: inline-flex; align-items: center; }
-            .ptc-field-search > i { position: absolute; left: 10px; color: #8c8c8c; font-size: 13px; pointer-events: none; }
+            .ptc-field-search > i { position: absolute; left: 10px; color: #8c8c8c; font-size: 0.8125rem; pointer-events: none; }
             .ptc-field-search .ui-inputtext { padding-left: 30px; min-width: 260px; }
             .ptc-group-chevron.ui-commandlink { display: inline-block; width: 22px; text-align: center; color: #6b6b66; text-decoration: none; cursor: pointer; }
-            .ptc-editor .ui-datatable table th, .ptc-editor .ui-datatable table td { padding: 2px 8px; font-size: 13px; line-height: 1.25; }
+            .ptc-editor .ui-datatable table th, .ptc-editor .ui-datatable table td { padding: 2px 8px; font-size: 0.8125rem; line-height: 1.25; }
             .ptc-champs .ui-datatable thead th { padding-top: 5px; padding-bottom: 5px; }
             .ptc-champs .ui-toggleswitch { transform: scale(.75); transform-origin: left center; margin: -3px 0; }
             .ptc-champs .ui-button.ui-button-icon-only { width: 1.55rem; height: 1.55rem; padding: 0; }
-            .ptc-champs .ui-button.ui-button-icon-only .ui-icon, .ptc-champs .ui-button.ui-button-icon-only .bi { font-size: 12px; }
+            .ptc-champs .ui-button.ui-button-icon-only .ui-icon, .ptc-champs .ui-button.ui-button-icon-only .bi { font-size: 0.75rem; }
             .ptc-champs .ui-selectonemenu { height: 1.6rem; }
-            .ptc-champs .ui-selectonemenu .ui-selectonemenu-label { padding: 2px 8px; font-size: 13px; }
+            .ptc-champs .ui-selectonemenu .ui-selectonemenu-label { padding: 2px 8px; font-size: 0.8125rem; }
             .ptc-champs .ui-selectonemenu .ui-selectonemenu-trigger { width: 1.4rem; }
-            .ptc-chip { font-size: 11.5px; padding: 0 6px; }
-            .ptc-drag-handle { font-size: 14px; }
+            .ptc-chip { font-size: 0.7188rem; padding: 0 6px; }
+            .ptc-drag-handle { font-size: 0.875rem; }
             .ptc-row-focus > td { animation: ptc-row-flash 2.2s ease-out; }
             @keyframes ptc-row-flash { from { background: #fff4b8; } to { background: transparent; } }
             .ptc-drawer-remove.ui-button { margin-right: auto; color: #b3261e !important; }
             /* ── form preview ── */
-            .ptc-preview-hint { color: #8c8c8c; font-size: 13px; margin: 0 0 12px; }
+            .ptc-preview-hint { color: #8c8c8c; font-size: 0.8125rem; margin: 0 0 12px; }
             .ptc-preview-form { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-start; }
-            .ptc-preview-group { flex: 0 0 100%; font-size: 15px; font-weight: 600; padding: 8px 0 4px; border-bottom: 1px solid #ececec; margin-top: 8px; }
+            .ptc-preview-group { flex: 0 0 100%; font-size: 0.9375rem; font-weight: 600; padding: 8px 0 4px; border-bottom: 1px solid #ececec; margin-top: 8px; }
             .ptc-preview-field { box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; }
             .ptc-preview-QUARTER { flex: 0 0 calc(25% - 12px); }
             .ptc-preview-HALF { flex: 0 0 calc(50% - 8px); }
             .ptc-preview-THREE_QUARTERS { flex: 0 0 calc(75% - 4px); }
             .ptc-preview-FULL { flex: 0 0 100%; }
-            .ptc-preview-label { font-size: 13px; color: #6b7280; }
+            .ptc-preview-label { font-size: 0.8125rem; color: #6b7280; }
             .ptc-preview-required { color: #b3261e; }
-            .ptc-preview-control { display: flex; align-items: center; gap: 8px; border: 1px solid #d8d8d2; border-radius: 6px; padding: 6px 10px; background: #fafaf8; color: #a3a3a0; font-size: 13px; }
+            .ptc-preview-control { display: flex; align-items: center; gap: 8px; border: 1px solid #d8d8d2; border-radius: 6px; padding: 6px 10px; background: #fafaf8; color: #a3a3a0; font-size: 0.8125rem; }
             .ptc-table-scroll { border: 1px solid #e7e7e3; border-radius: 0; overflow-x: auto; margin-bottom: 28px; }
             /* Without this, the last table's own margin-bottom stacks on top of .ui-tabs-panels'
                padding, doubling the empty space at the bottom of the tab. */
@@ -120,70 +120,70 @@
             .ptc-path { display: flex; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid #ececec; background: var(--siamois-green-light-50, #f3f6f2); flex-wrap: wrap; }
             .ptc-path-step { display: flex; flex-direction: column; gap: 1px; }
             .ptc-path-step-right { margin-left: auto; }
-            .ptc-path-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #8c8c8c; }
-            .ptc-path-value { font-size: 15px; font-weight: 600; color: #2b2b2b; }
+            .ptc-path-label { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: .05em; color: #8c8c8c; }
+            .ptc-path-value { font-size: 0.9375rem; font-weight: 600; color: #2b2b2b; }
             /* A step you can go back to is underlined; the one you are on is green. The theme styles links
                (size, decoration) with more weight than a single class, hence the doubled selector and the
                !important. The link's hit area is padded, the padding taken back with a negative margin so the
                layout does not move. */
-            .ptc-path .ptc-path-value.ptc-path-link { font-size: 15px !important; font-weight: 600 !important; color: #2b2b2b !important; text-decoration: underline !important; cursor: pointer; display: inline-block; padding: 6px 10px; margin: -6px -10px; }
+            .ptc-path .ptc-path-value.ptc-path-link { font-size: 0.9375rem !important; font-weight: 600 !important; color: #2b2b2b !important; text-decoration: underline !important; cursor: pointer; display: inline-block; padding: 6px 10px; margin: -6px -10px; }
             .ptc-path .ptc-path-value.ptc-path-current { color: var(--siamois-green-active, #5e8c61); }
             .ptc-path-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-weight: 500; }
-            .ptc-path-sep { color: #b5b5b0; font-size: 13px; }
+            .ptc-path-sep { color: #b5b5b0; font-size: 0.8125rem; }
 
             .ptc-summary { display: flex; gap: 24px; padding: 22px 24px; border-bottom: 1px solid #ececec; flex-wrap: wrap; }
             .ptc-summary-col { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 5px; }
             .ptc-summary-col-wide { flex: 2; min-width: 260px; }
-            .ptc-summary-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: #a3a3a0; }
-            .ptc-summary-value { font-size: 15px; color: #2b2b2b; }
+            .ptc-summary-label { font-size: 0.7188rem; text-transform: uppercase; letter-spacing: .05em; color: #a3a3a0; }
+            .ptc-summary-value { font-size: 0.9375rem; color: #2b2b2b; }
             .ptc-summary-value-muted { color: #555; }
             .ptc-summary-value.ptc-summary-placeholder { color: #a3a3a0; font-style: italic; }
-            .ptc-summary-definition.ui-button { display: block; max-width: 100%; padding: 0 !important; text-align: left; background: transparent !important; border: none !important; color: #555 !important; font-size: 15px; font-weight: 400; }
+            .ptc-summary-definition.ui-button { display: block; max-width: 100%; padding: 0 !important; text-align: left; background: transparent !important; border: none !important; color: #555 !important; font-size: 0.9375rem; font-weight: 400; }
             .ptc-summary-definition.ui-button .ui-button-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 !important; }
             .ptc-summary-definition.ui-button:hover .ui-button-text { text-decoration: underline; }
             .ptc-definition-overlay { max-width: min(560px, 90vw); }
-            .ptc-definition-full { font-size: 14.5px; line-height: 1.5; color: #2b2b2b; white-space: pre-wrap; }
-            .ptc-hint { font-size: 13px; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0; }
-            .ptc-readonly-value, .ptc-static-placeholder { font-size: 15px; border: 1px solid #d8d8d2; border-radius: 8px; padding: 9px 11px; background: #fff; color: #777; }
-            .ptc-field-hint { font-size: 12.5px; color: #a3a3a0; margin-top: 4px; }
+            .ptc-definition-full { font-size: 0.9062rem; line-height: 1.5; color: #2b2b2b; white-space: pre-wrap; }
+            .ptc-hint { font-size: 0.8125rem; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0; }
+            .ptc-readonly-value, .ptc-static-placeholder { font-size: 0.9375rem; border: 1px solid #d8d8d2; border-radius: 8px; padding: 9px 11px; background: #fff; color: #777; }
+            .ptc-field-hint { font-size: 0.7812rem; color: #a3a3a0; margin-top: 4px; }
             .ptc-tree-add-field.ui-button { margin-top: 4px; }
             .ptc-table-page { padding: 28px 32px; max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
-            .ptc-table-page-title { font-size: 22px; font-weight: 600; margin: 0; }
-            .ptc-table-page-description { color: #666; font-size: 14.5px; line-height: 1.5; margin: 0; }
+            .ptc-table-page-title { font-size: 1.375rem; font-weight: 600; margin: 0; }
+            .ptc-table-page-description { color: #666; font-size: 0.9062rem; line-height: 1.5; margin: 0; }
             .ptc-table-page-add.ui-button { width: auto; align-self: flex-start; padding: 8px 18px; }
             .ptc-field-warning { color: #b45309; }
-            .ptc-checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+            .ptc-checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; }
 
             .ptc-section-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-            .ptc-section-title { font-size: 17px; font-weight: 600; }
-            .ptc-section-meta { font-size: 13px; color: #8c8c8c; margin-left: 10px; }
-            .ptc-chip { font-size: 12px; color: #777; border: 1px solid #e7e7e3; border-radius: 5px; padding: 1px 7px; background: #f6f6f4; white-space: nowrap; }
+            .ptc-section-title { font-size: 1.0625rem; font-weight: 600; }
+            .ptc-section-meta { font-size: 0.8125rem; color: #8c8c8c; margin-left: 10px; }
+            .ptc-chip { font-size: 0.75rem; color: #777; border: 1px solid #e7e7e3; border-radius: 5px; padding: 1px 7px; background: #f6f6f4; white-space: nowrap; }
             .ptc-hidden-name { text-decoration: line-through; color: #a3a3a0; }
             /* #a3a3a0 on white is a 2.5:1 ratio; this grey holds 5.3:1 and reads the same at that size */
-            .ptc-lock-icon { font-size: 12px; color: #6b6b66; margin-left: 6px; }
+            .ptc-lock-icon { font-size: 0.75rem; color: #6b6b66; margin-left: 6px; }
 
-            .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 15px; }
+            .ptc-ident-placeholder { border: 1px dashed #d8cfa6; border-radius: 10px; background: #faf8ee; padding: 52px; text-align: center; color: #8a7d4a; font-size: 0.9375rem; }
 
             /* ── identifiants tab ────────────────────────── */
             .ptc-ident-numbers { display: flex; gap: 16px; }
             .ptc-ident-format-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 9px; background: #fff; padding: 10px 12px; min-height: 46px; }
             .ptc-ident-segment-text { display: flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #d8d8d2; border-radius: 20px; padding: 3px 4px 3px 8px; }
-            .ptc-ident-segment-text input { width: 90px; font-size: 14.5px; border: none; background: transparent; padding: 3px 2px; color: #2b2b2b; outline: none; }
-            .ptc-ident-segment-token { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #fff; background: var(--sia-accent, #5e8c61); border-radius: 20px; padding: 5px 6px 5px 10px; white-space: nowrap; }
+            .ptc-ident-segment-text input { width: 90px; font-size: 0.9062rem; border: none; background: transparent; padding: 3px 2px; color: #2b2b2b; outline: none; }
+            .ptc-ident-segment-token { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; font-weight: 600; color: #fff; background: var(--sia-accent, #5e8c61); border-radius: 20px; padding: 5px 6px 5px 10px; white-space: nowrap; }
             .ptc-ident-digits-box { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.22); border-radius: 11px; padding: 1px 6px; }
-            .ptc-ident-digits-box span { font-size: 10.5px; opacity: 0.85; }
-            .ptc-ident-digits-box input { width: 18px; border: none; background: transparent; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; padding: 0; }
-            .ptc-ident-arrow.ui-button, .ptc-ident-remove.ui-button { background: transparent !important; border: none !important; color: #909088 !important; font-size: 17px !important; line-height: 1 !important; padding: 0 4px !important; width: auto !important; }
+            .ptc-ident-digits-box span { font-size: 0.6562rem; opacity: 0.85; }
+            .ptc-ident-digits-box input { width: 18px; border: none; background: transparent; color: #fff; font-size: 0.75rem; font-weight: 600; outline: none; text-align: center; padding: 0; }
+            .ptc-ident-arrow.ui-button, .ptc-ident-remove.ui-button { background: transparent !important; border: none !important; color: #909088 !important; font-size: 1.0625rem !important; line-height: 1 !important; padding: 0 4px !important; width: auto !important; }
             .ptc-ident-arrow.ui-button { font-weight: 700 !important; }
-            .ptc-ident-remove.ui-button { font-size: 12px !important; border-radius: 50% !important; }
+            .ptc-ident-remove.ui-button { font-size: 0.75rem !important; border-radius: 50% !important; }
             .ptc-ident-segment-token .ptc-ident-arrow.ui-button, .ptc-ident-segment-token .ptc-ident-remove.ui-button { color: rgba(255,255,255,0.85) !important; }
-            .ptc-ident-add-text.ui-button { font-size: 13px !important; color: #777 !important; border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 20px !important; padding: 5px 12px !important; }
-            .ptc-ident-token-option.ui-button { font-size: 13px !important; color: #3a5a3c !important; background: var(--sia-accent-soft, #eaf3ea) !important; border: 1px solid transparent !important; border-radius: 20px !important; padding: 6px 13px !important; }
-            .ptc-ident-preview { font-size: 15px; font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid #e7e7e3; border-radius: 8px; padding: 10px 13px; background: #f6f6f4; color: #2b2b2b; letter-spacing: .02em; }
+            .ptc-ident-add-text.ui-button { font-size: 0.8125rem !important; color: #777 !important; border: 1px dashed #cfcfca !important; background: transparent !important; border-radius: 20px !important; padding: 5px 12px !important; }
+            .ptc-ident-token-option.ui-button { font-size: 0.8125rem !important; color: #3a5a3c !important; background: var(--sia-accent-soft, #eaf3ea) !important; border: 1px solid transparent !important; border-radius: 20px !important; padding: 6px 13px !important; }
+            .ptc-ident-preview { font-size: 0.9375rem; font-family: 'SFMono-Regular', Consolas, monospace; border: 1px solid #e7e7e3; border-radius: 8px; padding: 10px 13px; background: #f6f6f4; color: #2b2b2b; letter-spacing: .02em; }
 
             /* ── additional fields row reordering ──────── */
             .ptc-drag-cell { text-align: center; }
-            .ptc-drag-handle { color: #c4c4c0; font-size: 16px; cursor: grab; }
+            .ptc-drag-handle { color: #c4c4c0; font-size: 1rem; cursor: grab; }
             .ptc-drag-handle:active { cursor: grabbing; }
             tr:hover .ptc-drag-handle { color: #8c8c8c; }
             .ptc-rule-block { border-top: 1px solid #ececec; padding-top: 14px; }
@@ -192,22 +192,22 @@
             .ptc-group-row > td { background: #f3f6f2 !important; font-weight: 600; border-left: none !important; border-right: none !important; overflow: visible; }
             /* The group's title input sits in the field-name cell but is wide enough to read as a title of the whole row. */
             .ptc-group-row > td:nth-child(3) { position: relative; z-index: 1; }
-            .ptc-group-row .ptc-group-input.ui-inputtext { width: min(560px, 50vw); max-width: none; border-color: transparent; background: transparent; font-size: 15px; }
+            .ptc-group-row .ptc-group-input.ui-inputtext { width: min(560px, 50vw); max-width: none; border-color: transparent; background: transparent; font-size: 0.9375rem; }
             .ptc-group-row .ptc-group-input.ui-inputtext:hover, .ptc-group-row .ptc-group-input.ui-inputtext:focus { background: #fff; border-color: #cfcfca; }
             .ptc-group-input.ui-inputtext { font-weight: 600; }
             .ui-datatable-rowordering { outline: 1px dashed #cfcfca; background: #f6f6f4 !important; height: 42px; }
 
             /* ── add-field picker ──────────────────────── */
             .ptc-picker-dialog .ui-dialog-content { padding: 0 !important; }
-            .ptc-picker-newfield.ui-link, .ptc-picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 14.5px; cursor: pointer; text-decoration: none; }
-            .ptc-picker-section-title { padding: 0 22px 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a0; }
+            .ptc-picker-newfield.ui-link, .ptc-picker-newfield { display: block; margin: 16px 22px; border: 1px dashed #cfcfca; border-radius: 9px; padding: 12px 14px; text-align: center; color: #555; font-size: 0.9062rem; cursor: pointer; text-decoration: none; }
+            .ptc-picker-section-title { padding: 0 22px 6px; font-size: 0.75rem; letter-spacing: .05em; text-transform: uppercase; color: #a3a3a0; }
             .ptc-picker-search { padding: 0 22px 10px; }
             .ptc-picker-list { max-height: 340px; overflow: auto; padding: 6px 14px 18px; display: flex; flex-direction: column; gap: 4px; }
             .ptc-picker-item.ui-link, .ptc-picker-item { display: block; text-decoration: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: inherit; }
             .ptc-picker-item:hover { background: #f6f6f4; }
-            .ptc-picker-item-head { display: flex; align-items: center; gap: 8px; font-size: 14.5px; color: #2b2b2b; }
+            .ptc-picker-item-head { display: flex; align-items: center; gap: 8px; font-size: 0.9062rem; color: #2b2b2b; }
             .ptc-picker-item-name { font-weight: 600; }
-            .ptc-picker-item-desc { font-size: 12.5px; color: #8c8c8c; margin-top: 2px; }
+            .ptc-picker-item-desc { font-size: 0.7812rem; color: #8c8c8c; margin-top: 2px; }
 
             /* ── field edit drawer (p:sidebar) ─────────── */
             .ui-sidebar.ptc-drawer-sidebar { padding: 0; display: flex; flex-direction: column; }
@@ -217,38 +217,51 @@
             .ptc-field-view .ptc-drawer-body { min-height: 0; }
             .ptc-drawer-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 22px; border-bottom: 1px solid #ececec; flex: none; }
             .ptc-drawer-header { padding: 18px 22px; border-bottom: 1px solid #ececec; flex: none; }
-            .ptc-drawer-title { font-size: 18px; font-weight: 600; }
+            .ptc-drawer-title { font-size: 1.125rem; font-weight: 600; }
             .ptc-drawer-back.ui-button { padding-left: 0 !important; color: var(--siamois-green-active, #5e8c61) !important; }
-            .ptc-drawer-path { font-size: 13px; color: #8c8c8c; margin-bottom: 4px; }
+            .ptc-drawer-path { font-size: 0.8125rem; color: #8c8c8c; margin-bottom: 4px; }
             .ptc-drawer-section { border: 1px solid #e7e7e3; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
-            .ptc-drawer-section-title { font-size: 15px; font-weight: 600; margin: 0; }
-            .ptc-drawer-section-hint { font-size: 13px; color: #8c8c8c; margin: -8px 0 0; }
-            .ptc-drawer-system-note { font-size: 12px; color: #8a7d4a; margin-top: 2px; }
+            .ptc-drawer-section-title { font-size: 0.9375rem; font-weight: 600; margin: 0; }
+            .ptc-drawer-section-hint { font-size: 0.8125rem; color: #8c8c8c; margin: -8px 0 0; }
+            .ptc-drawer-system-note { font-size: 0.75rem; color: #8a7d4a; margin-top: 2px; }
             .ptc-drawer-body { flex: 1; overflow: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
             .ptc-drawer-field { display: flex; flex-direction: column; gap: 7px; }
-            .ptc-drawer-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a0; }
+            .ptc-drawer-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; color: #a3a3a0; }
             .ptc-drawer-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 22px; border-top: 1px solid #ececec; flex: none; }
             /* the drawer's own message area: growl messages would render under the sidebar overlay.
                flex: none so the message keeps its height instead of being squeezed by the body. */
             .ptc-drawer-messages { flex: none; }
-            .ptc-drawer-error { display: flex; align-items: flex-start; gap: 9px; margin: 14px 22px 0; padding: 11px 13px; border: 1px solid #f5c2bd; border-left-width: 4px; border-radius: 8px; background: #fdecea; color: #b3261e; font-size: 13.5px; line-height: 1.4; }
-            .ptc-drawer-error i { font-size: 15px; line-height: 1.3; flex: none; }
-            .ptc-native-select { width: 100%; font-size: 14px; font-family: inherit; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; color: #2b2b2b; }
+            .ptc-drawer-error { display: flex; align-items: flex-start; gap: 9px; margin: 14px 22px 0; padding: 11px 13px; border: 1px solid #f5c2bd; border-left-width: 4px; border-radius: 8px; background: #fdecea; color: #b3261e; font-size: 0.8438rem; line-height: 1.4; }
+            .ptc-drawer-error i { font-size: 0.9375rem; line-height: 1.3; flex: none; }
+            .ptc-native-select { width: 100%; font-size: 0.875rem; font-family: inherit; border: 1px solid #d8d8d2; border-radius: 8px; padding: 8px 11px; background: #fff; color: #2b2b2b; }
 
             /* ── drawer "Paramètres" section ────────────── */
             .ptc-params { border-top: 1px solid #ececec; padding-top: 16px; display: flex; flex-direction: column; gap: 13px; }
-            .ptc-params-title { font-size: 14px; font-weight: 600; }
+            .ptc-params-title { font-size: 0.875rem; font-weight: 600; }
             .ptc-chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
-            .ptc-chip-option.ui-button { font-size: 12.5px !important; padding: 5px 10px !important; border-radius: 7px !important; border: 1px solid #e7e7e3 !important; background: #fff !important; color: #555 !important; }
+            .ptc-chip-option.ui-button { font-size: 0.7812rem !important; padding: 5px 10px !important; border-radius: 7px !important; border: 1px solid #e7e7e3 !important; background: #fff !important; color: #555 !important; }
             .ptc-chip-option-selected.ui-button { border: 1.5px solid var(--sia-accent, #5e8c61) !important; background: var(--sia-accent-soft, #eaf3ea) !important; color: #3a5a3c !important; font-weight: 600 !important; }
-            .ptc-params-connection-ok { font-size: 12.5px; color: #3a5a3c; }
+            .ptc-params-connection-ok { font-size: 0.7812rem; color: #3a5a3c; }
+            .ptc-values-items { list-style: none; margin: 0; padding: 0; border: 1px solid #ececec; border-radius: 8px; }
+            .ptc-values-items li { padding: 6px 12px; font-size: 0.8125rem; border-bottom: 1px solid #f2f2ef; }
+            .ptc-values-items li:last-child { border-bottom: none; }
+            .ptc-values-pager { display: flex; align-items: center; justify-content: space-between; }
+            .ptc-params-triplet { display: flex; flex-wrap: wrap; gap: 12px; }
+            .ptc-params-triplet > .ptc-drawer-field { flex: 1 1 13rem; min-width: 0; }
+            .ptc-ac-glued { display: flex; align-items: stretch; }
+            .ptc-ac-glued .ui-autocomplete { flex: 1 1 auto; min-width: 0; }
+            .ptc-ac-glued .ui-autocomplete .ui-autocomplete-input { width: 100%; box-sizing: border-box; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+            .ptc-ac-glued .ptc-open-tab { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; margin-left: -1px; border: 1px solid #d8d8d2; border-radius: 0 6px 6px 0 !important; background: #fff; color: var(--siamois-green-active, #5e8c61); text-decoration: none; }
+            .ptc-ac-glued a.ptc-open-tab:hover { background: var(--siamois-green-light-50, #f1f6f1); }
+            .ptc-ac-glued span.ptc-open-tab { opacity: .45; cursor: default; }
+            .ptc-ac-footer { padding: 6px 8px; border-top: 1px solid #ececec; }
             .ptc-params-action-row { display: flex; gap: 7px; margin-top: 7px; }
             .ptc-params-url-row { display: flex; gap: 7px; align-items: center; margin-top: 7px; }
             .ptc-params-url-row .ui-inputtext, .ptc-params-url-row .ui-autocomplete { flex: 1; min-width: 0; }
             .ptc-params-url-row .ui-button-text-only, .ptc-params-action-row .ui-button-text-only { flex: none; white-space: nowrap; }
 
             /* ── new configuration dialog ──────────────── */
-            .ptc-dialog-hint { font-size: 13px; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0 0 14px; }
+            .ptc-dialog-hint { font-size: 0.8125rem; color: #8c8c8c; background: #f6f6f3; border: 1px solid #ececec; border-radius: 8px; padding: 9px 12px; margin: 0 0 14px; }
             .ptc-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
         </style>
     </ui:define>

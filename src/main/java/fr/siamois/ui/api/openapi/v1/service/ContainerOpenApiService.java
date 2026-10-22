@@ -178,6 +178,7 @@ public class ContainerOpenApiService {
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId()))
+                .withManageSettings(profilePermissionService.hasProjectSettingsPermission(userInfo, container.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, container.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;

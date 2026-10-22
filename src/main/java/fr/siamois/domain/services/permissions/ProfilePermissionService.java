@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
@@ -218,6 +219,18 @@ public class ProfilePermissionService {
                 PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS,
                 PermissionConstants.ORGANIZATION_MANAGE_ACTIONS,
                 PermissionConstants.PROJECT_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Same right, for a project given as a whole: the organisation-wide counterpart is checked against the
+     * institution that owns the project — never against whichever institution the caller has selected, which
+     * would let a manager of one organisation reach the settings of another's project by its id.
+     */
+    public boolean hasProjectSettingsPermission(PersonDTO person, ActionUnitDTO project) {
+        if (person == null || project == null || project.getId() == null || project.getCreatedByInstitution() == null) {
+            return false;
+        }
+        return hasProjectSettingsPermission(new UserInfo(project.getCreatedByInstitution(), person, null), project.getId());
     }
 
     /** Bulk version of {@link #hasProjectSettingsPermission}: which of the given action units the user may manage. */

@@ -1,5 +1,8 @@
 package fr.siamois.ui.bean.settings.project;
 
+import fr.siamois.dto.entity.PersonDTO;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.ArgumentMatchers.any;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -51,7 +54,7 @@ class ProjectDetailsBeanSettingsAccessTest {
     void checkProjectOrRedirect_answersNotFoundWithoutProjectSettingsPermission() {
         bean.setProject(project());
         when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
-        when(profilePermissionService.hasProjectSettingsPermission(userInfo, 7L)).thenReturn(false);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
         bean.checkProjectOrRedirect();
 
@@ -64,7 +67,7 @@ class ProjectDetailsBeanSettingsAccessTest {
         ActionUnitDTO project = project();
         bean.setProject(project);
         when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
-        when(profilePermissionService.hasProjectSettingsPermission(userInfo, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
 
         bean.checkProjectOrRedirect();
 

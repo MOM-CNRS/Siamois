@@ -153,6 +153,7 @@ export const fr = {
   "dup.summarySuffix_one": " nouvelle {unit}",
   "dup.summarySuffix_other": " nouvelles {unit}",
   "field.thesaurus": "Voir dans le thésaurus",
+  "field.configure": "Configurer le champ",
   "field.notApplicable": "Ne s'applique pas avec les réponses actuelles",
   "field.newLower": "Nouveau : {label}",
   "field.open": "Ouvrir « {label} »",

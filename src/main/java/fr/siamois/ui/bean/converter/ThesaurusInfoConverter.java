@@ -21,7 +21,9 @@ public class ThesaurusInfoConverter implements Converter<ThesaurusInfo> {
             return new ThesaurusInfo("", "", "", "");
         }
 
-        return new ThesaurusInfo(parts[0], parts[1], parts[2], parts[3]);
+        // a label may itself contain commas: server and id come first, the language last
+        String label = String.join(",", java.util.Arrays.copyOfRange(parts, 2, parts.length - 1));
+        return new ThesaurusInfo(parts[0], parts[1], label, parts[parts.length - 1]);
     }
 
     @Override

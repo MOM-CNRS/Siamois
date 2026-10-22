@@ -5,7 +5,8 @@ import { TabView, TabPanel } from "primereact/tabview";
 import { PaneErrorBoundary } from "../components/PaneErrorBoundary";
 import { Skeleton } from "primereact/skeleton";
 import { apiUrl } from "../api/basePath";
-import { openProjectSettings } from "./projectSettings";
+import { openProjectSettings, openTablesSettings, settingsTableOf } from "./projectSettings";
+import { FieldConfigProvider } from "../fields/fieldConfigContext";
 import { getEntityType } from "../entities/registry";
 import { PanelHeaderBar } from "../components/PanelHeaderBar";
 import { SiblingNav } from "../components/SiblingNav";
@@ -353,6 +354,13 @@ export function EntityDetailPanel({
   // onOpenOverview — no server round-trip to build a toolbar from) possible at all, and it also
   // keeps title/bookmark state current after an in-place edit for the originally-seeded overview.
   const settingsProjectId = config.detail.settingsProjectId?.(data);
+  // Every other fiche of the project (not the project itself, not a place) leads to the configuration of its
+  // type, and of its fields, for whoever may manage the project's settings.
+  const settingsTable = settingsTableOf(entityType);
+  const configurable = data as { projectId?: string | number | null; type?: { id?: string | number } | null; _permissions?: { canManageSettings?: boolean } };
+  const configureProjectId =
+    settingsTable != null && configurable._permissions?.canManageSettings === true ? configurable.projectId ?? undefined : undefined;
+  const configureTypeId = configurable.type?.id;
   // Whoever may edit the default views of this project arranges its fiches' tabs, in edit mode like the other changes.
   const canConfigureTabs = ficheConfig.canEdit && writeMode && organizationId != null;
   // The project's configuration with `rows`, saved at once, and the fiche opened on the tab `openKey`.
@@ -380,7 +388,11 @@ export function EntityDetailPanel({
     duplicate:
       canEdit && config.api.duplicate && !duplicateMutation.isPending ? () => duplicateMutation.mutate() : undefined,
     settings:
-      settingsProjectId != null ? () => openProjectSettings(settingsProjectId) : undefined,
+      settingsProjectId != null
+        ? () => openProjectSettings(settingsProjectId)
+        : configureProjectId != null && settingsTable != null
+          ? () => openTablesSettings(configureProjectId, settingsTable, configureTypeId)
+          : undefined,
     delete:
       writeMode && deletion.canDelete && (data as { _permissions?: { canDelete?: boolean } })._permissions?.canDelete === true
         ? () =>
@@ -489,6 +501,13 @@ export function EntityDetailPanel({
         />
       )}
       <Menu ref={addMenu} popup model={addItems} />
+      <FieldConfigProvider
+        value={
+          configureProjectId != null && settingsTable != null && configureTypeId != null
+            ? { configure: (field) => openTablesSettings(configureProjectId, settingsTable, configureTypeId, field.id) }
+            : undefined
+        }
+      >
       <FicheTabsProvider value={canConfigureTabs ? { saveAsTab: (target, filters) => setTabDraft({ target, filters }) } : undefined}>
         <TabView
           className="entity-detail-panel-tabs"
@@ -562,6 +581,7 @@ export function EntityDetailPanel({
           )}
         </TabView>
       </FicheTabsProvider>
+      </FieldConfigProvider>
     </Panel>
   );
 }

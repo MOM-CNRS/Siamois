@@ -180,6 +180,7 @@ public class PhaseOpenApiService {
                 ValuesLimit.forDetail(), lang));
         resource.setPermissions(ProjectResourcePermissions.of(canEdit)
                 .withValidate(profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId()))
+                .withManageSettings(profilePermissionService.hasProjectSettingsPermission(userInfo, phase.getActionUnit().getId()))
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, phase.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;

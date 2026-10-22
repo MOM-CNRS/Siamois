@@ -562,6 +562,7 @@ class ProjectTableFieldSettingsBeanTest {
                 mock(LabelService.class),
                 langBean,
                 new IdentifierResolverRegistry(),
-                layoutService);
+                layoutService,
+                mock(fr.siamois.domain.services.vocabulary.FieldConfigurationService.class));
     }
 }

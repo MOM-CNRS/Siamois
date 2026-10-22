@@ -4,6 +4,7 @@ import { Menu } from "primereact/menu";
 import { Tooltip } from "primereact/tooltip";
 import type { FieldResource } from "./types";
 import { t } from "../i18n";
+import { useFieldConfigActions } from "./fieldConfigContext";
 
 /**
  * panelField.xhtml's header-toggle-container: the flat label button — the field's own icon
@@ -32,15 +33,25 @@ import { t } from "../i18n";
  * serves neither, which shows up as a label with no icon AND a click that does nothing. Verify
  * with GET /api/v1/organizations/{id}/project-types (or the recording-unit-types equivalent).</p>
  *
- * <p>The menu is rendered only when the field HAS a conceptUri: JSF always renders it, but its
- * sole non-conditional item is that link, so a menu without one would open onto nothing. The
- * button then presents itself as non-interactive (no aria-haspopup, default cursor) rather than
- * inviting a click that does nothing.</p>
+ * <p>The menu is rendered only when it has an item: the link to the thesaurus (the field HAS a conceptUri) and,
+ * for whoever may configure the project, "Configurer" (opens the field in the project's configuration). A menu
+ * without any would open onto nothing: the button then presents itself as non-interactive (no aria-haspopup,
+ * default cursor) rather than inviting a click that does nothing.</p>
  */
 export function FieldLabel({ field, required }: { field: FieldResource; required: boolean }) {
   const menuRef = useRef<Menu>(null);
   const buttonId = `sia-field-label-${field.id}`;
   const hasThesaurusEntry = Boolean(field.conceptUri);
+  const configActions = useFieldConfigActions();
+  const items = [
+    ...(configActions
+      ? [{ label: t("field.configure"), icon: "bi bi-gear", command: () => configActions.configure(field) }]
+      : []),
+    ...(hasThesaurusEntry
+      ? [{ label: t("field.thesaurus"), icon: "bi bi-info-circle", url: field.conceptUri as string, target: "_blank" }]
+      : []),
+  ];
+  const hasMenu = items.length > 0;
 
   return (
     <div className="header-toggle-container">
@@ -59,23 +70,9 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
         icon={field.icon ?? undefined}
         label={field.label}
         onClick={(e) => menuRef.current?.toggle(e)}
-        aria-haspopup={hasThesaurusEntry ? "menu" : undefined}
+        aria-haspopup={hasMenu ? "menu" : undefined}
       />
-      {hasThesaurusEntry && (
-        <Menu
-          ref={menuRef}
-          popup
-          appendTo={document.body}
-          model={[
-            {
-              label: t("field.thesaurus"),
-              icon: "bi bi-info-circle",
-              url: field.conceptUri as string,
-              target: "_blank",
-            },
-          ]}
-        />
-      )}
+      {hasMenu && <Menu ref={menuRef} popup appendTo={document.body} model={items} />}
     </div>
   );
 }

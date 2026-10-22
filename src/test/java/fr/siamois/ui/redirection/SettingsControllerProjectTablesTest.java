@@ -1,5 +1,8 @@
 package fr.siamois.ui.redirection;
 
+import fr.siamois.dto.entity.PersonDTO;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.ArgumentMatchers.any;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -49,13 +52,26 @@ class SettingsControllerProjectTablesTest {
 
     @Test
     void goToProjectTablesSettings_isForbiddenWithoutProjectSettingsPermission() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
         when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
-        when(profilePermissionService.hasProjectSettingsPermission(userInfo, 7L)).thenReturn(false);
+        when(actionUnitService.findById(7L)).thenReturn(project);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
         // ForbiddenException cannot be built without a JAX-RS runtime, hence the generic type here
-        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null));
+        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null));
 
-        verify(actionUnitService, never()).findById(7L);
+        verify(projectDetailsBean, never()).setProject(any());
+        verify(projectTableFieldSettingsBean, never()).init(any());
+    }
+
+    @Test
+    void goToProjectTablesSettings_answersLikeAForbiddenOneForAnUnknownProject() {
+        when(actionUnitService.findById(7L)).thenThrow(new IllegalStateException("not found"));
+
+        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null));
+
+        verify(projectDetailsBean, never()).setProject(any());
     }
 
     @Test
@@ -63,13 +79,26 @@ class SettingsControllerProjectTablesTest {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
         when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
-        when(profilePermissionService.hasProjectSettingsPermission(userInfo, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
         when(actionUnitService.findById(7L)).thenReturn(project);
 
-        String view = controller.goToProjectTablesSettings(7L, null);
+        String view = controller.goToProjectTablesSettings(7L, null, null, null);
 
         assertEquals("forward:/pages/settings/project/projectTablesSettings.xhtml", view);
         verify(projectDetailsBean).setProject(project);
         verify(projectTableFieldSettingsBean).init(project);
+    }
+
+    @Test
+    void goToProjectTablesSettings_opensOnTheTypeAndFieldOfAFiche() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        when(sessionSettingsBean.getUserInfo()).thenReturn(userInfo);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
+        when(actionUnitService.findById(7L)).thenReturn(project);
+
+        controller.goToProjectTablesSettings(7L, "UE", 12L, 34L);
+
+        verify(projectTableFieldSettingsBean).openOn(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, 12L, 34L);
     }
 }

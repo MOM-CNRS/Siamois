@@ -273,7 +273,7 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     public String redirectToProject(ActionUnitDTO actionUnit) {
         if (!profilePermissionService.hasProjectSettingsPermission(
-                sessionSettingsBean.getUserInfo(), actionUnit.getId())) {
+                sessionSettingsBean.getUserInfo().getUser(), actionUnit)) {
             log.warn("Person {} tried to access settings of project {} without permission",
                     sessionSettingsBean.getUserInfo().getUser(), actionUnit.getId());
             MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");
@@ -286,7 +286,8 @@ public class ProjectListBean implements SettingsDatatableBean {
 
     /** Navigates straight to the project's member page — backs the row's "members" chip. */
     public String redirectToProjectMembers(ActionUnitDTO actionUnit) {
-        if (!canManageSettings(actionUnit)) {
+        if (!profilePermissionService.hasProjectSettingsPermission(
+                sessionSettingsBean.getUserInfo().getUser(), actionUnit)) {
             log.warn("Person {} tried to access members of project {} without permission",
                     sessionSettingsBean.getUserInfo().getUser(), actionUnit.getId());
             MessageUtils.displayWarnMessage(langBean, "common.error.forbidden");

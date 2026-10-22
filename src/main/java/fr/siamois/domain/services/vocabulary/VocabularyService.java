@@ -103,28 +103,39 @@ public class VocabularyService {
         return savedVocabulary;
     }
 
+    /** The public thesauri of an OpenTheso instance that are meant for Siamois. */
     public List<ThesaurusInfo> findAllPublicThesaurusOf(@NonNull String server, @NonNull String labelLang) throws InvalidEndpointException {
+        return listPublicThesauri(server, labelLang, true);
+    }
+
+    /** Every public thesaurus of an OpenTheso instance, whatever its type. */
+    public List<ThesaurusInfo> findAllThesaurusOf(@NonNull String server, @NonNull String labelLang) throws InvalidEndpointException {
+        return listPublicThesauri(server, labelLang, false);
+    }
+
+    private List<ThesaurusInfo> listPublicThesauri(String server, String labelLang, boolean siamoisOnly) throws InvalidEndpointException {
         List<ThesaurusDTO> dtos = thesaurusApi.fetchAllPublicThesaurus(server);
         List<ThesaurusInfo> results = new ArrayList<>();
         for (ThesaurusDTO dto : dtos) {
-            if(Objects.equals(dto.getType(), "Siamois")) {
-                String label;
-                String lang;
-                if (!dto.getLabels().isEmpty()) {
-                    label = dto.getLabels().get(0).getTitle();
-                    lang = dto.getLabels().get(0).getLang();
-                    int i = 0;
-                    while (i < dto.getLabels().size() && !dto.getLabels().get(i).getLang().equals(labelLang)) i++;
-                    if (i < dto.getLabels().size()) {
-                        label = dto.getLabels().get(i).getTitle();
-                        lang = dto.getLabels().get(i).getLang();
-                    }
-                } else {
-                    label = "NULL";
-                    lang = labelLang;
-                }
-                results.add(new ThesaurusInfo(server, dto.getIdTheso(), label, lang));
+            if (siamoisOnly && !Objects.equals(dto.getType(), "Siamois")) {
+                continue;
             }
+            String label;
+            String lang;
+            if (!dto.getLabels().isEmpty()) {
+                label = dto.getLabels().get(0).getTitle();
+                lang = dto.getLabels().get(0).getLang();
+                int i = 0;
+                while (i < dto.getLabels().size() && !dto.getLabels().get(i).getLang().equals(labelLang)) i++;
+                if (i < dto.getLabels().size()) {
+                    label = dto.getLabels().get(i).getTitle();
+                    lang = dto.getLabels().get(i).getLang();
+                }
+            } else {
+                label = "NULL";
+                lang = labelLang;
+            }
+            results.add(new ThesaurusInfo(server, dto.getIdTheso(), label, lang));
         }
         return results;
     }

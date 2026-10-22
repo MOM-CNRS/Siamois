@@ -141,40 +141,59 @@ public class SettingsController {
     }
 
     /**
+     * The project, once the caller is known to manage its settings. The right is checked against the
+     * institution owning the project, and an unknown project answers like a forbidden one.
+     */
+    private ActionUnitDTO requireProjectSettingsAccess(Long projectId) {
+        ActionUnitDTO project;
+        try {
+            project = actionUnitService.findById(projectId);
+        } catch (RuntimeException e) {
+            throw new ForbiddenException();
+        }
+        if (!profilePermissionService.hasProjectSettingsPermission(sessionSettingsBean.getUserInfo().getUser(), project)) {
+            throw new ForbiddenException();
+        }
+        return project;
+    }
+
+    /**
      * A project's settings page (its tiles: import, members, tables, thesaurus): where the project fiche's
      * settings button leads. Same right as the settings list's own entry.
      */
     @GetMapping("/settings/project/{projectId}")
     public String goToProjectSettings(@PathVariable("projectId") Long projectId) {
-        if (!profilePermissionService.hasProjectSettingsPermission(
-                sessionSettingsBean.getUserInfo(), projectId)) {
-            throw new ForbiddenException();
-        }
+        ActionUnitDTO project = requireProjectSettingsAccess(projectId);
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
-        projectDetailsBean.setProject(actionUnitService.findById(projectId));
+        projectDetailsBean.setProject(project);
         projectDetailsBean.init();
         return "forward:/pages/settings/project/projectSettings.xhtml";
     }
 
     /**
      * Straight to a project's table configuration (the page behind its "tables" tile), optionally
-     * opened on one table: what a creation form links to when a table has no type declared yet.
+     * opened on one table: what a creation form links to when a table has no type declared yet. A fiche
+     * links here too, on its type ({@code typeId}, a concept id) and, from a field's menu, on that field
+     * ({@code fieldId}, a custom field id).
      */
     @GetMapping("/settings/project/{projectId}/tables")
     public String goToProjectTablesSettings(@PathVariable("projectId") Long projectId,
-                                            @RequestParam(value = "table", required = false) String table) {
-        if (!profilePermissionService.hasProjectSettingsPermission(
-                sessionSettingsBean.getUserInfo(), projectId)) {
-            throw new ForbiddenException();
-        }
-        ActionUnitDTO project = actionUnitService.findById(projectId);
+                                            @RequestParam(value = "table", required = false) String table,
+                                            @RequestParam(value = "typeId", required = false) Long typeId,
+                                            @RequestParam(value = "fieldId", required = false) Long fieldId) {
+        ActionUnitDTO project = requireProjectSettingsAccess(projectId);
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectDetailsBean.setProject(project);
         projectDetailsBean.init();
         projectTableFieldSettingsBean.init(project);
         if (table != null) {
             try {
-                projectTableFieldSettingsBean.selectTable(ConfigurableTable.valueOf(table));
+                ConfigurableTable configurable = ConfigurableTable.valueOf(table);
+                if (typeId != null) {
+                    projectTableFieldSettingsBean.openOn(configurable, typeId, fieldId);
+                } else {
+                    projectTableFieldSettingsBean.selectTable(configurable);
+                }
             } catch (IllegalArgumentException ignored) {
                 // an unknown table: the page opens on its first one
             }
