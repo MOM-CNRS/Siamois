@@ -199,6 +199,8 @@ export interface CreatePrefill {
   parent?: EntityRef;
   // ...or its direct parent.
   child?: EntityRef;
+  // Recording unit: the phase it is attached to.
+  phase?: EntityRef;
   // Find: the recording unit it is created on (no UE picker then).
   recordingUnit?: EntityRef;
   // Project: the place it is attached to (spatial context).

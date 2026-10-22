@@ -1483,6 +1483,9 @@ public class RecordingUnitService implements ArkEntityService {
         hydrateCounts(page.getContent(), ids);
         if (includeFullRelations) {
             hydrateFullRelations(page.getContent(), ids);
+        } else {
+            // Not a relation field of the REST list's answers: the "phases" column reads them off the row.
+            hydratePhases(page.getContent(), ids);
         }
 
         return page;
@@ -1499,6 +1502,13 @@ public class RecordingUnitService implements ArkEntityService {
         for (RecordingUnitDTO dto : rows) {
             dto.setParents(parentsByOwner.getOrDefault(dto.getId(), Set.of()));
             dto.setChildren(childrenByOwner.getOrDefault(dto.getId(), Set.of()));
+            dto.setPhases(phasesByOwner.getOrDefault(dto.getId(), Set.of()));
+        }
+    }
+
+    private void hydratePhases(List<RecordingUnitDTO> rows, List<Long> ids) {
+        Map<Long, Set<PhaseDTO>> phasesByOwner = groupPhasesByOwner(phaseRepository.findPhaseEdges(ids));
+        for (RecordingUnitDTO dto : rows) {
             dto.setPhases(phasesByOwner.getOrDefault(dto.getId(), Set.of()));
         }
     }

@@ -2348,10 +2348,11 @@ class RecordingUnitServiceTest {
             assertEquals(6L, dto.getRelationshipCount());
             assertNull(dto.getParents());
             assertNull(dto.getChildren());
-            assertNull(dto.getPhases());
+            // Phases are not a relation field of the REST list: they are loaded (empty here) for its "phases" column.
+            assertTrue(dto.getPhases().isEmpty());
             verify(recordingUnitRepository, never()).findParentEdges(any());
             verify(recordingUnitRepository, never()).findChildEdges(any());
-            verify(phaseRepository, never()).findPhaseEdges(any());
+            verify(phaseRepository).findPhaseEdges(any());
         }
 
         @Test

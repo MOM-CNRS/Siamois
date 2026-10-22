@@ -10,6 +10,8 @@ export interface RecordingUnitCreateBody {
   // childRecordingUnitId — linked server-side in the same transaction as the creation.
   parentRecordingUnitId?: string | number;
   childRecordingUnitId?: string | number;
+  // The phase the new UE is attached to (same project).
+  phaseId?: string | number;
 }
 
 const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, RecordingUnitCreateBody>("recording-units", {
@@ -20,6 +22,7 @@ const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, Recording
     typeId: body.typeId,
     parentRecordingUnitId: body.parentRecordingUnitId != null ? Number(body.parentRecordingUnitId) : undefined,
     childRecordingUnitId: body.childRecordingUnitId != null ? Number(body.childRecordingUnitId) : undefined,
+    phaseId: body.phaseId != null ? Number(body.phaseId) : undefined,
   }),
 });
 
