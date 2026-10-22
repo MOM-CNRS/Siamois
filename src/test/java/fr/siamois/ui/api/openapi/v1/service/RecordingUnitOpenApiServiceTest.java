@@ -574,7 +574,7 @@ class RecordingUnitOpenApiServiceTest {
 
     /**
      * Régression : les défauts de colonnes de la liste des projets doivent venir de la même source que
-     * la table JSF ({@code ActionUnitTableColumnDefaults}) — status/oaCode/mainLocation/openingRate/
+     * la table JSF ({@code ActionUnitTableColumnDefaults}) — recordingUnits/status/oaCode/mainLocation/openingRate/
      * periods/subjects/scientificManager visibles par défaut, le reste disponible mais masqué.
      */
     @Test
@@ -597,7 +597,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(ProjectTableColumnResource::visible)
                 .extracting(ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("status", "oaCode", "mainLocation", "openingRate",
+                .containsExactlyInAnyOrder("recordingUnits", "status", "oaCode", "mainLocation", "openingRate",
                         "periods", "subjects", "scientificManager");
         assertThat(tableColumns)
                 .extracting(ProjectTableColumnResource::columnId)
