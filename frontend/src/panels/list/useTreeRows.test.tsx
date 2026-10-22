@@ -6,7 +6,7 @@ import type {
   EntityTypeConfig,
   ListParams,
   PagedResult,
-} from "../../entities/types";
+} from "../../entities/shared/types";
 import { useTreeRows, type TreeRow } from "./useTreeRows";
 
 (

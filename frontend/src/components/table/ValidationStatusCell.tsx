@@ -1,5 +1,5 @@
-import { useWriteMode } from "../../panels/writeMode";
-import { ValidationStatusButton } from "../ValidationStatusButton";
+import { useWriteMode } from "../../panels/pane/writeMode";
+import { ValidationStatusButton } from "../detail/ValidationStatusButton";
 import { ValidationStatusBadge } from "./ValidationStatusBadge";
 
 export interface ValidationStatusCellProps {

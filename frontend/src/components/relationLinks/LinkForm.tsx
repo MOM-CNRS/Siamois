@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { messageForError } from "../../api/errors";
 import { t } from "../../i18n";
-import { CreateFormField, CreateFormShell } from "../CreateFormShell";
+import { CreateFormField, CreateFormShell } from "../create/CreateFormShell";
 import { searchProjectUnits, type UnitOption } from "./api";
 import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";

@@ -5,16 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { FindCreateForm } from "./CreateForm";
-import { getEffectiveForm } from "../typeCatalog";
+import { getEffectiveForm } from "../shared/typeCatalog";
 import { createFind } from "./api";
-import { fetchList } from "../listApi";
+import { fetchList } from "../shared/listApi";
 
 
-vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
+vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 vi.mock("./api", () => ({ createFind: vi.fn() }));
-vi.mock("../listApi", () => ({ fetchList: vi.fn() }));
+vi.mock("../shared/listApi", () => ({ fetchList: vi.fn() }));
 // The project picker (useCreateProject) searches on focus when the list has no project of its own.
-vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
+vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn().mockResolvedValue({ data: [] }) }));
 
 // Same reduction as the other CreateForm test files: the concept picker is exercised elsewhere.
 vi.mock("../../fields/renderers", () => ({

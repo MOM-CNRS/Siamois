@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { scopeProjectId } from "../../entities/scope";
-import type { ColumnDef, EntityTypeConfig, FieldCatalog, ListScope } from "../../entities/types";
+import { scopeProjectId } from "../../entities/shared/scope";
+import type { ColumnDef, EntityTypeConfig, FieldCatalog, ListScope } from "../../entities/shared/types";
 import type { ColumnTogglerOption } from "../../components/table/ColumnToggler";
 import type { FilterSpec } from "../../components/table/FilterChipBar";
 import { renderAnswerCell } from "../../fields/display";

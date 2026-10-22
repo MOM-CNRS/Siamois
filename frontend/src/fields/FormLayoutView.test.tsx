@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FormLayoutView } from "./FormLayoutView";
-import { PaneStateProvider, PaneStateStore } from "../panels/paneState";
+import { PaneStateProvider, PaneStateStore } from "../panels/pane/paneState";
 import { registerDefaultFieldRenderers } from "./registerDefaultRenderers";
-import type { FormLayoutPanel } from "../fields/layout";
+import type { FormLayoutPanel } from "./layout";
 import type { FieldResource } from "./types";
 
 

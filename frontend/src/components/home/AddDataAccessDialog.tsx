@@ -4,7 +4,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
-import { createHomeAccess } from "../../api/homeAccesses";
+import { createHomeAccess } from "../../api/resources/homeAccesses";
 import { queryKeys } from "../../api/queryKeys";
 import { messageForError } from "../../api/errors";
 import { getAllEntityTypes } from "../../entities/registry";

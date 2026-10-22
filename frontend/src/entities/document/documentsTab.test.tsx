@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RowActionContext, RowActionDef } from "../types";
+import type { RowActionContext, RowActionDef } from "../shared/types";
 import { unlinkDocument } from "./api";
 import { documentsTab } from "./documentsTab";
 
 // relationTab hands back its own spec: the tab's wiring is what is under test, not the list it renders.
-vi.mock("../../panels/relationTab", () => ({ relationTab: (spec: unknown) => spec }));
+vi.mock("../../panels/detail/relationTab", () => ({ relationTab: (spec: unknown) => spec }));
 vi.mock("./api", () => ({ unlinkDocument: vi.fn(), linkDocument: vi.fn(), listDocuments: vi.fn() }));
 vi.mock("./AssociateDocument", () => ({ AssociateDocument: () => null }));
 

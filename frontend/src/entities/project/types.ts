@@ -3,13 +3,13 @@
 // detail entity are the same resource, unlike some entities with separate summary/detail DTOs).
 // Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept } from "../common";
+import type { OrganizationIdentifier, ResolvedConcept } from "../shared/common";
 
 export type {
   OrganizationIdentifier,
   ProjectRef,
   ResolvedConcept,
-} from "../common";
+} from "../shared/common";
 
 export interface PlaceLight {
   resourceType: string;

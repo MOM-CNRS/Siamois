@@ -1,12 +1,12 @@
 import { useState, type KeyboardEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InputText } from "primereact/inputtext";
-import { updateView, type ViewResource } from "../../api/views";
+import { updateView, type ViewResource } from "../../api/resources/views";
 import { messageForError } from "../../api/errors";
 import { queryKeys } from "../../api/queryKeys";
 import { t } from "../../i18n";
 import { useNotify } from "../../notify/NotifyProvider";
-import { useBridge } from "../bridge";
+import { useBridge } from "../pane/bridge";
 
 export interface ViewTitleProps {
   view: ViewResource;

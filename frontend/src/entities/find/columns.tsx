@@ -1,4 +1,4 @@
-import type { ColumnDef } from "../types";
+import type { ColumnDef } from "../shared/types";
 import type { FindSummary } from "./types";
 import { intlLocale, t } from "../../i18n";
 

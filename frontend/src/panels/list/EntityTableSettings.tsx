@@ -8,7 +8,7 @@ import {
 import { VisibilityChooser } from "../../components/table/VisibilityChooser";
 import { t } from "../../i18n";
 import type { ListViewMode, ListViewOption } from "./listViews";
-import type { OpenMode } from "../listPreferences";
+import type { OpenMode } from "./listPreferences";
 
 export interface ActionBarLayout {
   order: string[];

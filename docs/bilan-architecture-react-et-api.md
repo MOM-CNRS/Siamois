@@ -83,7 +83,7 @@ Classés par gravité réelle, pas par effort.
 
 ### Ensuite, au fil de l'eau
 
-- Chargement paresseux par entité et découpage de `renderers.tsx` et `entities/types.ts`, **après mesure** du bundle (R8).
+- Chargement paresseux par entité et découpage de `renderers.tsx` et `entities/shared/types.ts`, **après mesure** du bundle (R8).
 - Extraire les en-têtes et formulaires de création dupliqués (R7).
 - Découper `ProjectApiService` quand on y retouche, pas avant (A3).
 - Renommer les classes CSS propres à React en `sia-*` quand on y touche, et couper `main-panel.css` par composant (R9).

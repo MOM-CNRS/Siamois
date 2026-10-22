@@ -3,7 +3,7 @@ import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEd
 import type { FieldState } from "../rules";
 import { renderAnswerCell, renderAnswerValue } from "./display";
 import { FileCell, type StoredFile } from "./FileCell";
-import { useCanEdit } from "../panels/writeMode";
+import { useCanEdit } from "../panels/pane/writeMode";
 import { describeIncoherence } from "./incoherence";
 import { hasFieldRenderer } from "./registry";
 import { stratigraphyPositionOf } from "./stratigraphy";

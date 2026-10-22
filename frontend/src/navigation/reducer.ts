@@ -1,6 +1,6 @@
 import type { MountOptions, PanelKind } from "../mountOptions";
 import type { EntityPreview } from "../panels/EntityDetailPanel";
-import type { PanelTransitionKind } from "../panels/panelTransition";
+import type { PanelTransitionKind } from "../panels/pane/panelTransition";
 import { entityPath, resolveEntityPath } from "./paths";
 import { decodeFocusUrl, encodeFocusUrl } from "./url";
 import type { ListSeed } from "./externalBus";

@@ -3,8 +3,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { App, paneClassName } from "./App";
 import { registerEntityType } from "./entities/registry";
-import { relationTab } from "./panels/relationTab";
-import type { EntityTypeConfig } from "./entities/types";
+import { relationTab } from "./panels/detail/relationTab";
+import type { EntityTypeConfig } from "./entities/shared/types";
 import type { MountOptions } from "./mountOptions";
 
 

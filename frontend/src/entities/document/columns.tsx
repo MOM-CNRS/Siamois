@@ -1,9 +1,9 @@
-import type { ColumnDef } from "../types";
+import type { ColumnDef } from "../shared/types";
 import type { DocumentSummary } from "./types";
 import { t } from "../../i18n";
 
 // The pinned columns; the rest of the table comes from the project's document forms (the dynamic
-// catalog, entities/typeCatalog.ts). Field ids are the document table's system fields (DocumentForm).
+// catalog, entities/shared/typeCatalog.ts). Field ids are the document table's system fields (DocumentForm).
 export const documentColumns: ColumnDef<DocumentSummary>[] = [
   {
     key: "identifier",

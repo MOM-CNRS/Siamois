@@ -1,4 +1,4 @@
-import { createEntityApi } from "../createEntityApi";
+import { createEntityApi } from "../shared/createEntityApi";
 import type { DocumentDetail, DocumentSummary } from "./types";
 import { apiBlob, apiFetch } from "../../api/client";
 

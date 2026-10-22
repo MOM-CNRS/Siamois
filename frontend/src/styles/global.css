@@ -23,7 +23,7 @@ body {
 }
 
 
-/* ---- Pane transitions (panels/panelTransition.ts) --------------------------------------------
+/* ---- Pane transitions (panels/pane/panelTransition.ts) --------------------------------------------
    Each pane carries a view-transition-name derived from the entity it shows, so:
    - a pane present before AND after (same entity) morphs between its two boxes: the main pane
      shrinking when the overview opens, or the overview's fiche growing to full width on focus;

@@ -21,7 +21,7 @@ Suite de l'overlay de recherche des listes (`feat/list-search-overlay`, lots 1-2
 - Tests : rang d'un id sous tri par défaut, tri par champ, filtre et recherche actifs ; cible absente → `found: false` ; id hors institution → 404 ; ex æquo départagés par id.
 
 ## Lot R2 — Frontend : révélation dans la table
-- `entities/listApi.ts` : `fetchListPosition(collectionPath, params, id)` (même construction de requête que `fetchList`).
+- `entities/shared/listApi.ts` : `fetchListPosition(collectionPath, params, id)` (même construction de requête que `fetchList`).
 - `EntityListPanel` : prop `reveal?: { id, nonce }` sur le modèle de `seed` (effet clé sur le nonce). Ordre : `setSearch` / `setFilters` éventuels d'abord, puis, avec les `params` à jour, la position, puis `setPage(offset, limit)`, puis le surlignage. `setSort`, `setSearch` et `setFilters` remettent l'offset à 0 : le `setPage` du reveal passe en dernier, dans un rendu séparé.
 - `EntityTable` : prop `revealKey` ; `rowStateClasses` ajoute `reveal-flash` ; après la fin du fetch (`isFetching` faux, `placeholderData: previous` garde l'ancienne page), `scrollIntoView({ block: "center" })` sur la ligne. Le reset `scrollTop = 0` (l.161-169) est sauté tant qu'un reveal est en attente.
 - CSS `reveal-flash` dans `styles/main-panel.css`.

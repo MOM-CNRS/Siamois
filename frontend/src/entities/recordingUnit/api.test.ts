@@ -16,7 +16,7 @@ vi.mock("../../api/client", () => ({
 
 const mockedApiFetch = vi.mocked(apiFetch);
 
-// fetchList (entities/listApi.ts) resolves a scope's collection path through the registry —
+// fetchList (entities/shared/listApi.ts) resolves a scope's collection path through the registry —
 // "project" must be registered for the scoped URL to come out as "/projects/{id}/…", matching
 // EntityTypeConfig.collectionPath, not the raw scope.entityType string.
 registerEntityType({

@@ -1,23 +1,23 @@
-import type { EntityTypeConfig } from "../types";
-import { deleteEntity } from "../deleteApi";
-import { loadTypeCatalog } from "../typeCatalog";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import type { EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { loadTypeCatalog } from "../shared/typeCatalog";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
 import { documentColumns } from "./columns";
 import { DocumentCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { DocumentDetail, DocumentSummary } from "./types";
 import { t } from "../../i18n";
 
 // The document's own EntityTypeConfig: an independent card on the home, an organization-wide list, a
 // project list, and a fiche composed from the project's configuration of the document table (its
 // "type" is the category). Its dynamic column catalog comes from the project's forms
-// (entities/typeCatalog.ts).
+// (entities/shared/typeCatalog.ts).
 export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDetail> = {
   key: "document",
   labels: { singular: t("entity.document.singular"), plural: t("entity.document.plural"), all: t("entity.document.all") },

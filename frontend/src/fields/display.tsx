@@ -9,7 +9,7 @@ import type { FieldResource } from "./types";
 import { readMultiValue, unwrapAnswer } from "./types";
 import { getEntityType } from "../entities/registry";
 import { isEntityKey, type EntityKey } from "../entities/keys";
-import { useOpenEntity } from "../panels/entityNavigation";
+import { useOpenEntity } from "../panels/pane/entityNavigation";
 import { t } from "../i18n";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.

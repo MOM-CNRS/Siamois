@@ -6,14 +6,14 @@ import { Panel } from "primereact/panel";
 import { Skeleton } from "primereact/skeleton";
 import { ClickableCard } from "../../components/home/ClickableCard";
 import { EntityCountCard } from "../../components/home/EntityCountCard";
-import { useOrganizationCounts } from "../organizationCounts";
-import { useOrganizationPermissions } from "../organizationPermissions";
+import { useOrganizationCounts } from "../shared/organizationCounts";
+import { useOrganizationPermissions } from "../shared/organizationPermissions";
 import { ProjectCreateForm } from "./CreateForm";
-import type { HomeWidgetContext, HomeWidgetDef } from "../types";
+import type { HomeWidgetContext, HomeWidgetDef } from "../shared/types";
 import { listProjects } from "./api";
 import { queryKeys } from "../../api/queryKeys";
 import { t } from "../../i18n";
-import { usePaneState } from "../../panels/paneState";
+import { usePaneState } from "../../panels/pane/paneState";
 
 // Home's two Project widgets (plan §4/§8 phase 7), each mirroring one real JSF piece with its
 // PrimeReact counterpart rather than a from-scratch design:

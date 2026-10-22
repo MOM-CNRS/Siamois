@@ -6,7 +6,7 @@ import { messageForError } from "../../api/errors";
 import { queryKeys } from "../../api/queryKeys";
 import { qualifiedLabel, refChipStyle } from "../../fields/display";
 import { t } from "../../i18n";
-import { useOpenEntity } from "../../panels/entityNavigation";
+import { useOpenEntity } from "../../panels/pane/entityNavigation";
 import { addStratigraphyLink, removeStratigraphyLink, searchProjectUnits, updateStratigraphyLink, type StratigraphyZone } from "./api";
 import { FitToViewport } from "./FitToViewport";
 import { InlinePicker, type PickerOption } from "./InlinePicker";

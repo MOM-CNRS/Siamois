@@ -1,4 +1,4 @@
-import type { FilterValue } from "../../entities/types";
+import type { FilterValue } from "../../entities/shared/types";
 
 /**
  * The type a configured tab's fixed filters pin down: an "in" filter on the type field with one value. What is

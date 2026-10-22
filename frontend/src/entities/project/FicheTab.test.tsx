@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiError } from "../../api/client";
 import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
 import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/writeMode";
+import { WriteModeProvider } from "../../panels/pane/writeMode";
 import { ProjectFicheTab, buildPatch, isEmptyValue } from "./FicheTab";
 import { getProjectTypes } from "./projectTypes";
 import { getProjectHistory } from "./history";

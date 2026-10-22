@@ -1,6 +1,6 @@
-import { fetchTypesCatalog } from "../typeCatalog";
+import { fetchTypesCatalog } from "../shared/typeCatalog";
 import type { FieldResource } from "../../fields/types";
-import type { ProjectTableColumnDefault } from "../common";
+import type { ProjectTableColumnDefault } from "../shared/common";
 
 // GET /api/v1/organizations/{id}/project-types (plan §5/§6/§8 phase 3+6) — replaces the removed
 // GET /api/v1/projects/form. `data` is always `[]` this phase (Project has no configurable types

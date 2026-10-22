@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
 import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
-import type { EntityTypeConfig, PagedResult } from "../entities/types";
+import type { EntityTypeConfig, PagedResult } from "../entities/shared/types";
 import {
   createView,
   deleteViewState,
@@ -12,15 +12,15 @@ import {
   getViewState,
   updateView,
   type ViewResource,
-} from "../api/views";
-import { getBookmarkStatus } from "../api/bookmarks";
+} from "../api/resources/views";
+import { getBookmarkStatus } from "../api/resources/bookmarks";
 import { ApiError } from "../api/client";
 import { EntityListPanel } from "./EntityListPanel";
-import { BridgeProvider } from "./bridge";
+import { BridgeProvider } from "./pane/bridge";
 
 registerDefaultFieldRenderers();
 
-vi.mock("../api/bookmarks", () => ({
+vi.mock("../api/resources/bookmarks", () => ({
   createBookmark: vi.fn().mockResolvedValue(undefined),
   deleteBookmark: vi.fn().mockResolvedValue(undefined),
   getBookmarkStatus: vi.fn().mockResolvedValue(false),

@@ -1,4 +1,4 @@
-import { AnchoredFormOverlay } from "../AnchoredFormOverlay";
+import { AnchoredFormOverlay } from "../layout/AnchoredFormOverlay";
 import { LinkForm, type LinkFormProps } from "./LinkForm";
 
 export type LinkOverlayProps = Omit<LinkFormProps, "onCancel" | "onSubmit"> & {

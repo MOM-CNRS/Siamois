@@ -1,4 +1,4 @@
-import type { ListParams, ListScope } from "../entities/types";
+import type { ListParams, ListScope } from "../entities/shared/types";
 
 /**
  * Every query key of the app, so that a key and the invalidations that target it are written in

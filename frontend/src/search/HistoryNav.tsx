@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import { Tooltip } from "primereact/tooltip";
-import { listHistory, type HistoryShortcut } from "../api/homeShortcuts";
+import { listHistory, type HistoryShortcut } from "../api/resources/homeShortcuts";
 import { getEntityType } from "../entities/registry";
 import { t } from "../i18n";
 import { getNavigation } from "../navigation/externalBus";

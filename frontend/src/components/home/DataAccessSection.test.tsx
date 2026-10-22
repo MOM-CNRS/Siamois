@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { apiFetch } from "../../api/client";
 import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig } from "../../entities/types";
+import type { EntityTypeConfig } from "../../entities/shared/types";
 import { DataAccessSection } from "./DataAccessSection";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));

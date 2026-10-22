@@ -41,7 +41,7 @@ vi.mock("../notify/NotifyProvider", async () => {
 
 // No test reaches the server for what a user kept on a view (GET/PUT /api/v1/view-states) or for the saved
 // views (/api/v1/views): by default nothing was kept and there is no view. A test of that state overrides these mocks.
-vi.mock("../api/views", () => ({
+vi.mock("../api/resources/views", () => ({
   getViewState: vi.fn((_organizationId: number, viewKey: string) => Promise.resolve({ viewKey, state: null })),
   putViewState: vi.fn(() => Promise.resolve()),
   deleteViewState: vi.fn(() => Promise.resolve()),
@@ -53,7 +53,7 @@ vi.mock("../api/views", () => ({
 }));
 
 // Nor the tabs a project configured for a fiche (/api/v1/fiche-configs): by default none, and nobody may edit.
-vi.mock("../api/ficheConfigs", () => ({
+vi.mock("../api/resources/ficheConfigs", () => ({
   getFicheConfig: vi.fn(() => Promise.resolve({ tabs: null, canEdit: false })),
   putFicheConfig: vi.fn(() => Promise.resolve({ tabs: null, canEdit: true })),
   deleteFicheConfig: vi.fn(() => Promise.resolve()),

@@ -5,13 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { RecordingUnitCreateForm } from "./CreateForm";
-import { fetchTypesCatalog, getEffectiveForm } from "../typeCatalog";
+import { fetchTypesCatalog, getEffectiveForm } from "../shared/typeCatalog";
 import { createRecordingUnit } from "./api";
 
 
-vi.mock("../typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
+vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
 vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
-vi.mock("../creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 
 // The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
 // project 8, same stand-in as FindCreateForm's own recording-unit picker test.

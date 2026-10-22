@@ -1,6 +1,6 @@
-import { relationTab } from "../../panels/relationTab";
-import { deleteEntity } from "../deleteApi";
-import type { EntityTypeConfig } from "../types";
+import { relationTab } from "../../panels/detail/relationTab";
+import { deleteEntity } from "../shared/deleteApi";
+import type { EntityTypeConfig } from "../shared/types";
 import {
   duplicateProject,
   getProject,
@@ -15,7 +15,7 @@ import { ProjectFicheTab } from "./FicheTab";
 import { projectHomeWidgets } from "./homeWidgets";
 import { PlacesTab } from "./PlacesTab";
 import { getProjectTypes } from "./projectTypes";
-import { jsfRoutes } from "../routes";
+import { jsfRoutes } from "../shared/routes";
 import type { ProjectDetail, ProjectSummary } from "./types";
 import { t } from "../../i18n";
 

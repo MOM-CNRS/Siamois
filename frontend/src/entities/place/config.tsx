@@ -1,18 +1,18 @@
-import type { EntityRef, EntityTypeConfig } from "../types";
-import { deleteEntity } from "../deleteApi";
-import { relationTab } from "../../panels/relationTab";
+import type { EntityRef, EntityTypeConfig } from "../shared/types";
+import { deleteEntity } from "../shared/deleteApi";
+import { relationTab } from "../../panels/detail/relationTab";
 import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../chrome";
-import { fetchSiblings } from "../siblingsApi";
-import { fetchBreadcrumbs } from "../breadcrumbsApi";
+import { bookmarkChrome } from "../shared/chrome";
+import { fetchSiblings } from "../shared/siblingsApi";
+import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
 import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
 import { loadPlaceCatalog } from "./catalog";
 import { placeColumns } from "./columns";
 import { PlaceCreateForm } from "./CreateForm";
 import { PlaceDetailHeader } from "./DetailHeader";
-import { SchemaFicheTab } from "../../components/SchemaFicheTab";
-import { jsfRoutes } from "../routes";
-import { countCardWidgets } from "../countCard";
+import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
+import { jsfRoutes } from "../shared/routes";
+import { countCardWidgets } from "../shared/countCard";
 import type { PlaceDetail, PlaceSummary } from "./types";
 import { t } from "../../i18n";
 

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CreateFormField } from "../../components/CreateFormShell";
-import { CreateLinkField } from "../../components/CreateLinkField";
-import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../types";
+import { CreateFormField } from "../../components/create/CreateFormShell";
+import { CreateLinkField } from "../../components/create/CreateLinkField";
+import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
+import type { CreateFormContext } from "../shared/types";
 import { createDocument, uploadDocumentFile } from "./api";
 import { t } from "../../i18n";
 

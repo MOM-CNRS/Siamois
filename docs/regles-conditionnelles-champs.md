@@ -115,7 +115,7 @@ Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
 - `EntityListPanel` charge, pour chaque projet présent dans les lignes déjà reçues, les formulaires par type
   de l'endpoint du projet (`recording-unit-types`, `find-types`, `phase-types`, `container-types` ; clé
   `list.rulesSegment` de la config d'entité) et évalue chaque ligne avec les règles du formulaire de son
-  projet et de son type (le premier type de la table pour une ligne sans type) : `panels/useTypeRules.ts`, `useRowRules.ts`.
+  projet et de son type (le premier type de la table pour une ligne sans type) : `panels/list/useTypeRules.ts`, `useRowRules.ts`.
   Les champs lus par ces règles sont demandés (`fields=`) dès la deuxième requête, une fois les projets connus.
 - Audit : `FormConfig`, `FormConfigGroup`, `FieldFormConfig` et `ConceptFieldFormConfig` sont `@Audited`
   (relations vers champ, concept, projet et institution en `NOT_AUDITED`).

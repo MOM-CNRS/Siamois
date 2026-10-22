@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { usePersistedPaneState } from "../../../panels/persistedPaneState";
-import { useCanEdit } from "../../../panels/writeMode";
+import { usePersistedPaneState } from "../../../panels/pane/persistedPaneState";
+import { useCanEdit } from "../../../panels/pane/writeMode";
 import { entityChipStyle } from "../../../fields/display";
 import { editContextOf } from "../../../fields/editContext";
 import { t } from "../../../i18n";
-import type { EntityPreview } from "../../types";
+import type { EntityPreview } from "../../shared/types";
 import { layoutGraph, type LayoutLabels, type LayoutNode } from "./layout";
 import { zoneTitle } from "./labels";
 import { RelationsList, RelationsListControls, RelationsListEnd } from "./RelationsList";

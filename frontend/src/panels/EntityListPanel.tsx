@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { PaneStateScope, usePaneState } from "./paneState";
+import { PaneStateScope, usePaneState } from "./pane/paneState";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "primereact/skeleton";
 import { Panel } from "primereact/panel";
 import { Chip } from "primereact/chip";
 import { Button } from "primereact/button";
 import { getEntityType } from "../entities/registry";
-import { scopeProjectId } from "../entities/scope";
-import { searchCreatableProjects } from "../entities/creatableProjects";
+import { scopeProjectId } from "../entities/shared/scope";
+import { searchCreatableProjects } from "../entities/shared/creatableProjects";
 import type {
   CreatePrefill,
   EntityPreview,
@@ -15,8 +15,8 @@ import type {
   FilterValue,
   ListScope,
   RowActionDef,
-} from "../entities/types";
-import { PanelHeaderBar } from "../components/PanelHeaderBar";
+} from "../entities/shared/types";
+import { PanelHeaderBar } from "../components/layout/PanelHeaderBar";
 import { FilterChipBar } from "../components/table/FilterChipBar";
 import { withLabels } from "../components/table/ColumnFilter";
 import type { FilterOption } from "../fields/optionSources";
@@ -31,18 +31,18 @@ import { viewOptions } from "./list/listViews";
 import { ViewActions } from "./list/ViewActions";
 import { ViewTitle } from "./list/ViewTitle";
 import { fixedTypeOf } from "./list/fixedType";
-import { toViewState } from "./listState";
+import { toViewState } from "./list/listState";
 import { useNotify, useToastOnChange } from "../notify/NotifyProvider";
 import { t } from "../i18n";
-import { useFicheTabsActions } from "./ficheTabsContext";
+import { useFicheTabsActions } from "./detail/ficheTabsContext";
 import { listPath } from "../navigation/paths";
 import { ListSearchOverlayBox } from "./list/ListSearchOverlay";
 import { ListToolbar } from "./list/ListToolbar";
 import { useEntityListData, type RowRecord } from "./list/useEntityListData";
 import { useListColumns } from "./list/useListColumns";
-import { defaultOpenMode, listPrefsKey, loadListPrefs, saveListPrefs, type OpenMode } from "./listPreferences";
-import { useRowActions } from "./useRowActions";
-import { useWriteMode } from "./writeMode";
+import { defaultOpenMode, listPrefsKey, loadListPrefs, saveListPrefs, type OpenMode } from "./list/listPreferences";
+import { useRowActions } from "./list/useRowActions";
+import { useWriteMode } from "./pane/writeMode";
 import type { ListSeed } from "../navigation/externalBus";
 
 export interface EntityListPanelProps {
@@ -74,7 +74,7 @@ export interface EntityListPanelProps {
   toolbar?: PanelToolbarSlot;
   // Scopes this list to one parent entity's own sub-collection (plan: generic related-list tab,
   // e.g. "the recording units of project 5") rather than the entity type's global list. Threaded
-  // straight into ListParams.scope — see entities/listApi.ts for the URL it produces.
+  // straight into ListParams.scope — see entities/shared/listApi.ts for the URL it produces.
   scope?: ListScope;
   // Renders without the wrapping <Panel>/PanelHeaderBar (icon + plural label + count chip) — for
   // use inside a DetailTabDef's own TabPanel, which already supplies a title and (via
@@ -97,11 +97,11 @@ export interface EntityListPanelProps {
   // id, the default list). Without `onViewChange` the list offers no views.
   viewId?: number;
   onViewChange?: (viewId?: number) => void;
-  // A configured tab of a fiche (see panels/ficheConfig.ts): the filters that define it, and the key that
+  // A configured tab of a fiche (see panels/detail/ficheConfig.ts): the filters that define it, and the key that
   // keeps its state apart from the fiche's other lists of this type.
   fixedFilters?: Record<string, FilterValue>;
   stateKey?: string;
-  // The preview of a tab being configured (panels/FicheTabsEditor.tsx): its state is not kept for the user, it
+  // The preview of a tab being configured (panels/detail/FicheTabsEditor.tsx): its state is not kept for the user, it
   // opens on `initialFilters`, and `onFiltersChange` hears every change of its filters.
   volatile?: boolean;
   initialFilters?: Record<string, FilterValue>;

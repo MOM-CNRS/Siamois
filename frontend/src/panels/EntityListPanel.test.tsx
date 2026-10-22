@@ -3,17 +3,17 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { registerEntityType } from "../entities/registry";
-import { DEFAULT_LIMIT } from "./tableState";
+import { DEFAULT_LIMIT } from "./list/tableState";
 import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
 
 registerDefaultFieldRenderers();
-import type { EntityTypeConfig, PagedResult } from "../entities/types";
-import { recallListContext } from "./listContext";
+import type { EntityTypeConfig, PagedResult } from "../entities/shared/types";
+import { recallListContext } from "./list/listContext";
 import { EntityListPanel } from "./EntityListPanel";
-import { WriteModeProvider } from "./writeMode";
-import { searchCreatableProjects } from "../entities/creatableProjects";
+import { WriteModeProvider } from "./pane/writeMode";
+import { searchCreatableProjects } from "../entities/shared/creatableProjects";
 
-vi.mock("../entities/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
+vi.mock("../entities/shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 const mockedSearchCreatableProjects = vi.mocked(searchCreatableProjects);
 
 // Some PrimeReact internals (ripple, resize listeners) schedule state updates outside any act()
@@ -1694,7 +1694,7 @@ describe("EntityListPanel pinned columns backed by a catalog field", () => {
   });
 });
 
-// The fiche's previous/next arrows walk the list it was opened from (panels/listContext.ts).
+// The fiche's previous/next arrows walk the list it was opened from (panels/list/listContext.ts).
 describe("EntityListPanel remembers where a row was opened from", () => {
   function renderList(props: Record<string, unknown> = {}) {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

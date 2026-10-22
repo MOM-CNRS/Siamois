@@ -1,6 +1,6 @@
-import { CreateLinkField } from "../../components/CreateLinkField";
-import { TypeOnlyCreateForm } from "../../components/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../types";
+import { CreateLinkField } from "../../components/create/CreateLinkField";
+import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
+import type { CreateFormContext } from "../shared/types";
 import { createRecordingUnit } from "./api";
 import { t } from "../../i18n";
 

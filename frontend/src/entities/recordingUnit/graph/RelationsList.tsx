@@ -10,7 +10,7 @@ import { refChipStyle } from "../../../fields/display";
 import type { FilterOption } from "../../../fields/optionSources";
 import { t } from "../../../i18n";
 import { ListSearchBox } from "../../../panels/list/ListSearchBox";
-import { PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/tableState";
+import { PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/list/tableState";
 import { kindLabel, RELATION_KINDS } from "./labels";
 import { KIND_FILTER, type RelationListModel } from "./useRelationList";
 import type { RelationLinkEditor } from "./useRelationLinkEditor";

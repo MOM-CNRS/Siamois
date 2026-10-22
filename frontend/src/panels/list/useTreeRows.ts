@@ -8,7 +8,7 @@ import type {
   EntityTypeConfig,
   ListParams,
   PagedResult,
-} from "../../entities/types";
+} from "../../entities/shared/types";
 import type { RowRecord } from "./useEntityListData";
 
 // A parent's children are fetched in one request, up to this many.

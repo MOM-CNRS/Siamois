@@ -1,4 +1,4 @@
-import { createEntityApi } from "../createEntityApi";
+import { createEntityApi } from "../shared/createEntityApi";
 import type { FindDetail, FindSummary } from "./types";
 
 // Mirrors FindCreateRequest's required pair: a mobilier is created ON a recording unit, never

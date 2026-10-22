@@ -1,4 +1,4 @@
-import type { ColumnDef } from "../types";
+import type { ColumnDef } from "../shared/types";
 import type { ContainerSummary } from "./types";
 import { t } from "../../i18n";
 

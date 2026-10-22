@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Chip } from "primereact/chip";
-import { EntityDetailHeader } from "../../components/EntityDetailHeader";
+import { EntityDetailHeader } from "../../components/detail/EntityDetailHeader";
 import type { FieldResource } from "../../fields/types";
 import { patchProject, type ProjectPatch } from "./api";
 import { getProjectTypes } from "./projectTypes";
