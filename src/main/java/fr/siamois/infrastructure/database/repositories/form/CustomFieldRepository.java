@@ -97,8 +97,7 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
               and fc.fieldConcept.id in (
                   select cfc.concept.id
                   from ConceptFieldConfig cfc
-                  where cfc.institution.id = :institutionId
-                    and cfc.fieldCode = :fieldCode)
+                  where cfc.fieldCode = :fieldCode)
             order by f.label
             """)
     List<CustomField> findActiveAdditionalByInstitutionAndTable(@Param("institutionId") Long institutionId,

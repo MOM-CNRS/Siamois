@@ -19,7 +19,6 @@ import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptRemoteAutocompleteDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository;
@@ -56,7 +55,7 @@ public class ConceptService {
     private final ConceptLabelRepository conceptLabelRepository;
     private final ConceptHierarchyRepository conceptHierarchyRepository;
     private final ConversionService conversionService;
-    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
+    private final FieldCodeResolver fieldCodeResolver;
 
     private static final String DEFAULT_LABEL_RESOLUTION_LANG = "fr";
     private final ApplicationContext applicationContext;
@@ -74,7 +73,7 @@ public class ConceptService {
      */
     @NonNull
     public Concept resolveConceptByLabel(@NonNull Long institutionId, @NonNull String fieldCode, @NonNull String label) {
-        ConceptFieldConfig config = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionId, fieldCode)
+        ConceptFieldConfig config = fieldCodeResolver.find(institutionId, null, fieldCode)
                 .orElseThrow(() -> new IllegalStateException("Aucun thésaurus configuré pour ce champ"));
 
         List<Concept> matches = conceptRepository.findAllByFieldContextAndExactLabel(

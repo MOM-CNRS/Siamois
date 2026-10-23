@@ -63,7 +63,9 @@ public final class ActionUnitTableColumnDefaults {
             new ColumnDefault("volumeCount", "actionunit.field.volumeCount", ActionUnitForm.VOLUME_COUNT_FIELD, false),
             new ColumnDefault("pageCount", "actionunit.field.pageCount", ActionUnitForm.PAGE_COUNT_FIELD, false),
             new ColumnDefault("figureCount", "actionunit.field.figureCount", ActionUnitForm.FIGURE_COUNT_FIELD, false),
-            new ColumnDefault("appendixCount", "actionunit.field.appendixCount", ActionUnitForm.APPENDIX_COUNT_FIELD, false)
+            new ColumnDefault("appendixCount", "actionunit.field.appendixCount", ActionUnitForm.APPENDIX_COUNT_FIELD, false),
+            new ColumnDefault("regionMaritimeFacade", "actionunit.field.regionMaritimeFacade", ActionUnitForm.REGION_MARITIME_FACADE_FIELD, false),
+            new ColumnDefault("georeferencingDocument", "actionunit.field.georeferencingDocument", ActionUnitForm.GEOREFERENCING_DOCUMENT_FIELD, false)
     );
 
     public static List<ColumnDefault> columns() {

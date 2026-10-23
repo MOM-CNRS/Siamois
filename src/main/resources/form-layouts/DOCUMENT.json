@@ -135,6 +135,16 @@
           "width" : "QUARTER"
         },
         {
+          "fieldId" : -729,
+          "binding" : "storageLocation",
+          "width" : "QUARTER"
+        },
+        {
+          "fieldId" : -730,
+          "binding" : "moldComment",
+          "width" : "FULL"
+        },
+        {
           "fieldId" : -718,
           "binding" : "sizeMb",
           "width" : "QUARTER"

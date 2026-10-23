@@ -53,6 +53,12 @@
                                        styleClass="member-filter-chip filter-chip-ghost">
                             <i class="bi bi-flag"/> #{langBean.msg('exportTemplates.addNational')}
                         </p:commandLink>
+                        <p:commandLink action="#{exportTemplatesSettingsBean.addUnderwaterTemplate()}" process="@this"
+                                       update="@form :exportTemplatesDatatable:formCC:exportTemplatesForm"
+                                       rendered="#{exportTemplatesSettingsBean.canManage()}"
+                                       styleClass="member-filter-chip filter-chip-ghost">
+                            <i class="bi bi-water"/> #{langBean.msg('exportTemplates.addUnderwater')}
+                        </p:commandLink>
                         <p:commandLink action="#{exportTemplatesSettingsBean.displayImportDialog()}" process="@this"
                                        rendered="#{exportTemplatesSettingsBean.canManage()}"
                                        styleClass="member-filter-chip filter-chip-ghost">

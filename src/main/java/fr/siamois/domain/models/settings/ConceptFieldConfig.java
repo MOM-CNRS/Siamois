@@ -1,21 +1,22 @@
 package fr.siamois.domain.models.settings;
 
-import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.lang.Nullable;
 
 import java.util.Objects;
 
-@Getter
-@Setter
+/**
+ * Where a field code lives in a thesaurus: the concept that carries that code (its notation) in the
+ * thesaurus's fields branch, whose subtree is the list of values. One row per (thesaurus, code),
+ * shared by everyone who reads that thesaurus.
+ */
 @Entity
-@Table(name = "concept_field_config")
+@Table(name = "concept_field_config",
+        uniqueConstraints = @UniqueConstraint(name = "uk_concept_field_config_vocabulary_code",
+                columnNames = {"fk_vocabulary_id", "field_code"}))
 @Data
 public class ConceptFieldConfig {
 
@@ -26,13 +27,8 @@ public class ConceptFieldConfig {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fk_institution_id", nullable = false)
-    private Institution institution;
-
-    @Nullable
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_action_unit_id")
-    private ActionUnit actionUnit;
+    @JoinColumn(name = "fk_vocabulary_id", nullable = false)
+    private Vocabulary vocabulary;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -49,14 +45,12 @@ public class ConceptFieldConfig {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ConceptFieldConfig that)) return false;
-        return Objects.equals(institution, that.institution)
-                && Objects.equals(concept, that.concept)
-                && Objects.equals(fieldCode, that.fieldCode)
-                && Objects.equals(actionUnit, that.actionUnit);
+        return Objects.equals(vocabulary, that.vocabulary)
+                && Objects.equals(fieldCode, that.fieldCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(institution, concept, fieldCode, actionUnit);
+        return Objects.hash(vocabulary, fieldCode);
     }
 }

@@ -95,5 +95,62 @@
       "binding" : "collectionDate",
       "width" : "QUARTER"
     } ]
+  }, {
+    "label" : "specimen.header.conservation",
+    "fields" : [ {
+      "fieldId" : -424,
+      "binding" : "sanitaryState",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -426,
+      "binding" : "transferStatus",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -427,
+      "binding" : "selectiveConservation",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -435,
+      "binding" : "storageLocation",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -425,
+      "binding" : "sanitaryAlert",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -428,
+      "binding" : "selectiveConservationComment",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -429,
+      "binding" : "particularInterest",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "specimen.header.anthropobiology",
+    "fields" : [ {
+      "fieldId" : -430,
+      "binding" : "studyPotential",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -431,
+      "binding" : "studyPotentialComment",
+      "width" : "FULL"
+    } ]
+  }, {
+    "label" : "specimen.header.sampling",
+    "fields" : [ {
+      "fieldId" : -434,
+      "binding" : "validityDate",
+      "width" : "QUARTER"
+    }, {
+      "fieldId" : -432,
+      "binding" : "samplingPurpose",
+      "width" : "FULL"
+    }, {
+      "fieldId" : -433,
+      "binding" : "preservationCondition",
+      "width" : "FULL"
+    } ]
   } ]
 }

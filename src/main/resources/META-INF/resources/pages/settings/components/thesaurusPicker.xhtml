@@ -30,11 +30,7 @@
         </style>
 
         <div class="thesaurus-hint">
-            <p>
-                #{langBean.msg('thesaurusMain.hint.siamois')}
-                <a class="thesaurus-inactive-link" aria-disabled="true">#{langBean.msg('thesaurusMain.hint.docLink')}</a>).
-                #{langBean.msg('thesaurusMain.hint.role')}
-            </p>
+            <p>#{langBean.msg('thesaurusMain.hint.role')}</p>
             <p:outputPanel rendered="#{cc.attrs.projectScope}" layout="block">
                 <p>
                     #{langBean.msg('thesaurusMain.hint.others')}
@@ -49,17 +45,21 @@
             <div class="thesaurus-picker-row">
                 <p:selectOneMenu id="thesaurusSelect" styleClass="thesaurus-select" value="#{cc.attrs.bean.thesaurusUrl}"
                                  filter="true" filterMatchMode="contains">
-                    <p:ajax event="change" update="@(.thesaurus-open-link)"/>
+                    <p:ajax event="change" process="@(.sia-settings-form)" update="@(.sia-settings-form)"/>
                     <f:selectItem itemLabel="#{langBean.msg('thesaurusSelect.placeholder')}" itemValue="#{null}" noSelectionOption="true"/>
                     <f:selectItems value="#{cc.attrs.bean.thesaurusOptions}" var="opt" itemValue="#{opt.url}"
                                    itemLabel="#{opt.label} - #{opt.url}"/>
                 </p:selectOneMenu>
-                <p:commandButton icon="pi pi-refresh" type="submit" styleClass="thesaurus-reload"
-                                 title="#{langBean.msg('thesaurusReload.title')}"
-                                 action="#{cc.attrs.bean.saveConfig()}"
-                                 update="@(.thesaurus-progress-bar) @(.thesaurus-usages)"
-                                 onstart="startProgressBar()" oncomplete="endProgressBar()"/>
+
             </div>
+            <p:outputPanel layout="block" styleClass="thesaurus-apply mt-3">
+                <p:commandButton rendered="#{cc.attrs.bean.thesaurusChanged}" type="submit"
+                                 value="#{langBean.msg('thesaurusMain.apply')}" icon="pi pi-check"
+                                 action="#{cc.attrs.bean.saveConfig()}"
+                                 process="@(.sia-settings-form)"
+                                 update="@(.sia-settings-form) @(.thesaurus-usages)"
+                                 onstart="startProgressBar()" oncomplete="endProgressBar()"/>
+            </p:outputPanel>
             <div class="thesaurus-picker-actions">
                 <p:outputPanel layout="inline" styleClass="thesaurus-open-link">
                     <h:outputLink value="#{cc.attrs.bean.thesaurusUrl}" target="_blank" rel="noopener noreferrer"

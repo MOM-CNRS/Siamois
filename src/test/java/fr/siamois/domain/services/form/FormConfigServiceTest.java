@@ -564,6 +564,65 @@ class FormConfigServiceTest {
     }
 
     @Test
+    void addFieldCodeConfigFor_shouldNameTheThesaurusAndTheCode_andDropTheBranchAndTheCollection() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setBranchTopTerm(branchTopConcept);
+        ConceptCollection collection = new ConceptCollection();
+        existing.setCollection(collection);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.addFieldCodeConfigFor(formConfig, field, vocabulary, "SIAAU.TYPE");
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved).isSameAs(existing);
+        assertThat(saved.getVocabulary()).isSameAs(vocabulary);
+        assertThat(saved.getFieldCode()).isEqualTo("SIAAU.TYPE");
+        assertThat(saved.getBranchTopTerm()).isNull();
+        assertThat(saved.getCollection()).isNull();
+        assertThat(saved.isFieldCodeConfig()).isTrue();
+    }
+
+    @Test
+    void addConceptConfigFor_shouldDropAPreviousFieldCode() throws Exception {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setVocabulary(vocabulary);
+        existing.setFieldCode("SIAAU.TYPE");
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+        stubVocabularyResolution();
+        when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
+        when(conceptApi.fetchDownExpansion(vocabulary, "parent")).thenReturn(new ConceptBranchDTO());
+        stubBranchLoadComponents();
+
+        formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getFieldCode()).isNull();
+        assertThat(saved.getVocabulary()).isNull();
+        assertThat(saved.isBranchConfig()).isTrue();
+    }
+
+    @Test
+    void clearConceptConfigFor_shouldAlsoDropTheFieldCode() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setFormConfig(formConfig);
+        existing.setField(field);
+        existing.setVocabulary(vocabulary);
+        existing.setFieldCode("SIAAU.TYPE");
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.clearConceptConfigFor(formConfig, field);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getFieldCode()).isNull();
+        assertThat(saved.getVocabulary()).isNull();
+        assertThat(saved.isNotValid()).isTrue();
+    }
+
+    @Test
     void clearConceptConfigFor_shouldNullOutBothBranchAndCollectionAndSave() {
         ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
         existing.setFormConfig(formConfig);

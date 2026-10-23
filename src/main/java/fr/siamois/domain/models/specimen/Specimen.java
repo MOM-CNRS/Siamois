@@ -93,6 +93,12 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @FieldCode
     public static final String CHRONOLOGICAL_ATTRIBUTION_FIELD = "SIAS.CHRONO";
 
+    @FieldCode
+    public static final String TRANSFER_STATUS_FIELD = "SIAS.TRANSFER";
+
+    @FieldCode
+    public static final String SELECTIVE_CONSERVATION_FIELD = "SIAS.SELECTIVECONSERVATION";
+
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
     protected Ark ark;
@@ -206,6 +212,48 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @Column(name = "comments", length = 5000)
     protected String comments;
+
+    @Column(name = "sanitary_alert", length = 5000)
+    protected String sanitaryAlert;
+
+    /** Whether the find is handed over to the State (versement). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_transfer_status")
+    protected Concept transferStatus;
+
+    /** Whether the find is worth being kept after the handover (conservation sélective). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_selective_conservation")
+    protected Concept selectiveConservation;
+
+    @Column(name = "selective_conservation_comment", length = 5000)
+    protected String selectiveConservationComment;
+
+    @Column(name = "particular_interest", length = 5000)
+    protected String particularInterest;
+
+    /** Anthropobiological remains: whether the skeleton or lot still has a research potential. */
+    @Column(name = "study_potential")
+    protected Boolean studyPotential;
+
+    @Column(name = "study_potential_comment", length = 5000)
+    protected String studyPotentialComment;
+
+    /** Samples: what the sample was taken for. */
+    @Column(name = "sampling_purpose", length = 5000)
+    protected String samplingPurpose;
+
+    /** Samples: how the sample is kept after the handover. */
+    @Column(name = "preservation_condition", length = 5000)
+    protected String preservationCondition;
+
+    /** Samples: from this date the State may dispose of the sample. */
+    @Column(name = "validity_date")
+    protected OffsetDateTime validityDate;
+
+    /** Where the find is kept when it is not physically handed over to the State. */
+    @Column(name = "storage_location", length = 1000)
+    protected String storageLocation;
 
     @Override
     public boolean equals(Object o) {

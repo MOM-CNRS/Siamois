@@ -276,6 +276,10 @@ public class PlaceOpenApiService {
         answers.put(String.valueOf(SpatialUnit.NAME_FIELD.getId()), dto.getName());
         answers.put(String.valueOf(SpatialUnit.CODE_FIELD.getId()), dto.getCode());
         answers.put(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), dto.getPlaceNumber());
+        answers.put(String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId()), dto.getInseeCode());
+        answers.put(String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId()), dto.getLocalityName());
+        answers.put(String.valueOf(SpatialUnit.SHOM_MAP_NUMBER_FIELD.getId()), dto.getShomMapNumber());
+        answers.put(String.valueOf(SpatialUnit.COMMENTS_FIELD.getId()), dto.getComments());
         if (dto.getType() != null && resolvedType != null) {
             answers.put(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId()),
                     new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));

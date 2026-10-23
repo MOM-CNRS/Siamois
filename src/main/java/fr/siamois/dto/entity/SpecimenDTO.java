@@ -40,6 +40,18 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private MeasurementAnswerDTO weight;
     private Set<ContainerDTO> containers;
     private Set<PhaseDTO> phases;
+    private ConceptDTO sanitaryState;
+    private String sanitaryAlert;
+    private ConceptDTO transferStatus;
+    private ConceptDTO selectiveConservation;
+    private String selectiveConservationComment;
+    private String particularInterest;
+    private Boolean studyPotential;
+    private String studyPotentialComment;
+    private String samplingPurpose;
+    private String preservationCondition;
+    private OffsetDateTime validityDate;
+    private String storageLocation;
 
     /**
      * A new, unsaved find with the descriptive data of {@code original}: what a duplication starts
@@ -65,6 +77,18 @@ public class SpecimenDTO extends AbstractEntityDTO {
         taq = original.getTaq();
         tpq = original.getTpq();
         numberOfElements = original.getNumberOfElements();
+        sanitaryState = original.getSanitaryState();
+        sanitaryAlert = original.getSanitaryAlert();
+        transferStatus = original.getTransferStatus();
+        selectiveConservation = original.getSelectiveConservation();
+        selectiveConservationComment = original.getSelectiveConservationComment();
+        particularInterest = original.getParticularInterest();
+        studyPotential = original.getStudyPotential();
+        studyPotentialComment = original.getStudyPotentialComment();
+        samplingPurpose = original.getSamplingPurpose();
+        preservationCondition = original.getPreservationCondition();
+        validityDate = original.getValidityDate();
+        storageLocation = original.getStorageLocation();
         if (original.getWeight() != null) {
             MeasurementAnswerDTO w = original.getWeight();
             weight = new MeasurementAnswerDTO(null, w.getNumericValue(), w.getUnit(), w.getNormalizedValue(), w.getComment());
@@ -95,7 +119,19 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "weight",
                 "containers",
                 "phases",
-                "type"
+                "type",
+                "sanitaryState",
+                "sanitaryAlert",
+                "transferStatus",
+                "selectiveConservation",
+                "selectiveConservationComment",
+                "particularInterest",
+                "studyPotential",
+                "studyPotentialComment",
+                "samplingPurpose",
+                "preservationCondition",
+                "validityDate",
+                "storageLocation"
         );
     }
 }

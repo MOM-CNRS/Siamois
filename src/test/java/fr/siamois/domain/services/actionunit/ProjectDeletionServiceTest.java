@@ -16,7 +16,8 @@ import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGro
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ProjectCodeSourceRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,8 @@ class ProjectDeletionServiceTest {
     @Mock private FormConfigGroupRepository formConfigGroupRepository;
     @Mock private FieldFormConfigRepository fieldFormConfigRepository;
     @Mock private ConceptFieldStateRepository conceptFieldStateRepository;
-    @Mock private ConceptFieldConfigRepository conceptFieldConfigRepository;
+    @Mock private DocumentationThesaurusRepository documentationThesaurusRepository;
+    @Mock private ProjectCodeSourceRepository projectCodeSourceRepository;
     @Mock private ArkRepository arkRepository;
 
     @InjectMocks
@@ -128,7 +130,8 @@ class ProjectDeletionServiceTest {
         verify(recordingUnitRepository).deleteAllById(List.of(5L));
         verify(documentService).deleteDocument(document);
         verify(formConfigRepository).delete(formConfig);
-        verify(conceptFieldConfigRepository).deleteAll(anyList());
+        verify(documentationThesaurusRepository).deleteAll(anyList());
+        verify(projectCodeSourceRepository).deleteAll(anyList());
     }
 
     @Test

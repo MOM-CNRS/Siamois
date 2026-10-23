@@ -19,13 +19,17 @@ class PlaceOpenApiServiceFieldsTest {
     private static final String TYPE = String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId());
     private static final String NUMBER = String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId());
     private static final String ADDRESS = String.valueOf(SpatialUnit.ADDRESS_FIELD.getId());
+    private static final String INSEE = String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId());
+    private static final String LOCALITY = String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId());
+    private static final String SHOM = String.valueOf(SpatialUnit.SHOM_MAP_NUMBER_FIELD.getId());
+    private static final String COMMENTS = String.valueOf(SpatialUnit.COMMENTS_FIELD.getId());
 
     @Test
     void aPlaceListShowsEveryFormFieldButTheAddress() {
         List<String> ids = PlaceOpenApiService.listableFields().stream()
                 .map(CustomField::getId).map(String::valueOf).toList();
 
-        assertThat(ids).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER).doesNotContain(ADDRESS);
+        assertThat(ids).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS).doesNotContain(ADDRESS);
     }
 
     @Test
@@ -37,8 +41,8 @@ class PlaceOpenApiServiceFieldsTest {
 
     @Test
     void allMeansEveryListableField() {
-        assertThat(PlaceOpenApiService.requestedFieldIds("all")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER);
-        assertThat(PlaceOpenApiService.requestedFieldIds(" ALL ")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER);
+        assertThat(PlaceOpenApiService.requestedFieldIds("all")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS);
+        assertThat(PlaceOpenApiService.requestedFieldIds(" ALL ")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS);
     }
 
     @Test

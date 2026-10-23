@@ -1,6 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import org.hibernate.Hibernate;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -30,6 +33,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Vocabulaires contrôlés OpenAPI (field_code → concepts), alignés sur {@link FieldConfigurationService}.
@@ -130,9 +136,7 @@ public class VocabularyOpenApiService {
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
         }
-        CustomField field = customFieldRepository.findById(fieldId)
-                .map(f -> (CustomField) Hibernate.unproxy(f))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ introuvable : " + fieldId));
+        CustomField field = findField(fieldId);
         if (!(field instanceof CustomFieldConcept conceptField)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le champ " + fieldId + " n'est pas un champ de vocabulaire");
         }
@@ -173,9 +177,7 @@ public class VocabularyOpenApiService {
         }
         String code = fieldCode;
         if ((code == null || code.isBlank()) && fieldId != null) {
-            CustomField field = customFieldRepository.findById(fieldId)
-                    .map(f -> (CustomField) Hibernate.unproxy(f))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ introuvable : " + fieldId));
+            CustomField field = findField(fieldId);
             if (field instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
                 code = fromFieldCode.getFieldCode();
             }
@@ -193,6 +195,27 @@ public class VocabularyOpenApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Aucun vocabulaire configuré pour le fieldCode : " + code);
         }
+    }
+
+    /**
+     * A field by its id: the persisted one, or — for the system fields no table configures, whose forms are static
+     * (the places', the projects') — the one the form declares, so a client reads every vocabulary field the same way.
+     */
+    private CustomField findField(long fieldId) {
+        return customFieldRepository.findById(fieldId)
+                .map(f -> (CustomField) Hibernate.unproxy(f))
+                .or(() -> staticSystemField(fieldId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ introuvable : " + fieldId));
+    }
+
+    private static Optional<CustomField> staticSystemField(long fieldId) {
+        return Stream.of(SpatialUnit.DETAILS_FORM, ActionUnit.DETAILS_FORM)
+                .flatMap(form -> form.getLayout().stream())
+                .flatMap(panel -> panel.getRows().stream())
+                .flatMap(row -> row.getColumns().stream())
+                .map(CustomColUiDto::getField)
+                .filter(field -> field != null && Objects.equals(field.getId(), fieldId))
+                .findFirst();
     }
 
     @Transactional(readOnly = true)

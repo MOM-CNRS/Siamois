@@ -14,6 +14,7 @@ public enum ExportSubject {
     SPECIMEN(ConfigurableTable.MOBILIER),
     PHASE(ConfigurableTable.PHASE),
     CONTAINER(ConfigurableTable.CONTENANT),
+    STUDY(ConfigurableTable.STUDY),
     DOCUMENT(ConfigurableTable.DOCUMENT),
     SPATIAL_UNIT(null);
 
@@ -36,6 +37,7 @@ public enum ExportSubject {
             case SPECIMEN -> SPECIMEN;
             case PHASE -> PHASE;
             case CONTAINER -> CONTAINER;
+            case STUDY -> STUDY;
             case DOCUMENT -> DOCUMENT;
             case SPATIAL_UNIT -> SPATIAL_UNIT;
         };

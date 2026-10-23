@@ -7,14 +7,17 @@ import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.models.settings.DocumentationThesaurus;
+import fr.siamois.domain.models.settings.ProjectCodeSource;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ProjectCodeSourceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,10 +41,11 @@ class ProjectCopyTemplateApplierTest {
     private final FormConfigGroupRepository groupRepository = mock(FormConfigGroupRepository.class);
     private final FieldFormConfigRepository fieldRepository = mock(FieldFormConfigRepository.class);
     private final ConceptFieldStateRepository stateRepository = mock(ConceptFieldStateRepository.class);
-    private final ConceptFieldConfigRepository conceptFieldConfigRepository = mock(ConceptFieldConfigRepository.class);
+    private final DocumentationThesaurusRepository documentationThesaurusRepository = mock(DocumentationThesaurusRepository.class);
+    private final ProjectCodeSourceRepository projectCodeSourceRepository = mock(ProjectCodeSourceRepository.class);
 
     private final ProjectCopyTemplateApplier applier = new ProjectCopyTemplateApplier(actionUnitRepository,
-            formConfigRepository, groupRepository, fieldRepository, stateRepository, conceptFieldConfigRepository);
+            formConfigRepository, groupRepository, fieldRepository, stateRepository, documentationThesaurusRepository, projectCodeSourceRepository);
 
     private Institution institution;
     private ActionUnit source;
@@ -138,20 +142,39 @@ class ProjectCopyTemplateApplierTest {
     }
 
     @Test
-    void apply_copiesTheProjectThesaurusOverridesToTheNewProject() {
-        ConceptFieldConfig original = new ConceptFieldConfig();
+    void apply_copiesTheDocumentationThesaurusOfTheProjectToTheNewProject() {
+        Vocabulary vocabulary = new Vocabulary();
+        DocumentationThesaurus original = new DocumentationThesaurus();
         original.setInstitution(institution);
         original.setActionUnit(source);
-        original.setConcept(new Concept());
-        original.setFieldCode("SIAAU.TYPE");
-        when(conceptFieldConfigRepository.findAllByActionUnitId(10L)).thenReturn(List.of(original));
+        original.setVocabulary(vocabulary);
+        when(documentationThesaurusRepository.findByActionUnitId(10L)).thenReturn(Optional.of(original));
 
         applier.apply(null, "project:10", 20L);
 
-        ArgumentCaptor<ConceptFieldConfig> saved = ArgumentCaptor.forClass(ConceptFieldConfig.class);
-        verify(conceptFieldConfigRepository).save(saved.capture());
+        ArgumentCaptor<DocumentationThesaurus> saved = ArgumentCaptor.forClass(DocumentationThesaurus.class);
+        verify(documentationThesaurusRepository).save(saved.capture());
+        assertThat(saved.getValue().getActionUnit()).isSameAs(target);
+        assertThat(saved.getValue().getVocabulary()).isSameAs(vocabulary);
+    }
+
+    @Test
+    void apply_copiesWhereTheProjectReadsTheTypesOfItsTables() {
+        ProjectCodeSource original = new ProjectCodeSource();
+        original.setActionUnit(source);
+        original.setFieldCode("SIAAU.TYPE");
+        original.setSourceFieldCode("OWN.TYPE");
+        original.setVocabulary(new Vocabulary());
+        when(projectCodeSourceRepository.findAllByActionUnitId(10L)).thenReturn(List.of(original));
+
+        applier.apply(null, "project:10", 20L);
+
+        ArgumentCaptor<ProjectCodeSource> saved = ArgumentCaptor.forClass(ProjectCodeSource.class);
+        verify(projectCodeSourceRepository).save(saved.capture());
         assertThat(saved.getValue().getActionUnit()).isSameAs(target);
         assertThat(saved.getValue().getFieldCode()).isEqualTo("SIAAU.TYPE");
+        assertThat(saved.getValue().getSourceFieldCode()).isEqualTo("OWN.TYPE");
+        assertThat(saved.getValue().getVocabulary()).isSameAs(original.getVocabulary());
     }
 
     @Test

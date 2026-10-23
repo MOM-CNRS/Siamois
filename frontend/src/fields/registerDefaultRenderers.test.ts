@@ -13,8 +13,8 @@ const PROJECT_FICHE_ANSWER_TYPES = [
   "INTEGER", // volumeCount, pageCount, figureCount, appendixCount
   "DECIMAL", // zmin, zmax, excavatedArea, accessibleArea, openingRate, prescribedArea
   "DATETIME", // beginDate, endDate, prescriptionOrderDate, designationOrderDate
-  "SELECT_ONE_FROM_FIELD_CODE", // type, status, fieldStatus, system, developmentNature
-  "SELECT_MULTIPLE_FROM_FIELD_CODE", // periods, subjects
+  "SELECT_ONE", // type, status, fieldStatus, system, developmentNature
+  "SELECT_MULTIPLE", // periods, subjects
   "SELECT_ONE_SPATIAL_UNIT", // mainLocation
   "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", // spatialContext
 ];
@@ -29,6 +29,7 @@ describe("registerDefaultFieldRenderers", () => {
     "SELECT_MULTIPLE_PERSON",
     "SELECT_ONE_ACTION_UNIT",
     "SELECT_ONE_RECORDING_UNIT",
+    "SELECT_ONE_DOCUMENT",
     "SELECT_MULTIPLE_RECORDING_UNIT",
     "SELECT_MULTIPLE_SPECIMEN",
     "SELECT_MULTIPLE_PHASE",

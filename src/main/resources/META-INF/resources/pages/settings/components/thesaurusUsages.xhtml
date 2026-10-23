@@ -1,34 +1,87 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:cc="http://xmlns.jcp.org/jsf/composite">
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:shared="http://java.sun.com/jsf/composite/pages/shared/form">
 
     <cc:interface>
         <cc:attribute name="usages" required="true"/>
+        <cc:attribute name="bean" required="true"/>
+        <!-- whether rows can be ticked to connect their fields to another thesaurus (project page only) -->
+        <cc:attribute name="bulk" type="boolean" default="false"/>
     </cc:interface>
 
     <cc:implementation>
         <p:outputPanel layout="block" styleClass="thesaurus-usages">
         <h3>#{langBean.msg('thesaurusUsages.title')}</h3>
-        <p style="font-style: italic">#{langBean.msg('thesaurusUsages.hint')}</p>
-        <p:dataTable value="#{cc.attrs.usages}" var="usage" emptyMessage="#{langBean.msg('thesaurusUsages.empty')}">
-            <p:column headerText="#{langBean.msg('common.label.thesaurus')}">
-                #{usage.thesaurusLabel}
-            </p:column>
-            <p:column headerText="#{langBean.msg('thesaurusUsages.source')}">
-                #{langBean.msg(usage.kind == 'BRANCH' ? 'thesaurusUsages.kind.branch' : 'thesaurusUsages.kind.collection')} :
-                #{usage.sourceLabel}
-            </p:column>
-            <p:column headerText="#{langBean.msg('thesaurusUsages.field')}">
-                #{usage.fieldLabel}
-            </p:column>
-            <p:column headerText="#{langBean.msg('thesaurusUsages.type')}">
-                #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}
-            </p:column>
-            <p:column headerText="#{langBean.msg('thesaurusUsages.mode')}">
-                #{langBean.msg(usage.frozen ? 'thesaurusUsages.mode.frozen' : 'thesaurusUsages.mode.follow')}
-            </p:column>
-        </p:dataTable>
+        <shared:csrfform formId="usagesForm">
+            <p:outputPanel id="bulkWrap" layout="block" styleClass="thesaurus-bulk-wrap">
+            <p:outputPanel layout="block" styleClass="thesaurus-bulk mb-3"
+                           rendered="#{cc.attrs.bulk and not empty cc.attrs.bean.selectedUsages}">
+                <h4>#{langBean.msg('thesaurusUsages.bulk.title')}</h4>
+                <div class="small fw-semibold text-muted mb-1">#{langBean.msg('thesaurusUsages.bulk.selected', cc.attrs.bean.selectedUsages.size())}</div>
+                <label for="usagesForm:bulkTarget">#{langBean.msg('thesaurusUsages.bulk.label')}</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <p:selectOneMenu id="bulkTarget" value="#{cc.attrs.bean.bulkTargetUrl}" style="min-width:24rem">
+                        <f:selectItem itemLabel="—" itemValue="#{null}" noSelectionOption="true"/>
+                        <f:selectItems value="#{cc.attrs.bean.bulkTargetItems}"/>
+                    </p:selectOneMenu>
+                    <p:commandButton value="#{langBean.msg('thesaurusUsages.bulk.button')}"
+                                     action="#{cc.attrs.bean.rewireSelected()}"
+                                     process="@form" update="@(.thesaurus-usages)"/>
+                </div>
+                <small class="text-muted">#{langBean.msg('thesaurusUsages.bulk.hint')}</small>
             </p:outputPanel>
+            </p:outputPanel>
+
+            <p:outputPanel layout="block" styleClass="thesaurus-usages-count small text-muted mb-1">
+                #{cc.attrs.bean.filteredUsages != null and cc.attrs.bean.filteredUsages.size() != cc.attrs.usages.size()
+                  ? langBean.msg('thesaurusUsages.count.filtered', cc.attrs.bean.filteredUsages.size(), cc.attrs.usages.size())
+                  : langBean.msg('thesaurusUsages.count.total', cc.attrs.usages.size())}
+            </p:outputPanel>
+
+            <p:dataTable id="usagesTable" widgetVar="usagesTableW" value="#{cc.attrs.usages}" var="usage" rowKey="#{usage.rowKey}"
+                         selection="#{cc.attrs.bean.selectedUsages}" selectionMode="multiple" selectionRowMode="none" selectionPageOnly="false"
+                         filteredValue="#{cc.attrs.bean.filteredUsages}"
+                         paginator="true" rows="25" paginatorPosition="bottom" rowsPerPageTemplate="25,50,100"
+                         paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                         currentPageReportTemplate="#{langBean.msg('thesaurusUsages.page.report')}"
+                         emptyMessage="#{langBean.msg('thesaurusUsages.empty')}">
+                <p:column selectionBox="true" style="width:2.5rem;text-align:center"/>
+                <p:column headerText="#{langBean.msg('common.label.thesaurus')}" filterBy="#{usage.thesaurusLabel}" filterMatchMode="contains">
+                    #{usage.thesaurusLabel}
+                </p:column>
+                <p:column headerText="#{langBean.msg('thesaurusUsages.kind')}" filterBy="#{usage.kind}" filterMatchMode="exact">
+                    <f:facet name="filter">
+                        <p:selectOneMenu onchange="PF('usagesTableW').filter()" style="width:100%" styleClass="ui-custom-filter">
+                            <f:selectItem itemLabel="#{langBean.msg('thesaurusUsages.filter')}" itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItem itemLabel="#{langBean.msg('thesaurusUsages.kind.fieldCode')}" itemValue="FIELD_CODE"/>
+                            <f:selectItem itemLabel="#{langBean.msg('thesaurusUsages.kind.branch')}" itemValue="BRANCH"/>
+                            <f:selectItem itemLabel="#{langBean.msg('thesaurusUsages.kind.collection')}" itemValue="COLLECTION"/>
+                        </p:selectOneMenu>
+                    </f:facet>
+                    #{langBean.msg(usage.kind == 'BRANCH' ? 'thesaurusUsages.kind.branch' : (usage.kind == 'COLLECTION' ? 'thesaurusUsages.kind.collection' : 'thesaurusUsages.kind.fieldCode'))}
+                    <ui:fragment rendered="#{usage.inherited}">
+                        <span class="text-muted">(#{langBean.msg('thesaurusUsages.kind.default')})</span>
+                    </ui:fragment>
+                </p:column>
+                <p:column headerText="#{langBean.msg('thesaurusUsages.source')}" filterBy="#{usage.sourceLabel}" filterMatchMode="contains">
+                    #{usage.sourceLabel}
+                </p:column>
+                <p:column headerText="#{langBean.msg('thesaurusUsages.field')}" filterBy="#{usage.fieldLabel}" filterMatchMode="contains">
+                    #{usage.fieldLabel}
+                </p:column>
+                <p:column headerText="#{langBean.msg('thesaurusUsages.type')}" filterBy="#{usage.typeLabel}" filterMatchMode="contains">
+                    #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}
+                </p:column>
+                <p:ajax event="rowSelectCheckbox" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="rowUnselectCheckbox" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="toggleSelect" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="filter" update="@(.thesaurus-usages-count)"/>
+            </p:dataTable>
+
+        </shared:csrfform>
+        </p:outputPanel>
     </cc:implementation>
 </ui:composition>

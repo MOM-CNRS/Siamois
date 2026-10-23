@@ -24,6 +24,10 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
         relatedActionUnitList = spatialUnitDTO.relatedActionUnitList;
         address = spatialUnitDTO.address;
         placeNumber = spatialUnitDTO.placeNumber;
+        inseeCode = spatialUnitDTO.inseeCode;
+        localityName = spatialUnitDTO.localityName;
+        comments = spatialUnitDTO.comments;
+        shomMapNumber = spatialUnitDTO.shomMapNumber;
         geom = spatialUnitDTO.geom;
     }
 
@@ -37,10 +41,15 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Long recordingUnitCount;
     private String code;
     private Integer placeNumber;
+    private String inseeCode;
+    private String localityName;
+    private String comments;
+    private String shomMapNumber;
     private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "address", "code", "placeNumber");
+        return List.of("type", "name", "address", "code", "placeNumber",
+                "inseeCode", "localityName", "comments", "shomMapNumber");
     }
 
 

@@ -61,6 +61,7 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
         this.institution = institution;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfInstitutionId(institution.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
+        savedThesaurusUrl = thesaurusUrl;
         loadOptions();
         usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
     }

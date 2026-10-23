@@ -22,7 +22,8 @@ import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGro
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ProjectCodeSourceRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -142,7 +143,8 @@ public class ProjectDeletionService {
     private final FormConfigGroupRepository formConfigGroupRepository;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final ConceptFieldStateRepository conceptFieldStateRepository;
-    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
+    private final DocumentationThesaurusRepository documentationThesaurusRepository;
+    private final ProjectCodeSourceRepository projectCodeSourceRepository;
     private final ArkRepository arkRepository;
 
     /**
@@ -266,7 +268,8 @@ public class ProjectDeletionService {
         }
         entityManager.createNativeQuery("DELETE FROM identifier_counter WHERE fk_action_unit_id = :pid")
                 .setParameter("pid", projectId).executeUpdate();
-        conceptFieldConfigRepository.deleteAll(conceptFieldConfigRepository.findAllByActionUnitId(projectId));
+        documentationThesaurusRepository.deleteAll(documentationThesaurusRepository.findAllByActionUnitId(projectId));
+        projectCodeSourceRepository.deleteAll(projectCodeSourceRepository.findAllByActionUnitId(projectId));
         entityManager.flush();
     }
 

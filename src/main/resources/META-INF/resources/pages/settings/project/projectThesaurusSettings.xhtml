@@ -50,14 +50,13 @@
             <settingscomp:fieldValue
                     title="#{langBean.msg('projectSettings.thesaurus.title', projectThesaurusSettingsBean.project.name)}"
                     formId="thesaurusForm"
+                    displaySaveButton="false"
                     saveMethod="#{projectThesaurusSettingsBean.saveConfig()}"
                     cancelMethod="#{projectDetailsBean.backToProjectSettings()}"
                     update="pbAjaxThesaurusLoad @(.thesaurus-usages)"
                     onstart="startProgressBar()"
                     oncomplete="endProgressBar()"
             >
-                <p:messages showDetail="true" autoUpdate="true" closable="true" id="messages"/>
-
                 <settingscomp:thesaurusPicker bean="#{projectThesaurusSettingsBean}" projectScope="true"/>
 
                 <p:progressBar widgetVar="pbAjaxThesaurusLoadWidget"
@@ -73,7 +72,7 @@
 
             </settingscomp:fieldValue>
 
-            <settingscomp:thesaurusUsages usages="#{projectThesaurusSettingsBean.usages}"/>
+            <settingscomp:thesaurusUsages usages="#{projectThesaurusSettingsBean.usages}" bean="#{projectThesaurusSettingsBean}" bulk="true"/>
             <settingscomp:addThesaurusDialog bean="#{projectThesaurusSettingsBean}" update="@(.sia-settings-form)"/>
         </main>
     </ui:define>

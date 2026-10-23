@@ -18,15 +18,14 @@ import { t } from "../../i18n";
 // No endpoint serves SpatialUnit.DETAILS_FORM's field catalog outside a place's own detail
 // (SpatialUnit has no ConfigurableTable entry, hence no types catalog), so the type field is
 // described here, mirroring SpatialUnit.SPATIAL_UNIT_TYPE_FIELD — the concept picker only needs
-// its fieldCode to query GET /organizations/{id}/concepts.
+// its id to query GET /organizations/{id}/concepts?fieldId=.
 const PLACE_TYPE_FIELD: FieldResource = {
   id: "-201",
   resourceType: "fields",
   label: t("common.type"),
-  answerType: "SELECT_ONE_FROM_FIELD_CODE",
+  answerType: "SELECT_ONE",
   isSystemField: true,
   valueBinding: "type",
-  fieldCode: "SIASU.TYPE",
 };
 
 interface ConceptPick {

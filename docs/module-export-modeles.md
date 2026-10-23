@@ -160,15 +160,36 @@ Les avertissements de résolution sont affichés avec le fichier produit.
 - **Application à un autre projet** : les types et champs sont configurés par projet. Un champ absent
   dans le projet cible produit une cellule vide et un avertissement.
 - **Modèle national livré** (`src/main/resources/export-templates/rapport-operation-national.json`,
-  grammaire v3) : 6 feuilles sur 9 (`OA`, `situation`, `UE`, `relation`, `mobilier`, `documentation`),
-  en-têtes et ordre du référentiel. Les colonnes sans champ Siamois équivalent existent mais sans
-  mapping (à compléter dans l'éditeur). Les valeurs ne sont pas converties vers les vocabulaires
-  imposés par le référentiel (hors périmètre).
-  - `VAB`, `prelevement`, `traitement` ne sont pas livrées : Siamois n'a pas d'entité correspondante,
-    donc pas de source possible (une feuille existe par ses sources). À ajouter dans l'éditeur quand
-    ces entités existeront ; leurs colonnes sont dans le référentiel (chapitre IV, feuilles 6 à 8).
-  - `situation` : lignes = lieux (sans filtre de type) ; `code_OA_NAT`, commune, INSEE, lieu-dit et
-    adresse ne sont pas mappés (un lieu n'a pas de lien vers le projet).
+  grammaire v3) : 9 feuilles, en-têtes et ordre du référentiel (chapitre IV). Les valeurs ne sont pas
+  converties vers les vocabulaires imposés par le référentiel (hors périmètre).
+  - Champs système ajoutés pour le référentiel, sans concept dans le thésaurus système pour l'instant (identifiants
+    symboliques `specimen.*`, `document.*`, `actionunit.*`, `SIASU.*`) : mobilier (état sanitaire, alerte
+    sanitaire, versement, conservation sélective et son commentaire, intérêt particulier, potentiel d'étude et son
+    commentaire, objectif du prélèvement, condition de préservation, date de validité, lieu de conservation),
+    document (lieu de conservation, commentaire de moulage), projet (région / façade maritime, plan de géoréférencement : un document du projet, type de champ `SELECT_ONE_DOCUMENT`), lieu (code INSEE,
+    lieu-dit, commentaires, carte Shom).
+  - `VAB` et `prelevement` sont des filtres de type sur le mobilier. Leurs types sont des **placeholders**
+    (`TODO` / `specimen.type.vab` et `specimen.type.sample`) à remplacer quand les types existent : tant qu'ils ne
+    correspondent à aucun type, les feuilles sont vides donc omises. `mobilier` n'est pas filtré (il contiendrait aussi
+    VAB et prélèvements) ; `objet-lot` en dépend.
+  - `matiere` et `classe` de `VAB` sont des constantes imposées par le référentiel (« organique », « vestiges anthropobiologiques »).
+  - `traitement` : les études de type « traitement » (th252, 4291174) ; `Study` est un sujet d'export (`STUDY`).
+    `code_element_traite` liste les mobiliers liés à l'étude, `periode_traitement` concatène début et fin.
+  - Les liens entre mobiliers n'ont pas besoin d'une source dédiée : `code_objet-lot` (VAB) lit le champ `parents`, et
+    `code_element_provenance` (prélèvement) concatène l'unité d'enregistrement et les parents.
+    `code_element_associe` (documentation) concatène les unités d'enregistrement et les mobiliers liés.
+  - Navigations : unité d'enregistrement → lieu (`spatialUnit`, pour `mobilier.identifiant_parcelle`) et lieu → projet
+    (`project`, le projet exporté, lié à la ligne à la lecture : un lieu appartient à plusieurs projets). La ville d'une
+    adresse se lit par la propriété `city` du champ adresse (`street`, `postcode`, `latitude`, `longitude` aussi).
+  - `mobilier.objet-lot` lit le type du mobilier : ses libellés doivent être « objet » et « lot ».
+  - `relation.informations_complementaires_relation` reprend le caractère incertain de la relation (« incertain: true »),
+    `VAB.prelevement_VAB` liste les codes des prélèvements enfants (leur nature et leur objectif sont dans la feuille `prelevement`).
+  - Non mappé : rien dans les 9 feuilles.
+  - **Milieu sous-marin** : second modèle livré (`rapport-operation-national-sous-marin.json`, `BuiltInTemplate.UNDERWATER_REPORT`),
+    identique au national sauf la feuille `situation`, qui reprend le tableau sous-marin du référentiel (même nom de feuille,
+    autres en-têtes : un fichier ne contient qu'une des deux). `latitude_OA`, `longitude_OA` et `nom_commune_OA` lisent les
+    parties de l'adresse du lieu ; `profondeur_OA` lit le champ `zmin` du projet (profondeur maximale = altitude la plus basse).
+  - `situation` : lignes = lieux (sans filtre de type, à restreindre aux parcelles).
   - Le nom de fichier utilise `{dateCompact}` (aaaammjj) ; les espaces deviennent `_`.
 
 ## 8. Ordre de livraison envisagé

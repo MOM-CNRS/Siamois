@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../api/client";
 import {
-  fetchConceptOptions,
   createPlaceFromSuggestion,
+  fetchFieldConceptOptions,
   fetchPlaceOptions,
   fetchPlaceSuggestions,
   optionSourceFor,
@@ -22,25 +22,25 @@ function field(overrides: Partial<FieldResource>): FieldResource {
     id: "-118",
     resourceType: "fields",
     label: "Statut",
-    answerType: "SELECT_ONE_FROM_FIELD_CODE",
+    answerType: "SELECT_ONE",
     isSystemField: true,
     ...overrides,
   };
 }
 
-describe("fetchConceptOptions", () => {
-  it("calls the org-scoped concepts endpoint and maps resolvedLabel to label", async () => {
+describe("fetchFieldConceptOptions", () => {
+  it("calls the org-scoped concepts endpoint by field id and maps resolvedLabel to label", async () => {
     mockedApiFetch.mockResolvedValueOnce({
       data: [{ id: "7", resolvedLabel: "En cours" }, { id: "8", resolvedLabel: null, externalUrl: "1234" }],
     });
 
-    const options = await fetchConceptOptions(100, "SIARU.STATUS", "cour");
+    const options = await fetchFieldConceptOptions(100, "-118", undefined, "cour");
 
     expect(mockedApiFetch).toHaveBeenCalledWith(
       expect.stringMatching(/^\/api\/v1\/organizations\/100\/concepts\?/),
     );
     const [path] = mockedApiFetch.mock.calls[0];
-    expect(path).toContain("fieldCode=SIARU.STATUS");
+    expect(path).toContain("fieldId=-118");
     expect(path).toContain("q=cour");
     expect(options).toEqual([
       { id: "7", label: "En cours" },
@@ -50,7 +50,7 @@ describe("fetchConceptOptions", () => {
 
   it("omits q when absent", async () => {
     mockedApiFetch.mockResolvedValueOnce({ data: [] });
-    await fetchConceptOptions(100, "SIARU.STATUS");
+    await fetchFieldConceptOptions(100, "-118");
     const [path] = mockedApiFetch.mock.calls[0];
     expect(path).not.toContain("q=");
   });
@@ -71,16 +71,14 @@ describe("fetchPlaceOptions", () => {
 });
 
 describe("optionSourceFor", () => {
-  it("returns a concept loader for SELECT_ONE_FROM_FIELD_CODE with a fieldCode", async () => {
+  it("reads a vocabulary field's values by its field id, whatever its list comes from", async () => {
     mockedApiFetch.mockResolvedValueOnce({ data: [] });
-    const loader = optionSourceFor(field({ fieldCode: "SIARU.STATUS" }), 100);
+    const loader = optionSourceFor(field({ id: "-80", fieldCode: "SIARU.STATUS" }), 100, "5");
     expect(loader).not.toBeNull();
     await loader?.("q");
-    expect(mockedApiFetch.mock.calls[0][0]).toContain("fieldCode=SIARU.STATUS");
-  });
-
-  it("returns null for SELECT_ONE_FROM_FIELD_CODE without a fieldCode", () => {
-    expect(optionSourceFor(field({ fieldCode: null }), 100)).toBeNull();
+    const url = String(mockedApiFetch.mock.calls[0][0]);
+    expect(url).toContain("fieldId=-80");
+    expect(url).not.toContain("fieldCode");
   });
 
   it("returns a place loader for SELECT_ONE_SPATIAL_UNIT", async () => {
@@ -171,9 +169,10 @@ describe("referenceTargetOf", () => {
     ["SELECT_MULTIPLE_SPECIMEN", "finds", "find", "find"],
     ["SELECT_MULTIPLE_CONTAINER", "containers", "container", "container"],
     ["SELECT_MULTIPLE_PHASE", "phases", "phase", "phase"],
+    ["SELECT_ONE_DOCUMENT", "documents", "document", undefined],
     ["SELECT_ONE_PERSON", "persons", undefined, undefined],
     ["SELECT_ONE_ACTION_UNIT", "projects", "project", undefined],
-    ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined, undefined],
+    ["SELECT_ONE", "concepts", undefined, undefined],
   ])("%s references %s, opened as %s, created as %s", (answerType, resourceType, entityType, createEntityType) => {
     const expected: Record<string, string> = { resourceType };
     if (entityType) expected.entityType = entityType;
@@ -185,14 +184,14 @@ describe("referenceTargetOf", () => {
 describe("optionSourceFor with an option scope", () => {
   it("asks for the concepts related to the parent answer", async () => {
     mockedApiFetch.mockResolvedValue({ data: [] });
-    const loader = optionSourceFor(field({ fieldCode: "SIARU.INTERPRETATION" }), 100, "5", {
+    const loader = optionSourceFor(field({ id: "-311" }), 100, "5", {
       optionsContext: { kind: "RELATED_CONCEPTS", parentFieldId: "-310", relatedTo: "77" },
     });
 
     await loader!("ch");
 
     const url = String(mockedApiFetch.mock.calls[0][0]);
-    expect(url).toContain("fieldCode=SIARU.INTERPRETATION");
+    expect(url).toContain("fieldId=-311");
     expect(url).toContain("relatedToConceptId=77");
     expect(url).toContain("projectId=5");
   });

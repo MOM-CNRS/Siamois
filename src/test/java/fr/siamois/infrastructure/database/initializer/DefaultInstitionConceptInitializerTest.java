@@ -1,17 +1,14 @@
 package fr.siamois.infrastructure.database.initializer;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.services.InstitutionService;
-import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.SiamoisThesaurus;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,19 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultInstitionConceptInitializerTest {
+
+    private static final String URL = "https://thesaurus.example.org/?idt=th1";
 
     @Mock
     private VocabularyService vocabularyService;
     @Mock
     private FieldConfigurationService fieldConfigurationService;
     @Mock
-    private PersonService personService;
-    @Mock
-    private InstitutionService institutionService;
+    private SiamoisThesaurus siamoisThesaurus;
 
     @InjectMocks
     private DefaultInstitionConceptInitializer initializer;
@@ -47,19 +45,18 @@ class DefaultInstitionConceptInitializerTest {
     @BeforeEach
     void setUp() {
         vocabulary = new Vocabulary();
+        when(siamoisThesaurus.url()).thenReturn(URL);
     }
 
     @Test
-    void initialize_success() throws Exception {
-        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
-        when(personService.findByUsername("system")).thenReturn(Optional.of(new PersonDTO()));
-        when(institutionService.findByIdentifier("siamois")).thenReturn(Optional.of(new InstitutionDTO()));
-        when(fieldConfigurationService.setupFieldConfigurationForInstitution(any(UserInfo.class), any(Vocabulary.class)))
+    void initialize_loadsTheFieldCodesOfTheSiamoisThesaurus() throws Exception {
+        when(vocabularyService.findOrCreateVocabularyOfUri(URL)).thenReturn(vocabulary);
+        when(fieldConfigurationService.loadFieldCodes(any(Vocabulary.class), any(ProgressWrapper.class)))
                 .thenReturn(Optional.empty());
 
         assertDoesNotThrow(() -> initializer.initialize());
 
-        verify(fieldConfigurationService).setupFieldConfigurationForInstitution(any(UserInfo.class), any(Vocabulary.class));
+        verify(fieldConfigurationService).loadFieldCodes(any(Vocabulary.class), any(ProgressWrapper.class));
     }
 
     @Test
@@ -68,35 +65,12 @@ class DefaultInstitionConceptInitializerTest {
                 .thenThrow(new InvalidEndpointException("bad endpoint"));
 
         assertThrows(DatabaseDataInitException.class, () -> initializer.initialize());
-
-        verify(personService, never()).findByUsername(anyString());
-    }
-
-    @Test
-    void initialize_personNotFound_throwsDataInitException() throws Exception {
-        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
-        when(personService.findByUsername("system")).thenReturn(Optional.empty());
-
-        assertThrows(DatabaseDataInitException.class, () -> initializer.initialize());
-
-        verify(institutionService, never()).findByIdentifier(anyString());
-    }
-
-    @Test
-    void initialize_institutionNotFound_throwsDataInitException() throws Exception {
-        when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
-        when(personService.findByUsername("system")).thenReturn(Optional.of(new PersonDTO()));
-        when(institutionService.findByIdentifier("siamois")).thenReturn(Optional.empty());
-
-        assertThrows(DatabaseDataInitException.class, () -> initializer.initialize());
     }
 
     @Test
     void initialize_notSiamoisThesaurus_throwsDataInitException() throws Exception {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
-        when(personService.findByUsername("system")).thenReturn(Optional.of(new PersonDTO()));
-        when(institutionService.findByIdentifier("siamois")).thenReturn(Optional.of(new InstitutionDTO()));
-        when(fieldConfigurationService.setupFieldConfigurationForInstitution(any(UserInfo.class), any(Vocabulary.class)))
+        when(fieldConfigurationService.loadFieldCodes(any(Vocabulary.class), any(ProgressWrapper.class)))
                 .thenThrow(new NotSiamoisThesaurusException("not siamois"));
 
         assertThrows(DatabaseDataInitException.class, () -> initializer.initialize());
@@ -105,10 +79,8 @@ class DefaultInstitionConceptInitializerTest {
     @Test
     void initialize_errorProcessingExpansion_throwsDataInitException() throws Exception {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
-        when(personService.findByUsername("system")).thenReturn(Optional.of(new PersonDTO()));
-        when(institutionService.findByIdentifier("siamois")).thenReturn(Optional.of(new InstitutionDTO()));
-        when(fieldConfigurationService.setupFieldConfigurationForInstitution(any(UserInfo.class), any(Vocabulary.class)))
-                .thenThrow(new ErrorProcessingExpansionException("expansion error"));
+        when(fieldConfigurationService.loadFieldCodes(any(Vocabulary.class), any(ProgressWrapper.class)))
+                .thenThrow(new ErrorProcessingExpansionException("expansion"));
 
         assertThrows(DatabaseDataInitException.class, () -> initializer.initialize());
     }

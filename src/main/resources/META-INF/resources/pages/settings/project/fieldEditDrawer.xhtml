@@ -255,7 +255,7 @@
                             <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.units.pickDimension')}" itemValue="" noSelectionOption="true"/>
                             <f:selectItems value="#{projectTableFieldSettingsBean.dimensionOptions}" var="d"
                                            itemLabel="#{projectTableFieldSettingsBean.dimensionLabel(d)}" itemValue="#{d.name()}"/>
-                            <p:ajax event="change" process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                            <p:ajax event="change" process="@this draftName draftDescription" update=":fieldEditForm:valuesBlock"/>
                         </h:selectOneMenu>
 
                         <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.draftDimensionName}" layout="block">
@@ -263,7 +263,7 @@
                             <p:selectManyCheckbox id="draftUnits" value="#{projectTableFieldSettingsBean.draftUnitIds}" layout="responsive" columns="2">
                                 <f:selectItems value="#{projectTableFieldSettingsBean.unitOptions}" var="u"
                                                itemLabel="#{u.label} (#{u.symbol})" itemValue="#{u.id}"/>
-                                <p:ajax process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                                <p:ajax process="@this draftName draftDescription" update=":fieldEditForm:valuesBlock"/>
                             </p:selectManyCheckbox>
 
                             <h:panelGroup rendered="#{projectTableFieldSettingsBean.pickedUnitOptions.size() gt 1}" layout="block">
@@ -277,38 +277,27 @@
                         <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.units.hint')}</div>
                     </h:panelGroup>
 
-                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftConfigurable}">
+                    <h:panelGroup id="paramsBlock" layout="block" rendered="#{projectTableFieldSettingsBean.draftConfigurable}">
                         <div class="ptc-params">
                             <div class="ptc-params-title">#{langBean.msg('projectTables.drawer.params.title', projectTableFieldSettingsBean.draftType.label)}</div>
 
                             <div class="ptc-chip-row">
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftIsSystem}">
-                                    <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourcePrincipal')}"
-                                                      styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'principal' ? 'ptc-chip-option-selected' : ''}"
-                                                      actionListener="#{projectTableFieldSettingsBean.selectDraftSource('principal')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
-                                </h:panelGroup>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceBranche')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'branche' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('branche')}" update=":fieldEditForm:paramsBlock" process="@this draftName draftDescription"/>
                                 <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCollection')}"
                                                   styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'collection' ? 'ptc-chip-option-selected' : ''}"
-                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update=":fieldEditForm:drawerContent" process="@this draftName draftDescription"/>
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('collection')}" update=":fieldEditForm:paramsBlock" process="@this draftName draftDescription"/>
+                                <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCode')}"
+                                                  styleClass="ptc-chip-option #{projectTableFieldSettingsBean.draftSource eq 'code' ? 'ptc-chip-option-selected' : ''}"
+                                                  actionListener="#{projectTableFieldSettingsBean.selectDraftSource('code')}" update=":fieldEditForm:paramsBlock" process="@this draftName draftDescription"/>
                             </div>
 
                             <h:panelGroup rendered="#{empty projectTableFieldSettingsBean.draftSource}">
                                 <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.pickSourceHint')}</div>
                             </h:panelGroup>
 
-                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'principal'}">
-                                <div class="ptc-drawer-field">
-                                    <!-- read-only value, not a form control : a <label> here would have no control to point at -->
-                                    <div class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.fieldCode')}</div>
-                                    <div class="ptc-readonly-value">#{projectTableFieldSettingsBean.draftFieldCode}</div>
-                                    <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.fieldCodeHint')}</div>
-                                </div>
-                            </h:panelGroup>
-
-                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection'}">
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'branche' or projectTableFieldSettingsBean.draftSource eq 'collection' or projectTableFieldSettingsBean.draftSource eq 'code'}">
                               <!-- Instance, thesaurus and branch/collection side by side, wrapping on a narrow drawer. Each picker
                                    searches as soon as it is focused, even empty, and carries the link that opens it in a new tab. -->
                               <div class="ptc-params-triplet">
@@ -321,7 +310,7 @@
                                                         onfocus="var w=PF('acServerW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acServerW'); if (!w.panel.is(':visible')) w.search('')"
                                                         placeholder="#{langBean.msg('projectTables.drawer.params.pickServer')}">
                                             <p:ajax event="itemSelect" listener="#{projectTableFieldSettingsBean.onDraftServerChange()}"
-                                                    process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                                                    process="@this draftName draftDescription" update=":fieldEditForm:paramsBlock"/>
                                             <f:facet name="footer">
                                                 <div class="ptc-ac-footer">
                                                     <p:commandButton value="#{langBean.msg('projectTables.drawer.params.addServer')}" icon="pi pi-plus"
@@ -350,7 +339,7 @@
                                                             onfocus="var w=PF('acThesaurusW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acThesaurusW'); if (!w.panel.is(':visible')) w.search('')"
                                                             placeholder="#{langBean.msg('projectTables.drawer.params.pickThesaurus')}">
                                                 <p:ajax event="itemSelect" listener="#{projectTableFieldSettingsBean.onDraftThesaurusChange()}"
-                                                        process="@this draftName draftDescription" update=":fieldEditForm:drawerContent"/>
+                                                        process="@this draftName draftDescription" update=":fieldEditForm:paramsBlock"/>
                                             </p:autoComplete>
                                             <h:outputLink value="#{projectTableFieldSettingsBean.draftVocabularyUrl}" target="_blank" rel="noopener noreferrer"
                                                           disabled="#{not projectTableFieldSettingsBean.draftConnectionTested}" styleClass="ptc-open-tab"
@@ -383,6 +372,18 @@
                                                 <i class="bi bi-box-arrow-up-right"/>
                                             </h:outputLink>
                                         </h:panelGroup>
+                                    </div>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftSource eq 'code' and projectTableFieldSettingsBean.draftConnectionTested}">
+                                    <div class="ptc-drawer-field">
+                                        <label class="ptc-drawer-label" for="fieldEditForm:draftCodeChoice">#{langBean.msg('projectTables.drawer.params.code')}</label>
+                                        <p:selectOneMenu id="draftCodeChoice" value="#{projectTableFieldSettingsBean.draftCodeChoice}"
+                                                         style="width:100%" appendTo="@(body)" filter="true" filterMatchMode="contains">
+                                            <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.params.codePlaceholder')}" itemValue="" noSelectionOption="true"/>
+                                            <f:selectItems value="#{projectTableFieldSettingsBean.draftCodeOptions}"/>
+                                        </p:selectOneMenu>
+                                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.codeHint')}</div>
                                     </div>
                                 </h:panelGroup>
 
@@ -526,7 +527,7 @@
             <div class="mt-3">
                 <p:commandButton value="#{langBean.msg('common.action.add')}"
                                  actionListener="#{projectTableFieldSettingsBean.addDraftServer()}"
-                                 process="@form" update=":fieldEditForm:drawerContent"
+                                 process="@form" update=":fieldEditForm:paramsBlock"
                                  oncomplete="PF('addServerDialog').hide()"/>
             </div>
         </h:form>

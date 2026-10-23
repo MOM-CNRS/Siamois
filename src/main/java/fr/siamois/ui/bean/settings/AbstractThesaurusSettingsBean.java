@@ -40,10 +40,16 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
 
     /** The selected thesaurus, as an OpenTheso URL. */
     protected String thesaurusUrl;
+    /** The thesaurus last applied, to tell whether the selection has changed since. */
+    protected String savedThesaurusUrl;
     /** The URL typed in the "add a thesaurus" dialog. */
     protected String newThesaurusUrl;
     protected ArrayList<ThesaurusOption> thesaurusOptions = new ArrayList<>();
     protected ArrayList<ThesaurusUsage> usages = new ArrayList<>();
+    /** The rows ticked in the usages table. */
+    private List<ThesaurusUsage> selectedUsages = new ArrayList<>();
+    /** The rows left by the filters of the usages table, null while none is applied. */
+    private List<ThesaurusUsage> filteredUsages;
     protected ProgressWrapper progressWrapper = new ProgressWrapper();
 
     protected AbstractThesaurusSettingsBean(VocabularyService vocabularyService, LabelService labelService, LangBean langBean) {
@@ -54,9 +60,12 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
 
     protected void resetState() {
         thesaurusUrl = null;
+        savedThesaurusUrl = null;
         newThesaurusUrl = null;
         thesaurusOptions = new ArrayList<>();
         usages = new ArrayList<>();
+        selectedUsages = new ArrayList<>();
+        filteredUsages = null;
         progressWrapper.reset();
     }
 
@@ -83,7 +92,13 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         }
     }
 
+    /** Whether a thesaurus other than the applied one is selected: the changes then wait to be applied. */
+    public boolean isThesaurusChanged() {
+        return StringUtils.isNotBlank(thesaurusUrl) && !thesaurusUrl.equals(savedThesaurusUrl);
+    }
+
     protected void notifySaved() {
+        savedThesaurusUrl = thesaurusUrl;
         MessageUtils.displayInfoMessage(langBean, "myProfile.thesaurus.message.success");
     }
 }

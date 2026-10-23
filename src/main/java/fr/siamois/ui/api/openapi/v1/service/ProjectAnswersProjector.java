@@ -8,12 +8,14 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.DocumentSummaryDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -239,17 +241,28 @@ public class ProjectAnswersProjector {
     }
 
     private static Object referenceWireValue(CustomField field, Object raw, Map<Long, String> labels) {
+        if (field instanceof CustomFieldSelectOneFromFieldCode || field instanceof CustomFieldSelectMultipleFromFieldCode) {
+            return conceptWireValue(field, raw, labels);
+        }
+        return placeOrDocumentWireValue(field, raw);
+    }
+
+    private static Object conceptWireValue(CustomField field, Object raw, Map<Long, String> labels) {
         if (field instanceof CustomFieldSelectOneFromFieldCode) {
             return raw instanceof ConceptDTO c ? conceptRef(c, labels) : null;
         }
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) {
-            return refList(raw, item -> item instanceof ConceptDTO c ? conceptRef(c, labels) : null);
-        }
+        return refList(raw, item -> item instanceof ConceptDTO c ? conceptRef(c, labels) : null);
+    }
+
+    private static Object placeOrDocumentWireValue(CustomField field, Object raw) {
         if (field instanceof CustomFieldSelectOneSpatialUnit) {
             return raw instanceof SpatialUnitSummaryDTO s ? spatialUnitRef(s) : null;
         }
         if (field instanceof CustomFieldSelectMultipleSpatialUnitTree) {
             return refList(raw, item -> item instanceof SpatialUnitSummaryDTO s ? spatialUnitRef(s) : null);
+        }
+        if (field instanceof CustomFieldSelectOneDocument) {
+            return raw instanceof DocumentSummaryDTO d ? documentRef(d) : null;
         }
         log.debug("Type de champ non projeté pour la liste projets: {}", field.getClass().getSimpleName());
         return null;
@@ -268,6 +281,11 @@ public class ProjectAnswersProjector {
     private static ResourceRef conceptRef(ConceptDTO concept, Map<Long, String> labels) {
         return new ResourceRef(String.valueOf(concept.getId()), CONCEPTS,
                 ConceptLabelBatchResolver.labelOf(concept, labels));
+    }
+
+    private static ResourceRef documentRef(DocumentSummaryDTO d) {
+        String label = d.getTitle() != null && !d.getTitle().isBlank() ? d.getTitle() : d.getIdentifier();
+        return new ResourceRef(String.valueOf(d.getId()), "documents", label);
     }
 
     private static ResourceRef spatialUnitRef(SpatialUnitSummaryDTO su) {

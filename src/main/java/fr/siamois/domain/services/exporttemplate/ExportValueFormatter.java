@@ -2,6 +2,7 @@ package fr.siamois.domain.services.exporttemplate;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -10,6 +11,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.OutputTy
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.FullAddress;
 import org.locationtech.jts.geom.Geometry;
 import org.springframework.lang.Nullable;
 
@@ -68,7 +70,9 @@ final class ExportValueFormatter {
         if (value instanceof RecordingUnit r) return Optional.ofNullable(r.getFullIdentifier());
         if (value instanceof Specimen sp) return Optional.ofNullable(sp.getFullIdentifier());
         if (value instanceof Phase ph) return Optional.ofNullable(ph.getTitle());
-        if (value instanceof Document d) return Optional.ofNullable(d.getTitle());
+        if (value instanceof Document d) return Optional.ofNullable(d.getIdentifier()).or(() -> Optional.ofNullable(d.getTitle()));
+        if (value instanceof Container c) return Optional.ofNullable(c.getIdentifier());
+        if (value instanceof FullAddress a) return Optional.ofNullable(a.getLabel());
         return Optional.empty();
     }
 

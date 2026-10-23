@@ -2,6 +2,7 @@
              xmlns:ui="http://java.sun.com/jsf/facelets"
              xmlns:h="http://xmlns.jcp.org/jsf/html"
              xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core"
 >
 
     <h:form id="newConfigForm">
@@ -14,7 +15,18 @@
                             completeMethod="#{projectTableFieldSettingsBean.completeConfigurableTypes}"
                             dropdown="true" forceSelection="true" scrollHeight="220" style="width:100%"
                             required="true" requiredMessage="#{langBean.msg('projectTables.tree.newConfigRequired')}"
-                            placeholder="#{langBean.msg('projectTables.tree.newConfigPlaceholder')}"/>
+                            placeholder="#{langBean.msg('projectTables.tree.newConfigPlaceholder')}">
+                <!-- the candidates come from the table's type source: this leads to where it is set -->
+                <f:facet name="footer">
+                    <div class="ptc-ac-footer">
+                        <p:commandButton value="#{langBean.msg('projectTables.tree.configureTypeSource', projectTableFieldSettingsBean.selectedTable.label)}"
+                                         icon="pi pi-cog" styleClass="ui-button-outlined ui-button-sm"
+                                         actionListener="#{projectTableFieldSettingsBean.reloadTypesOfSelectedTable()}"
+                                         immediate="true" process="@this" update=":ptcMain :treeFormCC:treeForm"
+                                         oncomplete="PF('newConfigDialogWidget').hide()"/>
+                    </div>
+                </f:facet>
+            </p:autoComplete>
             <p:message for="newTypeName"/>
             <div class="ptc-dialog-actions">
                 <p:commandButton value="#{langBean.msg('common.action.cancel')}" type="button"

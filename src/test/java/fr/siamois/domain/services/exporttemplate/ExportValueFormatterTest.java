@@ -103,6 +103,32 @@ class ExportValueFormatterTest {
     }
 
     @Test
+    void document_usesItsIdentifier_orItsTitle() {
+        fr.siamois.domain.models.document.Document document = new fr.siamois.domain.models.document.Document();
+        document.setTitle("Plan cadastral");
+        assertThat(format(document)).contains("Plan cadastral");
+
+        document.setIdentifier("DOC-12");
+        assertThat(format(document)).contains("DOC-12");
+    }
+
+    @Test
+    void container_usesItsIdentifier() {
+        fr.siamois.domain.models.container.Container container = new fr.siamois.domain.models.container.Container();
+        container.setIdentifier("C-12");
+
+        assertThat(format(container)).contains("C-12");
+    }
+
+    @Test
+    void address_usesItsLabel() {
+        fr.siamois.dto.entity.FullAddress address = new fr.siamois.dto.entity.FullAddress();
+        address.setLabel("1 rue de la Paix 75002 Paris");
+
+        assertThat(format(address)).contains("1 rue de la Paix 75002 Paris");
+    }
+
+    @Test
     void anUnknownEntity_isNotRead() {
         assertThat(format(new Object())).isEmpty();
     }

@@ -70,3 +70,74 @@ conservant le field code comme source.
    publication ou rupture de contrat versionnée (cf. `contract` / B8 de `api-changes-vs-main.md`).
 4. Ordre conseillé : (a) frontend sur `fieldId` partout ; (b) `answerType` unifié côté API ;
    (c) migration du modèle et suppression des classes.
+
+
+## Source d'un champ : thésaurus + sélecteur (2026-10-24)
+
+> Décision, première passe backend et écran de réglage par champ. Reste : API unifiée (`answerType`, `fieldId`)
+> et frontend.
+
+### Modèle
+
+Un champ vocabulaire a une **source** = `{thésaurus, sélecteur, mode}` :
+
+- le **thésaurus** dit où l'on cherche ;
+- le **sélecteur** dit comment trouver la liste dans ce thésaurus : `FIELD_CODE` (le concept qui porte ce code,
+  sa « notation », dans la branche `SIAMOIS#SIAAUTO`), `BRANCH` (un concept de tête) ou `COLLECTION` ;
+- le **mode** reste `FOLLOW` ou `FROZEN`.
+
+Le field code n'est donc plus une identité à part ni un type de champ : c'est un paramètre de recherche, comme
+la branche et la collection. Il est stocké sur `ConceptFieldFormConfig` (`vocabulary` + `fieldCode`), à côté de
+`branchTopTerm` et `collection`.
+
+### Où est lu un code quand rien ne nomme de thésaurus
+
+`FieldCodeResolver`, dans cet ordre :
+
+1. le thésaurus **SIAMOIS** (`SiamoisThesaurus`, th252 par défaut, propriété `siamois.thesaurus.url`) s'il définit le code ;
+2. le thésaurus de documentation du **projet** ;
+3. le thésaurus de documentation de l'**institution**.
+
+Les champs système, type compris, lisent donc SIAMOIS par défaut. Un code que SIAMOIS définit ne passe jamais au
+thésaurus d'un projet de lui-même : il faut pointer le champ sur un autre thésaurus explicitement.
+
+### Stockage
+
+- `ConceptFieldConfig` : `(vocabulary, fieldCode) -> concept`, **global par thésaurus**, plus d'institution ni de projet.
+  Un thésaurus se charge une fois (`FieldConfigurationService.loadFieldCodes`), quel que soit le nombre d'utilisateurs.
+- `DocumentationThesaurus` : le thésaurus dans lequel une institution, ou un de ses projets, documente ses propres champs
+  et types. Remplace le repli institution/projet de l'ancien `ConceptFieldConfig`.
+- Les écrans de thésaurus d'institution et de projet appellent toujours `setupFieldConfigurationFor…` : ils chargent
+  les codes du thésaurus choisi et le mémorisent comme thésaurus de documentation.
+
+### Écran de réglage par champ
+
+Le tiroir d'un champ (`fieldEditDrawer.xhtml`, `ProjectTableFieldSettingsBean`) propose, à côté de « Branche » et
+« Collection », une source **« Code de champ »** :
+
+- le thésaurus se choisit comme pour les autres sources (instance puis thésaurus) ; s'il n'y en a pas encore, le tiroir
+  part du thésaurus de documentation du projet, puis de l'institution ;
+- la liste des codes est celle que le thésaurus définit (`FieldConfigurationService.findFieldCodesOf`, qui charge le
+  thésaurus la première fois) ;
+- l'enregistrement écrit `vocabulary` + `fieldCode` sur la `ConceptFieldFormConfig` du champ
+  (`FormConfigService.addFieldCodeConfigFor`) ; choisir une branche, une collection ou la source principale
+  efface le code, et inversement ;
+- pour un champ système, la source « principale » est le thésaurus SIAMOIS.
+
+### Source des types d'une table
+
+Les types d'une table ne sont portés par aucun champ : leur source se règle sur la page de la table
+(`ProjectTableTypeSourceBean`), avec les deux mêmes sélecteurs qu'un champ, un code ou une branche. Elle est
+rangée par projet et par code de type (`ProjectCodeSource`) et lue en premier par `FieldCodeResolver`.
+
+La liste du type d'une fiche reste celle des **types configurés** du projet, quelle que soit la source. La source ne
+fait que fournir les candidats que l'on peut configurer ensuite. Les types configurés sont rangés sous le concept où le
+code de type est lu **par défaut**, sans la redirection du projet (`TableFieldConfigServiceImpl#findFieldConcept`) :
+changer la source ne déplace donc aucun type déjà configuré. Une collection n'est pas proposée pour les types, car elle
+n'a pas de concept racine.
+
+### Hors périmètre de cette passe
+
+- aucune migration : la table `concept_field_config` est supprimée, les thésaurus sont rechargés au démarrage ;
+- le repli par code seul (sans champ) ne sait pas désigner un thésaurus : seuls les champs ont une source explicite ;
+- `*_FROM_FIELD_CODE` existe encore comme type de champ (voir « Cible » ci-dessus).

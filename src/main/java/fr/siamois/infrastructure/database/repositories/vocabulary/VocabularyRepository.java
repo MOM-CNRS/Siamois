@@ -21,9 +21,8 @@ public interface VocabularyRepository extends CrudRepository<Vocabulary, Long>, 
             value = """
                     SELECT DISTINCT v.*
                     FROM vocabulary v
-                    JOIN concept c ON c.fk_vocabulary_id = v.vocabulary_id
-                    JOIN concept_field_config cfc ON cfc.fk_concept_id = c.concept_id
-                    WHERE cfc.fk_institution_id = :institutionId
+                    JOIN documentation_thesaurus dt ON dt.fk_vocabulary_id = v.vocabulary_id
+                    WHERE dt.fk_institution_id = :institutionId
                     ORDER BY v.vocabulary_id
                     """
     )

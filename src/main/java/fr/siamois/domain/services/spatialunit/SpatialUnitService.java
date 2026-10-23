@@ -193,6 +193,10 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
         spatialUnit.setCode(su.getCode());
+        spatialUnit.setInseeCode(su.getInseeCode());
+        spatialUnit.setLocalityName(su.getLocalityName());
+        spatialUnit.setComments(su.getComments());
+        spatialUnit.setShomMapNumber(su.getShomMapNumber());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
         spatialUnit.setCreatedBy(personService.findById(info.getUser().getId()));
         spatialUnit.setType(conceptService.saveOrGetConcept(su.getType()));
@@ -290,6 +294,10 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
+            managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
+            managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
+            managedSpatialUnit.setComments(spatialUnit.getComments());
+            managedSpatialUnit.setShomMapNumber(spatialUnit.getShomMapNumber());
             Concept type = conceptService.saveOrGetConcept(conceptDTO);
             managedSpatialUnit.setType(type);
 

@@ -3,6 +3,7 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ColumnField;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptField;
@@ -133,6 +134,7 @@ public class ExportValueReader {
             case PHASE -> ListOwner.PHASE;
             case CONTAINER -> ListOwner.CONTAINER;
             case DOCUMENT -> ListOwner.DOCUMENT;
+            case STUDY -> ListOwner.STUDY;
             case PROJECT, SPATIAL_UNIT -> null;
         };
     }
@@ -144,6 +146,7 @@ public class ExportValueReader {
         if (entity instanceof Phase e) return e.getId();
         if (entity instanceof Container e) return e.getId();
         if (entity instanceof Document e) return e.getId();
+        if (entity instanceof Study e) return e.getId();
         if (entity instanceof ActionUnit e) return e.getId();
         if (entity instanceof SpatialUnit e) return e.getId();
         return null;

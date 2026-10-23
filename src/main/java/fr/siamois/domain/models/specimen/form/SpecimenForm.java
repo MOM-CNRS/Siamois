@@ -5,6 +5,7 @@ import java.util.List;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -448,6 +449,102 @@ public abstract class SpecimenForm {
             .concept(actionUnitConcept)
             .build();
 
+    // ----------- Fields of the national report inventory (no concept in the system thesaurus yet)
+
+    private static Concept symbolicConcept(String binding) {
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("specimen." + binding).build();
+    }
+
+    private static CustomFieldText textArea(long id, String binding) {
+        return CustomFieldText.builder()
+                .label("specimen.field." + binding)
+                .isSystemField(true)
+                .id(id)
+                .isTextArea(true)
+                .valueBinding(binding)
+                .concept(symbolicConcept(binding))
+                .build();
+    }
+
+    private static CustomFieldSelectOneFromFieldCode selectOne(long id, String binding, String fieldCode) {
+        return CustomFieldSelectOneFromFieldCode.builder()
+                .label("specimen.field." + binding)
+                .isSystemField(true)
+                .id(id)
+                .fieldCode(fieldCode)
+                .valueBinding(binding)
+                .concept(symbolicConcept(binding))
+                .build();
+    }
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode sanitaryStateField = selectOne(-424L, "sanitaryState", Specimen.SANITARY_STATE_FIELD);
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText sanitaryAlertField = textArea(-425L, "sanitaryAlert");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode transferStatusField = selectOne(-426L, "transferStatus", Specimen.TRANSFER_STATUS_FIELD);
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode selectiveConservationField =
+            selectOne(-427L, "selectiveConservation", Specimen.SELECTIVE_CONSERVATION_FIELD);
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText selectiveConservationCommentField = textArea(-428L, "selectiveConservationComment");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText particularInterestField = textArea(-429L, "particularInterest");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldBoolean studyPotentialField = CustomFieldBoolean.builder()
+            .label("specimen.field.studyPotential")
+            .isSystemField(true)
+            .id(-430L)
+            .valueBinding("studyPotential")
+            .concept(symbolicConcept("studyPotential"))
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText studyPotentialCommentField = textArea(-431L, "studyPotentialComment");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText samplingPurposeField = textArea(-432L, "samplingPurpose");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText preservationConditionField = textArea(-433L, "preservationCondition");
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldDateTime validityDateField = CustomFieldDateTime.builder()
+            .label("specimen.field.validityDate")
+            .isSystemField(true)
+            .id(-434L)
+            .valueBinding("validityDate")
+            .showTime(false)
+            .concept(symbolicConcept("validityDate"))
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText storageLocationField = CustomFieldText.builder()
+            .label("specimen.field.storageLocation")
+            .isSystemField(true)
+            .id(-435L)
+            .valueBinding("storageLocation")
+            .concept(symbolicConcept("storageLocation"))
+            .build();
+
     /**
      * The table's system fields, in their default order, with the properties intrinsic to each.
      * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
@@ -476,6 +573,18 @@ public abstract class SpecimenForm {
             SystemFieldSpec.of(numberOfElementField),
             SystemFieldSpec.of(authorsField),
             SystemFieldSpec.of(collectorsField),
-            SystemFieldSpec.of(collectionDateField));
+            SystemFieldSpec.of(collectionDateField),
+            SystemFieldSpec.of(sanitaryStateField),
+            SystemFieldSpec.of(sanitaryAlertField),
+            SystemFieldSpec.of(transferStatusField),
+            SystemFieldSpec.of(selectiveConservationField),
+            SystemFieldSpec.of(selectiveConservationCommentField),
+            SystemFieldSpec.of(particularInterestField),
+            SystemFieldSpec.of(studyPotentialField),
+            SystemFieldSpec.of(studyPotentialCommentField),
+            SystemFieldSpec.of(samplingPurposeField),
+            SystemFieldSpec.of(preservationConditionField),
+            SystemFieldSpec.of(validityDateField),
+            SystemFieldSpec.of(storageLocationField));
     }
 }

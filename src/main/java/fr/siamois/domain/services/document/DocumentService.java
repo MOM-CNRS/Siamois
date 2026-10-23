@@ -260,6 +260,8 @@ public class DocumentService implements ArkEntityService {
         to.setLanguage(from.getLanguage());
         to.setRights(from.getRights());
         to.setItemCount(from.getItemCount());
+        to.setStorageLocation(from.getStorageLocation());
+        to.setMoldComment(from.getMoldComment());
         to.setSizeMb(from.getSizeMb());
         to.setCrs(from.getCrs());
         to.setOriginalPath(from.getOriginalPath());

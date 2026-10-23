@@ -15,6 +15,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
+import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -49,6 +50,7 @@ class ExportSourceReaderTest {
     @Mock private PhaseRepository phaseRepository;
     @Mock private DocumentRepository documentRepository;
     @Mock private ContainerRepository containerRepository;
+    @Mock private StudyRepository studyRepository;
     @Mock private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
 
     private ExportSourceReader reader;
@@ -57,7 +59,7 @@ class ExportSourceReaderTest {
     @BeforeEach
     void setUp() {
         reader = new ExportSourceReader(actionUnitRepository, recordingUnitRepository, specimenRepository,
-                phaseRepository, documentRepository, containerRepository, stratigraphicRelationshipRepository);
+                phaseRepository, documentRepository, containerRepository, studyRepository, stratigraphicRelationshipRepository);
         project = new ActionUnit();
         project.setId(PROJECT_ID);
     }
@@ -103,6 +105,25 @@ class ExportSourceReaderTest {
 
         Source projectSource = new ProjectSource();
         assertThatThrownBy(() -> reader.read(projectSource, PROJECT_ID)).isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void read_studySource_filtersTheStudiesOfTheProjectByType() {
+        Concept treatment = concept("th252", "4291174");
+        fr.siamois.domain.models.study.Study kept = new fr.siamois.domain.models.study.Study();
+        kept.setType(treatment);
+        fr.siamois.domain.models.study.Study other = new fr.siamois.domain.models.study.Study();
+        other.setType(concept("th252", "4291173"));
+        when(studyRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of(kept, other));
+
+        List<ExportRow> rows = reader.read(
+                new EntitySource(EntityKind.STUDY, List.of(new ConceptRef("th252", "4291174", null))),
+                PROJECT_ID);
+
+        assertThat(rows).singleElement().satisfies(r -> {
+            assertThat(r.subject()).isEqualTo(ExportSubject.STUDY);
+            assertThat(r.entity()).isSameAs(kept);
+        });
     }
 
     @Test

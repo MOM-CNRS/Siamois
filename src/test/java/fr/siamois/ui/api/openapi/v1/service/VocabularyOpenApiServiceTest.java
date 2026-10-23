@@ -161,6 +161,21 @@ class VocabularyOpenApiServiceTest {
     }
 
     @Test
+    void getConceptsForField_readsAStaticSystemFieldNoTableConfigures_likeTheTypeOfAPlace() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        long typeFieldId = fr.siamois.domain.models.spatialunit.SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId();
+        when(customFieldRepository.findById(typeFieldId)).thenReturn(Optional.empty());
+        ConceptAutocompleteDTO item = new ConceptAutocompleteDTO(null, "Site", "fr");
+        when(fieldConfigurationService.fetchAutocomplete(
+                same(fr.siamois.domain.models.spatialunit.SpatialUnit.SPATIAL_UNIT_TYPE_FIELD), any(), any(), any()))
+                .thenReturn(List.of(item));
+
+        List<ConceptAutocompleteDTO> result = service.getConceptsForField(10L, typeFieldId, null, null, null, "fr", caller.person());
+
+        assertThat(result).containsExactly(item);
+    }
+
+    @Test
     void getConceptsForField_rejectsANonVocabularyField() {
         when(institutionService.findById(10L)).thenReturn(institution);
         CustomFieldText text = new CustomFieldText();

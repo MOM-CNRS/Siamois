@@ -36,6 +36,30 @@ class ExportNavigationsTest {
     }
 
     @Test
+    void follow_spatialUnit_fromARecordingUnit() {
+        fr.siamois.domain.models.spatialunit.SpatialUnit place = new fr.siamois.domain.models.spatialunit.SpatialUnit();
+        RecordingUnit ru = new RecordingUnit();
+        ru.setSpatialUnit(place);
+
+        Optional<ExportRow> result = ExportNavigations.follow(ExportRow.of(ExportSubject.RECORDING_UNIT, ru), List.of("spatialUnit"));
+
+        assertThat(result).hasValueSatisfying(r -> {
+            assertThat(r.subject()).isEqualTo(ExportSubject.SPATIAL_UNIT);
+            assertThat(r.entity()).isSameAs(place);
+        });
+    }
+
+    @Test
+    void follow_project_fromAPlace_isTheOneBoundToTheRow() {
+        ActionUnit project = new ActionUnit();
+        ExportRow row = new ExportRow(ExportSubject.SPATIAL_UNIT, new fr.siamois.domain.models.spatialunit.SpatialUnit(),
+                Map.of("project", ExportRow.of(ExportSubject.PROJECT, project)), Map.of());
+
+        assertThat(ExportNavigations.follow(row, List.of("project"))).hasValueSatisfying(r -> assertThat(r.entity()).isSameAs(project));
+        assertThat(ExportNavigations.targetOf(ExportSubject.SPATIAL_UNIT, List.of("project"))).isEqualTo(ExportSubject.PROJECT);
+    }
+
+    @Test
     void follow_emptyPath_returnsTheRowItself() {
         ExportRow row = ExportRow.of(ExportSubject.PROJECT, new ActionUnit());
 
@@ -108,7 +132,7 @@ class ExportNavigationsTest {
 
     @Test
     void targetOf_unknownStep_isRejected() {
-        List<String> steps4 = List.of("project");
+        List<String> steps4 = List.of("recordingUnit");
         assertThatThrownBy(() -> ExportNavigations.targetOf(ExportSubject.SPATIAL_UNIT, steps4))
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -130,7 +154,7 @@ class ExportNavigationsTest {
     @Test
     void names_listsTheNavigationsOfAnEntity() {
         assertThat(ExportNavigations.names(ExportSubject.SPECIMEN)).containsExactlyInAnyOrder("project", "recordingUnit");
-        assertThat(ExportNavigations.names(ExportSubject.SPATIAL_UNIT)).isEmpty();
+        assertThat(ExportNavigations.names(ExportSubject.SPATIAL_UNIT)).containsExactly("project");
     }
 
     @Test

@@ -29,7 +29,7 @@ describe("getRecordingUnitTypes", () => {
     mockedApiFetch.mockResolvedValueOnce({
       data: [],
       tableColumns: [{ columnId: "type", fieldId: "-80", visible: true, order: 0 }],
-      fields: { "-80": { id: "-80", resourceType: "fields", label: "Type", answerType: "SELECT_ONE_FROM_FIELD_CODE", isSystemField: true } },
+      fields: { "-80": { id: "-80", resourceType: "fields", label: "Type", answerType: "SELECT_ONE", isSystemField: true } },
     });
 
     const result = await getRecordingUnitTypes("5");

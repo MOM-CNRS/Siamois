@@ -8,7 +8,7 @@ function field(overrides: Partial<FieldResource> = {}): FieldResource {
     id: "-120",
     resourceType: "fields",
     label: "Périodes",
-    answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE",
+    answerType: "SELECT_MULTIPLE",
     isSystemField: false,
     ...overrides,
   };
@@ -86,7 +86,7 @@ describe("renderAnswerCell (one-line cell)", () => {
 
   it("unwraps a FieldAnswer envelope the same way the text version does", () => {
     const html = markup(
-      renderAnswerCell(field(), { answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE", values: [ref("1", "A"), ref("2", "B")] }),
+      renderAnswerCell(field(), { answerType: "SELECT_MULTIPLE", values: [ref("1", "A"), ref("2", "B")] }),
     );
     expect(html).toContain("+1");
   });

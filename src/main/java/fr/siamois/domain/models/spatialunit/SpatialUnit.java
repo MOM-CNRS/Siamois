@@ -100,6 +100,21 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "code")
     public String code;
 
+    /** INSEE code of the municipality the place lies in (national report inventory). */
+    @Column(name = "insee_code")
+    private String inseeCode;
+
+    /** Name of the locality (lieu-dit) the place lies in. */
+    @Column(name = "locality_name")
+    private String localityName;
+
+    @Column(name = "comments", length = 5000)
+    private String comments;
+
+    /** Number of the SHOM chart used to locate an underwater place. */
+    @Column(name = "shom_map_number")
+    private String shomMapNumber;
+
     /** Manually assigned grouping number; deliberately not unique. */
     @Column(name = "place_number")
     private Integer placeNumber;
@@ -163,6 +178,35 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("SIASU.PLACE_NUMBER")
             .build();
 
+    // National report inventory fields: no concept in the system thesaurus yet.
+    @Transient
+    @JsonIgnore
+    public static final Concept INSEE_CODE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("SIASU.INSEE_CODE")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept LOCALITY_NAME_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("SIASU.LOCALITY_NAME")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept COMMENTS_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("SIASU.COMMENTS")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept SHOM_MAP_NUMBER_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("SIASU.SHOM_MAP_NUMBER")
+            .build();
+
     // address
     @Transient
     @JsonIgnore
@@ -218,6 +262,47 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .id(-205L)
             .valueBinding("placeNumber")
             .concept(PLACE_NUMBER_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText INSEE_CODE_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.inseeCode")
+            .isSystemField(true)
+            .id(-206L)
+            .valueBinding("inseeCode")
+            .concept(INSEE_CODE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText LOCALITY_NAME_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.localityName")
+            .isSystemField(true)
+            .id(-207L)
+            .valueBinding("localityName")
+            .concept(LOCALITY_NAME_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText COMMENTS_FIELD = CustomFieldText.builder()
+            .label("common.field.comments")
+            .isSystemField(true)
+            .id(-208L)
+            .isTextArea(true)
+            .valueBinding("comments")
+            .concept(COMMENTS_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText SHOM_MAP_NUMBER_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.shomMapNumber")
+            .isSystemField(true)
+            .id(-209L)
+            .valueBinding("shomMapNumber")
+            .concept(SHOM_MAP_NUMBER_CONCEPT)
             .build();
 
     @Transient
@@ -301,6 +386,33 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(PLACE_NUMBER_FIELD)
+                                                    .build())
+                                            .build()
+                            ).addRow(
+                                    new CustomRowUiDto.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(INSEE_CODE_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(LOCALITY_NAME_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(SHOM_MAP_NUMBER_FIELD)
+                                                    .build())
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(false)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(COMMENTS_FIELD)
                                                     .build())
                                             .build()
                             ).build()

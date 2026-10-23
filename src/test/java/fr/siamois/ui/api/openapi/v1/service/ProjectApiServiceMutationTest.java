@@ -254,6 +254,24 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void patchProject_answers_unknownDocument_throws404() {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(row);
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(documentService.findDtoById(42L)).thenReturn(null);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-137", new AnswerInput(42, null)); // GEOREFERENCING_DOCUMENT_FIELD
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
     void patchProject_answers_appliedAfterFlatFieldsAndCanOverrideThem() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

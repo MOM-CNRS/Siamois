@@ -21,7 +21,7 @@ const typeField: FieldResource = {
   id: "-302",
   resourceType: "fields",
   label: "Type",
-  answerType: "SELECT_ONE_FROM_FIELD_CODE",
+  answerType: "SELECT_ONE",
   isSystemField: true,
   valueBinding: "type",
   fieldCode: "SIAUE.TYPE",

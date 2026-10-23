@@ -214,6 +214,14 @@ public abstract class DocumentForm {
     @Transient
     protected static final CustomFieldText externalUrlField = text(-722L, "externalUrl", false);
 
+    // The fields of the national report inventory: no concept in the system thesaurus yet.
+
+    @Transient
+    protected static final CustomFieldText storageLocationField = text(-729L, "storageLocation", false);
+
+    @Transient
+    protected static final CustomFieldText moldCommentField = text(-730L, "moldComment", true);
+
     // The links to the other entities: optional and multiple, written from the document's side.
 
     @Transient
@@ -285,6 +293,8 @@ public abstract class DocumentForm {
                 SystemFieldSpec.of(rightsField),
                 SystemFieldSpec.of(keywordsField),
                 SystemFieldSpec.of(itemCountField),
+                SystemFieldSpec.of(storageLocationField),
+                SystemFieldSpec.of(moldCommentField),
                 SystemFieldSpec.of(sizeMbField),
                 SystemFieldSpec.of(crsField),
                 SystemFieldSpec.of(originalPathField),

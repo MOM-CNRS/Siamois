@@ -728,7 +728,7 @@ describe("EntityListPanel with a field catalog (config.list.schema)", () => {
           id: "-120",
           resourceType: "fields",
           label: "Périodes",
-          answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE",
+          answerType: "SELECT_MULTIPLE",
           isSystemField: false,
         },
       },
@@ -1836,7 +1836,7 @@ describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
 
   const ruleCatalog = {
     fields: {
-      [NATURE]: { id: NATURE, resourceType: "fields", label: "Nature", answerType: "SELECT_ONE_FROM_FIELD_CODE", isSystemField: false, fieldCode: "SIARU.GEOMORPHO" },
+      [NATURE]: { id: NATURE, resourceType: "fields", label: "Nature", answerType: "SELECT_ONE", isSystemField: false, fieldCode: "SIARU.GEOMORPHO" },
       [EROSION]: {
         id: EROSION,
         resourceType: "fields",

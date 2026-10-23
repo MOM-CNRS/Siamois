@@ -451,6 +451,151 @@
                                                      styleClass="ptc-new-type-btn ptc-table-page-add"
                                                      onclick="PF('newConfigDialogWidget').show()"/>
                                 </form:csrfform>
+                                <h:panelGroup rendered="#{projectTableTypeSourceBean.available}" layout="block" styleClass="ptc-type-source">
+                                    <form:csrfform id="typeSourceFormCC" formId="typeSourceForm">
+                                        <h3 class="ptc-type-source-title">#{langBean.msg('projectTables.typeSource.title')}</h3>
+                                        <p class="ptc-field-hint">#{langBean.msg('projectTables.typeSource.hint')}</p>
+
+                                        <h:panelGroup layout="block" styleClass="ptc-drawer-error" rendered="#{not empty projectTableTypeSourceBean.errorMessage}">
+                                            <i class="bi bi-exclamation-triangle-fill"/>
+                                            <span>#{projectTableTypeSourceBean.errorMessage}</span>
+                                        </h:panelGroup>
+                                        <h:panelGroup layout="block" styleClass="ptc-field-hint" rendered="#{not empty projectTableTypeSourceBean.savedMessage}">
+                                            <i class="bi bi-check-circle-fill"/> #{projectTableTypeSourceBean.savedMessage}
+                                        </h:panelGroup>
+
+                                        <div class="ptc-chip-row">
+                                            <p:commandButton value="#{langBean.msg('projectTables.typeSource.default')}"
+                                                             styleClass="ptc-chip-option #{empty projectTableTypeSourceBean.source ? 'ptc-chip-option-selected' : ''}"
+                                                             actionListener="#{projectTableTypeSourceBean.select(null)}" update="@form" process="@this"/>
+                                            <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceCode')}"
+                                                             styleClass="ptc-chip-option #{projectTableTypeSourceBean.source eq 'code' ? 'ptc-chip-option-selected' : ''}"
+                                                             actionListener="#{projectTableTypeSourceBean.select('code')}" update="@form" process="@this"/>
+                                            <p:commandButton value="#{langBean.msg('projectTables.drawer.params.sourceBranche')}"
+                                                             styleClass="ptc-chip-option #{projectTableTypeSourceBean.source eq 'branche' ? 'ptc-chip-option-selected' : ''}"
+                                                             actionListener="#{projectTableTypeSourceBean.select('branche')}" update="@form" process="@this"/>
+                                        </div>
+
+                                        <h:panelGroup rendered="#{empty projectTableTypeSourceBean.source and not empty projectTableTypeSourceBean.defaultVocabulary}">
+                                            <div class="ptc-params-triplet">
+                                                <div class="ptc-drawer-field">
+                                                    <span class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.server')}</span>
+                                                    <div class="ptc-ac-glued">
+                                                        <p:inputText value="#{projectTableTypeSourceBean.defaultServerUrl}" disabled="true" style="width:100%"/>
+                                                        <h:outputLink value="#{projectTableTypeSourceBean.defaultServerUrl}" target="_blank" rel="noopener noreferrer" styleClass="ptc-open-tab"
+                                                                      title="#{langBean.msg('projectTables.drawer.params.openInTab')}">
+                                                            <i class="bi bi-box-arrow-up-right"/>
+                                                        </h:outputLink>
+                                                    </div>
+                                                </div>
+                                                <div class="ptc-drawer-field">
+                                                    <span class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.thesaurus')}</span>
+                                                    <div class="ptc-ac-glued">
+                                                        <p:inputText value="#{projectTableTypeSourceBean.defaultThesaurusLabel}" disabled="true" style="width:100%"/>
+                                                        <h:outputLink value="#{projectTableTypeSourceBean.defaultThesaurusUrl}" target="_blank" rel="noopener noreferrer" styleClass="ptc-open-tab"
+                                                                      title="#{langBean.msg('projectTables.drawer.params.openInTab')}">
+                                                            <i class="bi bi-box-arrow-up-right"/>
+                                                        </h:outputLink>
+                                                    </div>
+                                                </div>
+                                                <div class="ptc-drawer-field">
+                                                    <span class="ptc-drawer-label">#{langBean.msg('projectTables.drawer.params.code')}</span>
+                                                    <p:inputText value="#{projectTableTypeSourceBean.defaultCode}" disabled="true" style="width:100%"/>
+                                                </div>
+                                            </div>
+                                        </h:panelGroup>
+
+                                        <h:panelGroup rendered="#{empty projectTableTypeSourceBean.source}">
+                                            <div class="ptc-field-hint">
+                                                #{projectTableTypeSourceBean.custom ? langBean.msg('projectTables.typeSource.customHint') : langBean.msg('projectTables.typeSource.defaultHint')}
+                                            </div>
+                                        </h:panelGroup>
+
+                                        <h:panelGroup rendered="#{not empty projectTableTypeSourceBean.source}">
+                                            <div class="ptc-params-triplet">
+                                                <div class="ptc-drawer-field">
+                                                    <label class="ptc-drawer-label" for="typeSourceForm:typeSourceServer_input">#{langBean.msg('projectTables.drawer.params.server')}</label>
+                                                    <div class="ptc-ac-glued">
+                                                        <p:autoComplete id="typeSourceServer" widgetVar="acTypeServerW" value="#{projectTableTypeSourceBean.serverUrl}"
+                                                                        completeMethod="#{projectTableTypeSourceBean.completeServers}"
+                                                                        minQueryLength="0" dropdown="false" scrollHeight="220" style="width:100%"
+                                                                        onfocus="var w=PF('acTypeServerW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acTypeServerW'); if (!w.panel.is(':visible')) w.search('')"
+                                                                        placeholder="#{langBean.msg('projectTables.drawer.params.pickServer')}">
+                                                            <p:ajax event="itemSelect" listener="#{projectTableTypeSourceBean.onServerChange()}" process="@this" update="@form"/>
+                                                        </p:autoComplete>
+                                                        <h:outputLink value="#{projectTableTypeSourceBean.serverUrl}" target="_blank" rel="noopener noreferrer"
+                                                                      disabled="#{empty projectTableTypeSourceBean.serverUrl}" styleClass="ptc-open-tab"
+                                                                      title="#{langBean.msg('projectTables.drawer.params.openInTab')}">
+                                                            <i class="bi bi-box-arrow-up-right"/>
+                                                        </h:outputLink>
+                                                    </div>
+                                                </div>
+
+                                                <h:panelGroup rendered="#{not empty projectTableTypeSourceBean.serverUrl}">
+                                                    <div class="ptc-drawer-field">
+                                                        <label class="ptc-drawer-label" for="typeSourceForm:typeSourceThesaurus_input">#{langBean.msg('projectTables.drawer.params.thesaurus')}</label>
+                                                        <div class="ptc-ac-glued">
+                                                            <p:autoComplete id="typeSourceThesaurus" widgetVar="acTypeThesaurusW" value="#{projectTableTypeSourceBean.thesaurus}"
+                                                                            completeMethod="#{projectTableTypeSourceBean.completeThesauri}"
+                                                                            var="info" itemLabel="#{info.label()} (#{info.idTheso()})" itemValue="#{info}"
+                                                                            converter="#{thesaurusInfoConverter}"
+                                                                            minQueryLength="0" dropdown="false" forceSelection="true" scrollHeight="220" style="width:100%"
+                                                                            onfocus="var w=PF('acTypeThesaurusW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acTypeThesaurusW'); if (!w.panel.is(':visible')) w.search('')"
+                                                                            placeholder="#{langBean.msg('projectTables.drawer.params.pickThesaurus')}">
+                                                                <p:ajax event="itemSelect" listener="#{projectTableTypeSourceBean.onThesaurusChange()}" process="@this" update="@form"/>
+                                                            </p:autoComplete>
+                                                            <h:outputLink value="#{projectTableTypeSourceBean.thesaurusUrl}" target="_blank" rel="noopener noreferrer"
+                                                                          disabled="#{not projectTableTypeSourceBean.connectionTested}" styleClass="ptc-open-tab"
+                                                                          title="#{langBean.msg('projectTables.drawer.params.openInTab')}">
+                                                                <i class="bi bi-box-arrow-up-right"/>
+                                                            </h:outputLink>
+                                                        </div>
+                                                    </div>
+                                                </h:panelGroup>
+                                            </div>
+
+                                            <h:panelGroup rendered="#{projectTableTypeSourceBean.source eq 'code' and projectTableTypeSourceBean.connectionTested}">
+                                                <div class="ptc-drawer-field">
+                                                    <label class="ptc-drawer-label" for="typeSourceForm:typeSourceCode">#{langBean.msg('projectTables.drawer.params.code')}</label>
+                                                    <p:selectOneMenu id="typeSourceCode" value="#{projectTableTypeSourceBean.codeChoice}"
+                                                                     style="width:100%" appendTo="@(body)" filter="true" filterMatchMode="contains">
+                                                        <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.params.codePlaceholder')}" itemValue="" noSelectionOption="true"/>
+                                                        <f:selectItems value="#{projectTableTypeSourceBean.codeOptions}"/>
+                                                    </p:selectOneMenu>
+                                                    <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.params.codeHint')}</div>
+                                                </div>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup rendered="#{projectTableTypeSourceBean.source eq 'branche' and projectTableTypeSourceBean.connectionTested}">
+                                                <div class="ptc-drawer-field">
+                                                    <label class="ptc-drawer-label" for="typeSourceForm:typeSourceBranch_input">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
+                                                    <p:autoComplete id="typeSourceBranch" widgetVar="acTypeBranchW" value="#{projectTableTypeSourceBean.branchConcept}"
+                                                                    completeMethod="#{projectTableTypeSourceBean.completeBranches}"
+                                                                    var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
+                                                                    converter="#{conceptAutocompleteDetachedDTOConverter}"
+                                                                    minQueryLength="0" dropdown="false" scrollHeight="220" style="width:100%" forceSelection="true"
+                                                                    showEmptyMessage="true"
+                                                                    emptyMessage="#{langBean.msg('projectTables.drawer.params.typeAtLeastOne')}"
+                                                                    onfocus="var w=PF('acTypeBranchW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acTypeBranchW'); if (!w.panel.is(':visible')) w.search('')"
+                                                                    placeholder="#{langBean.msg('projectTables.drawer.params.brancheConceptPlaceholder')}">
+                                                        <p:ajax event="itemSelect" process="@this"/>
+                                                    </p:autoComplete>
+                                                </div>
+                                            </h:panelGroup>
+
+</h:panelGroup>
+
+                                        <p:commandButton value="#{langBean.msg('projectTables.typeSource.save')}"
+                                                         disabled="#{empty projectTableTypeSourceBean.source ? not projectTableTypeSourceBean.custom : not projectTableTypeSourceBean.connectionTested}"
+                                                         actionListener="#{projectTableTypeSourceBean.saveAction()}"
+                                                         oncomplete="if (args.changed) PF('typeSourceReload').jq.click()" update="@form" process="@form"/>
+
+                                        <!-- the table's types may have changed: lists them again, then the tree and the page -->
+                                        <p:commandButton widgetVar="typeSourceReload" style="display:none"
+                                                         actionListener="#{projectTableFieldSettingsBean.reloadTypesOfSelectedTable()}"
+                                                         update=":ptcMain :treeFormCC:treeForm" process="@this"/>
+                                    </form:csrfform>
+                                </h:panelGroup>
                             </div>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{not empty projectTableFieldSettingsBean.selectedTypeName and not projectTableFieldSettingsBean.drawerOpen}" layout="block" styleClass="ptc-main-panel">
@@ -597,7 +742,7 @@
 
                             <!-- Identifiants -->
                             <p:tab title="#{langBean.msg('projectTables.tab.identifiants')}">
-                                <h:panelGroup rendered="#{projectTableFieldSettingsBean.identTabAvailable}">
+                                <h:panelGroup id="identBlock" layout="block" rendered="#{projectTableFieldSettingsBean.identTabAvailable}">
                                     <div style="display:flex;flex-direction:column;gap:20px;max-width:720px;">
 
                                         <div class="ptc-ident-numbers">
@@ -620,36 +765,36 @@
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identSegments}" var="seg" varStatus="status">
                                                     <h:panelGroup rendered="#{not seg.token}">
                                                         <div class="ptc-ident-segment-text">
-                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                             <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].text}" placeholder="texte">
-                                                                <p:ajax event="change" update="@form" process="@form"/>
+                                                                <p:ajax event="change" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                             </p:inputText>
-                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@form"/>
-                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                         </div>
                                                     </h:panelGroup>
                                                     <h:panelGroup rendered="#{seg.token}">
                                                         <div class="ptc-ident-segment-token">
-                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="‹" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentLeft(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                             <span>#{seg.label}</span>
                                                             <h:panelGroup rendered="#{seg.numeric}">
                                                                 <div class="ptc-ident-digits-box">
                                                                     <span>#{langBean.msg('projectTables.ident.digits')}</span>
                                                                     <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].digits}">
-                                                                        <p:ajax event="change" update="@form" process="@form"/>
+                                                                        <p:ajax event="change" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                                     </p:inputText>
                                                                 </div>
                                                             </h:panelGroup>
-                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update="@form" process="@form"/>
-                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update="@form" process="@form"/>
+                                                            <p:commandButton value="›" styleClass="ptc-ident-arrow" actionListener="#{projectTableFieldSettingsBean.moveIdentSegmentRight(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
+                                                            <p:commandButton value="✕" styleClass="ptc-ident-remove" actionListener="#{projectTableFieldSettingsBean.removeIdentSegment(status.index)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                         </div>
                                                     </h:panelGroup>
                                                 </ui:repeat>
-                                                <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update="@form" process="@form"/>
+                                                <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                             </div>
                                             <div class="ptc-chip-row">
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identifierResolvers}" var="resolver">
-                                                    <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update="@form" process="@form"/>
+                                                    <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                 </ui:repeat>
                                             </div>
                                         </div>
@@ -662,7 +807,7 @@
                                         </div>
 
                                         <div style="display:flex;justify-content:flex-end;">
-                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveIdentConfig()}" update="@form"/>
+                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveIdentConfig()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock"/>
                                         </div>
                                     </div>
                                 </h:panelGroup>

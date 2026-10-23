@@ -16676,14 +16676,13 @@
               "BOOLEAN",
               "MEASUREMENT",
               "SELECT_ONE",
-              "SELECT_ONE_FROM_FIELD_CODE",
               "SELECT_ONE_PERSON",
               "SELECT_ONE_ACTION_UNIT",
               "SELECT_ONE_SPATIAL_UNIT",
               "SELECT_ONE_RECORDING_UNIT",
+              "SELECT_ONE_DOCUMENT",
               "SELECT_ADDRESS",
               "SELECT_MULTIPLE",
-              "SELECT_MULTIPLE_FROM_FIELD_CODE",
               "SELECT_MULTIPLE_PERSON",
               "SELECT_MULTIPLE_RECORDING_UNIT",
               "SELECT_MULTIPLE_SPATIAL_UNIT",
@@ -16708,7 +16707,7 @@
           },
           "fieldCode": {
             "type": "string",
-            "description": "Code de vocabulaire (ex. SIARU.CHRONO) pour les SELECT_*_FROM_FIELD_CODE"
+            "description": "Code de vocabulaire (ex. SIARU.CHRONO) du champ, à titre informatif : la liste de ses valeurs se lit par identifiant de champ"
           },
           "isTextArea": {
             "type": "boolean",

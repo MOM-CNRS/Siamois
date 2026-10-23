@@ -73,30 +73,6 @@ function toConceptOption(c: ConceptResponseItem): FilterOption {
   return option;
 }
 
-/**
- * GET /api/v1/organizations/{id}/concepts — the org-scoped sibling of
- * GET /api/v1/projects/{id}/concepts, used here because a list filter has an organization in
- * scope but no project to derive one from (OrganizationProjectsControllerApi#getConcepts).
- */
-export async function fetchConceptOptions(
-  organizationId: number,
-  fieldCode: string,
-  q?: string,
-  related?: { conceptId: string; projectId?: string },
-): Promise<FilterOption[]> {
-  const query = new URLSearchParams({ fieldCode });
-  if (q) query.set("q", q);
-  // A dependent list (rule options RELATED_CONCEPTS): the concepts related to the parent's answer.
-  if (related) {
-    query.set("relatedToConceptId", related.conceptId);
-    if (related.projectId) query.set("projectId", related.projectId);
-  }
-  const body = await apiFetch<ConceptsResponseBody>(
-    `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
-  );
-  return body.data.map(toConceptOption);
-}
-
 interface PlaceAutocompleteResponseBody {
   data: { id: string; name: string; code?: string | null }[];
 }
@@ -219,6 +195,8 @@ const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: Referen
   [(t) => t.endsWith("_SPECIMEN"), { resourceType: "finds", entityType: "find", createEntityType: "find" }],
   [(t) => t.endsWith("_CONTAINER"), { resourceType: "containers", entityType: "container", createEntityType: "container" }],
   [(t) => t.endsWith("_PHASE"), { resourceType: "phases", entityType: "phase", createEntityType: "phase" }],
+  // A document is picked, never created from a field (it needs its file).
+  [(t) => t.endsWith("_DOCUMENT"), { resourceType: "documents", entityType: "document" }],
 ];
 
 export function referenceTargetOf(field: FieldResource): ReferenceTarget {
@@ -226,9 +204,8 @@ export function referenceTargetOf(field: FieldResource): ReferenceTarget {
 }
 
 /**
- * A vocabulary field whose list is its own — SELECT_ONE / SELECT_MULTIPLE with no fieldCode, or a field
- * a project restricts to a branch or collection (a stratigraphic side): its suggestions come from
- * its own restrictions, resolved server side by field id
+ * The values of a vocabulary field — SELECT_ONE / SELECT_MULTIPLE, whatever its list comes from (a field
+ * code, a branch, a collection): resolved server side by field id
  * (OrganizationProjectsControllerApi#getConcepts' fieldId mode), scoped to the edited entity's
  * project when there is one.
  */
@@ -361,13 +338,6 @@ export function optionSourceFor(
 ): ((q?: string) => Promise<FilterOption[]>) | null {
   if (waitsForParent(scope.optionsContext)) return NOTHING;
   switch (field.answerType) {
-    case "SELECT_ONE_FROM_FIELD_CODE":
-    case "SELECT_MULTIPLE_FROM_FIELD_CODE": {
-      if (!field.fieldCode) return null;
-      const related = relatedConceptOf(scope.optionsContext);
-      return (q) =>
-        fetchConceptOptions(organizationId, field.fieldCode as string, q, related ? { conceptId: related, projectId } : undefined);
-    }
     case "SELECT_ONE":
     case "SELECT_MULTIPLE":
       return (q) => fetchFieldConceptOptions(organizationId, field.id, projectId, q, scope);
@@ -388,6 +358,7 @@ export function optionSourceFor(
     case "SELECT_ONE_ACTION_UNIT":
       return (q) => fetchEntityOptions({ projectPath: "", orgPath: "projects" }, organizationId, undefined, q);
     case "SELECT_ONE_RECORDING_UNIT":
+    case "SELECT_ONE_DOCUMENT":
     case "SELECT_MULTIPLE_RECORDING_UNIT":
     case "SELECT_MULTIPLE_SPECIMEN":
     case "SELECT_MULTIPLE_PHASE":
