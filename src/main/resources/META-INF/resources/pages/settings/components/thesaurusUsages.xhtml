@@ -17,6 +17,26 @@
         <h3>#{langBean.msg('thesaurusUsages.title')}</h3>
         <p style="font-style: italic">#{langBean.msg('thesaurusUsages.hint')}</p>
         <shared:csrfform formId="usagesForm">
+            <p:outputPanel id="bulkWrap" layout="block">
+            <p:outputPanel layout="block" styleClass="thesaurus-bulk mb-3"
+                           rendered="#{cc.attrs.bulk and not empty cc.attrs.bean.selectedUsages}">
+                <h4>#{langBean.msg('thesaurusUsages.bulk.title')}
+                    <span class="badge bg-secondary ms-2">#{langBean.msg('thesaurusUsages.bulk.selected', cc.attrs.bean.selectedUsages.size())}</span>
+                </h4>
+                <label for="usagesForm:bulkTarget">#{langBean.msg('thesaurusUsages.bulk.label')}</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <p:selectOneMenu id="bulkTarget" value="#{cc.attrs.bean.bulkTargetUrl}" style="min-width:24rem">
+                        <f:selectItem itemLabel="—" itemValue="#{null}" noSelectionOption="true"/>
+                        <f:selectItems value="#{cc.attrs.bean.bulkTargetItems}"/>
+                    </p:selectOneMenu>
+                    <p:commandButton value="#{langBean.msg('thesaurusUsages.bulk.button')}"
+                                     action="#{cc.attrs.bean.rewireSelected()}"
+                                     process="@form" update="@(.thesaurus-usages) @(.ui-messages)"/>
+                </div>
+                <small class="text-muted">#{langBean.msg('thesaurusUsages.bulk.hint')}</small>
+            </p:outputPanel>
+            </p:outputPanel>
+
             <p:dataTable id="usagesTable" widgetVar="usagesTableW" value="#{cc.attrs.usages}" var="usage" rowKey="#{usage.rowKey}"
                          selection="#{cc.attrs.bean.selectedUsages}" selectionPageOnly="false"
                          paginator="#{cc.attrs.usages.size() > 25}" rows="25" paginatorPosition="bottom"
@@ -48,22 +68,11 @@
                 <p:column headerText="#{langBean.msg('thesaurusUsages.type')}" filterBy="#{usage.typeLabel}" filterMatchMode="contains">
                     #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}
                 </p:column>
+                <p:ajax event="rowSelectCheckbox" process="@this" update="bulkWrap"/>
+                <p:ajax event="rowUnselectCheckbox" process="@this" update="bulkWrap"/>
+                <p:ajax event="toggleSelect" process="@this" update="bulkWrap"/>
             </p:dataTable>
 
-            <p:outputPanel layout="block" styleClass="thesaurus-bulk mt-3" rendered="#{cc.attrs.bulk}">
-                <h4>#{langBean.msg('thesaurusUsages.bulk.title')}</h4>
-                <label for="usagesForm:bulkTarget">#{langBean.msg('thesaurusUsages.bulk.label')}</label>
-                <div class="d-flex gap-2 align-items-center">
-                    <p:selectOneMenu id="bulkTarget" value="#{cc.attrs.bean.bulkTargetUrl}" style="min-width:24rem">
-                        <f:selectItem itemLabel="—" itemValue="#{null}" noSelectionOption="true"/>
-                        <f:selectItems value="#{cc.attrs.bean.bulkTargetItems}"/>
-                    </p:selectOneMenu>
-                    <p:commandButton value="#{langBean.msg('thesaurusUsages.bulk.button')}"
-                                     action="#{cc.attrs.bean.rewireSelected()}"
-                                     process="@form" update="@(.thesaurus-usages) @(.ui-messages)"/>
-                </div>
-                <small class="text-muted">#{langBean.msg('thesaurusUsages.bulk.hint')}</small>
-            </p:outputPanel>
         </shared:csrfform>
         </p:outputPanel>
     </cc:implementation>
