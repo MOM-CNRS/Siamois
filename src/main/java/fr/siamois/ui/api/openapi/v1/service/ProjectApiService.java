@@ -635,6 +635,9 @@ public class ProjectApiService {
         if (templateId == null || templateId.isBlank() || ProjectTemplate.EMPTY_ID.equals(templateId)) {
             return null;
         }
+        if (ProjectTemplate.DEFAULT_ID.equals(templateId)) {
+            return templateId;
+        }
         if (!templateId.startsWith(ProjectTemplate.PROJECT_PREFIX)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Modèle de projet inconnu");
         }
@@ -653,12 +656,13 @@ public class ProjectApiService {
         return templateId;
     }
 
-    /** The starting points offered when creating a project of the organization: empty, then the projects it can copy. */
+    /** The starting points offered when creating a project of the organization: the default project, empty, then the projects it can copy. */
     @Transactional(readOnly = true)
     public List<ProjectTemplate> listProjectTemplates(ProjectApiCaller caller, String organizationId) {
         long orgId = parseLong(organizationId);
         assertOrganizationInCallerScope(orgId, caller.accessibleInstitutionIds());
         List<ProjectTemplate> templates = new ArrayList<>();
+        templates.add(new ProjectTemplate(ProjectTemplate.DEFAULT_ID, "", ProjectTemplate.Kind.DEFAULT));
         templates.add(new ProjectTemplate(ProjectTemplate.EMPTY_ID, "", ProjectTemplate.Kind.EMPTY));
         actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(), orgId,
                         null, PageRequest.of(0, 200, Sort.by("name")))

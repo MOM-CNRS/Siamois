@@ -1,0 +1,214 @@
+{
+  "thesaurus": "https://thesaurus.mom.fr/?idt=th331",
+  "tables": [
+    {
+      "table": "UE",
+      "typeCode": "SIARU.TYPE",
+      "types": [
+        {
+          "label": "US",
+          "concept": "1154",
+          "identifierFormat": "US{NUM_UE:000}",
+          "lists": {
+            "SIARU.GEOMORPHO": "g104",
+            "SIARU.INTERPRETATION": "g107"
+          }
+        },
+        {
+          "label": "Fait",
+          "concept": "1155",
+          "identifierFormat": "F{NUM_UE:000}",
+          "lists": {
+            "SIARU.GEOMORPHO": "g105",
+            "SIARU.INTERPRETATION": "g108"
+          }
+        },
+        {
+          "label": "Ensemble",
+          "concept": "1156",
+          "identifierFormat": "ENS{NUM_UE:000}",
+          "lists": {
+            "SIARU.GEOMORPHO": "g106",
+            "SIARU.INTERPRETATION": "g109"
+          }
+        }
+      ]
+    },
+    {
+      "table": "MOBILIER",
+      "typeCode": "SIAS.CAT",
+      "types": [
+        {
+          "label": "Céramique",
+          "concept": "1332",
+          "lists": {
+            "SIAS.CLASS": "g119",
+            "SIAS.INTERPRETATION": "g126",
+            "SIAS.MATIERE": "g111"
+          }
+        },
+        {
+          "label": "Métal",
+          "concept": "1333",
+          "lists": {
+            "SIAS.CLASS": "g121",
+            "SIAS.INTERPRETATION": "g127",
+            "SIAS.MATIERE": "g113"
+          }
+        },
+        {
+          "label": "Industrie lithique",
+          "concept": "1334",
+          "lists": {
+            "SIAS.CLASS": "g122",
+            "SIAS.INTERPRETATION": "g128",
+            "SIAS.MATIERE": "g114"
+          }
+        },
+        {
+          "label": "Verre",
+          "concept": "1335",
+          "lists": {
+            "SIAS.CLASS": "g123",
+            "SIAS.INTERPRETATION": "g129",
+            "SIAS.MATIERE": "g115"
+          }
+        },
+        {
+          "label": "Faune",
+          "concept": "1336",
+          "lists": {
+            "SIAS.CLASS": "g124",
+            "SIAS.INTERPRETATION": "g130",
+            "SIAS.MATIERE": "g116"
+          }
+        }
+      ]
+    },
+    {
+      "table": "PHASE",
+      "typeCode": "SIAPHASE.TYPE",
+      "types": [
+        {
+          "label": "Phase d'occupation",
+          "concept": "1649"
+        },
+        {
+          "label": "Phase de construction",
+          "concept": "1650"
+        },
+        {
+          "label": "Phase d'aménagement ou de transformation",
+          "concept": "1651"
+        },
+        {
+          "label": "Phase d'abandon ou de destruction",
+          "concept": "1652"
+        }
+      ]
+    },
+    {
+      "table": "CONTENANT",
+      "typeCode": "SIAC.TYPE",
+      "types": [
+        {
+          "label": "caisse norme Europe",
+          "concept": "1626"
+        },
+        {
+          "label": "boîte à archives",
+          "concept": "1629"
+        },
+        {
+          "label": "sachet",
+          "concept": "1636"
+        }
+      ]
+    },
+    {
+      "table": "DOCUMENT",
+      "typeCode": "SIAD.CATEGORY",
+      "types": [
+        {
+          "label": "Document écrit et base de données",
+          "concept": "1520",
+          "lists": {
+            "SIAD.FORMAT": "g154",
+            "SIAD.NATURE": "g149",
+            "SIAD.TYPE": "g144"
+          }
+        },
+        {
+          "label": "Document graphique",
+          "concept": "1521",
+          "lists": {
+            "SIAD.FORMAT": "g155",
+            "SIAD.NATURE": "g150",
+            "SIAD.SCALE": "g158",
+            "SIAD.TYPE": "g145"
+          }
+        },
+        {
+          "label": "Document photographique et audiovisuel",
+          "concept": "1522",
+          "lists": {
+            "SIAD.FORMAT": "g156",
+            "SIAD.NATURE": "g151",
+            "SIAD.TYPE": "g146"
+          }
+        },
+        {
+          "label": "Moulage",
+          "concept": "1523",
+          "lists": {
+            "SIAD.NATURE": "g152",
+            "SIAD.TYPE": "g147"
+          }
+        },
+        {
+          "label": "Autre document",
+          "concept": "1524",
+          "lists": {
+            "SIAD.FORMAT": "g157",
+            "SIAD.NATURE": "g153",
+            "SIAD.TYPE": "g148"
+          }
+        }
+      ]
+    },
+    {
+      "table": "STUDY",
+      "typeCode": "SIAST.TYPE",
+      "types": [
+        {
+          "label": "Traitement",
+          "concept": "1464",
+          "lists": {
+            "SIAST.METHODE": "g140"
+          }
+        },
+        {
+          "label": "Datation",
+          "concept": "1465",
+          "lists": {
+            "SIAST.METHODE": "g141"
+          }
+        },
+        {
+          "label": "Analyse",
+          "concept": "1466",
+          "lists": {
+            "SIAST.METHODE": "g142"
+          }
+        },
+        {
+          "label": "Étude spécialisée",
+          "concept": "1467",
+          "lists": {
+            "SIAST.METHODE": "g143"
+          }
+        }
+      ]
+    }
+  ]
+}

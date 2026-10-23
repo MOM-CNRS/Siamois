@@ -283,6 +283,7 @@ export const fr = {
   "home.noProject": "Aucun projet",
   "create.newProject": "Nouveau projet",
   "create.projectTemplate": "Modèle",
+  "create.projectTemplate.default": "Projet par défaut",
   "create.projectTemplate.empty": "Projet vide",
   "create.identifier.auto": "Automatique",
   "create.newRecordingUnit": "Nouvelle unité d'enregistrement",

@@ -97,8 +97,13 @@ public class ConceptCollectionService {
         }
         ConceptApiUtils.BranchLoadComponents components = new ConceptApiUtils.BranchLoadComponents(applicationContext);
         Map<String, Concept> savedConcepts = ConceptApiUtils.saveAllConceptsOfBranch(components, savedCollection.getVocabulary(), branchDTO, new HashMap<>(), progressWrapper);
-        for (Concept concept : savedConcepts.values()) {
-            savedCollection.getConcepts().add(concept);
+        // the import also saves the concepts the members are related to, which are not members: only the branch's own are
+        savedCollection.getConcepts().clear();
+        for (String memberUrl : branchDTO.getData().keySet()) {
+            Concept member = savedConcepts.get(memberUrl);
+            if (member != null) {
+                savedCollection.getConcepts().add(member);
+            }
         }
         conceptCollectionRepository.save(savedCollection);
     }

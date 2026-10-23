@@ -9,8 +9,8 @@ public record ProjectTemplatesResponse(List<Template> templates) {
 
     @Schema(description = "Un modèle de départ")
     public record Template(
-            @Schema(description = "Identifiant à renvoyer à la création : 'empty' ou 'project:<id>'") String id,
-            @Schema(description = "Nom affiché (vide pour 'empty' : à libeller côté client)") String label,
-            @Schema(description = "Nature du modèle", allowableValues = {"empty", "project"}) String kind) {
+            @Schema(description = "Identifiant à renvoyer à la création : 'default', 'empty' ou 'project:<id>'") String id,
+            @Schema(description = "Nom affiché (vide pour 'default' et 'empty' : à libeller côté client)") String label,
+            @Schema(description = "Nature du modèle", allowableValues = {"default", "empty", "project"}) String kind) {
     }
 }

@@ -38,7 +38,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   const [name, setName] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [identifierEdited, setIdentifierEdited] = useState(false);
-  const [templateId, setTemplateId] = useState("empty");
+  const [templateId, setTemplateId] = useState("default");
   const [type, setType] = useState<ConceptPick | null>(null);
   const [mainLocation, setMainLocation] = useState<ConceptPick | null>(null);
   const [spatialContext, setSpatialContext] = useState<ConceptPick[]>([]);
@@ -49,9 +49,9 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
     queryFn: () => listProjectTemplates(organizationId as number),
     enabled: organizationId != null,
   });
-  const templateOptions = (templatesQuery.data ?? [{ id: "empty", label: "", kind: "empty" as const }]).map((tpl) => ({
+  const templateOptions = (templatesQuery.data ?? [{ id: "default", label: "", kind: "default" as const }]).map((tpl) => ({
     value: tpl.id,
-    label: tpl.kind === "empty" ? t("create.projectTemplate.empty") : tpl.label,
+    label: templateLabel(tpl),
   }));
 
   // The identifier the server would give the project: shown pre-filled, kept as is unless the user types
@@ -209,6 +209,13 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
       )}
     </CreateFormShell>
   );
+}
+
+// The default and empty templates carry no name of their own: the client words them.
+function templateLabel(template: { label: string; kind: "default" | "empty" | "project" }): string {
+  if (template.kind === "default") return t("create.projectTemplate.default");
+  if (template.kind === "empty") return t("create.projectTemplate.empty");
+  return template.label;
 }
 
 // The places the project is attached to: the one it is created from (a place's "new project" action),

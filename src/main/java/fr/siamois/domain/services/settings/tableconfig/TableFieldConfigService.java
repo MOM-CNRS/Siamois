@@ -157,6 +157,12 @@ public interface TableFieldConfigService {
     Optional<CustomField> findField(Long projectId, ConfigurableTable table, String typeName, String fieldName);
 
     /**
+     * Concept-id-keyed equivalent of {@link #findField(Long, ConfigurableTable, String, String)}: the type is named by
+     * its concept, so the caller needs no label in the language of the current user.
+     */
+    Optional<CustomField> findField(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName);
+
+    /**
      * Same as {@link #getFieldsConfig(Long, ConfigurableTable, String)}, but keyed directly on the
      * type's {@link fr.siamois.domain.models.vocabulary.Concept} id instead of its label — avoids the
      * label round-trip ({@link #findFormConfig(Long, ConfigurableTable, String)} resolving a label
