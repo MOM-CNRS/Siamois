@@ -320,6 +320,18 @@ class ProjectApiServiceTest {
     }
 
     @Test
+    void createProject_defaultTemplate_isPassedOn() throws Exception {
+        stubCreationUpToSave();
+        ProjectCreateRequest request = validCreateRequest();
+        request.setTemplateId("default");
+        when(actionUnitService.save(any(), any(), any(), any())).thenThrow(new FailedActionUnitSaveException("stop"));
+
+        assertThatThrownBy(() -> service.createProject(caller, request, "fr")).isInstanceOf(ResponseStatusException.class);
+
+        verify(actionUnitService).save(any(), any(), any(), eq("default"));
+    }
+
+    @Test
     void createProject_emptyTemplate_isNormalizedToNone() throws Exception {
         stubCreationUpToSave();
         ProjectCreateRequest request = validCreateRequest();
@@ -369,7 +381,7 @@ class ProjectApiServiceTest {
     }
 
     @Test
-    void listProjectTemplates_offersEmptyFirstThenTheAccessibleProjects() {
+    void listProjectTemplates_offersTheDefaultProjectThenEmptyThenTheAccessibleProjects() {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setName("Fouille A");
@@ -378,8 +390,8 @@ class ProjectApiServiceTest {
 
         var templates = service.listProjectTemplates(caller, "10");
 
-        assertThat(templates).extracting(t -> t.id()).containsExactly("empty", "project:5");
-        assertThat(templates.get(1).label()).isEqualTo("Fouille A");
+        assertThat(templates).extracting(t -> t.id()).containsExactly("default", "empty", "project:5");
+        assertThat(templates.get(2).label()).isEqualTo("Fouille A");
     }
 
     @Test

@@ -17342,16 +17342,17 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Identifiant à renvoyer à la création : 'empty' ou 'project:<id>'"
+            "description": "Identifiant à renvoyer à la création : 'default', 'empty' ou 'project:<id>'"
           },
           "label": {
             "type": "string",
-            "description": "Nom affiché (vide pour 'empty' : à libeller côté client)"
+            "description": "Nom affiché (vide pour 'default' et 'empty' : à libeller côté client)"
           },
           "kind": {
             "type": "string",
             "description": "Nature du modèle",
             "enum": [
+              "default",
               "empty",
               "project"
             ]

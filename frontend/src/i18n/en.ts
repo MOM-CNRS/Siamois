@@ -283,6 +283,7 @@ export const en: Record<MessageKey, string> = {
   "home.noProject": "No projects",
   "create.newProject": "New project",
   "create.projectTemplate": "Template",
+  "create.projectTemplate.default": "Default project",
   "create.projectTemplate.empty": "Empty project",
   "create.identifier.auto": "Automatic",
   "create.newRecordingUnit": "New recording unit",

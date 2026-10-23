@@ -394,6 +394,18 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
+    void findField_byTypeConcept_shouldResolveASystemFieldByName() {
+        givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
+        when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());
+
+        Optional<CustomField> field = service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, STANDARD_CONCEPT_ID, IDENTIFIER_FIELD);
+
+        assertThat(field).isPresent();
+        assertThat(field.get().getLabel()).isEqualTo(IDENTIFIER_FIELD);
+        assertThat(service.findField(PROJECT_ID, ConfigurableTable.MOBILIER, STANDARD_CONCEPT_ID, "Unknown")).isEmpty();
+    }
+
+    @Test
     void findField_shouldReturnEmptyWhenNoFieldMatchesTheName() {
         givenSystemFieldsOf(ConfigurableTable.MOBILIER, IDENTIFIER_FIELD);
         when(fieldFormConfigRepository.findAllByFormConfigId(10L)).thenReturn(List.of());

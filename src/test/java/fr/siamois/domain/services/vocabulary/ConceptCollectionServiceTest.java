@@ -320,6 +320,32 @@ class ConceptCollectionServiceTest {
     }
 
     @Test
+    void createOrUpdateConceptCollection_shouldNotMakeMembersOfTheConceptsTheMembersAreRelatedTo() throws Exception {
+        ConceptCollectionDTO detached = detachedCollection();
+        ConceptCollection existing = existingCollection();
+        stubVocabularyResolution();
+        when(conceptCollectionRepository.findByVocabularyAndExternalId(jpaVocabulary, "g1")).thenReturn(Optional.of(existing));
+
+        ConceptBranchDTO branch = new ConceptBranchDTO.ConceptBranchDTOBuilder()
+                .identifier(CONCEPT_URL, "12")
+                .build();
+        fr.siamois.infrastructure.api.dto.PurlInfoDTO related = new fr.siamois.infrastructure.api.dto.PurlInfoDTO();
+        related.setValue("http://example.org/?idc=99&idt=th1");
+        branch.getData().get(CONCEPT_URL).setRelated(new fr.siamois.infrastructure.api.dto.PurlInfoDTO[]{related});
+        when(conceptApi.fetchCollectionBranch(jpaVocabulary, existing)).thenReturn(branch);
+
+        Concept member = new Concept.Builder().id(30L).externalId("12").vocabulary(jpaVocabulary).build();
+        stubBranchLoadComponents();
+        when(conceptService.saveOrGetConceptFromFullDTO(jpaVocabulary, branch.getData().get(CONCEPT_URL), null)).thenReturn(member);
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(any(), any())).thenReturn(Optional.empty());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ConceptCollection result = conceptCollectionService.createOrUpdateConceptCollection(detached);
+
+        assertThat(result.getConcepts()).containsExactly(member);
+    }
+
+    @Test
     void createOrUpdateConceptCollection_shouldKeepTheCollectionUntouched_whenItHasNotChangedRemotely() throws Exception {
         ConceptCollectionDTO detached = detachedCollection();
         ConceptCollection existing = existingCollection();

@@ -155,6 +155,22 @@ class FormConfigServiceTest {
     }
 
     @Test
+    void addConceptConfigFor_withAnImportedCollection_setsItWithoutReadingTheThesaurus() {
+        ConceptCollection imported = new ConceptCollection();
+        imported.setExternalId("g101");
+        imported.setVocabulary(vocabulary);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+
+        formConfigService.addConceptConfigFor(formConfig, field, imported);
+
+        ConceptFieldFormConfig saved = captureSavedConfig();
+        assertThat(saved.getCollection()).isSameAs(imported);
+        assertThat(saved.getBranchTopTerm()).isNull();
+        assertThat(saved.getFieldCode()).isNull();
+        verifyNoInteractions(conceptApi, vocabularyService);
+    }
+
+    @Test
     void addConceptConfigFor_shouldResolveVocabularyFromCompleteUri() throws Exception {
         stubDownExpansion(new ConceptBranchDTO());
 

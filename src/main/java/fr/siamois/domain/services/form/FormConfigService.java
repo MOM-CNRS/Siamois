@@ -108,6 +108,20 @@ public class FormConfigService {
         doAddConceptConfig(formConfig, customFieldConcept, collectionDTO, progressWrapper);
     }
 
+    /**
+     * Names a collection already imported as a field's source, without reading the thesaurus again.
+     *
+     * @param collection a collection of the local database
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void addConceptConfigFor(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @NonNull ConceptCollection collection) {
+        ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
+        conceptFieldFormConfig.setCollection(collection);
+        conceptFieldFormConfig.setBranchTopTerm(null);
+        clearFieldCode(conceptFieldFormConfig);
+        fieldFormConfigRepository.save(conceptFieldFormConfig);
+    }
+
     private void doAddConceptConfig(FormConfig formConfig, CustomFieldConcept customFieldConcept,
                                     ConceptCollectionDTO collectionDTO, @Nullable ProgressWrapper progressWrapper) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);

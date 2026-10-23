@@ -101,11 +101,11 @@ beforeEach(() => {
     fields: { "-101": typeField },
   });
   mockedCreateProject.mockReset();
-  // by default an organization that cannot number its projects, offering only the empty template
+  // by default an organization that cannot number its projects, offering only the default template
   mockedNextIdentifier.mockReset();
   mockedNextIdentifier.mockResolvedValue(null);
   mockedTemplates.mockReset();
-  mockedTemplates.mockResolvedValue([{ id: "empty", label: "", kind: "empty" }]);
+  mockedTemplates.mockResolvedValue([{ id: "default", label: "", kind: "default" }]);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -158,7 +158,7 @@ describe("ProjectCreateForm", () => {
       organizationId: "7",
       name: "Fouille 2026",
       identifier: "F2026",
-      templateId: "empty",
+      templateId: "default",
       typeId: "9",
     });
     expect(onCreated).toHaveBeenCalledWith("55");
@@ -205,7 +205,7 @@ describe("ProjectCreateForm", () => {
       organizationId: "7",
       name: "Fouille",
       identifier: "F1",
-      templateId: "empty",
+      templateId: "default",
       typeId: "9",
       mainLocationId: "31",
       spatialContextSpatialUnitIds: ["32", "33"],
@@ -233,7 +233,7 @@ describe("ProjectCreateForm", () => {
       organizationId: "7",
       name: "Auto",
       identifier: undefined,
-      templateId: "empty",
+      templateId: "default",
       typeId: "9",
     });
   });
@@ -242,6 +242,19 @@ describe("ProjectCreateForm", () => {
     render();
     await flush();
     expect(container.textContent).not.toContain("Modèle");
+  });
+
+  it("preselects the default project, ahead of the empty one and of the projects that can be copied", async () => {
+    mockedTemplates.mockResolvedValue([
+      { id: "default", label: "", kind: "default" },
+      { id: "empty", label: "", kind: "empty" },
+      { id: "project:5", label: "Fouille A", kind: "project" },
+    ]);
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("Modèle");
+    expect(container.textContent).toContain("Projet par défaut");
   });
 
   it("shows the server's error message instead of calling onCreated on failure", async () => {
