@@ -175,9 +175,17 @@ public class ExportTemplatesSettingsBean implements Serializable {
 
     /** Ajoute à l'institution le modèle national livré avec l'application (référentiel du rapport d'opération). */
     public void addNationalTemplate() {
+        addBuiltInTemplate(ExportTemplateService.BuiltInTemplate.NATIONAL_REPORT);
+    }
+
+    /** Ajoute à l'institution le modèle national des opérations en milieu sous-marin. */
+    public void addUnderwaterTemplate() {
+        addBuiltInTemplate(ExportTemplateService.BuiltInTemplate.UNDERWATER_REPORT);
+    }
+
+    private void addBuiltInTemplate(ExportTemplateService.BuiltInTemplate template) {
         try {
-            ExportTemplateDTO added = exportTemplateService.createFromBuiltIn(userInfo(),
-                    ExportTemplateService.BuiltInTemplate.NATIONAL_REPORT);
+            ExportTemplateDTO added = exportTemplateService.createFromBuiltIn(userInfo(), template);
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.imported", added.name());
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);

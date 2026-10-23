@@ -70,19 +70,14 @@ class NationalTemplateResourceTest {
     }
 
     @Test
-    void sheetsWithoutSiamoisEntity_haveNoSourceAndAreOmitted() {
-        for (String name : List.of("VAB", "prelevement", "traitement")) {
-            Sheet sheet = definition.sheets().stream().filter(s -> s.name().equals(name)).findFirst().orElseThrow();
-            assertThat(sheet.sources()).isEmpty();
-            assertThat(sheet.omitIfEmpty()).isTrue();
-        }
+    void everySheetHasASource() {
+        definition.sheets().forEach(s -> assertThat(s.sources()).as(s.name()).isNotEmpty());
     }
 
     @Test
-    void columnsWithoutAnySiamoisField_areKeptUnmapped() {
-        Column region = definition.sheets().get(0).columns().stream()
-                .filter(c -> c.header().equals("region_facade_maritime_OA")).findFirst().orElseThrow();
-        assertThat(region.rules()).isEmpty();
+    void everyColumnOfTheNineSheets_isMapped() {
+        definition.sheets().forEach(sheet -> sheet.columns()
+                .forEach(c -> assertThat(c.rules()).as(sheet.name() + "." + c.header()).isNotEmpty()));
     }
 
     @Test

@@ -37,6 +37,7 @@ public enum FieldType {
     SELECT_MULTIPLE_SPATIAL_UNIT_TREE("Lieux (arbre)", "bi bi-diagram-3", false),
     SELECT_ADDRESS("Adresse", "bi bi-signpost", false),
     SELECT_ONE_ACTION_UNIT("Projet", "bi bi-arrow-down-square", false),
+    SELECT_ONE_DOCUMENT("Document", "bi bi-file-earmark", false),
     SELECT_ONE_RECORDING_UNIT("Unité d'enregistrement", "bi bi-pencil-square", false),
     SELECT_MULTIPLE_RECORDING_UNIT("Unités d'enregistrement", "bi bi-pencil-square", false),
     SELECT_MULTIPLE_SPECIMEN("Mobilier", "bi bi-box", false),

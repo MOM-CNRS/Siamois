@@ -199,6 +199,14 @@ public class Document extends TraceableEntity implements ArkEntity {
     @Column(name = "item_count")
     protected Integer itemCount;
 
+    /** Where the document is kept when it is not physically handed over to the State (prints and impressions). */
+    @Column(name = "storage_location", length = 1000)
+    protected String storageLocation;
+
+    /** Casts: owner, number of copies, dimensions and conservation conditions. */
+    @Column(name = "mold_comment", length = MAX_DESCRIPTION_LENGTH)
+    protected String moldComment;
+
     /** Size in megabytes: filled from the file when there is one, typed otherwise (a document may be physical). */
     @Column(name = "size_mb", precision = 14, scale = 3)
     protected BigDecimal sizeMb;

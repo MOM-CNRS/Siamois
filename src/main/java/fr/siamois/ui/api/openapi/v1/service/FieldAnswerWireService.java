@@ -162,7 +162,7 @@ public class FieldAnswerWireService {
             case "BOOLEAN" -> new BooleanFieldAnswer(answerType, field, raw instanceof Boolean b ? b : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, toOffsetDateTime(raw));
             case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
-                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT",
+                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ONE_DOCUMENT",
                  "SELECT_ADDRESS", "SELECT_ONE" ->
                     new SelectOneFieldAnswer(answerType, field, raw == null ? null : toResourceRef(answerType, first(raw), lang));
             case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
@@ -207,6 +207,7 @@ public class FieldAnswerWireService {
         if (item instanceof RecordingUnitSummaryDTO r) return ref(r.getId(), "recording-units", r.getFullIdentifier());
         if (item instanceof ActionUnitSummaryDTO a) return ref(a.getId(), "projects", a.getName());
         if (item instanceof ActionUnitDTO a) return ref(a.getId(), "projects", a.getName());
+        if (item instanceof DocumentSummaryDTO d) return ref(d.getId(), "documents", d.getTitle() != null ? d.getTitle() : d.getIdentifier());
         return toExcavationRef(answerType, item);
     }
 

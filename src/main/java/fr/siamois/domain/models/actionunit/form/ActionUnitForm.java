@@ -3,6 +3,7 @@ package fr.siamois.domain.models.actionunit.form;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
+import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -557,6 +558,37 @@ public abstract class ActionUnitForm {
             .id(-134L)
             .valueBinding("prescribedArea")
             .concept(PRESCRIBED_AREA_CONCEPT)
+            .build();
+
+    // No concept in the system thesaurus yet.
+    public static final Concept REGION_MARITIME_FACADE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("actionunit.regionMaritimeFacade")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText REGION_MARITIME_FACADE_FIELD = CustomFieldText.builder()
+            .label("actionunit.field.regionMaritimeFacade")
+            .isSystemField(true)
+            .id(-136L)
+            .valueBinding("regionMaritimeFacade")
+            .concept(REGION_MARITIME_FACADE_CONCEPT)
+            .build();
+
+    public static final Concept GEOREFERENCING_DOCUMENT_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("actionunit.georeferencingDocument")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldSelectOneDocument GEOREFERENCING_DOCUMENT_FIELD = CustomFieldSelectOneDocument.builder()
+            .label("actionunit.field.georeferencingDocument")
+            .isSystemField(true)
+            .id(-137L)
+            .valueBinding("georeferencingDocument")
+            .concept(GEOREFERENCING_DOCUMENT_CONCEPT)
             .build();
 
     public static final Concept RECORDING_UNITS_CONCEPT = new Concept.Builder()

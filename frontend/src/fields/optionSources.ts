@@ -219,6 +219,8 @@ const REFERENCE_TARGETS: [test: (answerType: string) => boolean, target: Referen
   [(t) => t.endsWith("_SPECIMEN"), { resourceType: "finds", entityType: "find", createEntityType: "find" }],
   [(t) => t.endsWith("_CONTAINER"), { resourceType: "containers", entityType: "container", createEntityType: "container" }],
   [(t) => t.endsWith("_PHASE"), { resourceType: "phases", entityType: "phase", createEntityType: "phase" }],
+  // A document is picked, never created from a field (it needs its file).
+  [(t) => t.endsWith("_DOCUMENT"), { resourceType: "documents", entityType: "document" }],
 ];
 
 export function referenceTargetOf(field: FieldResource): ReferenceTarget {
@@ -388,6 +390,7 @@ export function optionSourceFor(
     case "SELECT_ONE_ACTION_UNIT":
       return (q) => fetchEntityOptions({ projectPath: "", orgPath: "projects" }, organizationId, undefined, q);
     case "SELECT_ONE_RECORDING_UNIT":
+    case "SELECT_ONE_DOCUMENT":
     case "SELECT_MULTIPLE_RECORDING_UNIT":
     case "SELECT_MULTIPLE_SPECIMEN":
     case "SELECT_MULTIPLE_PHASE":

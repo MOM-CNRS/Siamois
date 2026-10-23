@@ -90,6 +90,99 @@
           "foreign_key": "id"
         }
       }
+    },
+    "VAB_1": {
+      "kind": "ENTITY",
+      "entity": "SPECIMEN",
+      "types": [
+        {
+          "thesaurus": "TODO",
+          "id": "specimen.type.vab"
+        }
+      ]
+    },
+    "VAB_1_project": {
+      "join": {
+        "topterm": "VAB_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "VAB_1_recordingUnit": {
+      "join": {
+        "topterm": "VAB_1",
+        "on": {
+          "local_key": "recordingUnit",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "prelevement_1": {
+      "kind": "ENTITY",
+      "entity": "SPECIMEN",
+      "types": [
+        {
+          "thesaurus": "TODO",
+          "id": "specimen.type.sample"
+        }
+      ]
+    },
+    "prelevement_1_project": {
+      "join": {
+        "topterm": "prelevement_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "prelevement_1_recordingUnit": {
+      "join": {
+        "topterm": "prelevement_1",
+        "on": {
+          "local_key": "recordingUnit",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "traitement_1": {
+      "kind": "ENTITY",
+      "entity": "STUDY",
+      "types": [
+        {
+          "thesaurus": "th252",
+          "id": "4291174"
+        }
+      ]
+    },
+    "traitement_1_project": {
+      "join": {
+        "topterm": "traitement_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "situation_1_project": {
+      "join": {
+        "topterm": "situation_1",
+        "on": {
+          "local_key": "project",
+          "foreign_key": "id"
+        }
+      }
+    },
+    "mobilier_1_recordingUnit_spatialUnit": {
+      "join": {
+        "topterm": "mobilier_1_recordingUnit",
+        "on": {
+          "local_key": "spatialUnit",
+          "foreign_key": "id"
+        }
+      }
     }
   },
   "root_connections": [
@@ -112,6 +205,18 @@
     {
       "target_root": "mobilier",
       "source_topterm": "mobilier_1"
+    },
+    {
+      "target_root": "VAB",
+      "source_topterm": "VAB_1"
+    },
+    {
+      "target_root": "prelevement",
+      "source_topterm": "prelevement_1"
+    },
+    {
+      "target_root": "traitement",
+      "source_topterm": "traitement_1"
     },
     {
       "target_root": "documentation",
@@ -178,7 +283,7 @@
     "OA.interpretations_concernees_OA": {
       "type": "text"
     },
-    "OA.code_document_georeferencement": {
+    "OA.code_document_georeferencement_OA": {
       "type": "text"
     },
     "OA.informations_complementaires_OA": {
@@ -298,10 +403,10 @@
     "mobilier.versement_objet-lot": {
       "type": "text"
     },
-    "mobilier.proposition_conservation_selective": {
+    "mobilier.proposition_conservation_selective_objet-lot": {
       "type": "text"
     },
-    "mobilier.commentaire_proposition": {
+    "mobilier.commentaire_proposition_conservation_selective_objet-lot": {
       "type": "text"
     },
     "mobilier.code_UE": {
@@ -512,6 +617,16 @@
       }
     },
     {
+      "target": "OA.region_facade_maritime_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "actionunit.regionMaritimeFacade"
+        }
+      }
+    },
+    {
       "target": "OA.type_OA",
       "source": "OA_1",
       "field": {
@@ -586,6 +701,30 @@
       }
     },
     {
+      "target": "OA.interpretations_concernees_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290935"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "OA.code_document_georeferencement_OA",
+      "source": "OA_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "actionunit.georeferencingDocument"
+        }
+      }
+    },
+    {
       "target": "OA.informations_complementaires_OA",
       "source": "OA_1",
       "field": {
@@ -596,12 +735,73 @@
       }
     },
     {
+      "target": "situation.code_OA_NAT",
+      "source": "situation_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
       "target": "situation.identifiant_parcelle",
       "source": "situation_1",
       "field": {
         "concept": {
           "thesaurus": "th230",
           "id": "4285848"
+        }
+      }
+    },
+    {
+      "target": "situation.nom_commune_OA",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289231"
+        },
+        "property": "city"
+      }
+    },
+    {
+      "target": "situation.numero_INSEE_commune_OA",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "SIASU.INSEE_CODE"
+        }
+      }
+    },
+    {
+      "target": "situation.lieu_dit_OA",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "SIASU.LOCALITY_NAME"
+        }
+      }
+    },
+    {
+      "target": "situation.adresse_OA",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4289231"
+        }
+      }
+    },
+    {
+      "target": "situation.informations_complementaires_parcelle",
+      "source": "situation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "SIASU.COMMENTS"
         }
       }
     },
@@ -763,6 +963,23 @@
       }
     },
     {
+      "target": "relation.informations_complementaires_relation",
+      "source": "relation_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "label": "incertain",
+            "source": "relation_1",
+            "field": {
+              "column": "uncertain"
+            }
+          }
+        ]
+      }
+    },
+    {
       "target": "mobilier.code_OA_NAT",
       "source": "mobilier_1_project",
       "field": {
@@ -779,6 +996,16 @@
         "concept": {
           "thesaurus": "th230",
           "id": "4286250"
+        }
+      }
+    },
+    {
+      "target": "mobilier.objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286248"
         }
       }
     },
@@ -872,12 +1099,72 @@
       }
     },
     {
+      "target": "mobilier.etat_sanitaire_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.sanitaryState"
+        }
+      }
+    },
+    {
+      "target": "mobilier.alerte_sanitaire_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.sanitaryAlert"
+        }
+      }
+    },
+    {
+      "target": "mobilier.versement_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.transferStatus"
+        }
+      }
+    },
+    {
+      "target": "mobilier.proposition_conservation_selective_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.selectiveConservation"
+        }
+      }
+    },
+    {
+      "target": "mobilier.commentaire_proposition_conservation_selective_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.selectiveConservationComment"
+        }
+      }
+    },
+    {
       "target": "mobilier.code_UE",
       "source": "mobilier_1_recordingUnit",
       "field": {
         "concept": {
           "thesaurus": "th230",
           "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "mobilier.interet_particulier_objet-lot",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.particularInterest"
         }
       }
     },
@@ -892,12 +1179,498 @@
       }
     },
     {
+      "target": "mobilier.identifiant_parcelle",
+      "source": "mobilier_1_recordingUnit_spatialUnit",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4285848"
+        }
+      }
+    },
+    {
+      "target": "mobilier.identifiant_contenant",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290154"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "mobilier.lieu_de_conservation",
+      "source": "mobilier_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.storageLocation"
+        }
+      }
+    },
+    {
       "target": "mobilier.informations_complementaires_objet-lot",
       "source": "mobilier_1",
       "field": {
         "concept": {
           "thesaurus": "th230",
           "id": "4290159"
+        }
+      }
+    },
+    {
+      "target": "VAB.code_OA_NAT",
+      "source": "VAB_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "VAB.identifiant_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286250"
+        }
+      }
+    },
+    {
+      "target": "VAB.code_UE",
+      "source": "VAB_1_recordingUnit",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4287640"
+        }
+      }
+    },
+    {
+      "target": "VAB.code_objet-lot",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290140"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "VAB.matiere",
+      "source": "VAB_1",
+      "constant": "organique"
+    },
+    {
+      "target": "VAB.classe",
+      "source": "VAB_1",
+      "constant": "vestiges anthropobiologiques"
+    },
+    {
+      "target": "VAB.determination_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290156"
+        }
+      }
+    },
+    {
+      "target": "VAB.nombre_element_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290161"
+        }
+      }
+    },
+    {
+      "target": "VAB.poids_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        }
+      }
+    },
+    {
+      "target": "VAB.unite_poids_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        },
+        "property": "unit"
+      }
+    },
+    {
+      "target": "VAB.prelevement_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290141"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "VAB.alerte_sanitaire_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.sanitaryAlert"
+        }
+      }
+    },
+    {
+      "target": "VAB.versement_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.transferStatus"
+        }
+      }
+    },
+    {
+      "target": "VAB.potentiel_etude_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.studyPotential"
+        }
+      }
+    },
+    {
+      "target": "VAB.commentaire_potentiel_etude_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.studyPotentialComment"
+        }
+      }
+    },
+    {
+      "target": "VAB.identifiant_contenant",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290154"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "VAB.lieu_de_conservation",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.storageLocation"
+        }
+      }
+    },
+    {
+      "target": "VAB.informations_complementaires_VAB",
+      "source": "VAB_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290159"
+        }
+      }
+    },
+    {
+      "target": "prelevement.code_OA_NAT",
+      "source": "prelevement_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "prelevement.identifiant_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286250"
+        }
+      }
+    },
+    {
+      "target": "prelevement.nature_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290158"
+        }
+      }
+    },
+    {
+      "target": "prelevement.auteur_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4286247"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "prelevement.objectif_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.samplingPurpose"
+        }
+      }
+    },
+    {
+      "target": "prelevement.poids_volume_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        }
+      }
+    },
+    {
+      "target": "prelevement.unite_poids_volume_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290162"
+        },
+        "property": "unit"
+      }
+    },
+    {
+      "target": "prelevement.code_element_provenance",
+      "source": "prelevement_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "prelevement_1_recordingUnit",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "4287640"
+              }
+            }
+          },
+          {
+            "source": "prelevement_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "4290140"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "target": "prelevement.condition_preservation_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.preservationCondition"
+        }
+      }
+    },
+    {
+      "target": "prelevement.date_validite_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.validityDate"
+        }
+      }
+    },
+    {
+      "target": "prelevement.identifiant_contenant",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290154"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "prelevement.lieu_de_conservation",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "specimen.storageLocation"
+        }
+      }
+    },
+    {
+      "target": "prelevement.informations_complementaires_prelevement",
+      "source": "prelevement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290159"
+        }
+      }
+    },
+    {
+      "target": "traitement.code_OA_NAT",
+      "source": "traitement_1_project",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "4290928"
+        }
+      }
+    },
+    {
+      "target": "traitement.code_element_traite",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.specimens"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "traitement.type_traitement",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.treatmentType"
+        }
+      }
+    },
+    {
+      "target": "traitement.code_rapport",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.reportCode"
+        }
+      }
+    },
+    {
+      "target": "traitement.periode_traitement",
+      "source": "traitement_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "traitement_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "study.treatmentStart"
+              }
+            }
+          },
+          {
+            "source": "traitement_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "study.treatmentEnd"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "target": "traitement.lieu_traitement",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.treatmentPlace"
+        }
+      }
+    },
+    {
+      "target": "traitement.nom_responsable_traitement",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.treatmentManager"
+        }
+      }
+    },
+    {
+      "target": "traitement.identifiant_lie_au_traitement",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.treatmentIdentifier"
+        }
+      }
+    },
+    {
+      "target": "traitement.informations_complementaires_traitement",
+      "source": "traitement_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "study.treatmentComments"
         }
       }
     },
@@ -1040,6 +1813,68 @@
         "concept": {
           "thesaurus": "th230",
           "id": "document.itemCount"
+        }
+      }
+    },
+    {
+      "target": "documentation.code_element_associe",
+      "source": "documentation_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "documentation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "document.recordingUnits"
+              }
+            }
+          },
+          {
+            "source": "documentation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th230",
+                "id": "document.finds"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "target": "documentation.identifiant_contenant",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.containers"
+        }
+      },
+      "list": {
+        "separator": " & ",
+        "sorted": true
+      }
+    },
+    {
+      "target": "documentation.commentaire_moulage",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.moldComment"
+        }
+      }
+    },
+    {
+      "target": "documentation.lieu_de_conservation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th230",
+          "id": "document.storageLocation"
         }
       }
     },

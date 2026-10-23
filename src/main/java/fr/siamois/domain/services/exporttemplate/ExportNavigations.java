@@ -3,6 +3,7 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTechnicalSource;
 import fr.siamois.domain.models.phase.Phase;
@@ -29,7 +30,11 @@ public final class ExportNavigations {
 
     private static final Map<ExportSubject, Map<String, Navigation>> REGISTRY = Map.of(
             ExportSubject.RECORDING_UNIT, Map.of(
-                    PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((RecordingUnit) e).getActionUnit())),
+                    PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((RecordingUnit) e).getActionUnit()),
+                    "spatialUnit", new Navigation(ExportSubject.SPATIAL_UNIT, e -> ((RecordingUnit) e).getSpatialUnit())),
+            // A place belongs to several projects: the project is the exported one, bound to the row when it is read.
+            ExportSubject.SPATIAL_UNIT, Map.of(
+                    PROJECT, new Navigation(ExportSubject.PROJECT, e -> null)),
             ExportSubject.SPECIMEN, Map.of(
                     PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((Specimen) e).getActionUnit()),
                     "recordingUnit", new Navigation(ExportSubject.RECORDING_UNIT, e -> ((Specimen) e).getRecordingUnit())),
@@ -39,6 +44,8 @@ public final class ExportNavigations {
                     PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((Document) e).getActionUnit())),
             ExportSubject.CONTAINER, Map.of(
                     PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((Container) e).getActionUnit())),
+            ExportSubject.STUDY, Map.of(
+                    PROJECT, new Navigation(ExportSubject.PROJECT, e -> ((Study) e).getActionUnit())),
             ExportSubject.PROJECT, Map.of(
                     "mainLocation", new Navigation(ExportSubject.SPATIAL_UNIT, e -> ((ActionUnit) e).getMainLocation()))
     );
@@ -111,6 +118,11 @@ public final class ExportNavigations {
         }
         for (int i = start; i < path.size(); i++) {
             String step = path.get(i);
+            ExportRow bound = current.ends().get(step);
+            if (bound != null) {
+                current = bound;
+                continue;
+            }
             ExportSubject subject = current.subject();
             Navigation navigation = find(subject, step)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown navigation '" + step + "' from " + subject));

@@ -53,6 +53,8 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private Integer pageCount;
     private Integer figureCount;
     private Integer appendixCount;
+    private String regionMaritimeFacade;
+    private DocumentSummaryDTO georeferencingDocument;
     private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
@@ -60,7 +62,8 @@ public class ActionUnitDTO extends AbstractEntityDTO {
                 "oaCode", "prescriptionOrderNumber", "prescriptionOrderDate", "scientificManager", "hostStructure", "developer",
                 "periods", "subjects", "scientificNotice", "status", "comments", "system", "fieldStatus", "zmin", "zmax",
                 "designationOrderNumber", "designationOrderDate", "prescribedArea", "excavatedArea", "accessibleArea",
-                "openingRate", "developmentNature", "volumeCount", "pageCount", "figureCount", "appendixCount");
+                "openingRate", "developmentNature", "volumeCount", "pageCount", "figureCount", "appendixCount",
+                "regionMaritimeFacade", "georeferencingDocument");
     }
 
     @Override

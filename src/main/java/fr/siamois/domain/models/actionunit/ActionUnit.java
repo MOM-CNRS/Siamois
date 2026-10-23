@@ -7,6 +7,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.form.ActionUnitDetailsForm;
 import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
 import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -173,6 +174,17 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
 
     @Column(name = "developer")
     protected String developer;
+
+    /** The plan that locates the operation (the cadastre extract): one of the project's documents. */
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_georeferencing_document")
+    protected Document georeferencingDocument;
+
+    /** Region, and maritime front for underwater operations (national report inventory). */
+    @Column(name = "region_maritime_facade")
+    protected String regionMaritimeFacade;
 
     @Column(name = "scientific_notice", length = 5000)
     protected String scientificNotice;

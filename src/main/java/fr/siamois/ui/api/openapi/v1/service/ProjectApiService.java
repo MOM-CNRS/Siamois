@@ -16,6 +16,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -833,7 +834,14 @@ public class ProjectApiService {
                     "add/remove ne s'appliquent qu'à un champ multivalué : " + fieldId);
         }
         Object raw = input == null ? null : input.value();
-        Object coerced = raw == null ? null : coerceScalarAnswer(field, raw);
+        Object coerced;
+        if (raw == null) {
+            coerced = null;
+        } else if (field instanceof CustomFieldSelectOneDocument) {
+            coerced = coerceDocumentId(dto, raw);
+        } else {
+            coerced = coerceScalarAnswer(field, raw);
+        }
         writeAnswerBinding(dto, field, coerced);
     }
 
@@ -906,6 +914,22 @@ public class ProjectApiService {
         Concept concept = conceptService.findById(conceptId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Concept introuvable : " + conceptId));
         return conceptMapper.convert(concept);
+    }
+
+    /** One of the project's own documents: a document of another project is refused. */
+    private DocumentSummaryDTO coerceDocumentId(ActionUnitDTO project, Object raw) {
+        long documentId = extractLongId(raw);
+        DocumentDTO document;
+        try {
+            document = documentService.findDtoById(documentId);
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document introuvable : " + documentId);
+        }
+        if (document.getActionUnit() == null || !Objects.equals(document.getActionUnit().getId(), project.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le document " + documentId + " n'appartient pas à ce projet");
+        }
+        return new DocumentSummaryDTO(document);
     }
 
     private SpatialUnitSummaryDTO coerceSpatialUnitId(Object raw) {

@@ -24,6 +24,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
+import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
 import lombok.RequiredArgsConstructor;
@@ -267,11 +268,28 @@ public class ExportEngine {
             if (value instanceof MeasurementAnswer m) {
                 Object picked = "unit".equals(field.property()) ? unitLabel(m) : m.getComment();
                 if (picked != null) out.add(picked);
+            } else if (value instanceof FullAddress address) {
+                Object picked = addressPart(address, field.property());
+                if (picked != null) out.add(picked);
             } else if (value != null) {
                 where.warnings().add(new ExportWarning(ExportWarning.Code.UNSUPPORTED_VALUE, where.sheet(), where.column(), field.property()));
             }
         }
         return out;
+    }
+
+    /** Partie d'une adresse : {@code street}, {@code postcode}, {@code city}, {@code latitude}, {@code longitude}. */
+    @Nullable
+    private static Object addressPart(FullAddress address, @Nullable String property) {
+        if (property == null) return address;
+        return switch (property) {
+            case "street" -> address.getStreet();
+            case "postcode" -> address.getPostcode();
+            case "city" -> address.getCity();
+            case "latitude" -> address.getLat();
+            case "longitude" -> address.getLon();
+            default -> null;
+        };
     }
 
     private static String unitLabel(MeasurementAnswer m) {

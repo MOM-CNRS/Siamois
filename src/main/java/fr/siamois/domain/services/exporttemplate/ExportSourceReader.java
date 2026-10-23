@@ -3,6 +3,7 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTechnicalSource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptRef;
@@ -17,6 +18,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
+import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -51,6 +53,7 @@ public class ExportSourceReader {
     private final PhaseRepository phaseRepository;
     private final DocumentRepository documentRepository;
     private final ContainerRepository containerRepository;
+    private final StudyRepository studyRepository;
     private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
 
     /**
@@ -83,12 +86,17 @@ public class ExportSourceReader {
             case PHASE -> phaseRepository.findAllByActionUnitId(projectId);
             case DOCUMENT -> documentRepository.findAllByActionUnitId(projectId);
             case CONTAINER -> containerRepository.findAllByActionUnitId(projectId);
+            case STUDY -> studyRepository.findAllByActionUnitId(projectId);
             case SPATIAL_UNIT -> spatialUnitsOf(project(projectId));
             case PROJECT -> throw new IllegalArgumentException("Use the PROJECT source for the project itself");
         };
+        // A place belongs to several projects: its row carries the exported one, for the "project" navigation.
+        Map<String, ExportRow> bound = subject == ExportSubject.SPATIAL_UNIT
+                ? Map.of("project", ExportRow.of(ExportSubject.PROJECT, project(projectId)))
+                : Map.of();
         return entities.stream()
                 .filter(e -> matchesTypes(typeOf(subject, e), source.types()))
-                .map(e -> ExportRow.of(subject, e))
+                .map(e -> new ExportRow(subject, e, bound, Map.of()))
                 .toList();
     }
 
@@ -115,6 +123,7 @@ public class ExportSourceReader {
             case PHASE -> ((Phase) entity).getType();
             case DOCUMENT -> ((Document) entity).getType();
             case CONTAINER -> ((Container) entity).getType();
+            case STUDY -> ((Study) entity).getType();
             case SPATIAL_UNIT -> ((SpatialUnit) entity).getType();
             case PROJECT -> null;
         };

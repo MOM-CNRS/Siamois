@@ -43,7 +43,9 @@ public class ExportTemplateService {
 
     /** Modèles livrés avec l'application — liste fermée, jamais un chemin fourni par l'appelant. */
     public enum BuiltInTemplate {
-        NATIONAL_REPORT("export-templates/rapport-operation-national.json");
+        NATIONAL_REPORT("export-templates/rapport-operation-national.json"),
+        /** Le même classeur, dont la feuille « situation » est celle du milieu sous-marin. */
+        UNDERWATER_REPORT("export-templates/rapport-operation-national-sous-marin.json");
 
         private final String resource;
 

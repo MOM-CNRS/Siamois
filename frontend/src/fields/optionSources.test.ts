@@ -171,6 +171,7 @@ describe("referenceTargetOf", () => {
     ["SELECT_MULTIPLE_SPECIMEN", "finds", "find", "find"],
     ["SELECT_MULTIPLE_CONTAINER", "containers", "container", "container"],
     ["SELECT_MULTIPLE_PHASE", "phases", "phase", "phase"],
+    ["SELECT_ONE_DOCUMENT", "documents", "document", undefined],
     ["SELECT_ONE_PERSON", "persons", undefined, undefined],
     ["SELECT_ONE_ACTION_UNIT", "projects", "project", undefined],
     ["SELECT_ONE_FROM_FIELD_CODE", "concepts", undefined, undefined],

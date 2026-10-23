@@ -9,7 +9,7 @@ import org.springframework.lang.Nullable;
 public record SelectOneFieldAnswer(
         @Schema(description = "Discriminant — SELECT_ONE_FROM_FIELD_CODE | SELECT_ONE_PERSON | "
                 + "SELECT_ONE_ACTION_UNIT | SELECT_ONE_SPATIAL_UNIT | "
-                + "SELECT_ONE_RECORDING_UNIT | SELECT_ADDRESS",
+                + "SELECT_ONE_RECORDING_UNIT | SELECT_ONE_DOCUMENT | SELECT_ADDRESS",
                 example = "SELECT_ONE_FROM_FIELD_CODE")
         String answerType,
 

@@ -38,7 +38,7 @@ public record ExportTemplateDefinition(
 
     public enum OutputType { TEXT, NUMBER, DATE }
 
-    public enum EntityKind { RECORDING_UNIT, SPECIMEN, PHASE, SPATIAL_UNIT, DOCUMENT, CONTAINER }
+    public enum EntityKind { RECORDING_UNIT, SPECIMEN, PHASE, SPATIAL_UNIT, DOCUMENT, CONTAINER, STUDY }
 
     /** Concept Opentheso : URI, identifiant externe du concept, identifiant externe du thésaurus. */
     public record ConceptRef(String thesaurusId, String conceptId, @Nullable String uri) {
@@ -82,6 +82,9 @@ public record ExportTemplateDefinition(
 
         /** Propriétés imbriquées d'une mesure, en plus de sa valeur. */
         public static final List<String> MEASUREMENT_PROPERTIES = List.of("unit", "comment");
+
+        /** Parties d'une adresse, en plus de son libellé complet. */
+        public static final List<String> ADDRESS_PROPERTIES = List.of("street", "postcode", "city", "latitude", "longitude");
 
         public ConceptField(ConceptRef concept) {
             this(concept, null);
