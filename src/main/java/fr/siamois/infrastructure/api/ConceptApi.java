@@ -369,11 +369,11 @@ public class ConceptApi {
     }
 
     /**
-     * Fetches the branch of fields for a given vocabulary.
+     * Fetches the branch of fields for a given vocabulary. A thesaurus without that branch defines no field code:
+     * its branch is empty.
      *
      * @param vocabulary the vocabulary for which to fetch the fields branch
      * @return ConceptBranchDTO containing the fields branch
-     * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the expansion
      */
     public ConceptBranchDTO fetchFieldsBranch(Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
@@ -388,11 +388,14 @@ public class ConceptApi {
         try {
             ConceptDTO[] array = mapper.readValue(conceptDTO, ConceptDTO[].class);
 
-            ConceptDTO autocompleteParent = findAutocompleteTopTerm(vocabulary, array)
-                    .orElseThrow(() -> new NotSiamoisThesaurusException("Concept with notation SIAMOIS#SIAAUTO not found in thesaurus %s",
-                            vocabulary.getExternalVocabularyId()));
+            Optional<ConceptDTO> autocompleteParent = findAutocompleteTopTerm(vocabulary, array);
+            if (autocompleteParent.isEmpty()) {
+                log.warn("Concept with notation SIAMOIS#SIAAUTO not found in thesaurus {}: it defines no field code",
+                        vocabulary.getExternalVocabularyId());
+                return new ConceptBranchDTO();
+            }
 
-            return fetchDownExpansion(vocabulary, autocompleteParent.idConcept);
+            return fetchDownExpansion(vocabulary, autocompleteParent.get().idConcept);
 
         } catch (JsonProcessingException e) {
             log.error("Error while parsing branch", e);

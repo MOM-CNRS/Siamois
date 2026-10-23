@@ -141,10 +141,15 @@ public class ThesaurusUsageService {
                 .toList();
     }
 
+    private static FieldVocabularyConfig.Kind kindOf(ConceptFieldFormConfig config) {
+        if (config.isBranchConfig()) {
+            return FieldVocabularyConfig.Kind.BRANCH;
+        }
+        return config.isFieldCodeConfig() ? FieldVocabularyConfig.Kind.FIELD_CODE : FieldVocabularyConfig.Kind.COLLECTION;
+    }
+
     private ThesaurusUsage toUsage(ConceptFieldFormConfig config, String lang, @Nullable ConfigurableTable table, @Nullable String typeName) {
-        FieldVocabularyConfig.Kind kind = config.isBranchConfig() ? FieldVocabularyConfig.Kind.BRANCH
-                : config.isFieldCodeConfig() ? FieldVocabularyConfig.Kind.FIELD_CODE
-                : FieldVocabularyConfig.Kind.COLLECTION;
+        FieldVocabularyConfig.Kind kind = kindOf(config);
         Vocabulary vocabulary = switch (kind) {
             case BRANCH -> config.getBranchTopTerm().getVocabulary();
             case FIELD_CODE -> config.getVocabulary();
@@ -185,24 +190,29 @@ public class ThesaurusUsageService {
         int missing = 0;
         int ignored = 0;
         for (ThesaurusUsage row : rows) {
-            if (row.getKind() != FieldVocabularyConfig.Kind.FIELD_CODE || row.getTableName() == null || row.getFieldCode() == null) {
-                ignored++;
-                continue;
-            }
-            if (fieldCodeResolver.findIn(target, row.getFieldCode()).isEmpty()) {
-                missing++;
-                continue;
-            }
-            if (rewire(projectId, institutionId, row, target)) {
-                rewired++;
-            } else {
-                ignored++;
+            switch (rewireRow(projectId, institutionId, row, target)) {
+                case REWIRED -> rewired++;
+                case CODE_MISSING -> missing++;
+                case IGNORED -> ignored++;
             }
         }
         return new RewireResult(rewired, missing, ignored);
     }
 
-    private boolean rewire(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target) {
+    private enum Outcome { REWIRED, CODE_MISSING, IGNORED }
+
+    private Outcome rewireRow(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target) {
+        String code = row.getFieldCode();
+        if (row.getKind() != FieldVocabularyConfig.Kind.FIELD_CODE || row.getTableName() == null || code == null) {
+            return Outcome.IGNORED;
+        }
+        if (fieldCodeResolver.findIn(target, code).isEmpty()) {
+            return Outcome.CODE_MISSING;
+        }
+        return rewire(projectId, institutionId, row, code, target) ? Outcome.REWIRED : Outcome.IGNORED;
+    }
+
+    private boolean rewire(Long projectId, Long institutionId, ThesaurusUsage row, String code, Vocabulary target) {
         ConfigurableTable table = ConfigurableTable.valueOf(row.getTableName());
         Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, table, row.getTypeName());
         Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, row.getTypeName(), row.getFieldLabel());
@@ -210,13 +220,13 @@ public class ThesaurusUsageService {
             log.warn("Field '{}' of {} / {} was not found to be connected to another thesaurus", row.getFieldLabel(), row.getTableName(), row.getTypeName());
             return false;
         }
-        boolean isDefault = fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, row.getFieldCode())
+        boolean isDefault = fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, code)
                 .map(found -> found.getId() != null && found.getId().equals(target.getId()))
                 .orElse(false);
         if (isDefault) {
             formConfigService.clearConceptConfigFor(formConfig.get(), conceptField);
         } else {
-            formConfigService.addFieldCodeConfigFor(formConfig.get(), conceptField, target, row.getFieldCode());
+            formConfigService.addFieldCodeConfigFor(formConfig.get(), conceptField, target, code);
         }
         return true;
     }

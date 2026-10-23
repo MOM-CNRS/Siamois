@@ -68,13 +68,15 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         this.project = project;
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
+        savedThesaurusUrl = thesaurusUrl;
         loadOptions();
         reloadUsages();
     }
 
     private void reloadUsages() {
         usages = new ArrayList<>(thesaurusUsageService.findAllUsagesOfProject(project.getId(), institutionId(), langBean.getLanguageCode()));
-        selectedUsages = new ArrayList<>();
+        setSelectedUsages(new ArrayList<>());
+        setFilteredUsages(null);
     }
 
     private Long institutionId() {
@@ -111,7 +113,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
 
     /** Connects the ticked fields that use a field code to the same codes in the picked thesaurus. */
     public void rewireSelected() {
-        if (StringUtils.isBlank(bulkTargetUrl) || selectedUsages == null || selectedUsages.isEmpty()) {
+        if (StringUtils.isBlank(bulkTargetUrl) || getSelectedUsages() == null || getSelectedUsages().isEmpty()) {
             displayErrorMessage(langBean, "thesaurusUsages.bulk.nothing");
             return;
         }
@@ -121,7 +123,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
             return;
         }
         try {
-            ThesaurusUsageService.RewireResult result = thesaurusUsageService.rewireFieldCodes(project.getId(), institutionId(), selectedUsages, target.get());
+            ThesaurusUsageService.RewireResult result = thesaurusUsageService.rewireFieldCodes(project.getId(), institutionId(), getSelectedUsages(), target.get());
             MessageUtils.displayInfoMessage(langBean, "thesaurusUsages.bulk.done", result.rewired(), result.codeMissing(), result.ignored());
         } catch (RuntimeException e) {
             log.error("Could not connect the fields to {}", bulkTargetUrl, e);

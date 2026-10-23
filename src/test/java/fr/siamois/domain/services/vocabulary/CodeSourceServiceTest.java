@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -145,6 +146,6 @@ class CodeSourceServiceTest {
     void clear_doesNothing_whenTheProjectRedirectsNothing() {
         service.clear(PROJECT, CODE);
 
-        verify(projectCodeSourceRepository, org.mockito.Mockito.never()).delete(any());
+        verify(projectCodeSourceRepository, never()).delete(any());
     }
 }

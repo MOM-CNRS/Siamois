@@ -569,7 +569,7 @@
                                             <h:panelGroup rendered="#{projectTableTypeSourceBean.source eq 'branche' and projectTableTypeSourceBean.connectionTested}">
                                                 <div class="ptc-drawer-field">
                                                     <label class="ptc-drawer-label" for="typeSourceForm:typeSourceBranch_input">#{langBean.msg('projectTables.drawer.params.brancheConcept')}</label>
-                                                    <p:autoComplete id="typeSourceBranch" widgetVar="acTypeBranchW" value="#{projectTableTypeSourceBean.branch}"
+                                                    <p:autoComplete id="typeSourceBranch" widgetVar="acTypeBranchW" value="#{projectTableTypeSourceBean.branchConcept}"
                                                                     completeMethod="#{projectTableTypeSourceBean.completeBranches}"
                                                                     var="c" itemLabel="#{c.conceptLabelToDisplay.label}" itemValue="#{c}"
                                                                     converter="#{conceptAutocompleteDetachedDTOConverter}"

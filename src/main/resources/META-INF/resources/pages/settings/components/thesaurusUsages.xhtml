@@ -15,14 +15,12 @@
     <cc:implementation>
         <p:outputPanel layout="block" styleClass="thesaurus-usages">
         <h3>#{langBean.msg('thesaurusUsages.title')}</h3>
-        <p style="font-style: italic">#{langBean.msg('thesaurusUsages.hint')}</p>
         <shared:csrfform formId="usagesForm">
-            <p:outputPanel id="bulkWrap" layout="block">
+            <p:outputPanel id="bulkWrap" layout="block" styleClass="thesaurus-bulk-wrap">
             <p:outputPanel layout="block" styleClass="thesaurus-bulk mb-3"
                            rendered="#{cc.attrs.bulk and not empty cc.attrs.bean.selectedUsages}">
-                <h4>#{langBean.msg('thesaurusUsages.bulk.title')}
-                    <span class="badge bg-secondary ms-2">#{langBean.msg('thesaurusUsages.bulk.selected', cc.attrs.bean.selectedUsages.size())}</span>
-                </h4>
+                <h4>#{langBean.msg('thesaurusUsages.bulk.title')}</h4>
+                <div class="small fw-semibold text-muted mb-1">#{langBean.msg('thesaurusUsages.bulk.selected', cc.attrs.bean.selectedUsages.size())}</div>
                 <label for="usagesForm:bulkTarget">#{langBean.msg('thesaurusUsages.bulk.label')}</label>
                 <div class="d-flex gap-2 align-items-center">
                     <p:selectOneMenu id="bulkTarget" value="#{cc.attrs.bean.bulkTargetUrl}" style="min-width:24rem">
@@ -31,17 +29,26 @@
                     </p:selectOneMenu>
                     <p:commandButton value="#{langBean.msg('thesaurusUsages.bulk.button')}"
                                      action="#{cc.attrs.bean.rewireSelected()}"
-                                     process="@form" update="@(.thesaurus-usages) @(.ui-messages)"/>
+                                     process="@form" update="@(.thesaurus-usages)"/>
                 </div>
                 <small class="text-muted">#{langBean.msg('thesaurusUsages.bulk.hint')}</small>
             </p:outputPanel>
             </p:outputPanel>
 
+            <p:outputPanel layout="block" styleClass="thesaurus-usages-count small text-muted mb-1">
+                #{cc.attrs.bean.filteredUsages != null and cc.attrs.bean.filteredUsages.size() != cc.attrs.usages.size()
+                  ? langBean.msg('thesaurusUsages.count.filtered', cc.attrs.bean.filteredUsages.size(), cc.attrs.usages.size())
+                  : langBean.msg('thesaurusUsages.count.total', cc.attrs.usages.size())}
+            </p:outputPanel>
+
             <p:dataTable id="usagesTable" widgetVar="usagesTableW" value="#{cc.attrs.usages}" var="usage" rowKey="#{usage.rowKey}"
-                         selection="#{cc.attrs.bean.selectedUsages}" selectionPageOnly="false"
-                         paginator="#{cc.attrs.usages.size() > 25}" rows="25" paginatorPosition="bottom"
+                         selection="#{cc.attrs.bean.selectedUsages}" selectionMode="multiple" selectionRowMode="none" selectionPageOnly="false"
+                         filteredValue="#{cc.attrs.bean.filteredUsages}"
+                         paginator="true" rows="25" paginatorPosition="bottom" rowsPerPageTemplate="25,50,100"
+                         paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                         currentPageReportTemplate="#{langBean.msg('thesaurusUsages.page.report')}"
                          emptyMessage="#{langBean.msg('thesaurusUsages.empty')}">
-                <p:column selectionMode="multiple" style="width:2.5rem;text-align:center" rendered="#{cc.attrs.bulk}"/>
+                <p:column selectionBox="true" style="width:2.5rem;text-align:center"/>
                 <p:column headerText="#{langBean.msg('common.label.thesaurus')}" filterBy="#{usage.thesaurusLabel}" filterMatchMode="contains">
                     #{usage.thesaurusLabel}
                 </p:column>
@@ -68,9 +75,10 @@
                 <p:column headerText="#{langBean.msg('thesaurusUsages.type')}" filterBy="#{usage.typeLabel}" filterMatchMode="contains">
                     #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}
                 </p:column>
-                <p:ajax event="rowSelectCheckbox" process="@this" update="bulkWrap"/>
-                <p:ajax event="rowUnselectCheckbox" process="@this" update="bulkWrap"/>
-                <p:ajax event="toggleSelect" process="@this" update="bulkWrap"/>
+                <p:ajax event="rowSelectCheckbox" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="rowUnselectCheckbox" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="toggleSelect" process="@this" update="@(.thesaurus-bulk-wrap)"/>
+                <p:ajax event="filter" update="@(.thesaurus-usages-count)"/>
             </p:dataTable>
 
         </shared:csrfform>

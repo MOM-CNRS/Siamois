@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -266,7 +267,7 @@ class ProjectTableTypeSourceBeanTest {
         ConceptDTO concept = ConceptDTO.builder().externalId("123").vocabulary(vocabularyDTO).deleted(false).build();
         ConceptLabelDTO label = new ConceptPrefLabelDTO();
         label.setConcept(concept);
-        bean.setBranch(new ConceptAutocompleteDetachedDTO(label, "Types", List.of(), "", vocabularyDTO.completeUri()));
+        bean.setBranchConcept(new ConceptAutocompleteDetachedDTO(label, "Types", List.of(), "", vocabularyDTO.completeUri()));
 
         assertThat(bean.save()).isTrue();
 
@@ -291,7 +292,7 @@ class ProjectTableTypeSourceBeanTest {
         bean.select(ProjectTableTypeSourceBean.FIELD_CODE);
         bean.testConnection();
         bean.setCodeChoice("OWN.TYPE");
-        org.mockito.Mockito.doThrow(new IllegalStateException("down")).when(codeSourceService)
+        doThrow(new IllegalStateException("down")).when(codeSourceService)
                 .useFieldCode(anyLong(), anyString(), any(Vocabulary.class), anyString());
 
         assertThat(bean.save()).isFalse();

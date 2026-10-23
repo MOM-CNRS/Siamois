@@ -125,7 +125,7 @@ class ConceptApiTest {
     }
 
     @Test
-    void fetchFieldsBranch_throws_whenThesauIsNotSiamois() throws JsonProcessingException {
+    void fetchFieldsBranch_returnsAnEmptyBranch_whenThesaurusHasNoFieldsBranch() throws Exception {
         conceptApi = new ConceptApi(requestFactory, mapper);
 
         when(restTemplate.getForObject(any(URI.class), eq(String.class))).thenReturn("NOT EMPTY");
@@ -142,7 +142,9 @@ class ConceptApiTest {
         //noinspection unchecked
         when(mapper.readValue(anyString(), any(TypeReference.class))).thenThrow(JsonProcessingException.class);
 
-        assertThrows(NotSiamoisThesaurusException.class, () -> conceptApi.fetchFieldsBranch(vocabulary));
+        ConceptBranchDTO result = conceptApi.fetchFieldsBranch(vocabulary);
+
+        assertTrue(result.isEmpty());
     }
 
     @Test

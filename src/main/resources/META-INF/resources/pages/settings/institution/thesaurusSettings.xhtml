@@ -50,14 +50,13 @@
             <settingscomp:fieldValue
                     title="#{langBean.msg('organisationSettings.thesaurus.title', institutionThesaurusSettingsBean.institution.name)}"
                     formId="thesaurusForm"
+                    displaySaveButton="false"
                     saveMethod="#{institutionThesaurusSettingsBean.saveConfig()}"
                     cancelMethod="#{institutionDetailsBean.backToInstitutionSettings()}"
                     update="pbAjaxThesaurusLoad @(.thesaurus-usages)"
                     onstart="startProgressBar()"
                     oncomplete="endProgressBar()"
             >
-                <p:messages showDetail="true" autoUpdate="true" closable="true" id="messages"/>
-
                 <settingscomp:thesaurusPicker bean="#{institutionThesaurusSettingsBean}" projectScope="false"/>
 
                 <p:progressBar widgetVar="pbAjaxThesaurusLoadWidget"

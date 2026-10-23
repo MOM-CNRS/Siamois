@@ -213,7 +213,7 @@ public class FieldConfigurationService {
                                                                   @Nullable ActionUnitDTO actionUnitDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        Optional<FeedbackFieldConfig> feedback = loadFieldCodes(vocabulary, progressWrapper);
+        Optional<FeedbackFieldConfig> feedback = selfProvider.getObject().loadFieldCodes(vocabulary, progressWrapper);
         saveDocumentationThesaurus(institutionDTO, actionUnitDTO, vocabulary);
         return feedback;
     }
@@ -329,7 +329,7 @@ public class FieldConfigurationService {
      */
     @NonNull
     public Concept findParentConceptForFieldcode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        Concept concept = findConfigurationForFieldCode(info, fieldCode, actionUnitId).getConcept();
+        Concept concept = selfProvider.getObject().findConfigurationForFieldCode(info, fieldCode, actionUnitId).getConcept();
         Hibernate.initialize(concept.getVocabulary());
         return concept;
     }
@@ -511,7 +511,7 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode) throws NoConfigForFieldException {
-        return findConfigurationForFieldCode(info, fieldCode, (Long) null);
+        return selfProvider.getObject().findConfigurationForFieldCode(info, fieldCode, (Long) null);
     }
 
     /**
@@ -524,7 +524,7 @@ public class FieldConfigurationService {
      */
     @NonNull
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @NonNull ActionUnitDTO actionUnitDTO) throws NoConfigForFieldException {
-        return findConfigurationForFieldCode(info, fieldCode, actionUnitDTO.getId());
+        return selfProvider.getObject().findConfigurationForFieldCode(info, fieldCode, actionUnitDTO.getId());
     }
 
     /**
@@ -558,7 +558,7 @@ public class FieldConfigurationService {
     @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
     public List<String> findFieldCodesOf(@NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         if (conceptFieldConfigRepository.findAllByVocabularyId(vocabulary.getId()).isEmpty()) {
-            loadFieldCodes(vocabulary, new ProgressWrapper());
+            selfProvider.getObject().loadFieldCodes(vocabulary, new ProgressWrapper());
         }
         return conceptFieldConfigRepository.findDistinctFieldCodesOf(List.of(vocabulary.getId()));
     }
@@ -604,7 +604,7 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocomplete(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
+        ConceptFieldConfig config = selfProvider.getObject().findConfigurationForFieldCode(info, fieldCode, actionUnitId);
         return autocompleteRepository.findMatchingConceptsFor(config.getConcept(), info.getLang(), input, LIMIT_RESULTS);
     }
 
@@ -795,7 +795,7 @@ public class FieldConfigurationService {
     @NonNull
     @ExecutionTimeLogger
     public List<ConceptAutocompleteDTO> fetchAutocompleteRelated(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Concept baseValue, @Nullable String input, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        ConceptFieldConfig config = findConfigurationForFieldCode(info, fieldCode, actionUnitId);
+        ConceptFieldConfig config = selfProvider.getObject().findConfigurationForFieldCode(info, fieldCode, actionUnitId);
         if (baseValue != null) {
             conceptService.loadUnloadedRelatedConceptsOf(baseValue, config.getConcept());
         }

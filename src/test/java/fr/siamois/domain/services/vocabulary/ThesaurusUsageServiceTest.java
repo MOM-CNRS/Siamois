@@ -72,7 +72,7 @@ class ThesaurusUsageServiceTest {
         return concept;
     }
 
-    private ConceptFieldFormConfig config(String fieldLabel, Concept valueConcept, boolean frozen) {
+    private ConceptFieldFormConfig config(String fieldLabel, Concept valueConcept) {
         ConceptFieldFormConfig config = mock(ConceptFieldFormConfig.class);
         CustomField field = mock(CustomField.class);
         when(field.getLabel()).thenReturn(fieldLabel);
@@ -84,10 +84,10 @@ class ThesaurusUsageServiceTest {
     }
 
     private ConceptFieldFormConfig branchConfig(Vocabulary vocabulary, String topTermLabel, String fieldLabel,
-                                                Concept valueConcept, boolean frozen) {
+                                                Concept valueConcept) {
         Concept topTerm = concept(topTermLabel);
         when(topTerm.getVocabulary()).thenReturn(vocabulary);
-        ConceptFieldFormConfig config = config(fieldLabel, valueConcept, frozen);
+        ConceptFieldFormConfig config = config(fieldLabel, valueConcept);
         when(config.isBranchConfig()).thenReturn(true);
         when(config.getBranchTopTerm()).thenReturn(topTerm);
         return config;
@@ -97,7 +97,7 @@ class ThesaurusUsageServiceTest {
         ConceptCollection collection = mock(ConceptCollection.class);
         when(collection.getVocabulary()).thenReturn(vocabulary);
         when(collection.getExternalId()).thenReturn(externalId);
-        ConceptFieldFormConfig config = config(fieldLabel, null, false);
+        ConceptFieldFormConfig config = config(fieldLabel, null);
         when(config.isBranchConfig()).thenReturn(false);
         when(config.getCollection()).thenReturn(collection);
         return config;
@@ -107,7 +107,7 @@ class ThesaurusUsageServiceTest {
     void findUsagesOfActionUnit_describesBranchWithItsType() {
         Vocabulary vocabulary = vocabulary("Siamois");
         Concept ceramic = concept("Céramique");
-        ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", ceramic, true);
+        ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", ceramic);
         when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
 
         List<ThesaurusUsage> usages = service.findUsagesOfActionUnit(1L, LANG);
@@ -201,7 +201,7 @@ class ThesaurusUsageServiceTest {
     void findAllUsagesOfProject_showsAStoredFieldCodeInsteadOfTheDefault() {
         FormConfig formConfig = typeFormConfig();
         Vocabulary mine = vocabulary("Mon thésaurus");
-        ConceptFieldFormConfig stored = config("Nature", null, false);
+        ConceptFieldFormConfig stored = config("Nature", null);
         when(stored.getFormConfig()).thenReturn(formConfig);
         CustomField storedField = stored.getField();
         when(storedField.getId()).thenReturn(10L);

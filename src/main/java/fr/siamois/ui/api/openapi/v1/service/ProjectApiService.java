@@ -925,7 +925,8 @@ public class ProjectApiService {
         } catch (RuntimeException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document introuvable : " + documentId);
         }
-        if (document.getActionUnit() == null || !Objects.equals(document.getActionUnit().getId(), project.getId())) {
+        ActionUnitSummaryDTO owner = document.getActionUnit();
+        if (owner == null || !Objects.equals(owner.getId(), project.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Le document " + documentId + " n'appartient pas à ce projet");
         }

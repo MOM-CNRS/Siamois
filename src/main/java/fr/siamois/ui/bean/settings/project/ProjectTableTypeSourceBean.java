@@ -26,6 +26,7 @@ import fr.siamois.ui.bean.LangBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -82,7 +83,7 @@ public class ProjectTableTypeSourceBean implements Serializable {
     private String defaultCode;
     private transient List<String> codeOptions = new ArrayList<>();
     private String codeChoice;
-    private transient ConceptAutocompleteDetachedDTO branch;
+    private transient ConceptAutocompleteDetachedDTO branchConcept;
     private String errorMessage;
     private String savedMessage;
 
@@ -131,7 +132,7 @@ public class ProjectTableTypeSourceBean implements Serializable {
     private String labelOfThesaurus(Vocabulary found) {
         try {
             String label = labelService.findLabelOf(found, langBean.getLanguageCode()).getValue();
-            return label == null || label.isBlank() ? found.getExternalVocabularyId() : label;
+            return StringUtils.isBlank(label) ? found.getExternalVocabularyId() : label;
         } catch (RuntimeException e) {
             return found.getExternalVocabularyId();
         }
@@ -151,10 +152,11 @@ public class ProjectTableTypeSourceBean implements Serializable {
             source = BRANCH;
             vocabulary = vocabularyMapper.convert(top.getVocabulary());
             connected();
-            branch = branchOf(top);
+            branchConcept = branchOf(top);
         } else if (current.getVocabulary() != null) {
+            Vocabulary sourceVocabulary = current.getVocabulary();
             source = FIELD_CODE;
-            vocabulary = vocabularyMapper.convert(current.getVocabulary());
+            vocabulary = vocabularyMapper.convert(sourceVocabulary);
             connected();
             loadCodeOptions();
             codeChoice = current.getSourceFieldCode();
@@ -194,7 +196,7 @@ public class ProjectTableTypeSourceBean implements Serializable {
     private void clearSelection() {
         codeOptions = new ArrayList<>();
         codeChoice = null;
-        branch = null;
+        branchConcept = null;
     }
 
     /** The instances to pick from: those of the thesauri the database knows, plus the default one. */
@@ -378,7 +380,7 @@ public class ProjectTableTypeSourceBean implements Serializable {
     }
 
     public boolean isBranchSelected() {
-        return branch != null && branch.concept() != null;
+        return branchConcept != null && branchConcept.concept() != null;
     }
 
     /** Applies what was picked, "default" included. Returns whether the types' source changed, so the page can list them again. */
@@ -405,7 +407,7 @@ public class ProjectTableTypeSourceBean implements Serializable {
                     error("projectTables.typeSource.brancheMissing");
                     return false;
                 }
-                codeSourceService.useBranch(project.getId(), table.getFieldCode(), branch.concept(), new ProgressWrapper());
+                codeSourceService.useBranch(project.getId(), table.getFieldCode(), branchConcept.concept(), new ProgressWrapper());
             }
             savedMessage = langBean.msg("projectTables.typeSource.saved");
             return true;

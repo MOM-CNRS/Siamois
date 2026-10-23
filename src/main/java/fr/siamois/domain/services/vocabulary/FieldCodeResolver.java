@@ -86,10 +86,12 @@ public class FieldCodeResolver {
             branch.setConcept(redirection.getBranchTopTerm());
             return Optional.of(branch);
         }
-        if (redirection.getVocabulary() == null || redirection.getSourceFieldCode() == null) {
+        Vocabulary vocabulary = redirection.getVocabulary();
+        String sourceFieldCode = redirection.getSourceFieldCode();
+        if (vocabulary == null || sourceFieldCode == null) {
             return Optional.empty();
         }
-        return findIn(redirection.getVocabulary(), redirection.getSourceFieldCode());
+        return findIn(vocabulary, sourceFieldCode);
     }
 
     /** The thesaurus a code is read in when nothing redirects it: the first default source that defines it. */

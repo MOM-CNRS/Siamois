@@ -241,12 +241,20 @@ public class ProjectAnswersProjector {
     }
 
     private static Object referenceWireValue(CustomField field, Object raw, Map<Long, String> labels) {
+        if (field instanceof CustomFieldSelectOneFromFieldCode || field instanceof CustomFieldSelectMultipleFromFieldCode) {
+            return conceptWireValue(field, raw, labels);
+        }
+        return placeOrDocumentWireValue(field, raw);
+    }
+
+    private static Object conceptWireValue(CustomField field, Object raw, Map<Long, String> labels) {
         if (field instanceof CustomFieldSelectOneFromFieldCode) {
             return raw instanceof ConceptDTO c ? conceptRef(c, labels) : null;
         }
-        if (field instanceof CustomFieldSelectMultipleFromFieldCode) {
-            return refList(raw, item -> item instanceof ConceptDTO c ? conceptRef(c, labels) : null);
-        }
+        return refList(raw, item -> item instanceof ConceptDTO c ? conceptRef(c, labels) : null);
+    }
+
+    private static Object placeOrDocumentWireValue(CustomField field, Object raw) {
         if (field instanceof CustomFieldSelectOneSpatialUnit) {
             return raw instanceof SpatialUnitSummaryDTO s ? spatialUnitRef(s) : null;
         }
