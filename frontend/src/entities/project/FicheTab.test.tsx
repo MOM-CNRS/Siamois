@@ -85,7 +85,7 @@ const fields: Record<string, FieldResource> = {
   "-101": field({
     id: "-101",
     label: "Type",
-    answerType: "SELECT_ONE_FROM_FIELD_CODE",
+    answerType: "SELECT_ONE",
     valueBinding: "projectKind",
     fieldCode: "SIAAU.TYPE",
     // What CustomFieldConcept.getIcon() actually returns for every vocabulary-backed field: a
@@ -96,7 +96,7 @@ const fields: Record<string, FieldResource> = {
   // CustomFieldText.getIcon(). Deliberately carries NO conceptUri, unlike the type field.
   "42": field({ id: "42", label: "Code OA", valueBinding: "oaCode", icon: "bi bi-alphabet" }),
   "43": field({ id: "43", label: "Commentaires", valueBinding: "comments", isTextArea: true }),
-  "44": field({ id: "44", label: "Statut", answerType: "SELECT_ONE_FROM_FIELD_CODE", valueBinding: "status", fieldCode: "SIAAU.STATUS" }),
+  "44": field({ id: "44", label: "Statut", answerType: "SELECT_ONE", valueBinding: "status", fieldCode: "SIAAU.STATUS" }),
   "45": field({ id: "45", label: "Aménageur", valueBinding: "developer" }),
   "46": field({ id: "46", label: "Localisations", answerType: "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", valueBinding: "spatialContext" }),
   "47": field({ id: "47", label: "Verrouillé", valueBinding: "zmin" }),
@@ -569,7 +569,7 @@ describe("buildPatch", () => {
   });
 
   it("sends a SELECT_MULTIPLE field as values, never as value", () => {
-    const multi = { "50": field({ id: "50", answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }) };
+    const multi = { "50": field({ id: "50", answerType: "SELECT_MULTIPLE" }) };
     expect(buildPatch({ "50": [{ resourceId: "1" }] }, multi)).toEqual({ answers: { "50": { values: ["1"] } } });
   });
 

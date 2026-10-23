@@ -44,6 +44,8 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected String newThesaurusUrl;
     protected ArrayList<ThesaurusOption> thesaurusOptions = new ArrayList<>();
     protected ArrayList<ThesaurusUsage> usages = new ArrayList<>();
+    /** The rows ticked in the usages table. */
+    protected List<ThesaurusUsage> selectedUsages = new ArrayList<>();
     protected ProgressWrapper progressWrapper = new ProgressWrapper();
 
     protected AbstractThesaurusSettingsBean(VocabularyService vocabularyService, LabelService labelService, LangBean langBean) {
@@ -57,6 +59,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         newThesaurusUrl = null;
         thesaurusOptions = new ArrayList<>();
         usages = new ArrayList<>();
+        selectedUsages = new ArrayList<>();
         progressWrapper.reset();
     }
 

@@ -2,6 +2,7 @@ package fr.siamois.domain.models.form.config;
 
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import jakarta.persistence.*;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
@@ -31,6 +32,19 @@ public class ConceptFieldFormConfig extends FieldFormConfig {
     private ConceptCollection collection;
 
     /**
+     * The thesaurus a {@link #fieldCode} is looked up in. A branch or a collection already belongs to
+     * one thesaurus, so this is only set together with a field code.
+     */
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_vocabulary_id")
+    private Vocabulary vocabulary;
+
+    /** Third way to name the source, next to a branch and a collection: the code that tags the list in {@link #vocabulary}. */
+    @Column(name = "field_code")
+    private String fieldCode;
+
+    /**
      * Whether the list follows its source or is a frozen set of concepts. The column default lets
      * Hibernate's schema update add it to a table that already has rows. Not audited: the audit table
      * would need the same default, and nothing reads the mode's history.
@@ -52,7 +66,15 @@ public class ConceptFieldFormConfig extends FieldFormConfig {
         return branchTopTerm != null && collection == null;
     }
 
+    public boolean isCollectionConfig() {
+        return collection != null;
+    }
+
+    public boolean isFieldCodeConfig() {
+        return fieldCode != null && vocabulary != null && branchTopTerm == null && collection == null;
+    }
+
     public boolean isNotValid() {
-        return branchTopTerm == null && collection == null;
+        return !isBranchConfig() && !isCollectionConfig() && !isFieldCodeConfig();
     }
 }

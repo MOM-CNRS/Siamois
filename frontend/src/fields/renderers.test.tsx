@@ -8,7 +8,7 @@ function field(overrides: Partial<FieldResource> = {}): FieldResource {
     id: "1",
     resourceType: "fields",
     label: "Type",
-    answerType: "SELECT_ONE_FROM_FIELD_CODE",
+    answerType: "SELECT_ONE",
     isSystemField: true,
     ...overrides,
   };

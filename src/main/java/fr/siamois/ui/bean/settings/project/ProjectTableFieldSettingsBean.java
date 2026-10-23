@@ -84,6 +84,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.unitDefinitionService = unitDefinitionService;
     }
 
+    /** Set by Spring, like the publisher; null where the bean is built by hand. */
+    private transient ProjectTableTypeSourceBean typeSourceBean;
+
+    @Autowired(required = false)
+    void setTypeSourceBean(ProjectTableTypeSourceBean typeSourceBean) {
+        this.typeSourceBean = typeSourceBean;
+    }
+
+    private void openTypeSource(ConfigurableTable table) {
+        if (typeSourceBean != null) {
+            typeSourceBean.open(project, table);
+        }
+    }
+
     public static final int TAB_CHAMPS = 0;
     public static final int TAB_APERCU = 1;
     public static final int TAB_DEFINITION = 2;
@@ -95,6 +109,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private static final String DEFAULT_THESAURUS_SERVER = "https://thesaurus.mom.fr";
     private static final String INTERNAL_ERROR = "common.error.internal";
     public static final String COLLECTION = "collection";
+    /** The source named by a field code looked up in the picked thesaurus. */
+    public static final String FIELD_CODE = "code";
 
     private final transient TableFieldConfigService tableFieldConfigService;
     private final transient FormConfigService formConfigService;
@@ -164,6 +180,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /** The OpenTheso instance picked, the thesauri it publishes and the one picked among them. */
     private String draftServerUrl;
     private transient ThesaurusInfo draftThesaurus;
+
+    /** The field codes the picked thesaurus defines, and the one chosen among them. */
+    private transient List<String> draftCodeOptions = new ArrayList<>();
+    private String draftCodeChoice;
+    private transient String draftOriginalCodeKey;
     private String newServerUrl;
     private transient List<String> draftServerOptions;
     private transient List<ThesaurusInfo> draftThesaurusOptions = new ArrayList<>();
@@ -285,6 +306,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectedTable = table;
         expandedNodes.add(tableNode(table));
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
+        openTypeSource(table);
         // a table opens on its first type; one with none yet (its thesaurus gave it nothing) opens empty
         selectType(typesForSelectedTable.isEmpty() ? null : typesForSelectedTable.get(0).getName());
     }
@@ -296,7 +318,13 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void selectTableOnly(ConfigurableTable table) {
         selectedTable = table;
         typesForSelectedTable = tableFieldConfigService.listTypes(project.getId(), table);
+        openTypeSource(table);
         selectType(null);
+    }
+
+    /** The table's types are read from another source: lists them again. */
+    public void reloadTypesOfSelectedTable() {
+        selectTableOnly(selectedTable);
     }
 
     /**
@@ -898,7 +926,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftMeasureNatureLabel = draftMeasureNature == null ? null : draftMeasureNature.name();
         draftFieldCode = field.getSourceLabel();
         resetDraftParams();
-        draftSource = draftIsSystem && field.getType().isConfigurable() ? "principal" : null;
+        draftSource = null;
+        if (draftIsSystem && field.getType().isConfigurable()) {
+            startFromDefaultFieldCode();
+        }
         if (isDraftConfigurable()) {
             prefillVocabularyConfig();
             browseValues("", 0);
@@ -926,7 +957,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     /**
      * Loads the field's current branch/collection restriction, if any, so the drawer shows what is
-     * actually configured instead of always starting blank. Leaves the {@code "principal"} default
+     * actually configured instead of always starting blank. Leaves the default source
      * from {@link #openDrawerForEdit} untouched when the field carries no restriction.
      */
     private void prefillVocabularyConfig() {
@@ -942,9 +973,26 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         ConceptFieldFormConfig config = conceptConfig.get();
         if (config.isBranchConfig()) {
             prefillBranch(config.getBranchTopTerm());
-        } else {
+        } else if (config.isCollectionConfig()) {
             prefillCollection(config.getCollection());
+        } else if (config.isFieldCodeConfig()) {
+            prefillFieldCode(config);
         }
+    }
+
+    private void prefillFieldCode(ConceptFieldFormConfig config) {
+        draftSource = FIELD_CODE;
+        draftVocabulary = vocabularyMapper.convert(config.getVocabulary());
+        draftThesaurusUrl = draftVocabulary.completeUri();
+        draftConnectionTested = true;
+        selectServerOf(draftVocabulary);
+        loadDraftCodeOptions();
+        draftCodeChoice = config.getFieldCode();
+        draftOriginalCodeKey = codeKey(draftVocabulary, config.getFieldCode());
+    }
+
+    private static String codeKey(VocabularyDTO vocabulary, String code) {
+        return vocabulary.getId() + "|" + code;
     }
 
     private void prefillBranch(Concept branchTopTerm) {
@@ -1050,6 +1098,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         lastCollectionResults = new ArrayList<>();
         draftOriginalBrancheConceptKey = null;
         draftOriginalCollectionKey = null;
+        draftCodeChoice = null;
+        draftCodeOptions = new ArrayList<>();
+        draftOriginalCodeKey = null;
     }
 
     public boolean isDraftConfigurable() {
@@ -1059,6 +1110,94 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void selectDraftSource(String source) {
         clearSourceSelection();
         draftSource = source;
+        if (FIELD_CODE.equals(source) && startFromDefaultFieldCode()) {
+            return;
+        }
+        offerDocumentationThesaurus();
+        draftSource = source;
+        if (FIELD_CODE.equals(source)) {
+            loadDraftCodeOptions();
+        }
+    }
+
+    /**
+     * The source a field with a code of its own reads by default: that code, in the thesaurus the code is read in by
+     * default. Offered as the starting point of the "field code" source, where the thesaurus and the code can both be changed.
+     *
+     * @return whether the field has such a default, and the pickers now show it
+     */
+    private boolean startFromDefaultFieldCode() {
+        Optional<Vocabulary> defaultVocabulary = defaultVocabularyOfFieldCode();
+        if (defaultVocabulary.isEmpty()) {
+            return false;
+        }
+        draftSource = FIELD_CODE;
+        draftVocabulary = vocabularyMapper.convert(defaultVocabulary.get());
+        draftThesaurusUrl = draftVocabulary.completeUri();
+        draftConnectionTested = true;
+        selectServerOf(draftVocabulary);
+        loadDraftCodeOptions();
+        draftCodeChoice = draftFieldCode;
+        draftOriginalCodeKey = codeKey(draftVocabulary, draftFieldCode);
+        return true;
+    }
+
+    private Optional<Vocabulary> defaultVocabularyOfFieldCode() {
+        if (draftFieldCode == null || draftFieldCode.isBlank() || project == null || project.getCreatedByInstitution() == null) {
+            return Optional.empty();
+        }
+        return fieldConfigurationService.findDefaultVocabularyOfFieldCode(
+                project.getCreatedByInstitution().getId(), project.getId(), draftFieldCode);
+    }
+
+    /** Whether the picked thesaurus and code are the field's default: nothing then needs to be stored for the field. */
+    private boolean isDefaultFieldCodeChoice() {
+        return draftCodeChoice != null && draftCodeChoice.equals(draftFieldCode)
+                && defaultVocabularyOfFieldCode()
+                .map(found -> found.getId() != null && found.getId().equals(draftVocabulary.getId()))
+                .orElse(false);
+    }
+
+    /**
+     * When no thesaurus has been picked yet, starts from the one the project documents its fields in, then
+     * the institution's: that is where its own fields and types live, so it is the likeliest source.
+     */
+    private void offerDocumentationThesaurus() {
+        if (draftThesaurusUrl != null && !draftThesaurusUrl.isBlank()) {
+            return;
+        }
+        Optional<String> url = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId());
+        if (url.isEmpty() && project.getCreatedByInstitution() != null) {
+            url = fieldConfigurationService.findVocabularyUrlOfInstitutionId(project.getCreatedByInstitution().getId());
+        }
+        if (url.isEmpty()) {
+            return;
+        }
+        draftThesaurusUrl = url.get();
+        testThesaurusConnection();
+        if (draftConnectionTested) {
+            selectServerOf(draftVocabulary);
+        }
+    }
+
+    /** The field codes of the picked thesaurus, which is read the first time it is offered. */
+    private void loadDraftCodeOptions() {
+        draftCodeOptions = new ArrayList<>();
+        if (draftVocabulary == null || !draftConnectionTested) {
+            return;
+        }
+        try {
+            Vocabulary vocabulary = vocabularyService.findVocabularyById(draftVocabulary.getId());
+            draftCodeOptions = new ArrayList<>(fieldConfigurationService.findFieldCodesOf(vocabulary));
+            if (draftCodeOptions.isEmpty()) {
+                showDrawerError("projectTables.drawer.params.codeNone");
+            }
+        } catch (fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException e) {
+            showDrawerError("myProfile.thesaurus.siamois.invalid");
+        } catch (fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException | RuntimeException e) {
+            log.error("Could not read the field codes of thesaurus {}", draftVocabulary.getExternalVocabularyId(), e);
+            showDrawerError("thesaurus.error.processingExpansion");
+        }
     }
 
     /**
@@ -1081,6 +1220,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             draftConnectionTested = true;
             preselectDesignatedConcept(resolvedUrl);
             draftThesaurusUrl = draftVocabulary.completeUri();
+            if (FIELD_CODE.equals(draftSource)) {
+                loadDraftCodeOptions();
+            }
         } catch (InvalidEndpointException e) {
             log.error("Invalid thesaurus URL '{}'", draftThesaurusUrl, e);
             draftConnectionTested = false;
@@ -1128,8 +1270,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         if (typeFormConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
             return;
         }
-        Optional<ConceptFieldFormConfig> config = formConfigService.findConceptConfigFor(typeFormConfig.get(), conceptField);
-        if (config.isEmpty() || config.get().isNotValid()) {
+        Optional<ConceptFieldFormConfig> config = formConfigService.findConceptConfigFor(typeFormConfig.get(), conceptField)
+                .filter(stored -> !stored.isNotValid())
+                .or(() -> defaultFieldCodeConfig(typeFormConfig.get()));
+        if (config.isEmpty()) {
             return;
         }
         try {
@@ -1145,6 +1289,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         } catch (RuntimeException e) {
             log.error("Could not list the values of field {}", draftOriginalName, e);
         }
+    }
+
+    /**
+     * What a field left on its default code reads: nothing is stored for it, so its list is that code in the
+     * thesaurus the code is read in by default.
+     */
+    private Optional<ConceptFieldFormConfig> defaultFieldCodeConfig(FormConfig typeFormConfig) {
+        return defaultVocabularyOfFieldCode().map(vocabulary -> {
+            ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+            config.setFormConfig(typeFormConfig);
+            config.setVocabulary(vocabulary);
+            config.setFieldCode(draftFieldCode);
+            return config;
+        });
     }
 
     public void searchValues() {
@@ -1459,19 +1617,19 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /**
      * Persists the vocabulary source picked in the drawer onto the field just saved by
      * {@link #saveDrawer()}: clears any existing branch/collection restriction for
-     * {@code "principal"}, or saves the newly picked branch/collection — a no-op when the source is
+     * the source back to the default, or saves the newly picked branch/collection/code — a no-op when the source is
      * unset (non-configurable fields) or when the user left the prefilled selection untouched.
      *
      * @throws FieldVocabularyConfigException when the picked branch/collection did not make it onto
      * the field, carrying the message {@link #saveDrawer()} reports
      */
     private void saveDraftVocabularyConfig() {
-        if ("principal".equals(draftSource)) {
-            clearConceptConfigIfAny();
-        } else if (BRANCHE.equals(draftSource)) {
+        if (BRANCHE.equals(draftSource)) {
             saveBrancheConceptIfChanged();
         } else if (COLLECTION.equals(draftSource)) {
             saveCollectionIfChanged();
+        } else if (FIELD_CODE.equals(draftSource)) {
+            saveFieldCodeIfChanged();
         }
     }
 
@@ -1529,6 +1687,31 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                     String.format("Could not save the collection '%s' as the vocabulary of field '%s'",
                             selected.get().getExternalId(), draftName),
                     "projectTables.drawer.params.collectionSaveError", e);
+        }
+    }
+
+    private void saveFieldCodeIfChanged() {
+        if (draftCodeChoice == null || draftCodeChoice.isBlank() || draftVocabulary == null) {
+            throw new NoVocabularySelectedException(
+                    String.format("No field code picked for field '%s'", draftName),
+                    "projectTables.drawer.params.codeMissing");
+        }
+        if (isDefaultFieldCodeChoice()) {
+            // back to the field's own code in the default thesaurus: the field follows the default again
+            clearConceptConfigIfAny();
+            return;
+        }
+        if (codeKey(draftVocabulary, draftCodeChoice).equals(draftOriginalCodeKey)) {
+            return;
+        }
+        ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.codeSaveError");
+        try {
+            formConfigService.addFieldCodeConfigFor(target.formConfig(), target.field(),
+                    vocabularyService.findVocabularyById(draftVocabulary.getId()), draftCodeChoice);
+        } catch (RuntimeException e) {
+            throw new VocabularyConfigNotSavedException(
+                    String.format("Could not save the field code '%s' as the vocabulary of field '%s'", draftCodeChoice, draftName),
+                    "projectTables.drawer.params.codeSaveError", e);
         }
     }
 

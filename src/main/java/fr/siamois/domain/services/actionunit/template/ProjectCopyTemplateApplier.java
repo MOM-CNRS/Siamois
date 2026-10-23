@@ -7,13 +7,15 @@ import fr.siamois.domain.models.form.config.ConceptFieldState;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.models.settings.DocumentationThesaurus;
+import fr.siamois.domain.models.settings.ProjectCodeSource;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ProjectCodeSourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -41,7 +43,8 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
     private final FormConfigGroupRepository groupRepository;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final ConceptFieldStateRepository conceptFieldStateRepository;
-    private final ConceptFieldConfigRepository conceptFieldConfigRepository;
+    private final DocumentationThesaurusRepository documentationThesaurusRepository;
+    private final ProjectCodeSourceRepository projectCodeSourceRepository;
 
     @Override
     public boolean supports(String templateId) {
@@ -81,14 +84,21 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
     }
 
     private void copyThesaurusOverrides(ActionUnit source, ActionUnit target) {
-        for (ConceptFieldConfig original : conceptFieldConfigRepository.findAllByActionUnitId(source.getId())) {
-            ConceptFieldConfig copy = new ConceptFieldConfig();
+        documentationThesaurusRepository.findByActionUnitId(source.getId()).ifPresent(original -> {
+            DocumentationThesaurus copy = new DocumentationThesaurus();
             copy.setInstitution(original.getInstitution());
             copy.setActionUnit(target);
-            copy.setConcept(original.getConcept());
+            copy.setVocabulary(original.getVocabulary());
+            documentationThesaurusRepository.save(copy);
+        });
+        for (ProjectCodeSource original : projectCodeSourceRepository.findAllByActionUnitId(source.getId())) {
+            ProjectCodeSource copy = new ProjectCodeSource();
+            copy.setActionUnit(target);
             copy.setFieldCode(original.getFieldCode());
-            copy.setExistingHash(original.getExistingHash());
-            conceptFieldConfigRepository.save(copy);
+            copy.setVocabulary(original.getVocabulary());
+            copy.setSourceFieldCode(original.getSourceFieldCode());
+            copy.setBranchTopTerm(original.getBranchTopTerm());
+            projectCodeSourceRepository.save(copy);
         }
     }
 
@@ -132,6 +142,8 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
             ConceptFieldFormConfig conceptCopy = new ConceptFieldFormConfig();
             conceptCopy.setBranchTopTerm(concept.getBranchTopTerm());
             conceptCopy.setCollection(concept.getCollection());
+            conceptCopy.setVocabulary(concept.getVocabulary());
+            conceptCopy.setFieldCode(concept.getFieldCode());
             conceptCopy.setVocabularyMode(concept.getVocabularyMode());
             copy = conceptCopy;
         } else {

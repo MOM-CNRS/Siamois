@@ -81,6 +81,7 @@ public class FormConfigService {
             concept = conceptService.saveOrGetConcept(branchTopConcept);
             conceptFieldFormConfig.setBranchTopTerm(concept);
             conceptFieldFormConfig.setCollection(null);
+            clearFieldCode(conceptFieldFormConfig);
 
             loadDownExpansion(concept, progressWrapper);
 
@@ -113,7 +114,33 @@ public class FormConfigService {
         ConceptCollection savedCollection = conceptCollectionService.createOrUpdateConceptCollection(collectionDTO, progressWrapper);
         conceptFieldFormConfig.setCollection(savedCollection);
         conceptFieldFormConfig.setBranchTopTerm(null);
+        clearFieldCode(conceptFieldFormConfig);
         fieldFormConfigRepository.save(conceptFieldFormConfig);
+    }
+
+    /**
+     * Names a field's source by a field code looked up in a given thesaurus, instead of a branch or a
+     * collection: the list is the subtree of the concept that carries the code in that thesaurus.
+     *
+     * @param vocabulary the thesaurus the code is looked up in
+     * @param fieldCode  a code the thesaurus defines
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void addFieldCodeConfigFor(@NonNull FormConfig formConfig,
+                                      @NonNull CustomFieldConcept customFieldConcept,
+                                      @NonNull Vocabulary vocabulary,
+                                      @NonNull String fieldCode) {
+        ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
+        conceptFieldFormConfig.setVocabulary(vocabulary);
+        conceptFieldFormConfig.setFieldCode(fieldCode);
+        conceptFieldFormConfig.setBranchTopTerm(null);
+        conceptFieldFormConfig.setCollection(null);
+        fieldFormConfigRepository.save(conceptFieldFormConfig);
+    }
+
+    private static void clearFieldCode(ConceptFieldFormConfig config) {
+        config.setVocabulary(null);
+        config.setFieldCode(null);
     }
 
     /**
@@ -143,6 +170,7 @@ public class FormConfigService {
         findConceptConfigFor(formConfig, customFieldConcept).ifPresent(config -> {
             config.setBranchTopTerm(null);
             config.setCollection(null);
+            clearFieldCode(config);
             fieldFormConfigRepository.save(config);
         });
     }

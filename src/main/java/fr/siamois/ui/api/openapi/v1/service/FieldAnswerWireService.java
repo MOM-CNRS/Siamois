@@ -45,11 +45,20 @@ public class FieldAnswerWireService {
     private final FormService formService;
     private final LabelService labelService;
 
-    /** The {@code answer_type} discriminator of a field — the {@code answerType} the API exposes. */
+    /**
+     * The {@code answerType} the API exposes for a field: its {@code answer_type} discriminator, except that a
+     * vocabulary field is always {@code SELECT_ONE} or {@code SELECT_MULTIPLE}. Where its list comes from (a field
+     * code, a branch, a collection) is the field's configuration, not its type: a client reads the list by field id.
+     */
     public static String answerTypeOf(CustomField field) {
         Class<?> fieldClass = Hibernate.getClass(field);
         DiscriminatorValue dv = fieldClass.getAnnotation(DiscriminatorValue.class);
-        return dv != null ? dv.value() : fieldClass.getSimpleName();
+        String discriminator = dv != null ? dv.value() : fieldClass.getSimpleName();
+        return switch (discriminator) {
+            case "SELECT_ONE_FROM_FIELD_CODE" -> "SELECT_ONE";
+            case "SELECT_MULTIPLE_FROM_FIELD_CODE" -> "SELECT_MULTIPLE";
+            default -> discriminator;
+        };
     }
 
     /**
@@ -161,11 +170,11 @@ public class FieldAnswerWireService {
             case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
             case "BOOLEAN" -> new BooleanFieldAnswer(answerType, field, raw instanceof Boolean b ? b : null);
             case "DATETIME" -> new DateFieldAnswer(answerType, field, toOffsetDateTime(raw));
-            case "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
+            case "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                  "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ONE_DOCUMENT",
                  "SELECT_ADDRESS", "SELECT_ONE" ->
                     new SelectOneFieldAnswer(answerType, field, raw == null ? null : toResourceRef(answerType, first(raw), lang));
-            case "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
+            case "SELECT_MULTIPLE_PERSON",
                  "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPATIAL_UNIT",
                  "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
                  "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE", "SELECT_MULTIPLE_STRATIGRAPHY" ->

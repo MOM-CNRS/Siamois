@@ -1,6 +1,7 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import org.mockito.ArgumentCaptor;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -22,6 +23,7 @@ import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
@@ -34,6 +36,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -206,6 +209,105 @@ class ProjectTableFieldSettingsBeanPickerTest {
         verify(vocabularyMapper, never()).convert(any(Vocabulary.class));
     }
 
+    // ---- a source named by a field code ----------------------------------------------------------------
+
+    private VocabularyDTO loadedThesaurus(String id) throws Exception {
+        Vocabulary vocabulary = vocabularyAt(SERVER);
+        vocabulary.setId(7L);
+        VocabularyDTO dto = new VocabularyDTO();
+        dto.setId(7L);
+        dto.setBaseUri(SERVER);
+        dto.setExternalVocabularyId(id);
+        String url = SERVER + "/?idt=" + id;
+        when(vocabularyService.resolveRedirections(url)).thenReturn(url);
+        when(vocabularyService.findOrCreateVocabularyOfUri(url)).thenReturn(vocabulary);
+        when(vocabularyService.findVocabularyById(7L)).thenReturn(vocabulary);
+        when(vocabularyMapper.convert(vocabulary)).thenReturn(dto);
+        return dto;
+    }
+
+    @Test
+    void selectDraftSource_code_shouldListTheFieldCodesOfTheThesaurusPicked() throws Exception {
+        loadedThesaurus("th1");
+        bean.setDraftThesaurusUrl(SERVER + "/?idt=th1");
+        bean.selectDraftSource(ProjectTableFieldSettingsBean.FIELD_CODE);
+        when(fieldConfigurationService.findFieldCodesOf(any(Vocabulary.class))).thenReturn(List.of("SIAAU.TYPE", "OWN.CODE"));
+
+        bean.testThesaurusConnection();
+
+        assertThat(bean.getDraftSource()).isEqualTo(ProjectTableFieldSettingsBean.FIELD_CODE);
+        assertThat(bean.getDraftCodeOptions()).containsExactly("SIAAU.TYPE", "OWN.CODE");
+    }
+
+    @Test
+    void selectDraftSource_code_shouldStartFromTheThesaurusTheProjectDocumentsItsFieldsIn() throws Exception {
+        loadedThesaurus("th1");
+        when(fieldConfigurationService.findVocabularyUrlOfActionUnitId(42L)).thenReturn(Optional.of(SERVER + "/?idt=th1"));
+        when(fieldConfigurationService.findFieldCodesOf(any(Vocabulary.class))).thenReturn(List.of("OWN.CODE"));
+        when(vocabularyService.findAll()).thenReturn(List.of());
+        when(vocabularyService.findAllThesaurusOf(SERVER, LANG)).thenReturn(List.of(thesaurus("th1", "Un")));
+
+        bean.selectDraftSource(ProjectTableFieldSettingsBean.FIELD_CODE);
+
+        assertThat(bean.isDraftConnectionTested()).isTrue();
+        assertThat(bean.getDraftSource()).isEqualTo(ProjectTableFieldSettingsBean.FIELD_CODE);
+        assertThat(bean.getDraftCodeOptions()).containsExactly("OWN.CODE");
+    }
+
+    @Test
+    void selectDraftSource_code_startsFromTheFieldsOwnCodeInTheDefaultThesaurus() throws Exception {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(12L);
+        bean.getProject().setCreatedByInstitution(institution);
+        bean.setDraftFieldCode("SIARU.GEOMORPHO");
+        Vocabulary siamois = vocabularyAt(SERVER);
+        siamois.setId(7L);
+        VocabularyDTO dto = new VocabularyDTO();
+        dto.setId(7L);
+        dto.setBaseUri(SERVER);
+        dto.setExternalVocabularyId("th1");
+        when(fieldConfigurationService.findDefaultVocabularyOfFieldCode(12L, 42L, "SIARU.GEOMORPHO")).thenReturn(Optional.of(siamois));
+        when(vocabularyMapper.convert(siamois)).thenReturn(dto);
+        when(vocabularyService.findVocabularyById(7L)).thenReturn(siamois);
+        when(vocabularyService.findAll()).thenReturn(List.of());
+        when(vocabularyService.findAllThesaurusOf(SERVER, LANG)).thenReturn(List.of(thesaurus("th1", "SIAMOIS")));
+        when(fieldConfigurationService.findFieldCodesOf(siamois)).thenReturn(List.of("SIARU.GEOMORPHO", "OTHER"));
+
+        bean.selectDraftSource(ProjectTableFieldSettingsBean.FIELD_CODE);
+
+        assertThat(bean.getDraftSource()).isEqualTo(ProjectTableFieldSettingsBean.FIELD_CODE);
+        assertThat(bean.isDraftConnectionTested()).isTrue();
+        assertThat(bean.getDraftCodeChoice()).isEqualTo("SIARU.GEOMORPHO");
+        assertThat(bean.getDraftCodeOptions()).containsExactly("SIARU.GEOMORPHO", "OTHER");
+        assertThat(bean.getDraftThesaurus()).isEqualTo(thesaurus("th1", "SIAMOIS"));
+    }
+
+    @Test
+    void selectDraftSource_code_shouldTellTheUser_whenTheThesaurusDefinesNoCode() throws Exception {
+        loadedThesaurus("th1");
+        bean.setDraftThesaurusUrl(SERVER + "/?idt=th1");
+        bean.selectDraftSource(ProjectTableFieldSettingsBean.FIELD_CODE);
+        when(fieldConfigurationService.findFieldCodesOf(any(Vocabulary.class))).thenReturn(List.of());
+
+        bean.testThesaurusConnection();
+
+        assertThat(bean.getDraftCodeOptions()).isEmpty();
+        assertThat(bean.getDrawerErrorMessage()).isEqualTo("projectTables.drawer.params.codeNone");
+    }
+
+    @Test
+    void selectDraftSource_code_shouldTellTheUser_whenTheThesaurusIsNotASiamoisOne() throws Exception {
+        loadedThesaurus("th1");
+        bean.setDraftThesaurusUrl(SERVER + "/?idt=th1");
+        bean.selectDraftSource(ProjectTableFieldSettingsBean.FIELD_CODE);
+        when(fieldConfigurationService.findFieldCodesOf(any(Vocabulary.class)))
+                .thenThrow(new fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException("no fields branch"));
+
+        bean.testThesaurusConnection();
+
+        assertThat(bean.getDrawerErrorMessage()).isEqualTo("myProfile.thesaurus.siamois.invalid");
+    }
+
     // ---- opening on a type ----------------------------------------------------------------------------
 
     private void typesOfUe(String... names) {
@@ -343,6 +445,35 @@ class ProjectTableFieldSettingsBeanPickerTest {
 
         assertThat(bean.isValuesAvailable()).isFalse();
         assertThat(bean.getValuesItems()).isEmpty();
+    }
+
+    @Test
+    void searchValues_shouldReadTheDefaultCode_whenNothingIsSavedForTheField() {
+        InstitutionDTO institution = new InstitutionDTO();
+        institution.setId(12L);
+        bean.getProject().setCreatedByInstitution(institution);
+        bean.setSelectedTable(ConfigurableTable.UE);
+        bean.setSelectedTypeName(TYPE_NAME);
+        bean.setDraftOriginalName("etat");
+        bean.setDraftFieldCode("SIARU.GEOMORPHO");
+        Vocabulary siamois = vocabularyAt(SERVER);
+        FormConfig formConfig = new FormConfig();
+        CustomFieldConcept field = mock(CustomFieldConcept.class);
+        when(tableService.findFormConfig(42L, ConfigurableTable.UE, TYPE_NAME)).thenReturn(Optional.of(formConfig));
+        when(tableService.findField(42L, ConfigurableTable.UE, TYPE_NAME, "etat")).thenReturn(Optional.of(field));
+        when(formConfigService.findConceptConfigFor(formConfig, field)).thenReturn(Optional.empty());
+        when(fieldConfigurationService.findDefaultVocabularyOfFieldCode(12L, 42L, "SIARU.GEOMORPHO")).thenReturn(Optional.of(siamois));
+        when(fieldConfigurationService.fetchValuesPage(eq(field), any(ConceptFieldFormConfig.class), eq(LANG), any(), anyInt(), anyInt()))
+                .thenReturn(new FieldConfigurationService.ValuesPage(List.of(), 12, false, false));
+
+        bean.searchValues();
+
+        assertThat(bean.isValuesAvailable()).isTrue();
+        assertThat(bean.getValuesTotal()).isEqualTo(12);
+        ArgumentCaptor<ConceptFieldFormConfig> read = ArgumentCaptor.forClass(ConceptFieldFormConfig.class);
+        verify(fieldConfigurationService).fetchValuesPage(eq(field), read.capture(), eq(LANG), any(), anyInt(), anyInt());
+        assertThat(read.getValue().getVocabulary()).isSameAs(siamois);
+        assertThat(read.getValue().getFieldCode()).isEqualTo("SIARU.GEOMORPHO");
     }
 
     @Test

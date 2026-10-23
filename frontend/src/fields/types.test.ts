@@ -25,7 +25,7 @@ describe("unwrapAnswer", () => {
   });
 
   it("unwraps a multi-valued FieldAnswer envelope", () => {
-    expect(unwrapAnswer({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE", field: {}, values: [1, 2] }))
+    expect(unwrapAnswer({ answerType: "SELECT_MULTIPLE", field: {}, values: [1, 2] }))
       .toEqual([1, 2]);
   });
 });
@@ -100,12 +100,12 @@ describe("toAnswerInput", () => {
 
   it("extracts resourceId from a ResourceRef for a single-valued SELECT field", () => {
     const ref = { resourceId: "7", resourceType: "concepts", label: "En cours" };
-    expect(toAnswerInput(field({ answerType: "SELECT_ONE_FROM_FIELD_CODE" }), ref)).toEqual({ value: "7" });
+    expect(toAnswerInput(field({ answerType: "SELECT_ONE" }), ref)).toEqual({ value: "7" });
   });
 
   it("extracts id from a ResolvedConceptResource-shaped value (the flat-entity shape)", () => {
     const resolved = { resourceType: "concepts", id: "9", resolvedLabel: "Sondage" };
-    expect(toAnswerInput(field({ answerType: "SELECT_ONE_FROM_FIELD_CODE" }), resolved)).toEqual({ value: "9" });
+    expect(toAnswerInput(field({ answerType: "SELECT_ONE" }), resolved)).toEqual({ value: "9" });
   });
 
   it("wraps an array of ResourceRefs as { values: [ids] } for a SELECT_MULTIPLE field", () => {
@@ -113,14 +113,14 @@ describe("toAnswerInput", () => {
       { resourceId: "1", resourceType: "concepts", label: "A" },
       { resourceId: "2", resourceType: "concepts", label: "B" },
     ];
-    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }), refs))
+    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE" }), refs))
       .toEqual({ values: ["1", "2"] });
   });
 
   it("wraps a non-array/absent value as { values: [] } for a SELECT_MULTIPLE field (clears it)", () => {
-    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }), undefined))
+    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE" }), undefined))
       .toEqual({ values: [] });
-    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" }), null))
+    expect(toAnswerInput(field({ answerType: "SELECT_MULTIPLE" }), null))
       .toEqual({ values: [] });
   });
 });

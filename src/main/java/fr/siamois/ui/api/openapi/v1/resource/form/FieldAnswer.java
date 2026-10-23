@@ -12,12 +12,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
         @JsonSubTypes.Type(value = BooleanFieldAnswer.class, names = {"BOOLEAN"}),
         @JsonSubTypes.Type(value = DateFieldAnswer.class, names = {"DATETIME"}),
         @JsonSubTypes.Type(value = SelectOneFieldAnswer.class, names = {
-                "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
+                "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                 "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ONE_DOCUMENT",
                 "SELECT_ADDRESS", "SELECT_ONE"
         }),
         @JsonSubTypes.Type(value = SelectManyFieldAnswer.class, names = {
-                "SELECT_MULTIPLE_PERSON", "SELECT_MULTIPLE_FROM_FIELD_CODE",
+                "SELECT_MULTIPLE_PERSON",
                 "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPATIAL_UNIT",
                 "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
                 "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE", "SELECT_MULTIPLE_STRATIGRAPHY"

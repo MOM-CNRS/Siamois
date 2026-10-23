@@ -12,11 +12,11 @@ import java.util.List;
         + "si complete=false (paramètre valuesLimit) : la liste entière est à _links.values, et une écriture "
         + "doit alors passer par add/remove plutôt que par values.")
 public record SelectManyFieldAnswer(
-        @Schema(description = "Discriminant — SELECT_MULTIPLE_PERSON | SELECT_MULTIPLE_FROM_FIELD_CODE | "
+        @Schema(description = "Discriminant — SELECT_MULTIPLE | SELECT_MULTIPLE_PERSON | "
                 + "SELECT_MULTIPLE_RECORDING_UNIT | SELECT_MULTIPLE_SPATIAL_UNIT_TREE | "
                 + "SELECT_MULTIPLE_SPECIMEN | SELECT_MULTIPLE_CONTAINER | SELECT_MULTIPLE_PHASE | "
                 + "SELECT_MULTIPLE_STRATIGRAPHY",
-                example = "SELECT_MULTIPLE_FROM_FIELD_CODE")
+                example = "SELECT_MULTIPLE")
         String answerType,
 
         @Schema(description = "Définition du champ")

@@ -19,9 +19,9 @@ public record FieldResource(
 
         @Schema(description = "Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer",
                 allowableValues = {"TEXT", "INTEGER", "DECIMAL", "DATETIME", "BOOLEAN", "MEASUREMENT",
-                        "SELECT_ONE", "SELECT_ONE_FROM_FIELD_CODE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
+                        "SELECT_ONE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                         "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ONE_DOCUMENT", "SELECT_ADDRESS",
-                        "SELECT_MULTIPLE", "SELECT_MULTIPLE_FROM_FIELD_CODE", "SELECT_MULTIPLE_PERSON",
+                        "SELECT_MULTIPLE", "SELECT_MULTIPLE_PERSON",
                         "SELECT_MULTIPLE_RECORDING_UNIT", "SELECT_MULTIPLE_SPATIAL_UNIT",
                         "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", "SELECT_MULTIPLE_SPECIMEN", "SELECT_MULTIPLE_CONTAINER",
                         "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE_STRATIGRAPHY"})
@@ -36,7 +36,7 @@ public record FieldResource(
         @Schema(description = "Nom de la propriété métier bindée si champ système (ex. openingDate)")
         @Nullable String valueBinding,
 
-        @Schema(description = "Code de vocabulaire (ex. SIARU.CHRONO) pour les SELECT_*_FROM_FIELD_CODE")
+        @Schema(description = "Code de vocabulaire (ex. SIARU.CHRONO) du champ, à titre informatif : la liste de ses valeurs se lit par identifiant de champ")
         @Nullable String fieldCode,
 
         @Schema(description = "Vrai si un champ TEXT doit s'afficher sur plusieurs lignes "

@@ -7,10 +7,10 @@ import org.springframework.lang.Nullable;
         + "Le champ answerType précise l'entité référencée : concept, person, action-unit, "
         + "spatial-unit, recording-unit.")
 public record SelectOneFieldAnswer(
-        @Schema(description = "Discriminant — SELECT_ONE_FROM_FIELD_CODE | SELECT_ONE_PERSON | "
+        @Schema(description = "Discriminant — SELECT_ONE | SELECT_ONE_PERSON | "
                 + "SELECT_ONE_ACTION_UNIT | SELECT_ONE_SPATIAL_UNIT | "
                 + "SELECT_ONE_RECORDING_UNIT | SELECT_ONE_DOCUMENT | SELECT_ADDRESS",
-                example = "SELECT_ONE_FROM_FIELD_CODE")
+                example = "SELECT_ONE")
         String answerType,
 
         @Schema(description = "Définition du champ")

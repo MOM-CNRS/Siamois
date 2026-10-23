@@ -13,7 +13,7 @@ const mockedApiFetch = vi.mocked(apiFetch);
 const listMock = vi.fn(async () => ({ data: [], totalCount: 42 }));
 
 const catalog = {
-  fields: { type: { id: "type", answerType: "SELECT_ONE_FROM_FIELD_CODE", fieldCode: "SIAMOIS.RUTYPE", valueBinding: "type" } },
+  fields: { type: { id: "type", answerType: "SELECT_ONE", fieldCode: "SIAMOIS.RUTYPE", valueBinding: "type" } },
   columns: [],
 };
 

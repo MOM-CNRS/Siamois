@@ -25,7 +25,7 @@ function conceptField(overrides: Partial<FieldResource> = {}): FieldResource {
     id: "-118",
     resourceType: "fields",
     label: "Statut",
-    answerType: "SELECT_ONE_FROM_FIELD_CODE",
+    answerType: "SELECT_ONE",
     isSystemField: true,
     fieldCode: "SIARU.STATUS",
     ...overrides,
@@ -155,7 +155,7 @@ describe("SelectManyConceptRenderer", () => {
     act(() => {
       root.render(
         <SelectManyConceptRenderer
-          field={conceptField({ id: "-115", answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" })}
+          field={conceptField({ id: "-115", answerType: "SELECT_MULTIPLE" })}
           value={[
             { resourceId: "1", resourceType: "concepts", label: "Néolithique" },
             { resourceId: "2", resourceType: "concepts", label: "Antiquité" },
@@ -175,7 +175,7 @@ describe("SelectManyConceptRenderer", () => {
     act(() => {
       root.render(
         <SelectManyConceptRenderer
-          field={conceptField({ id: "-115", answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" })}
+          field={conceptField({ id: "-115", answerType: "SELECT_MULTIPLE" })}
           value={undefined}
           readOnly={false}
           required={false}
@@ -406,7 +406,7 @@ describe("picked entity chips", () => {
       root.render(
         <EntityNavigationProvider value={vi.fn()}>
           <SelectManyConceptRenderer
-            field={conceptField({ answerType: "SELECT_MULTIPLE_FROM_FIELD_CODE" })}
+            field={conceptField({ answerType: "SELECT_MULTIPLE" })}
             value={[{ resourceId: "7", resourceType: "concepts", label: "En cours" }]}
             readOnly={false}
             required={false}

@@ -67,10 +67,10 @@ afterEach(() => {
 });
 
 describe("PlaceCreateForm", () => {
-  it("queries place types through the SIASU.TYPE field code", () => {
+  it("queries place types through the type field, by its id", () => {
     render();
 
-    expect(pickerField).toHaveBeenCalledWith(expect.objectContaining({ fieldCode: "SIASU.TYPE" }));
+    expect(pickerField).toHaveBeenCalledWith(expect.objectContaining({ id: "-201", answerType: "SELECT_ONE" }));
   });
 
   it("disables submit until both a name and a type are given", () => {

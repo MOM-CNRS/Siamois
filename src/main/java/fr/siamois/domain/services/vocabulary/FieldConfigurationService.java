@@ -15,6 +15,7 @@ import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
+import fr.siamois.domain.models.settings.DocumentationThesaurus;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
@@ -31,6 +32,7 @@ import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConf
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.InstitutionMapper;
@@ -59,15 +61,6 @@ public class FieldConfigurationService {
     public static final int LIMIT_RESULTS = 200;
 
     /**
-     * The field codes that stand in for another until the thesaurus defines them: each side of a unit's
-     * stratigraphic relationships has a vocabulary of its own, which starts as the single list they
-     * shared before the split.
-     */
-    private static final Map<String, String> FALLBACK_FIELD_CODES = Map.of(
-            RecordingUnit.ANTERIOR_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE,
-            RecordingUnit.POSTERIOR_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE,
-            RecordingUnit.SYNCHRONOUS_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE);
-    /**
      * How many candidates a frozen list reads from its source before keeping the enabled ones: the
      * enabled concepts are not necessarily among the first {@link #LIMIT_RESULTS} the source returns.
      */
@@ -85,6 +78,9 @@ public class FieldConfigurationService {
     private final ActionUnitMapper actionUnitMapper;
     private final FieldFormConfigRepository fieldFormConfigRepository;
     private final ConceptFieldStateRepository conceptFieldStateRepository;
+    private final DocumentationThesaurusRepository documentationThesaurusRepository;
+    private final SiamoisThesaurus siamoisThesaurus;
+    private final FieldCodeResolver fieldCodeResolver;
     private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
@@ -217,6 +213,35 @@ public class FieldConfigurationService {
                                                                   @Nullable ActionUnitDTO actionUnitDTO,
                                                                   @NonNull Vocabulary vocabulary,
                                                                   @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        Optional<FeedbackFieldConfig> feedback = loadFieldCodes(vocabulary, progressWrapper);
+        saveDocumentationThesaurus(institutionDTO, actionUnitDTO, vocabulary);
+        return feedback;
+    }
+
+    /** Makes {@code vocabulary} the thesaurus where the institution, or the project, documents its fields and types. */
+    private void saveDocumentationThesaurus(InstitutionDTO institutionDTO, @Nullable ActionUnitDTO actionUnitDTO, Vocabulary vocabulary) {
+        Optional<DocumentationThesaurus> existing = actionUnitDTO == null
+                ? documentationThesaurusRepository.findOfInstitution(institutionDTO.getId())
+                : documentationThesaurusRepository.findByActionUnitId(actionUnitDTO.getId());
+        DocumentationThesaurus thesaurus = existing.orElseGet(() -> {
+            DocumentationThesaurus created = new DocumentationThesaurus();
+            created.setInstitution(institutionMapper.invertConvert(institutionDTO));
+            if (actionUnitDTO != null) created.setActionUnit(actionUnitMapper.invertConvert(actionUnitDTO));
+            return created;
+        });
+        thesaurus.setVocabulary(vocabulary);
+        documentationThesaurusRepository.save(thesaurus);
+    }
+
+    /**
+     * Loads the field codes of a thesaurus: for each concept of its fields branch that carries a code SIAMOIS
+     * knows, the concept and its subtree. Shared by everyone who reads the thesaurus, so a thesaurus is loaded once.
+     *
+     * @return the feedback when the thesaurus misses codes SIAMOIS needs, otherwise empty
+     */
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public Optional<FeedbackFieldConfig> loadFieldCodes(@NonNull Vocabulary vocabulary,
+                                                        @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) log.warn("Missing code in thesaurus configuration: {}", config.missingFieldCode());
@@ -227,35 +252,21 @@ public class FieldConfigurationService {
             String fieldCode = conceptDTO.getFieldcode().orElseThrow(() -> FIELD_CODE_NOT_FOUND);
 
             Concept concept = conceptService.saveOrGetConceptFromFullDTO(vocabulary, conceptDTO, null);
-            ConceptFieldConfig fieldConfig;
-            Optional<ConceptFieldConfig> optConfig;
-
-            if (Objects.isNull(actionUnitDTO)) {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeForInstitution(institutionDTO.getId(), fieldCode);
-            } else {
-                optConfig = conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitDTO.getId());
-            }
-
-            if (optConfig.isEmpty()) {
-                Institution institution = institutionMapper.invertConvert(institutionDTO);
-                fieldConfig = new ConceptFieldConfig();
-                fieldConfig.setInstitution(institution);
-                if (actionUnitDTO != null) fieldConfig.setActionUnit(actionUnitMapper.invertConvert(actionUnitDTO));
-                fieldConfig.setFieldCode(fieldCode);
-                fieldConfig.setConcept(concept);
-            } else {
-                fieldConfig = optConfig.get();
-                fieldConfig.setConcept(concept); // update concept also if there is already a field config
-            }
+            ConceptFieldConfig fieldConfig = conceptFieldConfigRepository
+                    .findOneByVocabularyIdAndFieldCode(vocabulary.getId(), fieldCode)
+                    .orElseGet(() -> {
+                        ConceptFieldConfig created = new ConceptFieldConfig();
+                        created.setVocabulary(vocabulary);
+                        created.setFieldCode(fieldCode);
+                        return created;
+                    });
+            fieldConfig.setConcept(concept); // update concept also if there is already a field config
             fieldConfig = conceptFieldConfigRepository.save(fieldConfig);
-
-
 
             progressWrapper.incrementStep();
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();
         }
-
 
         if (config.isWrongConfig()) return Optional.of(config);
         return Optional.empty();
@@ -268,12 +279,11 @@ public class FieldConfigurationService {
      * @return an Optional containing the vocabulary URL if found, otherwise empty
      */
     @NonNull
+    @Transactional(readOnly = true)
     public Optional<String> findVocabularyUrlOfInstitutionId(@NonNull Long institutionId) {
-        Optional<Concept> optConcept = conceptRepository
-                .findTopTermConfigForFieldCodeOfInstitution(institutionId, SpatialUnit.TYPE_FIELD_CODE);
-        if (optConcept.isEmpty()) return Optional.empty();
-        Vocabulary vocabulary = optConcept.get().getVocabulary();
-        return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());
+        return documentationThesaurusRepository.findOfInstitution(institutionId)
+                .map(DocumentationThesaurus::getVocabulary)
+                .map(FieldConfigurationService::urlOf);
     }
 
     /**
@@ -283,14 +293,15 @@ public class FieldConfigurationService {
      * @return an Optional containing the vocabulary URL if found, otherwise empty
      */
     @NonNull
+    @Transactional(readOnly = true)
     public Optional<String> findVocabularyUrlOfActionUnitId(@NonNull Long actionUnitId) {
-        Optional<ConceptFieldConfig> optConfig = conceptFieldConfigRepository
-                .findOneByFieldCodeAndActionUnitId(SpatialUnit.TYPE_FIELD_CODE, actionUnitId);
-        if (optConfig.isEmpty()) return Optional.empty();
-        Concept concept = optConfig.get().getConcept();
-        Hibernate.initialize(concept.getVocabulary());
-        Vocabulary vocabulary = concept.getVocabulary();
-        return Optional.of(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId());
+        return documentationThesaurusRepository.findByActionUnitId(actionUnitId)
+                .map(DocumentationThesaurus::getVocabulary)
+                .map(FieldConfigurationService::urlOf);
+    }
+
+    private static String urlOf(Vocabulary vocabulary) {
+        return vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId();
     }
 
     /**
@@ -390,9 +401,13 @@ public class FieldConfigurationService {
         if (opt.isPresent() && !opt.get().isNotValid()) {
             ConceptFieldFormConfig config = opt.get();
             Map<Long, ConceptState> states = statesOf(conceptField, config);
-            return config.isBranchConfig()
-                    ? new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, config.getBranchTopTerm().getId(), null, config.getVocabularyMode(), states)
-                    : new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, config.getCollection().getId(), config.getVocabularyMode(), states);
+            if (config.isBranchConfig()) {
+                return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, config.getBranchTopTerm().getId(), null, config.getVocabularyMode(), states);
+            }
+            if (config.isFieldCodeConfig()) {
+                return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, config.getFieldCode(), null, null, config.getVocabularyMode(), states);
+            }
+            return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, config.getCollection().getId(), config.getVocabularyMode(), states);
         }
         if (conceptField instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
             return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, fromFieldCode.getFieldCode(), null, null, VocabularyMode.FOLLOW, Map.of());
@@ -436,6 +451,14 @@ public class FieldConfigurationService {
                 Concept branchTopTerm = config.getBranchTopTerm();
                 Hibernate.initialize(branchTopTerm.getVocabulary());
                 return getUrlOfConcept(branchTopTerm);
+            }
+            if (config.isFieldCodeConfig()) {
+                return findConfigurationInVocabulary(config.getVocabulary(), config.getFieldCode())
+                        .map(found -> {
+                            Hibernate.initialize(found.getConcept().getVocabulary());
+                            return getUrlOfConcept(found.getConcept());
+                        })
+                        .orElse(null);
             }
             return getUrlOfCollection(config.getCollection());
         }
@@ -505,37 +528,51 @@ public class FieldConfigurationService {
     }
 
     /**
-     * Searchs the configuration for a specific field for a project. If none set, falls back to the institution configuration.
+     * Where a field code is read when nothing names a thesaurus for it: in the SIAMOIS thesaurus if it
+     * defines the code, otherwise in the thesaurus the project documents its fields and types in, then
+     * the institution's. A code SIAMOIS defines therefore never moves to a project's thesaurus on its own:
+     * a field has to be pointed at another thesaurus explicitly.
      * A field code the thesaurus doesn't define yet but that has a {@link #FALLBACK_FIELD_CODES fallback} is read through it.
      *
      * @param info         the user information containing institution and user details
      * @param fieldCode    the field code for which to find the configuration
-     * @param actionUnitId the action unit (project) to check for an override, or null for institution-only
-     * @return The project configuration if it exists, otherwise the institution configuration
-     * @throws NoConfigForFieldException if no configuration is found for the field code
+     * @param actionUnitId the action unit (project) whose documentation thesaurus is read, or null for institution-only
+     * @return the configuration of the code in the thesaurus it is read from
+     * @throws NoConfigForFieldException if no thesaurus defines the field code
      */
     @NonNull
+    @Transactional(readOnly = true)
     public ConceptFieldConfig findConfigurationForFieldCode(@NonNull UserInfo info, @NonNull String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        try {
-            return findOwnConfiguration(info, fieldCode, actionUnitId);
-        } catch (NoConfigForFieldException e) {
-            String fallback = FALLBACK_FIELD_CODES.get(fieldCode);
-            if (fallback == null) {
-                throw e;
-            }
-            return findOwnConfiguration(info, fallback, actionUnitId);
-        }
+        return fieldCodeResolver.find(info.getInstitution().getId(), actionUnitId, fieldCode)
+                .orElseThrow(() -> new NoConfigForFieldException(fieldCode));
     }
 
-    private ConceptFieldConfig findOwnConfiguration(UserInfo info, String fieldCode, @Nullable Long actionUnitId) throws NoConfigForFieldException {
-        Optional<ConceptFieldConfig> projectConfig = actionUnitId == null
-                ? Optional.empty()
-                : conceptFieldConfigRepository.findOneByFieldCodeAndActionUnitId(fieldCode, actionUnitId);
-        if (projectConfig.isPresent()) {
-            return projectConfig.get();
+    /**
+     * The field codes a thesaurus defines, loading them first when the thesaurus has never been read: that is the
+     * list a field can pick its source from.
+     *
+     * @throws NotSiamoisThesaurusException      if the thesaurus has no fields branch, so it defines no code
+     * @throws ErrorProcessingExpansionException if the thesaurus could not be read
+     */
+    @NonNull
+    @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
+    public List<String> findFieldCodesOf(@NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        if (conceptFieldConfigRepository.findAllByVocabularyId(vocabulary.getId()).isEmpty()) {
+            loadFieldCodes(vocabulary, new ProgressWrapper());
         }
-        return conceptFieldConfigRepository.findOneByFieldCodeForInstitution(info.getInstitution().getId(), fieldCode)
-                .orElseThrow(() -> new NoConfigForFieldException(fieldCode));
+        return conceptFieldConfigRepository.findDistinctFieldCodesOf(List.of(vocabulary.getId()));
+    }
+
+    /** The thesaurus a field code is read in when nothing redirects it, for a project of an institution. */
+    @NonNull
+    public Optional<Vocabulary> findDefaultVocabularyOfFieldCode(@NonNull Long institutionId, @Nullable Long actionUnitId, @NonNull String fieldCode) {
+        return fieldCodeResolver.findDefaultVocabulary(institutionId, actionUnitId, fieldCode);
+    }
+
+    /** The configuration of a field code in one given thesaurus, read through its fallback code when it has none. */
+    @NonNull
+    public Optional<ConceptFieldConfig> findConfigurationInVocabulary(@NonNull Vocabulary vocabulary, @NonNull String fieldCode) {
+        return fieldCodeResolver.findIn(vocabulary, fieldCode);
     }
 
         /**
@@ -624,9 +661,7 @@ public class FieldConfigurationService {
         }
         Map<Long, ConceptState> states = statesOf(conceptField, conceptFieldFormConfig);
         int limit = scanLimit(conceptFieldFormConfig, states);
-        List<ConceptAutocompleteDTO> candidates = conceptFieldFormConfig.isBranchConfig()
-                ? autocompleteRepository.findMatchingConceptsInBranchOf(conceptFieldFormConfig.getBranchTopTerm(), info.getLang(), input, limit)
-                : autocompleteRepository.findMatchingConceptsInCollection(conceptFieldFormConfig.getCollection(), info.getLang(), input, limit);
+        List<ConceptAutocompleteDTO> candidates = findCandidates(conceptFieldFormConfig, info.getLang(), input, limit);
         return applyStates(candidates, conceptFieldFormConfig, states);
     }
 
@@ -654,15 +689,33 @@ public class FieldConfigurationService {
         String text = StringUtils.isBlank(input) ? null : input.trim();
         Map<Long, ConceptState> states = statesOf(conceptField, config);
         int limit = FROZEN_SCAN_LIMIT;
-        List<ConceptAutocompleteDTO> candidates = config.isBranchConfig()
-                ? autocompleteRepository.findMatchingConceptsInBranchOf(config.getBranchTopTerm(), lang, text, limit)
-                : autocompleteRepository.findMatchingConceptsInCollection(config.getCollection(), lang, text, limit);
+        List<ConceptAutocompleteDTO> candidates = findCandidates(config, lang, text, limit);
         List<ConceptAutocompleteDTO> offered = candidates.stream()
                 .filter(candidate -> isOffered(candidate, config, states))
                 .toList();
         int from = Math.min(offset, offered.size());
         int to = Math.min(from + pageSize, offered.size());
         return new ValuesPage(offered.subList(from, to), offered.size(), candidates.size() >= limit, offered.size() > to);
+    }
+
+    /**
+     * The candidates a saved configuration reads from its source: the subtree of its branch, of the concept
+     * that carries its field code in its thesaurus, or the concepts of its collection. A field code the
+     * thesaurus does not define offers nothing.
+     */
+    private List<ConceptAutocompleteDTO> findCandidates(ConceptFieldFormConfig config, String lang, @Nullable String input, int limit) {
+        if (config.isBranchConfig()) {
+            return autocompleteRepository.findMatchingConceptsInBranchOf(config.getBranchTopTerm(), lang, input, limit);
+        }
+        if (config.isFieldCodeConfig()) {
+            return findConfigurationInVocabulary(config.getVocabulary(), config.getFieldCode())
+                    .map(found -> autocompleteRepository.findMatchingConceptsInBranchOf(found.getConcept(), lang, input, limit))
+                    .orElseGet(() -> {
+                        log.warn("Field code {} is not defined in thesaurus {}", config.getFieldCode(), config.getVocabulary().getExternalVocabularyId());
+                        return List.of();
+                    });
+        }
+        return autocompleteRepository.findMatchingConceptsInCollection(config.getCollection(), lang, input, limit);
     }
 
     /**
@@ -760,8 +813,13 @@ public class FieldConfigurationService {
     @NonNull
     @Transactional(readOnly = true)
     public Map<String, List<ConceptAutocompleteDTO>> fetchAllConfiguredVocabularies(@NonNull UserInfo info) {
-        Long institutionId = info.getInstitution().getId();
-        List<String> fieldCodes = conceptFieldConfigRepository.findDistinctFieldCodesForInstitution(institutionId);
+        List<Long> vocabularyIds = new ArrayList<>();
+        siamoisThesaurus.vocabulary().ifPresent(v -> vocabularyIds.add(v.getId()));
+        documentationThesaurusRepository.findOfInstitution(info.getInstitution().getId())
+                .ifPresent(thesaurus -> vocabularyIds.add(thesaurus.getVocabulary().getId()));
+        List<String> fieldCodes = vocabularyIds.isEmpty()
+                ? List.of()
+                : conceptFieldConfigRepository.findDistinctFieldCodesOf(vocabularyIds);
         Map<String, List<ConceptAutocompleteDTO>> out = new LinkedHashMap<>();
         for (String fieldCode : fieldCodes) {
             try {

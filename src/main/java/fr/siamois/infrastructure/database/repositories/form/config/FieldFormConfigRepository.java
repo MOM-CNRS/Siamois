@@ -112,7 +112,7 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
                                                                      @Param("actionUnitId") Long actionUnitId);
 
     /**
-     * The branch and collection restrictions configured for a project: one row per field and per
+     * The field code, branch and collection sources configured for a project: one row per field and per
      * entity type, with the source they draw their list from.
      *
      * @param actionUnitId the project
@@ -125,9 +125,10 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
             JOIN FETCH ffc.formConfig fc
             LEFT JOIN FETCH ffc.branchTopTerm
             LEFT JOIN FETCH ffc.collection
+            LEFT JOIN FETCH ffc.vocabulary
             LEFT JOIN FETCH fc.valueConcept
             WHERE fc.actionUnit.id = :actionUnitId
-              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL)
+              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL OR ffc.vocabulary IS NOT NULL)
             """)
     List<ConceptFieldFormConfig> findVocabularyRestrictionsOfActionUnit(@Param("actionUnitId") Long actionUnitId);
 
@@ -145,10 +146,11 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
             JOIN FETCH ffc.formConfig fc
             LEFT JOIN FETCH ffc.branchTopTerm
             LEFT JOIN FETCH ffc.collection
+            LEFT JOIN FETCH ffc.vocabulary
             LEFT JOIN FETCH fc.valueConcept
             WHERE fc.institution.id = :institutionId
               AND fc.actionUnit IS NULL
-              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL)
+              AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL OR ffc.vocabulary IS NOT NULL)
             """)
     List<ConceptFieldFormConfig> findVocabularyRestrictionsOfInstitution(@Param("institutionId") Long institutionId);
 }

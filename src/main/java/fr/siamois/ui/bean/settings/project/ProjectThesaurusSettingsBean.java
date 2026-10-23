@@ -4,7 +4,9 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
+import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.utils.MessageUtils;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.ThesaurusUsageService;
@@ -12,6 +14,8 @@ import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.settings.AbstractThesaurusSettingsBean;
+import jakarta.faces.model.SelectItem;
+import jakarta.faces.model.SelectItemGroup;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +27,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -38,6 +44,8 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
     private final transient ThesaurusUsageService thesaurusUsageService;
     private final ProjectTableFieldSettingsBean projectTableFieldSettingsBean;
     private ActionUnitDTO project;
+    /** The thesaurus, as an OpenTheso URL, the ticked fields are connected to. */
+    private String bulkTargetUrl;
 
     public ProjectThesaurusSettingsBean(FieldConfigurationService fieldConfigurationService, VocabularyService vocabularyService,
                                         LabelService labelService, ThesaurusUsageService thesaurusUsageService, LangBean langBean,
@@ -52,6 +60,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
     public void reset() {
         resetState();
         project = null;
+        bulkTargetUrl = null;
     }
 
     public void init(ActionUnitDTO project) {
@@ -60,7 +69,65 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         Optional<String> optVocab = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId());
         optVocab.ifPresent(s -> thesaurusUrl = s);
         loadOptions();
-        usages = new ArrayList<>(thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode()));
+        reloadUsages();
+    }
+
+    private void reloadUsages() {
+        usages = new ArrayList<>(thesaurusUsageService.findAllUsagesOfProject(project.getId(), institutionId(), langBean.getLanguageCode()));
+        selectedUsages = new ArrayList<>();
+    }
+
+    private Long institutionId() {
+        return project.getCreatedByInstitution() == null ? null : project.getCreatedByInstitution().getId();
+    }
+
+    /**
+     * The thesauri a field code can be moved to: the one the project (or its institution) documents its own fields and
+     * types in first, as it is where a team that builds its vocabulary wants its fields to point, then the others known here.
+     */
+    public List<SelectItem> getBulkTargetItems() {
+        String documentation = fieldConfigurationService.findVocabularyUrlOfActionUnitId(project.getId())
+                .or(() -> institutionId() == null ? Optional.empty() : fieldConfigurationService.findVocabularyUrlOfInstitutionId(institutionId()))
+                .orElse(null);
+        List<SelectItem> mine = new ArrayList<>();
+        List<SelectItem> others = new ArrayList<>();
+        for (ThesaurusOption option : thesaurusOptions) {
+            SelectItem item = new SelectItem(option.getUrl(), option.getLabel());
+            (option.getUrl().equals(documentation) ? mine : others).add(item);
+        }
+        List<SelectItem> items = new ArrayList<>();
+        if (!mine.isEmpty()) {
+            SelectItemGroup group = new SelectItemGroup(langBean.msg("thesaurusUsages.bulk.group.documentation"));
+            group.setSelectItems(mine.toArray(new SelectItem[0]));
+            items.add(group);
+        }
+        if (!others.isEmpty()) {
+            SelectItemGroup group = new SelectItemGroup(langBean.msg("thesaurusUsages.bulk.group.others"));
+            group.setSelectItems(others.toArray(new SelectItem[0]));
+            items.add(group);
+        }
+        return items;
+    }
+
+    /** Connects the ticked fields that use a field code to the same codes in the picked thesaurus. */
+    public void rewireSelected() {
+        if (StringUtils.isBlank(bulkTargetUrl) || selectedUsages == null || selectedUsages.isEmpty()) {
+            displayErrorMessage(langBean, "thesaurusUsages.bulk.nothing");
+            return;
+        }
+        Optional<Vocabulary> target = vocabularyService.findAll().stream().filter(v -> urlOf(v).equals(bulkTargetUrl)).findFirst();
+        if (target.isEmpty() || institutionId() == null) {
+            displayErrorMessage(langBean, "thesaurusUsages.bulk.nothing");
+            return;
+        }
+        try {
+            ThesaurusUsageService.RewireResult result = thesaurusUsageService.rewireFieldCodes(project.getId(), institutionId(), selectedUsages, target.get());
+            MessageUtils.displayInfoMessage(langBean, "thesaurusUsages.bulk.done", result.rewired(), result.codeMissing(), result.ignored());
+        } catch (RuntimeException e) {
+            log.error("Could not connect the fields to {}", bulkTargetUrl, e);
+            displayErrorMessage(langBean, "thesaurusUsages.bulk.error");
+        }
+        reloadUsages();
     }
 
     /** Opens the field configuration of the project, where other thesauri (PACTOLS...) can be used. */
@@ -76,7 +143,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper);
             notifySaved();
-            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfActionUnit(project.getId(), langBean.getLanguageCode()));
+            reloadUsages();
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

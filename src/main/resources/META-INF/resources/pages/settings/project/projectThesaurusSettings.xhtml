@@ -73,7 +73,7 @@
 
             </settingscomp:fieldValue>
 
-            <settingscomp:thesaurusUsages usages="#{projectThesaurusSettingsBean.usages}"/>
+            <settingscomp:thesaurusUsages usages="#{projectThesaurusSettingsBean.usages}" bean="#{projectThesaurusSettingsBean}" bulk="true"/>
             <settingscomp:addThesaurusDialog bean="#{projectThesaurusSettingsBean}" update="@(.sia-settings-form)"/>
         </main>
     </ui:define>

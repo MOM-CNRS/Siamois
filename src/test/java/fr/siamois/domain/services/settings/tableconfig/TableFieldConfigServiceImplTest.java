@@ -474,6 +474,56 @@ class TableFieldConfigServiceImplTest {
         assertThat(result).isEmpty();
     }
 
+    // ========== A project that reads its types from another source ==========
+    // The types already configured are filed under the concept the type code is read at by default, so they do not move
+    // when the source does: a new source only changes which types can be configured next.
+
+    private static final long OTHER_SOURCE_CONCEPT_ID = 999L;
+
+    private Concept readTypesFromAnotherSource() throws Exception {
+        Concept otherSource = concept(OTHER_SOURCE_CONCEPT_ID, "other");
+        ConceptFieldConfig redirected = new ConceptFieldConfig();
+        redirected.setConcept(otherSource);
+        ConceptFieldConfig byDefault = new ConceptFieldConfig();
+        byDefault.setConcept(fieldConcept);
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), (Long) isNull())).thenReturn(byDefault);
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), eq(PROJECT_ID))).thenReturn(redirected);
+        return otherSource;
+    }
+
+    @Test
+    void listConfiguredTypeConcepts_shouldStillListTheTypesConfiguredBeforeTheSourceChanged() throws Exception {
+        readTypesFromAnotherSource();
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of(ceramiqueConfig));
+
+        assertThat(service.listConfiguredTypeConcepts(PROJECT_ID, ConfigurableTable.MOBILIER)).containsExactly(ceramiqueConcept);
+    }
+
+    @Test
+    void findFormConfig_shouldStillFindATypeConfiguredBeforeTheSourceChanged() throws Exception {
+        readTypesFromAnotherSource();
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+                .thenReturn(List.of(ceramiqueConfig));
+        when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
+
+        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique")).contains(ceramiqueConfig);
+    }
+
+    @Test
+    void findFormConfig_shouldReadANewTypeInTheNewSource_butFileItUnderTheSameKey() throws Exception {
+        Concept otherSource = readTypesFromAnotherSource();
+        Concept verre = concept(77L, "verre");
+        FormConfig verreConfig = formConfig(12L, verre);
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
+        when(conceptRepository.findAllByFieldContextAndExactLabel(otherSource.getId(), "fr", "Verre"))
+                .thenReturn(List.of(verre));
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 77L))
+                .thenReturn(Optional.of(verreConfig));
+
+        assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Verre")).contains(verreConfig);
+    }
+
     // ========== Concept-id-keyed overloads ==========
     // These skip the label round-trip (Concept -> label -> re-resolved Concept) that the
     // String-keyed overloads above go through via findValueConcept/conceptRepository. They must

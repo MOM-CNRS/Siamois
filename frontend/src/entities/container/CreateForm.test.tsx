@@ -29,7 +29,7 @@ const typeField: FieldResource = {
   id: "-602",
   resourceType: "fields",
   label: "Type",
-  answerType: "SELECT_ONE_FROM_FIELD_CODE",
+  answerType: "SELECT_ONE",
   isSystemField: true,
   valueBinding: "type",
   fieldCode: "SIACONTAINER.TYPE",
