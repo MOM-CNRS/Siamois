@@ -100,6 +100,8 @@ import static java.lang.Long.parseLong;
 @RequiredArgsConstructor
 public class ProjectApiService {
 
+    private static final String DOCUMENT_NOT_FOUND = "Document introuvable : ";
+
     public static final int MAX_PAGE_SIZE = 200;
 
     public static final String CREATION_TIME = "creationTime";
@@ -923,7 +925,10 @@ public class ProjectApiService {
         try {
             document = documentService.findDtoById(documentId);
         } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Document introuvable : " + documentId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, DOCUMENT_NOT_FOUND + documentId);
+        }
+        if (document == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, DOCUMENT_NOT_FOUND + documentId);
         }
         ActionUnitSummaryDTO owner = document.getActionUnit();
         if (owner == null || !Objects.equals(owner.getId(), project.getId())) {

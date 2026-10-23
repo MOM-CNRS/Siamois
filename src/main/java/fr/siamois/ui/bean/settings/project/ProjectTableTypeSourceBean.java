@@ -130,11 +130,12 @@ public class ProjectTableTypeSourceBean implements Serializable {
     }
 
     private String labelOfThesaurus(Vocabulary found) {
+        String externalId = found.getExternalVocabularyId();
         try {
             String label = labelService.findLabelOf(found, langBean.getLanguageCode()).getValue();
-            return StringUtils.isBlank(label) ? found.getExternalVocabularyId() : label;
+            return StringUtils.isBlank(label) ? externalId : label;
         } catch (RuntimeException e) {
-            return found.getExternalVocabularyId();
+            return externalId;
         }
     }
 
@@ -147,14 +148,14 @@ public class ProjectTableTypeSourceBean implements Serializable {
     }
 
     private void prefill(ProjectCodeSource current) {
+        Vocabulary sourceVocabulary = current.getVocabulary();
         if (current.isBranch()) {
             Concept top = current.getBranchTopTerm();
             source = BRANCH;
             vocabulary = vocabularyMapper.convert(top.getVocabulary());
             connected();
             branchConcept = branchOf(top);
-        } else if (current.getVocabulary() != null) {
-            Vocabulary sourceVocabulary = current.getVocabulary();
+        } else if (sourceVocabulary != null) {
             source = FIELD_CODE;
             vocabulary = vocabularyMapper.convert(sourceVocabulary);
             connected();
