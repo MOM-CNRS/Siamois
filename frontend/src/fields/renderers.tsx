@@ -212,6 +212,9 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
+  // What is being typed in a single picker's input: PrimeReact reports it through onChange as a
+  // plain string, which is not a pick and must never reach the answer.
+  const [typed, setTyped] = useState<string | null>(null);
   const orgId = organizationId ?? context?.organizationId;
   const sourceOptions =
     orgId != null
@@ -402,7 +405,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         className="resource-ref-picker"
         style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
         // itemTemplate narrows the picker's value type, which excludes the null of an empty single pick.
-        value={(asTokens ? tokens : selected) as FilterOption[] | FilterOption | undefined}
+        value={(asTokens ? tokens : (typed ?? selected)) as FilterOption[] | FilterOption | undefined}
         suggestions={suggestions}
         completeMethod={search}
         field="label"
@@ -411,6 +414,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         disabled={readOnly || creatingPlace}
         required={required}
         onFocus={onFocus}
+        onBlur={() => setTyped(null)}
         // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
         // depends on is empty — say so rather than showing an unexplained empty list.
         placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
@@ -423,6 +427,14 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
+          if (typeof e.value === "string") {
+            setTyped(e.value);
+            // An empty string means the input was cleared: commit null so the required-field
+            // check can fire (and the field can actually be cleared).
+            if (e.value === "") void commitPicked(null);
+            return;
+          }
+          setTyped(null);
           if (asTokens && !multiple) {
             // The last pick is the value; none left means cleared.
             const picked = (e.value as FilterOption[] | null) ?? [];

@@ -148,6 +148,92 @@ describe("SelectOneConceptRenderer", () => {
     });
     expect(mockedOptionSourceFor).not.toHaveBeenCalled();
   });
+
+  // PrimeReact fires onChange with the typed text (a string) on every keystroke — committing it
+  // would send { resourceId: undefined, … } and the server would refuse it ("Identifiant numérique
+  // attendu pour concept"). Only a real pick (an object) is committed from typed text; an empty
+  // string means the input was cleared and commits null.
+  it("ignores typed text: onChange fires with a non-empty string but the renderer's onChange is not called", async () => {
+    mockedOptionSourceFor.mockImplementation(() => async () => []);
+    const onChange = vi.fn();
+    act(() => {
+      root.render(
+        <SelectOneConceptRenderer
+          field={conceptField()}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={onChange}
+          organizationId={100}
+        />,
+      );
+    });
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "argile");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("commits null when the input is cleared (empty string)", async () => {
+    mockedOptionSourceFor.mockImplementation(() => async () => []);
+    const onChange = vi.fn();
+    act(() => {
+      root.render(
+        <SelectOneConceptRenderer
+          field={conceptField()}
+          value={{ resourceId: "7", resourceType: "concepts", label: "En cours" }}
+          readOnly={false}
+          required={false}
+          onChange={onChange}
+          organizationId={100}
+        />,
+      );
+    });
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  // The typed text must survive the re-render triggered when search results arrive — the
+  // controlled `value` prop alone would reset the input to the (empty) selected label.
+  it("keeps the typed text in the input after the search results arrive", async () => {
+    let resolveSearch: (options: FilterOption[]) => void = () => {};
+    mockedOptionSourceFor.mockImplementation(
+      () => () =>
+        new Promise<FilterOption[]>((resolve) => {
+          resolveSearch = resolve;
+        }),
+    );
+    const onChange = vi.fn();
+    act(() => {
+      root.render(
+        <SelectOneConceptRenderer
+          field={conceptField()}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={onChange}
+          organizationId={100}
+        />,
+      );
+    });
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "argile");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    // The search is in flight (suggestions not yet resolved) — a re-render happens when it lands.
+    await act(async () => {
+      resolveSearch([{ id: "7", label: "Argile" }]);
+    });
+    expect(input.value).toBe("argile");
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
 
 describe("SelectManyConceptRenderer", () => {
