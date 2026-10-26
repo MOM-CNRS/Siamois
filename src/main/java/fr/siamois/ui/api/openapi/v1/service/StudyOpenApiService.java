@@ -11,18 +11,14 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.study.StudyService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyCreateRequest;
@@ -50,10 +46,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class StudyOpenApiService {
 
+    private static final String TYPE_NOT_FOUND = "Type d'étude introuvable";
+
     private final StudyService studyService;
-    private final ActionUnitService actionUnitService;
-    private final ConceptService conceptService;
-    private final ConceptMapper conceptMapper;
+    private final ProjectTypedCreationService projectTypedCreationService;
     private final ProfilePermissionService profilePermissionService;
     private final StudyOpenApiMapper studyOpenApiMapper;
     private final StudyListProjectionService studyListProjectionService;
@@ -78,36 +74,40 @@ public class StudyOpenApiService {
     @Transactional
     public StudyResource createStudy(StudyCreateRequest request, PersonDTO personDto,
                                              Set<Long> accessibleInstitutionIds, String lang) {
-        String projectId = requireNonBlank(request.getProjectId(), "projectId");
-        String typeId = requireNonBlank(request.getTypeId(), "typeId");
-
-        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
-        ActionUnitDTO au = project.actionUnit();
-        InstitutionDTO institution = au.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(),
+        ProjectContext project = projectTypedCreationService.resolveProject(
+                request.getProjectId(), personDto, accessibleInstitutionIds, lang);
+        projectTypedCreationService.requirePermission(project, "Création d'étude non autorisée sur ce projet",
                 PermissionConstants.INSTANCE_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
-                PermissionConstants.PROJECT_EDIT_STUDIES)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création d'étude non autorisée sur ce projet");
-        }
+                PermissionConstants.PROJECT_EDIT_STUDIES);
+        StudyDTO shell = newStudy(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
+                () -> studyService.identifierAlreadyExistInAction(shell));
 
-        Concept typeConcept = conceptService.findById(parseLong(typeId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'étude introuvable"));
+        StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> studyService.save(shell));
+        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+    }
 
+    /**
+     * The identifier a new study of this type would be given in this project, without consuming the
+     * counter ({@code GET /api/v1/identifier-suggestions?entityType=studies}) — shown, modifiable, in the creation form.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds, String lang) {
+        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
+                lang, TYPE_NOT_FOUND, (project, type) -> studyService.suggestIdentifier(newStudy(project, type)));
+    }
+
+    private static StudyDTO newStudy(ProjectContext project, ConceptDTO type) {
         StudyDTO shell = new StudyDTO();
-        shell.setActionUnit(new ActionUnitSummaryDTO(au));
+        shell.setActionUnit(project.projectSummary());
         // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
         // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(personDto);
-        shell.setCreatedByInstitution(institution);
-        shell.setType(conceptMapper.convert(typeConcept));
-
-        StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> studyService.save(shell));
-        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+        shell.setCreatedBy(project.userInfo().getUser());
+        shell.setCreatedByInstitution(project.institution());
+        shell.setType(type);
+        return shell;
     }
 
     @Transactional
@@ -198,21 +198,6 @@ public class StudyOpenApiService {
         boolean inScope = institution != null && institution.getId() != null
                 && accessibleInstitutionIds != null && accessibleInstitutionIds.contains(institution.getId());
         return inScope && profilePermissionService.canViewProject(personDto, institution, project.getId());
-    }
-
-    private static String requireNonBlank(String value, String name) {
-        if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " est requis");
-        }
-        return value;
-    }
-
-    private static long parseLong(String value) {
-        try {
-            return Long.parseLong(value.trim());
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
-        }
     }
 
     /** Previous/next study in the same project ({@code GET /api/v1/studies/{id}/siblings}). */

@@ -12,7 +12,7 @@ export function ContainerCreateForm(ctx: CreateFormContext) {
       entityType="container"
       title={t("create.newContainer")}
       typesSegment="container-types"
-      create={(projectId, typeId) => createContainer({ projectId, typeId })}
+      create={createContainer}
     />
   );
 }

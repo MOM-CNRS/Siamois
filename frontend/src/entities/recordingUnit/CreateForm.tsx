@@ -1,7 +1,7 @@
 import { CreateLinkField } from "../../components/create/CreateLinkField";
 import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
 import type { CreateFormContext } from "../shared/types";
-import { createRecordingUnit, suggestRecordingUnitIdentifier } from "./api";
+import { createRecordingUnit } from "./api";
 import { t } from "../../i18n";
 
 // A recording unit needs only its type. Its identifier is suggested by the server (a peek at the
@@ -16,12 +16,9 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
       entityType="recordingUnit"
       title={t("create.newRecordingUnit")}
       typesSegment="recording-unit-types"
-      suggestIdentifier={suggestRecordingUnitIdentifier}
-      create={(projectId, typeId, identifier) =>
+      create={(body) =>
         createRecordingUnit({
-          projectId,
-          typeId,
-          identifier,
+          ...body,
           parentRecordingUnitId: prefill?.parent?.id,
           childRecordingUnitId: prefill?.child?.id,
           phaseId: prefill?.phase?.id,

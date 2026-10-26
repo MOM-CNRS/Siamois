@@ -44,6 +44,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -85,7 +86,7 @@ class StudyOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StudyOpenApiService(studyService, actionUnitService, conceptService, conceptMapper,
+        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
                 profilePermissionService, studyOpenApiMapper,
                 studyListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), entitySiblingsService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
@@ -458,5 +459,113 @@ class StudyOpenApiServiceTest {
         assertThatThrownBy(() -> service.deleteStudy(5L, personDto, scope, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    // --- identifier chosen in the creation form / suggested ---
+
+    private ConceptDTO allowCreationOfType2InProject7() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(2L);
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(2L);
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        return typeDto;
+    }
+
+    private StudyCreateRequest creationRequest(String identifier) {
+        StudyCreateRequest req = new StudyCreateRequest();
+        req.setProjectId("7");
+        req.setTypeId("2");
+        req.setIdentifier(identifier);
+        return req;
+    }
+
+    @Test
+    void createStudy_chosenIdentifier_isSavedTrimmedOnceCheckedFree() {
+        allowCreationOfType2InProject7();
+        StudyDTO saved = new StudyDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+
+        service.createStudy(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
+        verify(studyService).save(captor.capture());
+        // Set before the save: the service then skips its own generation.
+        assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
+        verify(studyService).identifierAlreadyExistInAction(captor.getValue());
+    }
+
+    @Test
+    void createStudy_chosenIdentifierAlreadyTaken_throws409WithoutSaving() {
+        allowCreationOfType2InProject7();
+        when(studyService.identifierAlreadyExistInAction(any(StudyDTO.class))).thenReturn(true);
+
+        var req = creationRequest("TAKEN");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createStudy(req, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+        verify(studyService, never()).save(any(StudyDTO.class));
+    }
+
+    @Test
+    void createStudy_blankIdentifier_leavesItToTheServer() {
+        allowCreationOfType2InProject7();
+        StudyDTO saved = new StudyDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+
+        service.createStudy(creationRequest("   "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
+        verify(studyService).save(captor.capture());
+        assertThat(captor.getValue().getIdentifier()).isNull();
+        verify(studyService, never()).identifierAlreadyExistInAction(any(StudyDTO.class));
+    }
+
+    @Test
+    void suggestIdentifier_suggestsForANewEntityOfTheTypeInTheProject_inTheCallersContext() {
+        ConceptDTO typeDto = allowCreationOfType2InProject7();
+        when(studyService.suggestIdentifier(any(StudyDTO.class))).thenAnswer(invocation -> {
+            // The identifier format is read in the caller's context (their organization and language).
+            UserInfo current = fr.siamois.utils.context.ExecutionContextHolder.get();
+            assertThat(current.getInstitution()).isSameAs(institution);
+            assertThat(current.getUser()).isSameAs(personDto);
+            assertThat(current.getLang()).isEqualTo("fr");
+            return "SUGGESTED-1";
+        });
+
+        String suggested = service.suggestIdentifier("7", "2", personDto, Set.of(10L), "fr");
+
+        assertThat(suggested).isEqualTo("SUGGESTED-1");
+        ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
+        verify(studyService).suggestIdentifier(captor.capture());
+        assertThat(captor.getValue().getId()).isNull();
+        assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
+        assertThat(captor.getValue().getType()).isSameAs(typeDto);
+        // A suggestion writes nothing — and needs no edit right.
+        verify(studyService, never()).save(any(StudyDTO.class));
+        verify(profilePermissionService, never()).hasProjectPermission(any(UserInfo.class), anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void suggestIdentifier_unknownType_throws404() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.empty());
+
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.suggestIdentifier("7", "2", personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Type d'étude introuvable")
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(studyService, never()).suggestIdentifier(any(StudyDTO.class));
     }
 }

@@ -14,18 +14,13 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ContainerService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.container.ContainerCreateRequest;
@@ -55,10 +50,10 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ContainerOpenApiService {
 
+    private static final String TYPE_NOT_FOUND = "Type de contenant introuvable";
+
     private final ContainerService containerService;
-    private final ActionUnitService actionUnitService;
-    private final ConceptService conceptService;
-    private final ConceptMapper conceptMapper;
+    private final ProjectTypedCreationService projectTypedCreationService;
     private final ProfilePermissionService profilePermissionService;
     private final ContainerOpenApiMapper containerOpenApiMapper;
     private final ContainerListProjectionService containerListProjectionService;
@@ -87,36 +82,40 @@ public class ContainerOpenApiService {
     @Transactional
     public ContainerResource createContainer(ContainerCreateRequest request, PersonDTO personDto,
                                              Set<Long> accessibleInstitutionIds, String lang) {
-        String projectId = requireNonBlank(request.getProjectId(), "projectId");
-        String typeId = requireNonBlank(request.getTypeId(), "typeId");
-
-        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
-        ActionUnitDTO au = project.actionUnit();
-        InstitutionDTO institution = au.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(),
+        ProjectContext project = projectTypedCreationService.resolveProject(
+                request.getProjectId(), personDto, accessibleInstitutionIds, lang);
+        projectTypedCreationService.requirePermission(project, "Création de contenant non autorisée sur ce projet",
                 PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de contenant non autorisée sur ce projet");
-        }
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        ContainerDTO shell = newContainer(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
+                () -> containerService.identifierAlreadyExistInAction(shell));
 
-        Concept typeConcept = conceptService.findById(parseLong(typeId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de contenant introuvable"));
+        ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> containerService.save(shell));
+        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+    }
 
+    /**
+     * The identifier a new container of this type would be given in this project, without consuming the
+     * counter ({@code GET /api/v1/identifier-suggestions?entityType=containers}) — shown, modifiable, in the creation form.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds, String lang) {
+        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
+                lang, TYPE_NOT_FOUND, (project, type) -> containerService.suggestIdentifier(newContainer(project, type)));
+    }
+
+    private static ContainerDTO newContainer(ProjectContext project, ConceptDTO type) {
         ContainerDTO shell = new ContainerDTO();
-        shell.setActionUnit(new ActionUnitSummaryDTO(au));
+        shell.setActionUnit(project.projectSummary());
         // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
         // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(personDto);
-        shell.setCreatedByInstitution(institution);
-        shell.setType(conceptMapper.convert(typeConcept));
-
-        ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> containerService.save(shell));
-        return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
+        shell.setCreatedBy(project.userInfo().getUser());
+        shell.setCreatedByInstitution(project.institution());
+        shell.setType(type);
+        return shell;
     }
 
     @Transactional
@@ -201,21 +200,6 @@ public class ContainerOpenApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Contenant introuvable ou hors périmètre");
         }
         return container;
-    }
-
-    private static String requireNonBlank(String value, String name) {
-        if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " est requis");
-        }
-        return value;
-    }
-
-    private static long parseLong(String value) {
-        try {
-            return Long.parseLong(value.trim());
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
-        }
     }
 
     /** Previous/next container in the same project ({@code GET /api/v1/containers/{id}/siblings}). */

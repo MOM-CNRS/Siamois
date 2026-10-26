@@ -8,7 +8,6 @@ import {
   getRecordingUnitStructure,
   listRecordingUnits,
   patchRecordingUnitAnswers,
-  suggestRecordingUnitIdentifier,
 } from "./api";
 
 vi.mock("../../api/client", () => ({
@@ -149,16 +148,5 @@ describe("createRecordingUnit", () => {
 
     const body = (mockedApiFetch.mock.calls[0][1] as { body: Record<string, unknown> }).body;
     expect(body.identifier).toBeUndefined();
-  });
-});
-
-describe("suggestRecordingUnitIdentifier", () => {
-  it("gets the suggestion for the project and the type, and unwraps it", async () => {
-    mockedApiFetch.mockResolvedValueOnce({ suggestedIdentifier: "INST-PROJ-UE1" });
-
-    const result = await suggestRecordingUnitIdentifier("5", 42);
-
-    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/recording-units/suggest-identifier?projectId=5&typeId=42");
-    expect(result).toBe("INST-PROJ-UE1");
   });
 });

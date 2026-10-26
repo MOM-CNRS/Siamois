@@ -268,11 +268,23 @@ public class SpecimenService implements ArkEntityService {
         return specimenMapper.convert(savedSpecimen);
     }
 
+    /**
+     * The full identifier a new specimen like {@code dto} would be given, without consuming the
+     * counter — the creation form's suggestion. Its recording unit is read from the database (its
+     * identifiers feed the format); nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestFullIdentifier(SpecimenDTO dto) {
+        Specimen specimen = specimenMapper.invertConvert(dto);
+        attachRecordingUnit(specimen, specimen);
+        return identifierGenerator.suggestIdentifier(specimen, specimenIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Specimen> specimenIdentifierSpec() {
         return IdentifierGenerationSpec.<Specimen>builder()
                 .table(ConfigurableTable.MOBILIER)
                 .entityName("specimen")
-                .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Specimen::getId, Specimen::getFullIdentifier))
                 .actionUnit(this::resolveIdentifierActionUnit)
                 .typeId(specimen -> specimen.getType() == null ? null : specimen.getType().getId())
                 .displayValue("NUM_PARENT", specimen -> {

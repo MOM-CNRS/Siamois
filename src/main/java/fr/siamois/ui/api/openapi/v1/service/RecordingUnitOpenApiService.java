@@ -130,6 +130,7 @@ public class RecordingUnitOpenApiService {
     private final MultiValueAnswers multiValueAnswers;
     private final DocumentService documentService;
     private final PhaseService phaseService;
+    private final ProjectTypedCreationService projectTypedCreationService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -641,31 +642,22 @@ public class RecordingUnitOpenApiService {
     /**
      * The identifier the server would generate for a new recording unit of the given type in the
      * given project — without consuming the counter. Shown as a modifiable suggestion in the
-     * creation form ({@code GET /api/v1/recording-units/suggest-identifier}).
+     * creation form ({@code GET /api/v1/identifier-suggestions?entityType=recording-units}).
      */
     @Transactional(readOnly = true)
     public String suggestIdentifier(String projectId,
-                                    long typeId,
+                                    String typeId,
                                     PersonDTO personDto,
                                     Set<Long> accessibleInstitutionIds,
                                     String lang) {
-        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
-        ActionUnitDTO au = project.actionUnit();
-        InstitutionDTO institution = au.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        Concept typeConcept = conceptRepository.findById(typeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
-
-        RecordingUnitDTO shell = new RecordingUnitDTO();
-        shell.setType(conceptMapper.convert(typeConcept));
-        shell.setActionUnit(actionUnitSummaryFromFull(au));
-
-        // The identifier configuration is read in the context of a user (their institution and language).
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        return OpenApiExecutionContext.callWithUserInfo(userInfo,
-                () -> recordingUnitService.suggestFullIdentifier(actionUnitSummaryFromFull(au), shell));
+        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
+                lang, "Type d'UE introuvable", (context, type) -> {
+                    ActionUnitSummaryDTO project = actionUnitSummaryFromFull(context.project());
+                    RecordingUnitDTO shell = new RecordingUnitDTO();
+                    shell.setType(type);
+                    shell.setActionUnit(project);
+                    return recordingUnitService.suggestFullIdentifier(project, shell);
+                });
     }
 
     /**
@@ -1110,13 +1102,8 @@ public class RecordingUnitOpenApiService {
         } catch (FailedRecordingUnitSaveException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
-        if (customIdentifier != null && !customIdentifier.isBlank()) {
-            saved.setFullIdentifier(customIdentifier.trim());
-            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Cet identifiant existe déjà dans le projet");
-            }
-        } else {
+        if (!IdentifierPatch.applyChosen(customIdentifier, saved::setFullIdentifier,
+                () -> recordingUnitService.fullIdentifierAlreadyExistInAction(saved))) {
             String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
             saved.setFullIdentifier(generated);
             if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {

@@ -95,7 +95,6 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
-import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -113,6 +112,9 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
+import java.util.function.BiFunction;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -196,6 +198,8 @@ class RecordingUnitOpenApiServiceTest {
 
     @Mock
     private fr.siamois.domain.services.document.DocumentService documentService;
+    @Mock
+    private ProjectTypedCreationService projectTypedCreationService;
 
     @InjectMocks
     private RecordingUnitOpenApiService service;
@@ -1328,25 +1332,25 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void suggestIdentifier_returnsTheServiceSuggestionForProjectAndType() {
+    @SuppressWarnings("unchecked")
+    void suggestIdentifier_suggestsForAShellOfTheTypeInTheProject() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setCreatedByInstitution(inst);
-        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
-                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-
-        Concept typeConcept = new Concept();
-        typeConcept.setId(42L);
         ConceptDTO typeDto = new ConceptDTO();
         typeDto.setId(42L);
-        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
-        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        // The shared resolution (project, organization, type, caller context) is ProjectTypedCreationService's:
+        // here, only what the RU service suggests for.
+        when(projectTypedCreationService.suggestIdentifier(eq("5"), eq("42"), eq(personDto), eq(SCOPE), eq("fr"),
+                eq("Type d'UE introuvable"), any()))
+                .thenAnswer(invocation -> ((BiFunction<ProjectContext, ConceptDTO, String>) invocation.getArgument(6))
+                        .apply(new ProjectContext(au, inst, new UserInfo(inst, personDto, "fr")), typeDto));
         when(recordingUnitService.suggestFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class)))
                 .thenReturn("INST-PROJ-UE1");
 
-        String suggested = service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr");
+        String suggested = service.suggestIdentifier("5", "42", personDto, SCOPE, "fr");
 
         assertThat(suggested).isEqualTo("INST-PROJ-UE1");
         // The suggestion is computed for an unpersisted shell of the picked type in the picked project.
@@ -1354,68 +1358,7 @@ class RecordingUnitOpenApiServiceTest {
         verify(recordingUnitService).suggestFullIdentifier(any(ActionUnitSummaryDTO.class), shell.capture());
         assertThat(shell.getValue().getType()).isSameAs(typeDto);
         assertThat(shell.getValue().getActionUnit().getId()).isEqualTo(5L);
-    }
-
-    @Test
-    void suggestIdentifier_runsInTheCallerInstitutionContext() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(5L);
-        au.setCreatedByInstitution(inst);
-        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
-                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        Concept typeConcept = new Concept();
-        typeConcept.setId(42L);
-        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
-        when(conceptMapper.convert(typeConcept)).thenReturn(new ConceptDTO());
-        when(recordingUnitService.suggestFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class)))
-                .thenAnswer(invocation -> {
-                    // The identifier configuration is read in the context of a user: without one
-                    // bound to the thread, the resolution fails (the bug this guards against).
-                    UserInfo current = ExecutionContextHolder.get();
-                    assertThat(current).isNotNull();
-                    assertThat(current.getInstitution().getId()).isEqualTo(10L);
-                    assertThat(current.getUser().getId()).isEqualTo(personDto.getId());
-                    assertThat(current.getLang()).isEqualTo("fr");
-                    return "INST-PROJ-UE1";
-                });
-
-        String suggested = service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr");
-
-        assertThat(suggested).isEqualTo("INST-PROJ-UE1");
-        // The context is bound only for the duration of the call.
-        assertThat(ExecutionContextHolder.get()).isNull();
-    }
-
-    @Test
-    void suggestIdentifier_projectWithoutOrganization_throws400() {
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(5L);
-        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
-                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-
-        assertThatThrownBy(() -> service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-        verifyNoInteractions(recordingUnitService);
-    }
-
-    @Test
-    void suggestIdentifier_unknownType_throws404() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(5L);
-        au.setCreatedByInstitution(inst);
-        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
-                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
-        when(conceptRepository.findById(42L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
-        verifyNoInteractions(recordingUnitService);
+        assertThat(shell.getValue().getId()).isNull();
     }
 
     @Test

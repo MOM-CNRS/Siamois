@@ -12,7 +12,7 @@ export function StudyCreateForm(ctx: CreateFormContext) {
       entityType="study"
       title={t("create.newStudy")}
       typesSegment="study-types"
-      create={(projectId, typeId) => createStudy({ projectId, typeId })}
+      create={createStudy}
     />
   );
 }

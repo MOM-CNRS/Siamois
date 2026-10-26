@@ -22,4 +22,9 @@ public class StudyCreateRequest {
     @Schema(description = "Identifiant du concept de type d'étude (concept_id)", requiredMode = Schema.RequiredMode.REQUIRED)
     private String typeId;
 
+    @Schema(description = "Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : "
+            + "absent ou vide, le serveur génère l'identifiant comme d'habitude. "
+            + "S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet).")
+    private String identifier;
+
 }

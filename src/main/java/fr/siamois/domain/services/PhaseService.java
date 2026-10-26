@@ -145,11 +145,20 @@ public class PhaseService {
         return phaseMapper.convert(phaseRepository.save(managed));
     }
 
+    /**
+     * The identifier a new phase like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. Nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(PhaseDTO dto) {
+        return identifierGenerator.suggestIdentifier(phaseMapper.invertConvert(dto), phaseIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Phase> phaseIdentifierSpec() {
         return IdentifierGenerationSpec.<Phase>builder()
                 .table(ConfigurableTable.PHASE)
                 .entityName("phase")
-                .generationRequired(phase -> phase.getId() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Phase::getId, Phase::getIdentifier))
                 .actionUnit(Phase::getActionUnit)
                 .typeId(phase -> phase.getType() == null ? null : phase.getType().getId())
                 .displayValue("NUM_PARENT", phase -> null)
