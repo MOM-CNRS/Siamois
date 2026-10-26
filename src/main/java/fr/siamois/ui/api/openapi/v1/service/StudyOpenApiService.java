@@ -16,8 +16,8 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper;
@@ -45,8 +45,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class StudyOpenApiService {
-
-    private static final String TYPE_NOT_FOUND = "Type d'étude introuvable";
 
     private final StudyService studyService;
     private final ProjectTypedCreationService projectTypedCreationService;
@@ -80,34 +78,13 @@ public class StudyOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                 PermissionConstants.PROJECT_EDIT_STUDIES);
-        StudyDTO shell = newStudy(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        StudyDTO shell = projectTypedCreationService.newEntity(Kind.STUDY, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.STUDY));
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> studyService.identifierAlreadyExistInAction(shell));
 
         StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> studyService.save(shell));
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
-    }
-
-    /**
-     * The identifier a new study of this type would be given in this project, without consuming the
-     * counter ({@code GET /api/v1/identifier-suggestions?entityType=studies}) — shown, modifiable, in the creation form.
-     */
-    @Transactional(readOnly = true)
-    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds, String lang) {
-        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
-                lang, TYPE_NOT_FOUND, (project, type) -> studyService.suggestIdentifier(newStudy(project, type)));
-    }
-
-    private static StudyDTO newStudy(ProjectContext project, ConceptDTO type) {
-        StudyDTO shell = new StudyDTO();
-        shell.setActionUnit(project.projectSummary());
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(project.userInfo().getUser());
-        shell.setCreatedByInstitution(project.institution());
-        shell.setType(type);
-        return shell;
     }
 
     @Transactional

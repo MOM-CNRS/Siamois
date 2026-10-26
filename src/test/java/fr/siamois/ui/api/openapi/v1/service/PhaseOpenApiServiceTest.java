@@ -434,7 +434,7 @@ class PhaseOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }
 
-    // --- identifier chosen in the creation form / suggested ---
+    // --- identifier chosen in the creation form ---
 
     private ConceptDTO allowCreationOfType2InProject7() {
         ActionUnitDTO au = projectWithInstitution();
@@ -503,42 +503,4 @@ class PhaseOpenApiServiceTest {
         verify(phaseService, never()).identifierAlreadyExistInAction(any(PhaseDTO.class));
     }
 
-    @Test
-    void suggestIdentifier_suggestsForANewEntityOfTheTypeInTheProject_inTheCallersContext() {
-        ConceptDTO typeDto = allowCreationOfType2InProject7();
-        when(phaseService.suggestIdentifier(any(PhaseDTO.class))).thenAnswer(invocation -> {
-            // The identifier format is read in the caller's context (their organization and language).
-            UserInfo current = fr.siamois.utils.context.ExecutionContextHolder.get();
-            assertThat(current.getInstitution()).isSameAs(institution);
-            assertThat(current.getUser()).isSameAs(personDto);
-            assertThat(current.getLang()).isEqualTo("fr");
-            return "SUGGESTED-1";
-        });
-
-        String suggested = service.suggestIdentifier("7", "2", personDto, Set.of(10L), "fr");
-
-        assertThat(suggested).isEqualTo("SUGGESTED-1");
-        ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).suggestIdentifier(captor.capture());
-        assertThat(captor.getValue().getId()).isNull();
-        assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
-        assertThat(captor.getValue().getType()).isSameAs(typeDto);
-        // A suggestion writes nothing — and needs no edit right.
-        verify(phaseService, never()).save(any(PhaseDTO.class));
-        verify(profilePermissionService, never()).hasProjectPermission(any(UserInfo.class), anyLong(), any(), any(), any());
-    }
-
-    @Test
-    void suggestIdentifier_unknownType_throws404() {
-        ActionUnitDTO au = projectWithInstitution();
-        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
-        when(conceptService.findById(2L)).thenReturn(java.util.Optional.empty());
-
-        var scope = Set.of(10L);
-        assertThatThrownBy(() -> service.suggestIdentifier("7", "2", personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Type de phase introuvable")
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
-        verify(phaseService, never()).suggestIdentifier(any(PhaseDTO.class));
-    }
 }

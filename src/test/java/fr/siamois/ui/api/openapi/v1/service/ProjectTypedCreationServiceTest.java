@@ -8,10 +8,14 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.dto.entity.DocumentDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,21 +135,21 @@ class ProjectTypedCreationServiceTest {
     void resolveType_mapsTheConcept() {
         ConceptDTO type = typeExists();
 
-        assertThat(service.resolveType("2", "Type introuvable")).isSameAs(type);
+        assertThat(service.resolveType("2", Kind.PHASE)).isSameAs(type);
     }
 
     @Test
     void resolveType_unknown_throws404WithTheGivenMessage() {
         when(conceptService.findById(2L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.resolveType("2", "Type de phase introuvable"))
-                .hasMessageContaining("Type de phase introuvable")
+        assertThatThrownBy(() -> service.resolveType("2", Kind.CONTAINER))
+                .hasMessageContaining("Type de contenant introuvable")
                 .satisfies(ex -> assertThat(statusOf(ex)).isEqualTo(HttpStatus.NOT_FOUND));
     }
 
     @Test
     void resolveType_notNumeric_throws400() {
-        assertThatThrownBy(() -> service.resolveType("abc", "Type introuvable"))
+        assertThatThrownBy(() -> service.resolveType("abc", Kind.PHASE))
                 .satisfies(ex -> assertThat(statusOf(ex)).isEqualTo(HttpStatus.BAD_REQUEST));
         verifyNoInteractions(conceptService);
     }
@@ -155,8 +159,8 @@ class ProjectTypedCreationServiceTest {
         projectIsAccessible();
         ConceptDTO type = typeExists();
 
-        String suggested = service.suggestIdentifier("7", "2", person, SCOPE, "fr", "Type introuvable",
-                (context, picked) -> {
+        String suggested = service.suggestIdentifier(Kind.PHASE, "7", "2", person, SCOPE, "fr",
+                phase -> {
                     // The identifier configuration is read in the context of a user: without one bound
                     // to the thread, its resolution fails ("No user bound to the current thread").
                     UserInfo current = ExecutionContextHolder.get();
@@ -164,8 +168,10 @@ class ProjectTypedCreationServiceTest {
                     assertThat(current.getInstitution().getId()).isEqualTo(10L);
                     assertThat(current.getUser()).isSameAs(person);
                     assertThat(current.getLang()).isEqualTo("fr");
-                    assertThat(context.project()).isSameAs(project);
-                    assertThat(picked).isSameAs(type);
+                    // The new, unsaved phase of the type in the project.
+                    assertThat(phase.getId()).isNull();
+                    assertThat(phase.getActionUnit().getId()).isEqualTo(7L);
+                    assertThat(phase.getType()).isSameAs(type);
                     return "P-1";
                 });
 
@@ -173,5 +179,41 @@ class ProjectTypedCreationServiceTest {
         assertThat(ExecutionContextHolder.get()).isNull();
         // Nothing is written, so no edit right is required.
         verify(profilePermissionService, never()).hasProjectPermission(any(UserInfo.class), any(), any(), any(), any());
+    }
+
+    @Test
+    void projectSummary_keepsTheProjectsIdentifiers_readByTheIdentifierFormats() {
+        project.setName("Fouille");
+        project.setIdentifier("PROJ7");
+        project.setFullIdentifier("ORG-PROJ7");
+        projectIsAccessible();
+
+        ActionUnitSummaryDTO summary = service.resolveProject("7", person, SCOPE, "fr").projectSummary();
+
+        assertThat(summary.getId()).isEqualTo(7L);
+        assertThat(summary.getName()).isEqualTo("Fouille");
+        assertThat(summary.getIdentifier()).isEqualTo("PROJ7");
+        // {ID_UA}: a summary built from the id and name alone renders XXX.
+        assertThat(summary.getFullIdentifier()).isEqualTo("ORG-PROJ7");
+    }
+
+    @Test
+    void newEntity_isTheUnsavedEntityOfTheTypeInTheProject_createdByTheCaller() {
+        projectIsAccessible();
+        ProjectContext context = service.resolveProject("7", person, SCOPE, "fr");
+        ConceptDTO type = new ConceptDTO();
+        type.setId(2L);
+
+        DocumentDTO document = service.newEntity(Kind.DOCUMENT, context, type);
+        RecordingUnitDTO unit = service.newEntity(Kind.RECORDING_UNIT, context, type);
+
+        assertThat(document.getId()).isNull();
+        assertThat(document.getActionUnit().getId()).isEqualTo(7L);
+        assertThat(document.getType()).isSameAs(type);
+        // TraceableEntity's NOT NULL author and organization: the caller, in the project's organization.
+        assertThat(document.getCreatedBy()).isSameAs(person);
+        assertThat(document.getCreatedByInstitution()).isSameAs(institution);
+        assertThat(unit.getActionUnit().getId()).isEqualTo(7L);
+        assertThat(unit.getType()).isSameAs(type);
     }
 }

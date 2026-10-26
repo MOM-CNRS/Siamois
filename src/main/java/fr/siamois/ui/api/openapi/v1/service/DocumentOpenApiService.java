@@ -16,8 +16,8 @@ import fr.siamois.domain.services.document.DocumentLinkService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
@@ -47,8 +47,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class DocumentOpenApiService {
-
-    private static final String TYPE_NOT_FOUND = "Catégorie de document introuvable";
 
     private final DocumentService documentService;
     private final ProjectTypedCreationService projectTypedCreationService;
@@ -84,7 +82,8 @@ public class DocumentOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
-        DocumentDTO shell = newDocument(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        DocumentDTO shell = projectTypedCreationService.newEntity(Kind.DOCUMENT, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.DOCUMENT));
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
@@ -94,29 +93,6 @@ public class DocumentOpenApiService {
         DocumentDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> documentService.save(shell));
         linkPrefilledTargets(saved.getId(), request, project.project().getId(), project.institution().getId());
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
-    }
-
-    /**
-     * The identifier a new document of this category would be given in this project, without consuming
-     * the counter ({@code GET /api/v1/identifier-suggestions?entityType=documents}) — shown, modifiable, in the creation
-     * form. {@code null} where the project configures no format.
-     */
-    @Transactional(readOnly = true)
-    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds, String lang) {
-        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
-                lang, TYPE_NOT_FOUND, (project, type) -> documentService.suggestIdentifier(newDocument(project, type)));
-    }
-
-    private static DocumentDTO newDocument(ProjectContext project, ConceptDTO type) {
-        DocumentDTO shell = new DocumentDTO();
-        shell.setActionUnit(project.projectSummary());
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(project.userInfo().getUser());
-        shell.setCreatedByInstitution(project.institution());
-        shell.setType(type);
-        return shell;
     }
 
     /** A document created from an entity's Documents tab starts out linked to it (and to nothing outside its project). */

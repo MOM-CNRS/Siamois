@@ -130,7 +130,6 @@ public class RecordingUnitOpenApiService {
     private final MultiValueAnswers multiValueAnswers;
     private final DocumentService documentService;
     private final PhaseService phaseService;
-    private final ProjectTypedCreationService projectTypedCreationService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -640,27 +639,6 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * The identifier the server would generate for a new recording unit of the given type in the
-     * given project — without consuming the counter. Shown as a modifiable suggestion in the
-     * creation form ({@code GET /api/v1/identifier-suggestions?entityType=recording-units}).
-     */
-    @Transactional(readOnly = true)
-    public String suggestIdentifier(String projectId,
-                                    String typeId,
-                                    PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds,
-                                    String lang) {
-        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
-                lang, "Type d'UE introuvable", (context, type) -> {
-                    ActionUnitSummaryDTO project = actionUnitSummaryFromFull(context.project());
-                    RecordingUnitDTO shell = new RecordingUnitDTO();
-                    shell.setType(type);
-                    shell.setActionUnit(project);
-                    return recordingUnitService.suggestFullIdentifier(project, shell);
-                });
-    }
-
-    /**
      * Gabarit UI pour création d'un mobilier pour un type donné, résolu pour un projet précis.
      *
      * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
@@ -1068,7 +1046,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO shell = new RecordingUnitDTO();
         shell.setType(typeDto);
         shell.setCreatedByInstitution(institution);
-        shell.setActionUnit(actionUnitSummaryFromFull(au));
+        shell.setActionUnit(ProjectTypedCreationService.summaryOf(au));
         shell.setAuthor(personDto);
         shell.setCreatedBy(personDto);
         shell.setContributors(new ArrayList<>(List.of(personDto)));
@@ -1214,18 +1192,6 @@ public class RecordingUnitOpenApiService {
                 expectedRevision,
                 current,
                 serverState));
-    }
-
-    private static ActionUnitSummaryDTO actionUnitSummaryFromFull(ActionUnitDTO au) {
-        ActionUnitSummaryDTO s = new ActionUnitSummaryDTO(au);
-        s.setId(au.getId());
-        s.setName(au.getName());
-        s.setFullIdentifier(au.getFullIdentifier());
-        s.setIdentifier(au.getIdentifier());
-        s.setType(au.getType());
-        s.setBeginDate(au.getBeginDate());
-        s.setEndDate(au.getEndDate());
-        return s;
     }
 
     /**

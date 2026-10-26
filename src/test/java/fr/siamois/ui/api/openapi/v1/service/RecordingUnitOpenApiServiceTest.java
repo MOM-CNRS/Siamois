@@ -112,9 +112,6 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
-import java.util.function.BiFunction;
-
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -198,8 +195,6 @@ class RecordingUnitOpenApiServiceTest {
 
     @Mock
     private fr.siamois.domain.services.document.DocumentService documentService;
-    @Mock
-    private ProjectTypedCreationService projectTypedCreationService;
 
     @InjectMocks
     private RecordingUnitOpenApiService service;
@@ -1329,36 +1324,6 @@ class RecordingUnitOpenApiServiceTest {
         ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
         verify(recordingUnitService, times(2)).save(saves.capture());
         assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("RU-3000");
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void suggestIdentifier_suggestsForAShellOfTheTypeInTheProject() {
-        InstitutionDTO inst = new InstitutionDTO();
-        inst.setId(10L);
-        ActionUnitDTO au = new ActionUnitDTO();
-        au.setId(5L);
-        au.setCreatedByInstitution(inst);
-        ConceptDTO typeDto = new ConceptDTO();
-        typeDto.setId(42L);
-        // The shared resolution (project, organization, type, caller context) is ProjectTypedCreationService's:
-        // here, only what the RU service suggests for.
-        when(projectTypedCreationService.suggestIdentifier(eq("5"), eq("42"), eq(personDto), eq(SCOPE), eq("fr"),
-                eq("Type d'UE introuvable"), any()))
-                .thenAnswer(invocation -> ((BiFunction<ProjectContext, ConceptDTO, String>) invocation.getArgument(6))
-                        .apply(new ProjectContext(au, inst, new UserInfo(inst, personDto, "fr")), typeDto));
-        when(recordingUnitService.suggestFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class)))
-                .thenReturn("INST-PROJ-UE1");
-
-        String suggested = service.suggestIdentifier("5", "42", personDto, SCOPE, "fr");
-
-        assertThat(suggested).isEqualTo("INST-PROJ-UE1");
-        // The suggestion is computed for an unpersisted shell of the picked type in the picked project.
-        ArgumentCaptor<RecordingUnitDTO> shell = ArgumentCaptor.forClass(RecordingUnitDTO.class);
-        verify(recordingUnitService).suggestFullIdentifier(any(ActionUnitSummaryDTO.class), shell.capture());
-        assertThat(shell.getValue().getType()).isSameAs(typeDto);
-        assertThat(shell.getValue().getActionUnit().getId()).isEqualTo(5L);
-        assertThat(shell.getValue().getId()).isNull();
     }
 
     @Test

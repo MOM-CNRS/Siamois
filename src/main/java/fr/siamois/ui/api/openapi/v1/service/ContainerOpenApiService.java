@@ -18,8 +18,8 @@ import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ContainerDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
@@ -49,8 +49,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class ContainerOpenApiService {
-
-    private static final String TYPE_NOT_FOUND = "Type de contenant introuvable";
 
     private final ContainerService containerService;
     private final ProjectTypedCreationService projectTypedCreationService;
@@ -88,34 +86,13 @@ public class ContainerOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
-        ContainerDTO shell = newContainer(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        ContainerDTO shell = projectTypedCreationService.newEntity(Kind.CONTAINER, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.CONTAINER));
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> containerService.identifierAlreadyExistInAction(shell));
 
         ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> containerService.save(shell));
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
-    }
-
-    /**
-     * The identifier a new container of this type would be given in this project, without consuming the
-     * counter ({@code GET /api/v1/identifier-suggestions?entityType=containers}) — shown, modifiable, in the creation form.
-     */
-    @Transactional(readOnly = true)
-    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds, String lang) {
-        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
-                lang, TYPE_NOT_FOUND, (project, type) -> containerService.suggestIdentifier(newContainer(project, type)));
-    }
-
-    private static ContainerDTO newContainer(ProjectContext project, ConceptDTO type) {
-        ContainerDTO shell = new ContainerDTO();
-        shell.setActionUnit(project.projectSummary());
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(project.userInfo().getUser());
-        shell.setCreatedByInstitution(project.institution());
-        shell.setType(type);
-        return shell;
     }
 
     @Transactional

@@ -17,8 +17,8 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
@@ -48,8 +48,6 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class PhaseOpenApiService {
-
-    private static final String TYPE_NOT_FOUND = "Type de phase introuvable";
 
     private final PhaseService phaseService;
     private final ProjectTypedCreationService projectTypedCreationService;
@@ -87,7 +85,8 @@ public class PhaseOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
                 PermissionConstants.PROJECT_EDIT_PHASES);
-        PhaseDTO shell = newPhase(project, projectTypedCreationService.resolveType(request.getTypeId(), TYPE_NOT_FOUND));
+        PhaseDTO shell = projectTypedCreationService.newEntity(Kind.PHASE, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.PHASE));
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
@@ -96,28 +95,6 @@ public class PhaseOpenApiService {
 
         PhaseDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> phaseService.save(shell));
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
-    }
-
-    /**
-     * The identifier a new phase of this type would be given in this project, without consuming the
-     * counter ({@code GET /api/v1/identifier-suggestions?entityType=phases}) — shown, modifiable, in the creation form.
-     */
-    @Transactional(readOnly = true)
-    public String suggestIdentifier(String projectId, String typeId, PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds, String lang) {
-        return projectTypedCreationService.suggestIdentifier(projectId, typeId, personDto, accessibleInstitutionIds,
-                lang, TYPE_NOT_FOUND, (project, type) -> phaseService.suggestIdentifier(newPhase(project, type)));
-    }
-
-    private static PhaseDTO newPhase(ProjectContext project, ConceptDTO type) {
-        PhaseDTO shell = new PhaseDTO();
-        shell.setActionUnit(project.projectSummary());
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(project.userInfo().getUser());
-        shell.setCreatedByInstitution(project.institution());
-        shell.setType(type);
-        return shell;
     }
 
     @Transactional
