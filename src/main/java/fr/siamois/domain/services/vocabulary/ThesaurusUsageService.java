@@ -7,20 +7,33 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
+import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +55,11 @@ public class ThesaurusUsageService {
     private final TableFieldConfigService tableFieldConfigService;
     private final FormConfigService formConfigService;
     private final FieldCodeResolver fieldCodeResolver;
+    private final ConceptService conceptService;
+    private final ConceptCollectionService conceptCollectionService;
+    private final VocabularyMapper vocabularyMapper;
+    private final ConceptCollectionRepository conceptCollectionRepository;
+    private final PlatformTransactionManager transactionManager;
 
     /** What {@link #rewireFieldCodes} did with the rows it was given. */
     public record RewireResult(int rewired, int codeMissing, int ignored) {
@@ -178,19 +196,21 @@ public class ThesaurusUsageService {
     }
 
     /**
-     * Connects the fields of the given rows that use a field code to the same code in another thesaurus. A field whose code
-     * the thesaurus does not define is left as it is; a field given back to its default thesaurus follows the default again.
+     * Moves the fields of the given rows to another thesaurus. A field on a field code keeps its code and looks it up
+     * there; a field on a branch or a collection takes the one of the same name. A field whose code, branch or
+     * collection the thesaurus does not have, or has more than once, is left as it is; a field given back to its
+     * default thesaurus follows the default again.
      *
-     * @param rows   the rows picked in the table; those not using a field code are ignored
-     * @param target the thesaurus the codes are now read in
+     * @param rows   the rows picked in the table
+     * @param target the thesaurus the lists are now read in
      */
-    @Transactional(rollbackFor = Exception.class)
     public RewireResult rewireFieldCodes(Long projectId, Long institutionId, List<ThesaurusUsage> rows, Vocabulary target) {
         int rewired = 0;
         int missing = 0;
         int ignored = 0;
+        NamedSources named = new NamedSources(target);
         for (ThesaurusUsage row : rows) {
-            switch (rewireRow(projectId, institutionId, row, target)) {
+            switch (rewireRowSafely(projectId, institutionId, row, target, named)) {
                 case REWIRED -> rewired++;
                 case CODE_MISSING -> missing++;
                 case IGNORED -> ignored++;
@@ -201,15 +221,165 @@ public class ThesaurusUsageService {
 
     private enum Outcome { REWIRED, CODE_MISSING, IGNORED }
 
-    private Outcome rewireRow(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target) {
+    /**
+     * Each field is moved in a transaction of its own, so the thesaurus is never read while one is held open for several
+     * fields, and a field that cannot be moved is left as it is without undoing the others.
+     */
+    private void inNewTransaction(Runnable work) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> work.run());
+    }
+
+    /** What the target thesaurus holds under a name, read once however many fields ask for it. */
+    private final class NamedSources {
+        private final VocabularyDTO target;
+        private final Map<String, Optional<ConceptDTO>> branches = new HashMap<>();
+        private final Map<String, Optional<ConceptCollectionDetachedDTO>> collections = new HashMap<>();
+        private List<ConceptCollectionDetachedDTO> allCollections;
+        /** The branches and collections already imported for a field, so the next field on them does not import them again. */
+        private final Set<String> importedBranches = new HashSet<>();
+        private final Set<String> importedCollections = new HashSet<>();
+
+        NamedSources(Vocabulary target) {
+            this.target = vocabularyMapper.convert(target);
+        }
+
+        /** The one branch top term of the thesaurus named {@code name}, empty when there is none or several. */
+        Optional<ConceptDTO> branch(String name) {
+            return branches.computeIfAbsent(normalized(name), key -> findBranch(name));
+        }
+
+        /** The one collection of the thesaurus named {@code name}, empty when there is none or several. */
+        Optional<ConceptCollectionDetachedDTO> collection(String name) {
+            return collections.computeIfAbsent(normalized(name), this::findCollection);
+        }
+
+        private Optional<ConceptDTO> findBranch(String name) {
+            try {
+                List<ConceptDTO> found = conceptService.fetchAutocompleteFromRemoteThesaurus(target, name).stream()
+                        .filter(result -> !result.getConceptLabelToDisplay().isAltLabel())
+                        .filter(result -> normalized(result.getConceptLabelToDisplay().getLabel()).equals(normalized(name)))
+                        .map(ConceptAutocompleteDetachedDTO::getConceptLabelToDisplay)
+                        .map(ConceptLabelDTO::getConcept)
+                        .collect(Collectors.toMap(ConceptDTO::getExternalId, Function.identity(), (first, second) -> first))
+                        .values().stream().toList();
+                return found.size() == 1 ? Optional.of(found.get(0)) : Optional.empty();
+            } catch (JsonProcessingException | RuntimeException e) {
+                log.warn("Could not look for the branch '{}' in {}", name, target.getBaseUri(), e);
+                return Optional.empty();
+            }
+        }
+
+        private Optional<ConceptCollectionDetachedDTO> findCollection(String key) {
+            try {
+                if (allCollections == null) {
+                    allCollections = conceptCollectionService.fetchCollectionsFromRemoteThesaurus(target);
+                }
+                List<ConceptCollectionDetachedDTO> found = allCollections.stream()
+                        .filter(collection -> normalized(collection.getLabelToDisplay()).equals(key)
+                                || collection.getLabels().stream().anyMatch(label -> normalized(label.getTitle()).equals(key)))
+                        .toList();
+                return found.size() == 1 ? Optional.of(found.get(0)) : Optional.empty();
+            } catch (RuntimeException e) {
+                log.warn("Could not look for the collection '{}' in {}", key, target.getBaseUri(), e);
+                return Optional.empty();
+            }
+        }
+    }
+
+    private static String normalized(@Nullable String name) {
+        return name == null ? "" : name.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private Outcome rewireRowSafely(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+        try {
+            return rewireRow(projectId, institutionId, row, target, named);
+        } catch (RuntimeException e) {
+            log.warn("Field '{}' of {} / {} could not be moved to another thesaurus", row.getFieldLabel(), row.getTableName(), row.getTypeName(), e);
+            return Outcome.IGNORED;
+        }
+    }
+
+    private Outcome rewireRow(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+        if (row.getTableName() == null) {
+            return Outcome.IGNORED;
+        }
+        if (row.getKind() != FieldVocabularyConfig.Kind.FIELD_CODE) {
+            return rewireByName(projectId, row, target, named);
+        }
         String code = row.getFieldCode();
-        if (row.getKind() != FieldVocabularyConfig.Kind.FIELD_CODE || row.getTableName() == null || code == null) {
+        if (code == null) {
             return Outcome.IGNORED;
         }
         if (fieldCodeResolver.findIn(target, code).isEmpty()) {
             return Outcome.CODE_MISSING;
         }
-        return rewire(projectId, institutionId, row, code, target) ? Outcome.REWIRED : Outcome.IGNORED;
+        boolean[] done = new boolean[1];
+        inNewTransaction(() -> done[0] = rewire(projectId, institutionId, row, code, target));
+        return done[0] ? Outcome.REWIRED : Outcome.IGNORED;
+    }
+
+    /** A branch or a collection is found again in the target thesaurus by the name it was picked under. */
+    private Outcome rewireByName(Long projectId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+        ConfigurableTable table = ConfigurableTable.valueOf(row.getTableName());
+        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, table, row.getTypeName());
+        Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, row.getTypeName(), row.getFieldLabel());
+        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
+            return Outcome.IGNORED;
+        }
+        boolean branch = row.getKind() == FieldVocabularyConfig.Kind.BRANCH;
+        String name = formConfigService.findConceptConfigFor(formConfig.get(), conceptField)
+                .map(config -> branch ? config.getBranchName() : config.getCollectionName())
+                .orElse(null);
+        if (name == null || name.isBlank()) {
+            return Outcome.IGNORED;
+        }
+        // looked up before any transaction opens: the thesaurus is slow
+        return branch
+                ? rewireBranch(formConfig.get(), conceptField, name, named)
+                : rewireCollection(formConfig.get(), conceptField, name, target, named);
+    }
+
+    private Outcome rewireBranch(FormConfig formConfig, CustomFieldConcept conceptField, String name, NamedSources named) {
+        Optional<ConceptDTO> found = named.branch(name);
+        if (found.isEmpty()) {
+            return Outcome.IGNORED;
+        }
+        ConceptDTO top = found.get();
+        boolean imported = named.importedBranches.contains(top.getExternalId());
+        inNewTransaction(() -> {
+            if (imported) {
+                formConfigService.addConceptConfigForLoadedBranch(formConfig, conceptField, top);
+            } else {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, top);
+            }
+            formConfigService.rememberSourceName(formConfig, conceptField, name);
+        });
+        named.importedBranches.add(top.getExternalId());
+        return Outcome.REWIRED;
+    }
+
+    private Outcome rewireCollection(FormConfig formConfig, CustomFieldConcept conceptField, String name,
+                                     Vocabulary target, NamedSources named) {
+        Optional<ConceptCollectionDetachedDTO> found = named.collection(name);
+        if (found.isEmpty()) {
+            return Outcome.IGNORED;
+        }
+        ConceptCollectionDetachedDTO collection = found.get();
+        Optional<ConceptCollection> local = named.importedCollections.contains(collection.getExternalId())
+                ? conceptCollectionRepository.findByVocabularyAndExternalId(target, collection.getExternalId())
+                : Optional.empty();
+        inNewTransaction(() -> {
+            if (local.isPresent()) {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, local.get());
+            } else {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, collection);
+            }
+            formConfigService.rememberSourceName(formConfig, conceptField, name);
+        });
+        named.importedCollections.add(collection.getExternalId());
+        return Outcome.REWIRED;
     }
 
     private boolean rewire(Long projectId, Long institutionId, ThesaurusUsage row, String code, Vocabulary target) {

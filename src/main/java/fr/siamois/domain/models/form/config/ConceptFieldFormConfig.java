@@ -45,6 +45,20 @@ public class ConceptFieldFormConfig extends FieldFormConfig {
     private String fieldCode;
 
     /**
+     * The label of the {@link #branchTopTerm} when it was picked. A branch or a collection belongs to one thesaurus and
+     * its ids mean nothing in another: this name is what finds the same branch in the thesaurus the field is moved to.
+     * Not audited, it only repeats what the thesaurus says.
+     */
+    @NotAudited
+    @Column(name = "branch_name")
+    private String branchName;
+
+    /** The label of the {@link #collection} when it was picked, for the same reason as {@link #branchName}. */
+    @NotAudited
+    @Column(name = "collection_name")
+    private String collectionName;
+
+    /**
      * Whether the list follows its source or is a frozen set of concepts. The column default lets
      * Hibernate's schema update add it to a table that already has rows. Not audited: the audit table
      * would need the same default, and nothing reads the mode's history.

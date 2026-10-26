@@ -35,7 +35,7 @@ const typeField: FieldResource = {
   answerType: "SELECT_ONE",
   isSystemField: true,
   valueBinding: "type",
-  fieldCode: "SIAD.CATEGORY",
+  fieldCode: "SIAD.TYPE",
 };
 
 let container: HTMLDivElement;

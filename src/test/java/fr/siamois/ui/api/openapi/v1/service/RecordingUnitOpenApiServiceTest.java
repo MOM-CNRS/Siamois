@@ -2784,7 +2784,7 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void buildProjectDocumentTypeSettings_returnsEachCategoryWithItsForm() {
+    void buildProjectDocumentTypeSettings_returnsEachTypeWithItsForm() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();
@@ -2822,10 +2822,10 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(response.getData().get(0).getFields()).containsKey("46");
     }
 
-    // Documents come before an institution's thesaurus declares the category field: no category, no stored
+    // Documents come before an institution's thesaurus declares the type field: no type, no stored
     // identifier format, the seed layout as the form — and no failure.
     @Test
-    void buildProjectDocumentTypeSettings_withoutTheCategoryField_fallsBackToTheSeedLayout() {
+    void buildProjectDocumentTypeSettings_withoutTheTypeField_fallsBackToTheSeedLayout() {
         InstitutionDTO inst = new InstitutionDTO();
         inst.setId(10L);
         ActionUnitDTO au = new ActionUnitDTO();

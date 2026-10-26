@@ -142,6 +142,8 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
             ConceptFieldFormConfig conceptCopy = new ConceptFieldFormConfig();
             conceptCopy.setBranchTopTerm(concept.getBranchTopTerm());
             conceptCopy.setCollection(concept.getCollection());
+            conceptCopy.setBranchName(concept.getBranchName());
+            conceptCopy.setCollectionName(concept.getCollectionName());
             conceptCopy.setVocabulary(concept.getVocabulary());
             conceptCopy.setFieldCode(concept.getFieldCode());
             conceptCopy.setVocabularyMode(concept.getVocabularyMode());

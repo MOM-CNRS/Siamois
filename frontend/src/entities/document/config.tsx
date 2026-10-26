@@ -17,7 +17,7 @@ import { t } from "../../i18n";
 
 // The document's own EntityTypeConfig: an independent card on the home, an organization-wide list, a
 // project list, and a fiche composed from the project's configuration of the document table (its
-// "type" is the category). Its dynamic column catalog comes from the project's forms
+// "type" is the document type). Its dynamic column catalog comes from the project's forms
 // (entities/shared/typeCatalog.ts).
 export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDetail> = {
   key: "document",

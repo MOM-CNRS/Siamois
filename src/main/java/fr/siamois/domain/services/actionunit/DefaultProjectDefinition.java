@@ -32,11 +32,15 @@ public class DefaultProjectDefinition {
      * @param identifierFormat the format of the identifiers of this type's records, null for the table's default
      * @param lists            the collection (its identifier in the thesaurus) holding the values of a field for this type,
      *                         by field code; a field absent from here reads its whole list in the thesaurus
+     * @param listNames        the name of each of those collections in the thesaurus, by field code: what finds the
+     *                         same collection again when the field is moved to another thesaurus
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Type(String label, String concept, String identifierFormat, Map<String, String> lists) {
+    public record Type(String label, String concept, String identifierFormat, Map<String, String> lists,
+                       Map<String, String> listNames) {
         public Type {
             lists = lists == null ? Map.of() : lists;
+            listNames = listNames == null ? Map.of() : listNames;
         }
     }
 

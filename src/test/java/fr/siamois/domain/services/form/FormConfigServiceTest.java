@@ -155,6 +155,18 @@ class FormConfigServiceTest {
     }
 
     @Test
+    void addConceptConfigForLoadedBranch_setsTheTopTermWithoutReadingTheThesaurusAgain() throws Exception {
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.empty());
+        stubVocabularyResolution();
+        when(conceptService.saveOrGetConcept(branchTopConceptDTO)).thenReturn(branchTopConcept);
+
+        formConfigService.addConceptConfigForLoadedBranch(formConfig, field, branchTopConceptDTO);
+
+        assertThat(captureSavedConfig().getBranchTopTerm()).isSameAs(branchTopConcept);
+        verify(conceptApi, never()).fetchDownExpansion(any(Vocabulary.class), anyString());
+    }
+
+    @Test
     void addConceptConfigFor_withAnImportedCollection_setsItWithoutReadingTheThesaurus() {
         ConceptCollection imported = new ConceptCollection();
         imported.setExternalId("g101");
@@ -729,4 +741,58 @@ class FormConfigServiceTest {
         return purlInfoDTO;
     }
 
+    // --- Remembering the name of a branch or a collection ---------------------------------------
+
+    @Test
+    void rememberSourceName_shouldStoreTheBranchName_whenTheFieldIsOnABranch() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setBranchTopTerm(branchTopConcept);
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.rememberSourceName(formConfig, field, "Matière");
+
+        assertThat(existing.getBranchName()).isEqualTo("Matière");
+        assertThat(existing.getCollectionName()).isNull();
+        verify(fieldFormConfigRepository).save(existing);
+    }
+
+    @Test
+    void rememberSourceName_shouldStoreTheCollectionName_whenTheFieldIsOnACollection() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setCollection(new fr.siamois.domain.models.vocabulary.ConceptCollection());
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.rememberSourceName(formConfig, field, "Classe — Métal");
+
+        assertThat(existing.getCollectionName()).isEqualTo("Classe — Métal");
+        assertThat(existing.getBranchName()).isNull();
+    }
+
+    @Test
+    void rememberSourceName_shouldDoNothing_whenTheFieldIsOnAFieldCode() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setVocabulary(vocabulary);
+        existing.setFieldCode("SIAS.CLASS");
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.rememberSourceName(formConfig, field, "x");
+
+        assertThat(existing.getBranchName()).isNull();
+        assertThat(existing.getCollectionName()).isNull();
+        verify(fieldFormConfigRepository, never()).save(any());
+    }
+
+    @Test
+    void clearConceptConfigFor_shouldForgetTheNames() {
+        ConceptFieldFormConfig existing = new ConceptFieldFormConfig();
+        existing.setBranchTopTerm(branchTopConcept);
+        existing.setBranchName("Matière");
+        existing.setCollectionName("Autre");
+        when(fieldFormConfigRepository.findByFormConfigAndField(formConfig, field)).thenReturn(Optional.of(existing));
+
+        formConfigService.clearConceptConfigFor(formConfig, field);
+
+        assertThat(existing.getBranchName()).isNull();
+        assertThat(existing.getCollectionName()).isNull();
+    }
 }

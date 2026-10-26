@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 import java.util.Map;
 
 /**
- * A document. The first block is what the mobile API has always served; the rest (identifier, category,
+ * A document. The first block is what the mobile API has always served; the rest (identifier, type,
  * answers, permissions…) is what the web client's list and fiche read, absent from a mobile response.
  */
 @Data
@@ -61,7 +61,7 @@ public class DocumentResource extends DocumentResourceIdentifier implements Book
     private OrganizationResourceIdentifier organization;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @Schema(description = "Catégorie (type de la table configurable)")
+    @Schema(description = "Type de document (type de la table configurable)")
     private ResolvedConceptResource type;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

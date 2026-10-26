@@ -35,6 +35,7 @@ class DefaultProjectDefinitionTest {
         assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::identifierFormat)
                 .containsExactly("US{NUM_UE:000}", "F{NUM_UE:000}", "ENS{NUM_UE:000}");
         assertThat(ue.types().get(0).lists()).containsKeys("SIARU.GEOMORPHO", "SIARU.INTERPRETATION");
+        assertThat(ue.types().get(0).listNames()).containsOnlyKeys(ue.types().get(0).lists().keySet().toArray(String[]::new));
     }
 
     @Test

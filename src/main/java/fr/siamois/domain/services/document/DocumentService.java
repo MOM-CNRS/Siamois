@@ -250,7 +250,7 @@ public class DocumentService implements ArkEntityService {
         to.setIdentifier(from.getIdentifier());
         to.setOtherIdentifiers(from.getOtherIdentifiers());
         to.setType(from.getType());
-        to.setDocumentType(from.getDocumentType());
+        to.setCategory(from.getCategory());
         to.setFormat(from.getFormat());
         to.setTitle(from.getTitle());
         to.setPublisher(from.getPublisher());

@@ -54,7 +54,7 @@ public class FormConfigService {
     public void addConceptConfigFor(@NonNull FormConfig formConfig,
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept) {
-        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, null);
+        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, null, true);
     }
 
     /**
@@ -68,11 +68,22 @@ public class FormConfigService {
                                     @NonNull CustomFieldConcept customFieldConcept,
                                     @NonNull ConceptDTO branchTopConcept,
                                     @Nullable ProgressWrapper progressWrapper) {
-        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, progressWrapper);
+        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, progressWrapper, true);
+    }
+
+    /**
+     * Same as {@link #addConceptConfigFor(FormConfig, CustomFieldConcept, ConceptDTO)} for a branch whose concepts were
+     * just imported for another field: the thesaurus is not read again.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void addConceptConfigForLoadedBranch(@NonNull FormConfig formConfig,
+                                                @NonNull CustomFieldConcept customFieldConcept,
+                                                @NonNull ConceptDTO branchTopConcept) {
+        doAddConceptConfig(formConfig, customFieldConcept, branchTopConcept, null, false);
     }
 
     private void doAddConceptConfig(FormConfig formConfig, CustomFieldConcept customFieldConcept,
-                                    ConceptDTO branchTopConcept, @Nullable ProgressWrapper progressWrapper) {
+                                    ConceptDTO branchTopConcept, @Nullable ProgressWrapper progressWrapper, boolean load) {
         ConceptFieldFormConfig conceptFieldFormConfig = createOrGetFieldConfig(formConfig, customFieldConcept);
         Concept concept;
         try {
@@ -82,8 +93,11 @@ public class FormConfigService {
             conceptFieldFormConfig.setBranchTopTerm(concept);
             conceptFieldFormConfig.setCollection(null);
             clearFieldCode(conceptFieldFormConfig);
+            clearSourceNames(conceptFieldFormConfig);
 
-            loadDownExpansion(concept, progressWrapper);
+            if (load) {
+                loadDownExpansion(concept, progressWrapper);
+            }
 
             fieldFormConfigRepository.save(conceptFieldFormConfig);
         } catch (InvalidEndpointException e) {
@@ -119,6 +133,7 @@ public class FormConfigService {
         conceptFieldFormConfig.setCollection(collection);
         conceptFieldFormConfig.setBranchTopTerm(null);
         clearFieldCode(conceptFieldFormConfig);
+        clearSourceNames(conceptFieldFormConfig);
         fieldFormConfigRepository.save(conceptFieldFormConfig);
     }
 
@@ -129,6 +144,7 @@ public class FormConfigService {
         conceptFieldFormConfig.setCollection(savedCollection);
         conceptFieldFormConfig.setBranchTopTerm(null);
         clearFieldCode(conceptFieldFormConfig);
+        clearSourceNames(conceptFieldFormConfig);
         fieldFormConfigRepository.save(conceptFieldFormConfig);
     }
 
@@ -149,12 +165,38 @@ public class FormConfigService {
         conceptFieldFormConfig.setFieldCode(fieldCode);
         conceptFieldFormConfig.setBranchTopTerm(null);
         conceptFieldFormConfig.setCollection(null);
+        clearSourceNames(conceptFieldFormConfig);
         fieldFormConfigRepository.save(conceptFieldFormConfig);
     }
 
     private static void clearFieldCode(ConceptFieldFormConfig config) {
         config.setVocabulary(null);
         config.setFieldCode(null);
+    }
+
+    /**
+     * Remembers the label of the branch or the collection a field was just set on, so the same one can be found in
+     * another thesaurus when the field is moved to it. Does nothing for a field on a field code, which has no name.
+     *
+     * @param name the label of the branch top term or of the collection, as the thesaurus gives it
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void rememberSourceName(@NonNull FormConfig formConfig, @NonNull CustomFieldConcept customFieldConcept, @Nullable String name) {
+        findConceptConfigFor(formConfig, customFieldConcept).ifPresent(config -> {
+            if (config.isBranchConfig()) {
+                config.setBranchName(name);
+            } else if (config.isCollectionConfig()) {
+                config.setCollectionName(name);
+            } else {
+                return;
+            }
+            fieldFormConfigRepository.save(config);
+        });
+    }
+
+    private static void clearSourceNames(ConceptFieldFormConfig config) {
+        config.setBranchName(null);
+        config.setCollectionName(null);
     }
 
     /**
@@ -185,6 +227,7 @@ public class FormConfigService {
             config.setBranchTopTerm(null);
             config.setCollection(null);
             clearFieldCode(config);
+            clearSourceNames(config);
             fieldFormConfigRepository.save(config);
         });
     }

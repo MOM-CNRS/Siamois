@@ -29,7 +29,7 @@ export interface DocumentResource {
   projectId?: string | null;
   // Organization-wide list only — see ProjectRef.
   project?: ProjectRef | null;
-  // The category: the type of the configurable table.
+  // The document type: the type of the configurable table.
   type?: ResolvedConcept | null;
   organization?: OrganizationIdentifier | null;
   // Raw values, list and detail alike (see DocumentAnswersProjector).

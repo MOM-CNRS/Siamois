@@ -794,8 +794,8 @@ applies(child(sd_type, "treatment"), [sd_treat])
 
 # -------------------------------------------------------------------------------------- Document
 DC = table("SIAD", "dc", "TBL_document", "TBL_document", "Document : pièce de la documentation archéologique.")
-dc_cat = field(DC, "category", "Catégorie", "Category", "ONE", "SIAD.CATEGORY", "categorie_documentation", is_type=True)
-dc_type = field(DC, "documentType", "Type de document", "Document type", "ONE", "SIAD.TYPE", "type_documentation")
+dc_cat = field(DC, "category", "Catégorie", "Category", "ONE", "SIAD.CATEGORY", "categorie_documentation")
+dc_type = field(DC, "documentType", "Type de document", "Document type", "ONE", "SIAD.TYPE", "type_documentation", is_type=True)
 dc_nature = field(DC, "supportNature", "Nature du support", "Support nature", "MANY", "SIAD.NATURE", "nature_support_documentation")
 dc_format = field(DC, "format", "Format du fichier", "File format", "ONE", "SIAD.FORMAT", "format_documentation")
 dc_scale = field(DC, "scale", "Échelle", "Scale", "ONE", "SIAD.SCALE")
@@ -928,30 +928,54 @@ survey | Topographie | Survey
 dating | Datation | Dating
 conservation | Conservation | Conservation
 """)
-with_driver(dc_type, dc_cat)
-scoped(dc_type, {
+# Le type de document pilote la fiche. Le référentiel range chaque type dans une catégorie : la catégorie, le support, le
+# format et l'échelle d'un document sont donc des listes qui dépendent de son type (un type reprend les valeurs de sa ou de
+# ses catégories).
+DOC_CATEGORY_TYPES = {
     "written": ["field-book", "study-report", "su-sheet", "find-sheet", "conservation-sheet", "strat-diagram", "points-list", "database"],
     "graphic": ["map", "aerial", "topo-plan", "field-drawing", "rock-art", "object-drawing", "traces", "strat-diagram"],
     "photo": ["xray", "field-photo", "rectified-photo", "object-photo", "orthophoto", "audio", "video"],
     "cast": ["imprint", "print", "section-peel", "mould"],
-    "other": ["point-cloud", "model-3d", "prototype"]}, "Document", "Document")
-with_driver(dc_nature, dc_cat)
-scoped(dc_nature, {
+    "other": ["point-cloud", "model-3d", "prototype"]}
+DOC_TYPE_CATEGORIES = {}
+for _cat, _types in DOC_CATEGORY_TYPES.items():
+    for _t in _types:
+        DOC_TYPE_CATEGORIES.setdefault(_t, []).append(_cat)
+
+
+def per_document_type(per_category):
+    """{catégorie: [valeurs]} -> {type: [valeurs de sa ou de ses catégories]}, sans doublon."""
+    out = {}
+    for t, cats in DOC_TYPE_CATEGORIES.items():
+        vals = []
+        for c in cats:
+            vals.extend(v for v in per_category.get(c, []) if v not in vals)
+        if vals:
+            out[t] = vals
+    return out
+
+
+with_driver(dc_cat, dc_type)
+scoped(dc_cat, DOC_TYPE_CATEGORIES, "Document", "Document")
+with_driver(dc_nature, dc_type)
+scoped(dc_nature, per_document_type({
     "written": ["paper", "digital"],
     "graphic": ["paper", "graph-paper", "tracing", "counter-tracing", "polyester", "graph-polyester", "polythene", "digital"],
     "photo": ["neg-color", "neg-bw", "slide", "print", "digital"],
     "cast": ["elastomer", "plaster", "resin"],
-    "other": ["digital", "resin"]}, "Document", "Document")
-with_driver(dc_format, dc_cat)
-scoped(dc_format, {
+    "other": ["digital", "resin"]}), "Document", "Document")
+with_driver(dc_format, dc_type)
+scoped(dc_format, per_document_type({
     "written": ["pdf", "docx", "odt", "csv", "xlsx", "gpkg"],
     "graphic": ["pdf", "svg", "dxf", "dwg", "geotiff", "tiff"],
     "photo": ["jpeg", "tiff", "dng", "png", "mp4", "wav"],
-    "other": ["obj", "ply", "glb", "e57", "laz", "stl"]}, "Document", "Document")
-with_driver(dc_scale, dc_cat)
-scoped(dc_scale, {"graphic": ["1-1", "1-2", "1-5", "1-10", "1-20", "1-50", "1-100", "1-200", "1-500"]}, "Document", "Document")
-applies(child(dc_cat, "graphic"), [dc_scale])
-applies(child(dc_cat, "cast"), [dc_cast])
+    "other": ["obj", "ply", "glb", "e57", "laz", "stl"]}), "Document", "Document")
+with_driver(dc_scale, dc_type)
+scoped(dc_scale, per_document_type({"graphic": ["1-1", "1-2", "1-5", "1-10", "1-20", "1-50", "1-100", "1-200", "1-500"]}), "Document", "Document")
+for _t in DOC_CATEGORY_TYPES["graphic"]:
+    applies(child(dc_type, _t), [dc_scale])
+for _t in DOC_CATEGORY_TYPES["cast"]:
+    applies(child(dc_type, _t), [dc_cast])
 
 # ------------------------------------------------------------------------------------ Contenant
 CT = table("SIAC", "ct", "TBL_contenant", "TBL_container", "Contenant : caisse, sachet, boîte… où le mobilier et la documentation sont rangés.")
