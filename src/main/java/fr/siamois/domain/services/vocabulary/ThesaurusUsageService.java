@@ -131,10 +131,24 @@ public class ThesaurusUsageService {
                                                     Long projectId, @Nullable Long institutionId, String lang) {
         String code = field.getSourceLabel();
         String thesaurus = institutionId == null ? "—" : fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, code)
-                .map(vocabulary -> labelService.findLabelOf(vocabulary, lang).getValue())
+                .map(vocabulary -> describe(vocabulary, lang))
                 .orElse("—");
         return Optional.of(new ThesaurusUsage(thesaurus, FieldVocabularyConfig.Kind.FIELD_CODE, code, field.getName(),
                 typeLabel(table, typeName), table.name(), typeName, code, true));
+    }
+
+    /** A thesaurus as the pages name it: its label, its identifier on its instance, and the instance. */
+    private String describe(Vocabulary vocabulary, String lang) {
+        StringBuilder text = new StringBuilder(labelService.findLabelOf(vocabulary, lang).getValue());
+        if (vocabulary.getExternalVocabularyId() != null) {
+            text.append(" (").append(vocabulary.getExternalVocabularyId()).append(')');
+        }
+        String server = vocabulary.getBaseUri();
+        if (server != null && !server.isBlank()) {
+            String trimmed = server.trim();
+            text.append(" - ").append(trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed);
+        }
+        return text.toString();
     }
 
     private static boolean isCode(@Nullable String sourceLabel) {
@@ -185,7 +199,7 @@ public class ThesaurusUsageService {
             type = valueConcept == null ? null : labelService.findLabelOf(valueConcept, lang).getLabel();
         }
         return new ThesaurusUsage(
-                labelService.findLabelOf(vocabulary, lang).getValue(),
+                describe(vocabulary, lang),
                 kind,
                 source,
                 config.getField().getLabel(),

@@ -25,6 +25,11 @@
                                                       display: inline-flex; align-items: center; justify-content: center; }
             .thesaurus-picker-row .thesaurus-reload .ui-icon, .thesaurus-picker-row .thesaurus-reload .ui-button-icon-left { position: static; margin: 0; }
             .thesaurus-picker-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; margin-top: .6rem; font-size: .95rem; }
+            .thesaurus-select-footer { padding: 6px 8px; border-top: 1px solid #ececec; background: #fff; }
+            .thesaurus-select-footer-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .75rem; border-radius: 6px;
+                                           border: 1px solid var(--siamois-green-active, #5e8c61); background: #fff;
+                                           color: var(--siamois-green-active, #5e8c61); font: inherit; cursor: pointer; }
+            .thesaurus-select-footer-btn:hover { background: var(--siamois-green-light-50, #f1f6f1); }
             .thesaurus-picker-actions a { text-decoration: none; }
             .thesaurus-picker-actions a:hover { text-decoration: underline; }
         </style>
@@ -48,7 +53,14 @@
                     <p:ajax event="change" process="@(.sia-settings-form)" update="@(.sia-settings-form)"/>
                     <f:selectItem itemLabel="#{langBean.msg('thesaurusSelect.placeholder')}" itemValue="#{null}" noSelectionOption="true"/>
                     <f:selectItems value="#{cc.attrs.bean.thesaurusOptions}" var="opt" itemValue="#{opt.url}"
-                                   itemLabel="#{opt.label} - #{opt.url}"/>
+                                   itemLabel="#{opt.label} (#{opt.externalId}) - #{opt.server}"/>
+                    <f:facet name="footer">
+                        <div class="thesaurus-select-footer">
+                            <button type="button" class="thesaurus-select-footer-btn" onclick="PF('addThesaurusDialog').show(); return false;">
+                                <i class="pi pi-plus"/> #{langBean.msg('thesaurusAdd.title')}
+                            </button>
+                        </div>
+                    </f:facet>
                 </p:selectOneMenu>
 
             </div>
@@ -57,7 +69,7 @@
                                  value="#{langBean.msg('thesaurusMain.apply')}" icon="pi pi-check"
                                  action="#{cc.attrs.bean.saveConfig()}"
                                  process="@(.sia-settings-form)"
-                                 update="@(.sia-settings-form) @(.thesaurus-usages)"
+                                 update="@(.sia-settings-form) @(.thesaurus-usages) @(.thesaurus-rewire-ask)"
                                  onstart="startProgressBar()" oncomplete="endProgressBar()"/>
             </p:outputPanel>
             <div class="thesaurus-picker-actions">

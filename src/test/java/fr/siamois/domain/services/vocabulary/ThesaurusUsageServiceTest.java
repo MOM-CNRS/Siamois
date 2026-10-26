@@ -145,6 +145,19 @@ class ThesaurusUsageServiceTest {
     }
 
     @Test
+    void findUsagesOfActionUnit_namesTheThesaurusByLabelIdentifierAndInstance() {
+        Vocabulary vocabulary = vocabulary("Siamois - Socle commun");
+        when(vocabulary.getExternalVocabularyId()).thenReturn("th332");
+        when(vocabulary.getBaseUri()).thenReturn("https://thesaurus.mom.fr/");
+        ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", concept("Céramique"));
+        when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
+
+        List<ThesaurusUsage> usages = service.findUsagesOfActionUnit(1L, LANG);
+
+        assertEquals("Siamois - Socle commun (th332) - https://thesaurus.mom.fr", usages.get(0).getThesaurusLabel());
+    }
+
+    @Test
     void findUsagesOfInstitution_describesCollectionWithoutType() {
         Vocabulary vocabulary = vocabulary("Pactols");
         ConceptFieldFormConfig config = collectionConfig(vocabulary, "col-42", "Période");

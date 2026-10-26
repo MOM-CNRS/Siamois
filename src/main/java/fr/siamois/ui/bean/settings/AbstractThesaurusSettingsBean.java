@@ -2,6 +2,7 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.misc.ProgressWrapper;
+import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -37,6 +38,10 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     public static class ThesaurusOption implements Serializable {
         String url;
         String label;
+        /** The identifier of the thesaurus on its instance (th332). */
+        String externalId;
+        /** The address of the OpenTheso instance. */
+        String server;
     }
 
     protected final transient VocabularyService vocabularyService;
@@ -47,8 +52,14 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected String thesaurusUrl;
     /** The thesaurus last applied, to tell whether the selection has changed since. */
     protected String savedThesaurusUrl;
-    /** The URL typed in the "add a thesaurus" dialog. */
-    protected String newThesaurusUrl;
+    private static final String DEFAULT_THESAURUS_SERVER = "https://thesaurus.mom.fr";
+    /** The instance and the thesaurus picked in the "add a thesaurus" dialog, and the thesauri of that instance. */
+    private String pickedServer;
+    private transient ThesaurusInfo pickedThesaurus;
+    private transient List<ThesaurusInfo> pickedServerThesauri = new ArrayList<>();
+    private transient List<String> serverOptions;
+    /** The address typed in the "add an instance" dialog. */
+    private String newServerUrl;
     protected ArrayList<ThesaurusOption> thesaurusOptions = new ArrayList<>();
     protected ArrayList<ThesaurusUsage> usages = new ArrayList<>();
     /** The rows ticked in the usages table. */
@@ -71,7 +82,11 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected void resetState() {
         thesaurusUrl = null;
         savedThesaurusUrl = null;
-        newThesaurusUrl = null;
+        pickedServer = null;
+        pickedThesaurus = null;
+        pickedServerThesauri = new ArrayList<>();
+        serverOptions = null;
+        newServerUrl = null;
         thesaurusOptions = new ArrayList<>();
         usages = new ArrayList<>();
         selectedUsages = new ArrayList<>();
@@ -106,7 +121,11 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     }
 
     private String labelOf(String url) {
-        return thesaurusOptions.stream().filter(option -> option.getUrl().equals(url)).map(ThesaurusOption::getLabel).findFirst().orElse(url);
+        return thesaurusOptions.stream()
+                .filter(option -> option.getUrl().equals(url))
+                .map(option -> option.getLabel() + " (" + option.getExternalId() + ")")
+                .findFirst()
+                .orElse(url);
     }
 
     /** The user accepted: the offered fields read the new thesaurus. */
@@ -132,7 +151,8 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
 
     protected void loadOptions() {
         thesaurusOptions = vocabularyService.findAll().stream()
-                .map(v -> new ThesaurusOption(urlOf(v), labelService.findLabelOf(v, langBean.getLanguageCode()).getValue()))
+                .map(v -> new ThesaurusOption(urlOf(v), labelService.findLabelOf(v, langBean.getLanguageCode()).getValue(),
+                        v.getExternalVocabularyId(), normalizeServer(v.getBaseUri())))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
@@ -140,14 +160,82 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         return v.getBaseUri() + "/?idt=" + v.getExternalVocabularyId();
     }
 
-    /** Registers the thesaurus typed in the dialog, then selects it. */
-    public void addThesaurus() {
-        if (StringUtils.isBlank(newThesaurusUrl)) return;
+    /** The instances to pick from: the default one and those of the thesauri the database knows. */
+    public List<String> getServerOptions() {
+        if (serverOptions == null) {
+            java.util.Set<String> servers = new java.util.LinkedHashSet<>();
+            servers.add(DEFAULT_THESAURUS_SERVER);
+            vocabularyService.findAll().forEach(v -> servers.add(normalizeServer(v.getBaseUri())));
+            serverOptions = new ArrayList<>(servers);
+        }
+        return serverOptions;
+    }
+
+    private static String normalizeServer(String url) {
+        String trimmed = url.trim();
+        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+    }
+
+    /** The instances matching what was typed. */
+    public List<String> completeServers(String query) {
+        String needle = query == null ? "" : query.trim().toLowerCase();
+        return getServerOptions().stream().filter(server -> server.toLowerCase().contains(needle)).toList();
+    }
+
+    /** The thesauri of the picked instance matching what was typed, by label or identifier. */
+    public List<ThesaurusInfo> completeThesauri(String query) {
+        String needle = query == null ? "" : query.trim().toLowerCase();
+        List<ThesaurusInfo> options = pickedServerThesauri == null ? List.of() : pickedServerThesauri;
+        return options.stream()
+                .filter(info -> info.label().toLowerCase().contains(needle) || info.idTheso().toLowerCase().contains(needle))
+                .toList();
+    }
+
+    /** Another instance was picked: its thesauri are listed, and none is picked yet. */
+    public void onServerPicked() {
+        pickedThesaurus = null;
+        pickedServerThesauri = new ArrayList<>();
+        if (StringUtils.isBlank(pickedServer)) return;
         try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(newThesaurusUrl.trim());
+            pickedServerThesauri = new ArrayList<>(vocabularyService.findAllThesaurusOf(normalizeServer(pickedServer), langBean.getLanguageCode()));
+        } catch (InvalidEndpointException e) {
+            log.error("Could not list the thesauri of {}", pickedServer, e);
+            displayErrorMessage(langBean, "projectTables.drawer.params.serverUnreachable");
+        }
+    }
+
+    /** Registers an instance typed by the user, once it answers, and picks it. */
+    public void addServer() {
+        if (StringUtils.isBlank(newServerUrl)) return;
+        String server = normalizeServer(newServerUrl);
+        try {
+            vocabularyService.findAllThesaurusOf(server, langBean.getLanguageCode());
+        } catch (InvalidEndpointException e) {
+            log.error("Could not reach the OpenTheso instance {}", server, e);
+            displayErrorMessage(langBean, "projectTables.drawer.params.serverUnreachable");
+            return;
+        }
+        if (!getServerOptions().contains(server)) {
+            serverOptions.add(server);
+        }
+        newServerUrl = null;
+        pickedServer = server;
+        onServerPicked();
+    }
+
+    /** Whether a thesaurus is picked in the dialog, so it can be added. */
+    public boolean isThesaurusPicked() {
+        return pickedThesaurus != null && StringUtils.isNotBlank(pickedThesaurus.idTheso());
+    }
+
+    /** Registers the thesaurus picked in the dialog, then selects it. */
+    public void addThesaurus() {
+        if (!isThesaurusPicked()) return;
+        try {
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(pickedThesaurus.completeThesaurusUrl());
             loadOptions();
             thesaurusUrl = urlOf(vocabulary);
-            newThesaurusUrl = null;
+            pickedThesaurus = null;
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         }

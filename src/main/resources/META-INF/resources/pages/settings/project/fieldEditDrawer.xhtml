@@ -333,7 +333,7 @@
                                         <div class="ptc-ac-glued">
                                             <p:autoComplete id="draftThesaurus" widgetVar="acThesaurusW" value="#{projectTableFieldSettingsBean.draftThesaurus}"
                                                             completeMethod="#{projectTableFieldSettingsBean.completeDraftThesauri}"
-                                                            var="info" itemLabel="#{info.label()} (#{info.idTheso()})" itemValue="#{info}"
+                                                            var="info" itemLabel="#{empty info.idTheso() ? '' : info.label().concat(' (').concat(info.idTheso()).concat(')')}" itemValue="#{info}"
                                                             converter="#{thesaurusInfoConverter}"
                                                             minQueryLength="0" dropdown="false" forceSelection="true" scrollHeight="220" style="width:100%"
                                                             onfocus="var w=PF('acThesaurusW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acThesaurusW'); if (!w.panel.is(':visible')) w.search('')"

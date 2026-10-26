@@ -61,6 +61,17 @@ public class LangBean implements Serializable {
     }
 
     /**
+     * The message of a code, or the text itself when no message has that code: a system field is named by a message code, a
+     * field a user created by its own label.
+     *
+     * @param code a message code or a free label
+     * @return the message, or {@code code} when it names none
+     */
+    public String resolve(String code) {
+        return langService().resolveMessage(code, locale);
+    }
+
+    /**
      * Get message formatted with args. Applies {@link String#format(String, Object...)} on the message with the args.
      * @param format format of the message
      * @param args arguments to format

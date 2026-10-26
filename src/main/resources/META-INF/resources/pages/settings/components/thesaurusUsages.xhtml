@@ -69,8 +69,8 @@
                 <p:column headerText="#{langBean.msg('thesaurusUsages.source')}" filterBy="#{usage.sourceLabel}" filterMatchMode="contains">
                     #{usage.sourceLabel}
                 </p:column>
-                <p:column headerText="#{langBean.msg('thesaurusUsages.field')}" filterBy="#{usage.fieldLabel}" filterMatchMode="contains">
-                    #{usage.fieldLabel}
+                <p:column headerText="#{langBean.msg('thesaurusUsages.field')}" filterBy="#{langBean.resolve(usage.fieldLabel)}" filterMatchMode="contains">
+                    #{langBean.resolve(usage.fieldLabel)}
                 </p:column>
                 <p:column headerText="#{langBean.msg('thesaurusUsages.type')}" filterBy="#{usage.typeLabel}" filterMatchMode="contains">
                     #{usage.typeLabel != null ? usage.typeLabel : langBean.msg('thesaurusUsages.type.default')}

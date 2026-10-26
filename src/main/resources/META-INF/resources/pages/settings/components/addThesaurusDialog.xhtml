@@ -1,5 +1,6 @@
 <ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:cc="http://xmlns.jcp.org/jsf/composite"
                 xmlns:shared="http://java.sun.com/jsf/composite/pages/shared/form">
@@ -9,17 +10,85 @@
         <cc:attribute name="update" type="java.lang.String" required="true"/>
     </cc:interface>
 
+    <!--
+    Adds a thesaurus to the list: the OpenTheso instance is picked first (or added from the footer of the picker), then
+    the thesaurus is searched among the ones that instance holds. Same way of choosing as the source of a field.
+    -->
     <cc:implementation>
-        <p:dialog widgetVar="addThesaurusDialog" modal="true" width="520"
+        <style>
+            .thesaurus-add-server .thesaurus-add-field, .thesaurus-add-thesaurus .thesaurus-add-field { margin-bottom: 1rem; }
+            .thesaurus-add-server .thesaurus-add-label, .thesaurus-add-thesaurus .thesaurus-add-label { display: block; font-weight: 600; margin-bottom: .35rem; }
+            .thesaurus-add-server .ui-autocomplete, .thesaurus-add-server .ui-autocomplete-input,
+            .thesaurus-add-thesaurus .ui-autocomplete, .thesaurus-add-thesaurus .ui-autocomplete-input { width: 100%; }
+            .thesaurus-ac-footer { padding: 6px 8px; border-top: 1px solid #ececec; }
+        </style>
+
+        <p:dialog widgetVar="addThesaurusDialog" modal="true" width="520" appendTo="@(body)"
                   header="#{langBean.msg('thesaurusAdd.title')}">
             <shared:csrfform formId="addThesaurusForm">
                 <p style="font-style: italic">#{langBean.msg('thesaurusAdd.hint')}</p>
-                <p:inputText id="newThesaurusUrl" value="#{cc.attrs.bean.newThesaurusUrl}" style="width: 100%"/>
-                <div class="mt-3">
+                <!-- The instance picker is redrawn only when an instance is added; picking one redraws just the thesaurus picker below,
+                     so the suggestions of the instance picker are closed and not left behind. -->
+                <p:outputPanel layout="block" styleClass="thesaurus-add-server">
+                    <div class="thesaurus-add-field">
+                        <label class="thesaurus-add-label" for="addThesaurusForm:addServer_input">#{langBean.msg('projectTables.drawer.params.server')}</label>
+                        <p:autoComplete id="addServer" widgetVar="acAddServerW" value="#{cc.attrs.bean.pickedServer}"
+                                        completeMethod="#{cc.attrs.bean.completeServers}"
+                                        minQueryLength="0" dropdown="false" scrollHeight="220"
+                                        onfocus="var w=PF('acAddServerW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acAddServerW'); if (!w.panel.is(':visible')) w.search('')"
+                                        placeholder="#{langBean.msg('projectTables.drawer.params.pickServer')}">
+                            <p:ajax event="itemSelect" listener="#{cc.attrs.bean.onServerPicked()}"
+                                    process="@this" update="@(.thesaurus-add-thesaurus) @(.thesaurus-add-button)"
+                                    oncomplete="PF('acAddServerW').hide()"/>
+                            <f:facet name="footer">
+                                <div class="thesaurus-ac-footer">
+                                    <p:commandButton value="#{langBean.msg('projectTables.drawer.params.addServer')}" icon="pi pi-plus"
+                                                     type="button" styleClass="ui-button-outlined ui-button-sm"
+                                                     onclick="PF('addThesaurusServerDialog').show()"/>
+                                </div>
+                            </f:facet>
+                        </p:autoComplete>
+                    </div>
+                </p:outputPanel>
+
+                <p:outputPanel layout="block" styleClass="thesaurus-add-thesaurus">
+                    <p:outputPanel layout="block" styleClass="thesaurus-add-field" rendered="#{not empty cc.attrs.bean.pickedServer}">
+                        <label class="thesaurus-add-label" for="addThesaurusForm:addPickedThesaurus_input">#{langBean.msg('projectTables.drawer.params.thesaurus')}</label>
+                        <p:autoComplete id="addPickedThesaurus" widgetVar="acAddThesaurusW" value="#{cc.attrs.bean.pickedThesaurus}"
+                                        completeMethod="#{cc.attrs.bean.completeThesauri}"
+                                        var="info" itemLabel="#{empty info.idTheso() ? '' : info.label().concat(' (').concat(info.idTheso()).concat(')')}" itemValue="#{info}"
+                                        converter="#{thesaurusInfoConverter}"
+                                        minQueryLength="0" dropdown="false" forceSelection="true" scrollHeight="220"
+                                        onfocus="var w=PF('acAddThesaurusW'); if (!w.panel.is(':visible')) w.search('')" onclick="var w=PF('acAddThesaurusW'); if (!w.panel.is(':visible')) w.search('')"
+                                        placeholder="#{langBean.msg('projectTables.drawer.params.pickThesaurus')}">
+                            <p:ajax event="itemSelect" process="@this" update="@(.thesaurus-add-button)" oncomplete="PF('acAddThesaurusW').hide()"/>
+                            <p:ajax event="clear" process="@this" update="@(.thesaurus-add-button)"/>
+                        </p:autoComplete>
+                    </p:outputPanel>
+                </p:outputPanel>
+
+                <p:outputPanel layout="block" styleClass="thesaurus-add-button mt-3">
                     <p:commandButton value="#{langBean.msg('common.action.add')}"
                                      action="#{cc.attrs.bean.addThesaurus()}"
-                                     update="#{cc.attrs.update}"
+                                     disabled="#{not cc.attrs.bean.thesaurusPicked}"
+                                     process="@form"
+                                     update="#{cc.attrs.update} @(.thesaurus-add-thesaurus) @(.thesaurus-add-button)"
                                      oncomplete="if (!args.validationFailed) PF('addThesaurusDialog').hide()"/>
+                </p:outputPanel>
+            </shared:csrfform>
+        </p:dialog>
+
+        <!-- Opened from the footer of the instance picker; its own form, as the one above cannot nest. -->
+        <p:dialog widgetVar="addThesaurusServerDialog" modal="true" width="480" appendTo="@(body)"
+                  header="#{langBean.msg('projectTables.drawer.params.addServer')}">
+            <shared:csrfform formId="addThesaurusServerForm">
+                <p style="font-style: italic">#{langBean.msg('projectTables.drawer.params.addServerHint')}</p>
+                <p:inputText id="newServerUrl" value="#{cc.attrs.bean.newServerUrl}" style="width:100%" placeholder="https://…"/>
+                <div class="mt-3">
+                    <p:commandButton value="#{langBean.msg('common.action.add')}"
+                                     action="#{cc.attrs.bean.addServer()}"
+                                     process="@form" update="@(.thesaurus-add-server) @(.thesaurus-add-thesaurus) @(.thesaurus-add-button)"
+                                     oncomplete="PF('addThesaurusServerDialog').hide()"/>
                 </div>
             </shared:csrfform>
         </p:dialog>
