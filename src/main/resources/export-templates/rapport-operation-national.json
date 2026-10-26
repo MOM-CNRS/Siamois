@@ -1710,7 +1710,7 @@
       "field": {
         "concept": {
           "thesaurus": "th230",
-          "id": "document.type"
+          "id": "document.category"
         }
       }
     },
@@ -1720,7 +1720,7 @@
       "field": {
         "concept": {
           "thesaurus": "th230",
-          "id": "document.documentType"
+          "id": "document.type"
         }
       }
     },

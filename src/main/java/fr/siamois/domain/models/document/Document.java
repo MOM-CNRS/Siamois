@@ -50,12 +50,12 @@ public class Document extends TraceableEntity implements ArkEntity {
     @Column(name = "document_id", nullable = false)
     private Long id;
 
-    /** The "category" (arrêté du 7 février 2022): the document table's configurable type. */
+    /** The document type (arrêté du 7 février 2022): the document table's configurable type. */
     @FieldCode
-    public static final String TYPE_FIELD = "SIAD.CATEGORY";
+    public static final String TYPE_FIELD = "SIAD.TYPE";
 
     @FieldCode
-    public static final String DOCUMENT_TYPE_FIELD = "SIAD.TYPE";
+    public static final String CATEGORY_FIELD = "SIAD.CATEGORY";
 
     @FieldCode
     public static final String NATURE_FIELD_CODE = "SIAD.NATURE";
@@ -144,15 +144,15 @@ public class Document extends TraceableEntity implements ArkEntity {
     @JoinColumn(name = "fk_action_unit_id")
     protected ActionUnit actionUnit;
 
-    /** The category (arrêté du 7 février 2022), which also selects the document's form configuration. */
+    /** The document type (arrêté du 7 février 2022), which also selects the document's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_type")
     protected Concept type;
 
-    /** The document type, restricted per category by the category's form configuration. */
+    /** The category, restricted per type by the type's form configuration. */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_document_type")
-    protected Concept documentType;
+    @JoinColumn(name = "fk_category")
+    protected Concept category;
 
     // ---------------------------------------------------------------- Description
 

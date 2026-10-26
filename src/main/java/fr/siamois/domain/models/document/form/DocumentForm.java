@@ -24,7 +24,7 @@ import java.util.List;
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
 /**
- * The document table's system fields: the national common base (identifiers, category, type, support,
+ * The document table's system fields: the national common base (identifiers, type, category, support,
  * description, authors, rights, keywords, technical data) and the document's links to the other
  * entities. Ids are stable negative numbers in the -701…-730 range.
  */
@@ -98,7 +98,7 @@ public abstract class DocumentForm {
             .concept(concept(B_ACTION_UNIT))
             .build();
 
-    /** The category: the table's type, hence the field that selects the form configuration. */
+    /** The document type: the table's type, hence the field that selects the form configuration. */
     @Transient
     protected static final CustomFieldSelectOneFromFieldCode typeField = CustomFieldSelectOneFromFieldCode.builder()
             .label(LABEL_PREFIX + B_TYPE)
@@ -111,8 +111,8 @@ public abstract class DocumentForm {
             .build();
 
     @Transient
-    protected static final CustomFieldSelectOneFromFieldCode documentTypeField =
-            one(-705L, "documentType", Document.DOCUMENT_TYPE_FIELD);
+    protected static final CustomFieldSelectOneFromFieldCode categoryField =
+            one(-705L, "category", Document.CATEGORY_FIELD);
 
     @Transient
     protected static final CustomFieldSelectMultipleFromFieldCode supportNaturesField =
@@ -280,7 +280,7 @@ public abstract class DocumentForm {
                 SystemFieldSpec.of(otherIdentifiersField),
                 SystemFieldSpec.hiddenReadOnly(actionUnitField),
                 SystemFieldSpec.hidden(typeField),
-                SystemFieldSpec.of(documentTypeField),
+                SystemFieldSpec.of(categoryField),
                 SystemFieldSpec.of(supportNaturesField),
                 SystemFieldSpec.of(formatField),
                 SystemFieldSpec.of(titleField),

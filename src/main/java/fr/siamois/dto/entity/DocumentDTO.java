@@ -24,7 +24,7 @@ public class DocumentDTO extends AbstractEntityDTO {
     private String otherIdentifiers;
     private ActionUnitSummaryDTO actionUnit;
     private ConceptDTO type;
-    private ConceptDTO documentType;
+    private ConceptDTO category;
     private Set<ConceptDTO> supportNatures;
     private String format;
     private String title;
@@ -71,7 +71,7 @@ public class DocumentDTO extends AbstractEntityDTO {
                 "otherIdentifiers",
                 "actionUnit",
                 "type",
-                "documentType",
+                "category",
                 "supportNatures",
                 "format",
                 "title",

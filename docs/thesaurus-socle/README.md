@@ -6,7 +6,7 @@
 
 ## Contenu
 
-11 tables, 164 champs dont 46 à vocabulaire, 724 concepts, 66 collections. Tout champ du socle (formulaires `*Form.java`,
+11 tables, 164 champs dont 46 à vocabulaire, 724 concepts, 142 collections. Tout champ du socle (formulaires `*Form.java`,
 `SpatialUnit`) y est décrit, avec son type de donnée, son code et son équivalent dans le référentiel national quand il existe.
 Les 46 codes de champ de l'application (`SIARU.TYPE`, `SIAS.CLASS`…) sont tous présents. Les listes sont des **démonstrations**,
 pas des vocabulaires exhaustifs.
@@ -19,7 +19,7 @@ pas des vocabulaires exhaustifs.
 | Stratigraphie | `SIARU.STRATI.TABLE` | `STRATI`, `STRATI.ANTERIOR`, `STRATI.POSTERIOR`, `STRATI.SYNCHRONOUS` |
 | Mobilier | `SIAS` | `CAT`, `MATIERE`, `CLASS`, `INTERPRETATION`, `METHOD`, `CHRONO`, `SANITARY`, `TRANSFER`, `SELECTIVECONSERVATION` |
 | Étude | `SIAST` | `TYPE`, `METHODE`, `TYPETRAIT` |
-| Document | `SIAD` | `CATEGORY`, `TYPE`, `NATURE`, `FORMAT`, `SCALE`, `LANGUAGE`, `KEYWORD` |
+| Document | `SIAD` | `TYPE` (pilote), `CATEGORY`, `NATURE`, `FORMAT`, `SCALE`, `LANGUAGE`, `KEYWORD` |
 | Contenant, Phase, Personne, Mesure | `SIAC`, `SIAPHASE`, `SIAP`, `SIAMD` | `TYPE` / `PERIOD`, `KEYWORD` / `ROLE` / `TYPE`, `NATURE` |
 
 ## Modélisation
@@ -43,8 +43,8 @@ l'application, mais ils identifient le champ de façon stable.
 5. La collection `SIAMOIS – Dépendance logique` regroupe les pilotes, comme dans le th230.
 
 Exemples livrés : interprétation d'une unité selon US / fait / ensemble / sépulture ; matière, classe et interprétation d'un
-mobilier selon son type (céramique, métal, lithique, verre, faune, VAB, prélèvement) ; type, support, format et échelle d'un
-document selon sa catégorie ; méthode d'une étude selon son type ; nature d'une mesure selon son type de mesure.
+mobilier selon son type (céramique, métal, lithique, verre, faune, VAB, prélèvement) ; catégorie, support, format et échelle d'un
+document selon son type (de document : un type reprend les valeurs de sa catégorie) ; méthode d'une étude selon son type ; nature d'une mesure selon son type de mesure.
 
 **Alignement sur le référentiel.** Chaque champ ou valeur qui a un équivalent dans le th326 porte un `skos:exactMatch` vers son
 URI, et l'altLabel garde le libellé national quand il diffère (`[métal] ferreux`). Une conversion à l'export peut s'appuyer dessus.

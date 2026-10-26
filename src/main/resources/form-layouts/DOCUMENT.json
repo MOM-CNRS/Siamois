@@ -20,7 +20,7 @@
       "fields" : [
         {
           "fieldId" : -705,
-          "binding" : "documentType",
+          "binding" : "category",
           "width" : "QUARTER"
         },
         {

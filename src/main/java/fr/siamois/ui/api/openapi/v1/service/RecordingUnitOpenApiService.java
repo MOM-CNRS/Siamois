@@ -395,7 +395,7 @@ public class RecordingUnitOpenApiService {
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         // Nothing can be configured on the table until the institution's thesaurus declares its type field:
-        // the project then has no category, no stored identifier format, and the seed layout as its form.
+        // the project then has no type, no stored identifier format, and the seed layout as its form.
         boolean configurable = Boolean.TRUE.equals(OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.isTypeFieldConfigured(au.getId(), ConfigurableTable.DOCUMENT)));
         Map<String, FieldResource> baseFields = baseFieldsOf(configurable ? au.getId() : null, ConfigurableTable.DOCUMENT,
