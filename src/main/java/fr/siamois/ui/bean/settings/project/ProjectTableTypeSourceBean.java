@@ -23,6 +23,7 @@ import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
+import fr.siamois.ui.bean.settings.ThesaurusServers;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +35,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Where a project reads the types of a table, on the table's page. A table's types are the values of a field no form
@@ -203,31 +202,23 @@ public class ProjectTableTypeSourceBean implements Serializable {
     /** The instances to pick from: those of the thesauri the database knows, plus the default one. */
     public List<String> getServerOptions() {
         if (serverOptions == null) {
-            Set<String> servers = new LinkedHashSet<>();
-            servers.add(DEFAULT_THESAURUS_SERVER);
-            vocabularyService.findAll().forEach(v -> servers.add(normalizeServer(v.getBaseUri())));
-            serverOptions = new ArrayList<>(servers);
+            serverOptions = ThesaurusServers.known(vocabularyService, DEFAULT_THESAURUS_SERVER);
         }
         return serverOptions;
     }
 
     private static String normalizeServer(String url) {
-        String trimmed = url.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
+        return ThesaurusServers.normalize(url);
     }
 
     /** The instances matching what was typed. */
     public List<String> completeServers(String query) {
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        return getServerOptions().stream().filter(server -> server.toLowerCase().contains(needle)).toList();
+        return ThesaurusServers.matching(getServerOptions(), query);
     }
 
     /** The thesauri of the picked instance matching what was typed, by label or identifier. */
     public List<ThesaurusInfo> completeThesauri(String query) {
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        return thesaurusOptions.stream()
-                .filter(info -> info.label().toLowerCase().contains(needle) || info.idTheso().toLowerCase().contains(needle))
-                .toList();
+        return ThesaurusServers.matchingThesauri(thesaurusOptions, query);
     }
 
     /** Another instance was picked: its thesauri are listed, and nothing is loaded until one is picked. */

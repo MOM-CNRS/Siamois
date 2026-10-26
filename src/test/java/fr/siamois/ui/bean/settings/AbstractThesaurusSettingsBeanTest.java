@@ -117,7 +117,7 @@ class AbstractThesaurusSettingsBeanTest {
     }
 
     @Test
-    void addThesaurus_doesNothing_whenNoThesaurusIsPicked() throws Exception {
+    void addThesaurus_doesNothing_whenNoThesaurusIsPicked() {
         bean.addThesaurus();
 
         assertThat(bean.getThesaurusUrl()).isNull();

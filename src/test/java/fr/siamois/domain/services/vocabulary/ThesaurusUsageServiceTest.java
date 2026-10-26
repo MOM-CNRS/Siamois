@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -263,7 +264,7 @@ class ThesaurusUsageServiceTest {
     }
 
     private ThesaurusUsage codeRow(String field, String code) {
-        return new ThesaurusUsage("Siamois", FieldVocabularyConfig.Kind.FIELD_CODE, code, field, "UE · Sondage", "UE", "Sondage", code, true);
+        return ThesaurusUsage.builder().thesaurusLabel("Siamois").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel(code).fieldLabel(field).typeLabel("UE · Sondage").tableName("UE").typeName("Sondage").fieldCode(code).inherited(true).build();
     }
 
     @Test
@@ -277,7 +278,7 @@ class ThesaurusUsageServiceTest {
         when(fieldCodeResolver.findDefaultVocabulary(2L, 1L, "SIAUE.NATURE")).thenReturn(java.util.Optional.of(mock(Vocabulary.class)));
         when(tableFieldConfigService.findFormConfig(1L, ConfigurableTable.UE, "Sondage")).thenReturn(java.util.Optional.of(formConfig));
         when(tableFieldConfigService.findField(1L, ConfigurableTable.UE, "Sondage", "Nature")).thenReturn(java.util.Optional.of(field));
-        ThesaurusUsage branch = new ThesaurusUsage("Siamois", FieldVocabularyConfig.Kind.BRANCH, "x", "Autre", null, "UE", "Sondage", null, false);
+        ThesaurusUsage branch = ThesaurusUsage.builder().thesaurusLabel("Siamois").kind(FieldVocabularyConfig.Kind.BRANCH).sourceLabel("x").fieldLabel("Autre").typeLabel(null).tableName("UE").typeName("Sondage").fieldCode(null).inherited(false).build();
 
         ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
                 List.of(codeRow("Nature", "SIAUE.NATURE"), codeRow("Absent", "SIAUE.ABSENT"), branch), target);
@@ -306,7 +307,7 @@ class ThesaurusUsageServiceTest {
     }
 
     private ThesaurusUsage namedRow(FieldVocabularyConfig.Kind kind, String field) {
-        return new ThesaurusUsage("Ancien", kind, "x", field, "UE · Sondage", "UE", "Sondage", null, false);
+        return ThesaurusUsage.builder().thesaurusLabel("Ancien").kind(kind).sourceLabel("x").fieldLabel(field).typeLabel("UE · Sondage").tableName("UE").typeName("Sondage").fieldCode(null).inherited(false).build();
     }
 
     private ConceptAutocompleteDetachedDTO remoteConcept(String externalId, String label, boolean alt) {
@@ -414,7 +415,7 @@ class ThesaurusUsageServiceTest {
     }
 
     private ThesaurusUsage rowOf(FieldVocabularyConfig.Kind kind, String type, String field) {
-        return new ThesaurusUsage("Ancien", kind, "x", field, "UE · " + type, "UE", type, null, false);
+        return ThesaurusUsage.builder().thesaurusLabel("Ancien").kind(kind).sourceLabel("x").fieldLabel(field).typeLabel("UE · " + type).tableName("UE").typeName(type).fieldCode(null).inherited(false).build();
     }
 
     @Test
@@ -470,8 +471,7 @@ class ThesaurusUsageServiceTest {
     }
 
     private ThesaurusUsage storedCodeRow(String field, String code, Long formConfigId, Long fieldId) {
-        return new ThesaurusUsage("Ancien", FieldVocabularyConfig.Kind.FIELD_CODE, code, field, null, null, null, code, false,
-                "https://old/?idt=th1", formConfigId, fieldId);
+        return ThesaurusUsage.builder().thesaurusLabel("Ancien").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel(code).fieldLabel(field).typeLabel(null).tableName(null).typeName(null).fieldCode(code).inherited(false).thesaurusUrl("https://old/?idt=th1").formConfigId(formConfigId).fieldId(fieldId).build();
     }
 
     @Test
@@ -496,7 +496,7 @@ class ThesaurusUsageServiceTest {
 
     @Test
     void rewireFieldCodes_ignoresARowWithoutIdsOrTable_whenThereIsNoProject() {
-        ThesaurusUsage inherited = new ThesaurusUsage("Siamois", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null, "SIAS.CLASS", true);
+        ThesaurusUsage inherited = ThesaurusUsage.builder().thesaurusLabel("Siamois").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel("SIAS.CLASS").fieldLabel("Classe").typeLabel(null).tableName(null).typeName(null).fieldCode("SIAS.CLASS").inherited(true).build();
 
         Vocabulary target = mock(Vocabulary.class);
         when(fieldCodeResolver.findIn(target, "SIAS.CLASS")).thenReturn(java.util.Optional.of(mock(ConceptFieldConfig.class)));
@@ -525,12 +525,10 @@ class ThesaurusUsageServiceTest {
 
     @Test
     void rowKey_tellsTwoProjectsStoredSourcesApart() {
-        ThesaurusUsage a = new ThesaurusUsage("T", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
-                "SIAS.CLASS", false, "u", 5L, 77L);
-        ThesaurusUsage b = new ThesaurusUsage("T", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
-                "SIAS.CLASS", false, "u", 6L, 77L);
+        ThesaurusUsage a = ThesaurusUsage.builder().thesaurusLabel("T").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel("SIAS.CLASS").fieldLabel("Classe").typeLabel(null).tableName(null).typeName(null).fieldCode("SIAS.CLASS").inherited(false).thesaurusUrl("u").formConfigId(5L).fieldId(77L).build();
+        ThesaurusUsage b = ThesaurusUsage.builder().thesaurusLabel("T").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel("SIAS.CLASS").fieldLabel("Classe").typeLabel(null).tableName(null).typeName(null).fieldCode("SIAS.CLASS").inherited(false).thesaurusUrl("u").formConfigId(6L).fieldId(77L).build();
 
-        assertTrue(!a.getRowKey().equals(b.getRowKey()));
+        assertNotEquals(a.getRowKey(), b.getRowKey());
     }
 
     @Test
@@ -545,12 +543,22 @@ class ThesaurusUsageServiceTest {
         when(fieldFormConfigRepository.findAllByFormConfigId(5L)).thenReturn(List.<fr.siamois.domain.models.form.config.FieldFormConfig>of(stored));
         when(fieldCodeResolver.findIn(target, "SIAS.CLASS")).thenReturn(java.util.Optional.of(mock(ConceptFieldConfig.class)));
         when(fieldCodeResolver.findDefaultVocabulary(2L, 7L, "SIAS.CLASS")).thenReturn(java.util.Optional.empty());
-        ThesaurusUsage row = new ThesaurusUsage("Ancien", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
-                "SIAS.CLASS", false, "https://old/?idt=th1", 5L, 77L, 7L, "Fouille A");
+        ThesaurusUsage row = ThesaurusUsage.builder().thesaurusLabel("Ancien").kind(FieldVocabularyConfig.Kind.FIELD_CODE).sourceLabel("SIAS.CLASS").fieldLabel("Classe").typeLabel(null).tableName(null).typeName(null).fieldCode("SIAS.CLASS").inherited(false).thesaurusUrl("https://old/?idt=th1").formConfigId(5L).fieldId(77L).projectId(7L).projectName("Fouille A").build();
 
         ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(null, 2L, List.of(row), target);
 
         assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
         verify(fieldCodeResolver).findDefaultVocabulary(2L, 7L, "SIAS.CLASS");
+    }
+
+    @Test
+    void findUsagesOfActionUnit_namesAThesaurusWithoutLabelByItsIdentifier() {
+        Vocabulary vocabulary = mock(Vocabulary.class);
+        when(vocabulary.getExternalVocabularyId()).thenReturn("th332");
+        when(labelService.findLabelOf(vocabulary, LANG)).thenReturn(null);
+        ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", concept("Céramique"));
+        when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
+
+        assertEquals("th332", service.findUsagesOfActionUnit(1L, LANG).get(0).getThesaurusLabel());
     }
 }

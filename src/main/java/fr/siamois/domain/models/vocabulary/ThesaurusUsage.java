@@ -1,6 +1,6 @@
 package fr.siamois.domain.models.vocabulary;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import org.springframework.lang.Nullable;
 
@@ -9,6 +9,8 @@ import java.io.Serializable;
 /**
  * One place where a project or an organisation draws a list from a thesaurus, for a field and an
  * entity type: through a field code, a branch or a collection.
+ *
+ * Built with {@link #builder()}: it has too many fields for a constructor to be read.
  *
  * A class rather than a record: the EL of the JSF pages (EL 5) only reads JavaBean getters.
  *
@@ -28,7 +30,7 @@ import java.io.Serializable;
  * @param projectName    the name of that project
  */
 @Value
-@AllArgsConstructor
+@Builder
 public class ThesaurusUsage implements Serializable {
     String thesaurusLabel;
     FieldVocabularyConfig.Kind kind;
@@ -44,22 +46,6 @@ public class ThesaurusUsage implements Serializable {
     @Nullable Long fieldId;
     @Nullable Long projectId;
     @Nullable String projectName;
-
-    /** A source with nothing stored behind it, or one whose stored form is not known. */
-    public ThesaurusUsage(String thesaurusLabel, FieldVocabularyConfig.Kind kind, String sourceLabel, String fieldLabel,
-                          @Nullable String typeLabel, @Nullable String tableName, @Nullable String typeName,
-                          @Nullable String fieldCode, boolean inherited) {
-        this(thesaurusLabel, kind, sourceLabel, fieldLabel, typeLabel, tableName, typeName, fieldCode, inherited, null, null, null, null, null);
-    }
-
-    /** A stored source whose project is not known. */
-    public ThesaurusUsage(String thesaurusLabel, FieldVocabularyConfig.Kind kind, String sourceLabel, String fieldLabel,
-                          @Nullable String typeLabel, @Nullable String tableName, @Nullable String typeName,
-                          @Nullable String fieldCode, boolean inherited,
-                          @Nullable String thesaurusUrl, @Nullable Long formConfigId, @Nullable Long fieldId) {
-        this(thesaurusLabel, kind, sourceLabel, fieldLabel, typeLabel, tableName, typeName, fieldCode, inherited,
-                thesaurusUrl, formConfigId, fieldId, null, null);
-    }
 
     /** What identifies the row among the others, for the selection of the table. */
     public String getRowKey() {

@@ -1,9 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
-import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.utils.MessageUtils;
@@ -145,26 +142,7 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
     }
 
     public void saveConfig() {
-        if (StringUtils.isEmpty(thesaurusUrl)) return;
-
-        String previousUrl = savedThesaurusUrl;
-        try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
-            fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper);
-            notifySaved();
-            reloadUsages();
-            askToRewire(previousUrl, thesaurusUrl);
-        } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
-        } catch (NotSiamoisThesaurusException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
-        } catch (ErrorProcessingExpansionException e) {
-            displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
-        } finally {
-            progressWrapper.reset();
-        }
-
-
+        applyThesaurus(vocabulary -> fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper));
     }
 
 }

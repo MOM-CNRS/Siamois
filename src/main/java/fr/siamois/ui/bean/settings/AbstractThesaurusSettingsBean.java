@@ -1,6 +1,8 @@
 package fr.siamois.ui.bean.settings;
 
+import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
@@ -152,7 +154,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     protected void loadOptions() {
         thesaurusOptions = vocabularyService.findAll().stream()
                 .map(v -> new ThesaurusOption(urlOf(v), labelService.findLabelOf(v, langBean.getLanguageCode()).getValue(),
-                        v.getExternalVocabularyId(), normalizeServer(v.getBaseUri())))
+                        v.getExternalVocabularyId(), ThesaurusServers.normalize(v.getBaseUri())))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
@@ -163,32 +165,19 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     /** The instances to pick from: the default one and those of the thesauri the database knows. */
     public List<String> getServerOptions() {
         if (serverOptions == null) {
-            java.util.Set<String> servers = new java.util.LinkedHashSet<>();
-            servers.add(DEFAULT_THESAURUS_SERVER);
-            vocabularyService.findAll().forEach(v -> servers.add(normalizeServer(v.getBaseUri())));
-            serverOptions = new ArrayList<>(servers);
+            serverOptions = ThesaurusServers.known(vocabularyService, DEFAULT_THESAURUS_SERVER);
         }
         return serverOptions;
     }
 
-    private static String normalizeServer(String url) {
-        String trimmed = url.trim();
-        return trimmed.endsWith("/") ? trimmed.substring(0, trimmed.length() - 1) : trimmed;
-    }
-
     /** The instances matching what was typed. */
     public List<String> completeServers(String query) {
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        return getServerOptions().stream().filter(server -> server.toLowerCase().contains(needle)).toList();
+        return ThesaurusServers.matching(getServerOptions(), query);
     }
 
     /** The thesauri of the picked instance matching what was typed, by label or identifier. */
     public List<ThesaurusInfo> completeThesauri(String query) {
-        String needle = query == null ? "" : query.trim().toLowerCase();
-        List<ThesaurusInfo> options = pickedServerThesauri == null ? List.of() : pickedServerThesauri;
-        return options.stream()
-                .filter(info -> info.label().toLowerCase().contains(needle) || info.idTheso().toLowerCase().contains(needle))
-                .toList();
+        return ThesaurusServers.matchingThesauri(pickedServerThesauri == null ? List.of() : pickedServerThesauri, query);
     }
 
     /** Another instance was picked: its thesauri are listed, and none is picked yet. */
@@ -197,7 +186,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         pickedServerThesauri = new ArrayList<>();
         if (StringUtils.isBlank(pickedServer)) return;
         try {
-            pickedServerThesauri = new ArrayList<>(vocabularyService.findAllThesaurusOf(normalizeServer(pickedServer), langBean.getLanguageCode()));
+            pickedServerThesauri = new ArrayList<>(vocabularyService.findAllThesaurusOf(ThesaurusServers.normalize(pickedServer), langBean.getLanguageCode()));
         } catch (InvalidEndpointException e) {
             log.error("Could not list the thesauri of {}", pickedServer, e);
             displayErrorMessage(langBean, "projectTables.drawer.params.serverUnreachable");
@@ -207,7 +196,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     /** Registers an instance typed by the user, once it answers, and picks it. */
     public void addServer() {
         if (StringUtils.isBlank(newServerUrl)) return;
-        String server = normalizeServer(newServerUrl);
+        String server = ThesaurusServers.normalize(newServerUrl);
         try {
             vocabularyService.findAllThesaurusOf(server, langBean.getLanguageCode());
         } catch (InvalidEndpointException e) {
@@ -221,6 +210,39 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         newServerUrl = null;
         pickedServer = server;
         onServerPicked();
+    }
+
+    /** What sets a scope (a project, an organisation) up on the thesaurus just chosen. */
+    @FunctionalInterface
+    protected interface ThesaurusSetup {
+        void run(Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException;
+    }
+
+    /**
+     * Applies the selected thesaurus: sets the scope up on it, refreshes the usages, then offers to move the fields that
+     * still read the thesaurus left. A failure is reported to the user, and leaves the selection as it was.
+     *
+     * @param setup how the scope of the page is set up on the thesaurus
+     */
+    protected void applyThesaurus(ThesaurusSetup setup) {
+        if (StringUtils.isEmpty(thesaurusUrl)) return;
+
+        String previousUrl = savedThesaurusUrl;
+        try {
+            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
+            setup.run(vocabulary);
+            notifySaved();
+            reloadUsages();
+            askToRewire(previousUrl, thesaurusUrl);
+        } catch (InvalidEndpointException e) {
+            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+        } catch (NotSiamoisThesaurusException e) {
+            displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
+        } catch (ErrorProcessingExpansionException e) {
+            displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } finally {
+            progressWrapper.reset();
+        }
     }
 
     /** Whether a thesaurus is picked in the dialog, so it can be added. */

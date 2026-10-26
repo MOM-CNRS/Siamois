@@ -11,6 +11,7 @@ import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -133,15 +134,27 @@ public class ThesaurusUsageService {
         String thesaurus = institutionId == null ? "—" : fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, code)
                 .map(vocabulary -> describe(vocabulary, lang))
                 .orElse("—");
-        return Optional.of(new ThesaurusUsage(thesaurus, FieldVocabularyConfig.Kind.FIELD_CODE, code, field.getName(),
-                typeLabel(table, typeName), table.name(), typeName, code, true));
+        return Optional.of(ThesaurusUsage.builder()
+                .thesaurusLabel(thesaurus)
+                .kind(FieldVocabularyConfig.Kind.FIELD_CODE)
+                .sourceLabel(code)
+                .fieldLabel(field.getName())
+                .typeLabel(typeLabel(table, typeName))
+                .tableName(table.name())
+                .typeName(typeName)
+                .fieldCode(code)
+                .inherited(true)
+                .build());
     }
 
     /** A thesaurus as the pages name it: its label, its identifier on its instance, and the instance. */
     private String describe(Vocabulary vocabulary, String lang) {
-        StringBuilder text = new StringBuilder(labelService.findLabelOf(vocabulary, lang).getValue());
-        if (vocabulary.getExternalVocabularyId() != null) {
-            text.append(" (").append(vocabulary.getExternalVocabularyId()).append(')');
+        VocabularyLabel label = labelService.findLabelOf(vocabulary, lang);
+        String name = label == null ? null : label.getValue();
+        String id = vocabulary.getExternalVocabularyId();
+        StringBuilder text = new StringBuilder(name != null ? name : String.valueOf(id));
+        if (name != null && id != null) {
+            text.append(" (").append(id).append(')');
         }
         String server = vocabulary.getBaseUri();
         if (server != null && !server.isBlank()) {
@@ -199,21 +212,31 @@ public class ThesaurusUsageService {
             var valueConcept = config.getFormConfig().getValueConcept();
             type = valueConcept == null ? null : labelService.findLabelOf(valueConcept, lang).getLabel();
         }
-        return new ThesaurusUsage(
-                describe(vocabulary, lang),
-                kind,
-                source,
-                config.getField().getLabel(),
-                table == null ? type : typeLabel(table, typeName),
-                table == null ? null : table.name(),
-                typeName,
-                kind == FieldVocabularyConfig.Kind.FIELD_CODE ? config.getFieldCode() : null,
-                false,
-                vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId(),
-                config.getFormConfig().getId(),
-                config.getField().getId(),
-                config.getFormConfig().getActionUnit() == null ? null : config.getFormConfig().getActionUnit().getId(),
-                config.getFormConfig().getActionUnit() == null ? null : config.getFormConfig().getActionUnit().getName());
+        return ThesaurusUsage.builder()
+                .thesaurusLabel(describe(vocabulary, lang))
+                .kind(kind)
+                .sourceLabel(source)
+                .fieldLabel(config.getField()
+                .getLabel())
+                .typeLabel(table == null ? type : typeLabel(table, typeName))
+                .tableName(table == null ? null : table.name())
+                .typeName(typeName)
+                .fieldCode(kind == FieldVocabularyConfig.Kind.FIELD_CODE ? config.getFieldCode() : null)
+                .inherited(false)
+                .thesaurusUrl(vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId())
+                .formConfigId(config.getFormConfig()
+                .getId())
+                .fieldId(config.getField()
+                .getId())
+                .projectId(config.getFormConfig()
+                .getActionUnit() == null ? null : config.getFormConfig()
+                .getActionUnit()
+                .getId())
+                .projectName(config.getFormConfig()
+                .getActionUnit() == null ? null : config.getFormConfig()
+                .getActionUnit()
+                .getName())
+                .build();
     }
 
     /**
