@@ -11,7 +11,6 @@ import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -130,6 +129,7 @@ public class ThesaurusUsageService {
 
     private Optional<ThesaurusUsage> inheritedUsage(TypeFieldFormConfig field, ConfigurableTable table, String typeName,
                                                     Long projectId, @Nullable Long institutionId, String lang) {
+        String tableName = table.name();
         String code = field.getSourceLabel();
         String thesaurus = institutionId == null ? "—" : fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, code)
                 .map(vocabulary -> describe(vocabulary, lang))
@@ -140,7 +140,7 @@ public class ThesaurusUsageService {
                 .sourceLabel(code)
                 .fieldLabel(field.getName())
                 .typeLabel(typeLabel(table, typeName))
-                .tableName(table.name())
+                .tableName(tableName)
                 .typeName(typeName)
                 .fieldCode(code)
                 .inherited(true)
@@ -148,11 +148,13 @@ public class ThesaurusUsageService {
     }
 
     /** A thesaurus as the pages name it: its label, its identifier on its instance, and the instance. */
-    private String describe(Vocabulary vocabulary, String lang) {
-        VocabularyLabel label = labelService.findLabelOf(vocabulary, lang);
-        String name = label == null ? null : label.getValue();
+    private String describe(@Nullable Vocabulary vocabulary, String lang) {
+        if (vocabulary == null) {
+            return "—";
+        }
+        String name = labelService.findLabelOf(vocabulary, lang).getValue();
         String id = vocabulary.getExternalVocabularyId();
-        StringBuilder text = new StringBuilder(name != null ? name : String.valueOf(id));
+        StringBuilder text = new StringBuilder(name != null ? name : (id != null ? id : "—"));
         if (name != null && id != null) {
             text.append(" (").append(id).append(')');
         }

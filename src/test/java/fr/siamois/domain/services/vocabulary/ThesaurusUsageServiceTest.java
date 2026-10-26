@@ -552,10 +552,10 @@ class ThesaurusUsageServiceTest {
     }
 
     @Test
-    void findUsagesOfActionUnit_namesAThesaurusWithoutLabelByItsIdentifier() {
+    void findUsagesOfActionUnit_namesAThesaurusWhoseLabelIsEmptyByItsIdentifier() {
         Vocabulary vocabulary = mock(Vocabulary.class);
         when(vocabulary.getExternalVocabularyId()).thenReturn("th332");
-        when(labelService.findLabelOf(vocabulary, LANG)).thenReturn(null);
+        when(labelService.findLabelOf(vocabulary, LANG)).thenReturn(new VocabularyLabel());
         ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", concept("Céramique"));
         when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
 
