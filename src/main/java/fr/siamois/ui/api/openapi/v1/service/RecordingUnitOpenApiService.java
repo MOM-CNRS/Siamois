@@ -647,9 +647,14 @@ public class RecordingUnitOpenApiService {
     public String suggestIdentifier(String projectId,
                                     long typeId,
                                     PersonDTO personDto,
-                                    Set<Long> accessibleInstitutionIds) {
+                                    Set<Long> accessibleInstitutionIds,
+                                    String lang) {
         AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
         ActionUnitDTO au = project.actionUnit();
+        InstitutionDTO institution = au.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
+        }
         Concept typeConcept = conceptRepository.findById(typeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
 
@@ -657,7 +662,10 @@ public class RecordingUnitOpenApiService {
         shell.setType(conceptMapper.convert(typeConcept));
         shell.setActionUnit(actionUnitSummaryFromFull(au));
 
-        return recordingUnitService.suggestFullIdentifier(actionUnitSummaryFromFull(au), shell);
+        // The identifier configuration is read in the context of a user (their institution and language).
+        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        return OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> recordingUnitService.suggestFullIdentifier(actionUnitSummaryFromFull(au), shell));
     }
 
     /**

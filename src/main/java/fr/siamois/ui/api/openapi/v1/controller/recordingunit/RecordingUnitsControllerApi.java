@@ -97,11 +97,14 @@ public class RecordingUnitsControllerApi {
             @Parameter(description = "Identifiant ou clé du projet (doit être dans le périmètre JWT).", example = "10")
             @RequestParam String projectId,
             @Parameter(description = "Identifiant du concept définissant le type d'UE (concept_id).", example = "42")
-            @RequestParam long typeId) {
+            @RequestParam long typeId,
+            @Parameter(description = "Langue préférée (la configuration des identifiants est lue dans la langue de l'utilisateur).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
         ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         String suggested = recordingUnitOpenApiService.suggestIdentifier(
-                projectId, typeId, caller.person(), caller.accessibleInstitutionIds());
+                projectId, typeId, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new IdentifierSuggestionResponse(suggested));
     }
 
