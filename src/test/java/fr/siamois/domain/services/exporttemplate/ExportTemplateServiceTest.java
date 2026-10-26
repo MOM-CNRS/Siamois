@@ -124,16 +124,16 @@ class ExportTemplateServiceTest {
         when(permissions.hasInstancePermission(personDto, PermissionConstants.INSTANCE_MANAGE_SETTINGS)).thenReturn(false);
         when(permissions.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.createBlank(userInfo, "N", "S", "C"))
+        assertThatThrownBy(() -> service.createBlank(userInfo, "N", "S"))
                 .isInstanceOf(ForbiddenOperationException.class);
         verify(repository, never()).save(any());
     }
 
     @Test
-    void createBlank_storesAValidDefinitionWithSyncedColumns() {
+    void createBlank_storesOneEmptySheet() {
         allowManage();
 
-        service.createBlank(userInfo, "Mon modèle", "Feuille", "col");
+        service.createBlank(userInfo, "Mon modèle", "Feuille");
 
         ArgumentCaptor<ExportTemplate> captor = ArgumentCaptor.forClass(ExportTemplate.class);
         verify(repository).save(captor.capture());
@@ -142,7 +142,11 @@ class ExportTemplateServiceTest {
         assertThat(saved.getName()).isEqualTo("Mon modèle");
         ExportTemplateDefinition parsed = ExportTemplateJson.parse(saved.getDefinition());
         assertThat(parsed.id()).isEqualTo(saved.getTemplateUuid());
-        assertThat(parsed.sheets().get(0).name()).isEqualTo("Feuille");
+        assertThat(parsed.sheets()).singleElement().satisfies(sheet -> {
+            assertThat(sheet.name()).isEqualTo("Feuille");
+            assertThat(sheet.sources()).isEmpty();
+            assertThat(sheet.columns()).isEmpty();
+        });
     }
 
     @Test
@@ -220,6 +224,46 @@ class ExportTemplateServiceTest {
         assertThat(copy.getTemplateUuid()).isNotEqualTo("u1");
         assertThat(copy.getName()).isEqualTo("A (copie)");
         assertThat(copy.getReferenceProject()).isSameAs(project);
+    }
+
+    @Test
+    void publish_locksTheTemplate() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+
+        ExportTemplateDTO dto = service.publish(userInfo, 5L);
+
+        assertThat(existing.isPublished()).isTrue();
+        assertThat(dto.published()).isTrue();
+    }
+
+    @Test
+    void publishedTemplate_refusesEveryWrite() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        existing.setPublished(true);
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+        ExportTemplateDefinition same = ExportTemplateJson.parse(sampleJson("u1", "A"));
+
+        assertThatThrownBy(() -> service.updateDefinition(userInfo, 5L, same)).isInstanceOf(ForbiddenOperationException.class);
+        assertThatThrownBy(() -> service.rename(userInfo, 5L, "B")).isInstanceOf(ForbiddenOperationException.class);
+        assertThatThrownBy(() -> service.setReferenceProject(userInfo, 5L, null)).isInstanceOf(ForbiddenOperationException.class);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void duplicate_ofAPublishedTemplate_isEditable() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        existing.setPublished(true);
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+
+        service.duplicate(userInfo, 5L, "A (copie)");
+
+        ArgumentCaptor<ExportTemplate> captor = ArgumentCaptor.forClass(ExportTemplate.class);
+        verify(repository, atLeastOnce()).save(captor.capture());
+        assertThat(captor.getValue().isPublished()).isFalse();
     }
 
     @Test

@@ -13,5 +13,6 @@ public record ExportTemplateDTO(
         String version,
         @Nullable Long referenceProjectId,
         Instant createdAt,
-        Instant updatedAt) implements Serializable {
+        Instant updatedAt,
+        boolean published) implements Serializable {
 }

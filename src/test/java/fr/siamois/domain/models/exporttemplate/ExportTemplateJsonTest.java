@@ -180,7 +180,6 @@ class ExportTemplateJsonTest {
                 Arguments.of("root on unknown source", template(RU, "[{\"target_root\":\"UE\",\"source_topterm\":\"ZZ\"}]", CODE_COLUMN, CONSTANT_FIELD), "Unknown source 'ZZ'"),
                 Arguments.of("root on joined source", template(RU + "," + PROJECT_JOIN, "[{\"target_root\":\"UE\",\"source_topterm\":\"UE_1_project\"}]", CODE_COLUMN, CONSTANT_FIELD), "is joined"),
                 Arguments.of("dot in sheet name", template(RU, "[{\"target_root\":\"U.E\",\"source_topterm\":\"UE_1\"}]", CODE_COLUMN, CONSTANT_FIELD), "cannot contain '.'"),
-                Arguments.of("sheet without column", template(RU, ROOT, "{\"X.a\":{}}", "[]"), "Sheet 'UE' has no column"),
                 Arguments.of("unknown source kind", simple(CONSTANT_FIELD).replace("\"kind\":\"ENTITY\"", "\"kind\":\"SQL\""), "Unknown source kind"),
                 Arguments.of("unknown entity", simple(CONSTANT_FIELD).replace("RECORDING_UNIT", "NOPE"), "Unknown entity"),
                 Arguments.of("join foreign key not id", template(RU + "," + PROJECT_JOIN.replace("\"foreign_key\":\"id\"", "\"foreign_key\":\"code\""), ROOT, CODE_COLUMN, CONSTANT_FIELD), "foreign_key must be 'id'"),
@@ -214,6 +213,45 @@ class ExportTemplateJsonTest {
         assertThat(parsed.sheets()).extracting(ExportTemplateDefinition.Sheet::name).containsExactly("UE", "Vide");
         assertThat(parsed.sheets().get(1).sources()).isEmpty();
         assertThat(ExportTemplateJson.parse(ExportTemplateJson.toJson(parsed))).isEqualTo(parsed);
+    }
+
+    @Test
+    void sheetWithASourceButNoColumn_roundTrips() {
+        ExportTemplateDefinition parsed = ExportTemplateJson.parse(template(RU, ROOT, "{\"X.a\":{}}", "[]"));
+
+        Sheet ue = parsed.sheets().stream().filter(sh -> sh.name().equals("UE")).findFirst().orElseThrow();
+        assertThat(ue.sources()).hasSize(1);
+        assertThat(ue.columns()).isEmpty();
+        assertThat(ExportTemplateJson.parse(ExportTemplateJson.toJson(parsed))).isEqualTo(parsed);
+    }
+
+    @Test
+    void blankTemplate_withAnEmptySheetWithoutSourceNorColumn_roundTrips() {
+        ExportTemplateDefinition blank = new ExportTemplateDefinition(ExportTemplateDefinition.CURRENT_SCHEMA_VERSION,
+                "id-1", "1.0.0", "Neuf", null, List.of(new Sheet("Feuille 1", false, List.of(), List.of(), List.of())));
+
+        String json = ExportTemplateJson.toJson(blank);
+
+        assertThat(json).contains("\"empty_sheets\":[\"Feuille 1\"]");
+        assertThat(ExportTemplateJson.parse(json)).isEqualTo(blank);
+    }
+
+    @Test
+    void emptySheet_keepsItsOptions() {
+        ExportTemplateDefinition blank = new ExportTemplateDefinition(ExportTemplateDefinition.CURRENT_SCHEMA_VERSION,
+                "id-1", "1.0.0", "Neuf", null, List.of(new Sheet("Feuille 1", true, List.of(), List.of(), List.of())));
+
+        assertThat(ExportTemplateJson.parse(ExportTemplateJson.toJson(blank))).isEqualTo(blank);
+    }
+
+    @Test
+    void sheetsWithoutColumnsAreWrittenAfterTheOthers_andOtherSheetsKeepTheirOrder() {
+        Column c = new Column("a", OutputType.TEXT, List.of(new ConstantRule(List.of(), "x")));
+        ExportTemplateDefinition d = new ExportTemplateDefinition(ExportTemplateDefinition.CURRENT_SCHEMA_VERSION, "id-1", "1.0.0", "T", null, List.of(
+                new Sheet("B", false, List.of(new ProjectSource()), List.of(), List.of(c)),
+                new Sheet("A", false, List.of(), List.of(), List.of(c))));
+
+        assertThat(ExportTemplateJson.parse(ExportTemplateJson.toJson(d)).sheets()).extracting(Sheet::name).containsExactly("B", "A");
     }
 
     @Test

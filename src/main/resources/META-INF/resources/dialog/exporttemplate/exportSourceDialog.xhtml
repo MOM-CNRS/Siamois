@@ -1,0 +1,115 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!-- Source de donnée : une table, ses types, puis les champs à importer vers des colonnes (le tout décoché par défaut) -->
+    <p:dialog widgetVar="xeSourceDlg" id="xeSourceDlg" modal="true" width="520" draggable="false" resizable="false"
+              closeOnEscape="true" styleClass="xe-source-dlg">
+        <f:facet name="header">
+            <h3>#{exportTemplateEditorBean.sourceDialog.editIndex ge 0
+                  ? langBean.msg('exportTemplates.editor.source.dialog.edit')
+                  : langBean.msg('exportTemplates.editor.source.dialog.new')}</h3>
+        </f:facet>
+        <h:form id="xeSourceForm">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <div class="xe-source-body">
+                <p class="xe-dlg-hint">
+                    #{langBean.msg('exportTemplates.editor.source.dialog.hint')}
+                    <h:panelGroup rendered="#{not empty exportTemplateEditorBean.referenceProjectLabel and exportTemplateEditorBean.referenceProject ne ''}">
+                        #{langBean.msg('exportTemplates.editor.source.dialog.countsIn', exportTemplateEditorBean.referenceProjectLabel)}
+                    </h:panelGroup>
+                </p>
+
+                <div class="xe-dlg-search">
+                    <i class="bi bi-search"/>
+                    <p:inputText value="#{exportTemplateEditorBean.sourceDialog.query}"
+                                 placeholder="#{langBean.msg('exportTemplates.editor.source.dialog.search')}">
+                        <p:ajax event="keyup" delay="250" process="@this" update="xeTree"/>
+                    </p:inputText>
+                </div>
+
+                <h:panelGroup id="xeTree" layout="block" styleClass="xe-tree">
+                    <ui:repeat value="#{exportTemplateEditorBean.sourceTree}" var="table">
+                        <div class="xe-tree-table">
+                            <div class="xe-tree-row #{table.entityClass} #{table.state ne 'NONE' ? 'picked' : ''}">
+                                <p:commandLink styleClass="xe-chevron" rendered="#{table.hasTypes}"
+                                               action="#{exportTemplateEditorBean.toggleExpand(table)}" process="@this" update="xeTree">
+                                    <i class="bi #{table.expanded ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
+                                </p:commandLink>
+                                <span class="xe-chevron" style="#{table.hasTypes ? 'display:none' : ''}"/>
+                                <p:commandLink styleClass="xe-box #{table.state}" title="#{table.label}"
+                                               action="#{exportTemplateEditorBean.toggleTable(table)}" process="@this" update="@form">
+                                    <i class="bi #{table.all ? 'bi-check-lg' : (table.some ? 'bi-dash-lg' : '')}"/>
+                                </p:commandLink>
+                                <i class="bi #{table.icon} xe-ent-icon"/>
+                                <span class="xe-tree-name">#{table.label}</span>
+                                <span class="xe-tree-count">#{table.total}</span>
+                            </div>
+                            <h:panelGroup rendered="#{table.expanded}" layout="block">
+                                <ui:repeat value="#{table.types}" var="type">
+                                    <div class="xe-tree-row xe-tree-type #{table.entityClass}">
+                                        <p:commandLink styleClass="xe-box #{type.picked ? 'ALL' : 'NONE'}" title="#{type.label}"
+                                                       action="#{exportTemplateEditorBean.toggleType(table.key, type.key)}" process="@this" update="@form">
+                                            <i class="bi #{type.picked ? 'bi-check-lg' : ''}"/>
+                                        </p:commandLink>
+                                        <span class="xe-tree-name">#{type.label}</span>
+                                        <span class="xe-tree-count #{type['empty'] ? 'xe-tree-empty' : ''}">#{type.count}</span>
+                                    </div>
+                                </ui:repeat>
+                            </h:panelGroup>
+                        </div>
+                    </ui:repeat>
+                </h:panelGroup>
+
+                <h:panelGroup layout="block" styleClass="xe-fields" rendered="#{exportTemplateEditorBean.hasFieldRows}">
+                    <div class="xe-fields-title">#{langBean.msg('exportTemplates.editor.source.fields.title')}</div>
+                    <div class="xe-dlg-search">
+                        <i class="bi bi-search"/>
+                        <p:inputText value="#{exportTemplateEditorBean.sourceDialog.fieldQuery}"
+                                     placeholder="#{langBean.msg('exportTemplates.editor.source.fields.search')}">
+                            <p:ajax event="keyup" delay="250" process="@this" update="xeFieldList"/>
+                        </p:inputText>
+                    </div>
+                    <h:panelGroup id="xeFieldList" layout="block">
+                        <p:commandLink styleClass="xe-selall" action="#{exportTemplateEditorBean.toggleAllFields()}"
+                                       process="@form" update="xeFieldList">
+                            <span class="xe-box #{exportTemplateEditorBean.fieldsSelectionState}">
+                                <i class="bi #{exportTemplateEditorBean.fieldsSelectionState eq 'ALL' ? 'bi-check-lg' : (exportTemplateEditorBean.fieldsSelectionState eq 'SOME' ? 'bi-dash-lg' : '')}"/>
+                            </span>
+                            <strong>#{exportTemplateEditorBean.fieldsSelectionState eq 'ALL'
+                                      ? langBean.msg('exportTemplates.editor.source.fields.none')
+                                      : langBean.msg('exportTemplates.editor.source.fields.all')}</strong>
+                            <span class="xe-selall-count">#{langBean.msg('exportTemplates.editor.source.fields.selected', exportTemplateEditorBean.checkedFieldCount, exportTemplateEditorBean.visibleFieldRows.size())}</span>
+                        </p:commandLink>
+                        <div class="xe-field-rows">
+                            <ui:repeat value="#{exportTemplateEditorBean.visibleFieldRows}" var="fr">
+                                <div class="xe-field-row">
+                                    <p:selectBooleanCheckbox value="#{fr.checked}">
+                                        <p:ajax event="change" process="@this" update="xeFieldList"/>
+                                    </p:selectBooleanCheckbox>
+                                    <span class="xe-ellipsis">#{fr.label}</span>
+                                    <p:selectOneMenu value="#{fr.target}" styleClass="xe-select xe-target" appendTo="@(body)">
+                                        <f:selectItems value="#{exportTemplateEditorBean.targetColumnItems}" var="o"
+                                                       itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                    </p:selectOneMenu>
+                                </div>
+                            </ui:repeat>
+                        </div>
+                    </h:panelGroup>
+                </h:panelGroup>
+
+                <div class="xe-pop-foot">
+                    <p:commandButton value="#{langBean.msg('exportTemplates.editor.cancel')}" styleClass="xt-btn-flat" type="button"
+                                     onclick="PF('xeSourceDlg').hide()"/>
+                    <p:commandButton styleClass="xt-btn-primary"
+                                     value="#{exportTemplateEditorBean.sourceDialog.editIndex ge 0 ? langBean.msg('common.action.save') : langBean.msg('common.action.add')}"
+                                     disabled="#{not exportTemplateEditorBean.sourceDialogConfirmable}"
+                                     action="#{exportTemplateEditorBean.confirmSourceDialog()}"
+                                     process="@form" update="@form :xeEditorCc:exportTemplateEditorForm"
+                                     oncomplete="PF('xeSourceDlg').hide()"/>
+                </div>
+            </div>
+        </h:form>
+    </p:dialog>
+</ui:fragment>

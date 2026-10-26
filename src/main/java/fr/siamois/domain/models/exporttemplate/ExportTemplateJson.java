@@ -83,6 +83,7 @@ public final class ExportTemplateJson {
     private static final String FILE_NAME_PATTERN = "fileNamePattern";
     private static final String ROOT_CONNECTIONS = "root_connections";
     private static final String SHEETS = "sheets";
+    private static final String EMPTY_SHEETS = "empty_sheets";
     private static final String SCHEMA_TARGET = "schema_target";
     private static final String FIELDS = "fields";
     private static final String TARGET_ROOT = "target_root";
@@ -117,8 +118,12 @@ public final class ExportTemplateJson {
         Map<String, Object> sheetOptions = new LinkedHashMap<>();
         Map<String, Object> schemaTarget = new LinkedHashMap<>();
         List<Object> fields = new ArrayList<>();
+        List<String> emptySheets = new ArrayList<>();
         for (Sheet sheet : d.sheets()) {
             requireSheetName(sheet.name());
+            if (sheet.sources().isEmpty() && sheet.columns().isEmpty()) {
+                emptySheets.add(sheet.name());
+            }
             SheetWriter writer = new SheetWriter(sheet, sources);
             writer.writeSources(roots);
             if (sheet.omitIfEmpty() || !sheet.sortBy().isEmpty()) {
@@ -135,6 +140,7 @@ public final class ExportTemplateJson {
         out.put(SOURCES, sources);
         out.put(ROOT_CONNECTIONS, roots);
         if (!sheetOptions.isEmpty()) out.put(SHEETS, sheetOptions);
+        if (!emptySheets.isEmpty()) out.put(EMPTY_SHEETS, emptySheets);
         out.put(SCHEMA_TARGET, schemaTarget);
         out.put(FIELDS, fields);
         return out;
@@ -323,7 +329,7 @@ public final class ExportTemplateJson {
     public static ExportTemplateDefinition fromJson(@Nullable JsonNode root) {
         JsonNode node = requireObject(root, "template");
         only(node, "template", VERSION, "id", TEMPLATE_VERSION, "name", FILE_NAME_PATTERN, SOURCES,
-                ROOT_CONNECTIONS, SHEETS, SCHEMA_TARGET, FIELDS);
+                ROOT_CONNECTIONS, SHEETS, EMPTY_SHEETS, SCHEMA_TARGET, FIELDS);
         int version = requireInt(node, VERSION);
         if (version != ExportTemplateDefinition.CURRENT_SCHEMA_VERSION) {
             throw new InvalidExportTemplateException("Unsupported version: " + version);
@@ -331,20 +337,17 @@ public final class ExportTemplateJson {
         Map<String, Declared> declared = readSources(required(node, SOURCES));
         Map<String, List<String>> sheetSources = readRootConnections(node, declared);
         addSourcelessSheets(required(node, SCHEMA_TARGET), sheetSources);
+        addEmptySheets(node, sheetSources);
         Map<String, JsonNode> sheetOptions = readSheetOptions(node, sheetSources);
         Map<String, Map<String, OutputType>> columns = readSchemaTarget(required(node, SCHEMA_TARGET), sheetSources);
         Map<String, Map<String, List<Rule>>> rules = readFields(required(node, FIELDS), declared, sheetSources, columns);
 
         List<Sheet> sheets = new ArrayList<>();
-        for (String sheetName : sheetSources.keySet()) {
-            if (!columns.containsKey(sheetName)) {
-                throw new InvalidExportTemplateException("Sheet '" + sheetName + "' has no column");
-            }
-        }
-        for (Map.Entry<String, Map<String, OutputType>> e : columns.entrySet()) {
-            String name = e.getKey();
+        // Les feuilles à colonnes suivent l'ordre de schema_target ; les feuilles sans colonne (source seule, ou vides) viennent après.
+        List<String> sheetNames = new ArrayList<>(columns.keySet());
+        sheetSources.keySet().stream().filter(n -> !columns.containsKey(n)).forEach(sheetNames::add);
+        for (String name : sheetNames) {
             Map<String, OutputType> headers = columns.getOrDefault(name, Map.of());
-            if (headers.isEmpty()) throw new InvalidExportTemplateException("Sheet '" + name + "' has no column");
             List<Column> sheetColumns = new ArrayList<>();
             headers.forEach((header, output) -> sheetColumns.add(
                     new Column(header, output, mergeRules(rules.getOrDefault(name, Map.of()).getOrDefault(header, List.of())))));
@@ -409,7 +412,9 @@ public final class ExportTemplateJson {
 
     private static Map<String, List<String>> readRootConnections(JsonNode node, Map<String, Declared> declared) {
         Map<String, List<String>> out = new LinkedHashMap<>();
-        for (JsonNode c : readListNodes(node, ROOT_CONNECTIONS)) {
+        // Un modèle sans aucune source déclarée n'a pas de racine : il ne porte que des feuilles vides.
+        List<JsonNode> connections = declared.isEmpty() ? readList(node, ROOT_CONNECTIONS, false, n -> n) : readListNodes(node, ROOT_CONNECTIONS);
+        for (JsonNode c : connections) {
             requireObject(c, "root connection");
             only(c, "root connection", TARGET_ROOT, SOURCE_TOPTERM);
             String sheet = requireText(c, TARGET_ROOT);
@@ -424,7 +429,7 @@ public final class ExportTemplateJson {
             }
             aliases.add(alias);
         }
-        if (out.isEmpty()) throw new InvalidExportTemplateException("'root_connections' cannot be empty");
+        if (out.isEmpty() && !declared.isEmpty()) throw new InvalidExportTemplateException("'root_connections' cannot be empty");
         return out;
     }
 
@@ -441,6 +446,14 @@ public final class ExportTemplateJson {
                 sheetSources.putIfAbsent(sheet, new ArrayList<>());
             }
         });
+    }
+
+    /** Feuilles déclarées sans source ni colonne : le modèle les porte pour qu'on les remplisse plus tard. */
+    private static void addEmptySheets(JsonNode node, Map<String, List<String>> sheetSources) {
+        for (String name : readList(node, EMPTY_SHEETS, false, n -> requireString(n, "empty sheet name"))) {
+            requireSheetName(name);
+            sheetSources.putIfAbsent(name, new ArrayList<>());
+        }
     }
 
     private static Map<String, JsonNode> readSheetOptions(JsonNode node, Map<String, List<String>> sheetSources) {

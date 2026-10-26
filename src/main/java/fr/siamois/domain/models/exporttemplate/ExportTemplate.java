@@ -67,6 +67,10 @@ public class ExportTemplate {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** Un modèle publié est en lecture seule : seule une copie (non publiée) peut être modifiée. Donnée locale, jamais partagée. */
+    @Column(name = "published", nullable = false, columnDefinition = "boolean not null default false")
+    private boolean published;
+
     /** Partie partageable, au format {@link ExportTemplateJson}. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "definition", columnDefinition = "jsonb", nullable = false)

@@ -139,7 +139,7 @@ public class ExportTemplatesSettingsBean implements Serializable {
         }
         try {
             exportTemplateService.createBlank(userInfo(), newTemplateName.trim(),
-                    langBean.msg("exportTemplates.blank.sheetName"), langBean.msg("exportTemplates.blank.columnHeader"));
+                    langBean.msg("exportTemplates.blank.sheetName"));
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
