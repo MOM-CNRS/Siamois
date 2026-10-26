@@ -222,6 +222,67 @@ class RecordingUnitsControllerApiTest {
     }
 
     @Test
+    void get_suggestIdentifier_returns200_withSuggestedIdentifier() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.suggestIdentifier("5", 42L, personDto, Set.of(10L), "fr"))
+                .thenReturn("INST-PROJ-UE1");
+
+        mockMvc.perform(get("/api/v1/recording-units/suggest-identifier")
+                        .param("projectId", "5")
+                        .param("typeId", "42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.suggestedIdentifier").value("INST-PROJ-UE1"));
+
+        verify(recordingUnitOpenApiService).suggestIdentifier("5", 42L, personDto, Set.of(10L), "fr");
+    }
+
+    @Test
+    void get_suggestIdentifier_passesTheAcceptLanguageToTheService() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.suggestIdentifier(any(), anyLong(), any(), any(), any()))
+                .thenReturn("INST-PROJ-UE1");
+
+        mockMvc.perform(get("/api/v1/recording-units/suggest-identifier")
+                        .param("projectId", "5")
+                        .param("typeId", "42")
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService).suggestIdentifier("5", 42L, personDto, Set.of(10L), "en");
+    }
+
+    @Test
+    void get_suggestIdentifier_unknownType_returns404() throws Exception {
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.suggestIdentifier(eq("5"), eq(42L), eq(personDto), eq(Set.of(10L)), eq("fr")))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
+
+        mockMvc.perform(get("/api/v1/recording-units/suggest-identifier")
+                        .param("projectId", "5")
+                        .param("typeId", "42"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void get_suggestIdentifier_isNotSwallowedByTheIdRoute() throws Exception {
+        // The literal route wins over /{id}: a request for it never reaches buildMobileDetail.
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+        when(recordingUnitOpenApiService.suggestIdentifier(any(), anyLong(), any(), any(), any()))
+                .thenReturn("INST-PROJ-UE1");
+
+        mockMvc.perform(get("/api/v1/recording-units/suggest-identifier")
+                        .param("projectId", "5")
+                        .param("typeId", "42"))
+                .andExpect(status().isOk());
+
+        verify(recordingUnitOpenApiService, never()).buildMobileDetail(any(), any(), any(), any(), any());
+    }
+
+    @Test
     void patch_returns200() throws Exception {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { InputText } from "primereact/inputtext";
 import { queryKeys } from "../../api/queryKeys";
 import { getEffectiveForm } from "../../entities/shared/typeCatalog";
 import type { CreatableKind, CreateFormContext } from "../../entities/shared/types";
@@ -25,22 +26,29 @@ export interface TypeOnlyCreateFormProps extends CreateFormContext {
   title: string;
   // The project catalog whose untyped form carries the type field (valueBinding "type").
   typesSegment: string;
-  create: (projectId: string, typeId: string) => Promise<{ id: string | number }>;
+  // The identifier is the entity's auto-generated one, shown as a modifiable suggestion when
+  // `suggestIdentifier` is set: sent only when the user typed another one.
+  create: (projectId: string, typeId: string, identifier?: string) => Promise<{ id: string | number }>;
+  // The identifier the server would generate for a new entity of this type in this project, without
+  // consuming it. When set, an editable identifier field appears under the type, pre-filled with it.
+  suggestIdentifier?: (projectId: string, typeId: string) => Promise<string>;
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
 }
 
 /**
  * The creation overlay of an entity created in a project with nothing but its type (phase,
- * container, recording unit): the server generates the identifier, and every other field is edited
- * afterwards on the fiche the overlay opens. The project is the list's own, or picked first in the
- * form on an organization-wide list.
+ * container, recording unit): the server generates the identifier — shown as a modifiable
+ * suggestion when `suggestIdentifier` is set — and every other field is edited afterwards on the
+ * fiche the overlay opens. The project is the list's own, or picked first in the form on an
+ * organization-wide list.
  */
 export function TypeOnlyCreateForm({
   entityType,
   title,
   typesSegment,
   create,
+  suggestIdentifier,
   children,
   organizationId,
   scope,
@@ -55,6 +63,26 @@ export function TypeOnlyCreateForm({
     setType(null);
   }, [projectId]);
   const [error, setError] = useState<string | null>(null);
+  // The identifier field, like entities/project/CreateForm.tsx's: the suggestion is shown until
+  // the user types, then their value is — an edited-to-empty one means "let the server generate".
+  const [identifier, setIdentifier] = useState("");
+  const [identifierEdited, setIdentifierEdited] = useState(false);
+  // The suggestion depends on the project AND the type: a change of either is a new suggestion,
+  // and an edit made for the previous pair no longer applies.
+  const typeId = type?.resourceId ?? null;
+  useEffect(() => {
+    setIdentifier("");
+    setIdentifierEdited(false);
+  }, [projectId, typeId]);
+
+  const suggestionQuery = useQuery({
+    queryKey: queryKeys.identifierSuggestion(entityType, projectId, typeId),
+    queryFn: () => suggestIdentifier!(projectId as string, typeId as string),
+    enabled: suggestIdentifier != null && projectId != null && typeId != null,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const shownIdentifier = identifierEdited ? identifier : (suggestionQuery.data ?? "");
 
   const formQuery = useQuery({
     queryKey: queryKeys.effectiveForm(typesSegment, projectId, null),
@@ -82,7 +110,8 @@ export function TypeOnlyCreateForm({
   }, [prefilledType, typeField, typesLoaded, declaredTypes]);
 
   const mutation = useMutation({
-    mutationFn: () => create(projectId as string, type!.resourceId),
+    mutationFn: () =>
+      create(projectId as string, type!.resourceId, identifierEdited && identifier.trim() !== "" ? identifier.trim() : undefined),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => setError(messageForError(err, t("create.failed"))),
   });
@@ -119,6 +148,19 @@ export function TypeOnlyCreateForm({
           <span className="sia-create-form-hint">{projectId == null ? t("create.chooseProjectFirst") : t("common.loading")}</span>
         )}
       </CreateFormField>
+
+      {suggestIdentifier != null && (
+        <CreateFormField label={t("common.identifier")}>
+          <InputText
+            value={shownIdentifier}
+            placeholder={t("create.identifier.auto")}
+            onChange={(e) => {
+              setIdentifier(e.target.value);
+              setIdentifierEdited(true);
+            }}
+          />
+        </CreateFormField>
+      )}
 
       {children}
     </CreateFormShell>

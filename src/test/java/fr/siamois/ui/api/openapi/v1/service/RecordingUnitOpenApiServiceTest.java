@@ -95,6 +95,7 @@ import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1275,6 +1276,146 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifier_isUsedAsIs_andGenerationIsSkipped() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("INST-PROJ-UE42");
+
+        RecordingUnitResource data = service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        assertThat(data.getId()).isEqualTo("1026");
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        // The chosen identifier is set on the saved unit before the second save...
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("INST-PROJ-UE42");
+        // ...its uniqueness is checked...
+        verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saves.getAllValues().get(1));
+        // ...and the server's own generation is not even attempted.
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifierAlreadyTaken_throwsConflict() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("RU-3000");
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+
+        // The unit was saved once (the identifier is set only once it exists); the conflict rolls the rest back.
+        verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_blankIdentifier_fallsBackToGeneration() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("   ");
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        verify(recordingUnitService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any());
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("RU-3000");
+    }
+
+    @Test
+    void suggestIdentifier_returnsTheServiceSuggestionForProjectAndType() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        Concept typeConcept = new Concept();
+        typeConcept.setId(42L);
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        when(recordingUnitService.suggestFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class)))
+                .thenReturn("INST-PROJ-UE1");
+
+        String suggested = service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr");
+
+        assertThat(suggested).isEqualTo("INST-PROJ-UE1");
+        // The suggestion is computed for an unpersisted shell of the picked type in the picked project.
+        ArgumentCaptor<RecordingUnitDTO> shell = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService).suggestFullIdentifier(any(ActionUnitSummaryDTO.class), shell.capture());
+        assertThat(shell.getValue().getType()).isSameAs(typeDto);
+        assertThat(shell.getValue().getActionUnit().getId()).isEqualTo(5L);
+    }
+
+    @Test
+    void suggestIdentifier_runsInTheCallerInstitutionContext() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        Concept typeConcept = new Concept();
+        typeConcept.setId(42L);
+        when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
+        when(conceptMapper.convert(typeConcept)).thenReturn(new ConceptDTO());
+        when(recordingUnitService.suggestFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class)))
+                .thenAnswer(invocation -> {
+                    // The identifier configuration is read in the context of a user: without one
+                    // bound to the thread, the resolution fails (the bug this guards against).
+                    UserInfo current = ExecutionContextHolder.get();
+                    assertThat(current).isNotNull();
+                    assertThat(current.getInstitution().getId()).isEqualTo(10L);
+                    assertThat(current.getUser().getId()).isEqualTo(personDto.getId());
+                    assertThat(current.getLang()).isEqualTo("fr");
+                    return "INST-PROJ-UE1";
+                });
+
+        String suggested = service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr");
+
+        assertThat(suggested).isEqualTo("INST-PROJ-UE1");
+        // The context is bound only for the duration of the call.
+        assertThat(ExecutionContextHolder.get()).isNull();
+    }
+
+    @Test
+    void suggestIdentifier_projectWithoutOrganization_throws400() {
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+
+        assertThatThrownBy(() -> service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verifyNoInteractions(recordingUnitService);
+    }
+
+    @Test
+    void suggestIdentifier_unknownType_throws404() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(conceptRepository.findById(42L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.suggestIdentifier("5", 42L, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verifyNoInteractions(recordingUnitService);
     }
 
     @Test

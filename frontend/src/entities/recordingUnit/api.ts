@@ -6,6 +6,9 @@ import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 export interface RecordingUnitCreateBody {
   projectId: string;
   typeId: string;
+  // An identifier chosen in the creation form (the auto-generated one, edited). Undefined when the
+  // user kept the suggestion: the server then generates it itself.
+  identifier?: string;
   // The new UE becomes a direct child of parentRecordingUnitId / the direct parent of
   // childRecordingUnitId — linked server-side in the same transaction as the creation.
   parentRecordingUnitId?: string | number;
@@ -20,6 +23,7 @@ const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, Recording
   toCreateBody: (body) => ({
     projectId: body.projectId,
     typeId: body.typeId,
+    identifier: body.identifier?.trim() ? body.identifier.trim() : undefined,
     parentRecordingUnitId: body.parentRecordingUnitId != null ? Number(body.parentRecordingUnitId) : undefined,
     childRecordingUnitId: body.childRecordingUnitId != null ? Number(body.childRecordingUnitId) : undefined,
     phaseId: body.phaseId != null ? Number(body.phaseId) : undefined,
@@ -55,6 +59,16 @@ export async function duplicateRecordingUnitStructure(
     body: { copies: options.copies, descendantIds: options.descendantIds.map(Number) },
   });
   return body.data;
+}
+
+// GET /api/v1/recording-units/suggest-identifier — the identifier the server would generate for a
+// new UE of this type in this project, without consuming the counter. The creation form shows it
+// pre-filled and editable; an unedited suggestion is not sent, the server allocates it itself.
+export async function suggestRecordingUnitIdentifier(projectId: string | number, typeId: string | number): Promise<string> {
+  const body = await apiFetch<{ suggestedIdentifier: string }>(
+    `/api/v1/recording-units/suggest-identifier?projectId=${encodeURIComponent(String(projectId))}&typeId=${encodeURIComponent(String(typeId))}`,
+  );
+  return body.suggestedIdentifier;
 }
 
 // Mirrors RecordingUnitCreateRequest's required pair (projectId/typeId — answers/geom both

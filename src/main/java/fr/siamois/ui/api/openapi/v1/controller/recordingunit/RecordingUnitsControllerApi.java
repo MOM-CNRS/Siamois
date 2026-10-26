@@ -7,6 +7,7 @@ import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateReq
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.recordingunit.IdentifierSuggestionResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitCreateFormResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -77,6 +78,34 @@ public class RecordingUnitsControllerApi {
         RecordingUnitCreateFormData data = recordingUnitOpenApiService.buildRecordingUnitCreateForm(
                 projectId, recordingUnitTypeConceptId, caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.ok(new RecordingUnitCreateFormResponse(data));
+    }
+
+    @GetMapping("/suggest-identifier")
+    @Operation(
+            summary = "Suggérer le prochain identifiant d'une unité d'enregistrement",
+            description = "L'identifiant que le serveur générerait pour une nouvelle UE du type donné dans le projet "
+                    + "donné — sans consommer le compteur. Le formulaire de création l'affiche comme valeur "
+                    + "modifiable : si l'utilisateur la change, l'identifiant choisi est envoyé à la création."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ok"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Projet ou type d'UE introuvable"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<IdentifierSuggestionResponse> suggestIdentifier(
+            @Parameter(description = "Identifiant ou clé du projet (doit être dans le périmètre JWT).", example = "10")
+            @RequestParam String projectId,
+            @Parameter(description = "Identifiant du concept définissant le type d'UE (concept_id).", example = "42")
+            @RequestParam long typeId,
+            @Parameter(description = "Langue préférée (la configuration des identifiants est lue dans la langue de l'utilisateur).")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        String suggested = recordingUnitOpenApiService.suggestIdentifier(
+                projectId, typeId, caller.person(), caller.accessibleInstitutionIds(), lang);
+        return ResponseEntity.ok(new IdentifierSuggestionResponse(suggested));
     }
 
     @GetMapping("/{id}/siblings")
