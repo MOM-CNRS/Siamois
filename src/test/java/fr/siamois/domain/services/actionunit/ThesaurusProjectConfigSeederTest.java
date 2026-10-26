@@ -132,6 +132,9 @@ class ThesaurusProjectConfigSeederTest {
 
         // the interpretation of a US is its own collection, the one of "Fait" and "Ensemble" theirs
         verify(formConfigService, times(1)).addConceptConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(collection));
+        // and it remembers the collection's name, to find it again if the field is moved to another thesaurus
+        verify(formConfigService).rememberSourceName(eq(usFormConfig), any(CustomFieldConcept.class),
+                eq(us.listNames().get(RecordingUnit.INTERPRETATION_FIELD_CODE)));
         // the chronology has no list per type: it follows its code, once for each of the three types
         verify(formConfigService, times(3)).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
                 eq(RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE));

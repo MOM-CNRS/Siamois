@@ -12,6 +12,10 @@
           "lists": {
             "SIARU.GEOMORPHO": "g104",
             "SIARU.INTERPRETATION": "g107"
+          },
+          "listNames": {
+            "SIARU.GEOMORPHO": "Enregistrement · Nature — US  [SIARU.GEOMORPHO @ SIARU.TYPE:us]",
+            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — US  [SIARU.INTERPRETATION @ SIARU.TYPE:us]"
           }
         },
         {
@@ -21,6 +25,10 @@
           "lists": {
             "SIARU.GEOMORPHO": "g105",
             "SIARU.INTERPRETATION": "g108"
+          },
+          "listNames": {
+            "SIARU.GEOMORPHO": "Enregistrement · Nature — Fait  [SIARU.GEOMORPHO @ SIARU.TYPE:fait]",
+            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Fait  [SIARU.INTERPRETATION @ SIARU.TYPE:fait]"
           }
         },
         {
@@ -30,6 +38,10 @@
           "lists": {
             "SIARU.GEOMORPHO": "g106",
             "SIARU.INTERPRETATION": "g109"
+          },
+          "listNames": {
+            "SIARU.GEOMORPHO": "Enregistrement · Nature — Ensemble  [SIARU.GEOMORPHO @ SIARU.TYPE:ensemble]",
+            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Ensemble  [SIARU.INTERPRETATION @ SIARU.TYPE:ensemble]"
           }
         }
       ]
@@ -45,6 +57,11 @@
             "SIAS.CLASS": "g119",
             "SIAS.INTERPRETATION": "g126",
             "SIAS.MATIERE": "g111"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Céramique  [SIAS.CLASS @ SIAS.CAT:ceramique]",
+            "SIAS.INTERPRETATION": "Mobilier · Interprétation — Céramique  [SIAS.INTERPRETATION @ SIAS.CAT:ceramique]",
+            "SIAS.MATIERE": "Mobilier · Matière — Céramique  [SIAS.MATIERE @ SIAS.CAT:ceramique]"
           }
         },
         {
@@ -54,6 +71,11 @@
             "SIAS.CLASS": "g121",
             "SIAS.INTERPRETATION": "g127",
             "SIAS.MATIERE": "g113"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Métal  [SIAS.CLASS @ SIAS.CAT:metal]",
+            "SIAS.INTERPRETATION": "Mobilier · Interprétation — Métal  [SIAS.INTERPRETATION @ SIAS.CAT:metal]",
+            "SIAS.MATIERE": "Mobilier · Matière — Métal  [SIAS.MATIERE @ SIAS.CAT:metal]"
           }
         },
         {
@@ -63,6 +85,11 @@
             "SIAS.CLASS": "g122",
             "SIAS.INTERPRETATION": "g128",
             "SIAS.MATIERE": "g114"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Industrie lithique  [SIAS.CLASS @ SIAS.CAT:lithique]",
+            "SIAS.INTERPRETATION": "Mobilier · Interprétation — Industrie lithique  [SIAS.INTERPRETATION @ SIAS.CAT:lithique]",
+            "SIAS.MATIERE": "Mobilier · Matière — Industrie lithique  [SIAS.MATIERE @ SIAS.CAT:lithique]"
           }
         },
         {
@@ -72,6 +99,11 @@
             "SIAS.CLASS": "g123",
             "SIAS.INTERPRETATION": "g129",
             "SIAS.MATIERE": "g115"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Verre  [SIAS.CLASS @ SIAS.CAT:verre]",
+            "SIAS.INTERPRETATION": "Mobilier · Interprétation — Verre  [SIAS.INTERPRETATION @ SIAS.CAT:verre]",
+            "SIAS.MATIERE": "Mobilier · Matière — Verre  [SIAS.MATIERE @ SIAS.CAT:verre]"
           }
         },
         {
@@ -81,6 +113,11 @@
             "SIAS.CLASS": "g124",
             "SIAS.INTERPRETATION": "g130",
             "SIAS.MATIERE": "g116"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Faune  [SIAS.CLASS @ SIAS.CAT:faune]",
+            "SIAS.INTERPRETATION": "Mobilier · Interprétation — Faune  [SIAS.INTERPRETATION @ SIAS.CAT:faune]",
+            "SIAS.MATIERE": "Mobilier · Matière — Faune  [SIAS.MATIERE @ SIAS.CAT:faune]"
           }
         }
       ]
@@ -136,6 +173,11 @@
             "SIAD.FORMAT": "g154",
             "SIAD.NATURE": "g149",
             "SIAD.TYPE": "g144"
+          },
+          "listNames": {
+            "SIAD.FORMAT": "Document · Format du fichier — Document écrit et base de données  [SIAD.FORMAT @ SIAD.CATEGORY:written]",
+            "SIAD.NATURE": "Document · Nature du support — Document écrit et base de données  [SIAD.NATURE @ SIAD.CATEGORY:written]",
+            "SIAD.TYPE": "Document · Type de document — Document écrit et base de données  [SIAD.TYPE @ SIAD.CATEGORY:written]"
           }
         },
         {
@@ -146,6 +188,12 @@
             "SIAD.NATURE": "g150",
             "SIAD.SCALE": "g158",
             "SIAD.TYPE": "g145"
+          },
+          "listNames": {
+            "SIAD.FORMAT": "Document · Format du fichier — Document graphique  [SIAD.FORMAT @ SIAD.CATEGORY:graphic]",
+            "SIAD.NATURE": "Document · Nature du support — Document graphique  [SIAD.NATURE @ SIAD.CATEGORY:graphic]",
+            "SIAD.SCALE": "Document · Échelle — Document graphique  [SIAD.SCALE @ SIAD.CATEGORY:graphic]",
+            "SIAD.TYPE": "Document · Type de document — Document graphique  [SIAD.TYPE @ SIAD.CATEGORY:graphic]"
           }
         },
         {
@@ -155,6 +203,11 @@
             "SIAD.FORMAT": "g156",
             "SIAD.NATURE": "g151",
             "SIAD.TYPE": "g146"
+          },
+          "listNames": {
+            "SIAD.FORMAT": "Document · Format du fichier — Document photographique et audiovisuel  [SIAD.FORMAT @ SIAD.CATEGORY:photo]",
+            "SIAD.NATURE": "Document · Nature du support — Document photographique et audiovisuel  [SIAD.NATURE @ SIAD.CATEGORY:photo]",
+            "SIAD.TYPE": "Document · Type de document — Document photographique et audiovisuel  [SIAD.TYPE @ SIAD.CATEGORY:photo]"
           }
         },
         {
@@ -163,6 +216,10 @@
           "lists": {
             "SIAD.NATURE": "g152",
             "SIAD.TYPE": "g147"
+          },
+          "listNames": {
+            "SIAD.NATURE": "Document · Nature du support — Moulage  [SIAD.NATURE @ SIAD.CATEGORY:cast]",
+            "SIAD.TYPE": "Document · Type de document — Moulage  [SIAD.TYPE @ SIAD.CATEGORY:cast]"
           }
         },
         {
@@ -172,6 +229,11 @@
             "SIAD.FORMAT": "g157",
             "SIAD.NATURE": "g153",
             "SIAD.TYPE": "g148"
+          },
+          "listNames": {
+            "SIAD.FORMAT": "Document · Format du fichier — Autre document  [SIAD.FORMAT @ SIAD.CATEGORY:other]",
+            "SIAD.NATURE": "Document · Nature du support — Autre document  [SIAD.NATURE @ SIAD.CATEGORY:other]",
+            "SIAD.TYPE": "Document · Type de document — Autre document  [SIAD.TYPE @ SIAD.CATEGORY:other]"
           }
         }
       ]
@@ -185,6 +247,9 @@
           "concept": "1464",
           "lists": {
             "SIAST.METHODE": "g140"
+          },
+          "listNames": {
+            "SIAST.METHODE": "Étude · Méthode — Traitement  [SIAST.METHODE @ SIAST.TYPE:treatment]"
           }
         },
         {
@@ -192,6 +257,9 @@
           "concept": "1465",
           "lists": {
             "SIAST.METHODE": "g141"
+          },
+          "listNames": {
+            "SIAST.METHODE": "Étude · Méthode — Datation  [SIAST.METHODE @ SIAST.TYPE:dating]"
           }
         },
         {
@@ -199,6 +267,9 @@
           "concept": "1466",
           "lists": {
             "SIAST.METHODE": "g142"
+          },
+          "listNames": {
+            "SIAST.METHODE": "Étude · Méthode — Analyse  [SIAST.METHODE @ SIAST.TYPE:analysis]"
           }
         },
         {
@@ -206,6 +277,9 @@
           "concept": "1467",
           "lists": {
             "SIAST.METHODE": "g143"
+          },
+          "listNames": {
+            "SIAST.METHODE": "Étude · Méthode — Étude spécialisée  [SIAST.METHODE @ SIAST.TYPE:specialist]"
           }
         }
       ]

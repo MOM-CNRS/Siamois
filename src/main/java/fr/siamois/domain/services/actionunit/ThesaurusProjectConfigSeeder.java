@@ -158,6 +158,7 @@ public class ThesaurusProjectConfigSeeder {
         }
         if (collection.isPresent()) {
             formConfigService.addConceptConfigFor(formConfig, conceptField, collection.get());
+            formConfigService.rememberSourceName(formConfig, conceptField, type.listNames().get(spec.getFieldCode()));
         } else {
             formConfigService.addFieldCodeConfigFor(formConfig, conceptField, vocabulary, spec.getFieldCode());
         }

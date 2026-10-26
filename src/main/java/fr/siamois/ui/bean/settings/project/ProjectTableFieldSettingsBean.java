@@ -1659,6 +1659,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.brancheSaveError");
         try {
             formConfigService.addConceptConfigFor(target.formConfig(), target.field(), Objects.requireNonNull(draftBrancheConcept.concept()), progressWrapper);
+            formConfigService.rememberSourceName(target.formConfig(), target.field(), draftBrancheConcept.getOriginalPrefLabel());
         } catch (RuntimeException e) {
             throw new VocabularyConfigNotSavedException(
                     String.format("Could not save the branch '%s' as the vocabulary of field '%s'",
@@ -1682,6 +1683,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         ConceptFieldTarget target = resolveConceptFieldTarget("projectTables.drawer.params.collectionSaveError");
         try {
             formConfigService.addConceptConfigFor(target.formConfig(), target.field(), selected.get(), progressWrapper);
+            formConfigService.rememberSourceName(target.formConfig(), target.field(), selected.get().getLabelToDisplay());
         } catch (RuntimeException e) {
             throw new VocabularyConfigNotSavedException(
                     String.format("Could not save the collection '%s' as the vocabulary of field '%s'",

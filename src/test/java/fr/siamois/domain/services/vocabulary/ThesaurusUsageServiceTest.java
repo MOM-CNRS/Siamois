@@ -19,6 +19,15 @@ import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
 import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.infrastructure.api.dto.LabelDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
+import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
+import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +62,16 @@ class ThesaurusUsageServiceTest {
     private FormConfigService formConfigService;
     @Mock
     private FieldCodeResolver fieldCodeResolver;
+    @Mock
+    private ConceptService conceptService;
+    @Mock
+    private ConceptCollectionService conceptCollectionService;
+    @Mock
+    private VocabularyMapper vocabularyMapper;
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository conceptCollectionRepository;
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
     @InjectMocks
     private ThesaurusUsageService service;
 
@@ -266,5 +285,169 @@ class ThesaurusUsageServiceTest {
 
         verify(formConfigService).clearConceptConfigFor(formConfig, field);
         verify(formConfigService, never()).addFieldCodeConfigFor(any(), any(), any(), any());
+    }
+
+    private ThesaurusUsage namedRow(FieldVocabularyConfig.Kind kind, String field) {
+        return new ThesaurusUsage("Ancien", kind, "x", field, "UE · Sondage", "UE", "Sondage", null, false);
+    }
+
+    private ConceptAutocompleteDetachedDTO remoteConcept(String externalId, String label, boolean alt) {
+        ConceptLabelDTO labelDTO = alt ? new ConceptAltLabelDTO() : new ConceptPrefLabelDTO();
+        labelDTO.setLabel(label);
+        labelDTO.setConcept(ConceptDTO.builder().externalId(externalId).build());
+        return new ConceptAutocompleteDetachedDTO(labelDTO, label, List.of(), "", "uri");
+    }
+
+    /** A field of the UE type "Sondage" whose stored source carries the given names. */
+    private record Named(FormConfig formConfig, CustomFieldConcept field, VocabularyDTO targetDto) {
+    }
+
+    private Named namedField(String branchName, String collectionName) {
+        FormConfig formConfig = mock(FormConfig.class);
+        CustomFieldConcept field = mock(CustomFieldConcept.class);
+        VocabularyDTO targetDto = new VocabularyDTO();
+        ConceptFieldFormConfig stored = new ConceptFieldFormConfig();
+        stored.setBranchName(branchName);
+        stored.setCollectionName(collectionName);
+        when(tableFieldConfigService.findFormConfig(1L, ConfigurableTable.UE, "Sondage")).thenReturn(java.util.Optional.of(formConfig));
+        when(tableFieldConfigService.findField(1L, ConfigurableTable.UE, "Sondage", "Matière")).thenReturn(java.util.Optional.of(field));
+        when(formConfigService.findConceptConfigFor(formConfig, field)).thenReturn(java.util.Optional.of(stored));
+        when(vocabularyMapper.convert(any())).thenReturn(targetDto);
+        return new Named(formConfig, field, targetDto);
+    }
+
+    @Test
+    void rewire_movesABranchToTheConceptOfTheSameName() throws Exception {
+        Named n = namedField("Matière", null);
+        when(conceptService.fetchAutocompleteFromRemoteThesaurus(n.targetDto(), "Matière")).thenReturn(List.of(
+                remoteConcept("12", "matière", false), remoteConcept("13", "Matière première", false), remoteConcept("14", "Matière", true)));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.BRANCH, "Matière")), mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
+        verify(formConfigService).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class),
+                org.mockito.ArgumentMatchers.<ConceptDTO>argThat(c -> "12".equals(c.getExternalId())));
+        verify(formConfigService).rememberSourceName(n.formConfig(), n.field(), "Matière");
+    }
+
+    @Test
+    void rewire_leavesABranchAlone_whenTwoConceptsShareTheName() throws Exception {
+        Named n = namedField("Matière", null);
+        when(conceptService.fetchAutocompleteFromRemoteThesaurus(n.targetDto(), "Matière")).thenReturn(List.of(
+                remoteConcept("12", "Matière", false), remoteConcept("15", "Matière", false)));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.BRANCH, "Matière")), mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(0, 0, 1), result);
+        verify(formConfigService, never()).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
+    }
+
+    @Test
+    void rewire_leavesABranchAlone_whenThereIsNoStoredName() {
+        namedField(null, null);
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.BRANCH, "Matière")), mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(0, 0, 1), result);
+        verify(formConfigService, never()).rememberSourceName(any(), any(), any());
+    }
+
+    @Test
+    void rewire_movesACollectionToTheOneOfTheSameNameInAnyLanguage() {
+        Named n = namedField(null, "Mobilier · Classe — Métal");
+        ConceptCollectionDetachedDTO other = new ConceptCollectionDetachedDTO("g1", n.targetDto(), "Autre", List.of());
+        ConceptCollectionDetachedDTO metal = new ConceptCollectionDetachedDTO("g2", n.targetDto(), "Class — Metal",
+                List.of(new LabelDTO("fr", "mobilier · classe — métal")));
+        when(conceptCollectionService.fetchCollectionsFromRemoteThesaurus(n.targetDto())).thenReturn(List.of(other, metal));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.COLLECTION, "Matière")), mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
+        verify(formConfigService).addConceptConfigFor(n.formConfig(), n.field(), metal);
+        verify(formConfigService).rememberSourceName(n.formConfig(), n.field(), "Mobilier · Classe — Métal");
+    }
+
+    @Test
+    void rewire_leavesACollectionAlone_whenTheThesaurusHasNoneOfThatName() {
+        Named n = namedField(null, "Introuvable");
+        when(conceptCollectionService.fetchCollectionsFromRemoteThesaurus(n.targetDto())).thenReturn(
+                List.of(new ConceptCollectionDetachedDTO("g1", n.targetDto(), "Autre", List.of())));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.COLLECTION, "Matière")), mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(0, 0, 1), result);
+        verify(formConfigService, never()).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollectionDetachedDTO.class));
+    }
+
+    private void secondField(String fieldLabel, String branchName, String collectionName) {
+        FormConfig formConfig = mock(FormConfig.class);
+        CustomFieldConcept field = mock(CustomFieldConcept.class);
+        ConceptFieldFormConfig stored = new ConceptFieldFormConfig();
+        stored.setBranchName(branchName);
+        stored.setCollectionName(collectionName);
+        when(tableFieldConfigService.findFormConfig(1L, ConfigurableTable.UE, "Autre type")).thenReturn(java.util.Optional.of(formConfig));
+        when(tableFieldConfigService.findField(1L, ConfigurableTable.UE, "Autre type", fieldLabel)).thenReturn(java.util.Optional.of(field));
+        when(formConfigService.findConceptConfigFor(formConfig, field)).thenReturn(java.util.Optional.of(stored));
+    }
+
+    private ThesaurusUsage rowOf(FieldVocabularyConfig.Kind kind, String type, String field) {
+        return new ThesaurusUsage("Ancien", kind, "x", field, "UE · " + type, "UE", type, null, false);
+    }
+
+    @Test
+    void rewire_importsASharedBranchOnce() throws Exception {
+        Named n = namedField("Matière", null);
+        secondField("Matière", "Matière", null);
+        when(conceptService.fetchAutocompleteFromRemoteThesaurus(n.targetDto(), "Matière"))
+                .thenReturn(List.of(remoteConcept("12", "Matière", false)));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.BRANCH, "Matière"), rowOf(FieldVocabularyConfig.Kind.BRANCH, "Autre type", "Matière")),
+                mock(Vocabulary.class));
+
+        assertEquals(new ThesaurusUsageService.RewireResult(2, 0, 0), result);
+        verify(conceptService, org.mockito.Mockito.times(1)).fetchAutocompleteFromRemoteThesaurus(any(), any());
+        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
+        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigForLoadedBranch(any(), any(), any());
+    }
+
+    @Test
+    void rewire_importsASharedCollectionOnce() {
+        Named n = namedField(null, "Classe");
+        secondField("Matière", null, "Classe");
+        ConceptCollectionDetachedDTO collection = new ConceptCollectionDetachedDTO("g2", n.targetDto(), "Classe", List.of());
+        when(conceptCollectionService.fetchCollectionsFromRemoteThesaurus(n.targetDto())).thenReturn(List.of(collection));
+        ConceptCollection imported = mock(ConceptCollection.class);
+        Vocabulary target = mock(Vocabulary.class);
+        when(conceptCollectionRepository.findByVocabularyAndExternalId(target, "g2")).thenReturn(java.util.Optional.of(imported));
+
+        service.rewireFieldCodes(1L, 2L, List.of(namedRow(FieldVocabularyConfig.Kind.COLLECTION, "Matière"),
+                rowOf(FieldVocabularyConfig.Kind.COLLECTION, "Autre type", "Matière")), target);
+
+        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollectionDetachedDTO.class));
+        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), org.mockito.ArgumentMatchers.eq(imported));
+    }
+
+    @Test
+    void rewire_keepsTheOtherFields_whenOneCannotBeMoved() throws Exception {
+        Named n = namedField("Matière", null);
+        secondField("Matière", "Matière", null);
+        when(conceptService.fetchAutocompleteFromRemoteThesaurus(n.targetDto(), "Matière"))
+                .thenReturn(List.of(remoteConcept("12", "Matière", false)));
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("import failed"))
+                .doNothing()
+                .when(formConfigService).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(1L, 2L,
+                List.of(namedRow(FieldVocabularyConfig.Kind.BRANCH, "Matière"), rowOf(FieldVocabularyConfig.Kind.BRANCH, "Autre type", "Matière")),
+                mock(Vocabulary.class));
+
+        // the first import failed, so the branch was not marked imported and the second field imports it itself
+        assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 1), result);
     }
 }
