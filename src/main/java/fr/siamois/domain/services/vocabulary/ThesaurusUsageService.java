@@ -169,6 +169,7 @@ public class ThesaurusUsageService {
     private List<ThesaurusUsage> sorted(List<ThesaurusUsage> usages) {
         return usages.stream()
                 .sorted(Comparator.comparing(ThesaurusUsage::getThesaurusLabel)
+                        .thenComparing(usage -> usage.getProjectName() == null ? "" : usage.getProjectName())
                         .thenComparing(ThesaurusUsage::getFieldLabel)
                         .thenComparing(usage -> usage.getTypeLabel() == null ? "" : usage.getTypeLabel()))
                 .toList();
@@ -210,7 +211,9 @@ public class ThesaurusUsageService {
                 false,
                 vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId(),
                 config.getFormConfig().getId(),
-                config.getField().getId());
+                config.getField().getId(),
+                config.getFormConfig().getActionUnit() == null ? null : config.getFormConfig().getActionUnit().getId(),
+                config.getFormConfig().getActionUnit() == null ? null : config.getFormConfig().getActionUnit().getName());
     }
 
     /**
@@ -348,7 +351,9 @@ public class ThesaurusUsageService {
         return Optional.of(new RewireTarget(formConfig.get(), conceptField));
     }
 
-    private Outcome rewireRow(@Nullable Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+    private Outcome rewireRow(@Nullable Long givenProjectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+        // a row of an organisation's table carries its own project: the default thesaurus of a code is that project's
+        Long projectId = row.getProjectId() != null ? row.getProjectId() : givenProjectId;
         boolean isCode = row.getKind() == FieldVocabularyConfig.Kind.FIELD_CODE;
         String code = row.getFieldCode();
         if (isCode && code == null) {

@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -504,5 +505,52 @@ class ThesaurusUsageServiceTest {
 
         assertEquals(new ThesaurusUsageService.RewireResult(0, 0, 1), result);
         verify(formConfigService, never()).addFieldCodeConfigFor(any(), any(), any(), any());
+    }
+
+    @Test
+    void findUsagesOfInstitution_namesTheProjectEachSourceBelongsTo() {
+        Vocabulary vocabulary = vocabulary("Pactols");
+        ConceptFieldFormConfig config = collectionConfig(vocabulary, "col-42", "Période");
+        ActionUnit project = mock(ActionUnit.class);
+        when(project.getId()).thenReturn(7L);
+        when(project.getName()).thenReturn("Fouille A");
+        when(config.getFormConfig().getActionUnit()).thenReturn(project);
+        when(fieldFormConfigRepository.findVocabularyRestrictionsOfInstitution(2L)).thenReturn(List.of(config));
+
+        ThesaurusUsage usage = service.findUsagesOfInstitution(2L, LANG).get(0);
+
+        assertEquals("Fouille A", usage.getProjectName());
+        assertEquals(7L, usage.getProjectId());
+    }
+
+    @Test
+    void rowKey_tellsTwoProjectsStoredSourcesApart() {
+        ThesaurusUsage a = new ThesaurusUsage("T", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
+                "SIAS.CLASS", false, "u", 5L, 77L);
+        ThesaurusUsage b = new ThesaurusUsage("T", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
+                "SIAS.CLASS", false, "u", 6L, 77L);
+
+        assertTrue(!a.getRowKey().equals(b.getRowKey()));
+    }
+
+    @Test
+    void rewireFieldCodes_readsTheDefaultThesaurusOfTheProjectTheRowBelongsTo() {
+        Vocabulary target = mock(Vocabulary.class);
+        FormConfig formConfig = mock(FormConfig.class);
+        CustomFieldConcept field = mock(CustomFieldConcept.class);
+        when(field.getId()).thenReturn(77L);
+        ConceptFieldFormConfig stored = mock(ConceptFieldFormConfig.class);
+        when(stored.getField()).thenReturn(field);
+        when(stored.getFormConfig()).thenReturn(formConfig);
+        when(fieldFormConfigRepository.findAllByFormConfigId(5L)).thenReturn(List.<fr.siamois.domain.models.form.config.FieldFormConfig>of(stored));
+        when(fieldCodeResolver.findIn(target, "SIAS.CLASS")).thenReturn(java.util.Optional.of(mock(ConceptFieldConfig.class)));
+        when(fieldCodeResolver.findDefaultVocabulary(2L, 7L, "SIAS.CLASS")).thenReturn(java.util.Optional.empty());
+        ThesaurusUsage row = new ThesaurusUsage("Ancien", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null,
+                "SIAS.CLASS", false, "https://old/?idt=th1", 5L, 77L, 7L, "Fouille A");
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(null, 2L, List.of(row), target);
+
+        assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
+        verify(fieldCodeResolver).findDefaultVocabulary(2L, 7L, "SIAS.CLASS");
     }
 }

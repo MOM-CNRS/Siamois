@@ -10,6 +10,8 @@
         <cc:attribute name="bean" required="true"/>
         <!-- whether rows can be ticked to connect their fields to another thesaurus (project page only) -->
         <cc:attribute name="bulk" type="boolean" default="false"/>
+        <!-- whether a column names the project each row belongs to (the organisation page lists the sources of all its projects) -->
+        <cc:attribute name="showProject" type="boolean" default="false"/>
     </cc:interface>
 
     <cc:implementation>
@@ -68,6 +70,10 @@
                 </p:column>
                 <p:column headerText="#{langBean.msg('thesaurusUsages.source')}" filterBy="#{usage.sourceLabel}" filterMatchMode="contains">
                     #{usage.sourceLabel}
+                </p:column>
+                <p:column rendered="#{cc.attrs.showProject}" headerText="#{langBean.msg('thesaurusUsages.project')}"
+                          filterBy="#{usage.projectName}" filterMatchMode="contains">
+                    #{usage.projectName != null ? usage.projectName : langBean.msg('thesaurusUsages.project.organisation')}
                 </p:column>
                 <p:column headerText="#{langBean.msg('thesaurusUsages.field')}" filterBy="#{langBean.resolve(usage.fieldLabel)}" filterMatchMode="contains">
                     #{langBean.resolve(usage.fieldLabel)}
