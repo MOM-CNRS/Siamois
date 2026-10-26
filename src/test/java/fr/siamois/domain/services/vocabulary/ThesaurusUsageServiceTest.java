@@ -454,4 +454,42 @@ class ThesaurusUsageServiceTest {
         // the first import failed, so the branch was not marked imported and the second field imports it itself
         assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 1), result);
     }
+
+    private ThesaurusUsage storedCodeRow(String field, String code, Long formConfigId, Long fieldId) {
+        return new ThesaurusUsage("Ancien", FieldVocabularyConfig.Kind.FIELD_CODE, code, field, null, null, null, code, false,
+                "https://old/?idt=th1", formConfigId, fieldId);
+    }
+
+    @Test
+    void rewireFieldCodes_movesAStoredFieldOfAnOrganisation_throughTheIdsOfItsRow() {
+        Vocabulary target = mock(Vocabulary.class);
+        FormConfig formConfig = mock(FormConfig.class);
+        CustomFieldConcept field = mock(CustomFieldConcept.class);
+        when(field.getId()).thenReturn(77L);
+        ConceptFieldFormConfig stored = mock(ConceptFieldFormConfig.class);
+        when(stored.getField()).thenReturn(field);
+        when(stored.getFormConfig()).thenReturn(formConfig);
+        when(fieldFormConfigRepository.findAllByFormConfigId(5L)).thenReturn(List.<fr.siamois.domain.models.form.config.FieldFormConfig>of(stored));
+        when(fieldCodeResolver.findIn(target, "SIAS.CLASS")).thenReturn(java.util.Optional.of(mock(ConceptFieldConfig.class)));
+        when(fieldCodeResolver.findDefaultVocabulary(2L, null, "SIAS.CLASS")).thenReturn(java.util.Optional.empty());
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(null, 2L,
+                List.of(storedCodeRow("Classe", "SIAS.CLASS", 5L, 77L)), target);
+
+        assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
+        verify(formConfigService).addFieldCodeConfigFor(formConfig, field, target, "SIAS.CLASS");
+    }
+
+    @Test
+    void rewireFieldCodes_ignoresARowWithoutIdsOrTable_whenThereIsNoProject() {
+        ThesaurusUsage inherited = new ThesaurusUsage("Siamois", FieldVocabularyConfig.Kind.FIELD_CODE, "SIAS.CLASS", "Classe", null, null, null, "SIAS.CLASS", true);
+
+        Vocabulary target = mock(Vocabulary.class);
+        when(fieldCodeResolver.findIn(target, "SIAS.CLASS")).thenReturn(java.util.Optional.of(mock(ConceptFieldConfig.class)));
+
+        ThesaurusUsageService.RewireResult result = service.rewireFieldCodes(null, 2L, List.of(inherited), target);
+
+        assertEquals(new ThesaurusUsageService.RewireResult(0, 0, 1), result);
+        verify(formConfigService, never()).addFieldCodeConfigFor(any(), any(), any(), any());
+    }
 }

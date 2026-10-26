@@ -23,6 +23,7 @@ import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConf
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -192,7 +193,10 @@ public class ThesaurusUsageService {
                 table == null ? null : table.name(),
                 typeName,
                 kind == FieldVocabularyConfig.Kind.FIELD_CODE ? config.getFieldCode() : null,
-                false);
+                false,
+                vocabulary.getBaseUri() + "/?idt=" + vocabulary.getExternalVocabularyId(),
+                config.getFormConfig().getId(),
+                config.getField().getId());
     }
 
     /**
@@ -204,7 +208,7 @@ public class ThesaurusUsageService {
      * @param rows   the rows picked in the table
      * @param target the thesaurus the lists are now read in
      */
-    public RewireResult rewireFieldCodes(Long projectId, Long institutionId, List<ThesaurusUsage> rows, Vocabulary target) {
+    public RewireResult rewireFieldCodes(@Nullable Long projectId, Long institutionId, List<ThesaurusUsage> rows, Vocabulary target) {
         int rewired = 0;
         int missing = 0;
         int ignored = 0;
@@ -292,7 +296,7 @@ public class ThesaurusUsageService {
         return name == null ? "" : name.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
-    private Outcome rewireRowSafely(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+    private Outcome rewireRowSafely(@Nullable Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
         try {
             return rewireRow(projectId, institutionId, row, target, named);
         } catch (RuntimeException e) {
@@ -301,35 +305,58 @@ public class ThesaurusUsageService {
         }
     }
 
-    private Outcome rewireRow(Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
-        if (row.getTableName() == null) {
-            return Outcome.IGNORED;
-        }
-        if (row.getKind() != FieldVocabularyConfig.Kind.FIELD_CODE) {
-            return rewireByName(projectId, row, target, named);
-        }
-        String code = row.getFieldCode();
-        if (code == null) {
-            return Outcome.IGNORED;
-        }
-        if (fieldCodeResolver.findIn(target, code).isEmpty()) {
-            return Outcome.CODE_MISSING;
-        }
-        boolean[] done = new boolean[1];
-        inNewTransaction(() -> done[0] = rewire(projectId, institutionId, row, code, target));
-        return done[0] ? Outcome.REWIRED : Outcome.IGNORED;
+    /** The form configuration and the field a row is about. */
+    private record RewireTarget(FormConfig formConfig, CustomFieldConcept field) {
     }
 
-    /** A branch or a collection is found again in the target thesaurus by the name it was picked under. */
-    private Outcome rewireByName(Long projectId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+    /**
+     * Finds what a row is about: through the ids it carries when something is stored for it, else through the table, type and
+     * label of an inherited row of a project.
+     */
+    private Optional<RewireTarget> resolveTarget(@Nullable Long projectId, ThesaurusUsage row) {
+        if (row.getFormConfigId() != null && row.getFieldId() != null) {
+            return fieldFormConfigRepository.findAllByFormConfigId(row.getFormConfigId()).stream()
+                    .filter(config -> config.getField() != null && row.getFieldId().equals(config.getField().getId()))
+                    .findFirst()
+                    .filter(config -> Hibernate.unproxy(config.getField()) instanceof CustomFieldConcept)
+                    .map(config -> new RewireTarget(config.getFormConfig(), (CustomFieldConcept) Hibernate.unproxy(config.getField())));
+        }
+        if (projectId == null || row.getTableName() == null) {
+            return Optional.empty();
+        }
         ConfigurableTable table = ConfigurableTable.valueOf(row.getTableName());
         Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, table, row.getTypeName());
         Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, row.getTypeName(), row.getFieldLabel());
         if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
+            log.warn("Field '{}' of {} / {} was not found to be connected to another thesaurus", row.getFieldLabel(), row.getTableName(), row.getTypeName());
+            return Optional.empty();
+        }
+        return Optional.of(new RewireTarget(formConfig.get(), conceptField));
+    }
+
+    private Outcome rewireRow(@Nullable Long projectId, Long institutionId, ThesaurusUsage row, Vocabulary target, NamedSources named) {
+        boolean isCode = row.getKind() == FieldVocabularyConfig.Kind.FIELD_CODE;
+        String code = row.getFieldCode();
+        if (isCode && code == null) {
             return Outcome.IGNORED;
         }
-        boolean branch = row.getKind() == FieldVocabularyConfig.Kind.BRANCH;
-        String name = formConfigService.findConceptConfigFor(formConfig.get(), conceptField)
+        if (isCode && fieldCodeResolver.findIn(target, code).isEmpty()) {
+            return Outcome.CODE_MISSING;
+        }
+        Optional<RewireTarget> found = resolveTarget(projectId, row);
+        if (found.isEmpty()) {
+            return Outcome.IGNORED;
+        }
+        if (!isCode) {
+            return rewireByName(found.get(), target, named, row.getKind() == FieldVocabularyConfig.Kind.BRANCH);
+        }
+        inNewTransaction(() -> rewire(found.get(), projectId, institutionId, code, target));
+        return Outcome.REWIRED;
+    }
+
+    /** A branch or a collection is found again in the target thesaurus by the name it was picked under. */
+    private Outcome rewireByName(RewireTarget at, Vocabulary target, NamedSources named, boolean branch) {
+        String name = formConfigService.findConceptConfigFor(at.formConfig(), at.field())
                 .map(config -> branch ? config.getBranchName() : config.getCollectionName())
                 .orElse(null);
         if (name == null || name.isBlank()) {
@@ -337,8 +364,8 @@ public class ThesaurusUsageService {
         }
         // looked up before any transaction opens: the thesaurus is slow
         return branch
-                ? rewireBranch(formConfig.get(), conceptField, name, named)
-                : rewireCollection(formConfig.get(), conceptField, name, target, named);
+                ? rewireBranch(at.formConfig(), at.field(), name, named)
+                : rewireCollection(at.formConfig(), at.field(), name, target, named);
     }
 
     private Outcome rewireBranch(FormConfig formConfig, CustomFieldConcept conceptField, String name, NamedSources named) {
@@ -382,22 +409,14 @@ public class ThesaurusUsageService {
         return Outcome.REWIRED;
     }
 
-    private boolean rewire(Long projectId, Long institutionId, ThesaurusUsage row, String code, Vocabulary target) {
-        ConfigurableTable table = ConfigurableTable.valueOf(row.getTableName());
-        Optional<FormConfig> formConfig = tableFieldConfigService.findFormConfig(projectId, table, row.getTypeName());
-        Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, row.getTypeName(), row.getFieldLabel());
-        if (formConfig.isEmpty() || field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
-            log.warn("Field '{}' of {} / {} was not found to be connected to another thesaurus", row.getFieldLabel(), row.getTableName(), row.getTypeName());
-            return false;
-        }
+    private void rewire(RewireTarget at, @Nullable Long projectId, Long institutionId, String code, Vocabulary target) {
         boolean isDefault = fieldCodeResolver.findDefaultVocabulary(institutionId, projectId, code)
                 .map(found -> found.getId() != null && found.getId().equals(target.getId()))
                 .orElse(false);
         if (isDefault) {
-            formConfigService.clearConceptConfigFor(formConfig.get(), conceptField);
+            formConfigService.clearConceptConfigFor(at.formConfig(), at.field());
         } else {
-            formConfigService.addFieldCodeConfigFor(formConfig.get(), conceptField, target, code);
+            formConfigService.addFieldCodeConfigFor(at.formConfig(), at.field(), target, code);
         }
-        return true;
     }
 }

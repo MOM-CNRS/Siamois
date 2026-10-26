@@ -5,6 +5,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
+import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
@@ -63,19 +65,33 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
         optVocab.ifPresent(s -> thesaurusUrl = s);
         savedThesaurusUrl = thesaurusUrl;
         loadOptions();
+        reloadUsages();
+    }
+
+    @Override
+    protected void reloadUsages() {
         usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
+        setSelectedUsages(new ArrayList<>());
+        setFilteredUsages(null);
+    }
+
+    @Override
+    protected ThesaurusUsageService.RewireResult rewire(List<ThesaurusUsage> rows, Vocabulary target) {
+        return thesaurusUsageService.rewireFieldCodes(null, institution.getId(), rows, target);
     }
 
     public void saveConfig() {
         if (StringUtils.isEmpty(thesaurusUrl)) return;
 
         UserInfo userInfo = sessionSettingsBean.getUserInfo();
+        String previousUrl = savedThesaurusUrl;
 
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary, progressWrapper);
             notifySaved();
-            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
+            reloadUsages();
+            askToRewire(previousUrl, thesaurusUrl);
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {

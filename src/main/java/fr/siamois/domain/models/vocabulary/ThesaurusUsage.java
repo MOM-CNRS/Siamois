@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.vocabulary;
 
+import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.springframework.lang.Nullable;
 
@@ -20,8 +21,12 @@ import java.io.Serializable;
  * @param typeName       the name of the entity type, or null for the default configuration
  * @param fieldCode      the field code the field is connected to, for {@link FieldVocabularyConfig.Kind#FIELD_CODE}
  * @param inherited      whether nothing is stored for the field: it follows the default source of its code
+ * @param thesaurusUrl   the URL of that thesaurus, or null for a field that follows the default source of its code
+ * @param formConfigId   the form configuration the stored source belongs to, null when nothing is stored
+ * @param fieldId        the field the stored source belongs to, null when nothing is stored
  */
 @Value
+@AllArgsConstructor
 public class ThesaurusUsage implements Serializable {
     String thesaurusLabel;
     FieldVocabularyConfig.Kind kind;
@@ -32,6 +37,16 @@ public class ThesaurusUsage implements Serializable {
     @Nullable String typeName;
     @Nullable String fieldCode;
     boolean inherited;
+    @Nullable String thesaurusUrl;
+    @Nullable Long formConfigId;
+    @Nullable Long fieldId;
+
+    /** A source with nothing stored behind it, or one whose stored form is not known. */
+    public ThesaurusUsage(String thesaurusLabel, FieldVocabularyConfig.Kind kind, String sourceLabel, String fieldLabel,
+                          @Nullable String typeLabel, @Nullable String tableName, @Nullable String typeName,
+                          @Nullable String fieldCode, boolean inherited) {
+        this(thesaurusLabel, kind, sourceLabel, fieldLabel, typeLabel, tableName, typeName, fieldCode, inherited, null, null, null);
+    }
 
     /** What identifies the row among the others, for the selection of the table. */
     public String getRowKey() {

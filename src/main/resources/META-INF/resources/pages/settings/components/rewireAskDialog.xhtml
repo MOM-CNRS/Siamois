@@ -1,0 +1,35 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:shared="http://java.sun.com/jsf/composite/pages/shared/form">
+
+    <cc:interface>
+        <cc:attribute name="bean" required="true"/>
+    </cc:interface>
+
+    <!--
+    Opened by the bean (askToRewire) once a new thesaurus is applied and fields still read the old one. Its text is
+    redrawn by the save button, which updates .thesaurus-rewire-ask.
+    -->
+    <cc:implementation>
+        <p:dialog widgetVar="rewireAskDialog" modal="true" width="560" closable="false"
+                  header="#{langBean.msg('thesaurusRewire.title')}">
+            <shared:csrfform formId="rewireAskForm">
+                <p:outputPanel layout="block" styleClass="thesaurus-rewire-ask">
+                    <p>#{langBean.msg('thesaurusRewire.ask', cc.attrs.bean.rewireRows.size(), cc.attrs.bean.rewireOldLabel, cc.attrs.bean.rewireNewLabel)}</p>
+                </p:outputPanel>
+                <div class="mt-3 d-flex gap-2">
+                    <p:commandButton value="#{langBean.msg('thesaurusRewire.yes')}"
+                                     action="#{cc.attrs.bean.confirmRewire()}"
+                                     process="@form" update="@(.thesaurus-usages)"
+                                     oncomplete="PF('rewireAskDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('thesaurusRewire.no')}"
+                                     action="#{cc.attrs.bean.declineRewire()}"
+                                     process="@form" styleClass="ui-button-flat"
+                                     oncomplete="PF('rewireAskDialog').hide()"/>
+                </div>
+            </shared:csrfform>
+        </p:dialog>
+    </cc:implementation>
+</ui:composition>

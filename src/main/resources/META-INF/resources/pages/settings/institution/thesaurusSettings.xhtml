@@ -53,7 +53,7 @@
                     displaySaveButton="false"
                     saveMethod="#{institutionThesaurusSettingsBean.saveConfig()}"
                     cancelMethod="#{institutionDetailsBean.backToInstitutionSettings()}"
-                    update="pbAjaxThesaurusLoad @(.thesaurus-usages)"
+                    update="pbAjaxThesaurusLoad @(.thesaurus-usages) @(.thesaurus-rewire-ask)"
                     onstart="startProgressBar()"
                     oncomplete="endProgressBar()"
             >
@@ -74,6 +74,7 @@
 
             <settingscomp:thesaurusUsages usages="#{institutionThesaurusSettingsBean.usages}" bean="#{institutionThesaurusSettingsBean}"/>
             <settingscomp:addThesaurusDialog bean="#{institutionThesaurusSettingsBean}" update="@(.sia-settings-form)"/>
+            <settingscomp:rewireAskDialog bean="#{institutionThesaurusSettingsBean}"/>
         </main>
     </ui:define>
 

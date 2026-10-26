@@ -5,17 +5,21 @@ import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.LabelService;
+import fr.siamois.domain.services.vocabulary.ThesaurusUsageService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
+import org.primefaces.PrimeFaces;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
@@ -25,6 +29,7 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
  */
 @Getter
 @Setter
+@Slf4j
 public abstract class AbstractThesaurusSettingsBean implements Serializable {
 
     /** A thesaurus of the database, as offered by the drop-down; {@code url} is the value stored in {@code thesaurusUrl}. */
@@ -51,6 +56,11 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     /** The rows left by the filters of the usages table, null while none is applied. */
     private List<ThesaurusUsage> filteredUsages;
     protected ProgressWrapper progressWrapper = new ProgressWrapper();
+    /** The stored sources that read the thesaurus just left, offered to move to the one just applied. */
+    private List<ThesaurusUsage> rewireRows = new ArrayList<>();
+    private String rewireOldLabel;
+    private String rewireNewLabel;
+    private String rewireNewUrl;
 
     protected AbstractThesaurusSettingsBean(VocabularyService vocabularyService, LabelService labelService, LangBean langBean) {
         this.vocabularyService = vocabularyService;
@@ -66,7 +76,58 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
         usages = new ArrayList<>();
         selectedUsages = new ArrayList<>();
         filteredUsages = null;
+        rewireRows = new ArrayList<>();
         progressWrapper.reset();
+    }
+
+    /** Moves the given fields to the target thesaurus, returning what was done. */
+    protected abstract ThesaurusUsageService.RewireResult rewire(List<ThesaurusUsage> rows, Vocabulary target);
+
+    /** Reads the usages again, once fields were moved. */
+    protected abstract void reloadUsages();
+
+    /**
+     * Once a new thesaurus is applied, offers to move the fields that still read the old one. Does nothing when no field does.
+     *
+     * @param oldUrl the thesaurus applied before
+     * @param newUrl the thesaurus just applied
+     */
+    protected void askToRewire(String oldUrl, String newUrl) {
+        rewireRows = new ArrayList<>();
+        if (StringUtils.isBlank(oldUrl) || oldUrl.equals(newUrl)) return;
+        rewireRows = usages.stream()
+                .filter(usage -> !usage.isInherited() && oldUrl.equals(usage.getThesaurusUrl()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (rewireRows.isEmpty()) return;
+        rewireOldLabel = labelOf(oldUrl);
+        rewireNewLabel = labelOf(newUrl);
+        rewireNewUrl = newUrl;
+        PrimeFaces.current().executeScript("PF('rewireAskDialog').show();");
+    }
+
+    private String labelOf(String url) {
+        return thesaurusOptions.stream().filter(option -> option.getUrl().equals(url)).map(ThesaurusOption::getLabel).findFirst().orElse(url);
+    }
+
+    /** The user accepted: the offered fields read the new thesaurus. */
+    public void confirmRewire() {
+        List<ThesaurusUsage> rows = rewireRows;
+        rewireRows = new ArrayList<>();
+        Optional<Vocabulary> target = vocabularyService.findAll().stream().filter(v -> urlOf(v).equals(rewireNewUrl)).findFirst();
+        if (rows.isEmpty() || target.isEmpty()) return;
+        try {
+            ThesaurusUsageService.RewireResult result = rewire(rows, target.get());
+            MessageUtils.displayInfoMessage(langBean, "thesaurusUsages.bulk.done", result.rewired(), result.codeMissing(), result.ignored());
+        } catch (RuntimeException e) {
+            log.error("Could not connect the fields to {}", rewireNewUrl, e);
+            displayErrorMessage(langBean, "thesaurusUsages.bulk.error");
+        }
+        reloadUsages();
+    }
+
+    /** The user declined: the fields keep reading the old thesaurus. */
+    public void declineRewire() {
+        rewireRows = new ArrayList<>();
     }
 
     protected void loadOptions() {

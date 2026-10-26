@@ -73,7 +73,8 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         reloadUsages();
     }
 
-    private void reloadUsages() {
+    @Override
+    protected void reloadUsages() {
         usages = new ArrayList<>(thesaurusUsageService.findAllUsagesOfProject(project.getId(), institutionId(), langBean.getLanguageCode()));
         setSelectedUsages(new ArrayList<>());
         setFilteredUsages(null);
@@ -138,14 +139,21 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         return "/pages/settings/project/projectTablesSettings.xhtml?faces-redirect=true";
     }
 
+    @Override
+    protected ThesaurusUsageService.RewireResult rewire(List<ThesaurusUsage> rows, Vocabulary target) {
+        return thesaurusUsageService.rewireFieldCodes(project.getId(), institutionId(), rows, target);
+    }
+
     public void saveConfig() {
         if (StringUtils.isEmpty(thesaurusUrl)) return;
 
+        String previousUrl = savedThesaurusUrl;
         try {
             Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
             fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper);
             notifySaved();
             reloadUsages();
+            askToRewire(previousUrl, thesaurusUrl);
         } catch (InvalidEndpointException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
         } catch (NotSiamoisThesaurusException e) {
