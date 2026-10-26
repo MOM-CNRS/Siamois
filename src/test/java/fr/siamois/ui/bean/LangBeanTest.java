@@ -42,4 +42,13 @@ class LangBeanTest {
         assertThat(result).containsExactlyInAnyOrder("'fr'", "'en'", "'de'");
     }
 
+
+    @Test
+    void resolve_shouldAnswerTheMessageOfACode_orTheTextItself() {
+        when(langService.resolveMessage("container.field.type", new java.util.Locale("en"))).thenReturn("Type");
+        when(langService.resolveMessage("Mon champ", new java.util.Locale("en"))).thenReturn("Mon champ");
+
+        assertThat(langBean.resolve("container.field.type")).isEqualTo("Type");
+        assertThat(langBean.resolve("Mon champ")).isEqualTo("Mon champ");
+    }
 }

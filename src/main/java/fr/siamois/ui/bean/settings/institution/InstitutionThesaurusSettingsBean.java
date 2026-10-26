@@ -1,10 +1,7 @@
 package fr.siamois.ui.bean.settings.institution;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
-import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
+import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -17,7 +14,6 @@ import fr.siamois.ui.bean.settings.AbstractThesaurusSettingsBean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.context.event.EventListener;
@@ -25,9 +21,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 
 @Slf4j
 @Component
@@ -63,30 +59,24 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
         optVocab.ifPresent(s -> thesaurusUrl = s);
         savedThesaurusUrl = thesaurusUrl;
         loadOptions();
+        reloadUsages();
+    }
+
+    @Override
+    protected void reloadUsages() {
         usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
+        setSelectedUsages(new ArrayList<>());
+        setFilteredUsages(null);
+    }
+
+    @Override
+    protected ThesaurusUsageService.RewireResult rewire(List<ThesaurusUsage> rows, Vocabulary target) {
+        return thesaurusUsageService.rewireFieldCodes(null, institution.getId(), rows, target);
     }
 
     public void saveConfig() {
-        if (StringUtils.isEmpty(thesaurusUrl)) return;
-
-        UserInfo userInfo = sessionSettingsBean.getUserInfo();
-
-        try {
-            Vocabulary vocabulary = vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl);
-            fieldConfigurationService.setupFieldConfigurationForInstitution(userInfo, vocabulary, progressWrapper);
-            notifySaved();
-            usages = new ArrayList<>(thesaurusUsageService.findUsagesOfInstitution(institution.getId(), langBean.getLanguageCode()));
-        } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
-        } catch (NotSiamoisThesaurusException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
-        } catch (ErrorProcessingExpansionException e) {
-            displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
-        } finally {
-            progressWrapper.reset();
-        }
-
-
+        applyThesaurus(vocabulary -> fieldConfigurationService.setupFieldConfigurationForInstitution(
+                sessionSettingsBean.getUserInfo(), vocabulary, progressWrapper));
     }
 
 }

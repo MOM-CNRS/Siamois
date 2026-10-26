@@ -133,11 +133,11 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
     List<ConceptFieldFormConfig> findVocabularyRestrictionsOfActionUnit(@Param("actionUnitId") Long actionUnitId);
 
     /**
-     * Same as {@link #findVocabularyRestrictionsOfActionUnit} for the configurations set at the
-     * organisation level, i.e. carrying no project.
+     * Same as {@link #findVocabularyRestrictionsOfActionUnit} for a whole organisation: the configurations of each of
+     * its projects, and those set at the organisation level (carrying no project), if any.
      *
      * @param institutionId the organisation
-     * @return the vocabulary-restricted field configurations of the organisation
+     * @return the vocabulary-restricted field configurations of the organisation and of its projects
      */
     @Query("""
             SELECT ffc
@@ -148,8 +148,9 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
             LEFT JOIN FETCH ffc.collection
             LEFT JOIN FETCH ffc.vocabulary
             LEFT JOIN FETCH fc.valueConcept
-            WHERE fc.institution.id = :institutionId
-              AND fc.actionUnit IS NULL
+            LEFT JOIN FETCH fc.actionUnit au
+            WHERE ((fc.actionUnit IS NULL AND fc.institution.id = :institutionId)
+                   OR au.createdByInstitution.id = :institutionId)
               AND (ffc.branchTopTerm IS NOT NULL OR ffc.collection IS NOT NULL OR ffc.vocabulary IS NOT NULL)
             """)
     List<ConceptFieldFormConfig> findVocabularyRestrictionsOfInstitution(@Param("institutionId") Long institutionId);

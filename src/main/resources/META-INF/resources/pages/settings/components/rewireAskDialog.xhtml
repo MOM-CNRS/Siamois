@@ -1,0 +1,55 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:cc="http://xmlns.jcp.org/jsf/composite"
+                xmlns:shared="http://java.sun.com/jsf/composite/pages/shared/form">
+
+    <cc:interface>
+        <cc:attribute name="bean" required="true"/>
+    </cc:interface>
+
+    <!--
+    Opened by the bean (askToRewire) once a new thesaurus is applied and fields still read the old one. Its text is
+    redrawn by the save button, which updates .thesaurus-rewire-ask.
+    -->
+    <cc:implementation>
+        <style>
+            .thesaurus-rewire-ask .rewire-count { margin: 0 0 1rem; font-size: 1.05rem; }
+            .thesaurus-rewire-ask .rewire-switch { display: grid; grid-template-columns: max-content 1fr; gap: .5rem 1rem; align-items: baseline;
+                                                   margin: 0 0 1.25rem; padding: .85rem 1rem; border-radius: 8px; border-left: 4px solid var(--siamois-green-active, #5e8c61);
+                                                   background: var(--siamois-green-light-50, #f1f6f1); }
+            .thesaurus-rewire-ask .rewire-switch dt { margin: 0; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: #6b6b66; }
+            .thesaurus-rewire-ask .rewire-switch dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+            .thesaurus-rewire-ask .rewire-question { margin: 0 0 .35rem; font-weight: 600; }
+            .thesaurus-rewire-ask .rewire-hint { margin: 0; font-size: .9rem; color: #6b6b66; line-height: 1.45; }
+            .thesaurus-rewire-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-top: 1.5rem; }
+        </style>
+
+        <p:dialog widgetVar="rewireAskDialog" modal="true" width="560" closable="false" draggable="false" resizable="false"
+                  appendTo="@(body)" header="#{langBean.msg('thesaurusRewire.title')}">
+            <shared:csrfform formId="rewireAskForm">
+                <p:outputPanel layout="block" styleClass="thesaurus-rewire-ask">
+                    <p class="rewire-count">#{langBean.msg('thesaurusRewire.count', cc.attrs.bean.rewireRows.size())}</p>
+                    <dl class="rewire-switch">
+                        <dt>#{langBean.msg('thesaurusRewire.old')}</dt>
+                        <dd>#{cc.attrs.bean.rewireOldLabel}</dd>
+                        <dt>#{langBean.msg('thesaurusRewire.new')}</dt>
+                        <dd>#{cc.attrs.bean.rewireNewLabel}</dd>
+                    </dl>
+                    <p class="rewire-question">#{langBean.msg('thesaurusRewire.question')}</p>
+                    <p class="rewire-hint">#{langBean.msg('thesaurusRewire.hint')}</p>
+                </p:outputPanel>
+                <div class="thesaurus-rewire-actions">
+                    <p:commandButton value="#{langBean.msg('thesaurusRewire.no')}"
+                                     action="#{cc.attrs.bean.declineRewire()}"
+                                     process="@form" styleClass="ui-button-flat"
+                                     oncomplete="PF('rewireAskDialog').hide()"/>
+                    <p:commandButton value="#{langBean.msg('thesaurusRewire.yes')}" icon="pi pi-check"
+                                     action="#{cc.attrs.bean.confirmRewire()}"
+                                     process="@form" update="@(.thesaurus-usages)"
+                                     oncomplete="PF('rewireAskDialog').hide()"/>
+                </div>
+            </shared:csrfform>
+        </p:dialog>
+    </cc:implementation>
+</ui:composition>
