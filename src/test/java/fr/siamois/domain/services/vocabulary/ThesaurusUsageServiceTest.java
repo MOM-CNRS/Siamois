@@ -41,9 +41,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -327,7 +331,7 @@ class ThesaurusUsageServiceTest {
 
         assertEquals(new ThesaurusUsageService.RewireResult(1, 0, 0), result);
         verify(formConfigService).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class),
-                org.mockito.ArgumentMatchers.<ConceptDTO>argThat(c -> "12".equals(c.getExternalId())));
+                argThat((ConceptDTO c) -> "12".equals(c.getExternalId())));
         verify(formConfigService).rememberSourceName(n.formConfig(), n.field(), "Matière");
     }
 
@@ -411,9 +415,9 @@ class ThesaurusUsageServiceTest {
                 mock(Vocabulary.class));
 
         assertEquals(new ThesaurusUsageService.RewireResult(2, 0, 0), result);
-        verify(conceptService, org.mockito.Mockito.times(1)).fetchAutocompleteFromRemoteThesaurus(any(), any());
-        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
-        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigForLoadedBranch(any(), any(), any());
+        verify(conceptService, times(1)).fetchAutocompleteFromRemoteThesaurus(any(), any());
+        verify(formConfigService, times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
+        verify(formConfigService, times(1)).addConceptConfigForLoadedBranch(any(), any(), any());
     }
 
     @Test
@@ -429,8 +433,8 @@ class ThesaurusUsageServiceTest {
         service.rewireFieldCodes(1L, 2L, List.of(namedRow(FieldVocabularyConfig.Kind.COLLECTION, "Matière"),
                 rowOf(FieldVocabularyConfig.Kind.COLLECTION, "Autre type", "Matière")), target);
 
-        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollectionDetachedDTO.class));
-        verify(formConfigService, org.mockito.Mockito.times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), org.mockito.ArgumentMatchers.eq(imported));
+        verify(formConfigService, times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollectionDetachedDTO.class));
+        verify(formConfigService, times(1)).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), eq(imported));
     }
 
     @Test
@@ -439,7 +443,7 @@ class ThesaurusUsageServiceTest {
         secondField("Matière", "Matière", null);
         when(conceptService.fetchAutocompleteFromRemoteThesaurus(n.targetDto(), "Matière"))
                 .thenReturn(List.of(remoteConcept("12", "Matière", false)));
-        org.mockito.Mockito.doThrow(new IllegalArgumentException("import failed"))
+        doThrow(new IllegalArgumentException("import failed"))
                 .doNothing()
                 .when(formConfigService).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptDTO.class));
 

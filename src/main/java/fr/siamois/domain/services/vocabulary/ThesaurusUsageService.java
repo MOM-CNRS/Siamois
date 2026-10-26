@@ -15,6 +15,7 @@ import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
@@ -251,7 +252,7 @@ public class ThesaurusUsageService {
 
         /** The one collection of the thesaurus named {@code name}, empty when there is none or several. */
         Optional<ConceptCollectionDetachedDTO> collection(String name) {
-            return collections.computeIfAbsent(normalized(name), key -> findCollection(key));
+            return collections.computeIfAbsent(normalized(name), this::findCollection);
         }
 
         private Optional<ConceptDTO> findBranch(String name) {
@@ -260,7 +261,7 @@ public class ThesaurusUsageService {
                         .filter(result -> !result.getConceptLabelToDisplay().isAltLabel())
                         .filter(result -> normalized(result.getConceptLabelToDisplay().getLabel()).equals(normalized(name)))
                         .map(ConceptAutocompleteDetachedDTO::getConceptLabelToDisplay)
-                        .map(label -> label.getConcept())
+                        .map(ConceptLabelDTO::getConcept)
                         .collect(Collectors.toMap(ConceptDTO::getExternalId, Function.identity(), (first, second) -> first))
                         .values().stream().toList();
                 return found.size() == 1 ? Optional.of(found.get(0)) : Optional.empty();
@@ -335,41 +336,49 @@ public class ThesaurusUsageService {
             return Outcome.IGNORED;
         }
         // looked up before any transaction opens: the thesaurus is slow
-        if (branch) {
-            Optional<ConceptDTO> found = named.branch(name);
-            if (found.isEmpty()) {
-                return Outcome.IGNORED;
-            }
-            ConceptDTO top = found.get();
-            boolean imported = named.importedBranches.contains(top.getExternalId());
-            inNewTransaction(() -> {
-                if (imported) {
-                    formConfigService.addConceptConfigForLoadedBranch(formConfig.get(), conceptField, top);
-                } else {
-                    formConfigService.addConceptConfigFor(formConfig.get(), conceptField, top);
-                }
-                formConfigService.rememberSourceName(formConfig.get(), conceptField, name);
-            });
-            named.importedBranches.add(top.getExternalId());
-        } else {
-            Optional<ConceptCollectionDetachedDTO> found = named.collection(name);
-            if (found.isEmpty()) {
-                return Outcome.IGNORED;
-            }
-            ConceptCollectionDetachedDTO collection = found.get();
-            Optional<ConceptCollection> local = named.importedCollections.contains(collection.getExternalId())
-                    ? conceptCollectionRepository.findByVocabularyAndExternalId(target, collection.getExternalId())
-                    : Optional.empty();
-            inNewTransaction(() -> {
-                if (local.isPresent()) {
-                    formConfigService.addConceptConfigFor(formConfig.get(), conceptField, local.get());
-                } else {
-                    formConfigService.addConceptConfigFor(formConfig.get(), conceptField, collection);
-                }
-                formConfigService.rememberSourceName(formConfig.get(), conceptField, name);
-            });
-            named.importedCollections.add(collection.getExternalId());
+        return branch
+                ? rewireBranch(formConfig.get(), conceptField, name, named)
+                : rewireCollection(formConfig.get(), conceptField, name, target, named);
+    }
+
+    private Outcome rewireBranch(FormConfig formConfig, CustomFieldConcept conceptField, String name, NamedSources named) {
+        Optional<ConceptDTO> found = named.branch(name);
+        if (found.isEmpty()) {
+            return Outcome.IGNORED;
         }
+        ConceptDTO top = found.get();
+        boolean imported = named.importedBranches.contains(top.getExternalId());
+        inNewTransaction(() -> {
+            if (imported) {
+                formConfigService.addConceptConfigForLoadedBranch(formConfig, conceptField, top);
+            } else {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, top);
+            }
+            formConfigService.rememberSourceName(formConfig, conceptField, name);
+        });
+        named.importedBranches.add(top.getExternalId());
+        return Outcome.REWIRED;
+    }
+
+    private Outcome rewireCollection(FormConfig formConfig, CustomFieldConcept conceptField, String name,
+                                     Vocabulary target, NamedSources named) {
+        Optional<ConceptCollectionDetachedDTO> found = named.collection(name);
+        if (found.isEmpty()) {
+            return Outcome.IGNORED;
+        }
+        ConceptCollectionDetachedDTO collection = found.get();
+        Optional<ConceptCollection> local = named.importedCollections.contains(collection.getExternalId())
+                ? conceptCollectionRepository.findByVocabularyAndExternalId(target, collection.getExternalId())
+                : Optional.empty();
+        inNewTransaction(() -> {
+            if (local.isPresent()) {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, local.get());
+            } else {
+                formConfigService.addConceptConfigFor(formConfig, conceptField, collection);
+            }
+            formConfigService.rememberSourceName(formConfig, conceptField, name);
+        });
+        named.importedCollections.add(collection.getExternalId());
         return Outcome.REWIRED;
     }
 
