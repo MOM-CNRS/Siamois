@@ -171,7 +171,7 @@ export const en: Record<MessageKey, string> = {
   "field.pickerDone": "Done",
   "field.pickerClear": "Clear",
   "field.pickerPlaceholder": "Choose…",
-  "concept.altLabelOf": "Matches « {label} », alternative label",
+  "concept.altLabels": "Synonyms: {labels}",
   "concept.parents": "Parents: {parents}",
   "concept.openInThesaurus": "Open in the thesaurus",
   "field.comment": "Comment",

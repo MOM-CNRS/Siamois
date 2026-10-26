@@ -5,11 +5,12 @@ import fr.siamois.annotations.ExecutionTimeLogger;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -21,8 +22,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Repository for fetching autocomplete suggestions for concepts.
@@ -33,6 +37,7 @@ import java.util.Objects;
 public class AutocompleteRepository {
 
     private final HikariDataSource dataSource;
+    private final ConceptLabelRepository conceptLabelRepository;
 
     public static final int DESCRIPTION_TRUNCATE_LENGTH = 200;
 
@@ -229,13 +234,31 @@ public class AutocompleteRepository {
     }
 
     private List<ConceptAutocompleteDTO> processResultSet(@NonNull String searchedScope, @NonNull String lang, PreparedStatement statement) {
-        List<ConceptAutocompleteDTO> results = new ArrayList<>();
+        // Dédupliquer par concept_id : un concept n'apparaît qu'une seule fois dans les suggestions,
+        // avec son prefLabel comme choix sélectionnable. La recherche par altLabel continue de
+        // fonctionner (la fonction SQL cherche dans tous les labels), mais l'altLabel n'est plus
+        // proposé comme entrée séparée.
+        Map<Long, ConceptAutocompleteDTO> byConcept = new LinkedHashMap<>();
+
         try (ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 ConceptAutocompleteDTO dto = rowToDTO(resultSet, lang);
-                addAllAltLabelsToResults(lang, dto, results);
-                results.add(dto);
+                long conceptId = dto.concept().getId();
+
+                byConcept.merge(conceptId, dto, (existing, incoming) -> {
+                    // Préférer l'entrée dont le label n'est pas un altLabel (c'est le prefLabel)
+                    boolean existingIsAlt = isAltLabelMatch(existing);
+                    boolean incomingIsAlt = isAltLabelMatch(incoming);
+                    if (existingIsAlt && !incomingIsAlt) return incoming;
+                    return existing;
+                });
             }
+
+            List<ConceptAutocompleteDTO> results = new ArrayList<>(byConcept.values());
+
+            // Quand la recherche a matché sur un altLabel, remplacer par le prefLabel du concept
+            replaceAltLabelMatchesWithPrefLabels(results, lang);
+
             return results;
         } catch (Exception e) {
             log.error("Error while processing result set for concept autocomplete of {}: {}", searchedScope, e.getMessage(), e);
@@ -243,23 +266,59 @@ public class AutocompleteRepository {
         }
     }
 
-    private static void addAllAltLabelsToResults(String lang, ConceptAutocompleteDTO dto, List<ConceptAutocompleteDTO> results) {
-        ConceptDTO currentConcept = dto.getConceptLabelToDisplay().getConcept();
-        for (String altLabel : dto.getAltLabels()) {
-            ConceptAltLabelDTO unsavedAltLabel = new ConceptAltLabelDTO();
-            unsavedAltLabel.setLabel(altLabel);
-            unsavedAltLabel.setLangCode(lang);
-            unsavedAltLabel.setConcept(currentConcept);
+    /**
+     * Le label affiché est-il un altLabel (la recherche a matché sur un altLabel, pas sur le prefLabel) ?
+     */
+    private static boolean isAltLabelMatch(ConceptAutocompleteDTO dto) {
+        String label = dto.getConceptLabelToDisplay().getLabel();
+        return label != null && dto.getAltLabels().contains(label);
+    }
 
-            ConceptAutocompleteDTO altLabelDto = ConceptAutocompleteDTO.builder()
-                    .conceptLabelToDisplay(unsavedAltLabel)
-                    .originalPrefLabel(dto.getOriginalPrefLabel())
-                    .altLabels(dto.getAltLabels())
-                    .definition(dto.getDefinition())
-                    .hierarchyPrefLabels(dto.getHierarchyPrefLabels())
-                    .build();
+    /**
+     * Remplace le label d'un DTO dont la recherche a matché sur un altLabel par le prefLabel du concept,
+     * pour que le dropdown n'affiche que des prefLabels comme choix sélectionnables. Les altLabels restent
+     * dans {@code altLabels} pour information, et la recherche par altLabel est préservée (c'est la
+     * fonction SQL qui cherche dans tous les labels).
+     */
+    private void replaceAltLabelMatchesWithPrefLabels(List<ConceptAutocompleteDTO> results, String lang) {
+        List<Long> altMatchConceptIds = results.stream()
+                .filter(AutocompleteRepository::isAltLabelMatch)
+                .map(dto -> dto.concept().getId())
+                .distinct()
+                .toList();
 
-            results.add(altLabelDto);
+        if (altMatchConceptIds.isEmpty()) return;
+
+        // Un seul appel pour tous les prefLabels manquants
+        Map<Long, String> prefLabelByConceptId = conceptLabelRepository
+                .findAllPrefLabelsByLangCodeAndConcept_IdIn(lang, altMatchConceptIds).stream()
+                .collect(Collectors.toMap(
+                        pl -> pl.getConcept().getId(),
+                        ConceptPrefLabel::getLabel,
+                        (a, b) -> a));
+
+        for (int i = 0; i < results.size(); i++) {
+            ConceptAutocompleteDTO dto = results.get(i);
+            if (isAltLabelMatch(dto)) {
+                String prefLabel = prefLabelByConceptId.get(dto.concept().getId());
+                if (prefLabel != null) {
+                    // Remplacer le DTO par une copie portant le prefLabel (les champs sont final)
+                    ConceptPrefLabelDTO newLabel = new ConceptPrefLabelDTO();
+                    newLabel.setId(dto.getConceptLabelToDisplay().getId());
+                    newLabel.setConcept(dto.getConceptLabelToDisplay().getConcept());
+                    newLabel.setLabel(prefLabel);
+                    newLabel.setParentConcept(dto.getConceptLabelToDisplay().getParentConcept());
+                    newLabel.setLangCode(dto.getConceptLabelToDisplay().getLangCode());
+
+                    results.set(i, ConceptAutocompleteDTO.builder()
+                            .conceptLabelToDisplay(newLabel)
+                            .originalPrefLabel(prefLabel)
+                            .altLabels(dto.getAltLabels())
+                            .definition(dto.getDefinition())
+                            .hierarchyPrefLabels(dto.getHierarchyPrefLabels())
+                            .build());
+                }
+            }
         }
     }
 

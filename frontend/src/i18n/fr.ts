@@ -171,7 +171,7 @@ export const fr = {
   "field.pickerDone": "Terminé",
   "field.pickerClear": "Effacer",
   "field.pickerPlaceholder": "Choisir…",
-  "concept.altLabelOf": "Correspond à « {label} », libellé alternatif",
+  "concept.altLabels": "Variantes : {labels}",
   "concept.parents": "Parents : {parents}",
   "concept.openInThesaurus": "Ouvrir dans le thésaurus",
   "field.comment": "Commentaire",

@@ -43,6 +43,8 @@ export interface ConceptItemInfo {
   thesaurusUrl?: string;
   /** The preferred label, only when `label` is an alternative one. */
   prefLabel?: string;
+  /** All the alternative labels of the concept, shown under the preferred one. */
+  altLabels?: string[];
   definition?: string;
   parents?: string;
 }
@@ -58,6 +60,7 @@ interface ConceptResponseItem {
   definition?: string | null;
   thesaurusUrl?: string | null;
   prefLabel?: string | null;
+  altLabels?: string[] | null;
   parents?: string | null;
 }
 
@@ -66,6 +69,7 @@ function toConceptOption(c: ConceptResponseItem): FilterOption {
   const concept: ConceptItemInfo = {
     thesaurusUrl: c.thesaurusUrl ?? undefined,
     prefLabel: c.prefLabel ?? undefined,
+    altLabels: c.altLabels && c.altLabels.length > 0 ? c.altLabels : undefined,
     definition: c.definition ?? undefined,
     parents: c.parents ?? undefined,
   };

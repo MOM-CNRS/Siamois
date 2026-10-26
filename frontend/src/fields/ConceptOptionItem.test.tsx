@@ -32,14 +32,24 @@ describe("ConceptOptionItem", () => {
     expect(container.querySelector("a")).toBeNull();
   });
 
-  it("shows the alt-label hint, definition, parents and a thesaurus link", () => {
+  it("shows the alt-labels under the pref label, definition, parents and a thesaurus link", () => {
     renderItem({
       id: "1",
-      label: "Glaise",
-      concept: { thesaurusUrl: "https://ot.example/?idc=4&idt=th1", prefLabel: "Argile", definition: "Roche meuble", parents: "Sédiment" },
+      label: "Argile",
+      concept: {
+        thesaurusUrl: "https://ot.example/?idc=4&idt=th1",
+        altLabels: ["Glaise", "Terre glaise"],
+        definition: "Roche meuble",
+        parents: "Sédiment",
+      },
     });
 
-    expect(container.querySelector(".concept-item-altlabel")?.textContent).toContain("Argile");
+    // The main label is the prefLabel
+    expect(container.querySelector(".concept-item-body > span")?.textContent).toBe("Argile");
+    // Alt labels are shown underneath
+    const altLabels = container.querySelector(".concept-item-altlabels");
+    expect(altLabels?.textContent).toContain("Glaise");
+    expect(altLabels?.textContent).toContain("Terre glaise");
     const definition = container.querySelector(".concept-item-definition");
     expect(definition?.textContent).toBe("Roche meuble");
     expect(definition?.getAttribute("title")).toBe("Roche meuble");
@@ -47,6 +57,16 @@ describe("ConceptOptionItem", () => {
     const link = container.querySelector("a");
     expect(link?.getAttribute("href")).toBe("https://ot.example/?idc=4&idt=th1");
     expect(link?.getAttribute("target")).toBe("_blank");
+  });
+
+  it("does not show the alt-labels line when there are none", () => {
+    renderItem({
+      id: "1",
+      label: "Argile",
+      concept: { definition: "Roche meuble" },
+    });
+
+    expect(container.querySelector(".concept-item-altlabels")).toBeNull();
   });
 
   it("does not let a press on the link reach the suggestion list", () => {
