@@ -6,11 +6,11 @@ import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { fetchTypesCatalog, getEffectiveForm } from "../shared/typeCatalog";
-import { createRecordingUnit } from "./api";
+import { createRecordingUnit, suggestRecordingUnitIdentifier } from "./api";
 
 
 vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
-vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
+vi.mock("./api", () => ({ createRecordingUnit: vi.fn(), suggestRecordingUnitIdentifier: vi.fn() }));
 vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 
 // The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
@@ -30,10 +30,15 @@ vi.mock("primereact/autocomplete", async () => ({
 
 // Same reduction as entities/project/CreateForm.test.tsx: the concept autocomplete is exercised
 // elsewhere, mocked here to a plain clickable stand-in so this stays a test of the form's own
-// validation/submit/error logic.
+// validation/submit/error logic. The picked type is mutable (vi.hoisted) so a test can re-pick
+// another one and see the identifier suggestion follow.
+const mocks = vi.hoisted(() => ({
+  typePick: { resourceId: "9", resourceType: "concepts", label: "US" },
+}));
+
 vi.mock("../../fields/renderers", () => ({
   SelectOneConceptRenderer: ({ onChange }: FieldRendererProps) => (
-    <button type="button" data-testid="pick-type" onClick={() => onChange({ resourceId: "9", resourceType: "concepts", label: "US" })}>
+    <button type="button" data-testid="pick-type" onClick={() => onChange(mocks.typePick)}>
       Choisir un type
     </button>
   ),
@@ -41,6 +46,7 @@ vi.mock("../../fields/renderers", () => ({
 
 const mockedGetRecordingUnitTypes = vi.mocked(getEffectiveForm);
 const mockedCreateRecordingUnit = vi.mocked(createRecordingUnit);
+const mockedSuggestIdentifier = vi.mocked(suggestRecordingUnitIdentifier);
 
 const typeField: FieldResource = {
   id: "-101",
@@ -79,10 +85,25 @@ function submitButton(): HTMLButtonElement {
   return Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Créer") as HTMLButtonElement;
 }
 
+// The identifier field is the form's only real input (the project and type pickers are mocked to
+// buttons), targeted by its placeholder rather than by position.
+function identifierInput(): HTMLInputElement {
+  return container.querySelector<HTMLInputElement>('input[placeholder="Automatique"]')!;
+}
+
+function setInputValue(input: HTMLInputElement, value: string) {
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!;
+  nativeSetter.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 beforeEach(() => {
   mockedGetRecordingUnitTypes.mockReset();
   mockedGetRecordingUnitTypes.mockResolvedValue({ layoutJson: "[]", fields: { "-101": typeField } });
   mockedCreateRecordingUnit.mockReset();
+  mockedSuggestIdentifier.mockReset();
+  mockedSuggestIdentifier.mockResolvedValue("INST-PROJ-UE1");
+  mocks.typePick = { resourceId: "9", resourceType: "concepts", label: "US" };
   vi.mocked(fetchTypesCatalog).mockReset();
   vi.mocked(fetchTypesCatalog).mockRejectedValue(new Error("not needed here"));
   container = document.createElement("div");
@@ -132,6 +153,93 @@ describe("RecordingUnitCreateForm", () => {
 
     expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({ projectId: "5", typeId: "9" });
     expect(onCreated).toHaveBeenCalledWith("77");
+  });
+
+  it("prefills the identifier the server would generate, and sends none when it is left untouched", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "77", fullIdentifier: "INST-PROJ-UE1" } as never);
+    render();
+    await flush();
+
+    // No suggestion before a type is picked: it depends on the project AND the type.
+    expect(mockedSuggestIdentifier).not.toHaveBeenCalled();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await flush();
+
+    expect(mockedSuggestIdentifier).toHaveBeenCalledWith("5", "9");
+    expect(identifierInput().value).toBe("INST-PROJ-UE1");
+
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    // Untouched: the server allocates the identifier itself.
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({ projectId: "5", typeId: "9" });
+  });
+
+  it("sends the identifier the user typed instead of the suggestion", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "80", fullIdentifier: "INST-PROJ-UE42" } as never);
+    render();
+    await flush();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await flush();
+
+    await act(async () => {
+      setInputValue(identifierInput(), "INST-PROJ-UE42");
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith(expect.objectContaining({ projectId: "5", typeId: "9", identifier: "INST-PROJ-UE42" }));
+  });
+
+  it("treats an emptied identifier as automatic: none is sent", async () => {
+    mockedCreateRecordingUnit.mockResolvedValue({ resourceType: "recording-units", id: "81", fullIdentifier: "INST-PROJ-UE1" } as never);
+    render();
+    await flush();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await flush();
+
+    await act(async () => {
+      setInputValue(identifierInput(), "");
+    });
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedCreateRecordingUnit).toHaveBeenCalledWith({ projectId: "5", typeId: "9" });
+  });
+
+  it("asks for a new suggestion and drops the edit when the type changes", async () => {
+    mockedSuggestIdentifier.mockReset();
+    mockedSuggestIdentifier.mockResolvedValueOnce("INST-PROJ-UE1").mockResolvedValueOnce("INST-PROJ-UE2");
+    render();
+    await flush();
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await flush();
+    await act(async () => {
+      setInputValue(identifierInput(), "INST-PROJ-UE42");
+    });
+
+    mocks.typePick = { resourceId: "10", resourceType: "concepts", label: "Mur" };
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    await flush();
+
+    expect(mockedSuggestIdentifier).toHaveBeenLastCalledWith("5", "10");
+    expect(identifierInput().value).toBe("INST-PROJ-UE2");
   });
 
   it("links the new UE to a row action's parent, and shows that parent in the form", async () => {

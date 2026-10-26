@@ -639,6 +639,28 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
+     * The identifier the server would generate for a new recording unit of the given type in the
+     * given project — without consuming the counter. Shown as a modifiable suggestion in the
+     * creation form ({@code GET /api/v1/recording-units/suggest-identifier}).
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(String projectId,
+                                    long typeId,
+                                    PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds) {
+        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
+        ActionUnitDTO au = project.actionUnit();
+        Concept typeConcept = conceptRepository.findById(typeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
+
+        RecordingUnitDTO shell = new RecordingUnitDTO();
+        shell.setType(conceptMapper.convert(typeConcept));
+        shell.setActionUnit(actionUnitSummaryFromFull(au));
+
+        return recordingUnitService.suggestFullIdentifier(actionUnitSummaryFromFull(au), shell);
+    }
+
+    /**
      * Gabarit UI pour création d'un mobilier pour un type donné, résolu pour un projet précis.
      *
      * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
@@ -977,7 +999,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                     fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
-            RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell);
+            RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell, request.getIdentifier());
             // Additional answers hang off the unit's id, so only once it exists.
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);
             return saved;
@@ -1065,16 +1087,33 @@ public class RecordingUnitOpenApiService {
     }
 
     private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto) {
+        return saveWithGeneratedIdentifier(dto, null);
+    }
+
+    /**
+     * Saves the unit, then sets its identifier: the caller's {@code customIdentifier} when one was
+     * given (uniqueness checked), otherwise the generated one. The two-step save is unchanged — the
+     * identifier hangs off the unit's id, so only once it exists.
+     */
+    private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto, String customIdentifier) {
         RecordingUnitDTO saved;
         try {
             saved = recordingUnitService.save(dto);
         } catch (FailedRecordingUnitSaveException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
-        String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
-        saved.setFullIdentifier(generated);
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
+        if (customIdentifier != null && !customIdentifier.isBlank()) {
+            saved.setFullIdentifier(customIdentifier.trim());
+            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Cet identifiant existe déjà dans le projet");
+            }
+        } else {
+            String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
+            saved.setFullIdentifier(generated);
+            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
+            }
         }
         try {
             return recordingUnitService.save(saved);

@@ -73,6 +73,46 @@ public class EntityIdentifierGenerator {
         }
     }
 
+    /**
+     * The identifier {@link #generate} would allocate next, without consuming the counter — for
+     * the creation form's suggestion. The peeked number is tried first; if the rendered identifier
+     * is already taken (a manually set one), the following numbers are tried in turn.
+     */
+    public GeneratedIdentifier suggest(ConfigurableTable table,
+                                       ActionUnit actionUnit,
+                                       Long typeConceptId,
+                                       Map<String, ?> displayValues,
+                                       Map<String, ?> partitionValues,
+                                       Predicate<String> identifierAlreadyUsed) {
+        Objects.requireNonNull(actionUnit, "An action unit is required to suggest an identifier");
+        Objects.requireNonNull(actionUnit.getId(), "The action unit must be persisted before identifier suggestion");
+
+        FormConfig config = tableFieldConfigService.resolveIdentifierConfig(
+                actionUnit.getId(), table, typeConceptId);
+        validateRange(config);
+
+        Map<String, Object> values = new HashMap<>(displayValues);
+        Map<String, Object> partitions = new HashMap<>(partitionValues);
+        MapIdentifierRenderContext context = new MapIdentifierRenderContext(values, partitions);
+        String canonicalKey = partitionService.canonicalKey(table, config.getIdentifierFormat(), context);
+
+        int number = counterRepository.peekValue(
+                actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
+        while (true) {
+            if (number > config.getMaxCode()) {
+                throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
+            }
+            values.put(resolverRegistry.ownNumericalToken(table), number);
+            String rendered = resolverRegistry.render(
+                    table, config.getIdentifierFormat(),
+                    new MapIdentifierRenderContext(values, partitions));
+            if (!identifierAlreadyUsed.test(rendered)) {
+                return new GeneratedIdentifier(number, rendered);
+            }
+            number++;
+        }
+    }
+
     @Transactional
     public <E> Optional<GeneratedIdentifier> generateIdentifierIfRequired(
             E entity, IdentifierGenerationSpec<E> spec) {
@@ -100,6 +140,29 @@ public class EntityIdentifierGenerator {
         spec.numberSetter().accept(entity, generated.number());
         spec.identifierSetter().accept(entity, generated.value());
         return Optional.of(generated);
+    }
+
+    /**
+     * The identifier that would be generated for {@code entity}, without consuming the counter or
+     * writing anything — the creation form's suggestion. The entity is never modified.
+     */
+    public <E> GeneratedIdentifier suggestIdentifier(E entity, IdentifierGenerationSpec<E> spec) {
+        Objects.requireNonNull(spec, "Identifier generation specification is required");
+        if (entity == null) {
+            throw new IllegalArgumentException("A " + spec.entityName() + " is required to suggest an identifier");
+        }
+
+        ActionUnit actionUnit = spec.actionUnit().apply(entity);
+        if (actionUnit == null) {
+            throw new IllegalArgumentException(
+                    "An action unit is required to suggest a " + spec.entityName() + " identifier");
+        }
+
+        Map<String, Object> displayValues = resolveValues(entity, spec.displayValues());
+        Map<String, Object> partitionValues = resolveValues(entity, spec.partitionValues());
+        return suggest(spec.table(), actionUnit, spec.typeId().apply(entity),
+                displayValues, partitionValues,
+                candidate -> spec.identifierAlreadyUsed().test(entity, candidate));
     }
 
     private static <E> Map<String, Object> resolveValues(
