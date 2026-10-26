@@ -33,7 +33,9 @@ export function ConceptOptionItem({ option }: Readonly<{ option: FilterOption }>
       )}
       <div className="concept-item-body">
         <span>{option.label}</span>
-        {info.prefLabel && <small className="concept-item-altlabel">{t("concept.altLabelOf", { label: info.prefLabel })}</small>}
+        {info.altLabels && info.altLabels.length > 0 && (
+          <small className="concept-item-altlabels">{t("concept.altLabels", { labels: info.altLabels.join(", ") })}</small>
+        )}
         {info.definition && (
           <small className="concept-item-definition" title={info.definition}>
             {info.definition}

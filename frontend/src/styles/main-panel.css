@@ -1988,6 +1988,10 @@ body button.p-button.status-button.status-button-compact {
   font-style: italic;
   color: var(--siamois-green-active, #4f8a4f);
 }
+.concept-item-altlabels {
+  font-style: italic;
+  color: var(--text-light, #6b7280);
+}
 
 /* A document's file on its fiche (fields/FileCell.tsx) */
 .file-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }

@@ -3,7 +3,9 @@ package fr.siamois.infrastructure.database.repositories.vocabulary;
 import com.zaxxer.hikari.HikariDataSource;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.ConceptCollection;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +28,9 @@ class AutocompleteRepositoryTest {
     @Mock
     private HikariDataSource dataSource;
 
+    @Mock
+    private ConceptLabelRepository conceptLabelRepository;
+
     @InjectMocks
     private AutocompleteRepository autocompleteRepository;
 
@@ -39,13 +44,13 @@ class AutocompleteRepositoryTest {
     private ResultSet resultSet;
 
     @Test
-    void shouldReturnListWithAltLabelsAndTruncatedDefinition() throws Exception {
+    void shouldReturnSingleDtoWithPrefLabelWhenAltLabelsExist() throws Exception {
         // Arrange
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
 
-        // Simulate a single row
+        // Simulate a single row where the matched label is the prefLabel
         when(resultSet.next()).thenReturn(true, false);
         when(resultSet.getLong("vocabulary_type_id")).thenReturn(10L);
         when(resultSet.getString("vocabulary_type_label")).thenReturn("TypeLabel");
@@ -59,7 +64,7 @@ class AutocompleteRepositoryTest {
         when(resultSet.getLong("concept_label_id")).thenReturn(50L);
         when(resultSet.getString("concept_label_label")).thenReturn("prefLabel");
 
-        // alt labels separated by ;# -> should create two alt label DTOs + original
+        // alt labels are kept on the DTO but no longer added as separate entries
         when(resultSet.getString("data_aggregated_alt_labels")).thenReturn("alt1;#alt2");
 
         // long definition to trigger truncation
@@ -73,22 +78,117 @@ class AutocompleteRepositoryTest {
         // Act
         List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFor(concept, "fr", "in", 10);
 
-        // Assert
-        // one row -> original dto + 2 alt label dtos
-        assertEquals(3, results.size(), "Expected 3 entries (1 pref + 2 alt)");
+        // Assert: one entry per concept, with the prefLabel (altLabels are not separate choices)
+        assertEquals(1, results.size(), "Expected 1 entry (the concept, deduplicated)");
 
-        // the original pref label should be present as one of the entries
-        boolean foundPref = results.stream().anyMatch(d -> d.getOriginalPrefLabel().equals("prefLabel"));
-        assertTrue(foundPref);
+        ConceptAutocompleteDTO dto = results.get(0);
+        assertEquals("prefLabel", dto.getConceptLabelToDisplay().getLabel());
+        assertEquals("prefLabel", dto.getOriginalPrefLabel());
+        // altLabels are still carried on the DTO for information
+        assertEquals(List.of("alt1", "alt2"), dto.getAltLabels());
 
-        // definition should be truncated on the original dto (and alt dtos keep same truncated def)
-        for (ConceptAutocompleteDTO dto : results) {
-            assertNotNull(dto.getDefinition());
-            assertTrue(dto.getDefinition().length() <= AutocompleteRepository.DESCRIPTION_TRUNCATE_LENGTH + 3); // ... may add
-            assertTrue(dto.getDefinition().startsWith("A"));
-        }
+        // definition should be truncated
+        assertNotNull(dto.getDefinition());
+        assertTrue(dto.getDefinition().length() <= AutocompleteRepository.DESCRIPTION_TRUNCATE_LENGTH + 3);
+        assertTrue(dto.getDefinition().startsWith("A"));
 
         // verify resources closed
+        verify(statement).close();
+        verify(connection).close();
+    }
+
+    @Test
+    void shouldReplaceAltLabelMatchWithPrefLabel() throws Exception {
+        // Arrange: the SQL matched on an altLabel ("alt1"), not on the prefLabel
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        when(resultSet.next()).thenReturn(true, false);
+        when(resultSet.getLong("vocabulary_type_id")).thenReturn(1L);
+        when(resultSet.getString("vocabulary_type_label")).thenReturn("Type");
+        when(resultSet.getLong("vocabulary_id")).thenReturn(2L);
+        when(resultSet.getString("vocabulary_base_uri")).thenReturn("base");
+        when(resultSet.getString("vocabulary_external_id")).thenReturn("ext");
+        when(resultSet.getLong("concept_id")).thenReturn(30L);
+        when(resultSet.getString("concept_external_id")).thenReturn("extConcept");
+        when(resultSet.getLong("parent_concept_id")).thenReturn(40L);
+        when(resultSet.getString("parent_concept_external_id")).thenReturn("extParent");
+        when(resultSet.getLong("concept_label_id")).thenReturn(50L);
+        // The matched label is an altLabel
+        when(resultSet.getString("concept_label_label")).thenReturn("alt1");
+        when(resultSet.getString("data_aggregated_alt_labels")).thenReturn("alt1;#alt2");
+        when(resultSet.getString("data_definition")).thenReturn(null);
+        when(resultSet.getString("data_hierarchy_str")).thenReturn(null);
+
+        // The prefLabel repository returns the real prefLabel for this concept
+        ConceptPrefLabel prefLabel = new ConceptPrefLabel();
+        prefLabel.setLabel("prefLabel");
+        Concept conceptEntity = new Concept();
+        conceptEntity.setId(30L);
+        prefLabel.setConcept(conceptEntity);
+        when(conceptLabelRepository.findAllPrefLabelsByLangCodeAndConcept_IdIn(eq("fr"), any()))
+                .thenReturn(List.of(prefLabel));
+
+        Concept concept = new Concept();
+        concept.setId(123L);
+
+        // Act: search by altLabel
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFor(concept, "fr", "alt1", 10);
+
+        // Assert: the displayed label is the prefLabel, not the matched altLabel
+        assertEquals(1, results.size());
+        assertEquals("prefLabel", results.get(0).getConceptLabelToDisplay().getLabel(),
+                "AltLabel match should be replaced by the prefLabel");
+        assertEquals("prefLabel", results.get(0).getOriginalPrefLabel());
+        // altLabels are still carried for information
+        assertEquals(List.of("alt1", "alt2"), results.get(0).getAltLabels());
+
+        verify(statement).close();
+        verify(connection).close();
+    }
+
+    @Test
+    void shouldDeduplicateConceptsMatchedByMultipleLabels() throws Exception {
+        // Arrange: the same concept matched twice — once by prefLabel, once by altLabel
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        when(statement.executeQuery()).thenReturn(resultSet);
+
+        // First row: matched by prefLabel
+        // Second row: matched by altLabel (same concept)
+        when(resultSet.next()).thenReturn(true, true, false);
+
+        // Common columns
+        when(resultSet.getLong("vocabulary_type_id")).thenReturn(1L);
+        when(resultSet.getString("vocabulary_type_label")).thenReturn("Type");
+        when(resultSet.getLong("vocabulary_id")).thenReturn(2L);
+        when(resultSet.getString("vocabulary_base_uri")).thenReturn("base");
+        when(resultSet.getString("vocabulary_external_id")).thenReturn("ext");
+        when(resultSet.getLong("concept_id")).thenReturn(30L);
+        when(resultSet.getString("concept_external_id")).thenReturn("extConcept");
+        when(resultSet.getLong("parent_concept_id")).thenReturn(40L);
+        when(resultSet.getString("parent_concept_external_id")).thenReturn("extParent");
+        when(resultSet.getLong("concept_label_id")).thenReturn(50L, 51L);
+        when(resultSet.getString("data_aggregated_alt_labels")).thenReturn("alt1;#alt2");
+        when(resultSet.getString("data_definition")).thenReturn(null);
+        when(resultSet.getString("data_hierarchy_str")).thenReturn(null);
+
+        // First row: prefLabel matched
+        // Second row: altLabel matched
+        when(resultSet.getString("concept_label_label")).thenReturn("prefLabel", "alt1");
+
+        Concept concept = new Concept();
+        concept.setId(123L);
+
+        // Act
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFor(concept, "fr", "a", 10);
+
+        // Assert: deduplicated to one entry, with the prefLabel (not the altLabel)
+        assertEquals(1, results.size(), "Concept matched by multiple labels should appear once");
+        assertEquals("prefLabel", results.get(0).getConceptLabelToDisplay().getLabel(),
+                "PrefLabel should be preferred over altLabel match");
+
         verify(statement).close();
         verify(connection).close();
     }
@@ -244,7 +344,7 @@ class AutocompleteRepositoryTest {
     }
 
     @Test
-    void shouldReturnRelatedResultsWithAltLabels() throws Exception {
+    void shouldReturnSingleRelatedResultWithPrefLabelWhenAltLabelsExist() throws Exception {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.prepareStatement(anyString())).thenReturn(statement);
         when(statement.executeQuery()).thenReturn(resultSet);
@@ -272,11 +372,12 @@ class AutocompleteRepositoryTest {
 
         List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsFromRelatedFor(field, baseValue, "fr", "al", 10);
 
-        // one row -> 2 alt label entries + the pref label entry
-        assertEquals(3, results.size());
-        assertEquals(1, results.stream().filter(d -> "relatedLabel".equals(d.getConceptLabelToDisplay().getLabel())).count());
-        assertTrue(results.stream().allMatch(d -> "relatedLabel".equals(d.getOriginalPrefLabel())));
-        assertTrue(results.stream().allMatch(d -> "".equals(d.getDefinition())));
+        // one row -> one deduplicated entry with the prefLabel (altLabels are not separate choices)
+        assertEquals(1, results.size());
+        assertEquals("relatedLabel", results.get(0).getConceptLabelToDisplay().getLabel());
+        assertEquals("relatedLabel", results.get(0).getOriginalPrefLabel());
+        assertEquals(List.of("altA", "altB"), results.get(0).getAltLabels());
+        assertEquals("", results.get(0).getDefinition());
     }
 
     @Test
@@ -368,9 +469,11 @@ class AutocompleteRepositoryTest {
 
         List<ConceptAutocompleteDTO> results = autocompleteRepository.findMatchingConceptsInBranchOf(topTerm, "fr", "cer", 10);
 
-        // one row -> the pref label entry + one entry per alt label
-        assertEquals(3, results.size());
-        assertTrue(results.stream().allMatch(d -> "prefLabel".equals(d.getOriginalPrefLabel())));
+        // one row -> one deduplicated entry with the prefLabel (altLabels are not separate choices)
+        assertEquals(1, results.size());
+        assertEquals("prefLabel", results.get(0).getOriginalPrefLabel());
+        assertEquals("prefLabel", results.get(0).getConceptLabelToDisplay().getLabel());
+        assertEquals(List.of("altA", "altB"), results.get(0).getAltLabels());
 
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
         verify(connection).prepareStatement(queryCaptor.capture());
