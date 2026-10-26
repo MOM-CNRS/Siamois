@@ -154,9 +154,14 @@ public class ThesaurusUsageService {
         }
         String name = labelService.findLabelOf(vocabulary, lang).getValue();
         String id = vocabulary.getExternalVocabularyId();
-        StringBuilder text = new StringBuilder(name != null ? name : (id != null ? id : "—"));
-        if (name != null && id != null) {
-            text.append(" (").append(id).append(')');
+        StringBuilder text = new StringBuilder();
+        if (name != null) {
+            text.append(name);
+            if (id != null) {
+                text.append(" (").append(id).append(')');
+            }
+        } else {
+            text.append(id != null ? id : "—");
         }
         String server = vocabulary.getBaseUri();
         if (server != null && !server.isBlank()) {
