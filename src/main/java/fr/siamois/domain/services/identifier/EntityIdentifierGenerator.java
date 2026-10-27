@@ -56,7 +56,7 @@ public class EntityIdentifierGenerator {
                 int number = counterRepository.nextValue(
                         actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
                 if (number > config.getMaxCode()) {
-                    throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
+                    throw new IdentifierRangeExhaustedException("Identifier range exhausted for form config " + config.getId());
                 }
                 values.put(resolverRegistry.ownNumericalToken(table), number);
                 String rendered = resolverRegistry.render(
@@ -100,7 +100,7 @@ public class EntityIdentifierGenerator {
                 actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
         while (true) {
             if (number > config.getMaxCode()) {
-                throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
+                throw new IdentifierRangeExhaustedException("Identifier range exhausted for form config " + config.getId());
             }
             values.put(resolverRegistry.ownNumericalToken(table), number);
             String rendered = resolverRegistry.render(

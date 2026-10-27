@@ -3,6 +3,7 @@ package fr.siamois.ui.api.handler;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
+import fr.siamois.domain.services.identifier.IdentifierRangeExhaustedException;
 import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
@@ -185,6 +186,21 @@ class RestExceptionHandlerTest {
         ResponseEntity<ApiError> response = handler.identifierConflict(new IdentifierConflictException(), requestIn("en"));
 
         assertThat(response.getBody().message()).isEqualTo("This identifier already exists in the project");
+    }
+
+    @Test
+    void identifierRangeExhausted_returns409InTheCallersLanguage() {
+        ResponseEntity<ApiError> fr = handler.identifierRangeExhausted(
+                new IdentifierRangeExhaustedException("exhausted"), requestIn("fr-FR"));
+        ResponseEntity<ApiError> en = handler.identifierRangeExhausted(
+                new IdentifierRangeExhaustedException("exhausted"), requestIn("en"));
+
+        assertThat(fr.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(fr.getBody().error()).isEqualTo("conflict");
+        assertThat(fr.getBody().message()).isEqualTo(
+                "Impossible de générer de nouveaux identifiants : la valeur maximale configurée a été atteinte");
+        assertThat(en.getBody().message()).isEqualTo(
+                "No new identifier can be generated: the configured maximum value has been reached");
     }
 
     private static MockHttpServletRequest requestIn(String acceptLanguage) {
