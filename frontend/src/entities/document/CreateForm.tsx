@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { CreateFormField } from "../../components/create/CreateFormShell";
-import { CreateLinkField } from "../../components/create/CreateLinkField";
-import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../shared/types";
-import { createDocument, uploadDocumentFile } from "./api";
-import { t } from "../../i18n";
+import {useState} from "react";
+import {CreateFormField} from "../../components/create/CreateFormShell";
+import {CreateLinkField} from "../../components/create/CreateLinkField";
+import {TypeOnlyCreateForm} from "../../components/create/TypeOnlyCreateForm";
+import type {CreateFormContext} from "../shared/types";
+import {createDocument, uploadDocumentFile} from "./api";
+import {t} from "../../i18n";
 
 // A document is created in a project with its type, and optionally its file (sent once the
 // document exists); everything else (title, links, URL…) is edited afterwards on the fiche.

@@ -1,9 +1,9 @@
-import { relationTab } from "../../panels/detail/relationTab";
-import { t } from "../../i18n";
-import type { DetailTabDef, DocumentLinkField, EntityRef } from "../shared/types";
-import { AssociateDocument } from "./AssociateDocument";
-import { BulkImportDocument } from "./BulkImportDocument";
-import { unlinkDocument } from "./api";
+import {relationTab} from "../../panels/detail/relationTab";
+import {t} from "../../i18n";
+import type {DetailTabDef, DocumentLinkField, EntityRef} from "../shared/types";
+import {AssociateDocument} from "./AssociateDocument";
+import {BulkImportDocument} from "./BulkImportDocument";
+import {unlinkDocument} from "./api";
 
 export interface DocumentsTabSpec<TDetail extends { id: string | number }> {
   // The fiche's own registry key ("phase", "recordingUnit"…): what the list's scope and the create form's link name.

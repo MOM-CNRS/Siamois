@@ -1,5 +1,5 @@
-import { addLocale, locale as setPrimeLocale } from "primereact/api";
-import type { Locale } from "./index";
+import {addLocale, locale as setPrimeLocale} from "primereact/api";
+import type {Locale} from "./index";
 
 // PrimeReact ships English only: its calendar and filters read these from its own locale registry,
 // which the app has to fill in for any other language.

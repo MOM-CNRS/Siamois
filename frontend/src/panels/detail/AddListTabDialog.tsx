@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Dropdown } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
-import type { FilterValue } from "../../entities/shared/types";
-import { t } from "../../i18n";
-import { EntityListPanel } from "../EntityListPanel";
-import { newListTab, targetLabel, type EditableTab } from "./ficheTabsModel";
+import {useRef, useState} from "react";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {Dropdown} from "primereact/dropdown";
+import {InputText} from "primereact/inputtext";
+import type {FilterValue} from "../../entities/shared/types";
+import {t} from "../../i18n";
+import {EntityListPanel} from "../EntityListPanel";
+import {type EditableTab, newListTab, targetLabel} from "./ficheTabsModel";
 
 export interface AddListTabDialogProps {
   // The fiche the tab is for: what the preview list is scoped to.

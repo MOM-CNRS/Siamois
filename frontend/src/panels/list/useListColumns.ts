@@ -1,12 +1,12 @@
-import { useMemo } from "react";
-import { scopeProjectId } from "../../entities/shared/scope";
-import type { ColumnDef, EntityTypeConfig, FieldCatalog, ListScope } from "../../entities/shared/types";
-import type { ColumnTogglerOption } from "../../components/table/ColumnToggler";
-import type { FilterSpec } from "../../components/table/FilterChipBar";
-import { renderAnswerCell } from "../../fields/display";
-import { filterKindForField, optionSourceFor, type FilterKind } from "../../fields/optionSources";
-import { isOwningProjectField, resolveValueBinding, type FieldResource } from "../../fields/types";
-import type { RowRecord } from "./useEntityListData";
+import {useMemo} from "react";
+import {scopeProjectId} from "../../entities/shared/scope";
+import type {ColumnDef, EntityTypeConfig, FieldCatalog, ListScope} from "../../entities/shared/types";
+import type {ColumnTogglerOption} from "../../components/table/ColumnToggler";
+import type {FilterSpec} from "../../components/table/FilterChipBar";
+import {renderAnswerCell} from "../../fields/display";
+import {type FilterKind, filterKindForField, optionSourceFor} from "../../fields/optionSources";
+import {type FieldResource, isOwningProjectField, resolveValueBinding} from "../../fields/types";
+import type {RowRecord} from "./useEntityListData";
 
 
 export interface UseListColumnsOptions {

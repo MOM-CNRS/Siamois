@@ -1,6 +1,6 @@
-import { afterEach, vi } from "vitest";
-import { queryClient } from "../api/queryClient";
-import { notifySpy } from "./notifySpy";
+import {afterEach, vi} from "vitest";
+import {queryClient} from "../api/queryClient";
+import {notifySpy} from "./notifySpy";
 
 // Vitest setup shared by every test file.
 

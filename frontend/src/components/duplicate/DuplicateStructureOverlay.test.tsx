@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../../entities/registry";
-import type { DuplicationResult, DuplicationStructure, EntityTypeConfig } from "../../entities/shared/types";
-import { DuplicateStructureOverlay } from "./DuplicateStructureOverlay";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../../entities/registry";
+import type {DuplicationResult, DuplicationStructure, EntityTypeConfig} from "../../entities/shared/types";
+import {DuplicateStructureOverlay} from "./DuplicateStructureOverlay";
+import {notifySpy} from "../../test/notifySpy";
 
 
 const loadMock = vi.fn<(id: string | number) => Promise<DuplicationStructure>>();

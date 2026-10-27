@@ -1,4 +1,4 @@
-import type { FieldResource } from "./types";
+import type {FieldResource} from "./types";
 
 /**
  * When a field widget's value counts as "the user is done editing" — the rules the table's cell

@@ -1,4 +1,4 @@
-import type { ListParams } from "../../entities/shared/types";
+import type {ListParams} from "../../entities/shared/types";
 
 // Which list an entity was opened from, and where it sat in it: what "Fiche précédente/suivante"
 // walks. The table knows both — its own request (sort, search, filters, scope) and the clicked

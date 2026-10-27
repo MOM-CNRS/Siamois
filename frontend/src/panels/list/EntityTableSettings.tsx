@@ -1,14 +1,11 @@
-import { useRef, type RefObject, type SyntheticEvent } from "react";
-import { Button } from "primereact/button";
-import { OverlayPanel } from "primereact/overlaypanel";
-import {
-  ColumnToggler,
-  type ColumnTogglerOption,
-} from "../../components/table/ColumnToggler";
-import { VisibilityChooser } from "../../components/table/VisibilityChooser";
-import { t } from "../../i18n";
-import type { ListViewMode, ListViewOption } from "./listViews";
-import type { OpenMode } from "./listPreferences";
+import {type RefObject, type SyntheticEvent, useRef} from "react";
+import {Button} from "primereact/button";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {ColumnToggler, type ColumnTogglerOption,} from "../../components/table/ColumnToggler";
+import {VisibilityChooser} from "../../components/table/VisibilityChooser";
+import {t} from "../../i18n";
+import type {ListViewMode, ListViewOption} from "./listViews";
+import type {OpenMode} from "./listPreferences";
 
 export interface ActionBarLayout {
   order: string[];

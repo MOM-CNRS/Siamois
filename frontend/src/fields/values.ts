@@ -1,4 +1,4 @@
-import { resolveValueBinding, unwrapAnswer, type FieldResource } from "./types";
+import {type FieldResource, resolveValueBinding, unwrapAnswer} from "./types";
 
 /**
  * A field's value for the rules: through its binding when the catalog knows it (system fields read

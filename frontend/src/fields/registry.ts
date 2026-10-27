@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
-import type { FieldState, OptionsContext, PlaceContext } from "../rules";
-import type { FieldEditContext } from "./editContext";
-import type { FieldResource } from "./types";
+import type {ReactNode} from "react";
+import type {FieldState, OptionsContext, PlaceContext} from "../rules";
+import type {FieldEditContext} from "./editContext";
+import type {FieldResource} from "./types";
 
 // The "answerType → component" pattern validated on the RU branch's fieldRegistry.tsx (plan
 // §3), re-implemented fresh here (no dependency on that unmerged branch).
-import type { FilterOption } from "./optionSources";
+import type {FilterOption} from "./optionSources";
 
 export interface FieldRendererProps {
   field: FieldResource;

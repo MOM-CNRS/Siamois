@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { RelationsList, RelationsListControls, RelationsListEnd } from "./RelationsList";
-import type { RelationListModel } from "./useRelationList";
-import type { RelationRow } from "./types";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {RelationsList, RelationsListControls, RelationsListEnd} from "./RelationsList";
+import type {RelationListModel} from "./useRelationList";
+import type {RelationRow} from "./types";
 
 const row = (kind: RelationRow["kind"], id: string, qualifier?: RelationRow["unit"]["qualifier"]): RelationRow => ({
   kind,

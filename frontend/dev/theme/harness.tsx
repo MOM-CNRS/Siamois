@@ -1,33 +1,33 @@
 // Theme parity harness: every PrimeReact component the main panel uses, next to the PrimeFaces
 // markup the JSF app renders for its counterpart, both under the real host stylesheets (see
 // harness.html). `?lara=1` also loads the old Lara theme, for a before/after comparison.
-import { createRoot } from "react-dom/client";
-import { useRef, useState, type ReactNode } from "react";
+import {createRoot} from "react-dom/client";
+import {type ReactNode, useRef, useState} from "react";
 import "../../src/styles/bundle";
-import { Button } from "primereact/button";
-import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
-import { InputNumber } from "primereact/inputnumber";
-import { AutoComplete } from "primereact/autocomplete";
-import { Calendar } from "primereact/calendar";
-import { MultiSelect } from "primereact/multiselect";
-import { Checkbox } from "primereact/checkbox";
-import { Panel } from "primereact/panel";
-import { Card } from "primereact/card";
-import { Chip } from "primereact/chip";
-import { Message } from "primereact/message";
-import { Toolbar } from "primereact/toolbar";
-import { TabView, TabPanel } from "primereact/tabview";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { Menu } from "primereact/menu";
-import { BreadCrumb } from "primereact/breadcrumb";
-import { ProgressBar } from "primereact/progressbar";
-import { Skeleton } from "primereact/skeleton";
-import { Dialog } from "primereact/dialog";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { Tooltip } from "primereact/tooltip";
-import { Splitter, SplitterPanel } from "primereact/splitter";
+import {Button} from "primereact/button";
+import {InputText} from "primereact/inputtext";
+import {InputTextarea} from "primereact/inputtextarea";
+import {InputNumber} from "primereact/inputnumber";
+import {AutoComplete} from "primereact/autocomplete";
+import {Calendar} from "primereact/calendar";
+import {MultiSelect} from "primereact/multiselect";
+import {Checkbox} from "primereact/checkbox";
+import {Panel} from "primereact/panel";
+import {Card} from "primereact/card";
+import {Chip} from "primereact/chip";
+import {Message} from "primereact/message";
+import {Toolbar} from "primereact/toolbar";
+import {TabPanel, TabView} from "primereact/tabview";
+import {DataTable} from "primereact/datatable";
+import {Column} from "primereact/column";
+import {Menu} from "primereact/menu";
+import {BreadCrumb} from "primereact/breadcrumb";
+import {ProgressBar} from "primereact/progressbar";
+import {Skeleton} from "primereact/skeleton";
+import {Dialog} from "primereact/dialog";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {Tooltip} from "primereact/tooltip";
+import {Splitter, SplitterPanel} from "primereact/splitter";
 
 if (new URLSearchParams(location.search).has("lara")) {
   void import("primereact/resources/themes/lara-light-blue/theme.css");

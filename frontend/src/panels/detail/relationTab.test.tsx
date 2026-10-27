@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig, PagedResult } from "../../entities/shared/types";
-import { relationTab } from "./relationTab";
-import { WriteModeProvider } from "../pane/writeMode";
-import { listPrefsKey, saveListPrefs } from "../list/listPreferences";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../../entities/registry";
+import type {EntityTypeConfig, PagedResult} from "../../entities/shared/types";
+import {relationTab} from "./relationTab";
+import {WriteModeProvider} from "../pane/writeMode";
+import {listPrefsKey, saveListPrefs} from "../list/listPreferences";
 
 
 interface FakeChildRow {

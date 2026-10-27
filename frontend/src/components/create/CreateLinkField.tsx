@@ -1,6 +1,6 @@
-import { getEntityType } from "../../entities/registry";
-import type { EntityRef } from "../../entities/shared/types";
-import { entityChipStyle } from "../../fields/display";
+import {getEntityType} from "../../entities/registry";
+import type {EntityRef} from "../../entities/shared/types";
+import {entityChipStyle} from "../../fields/display";
 
 // A create form's pre-set link (CreatePrefill) — the entity the new one will be attached to,
 // shown read-only where a picker would otherwise be, so the user sees what they are creating.

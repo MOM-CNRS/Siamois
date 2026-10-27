@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { apiFetch } from "../../api/client";
-import { configureBasePath } from "../../api/basePath";
-import { projectHomeWidgets } from "./homeWidgets";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {apiFetch} from "../../api/client";
+import {configureBasePath} from "../../api/basePath";
+import {projectHomeWidgets} from "./homeWidgets";
 
 
 vi.mock("../../api/client", () => ({

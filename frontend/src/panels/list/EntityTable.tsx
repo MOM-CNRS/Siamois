@@ -1,56 +1,38 @@
 import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type DragEvent,
-  type ReactNode,
-  type SyntheticEvent,
+    type DragEvent,
+    type ReactNode,
+    type SyntheticEvent,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
 } from "react";
-import { onGridKeyDown } from "../../components/table/gridNavigation";
-import { Column } from "primereact/column";
-import {
-  DataTable,
-  type DataTableSelectionMultipleChangeEvent,
-} from "primereact/datatable";
-import { TreeTable } from "primereact/treetable";
-import type { TreeNode } from "primereact/treenode";
-import { Skeleton } from "primereact/skeleton";
-import {
-  CellEditOverlay,
-  type CellEditTarget,
-} from "../../components/table/CellEditOverlay";
-import {
-  ValidationStatusCell,
-  type ValidationStatusCellProps,
-} from "../../components/table/ValidationStatusCell";
-import { getEntityType } from "../../entities/registry";
-import type {
-  ColumnDef,
-  EntityPreview,
-  EntityTypeConfig,
-  ListParams,
-} from "../../entities/shared/types";
-import { entityChipStyle, renderAnswerValue } from "../../fields/display";
-import { describeIncoherence } from "../../fields/incoherence";
-import { entityRowLabel } from "../../fields/optionSources";
-import { hasFieldRenderer } from "../../fields/registry";
-import { stratigraphyPositionOf } from "../../fields/stratigraphy";
-import type { FieldState } from "../../rules";
-import { resolveValueBinding, type FieldResource } from "../../fields/types";
-import {
-  FROZEN_COLUMN_CLASS,
-  frozenColumnStyle,
-  useFrozenColumnOffsets,
-} from "./frozenColumns";
-import { rememberListContext } from "./listContext";
-import { PAGE_SIZE_OPTIONS } from "./tableState";
-import { useWriteMode } from "../pane/writeMode";
-import { isFieldPending } from "./usePagedList";
-import type { RowRecord } from "./useEntityListData";
-import { buildTreeSelectionColumn } from "./treeSelectionColumn";
-import type { EntityTableTree } from "./useTreeRows";
-import { t } from "../../i18n";
+import {onGridKeyDown} from "../../components/table/gridNavigation";
+import {Column} from "primereact/column";
+import {DataTable, type DataTableSelectionMultipleChangeEvent,} from "primereact/datatable";
+import {TreeTable} from "primereact/treetable";
+import type {TreeNode} from "primereact/treenode";
+import {Skeleton} from "primereact/skeleton";
+import {CellEditOverlay, type CellEditTarget,} from "../../components/table/CellEditOverlay";
+import {ValidationStatusCell, type ValidationStatusCellProps,} from "../../components/table/ValidationStatusCell";
+import {getEntityType} from "../../entities/registry";
+import type {ColumnDef, EntityPreview, EntityTypeConfig, ListParams,} from "../../entities/shared/types";
+import {entityChipStyle, renderAnswerValue} from "../../fields/display";
+import {describeIncoherence} from "../../fields/incoherence";
+import {entityRowLabel} from "../../fields/optionSources";
+import {hasFieldRenderer} from "../../fields/registry";
+import {stratigraphyPositionOf} from "../../fields/stratigraphy";
+import type {FieldState} from "../../rules";
+import {type FieldResource, resolveValueBinding} from "../../fields/types";
+import {FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets,} from "./frozenColumns";
+import {rememberListContext} from "./listContext";
+import {PAGE_SIZE_OPTIONS} from "./tableState";
+import {useWriteMode} from "../pane/writeMode";
+import {isFieldPending} from "./usePagedList";
+import type {RowRecord} from "./useEntityListData";
+import {buildTreeSelectionColumn} from "./treeSelectionColumn";
+import type {EntityTableTree} from "./useTreeRows";
+import {t} from "../../i18n";
 
 // Placeholder rows shown during a list's very first load, one skeleton per cell — the table keeps
 // its header and shape instead of an empty body under a grey loading overlay.

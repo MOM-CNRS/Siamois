@@ -1,5 +1,5 @@
-import { Skeleton } from "primereact/skeleton";
-import { t } from "../../i18n";
+import {Skeleton} from "primereact/skeleton";
+import {t} from "../../i18n";
 
 /**
  * Loading placeholders for a fiche. Wrapped in .loading-skeleton, which fades them in only after a

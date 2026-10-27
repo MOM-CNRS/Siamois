@@ -1,7 +1,7 @@
-import { apiFetch } from "../../api/client";
-import { filtersToQueryParams } from "../../panels/list/tableState";
-import { getEntityType } from "../registry";
-import type { ListParams, PagedResult } from "./types";
+import {apiFetch} from "../../api/client";
+import {filtersToQueryParams} from "../../panels/list/tableState";
+import {getEntityType} from "../registry";
+import type {ListParams, PagedResult} from "./types";
 
 // Response envelope shared by every GET .../{collection} list endpoint (ListResponse<T> server
 // side) — meta.total, not totalCount, is the wire field name; PagedResult normalizes that for the

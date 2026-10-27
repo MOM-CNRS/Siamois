@@ -1,17 +1,17 @@
-import { useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { patchValidation, requiresValidator } from "../../api/resources/validation";
-import { patchCachedEntity } from "../../api/entityCache";
+import {useRef} from "react";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {patchValidation, requiresValidator} from "../../api/resources/validation";
+import {patchCachedEntity} from "../../api/entityCache";
 import {
-  VALIDATION_PRESENTATION,
-  VALIDATION_STATUSES,
-  validationPresentation,
-  type ValidationStatusValue,
+    VALIDATION_PRESENTATION,
+    VALIDATION_STATUSES,
+    validationPresentation,
+    type ValidationStatusValue,
 } from "../table/ValidationStatusBadge";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 export interface ValidationStatusButtonProps {
   // The registry key: the cached list rows and fiche are keyed by it.

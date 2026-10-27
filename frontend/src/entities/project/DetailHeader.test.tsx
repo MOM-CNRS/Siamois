@@ -1,14 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { patchProject } from "./api";
-import { ProjectDetailHeader } from "./DetailHeader";
-import { getProjectTypes } from "./projectTypes";
-import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/pane/writeMode";
-import type { ProjectDetail } from "./types";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {patchProject} from "./api";
+import {ProjectDetailHeader} from "./DetailHeader";
+import {getProjectTypes} from "./projectTypes";
+import type {FieldResource} from "../../fields/types";
+import {WriteModeProvider} from "../../panels/pane/writeMode";
+import type {ProjectDetail} from "./types";
+import {notifySpy} from "../../test/notifySpy";
 
 
 vi.mock("./api", () => ({ patchProject: vi.fn() }));

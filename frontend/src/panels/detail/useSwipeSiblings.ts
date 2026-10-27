@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import type { EntitySibling } from "../../entities/shared/types";
+import {useEffect, useRef} from "react";
+import type {EntitySibling} from "../../entities/shared/types";
 
 // What a swipe must look like to count: far enough, and clearly horizontal rather than a scroll.
 const MIN_DISTANCE = 70;

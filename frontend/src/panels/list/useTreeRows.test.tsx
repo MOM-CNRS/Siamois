@@ -1,13 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type {
-  EntityTypeConfig,
-  ListParams,
-  PagedResult,
-} from "../../entities/shared/types";
-import { useTreeRows, type TreeRow } from "./useTreeRows";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {EntityTypeConfig, ListParams, PagedResult,} from "../../entities/shared/types";
+import {type TreeRow, useTreeRows} from "./useTreeRows";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

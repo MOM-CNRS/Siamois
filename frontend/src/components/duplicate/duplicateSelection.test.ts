@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { check, createdCount, indexStructure, selectAll, uncheck } from "./duplicateSelection";
+import {describe, expect, it} from "vitest";
+import {check, createdCount, indexStructure, selectAll, uncheck} from "./duplicateSelection";
 
 //  1 (root)
 //  ├─ 2

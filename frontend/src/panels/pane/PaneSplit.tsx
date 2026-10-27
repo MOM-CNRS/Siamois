@@ -1,4 +1,11 @@
-import { useCallback, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+    type CSSProperties,
+    type PointerEvent as ReactPointerEvent,
+    type ReactNode,
+    useCallback,
+    useRef,
+    useState
+} from "react";
 
 // Where the main pane's share of the width is remembered (this browser only).
 const RATIO_STORAGE_KEY = "siamois.main-panel.split-ratio";

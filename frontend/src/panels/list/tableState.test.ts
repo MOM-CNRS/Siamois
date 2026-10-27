@@ -1,8 +1,5 @@
-import { describe, expect, it } from "vitest";
-import {
-  createTableState,
-  filtersToQueryParams,
-} from "./tableState";
+import {describe, expect, it} from "vitest";
+import {createTableState, filtersToQueryParams,} from "./tableState";
 
 describe("createTableState", () => {
   it("defaults visibleColumns/filters", () => {

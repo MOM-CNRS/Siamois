@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
-import { projectColumns } from "./columns";
-import type { ProjectSummary } from "./types";
+import {describe, expect, it} from "vitest";
+import {renderToStaticMarkup} from "react-dom/server";
+import {projectColumns} from "./columns";
+import type {ProjectSummary} from "./types";
 
 function project(overrides: Partial<ProjectSummary>): ProjectSummary {
   return {

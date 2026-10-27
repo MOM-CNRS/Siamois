@@ -1,8 +1,10 @@
 """JSF non-regression check for the PrimeReact aliasing: compares two compiled (expanded) CSS files.
 Every rule of OLD must exist in NEW with identical declarations and a superset of its selectors,
 every selector NEW adds must mention a .p- class, and every rule only in NEW must be .p- only."""
-import re, sys
+import re
+import sys
 from collections import defaultdict
+
 
 def split_top(sel):
     out, depth, cur = [], 0, ''

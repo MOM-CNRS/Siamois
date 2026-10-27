@@ -1,18 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Panel } from "primereact/panel";
-import { Skeleton } from "primereact/skeleton";
-import { listHistory } from "../../api/resources/homeShortcuts";
-import { queryKeys } from "../../api/queryKeys";
-import { getEntityType } from "../../entities/registry";
-import type { HomeWidgetContext, HomeWidgetDef } from "../../entities/shared/types";
-import { t } from "../../i18n";
-import { resolveEntityPath } from "../../navigation/paths";
-import { usePaneState } from "../../panels/pane/paneState";
-import { ProjectName } from "../ProjectName";
-import { ClickableCard } from "./ClickableCard";
-import { DataAccessSection } from "./DataAccessSection";
-import { openSidebarDrawer } from "./sidebar";
+import {useQuery} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Panel} from "primereact/panel";
+import {Skeleton} from "primereact/skeleton";
+import {listHistory} from "../../api/resources/homeShortcuts";
+import {queryKeys} from "../../api/queryKeys";
+import {getEntityType} from "../../entities/registry";
+import type {HomeWidgetContext, HomeWidgetDef} from "../../entities/shared/types";
+import {t} from "../../i18n";
+import {resolveEntityPath} from "../../navigation/paths";
+import {usePaneState} from "../../panels/pane/paneState";
+import {ProjectName} from "../ProjectName";
+import {ClickableCard} from "./ClickableCard";
+import {DataAccessSection} from "./DataAccessSection";
+import {openSidebarDrawer} from "./sidebar";
 
 // « Consulté récemment » on the home page: the pages the user opened last, as cards like the other sections.
 // « Voir tout » opens the sidebar's history, which has the whole list.

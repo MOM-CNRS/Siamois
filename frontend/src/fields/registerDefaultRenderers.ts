@@ -1,14 +1,14 @@
-import { registerFallbackFieldRenderer, registerFieldRenderer } from "./registry";
+import {registerFallbackFieldRenderer, registerFieldRenderer} from "./registry";
 import {
-  BooleanRenderer,
-  DateRenderer,
-  DecimalRenderer,
-  FallbackRenderer,
-  IntegerRenderer,
-  MeasurementRenderer,
-  SelectManyRefRenderer,
-  SelectOneRefRenderer,
-  TextRenderer,
+    BooleanRenderer,
+    DateRenderer,
+    DecimalRenderer,
+    FallbackRenderer,
+    IntegerRenderer,
+    MeasurementRenderer,
+    SelectManyRefRenderer,
+    SelectOneRefRenderer,
+    TextRenderer,
 } from "./renderers";
 
 // Called once at app startup (from mount.ts) to populate the base renderer set: every answerType a

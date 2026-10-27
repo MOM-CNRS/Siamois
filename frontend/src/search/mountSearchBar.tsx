@@ -1,13 +1,13 @@
-import { createRoot, type Root } from "react-dom/client";
-import { createElement } from "react";
-import { PrimeReactProvider } from "primereact/api";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "../api/queryClient";
-import { configureBasePath } from "../api/basePath";
-import { configureCsrf } from "../auth/sessionAuth";
-import { setLocale, resolveLocale } from "../i18n";
-import { GlobalSearchBar } from "./GlobalSearchBar";
-import { HistoryNav } from "./HistoryNav";
+import {createRoot, type Root} from "react-dom/client";
+import {createElement} from "react";
+import {PrimeReactProvider} from "primereact/api";
+import {QueryClientProvider} from "@tanstack/react-query";
+import {queryClient} from "../api/queryClient";
+import {configureBasePath} from "../api/basePath";
+import {configureCsrf} from "../auth/sessionAuth";
+import {resolveLocale, setLocale} from "../i18n";
+import {GlobalSearchBar} from "./GlobalSearchBar";
+import {HistoryNav} from "./HistoryNav";
 
 const roots = new Map<HTMLElement, Root>();
 

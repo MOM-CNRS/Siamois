@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { placeColumns } from "./columns";
-import type { PlaceSummary } from "./types";
+import {describe, expect, it} from "vitest";
+import {placeColumns} from "./columns";
+import type {PlaceSummary} from "./types";
 
 const row: PlaceSummary = {
   resourceType: "places",

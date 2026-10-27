@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type SyntheticEvent } from "react";
-import { Button } from "primereact/button";
-import { Checkbox } from "primereact/checkbox";
-import { Dialog } from "primereact/dialog";
-import { Paginator, type PaginatorPageChangeEvent } from "primereact/paginator";
-import { Skeleton } from "primereact/skeleton";
-import { ValidationStatusCell, type ValidationStatusCellProps } from "../../components/table/ValidationStatusCell";
-import type { EntityPreview, EntityTypeConfig, ListParams } from "../../entities/shared/types";
-import { entityChipStyle } from "../../fields/display";
-import { entityRowLabel } from "../../fields/optionSources";
-import { t } from "../../i18n";
-import { rememberListContext } from "./listContext";
-import { PAGE_SIZE_OPTIONS } from "./tableState";
-import type { RowRecord } from "./useEntityListData";
-import { useDocumentFullImage, useDocumentThumbnail } from "./useDocumentThumbnail";
+import {type KeyboardEvent, type ReactNode, type SyntheticEvent, useEffect, useRef, useState} from "react";
+import {Button} from "primereact/button";
+import {Checkbox} from "primereact/checkbox";
+import {Dialog} from "primereact/dialog";
+import {Paginator, type PaginatorPageChangeEvent} from "primereact/paginator";
+import {Skeleton} from "primereact/skeleton";
+import {ValidationStatusCell, type ValidationStatusCellProps} from "../../components/table/ValidationStatusCell";
+import type {EntityPreview, EntityTypeConfig, ListParams} from "../../entities/shared/types";
+import {entityChipStyle} from "../../fields/display";
+import {entityRowLabel} from "../../fields/optionSources";
+import {t} from "../../i18n";
+import {rememberListContext} from "./listContext";
+import {PAGE_SIZE_OPTIONS} from "./tableState";
+import type {RowRecord} from "./useEntityListData";
+import {useDocumentFullImage, useDocumentThumbnail} from "./useDocumentThumbnail";
 
 const SKELETON_CARD_COUNT = 8;
 

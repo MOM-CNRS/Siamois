@@ -1,24 +1,24 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ProjectName } from "../components/ProjectName";
-import { getEntityType } from "../entities/registry";
-import { listProjects } from "../entities/project/api";
-import { queryKeys } from "../api/queryKeys";
-import { getContext, getNavigation, subscribeContext } from "../navigation/externalBus";
-import { t } from "../i18n";
-import { formatFilter, keywordCompletion, parseQuery, SEARCH_KEYWORDS, tailKeyword } from "./queryParser";
+import {type KeyboardEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {ProjectName} from "../components/ProjectName";
+import {getEntityType} from "../entities/registry";
+import {listProjects} from "../entities/project/api";
+import {queryKeys} from "../api/queryKeys";
+import {getContext, getNavigation, subscribeContext} from "../navigation/externalBus";
+import {t} from "../i18n";
+import {formatFilter, keywordCompletion, parseQuery, SEARCH_KEYWORDS, tailKeyword} from "./queryParser";
 import {
-  anchorOf,
-  Highlighted,
-  KeywordButtons,
-  nextActive,
-  SearchOverlay,
-  SearchRow,
-  useDebounced,
-  type SearchAnchor,
+    anchorOf,
+    Highlighted,
+    KeywordButtons,
+    nextActive,
+    type SearchAnchor,
+    SearchOverlay,
+    SearchRow,
+    useDebounced,
 } from "./SearchOverlay";
-import { fetchGlobalSearch, type SearchItem, type SearchSection } from "./searchApi";
-import { useToastOnChange } from "../notify/NotifyProvider";
+import {fetchGlobalSearch, type SearchItem, type SearchSection} from "./searchApi";
+import {useToastOnChange} from "../notify/NotifyProvider";
 
 export const SEARCH_DEBOUNCE_MS = 250;
 const SECTION_LIMIT = 5;

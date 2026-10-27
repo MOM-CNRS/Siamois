@@ -1,14 +1,24 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
-import { apiUrl } from "../api/basePath";
-import { getEntityType } from "../entities/registry";
-import type { MountOptions } from "../mountOptions";
-import type { EntityPreview } from "../panels/EntityDetailPanel";
-import { withPanelTransition } from "../panels/pane/panelTransition";
-import type { ListSeed } from "./externalBus";
-import { isMobileViewport } from "../viewport";
-import { listPath } from "./paths";
-import { recordVisit } from "./navTrail";
-import { decodeUrl, encodeUrl, initialNavState, navReducer, overviewPath, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
+import {useCallback, useEffect, useReducer, useRef} from "react";
+import {apiUrl} from "../api/basePath";
+import {getEntityType} from "../entities/registry";
+import type {MountOptions} from "../mountOptions";
+import type {EntityPreview} from "../panels/EntityDetailPanel";
+import {withPanelTransition} from "../panels/pane/panelTransition";
+import type {ListSeed} from "./externalBus";
+import {isMobileViewport} from "../viewport";
+import {listPath} from "./paths";
+import {recordVisit} from "./navTrail";
+import {
+    decodeUrl,
+    encodeUrl,
+    initialNavState,
+    type NavAction,
+    navReducer,
+    type NavState,
+    overviewPath,
+    serverSync,
+    transitionOf
+} from "./reducer";
 
 export interface Navigation {
   state: NavState;

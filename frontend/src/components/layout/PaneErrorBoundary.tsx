@@ -1,6 +1,6 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Message } from "primereact/message";
-import { t } from "../../i18n";
+import {Component, type ErrorInfo, type ReactNode} from "react";
+import {Message} from "primereact/message";
+import {t} from "../../i18n";
 
 interface Props {
   // What the boundary guards ("le panneau principal", "l'onglet Fouilles"…), for the message.

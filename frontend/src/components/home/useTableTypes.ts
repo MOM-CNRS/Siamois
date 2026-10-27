@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { getEntityType } from "../../entities/registry";
-import { optionSourceFor, type FilterOption } from "../../fields/optionSources";
+import {useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {getEntityType} from "../../entities/registry";
+import {type FilterOption, optionSourceFor} from "../../fields/optionSources";
 
 /** The type field of a table's catalog: how a list tells its types apart. */
 const isTypeField = (field: { id: string; valueBinding?: string | null }) => field.id === "type" || field.valueBinding === "type";

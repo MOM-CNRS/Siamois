@@ -1,4 +1,4 @@
-import type { Condition, FieldRules, RuledColumn } from "./types";
+import type {Condition, FieldRules, RuledColumn} from "./types";
 
 function collect(condition: Condition | undefined | null, out: Set<string>) {
   if (!condition) return;

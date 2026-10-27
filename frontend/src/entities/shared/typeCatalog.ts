@@ -1,10 +1,10 @@
-import { apiFetch } from "../../api/client";
-import { queryClient } from "../../api/queryClient";
-import { queryKeys } from "../../api/queryKeys";
-import type { FieldResource } from "../../fields/types";
-import type { ProjectTableColumnDefault } from "./common";
-import { scopeProjectId } from "./scope";
-import type { FieldCatalog, ListScope } from "./types";
+import {apiFetch} from "../../api/client";
+import {queryClient} from "../../api/queryClient";
+import {queryKeys} from "../../api/queryKeys";
+import type {FieldResource} from "../../fields/types";
+import type {ProjectTableColumnDefault} from "./common";
+import {scopeProjectId} from "./scope";
+import type {FieldCatalog, ListScope} from "./types";
 
 // One type's form in a types catalog (GET …/<x>-types): its layout and the fields it places.
 export interface TypeFormBody {

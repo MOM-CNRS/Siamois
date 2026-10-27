@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { registerEntityType } from "../registry";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {registerEntityType} from "../registry";
 import {
-  createRecordingUnit,
-  duplicateRecordingUnitStructure,
-  getRecordingUnit,
-  getRecordingUnitStructure,
-  listRecordingUnits,
-  patchRecordingUnitAnswers,
+    createRecordingUnit,
+    duplicateRecordingUnitStructure,
+    getRecordingUnit,
+    getRecordingUnitStructure,
+    listRecordingUnits,
+    patchRecordingUnitAnswers,
 } from "./api";
 
 vi.mock("../../api/client", () => ({

@@ -1,5 +1,5 @@
-import { Chip } from "primereact/chip";
-import { ClickableCard } from "./ClickableCard";
+import {Chip} from "primereact/chip";
+import {ClickableCard} from "./ClickableCard";
 
 // React counterpart of pages/shared/card/welcomeCard.xhtml, minus its footer button: the whole
 // card opens the list.

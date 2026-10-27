@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { phaseColumns } from "./columns";
-import type { PhaseSummary } from "./types";
+import {describe, expect, it} from "vitest";
+import {phaseColumns} from "./columns";
+import type {PhaseSummary} from "./types";
 
 describe("phaseColumns", () => {
   it("marks exactly one column as the identifier", () => {

@@ -1,8 +1,8 @@
-import { CreateLinkField } from "../../components/create/CreateLinkField";
-import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../shared/types";
-import { createRecordingUnit } from "./api";
-import { t } from "../../i18n";
+import {CreateLinkField} from "../../components/create/CreateLinkField";
+import {TypeOnlyCreateForm} from "../../components/create/TypeOnlyCreateForm";
+import type {CreateFormContext} from "../shared/types";
+import {createRecordingUnit} from "./api";
+import {t} from "../../i18n";
 
 // A recording unit needs only its type. Its identifier is suggested by the server (a peek at the
 // counter, not a consumption), shown pre-filled and modifiable — an edited one is sent, an

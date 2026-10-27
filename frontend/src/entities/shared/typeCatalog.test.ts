@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { getEffectiveForm, loadTypeCatalog } from "./typeCatalog";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {getEffectiveForm, loadTypeCatalog} from "./typeCatalog";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);

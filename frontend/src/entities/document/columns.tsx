@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { DocumentSummary } from "./types";
-import { t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {DocumentSummary} from "./types";
+import {t} from "../../i18n";
 
 // The pinned columns; the rest of the table comes from the project's document forms (the dynamic
 // catalog, entities/shared/typeCatalog.ts). Field ids are the document table's system fields (DocumentForm).

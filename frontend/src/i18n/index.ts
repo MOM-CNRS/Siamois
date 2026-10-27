@@ -1,5 +1,5 @@
-import { en } from "./en";
-import { fr, type MessageKey } from "./fr";
+import {en} from "./en";
+import {fr, type MessageKey} from "./fr";
 
 export type { MessageKey };
 export type Locale = "fr" | "en";

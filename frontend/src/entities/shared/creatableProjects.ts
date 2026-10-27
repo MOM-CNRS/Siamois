@@ -1,5 +1,5 @@
-import { apiFetch } from "../../api/client";
-import type { CreatableKind, PagedResult } from "./types";
+import {apiFetch} from "../../api/client";
+import type {CreatableKind, PagedResult} from "./types";
 
 // The fields of a project a create form's project picker shows (a ProjectResource row).
 export interface CreatableProject {

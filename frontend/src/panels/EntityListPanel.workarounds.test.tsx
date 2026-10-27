@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../entities/registry";
-import type { PagedResult } from "../entities/shared/types";
-import { EntityListPanel } from "./EntityListPanel";
-import { WriteModeProvider } from "./pane/writeMode";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../entities/registry";
+import type {PagedResult} from "../entities/shared/types";
+import {EntityListPanel} from "./EntityListPanel";
+import {WriteModeProvider} from "./pane/writeMode";
 
 // The list's own guarantees that are easy to lose in a refactor: what a keystroke re-renders, how many
 // requests a column change makes, and the PrimeReact behaviours the table works around.

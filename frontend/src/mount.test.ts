@@ -1,6 +1,6 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { MOUNT_CONTRACT_VERSION } from "./mountOptions";
+import {afterEach, beforeAll, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {MOUNT_CONTRACT_VERSION} from "./mountOptions";
 
 // mount.ts installs window.SiamoisMainPanel as a side effect of being imported.
 beforeAll(async () => {

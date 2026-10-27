@@ -1,6 +1,6 @@
-import { Button } from "primereact/button";
-import type { EntitySibling, EntitySiblings } from "../../entities/shared/types";
-import { t } from "../../i18n";
+import {Button} from "primereact/button";
+import type {EntitySibling, EntitySiblings} from "../../entities/shared/types";
+import {t} from "../../i18n";
 
 export interface SiblingNavProps {
   // undefined while the siblings query hasn't resolved yet — both arrows render disabled rather

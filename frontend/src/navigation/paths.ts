@@ -1,4 +1,4 @@
-import { getAllEntityTypes, getEntityType } from "../entities/registry";
+import {getAllEntityTypes, getEntityType} from "../entities/registry";
 
 /** The resource path of an entity (or, without an id, of its list): what the server calls it. */
 export function entityPath(entityType: string, id?: string | number): string | undefined {

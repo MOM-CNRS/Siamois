@@ -1,7 +1,7 @@
-import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../shared/types";
-import { createPhase } from "./api";
-import { t } from "../../i18n";
+import {TypeOnlyCreateForm} from "../../components/create/TypeOnlyCreateForm";
+import type {CreateFormContext} from "../shared/types";
+import {createPhase} from "./api";
+import {t} from "../../i18n";
 
 // PhaseNewUnitForm only requires a type; the title is edited afterwards on the fiche.
 export function PhaseCreateForm(ctx: CreateFormContext) {

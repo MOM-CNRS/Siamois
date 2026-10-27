@@ -1,6 +1,6 @@
-import { getEntityType } from "../../entities/registry";
-import type { DetailTabDef, FilterValue } from "../../entities/shared/types";
-import { parseFicheTabs } from "./ficheConfig";
+import {getEntityType} from "../../entities/registry";
+import type {DetailTabDef, FilterValue} from "../../entities/shared/types";
+import {parseFicheTabs} from "./ficheConfig";
 
 /** One line of the tabs editor: a tab of the fiche as the project arranges it, hidden ones included. */
 export interface EditableTab {

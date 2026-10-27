@@ -1,12 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {type RelationListModel, useRelationList} from "./useRelationList";
 
 const getRelationList = vi.fn();
 vi.mock("./api", () => ({ getRelationList: (...args: unknown[]) => getRelationList(...args) }));
-
-import { useRelationList, type RelationListModel } from "./useRelationList";
 
 let container: HTMLDivElement;
 let root: Root;
