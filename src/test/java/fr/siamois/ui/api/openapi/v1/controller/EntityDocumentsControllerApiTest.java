@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
@@ -55,7 +55,7 @@ class EntityDocumentsControllerApiTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new EntityDocumentsControllerApi(projectApiService, documentLinksOpenApiService, ListQueryStubs.none()))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
         PersonDTO person = new PersonDTO();
         person.setId(3L);

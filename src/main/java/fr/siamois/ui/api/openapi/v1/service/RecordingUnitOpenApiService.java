@@ -44,6 +44,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
@@ -401,8 +402,8 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldResource> baseFields = baseFieldsOf(configurable ? au.getId() : null, ConfigurableTable.DOCUMENT,
                 Document.class, institution, personDto, lang);
 
-        List<Concept> configuredTypes = !configurable ? List.<Concept>of() : OpenApiExecutionContext.callWithUserInfo(userInfo,
-                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT));
+        List<Concept> configuredTypes = configurable ? OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT)) : List.<Concept>of();
         Locale locale = langService.localeForApiLang(lang);
         List<DocumentType> types = configuredTypes.stream()
                 .map(concept -> buildDocumentType(au.getId(), concept, userInfo, locale,
@@ -1058,8 +1059,9 @@ public class RecordingUnitOpenApiService {
         if (!suOptions.isEmpty()) {
             shell.setSpatialUnit(suOptions.get(0));
         }
-        shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) shell.setFullIdentifier("PENDING");
+        // Left empty: the first save gives it a random temporary code, unique in the project, until the real
+        // identifier is set — the project's own identifier would collide between concurrent creations.
+        shell.setFullIdentifier(null);
         shell.setIdentifier("0");
         return shell;
     }
@@ -1078,20 +1080,20 @@ public class RecordingUnitOpenApiService {
         try {
             saved = recordingUnitService.save(dto);
         } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            throw IdentifierPatch.saveFailed(e);
         }
         if (!IdentifierPatch.applyChosen(customIdentifier, saved::setFullIdentifier,
                 () -> recordingUnitService.fullIdentifierAlreadyExistInAction(saved))) {
             String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
             saved.setFullIdentifier(generated);
             if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
+                throw new IdentifierConflictException(generated, null);
             }
         }
         try {
             return recordingUnitService.save(saved);
         } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            throw IdentifierPatch.saveFailed(e);
         }
     }
 
@@ -1162,7 +1164,7 @@ public class RecordingUnitOpenApiService {
             try {
                 recordingUnitService.save(dto, additionalAnswers);
             } catch (FailedRecordingUnitSaveException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+                throw IdentifierPatch.saveFailed(e);
             }
         });
         // After the save: it writes the DTO's (old) status back onto the entity.

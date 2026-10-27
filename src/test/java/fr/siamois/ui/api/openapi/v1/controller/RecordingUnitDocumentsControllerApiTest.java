@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
@@ -53,7 +53,7 @@ class RecordingUnitDocumentsControllerApiTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new RecordingUnitDocumentsControllerApi(
                         projectApiService, documentWriteOpenApiService, documentLinksOpenApiService, ListQueryStubs.none()))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
         PersonDTO person = new PersonDTO();
         person.setId(3L);

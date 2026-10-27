@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,8 +37,19 @@ final class IdentifierPatch {
     /** Rejects an identifier already used in the project. */
     static void requireFree(boolean alreadyExists) {
         if (alreadyExists) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cet identifiant existe déjà dans le projet");
+            throw new IdentifierConflictException();
         }
+    }
+
+    /**
+     * A save that failed: 409 when the database refused an identifier already used in the project (a write
+     * that raced past {@link #requireFree}), 500 otherwise.
+     */
+    static RuntimeException saveFailed(RuntimeException e) {
+        if (ProjectIdentifierConstraints.isViolatedBy(e)) {
+            return new IdentifierConflictException(null, e);
+        }
+        return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
     }
 
     /**

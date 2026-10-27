@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Sert à avertir si des doublons existent déjà dans la BD
+    -->
+
+    <changeSet id="2026.10.27-0" author="Julien Linget">
+        <sql splitStatements="false">
+            DO $$
+            DECLARE
+                spec text[];
+                specs text[][] := ARRAY[
+                    ARRAY['recording_unit', 'full_identifier', 'uk_recording_unit_project_identifier'],
+                    ARRAY['specimen', 'full_identifier', 'uk_specimen_project_identifier'],
+                    ARRAY['container', 'identifier', 'uk_container_project_identifier'],
+                    ARRAY['phase', 'identifier', 'uk_phase_project_identifier']];
+                duplicates text;
+            BEGIN
+                FOREACH spec SLICE 1 IN ARRAY specs
+                LOOP
+                    CONTINUE WHEN to_regclass('public.' || spec[1]) IS NULL;
+                    CONTINUE WHEN EXISTS (SELECT 1 FROM pg_constraint WHERE conname = spec[3])
+                               OR to_regclass('public.' || spec[3]) IS NOT NULL;
+
+                    EXECUTE format(
+                        'SELECT string_agg(format(''(projet %%s, %%L ×%%s)'', fk_action_unit_id, %2$I, n), '', '')
+                         FROM (SELECT fk_action_unit_id, %2$I, count(*) AS n FROM %1$I
+                               WHERE fk_action_unit_id IS NOT NULL AND %2$I IS NOT NULL
+                               GROUP BY fk_action_unit_id, %2$I HAVING count(*) > 1) d',
+                        spec[1], spec[2])
+                    INTO duplicates;
+
+                    IF duplicates IS NULL THEN
+                        EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I UNIQUE (fk_action_unit_id, %I)',
+                                       spec[1], spec[3], spec[2]);
+                    ELSE
+                        RAISE WARNING 'Identifiants en double dans %, contrainte % non posée, à réparer à la main : %',
+                            spec[1], spec[3], duplicates;
+                    END IF;
+                END LOOP;
+            END $$;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

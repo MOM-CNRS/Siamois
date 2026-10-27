@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
@@ -1055,8 +1056,7 @@ class FindOpenApiServiceTest {
         FindPatchRequest request = new FindPatchRequest();
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(specimenService, never()).save(any());
     }
 
@@ -1101,8 +1101,7 @@ class FindOpenApiServiceTest {
         request.setIdentifier("TAKEN");
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(specimenService, never()).save(any(SpecimenDTO.class));
     }
 

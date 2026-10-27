@@ -162,7 +162,7 @@ public class RecordingUnitService implements ArkEntityService {
             return recordingUnitMapper.convert(save(recordingUnit));
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 
@@ -184,7 +184,7 @@ public class RecordingUnitService implements ArkEntityService {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
         return saved;
     }
@@ -248,7 +248,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 

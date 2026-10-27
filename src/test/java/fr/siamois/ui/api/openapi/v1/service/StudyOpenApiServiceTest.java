@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -398,8 +399,7 @@ class StudyOpenApiServiceTest {
         req.setIdentifier("TAKEN");
         var ids = Set.of(10L);
         assertThatThrownBy(() -> service.patchStudy(5L, req, personDto, ids, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(studyService, never()).save(any(), any());
     }
 
@@ -509,8 +509,7 @@ class StudyOpenApiServiceTest {
         var req = creationRequest("TAKEN");
         var scope = Set.of(10L);
         assertThatThrownBy(() -> service.createStudy(req, personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(studyService, never()).save(any(StudyDTO.class));
     }
 

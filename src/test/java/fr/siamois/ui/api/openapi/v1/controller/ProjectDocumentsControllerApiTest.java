@@ -6,7 +6,7 @@ import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
@@ -68,7 +68,7 @@ class ProjectDocumentsControllerApiTest {
         mockMvc = MockMvcBuilders.standaloneSetup(new ProjectDocumentsControllerApi(projectApiService,
                         documentWriteOpenApiService, documentOpenApiMapper, documentListProjectionService,
                         resourceBookmarkService, fieldQueryService))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
         PersonDTO person = new PersonDTO();
         person.setId(1L);

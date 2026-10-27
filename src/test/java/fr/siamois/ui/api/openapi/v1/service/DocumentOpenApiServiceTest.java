@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -509,8 +510,7 @@ class DocumentOpenApiServiceTest {
         request.setIdentifier("NEW-1");
         var scope = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(documentService, never()).save(any(DocumentDTO.class));
     }
 
@@ -562,8 +562,7 @@ class DocumentOpenApiServiceTest {
         var req = creationRequest("TAKEN");
         var scope = Set.of(10L);
         assertThatThrownBy(() -> service.createDocument(req, personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(documentService, never()).save(any(DocumentDTO.class));
     }
 

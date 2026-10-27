@@ -10,6 +10,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitDuplicationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitStructureResource;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +93,7 @@ public class RecordingUnitDuplicationOpenApiService {
             result = OpenApiExecutionContext.callWithUserInfo(userInfo,
                     () -> recordingUnitService.duplicateStructure(root, selected, count));
         } catch (RecordingUnitIdentifierAlreadyExistsException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Identifiant généré déjà attribué : " + e.getIdentifier(), e);
+            throw new IdentifierConflictException(e.getIdentifier(), e);
         } catch (ForbiddenOperationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Duplication non autorisée", e);
         }

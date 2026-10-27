@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
@@ -1233,9 +1234,7 @@ class RecordingUnitOpenApiServiceTest {
         request.setTypeId("42");
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
 
         verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
         verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saved);
@@ -1304,8 +1303,7 @@ class RecordingUnitOpenApiServiceTest {
         when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(true);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
 
         // The unit was saved once (the identifier is set only once it exists); the conflict rolls the rest back.
         verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
@@ -3572,7 +3570,6 @@ class RecordingUnitOpenApiServiceTest {
         var request = new RecordingUnitPatchRequest();
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
     }
 }
