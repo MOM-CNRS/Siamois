@@ -163,11 +163,17 @@ public class ExportTemplateService {
 
     /** Étiquette suivante : le dernier nombre est incrémenté (1.0.0 → 1.0.1, v2 → v3), sinon « .1 » est ajouté. */
     static String nextVersion(String version) {
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(.*?)(\\d+)$").matcher(version == null ? "" : version);
-        if (!m.matches()) {
-            return (version == null || version.isBlank() ? "1.0.0" : version + ".1");
+        if (version == null || version.isBlank()) {
+            return "1.0.0";
         }
-        return m.group(1) + (Long.parseLong(m.group(2)) + 1);
+        int digitsStart = version.length();
+        while (digitsStart > 0 && Character.isDigit(version.charAt(digitsStart - 1))) {
+            digitsStart--;
+        }
+        if (digitsStart == version.length()) {
+            return version + ".1";
+        }
+        return version.substring(0, digitsStart) + (Long.parseLong(version.substring(digitsStart)) + 1);
     }
 
     // ------------------------------------------------------------------ modification

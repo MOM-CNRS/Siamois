@@ -89,4 +89,22 @@ class ProjectThesaurusAssignerTest {
 
         verify(documentation, never()).save(any());
     }
+
+    @Test
+    void whenTheCommonCoreIsMissingNothingIsAssigned() {
+        when(vocabularies.findVocabularyByBaseUriAndVocabExternalId(anyString(), anyString())).thenReturn(Optional.empty());
+
+        assigner.assignCommonCore(5L);
+
+        verify(documentation, never()).save(any());
+    }
+
+    @Test
+    void assigningTwiceKeepsTheFirstThesaurus() {
+        when(documentation.findByActionUnitId(5L)).thenReturn(Optional.of(new DocumentationThesaurus()));
+
+        assigner.assignCommonCore(5L);
+
+        verify(documentation, never()).save(any());
+    }
 }

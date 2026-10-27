@@ -404,8 +404,10 @@
                                 <h:panelGroup rendered="#{not exportTemplateEditorBean.previewOpen}" layout="block" styleClass="xe-list-mapping">
                                 <div class="xe-grid xe-grid-head">
                                     <div>
-                                        <span class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.allVisibleChecked ? 'on' : ''}" role="checkbox"
-                                              title="#{langBean.msg('exportTemplates.editor.columns.selectAll')}" onclick="xeToggleAll()"><i class="bi bi-check-lg"/></span>
+                                        <button type="button" class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.allVisibleChecked ? 'on' : ''}"
+                                                aria-pressed="#{exportTemplateEditorBean.allVisibleChecked}"
+                                                title="#{langBean.msg('exportTemplates.editor.columns.selectAll')}"
+                                                aria-label="#{langBean.msg('exportTemplates.editor.columns.selectAll')}" onclick="xeToggleAll()"><i class="bi bi-check-lg"/></button>
                                         #{langBean.msg('exportTemplates.editor.columns.field')}
                                     </div>
                                     <div>#{langBean.msg('exportTemplates.editor.columns.mapping')}</div>
@@ -416,8 +418,9 @@
                                         <p:commandLink styleClass="xe-grid xe-row #{exportTemplateEditorBean.isColumnSelected(col) ? 'selected' : ''}"
                                                        action="#{exportTemplateEditorBean.selectColumn(col)}" process="@form" update="@form">
                                             <span class="xe-cell xe-name">
-                                                <span class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.isChecked(col) ? 'on' : ''}" role="checkbox"
-                                                      onclick="event.stopPropagation(); event.preventDefault(); xeToggleCheck([{name: 'ix', value: #{exportTemplateEditorBean.columnIndex(col)}}]); return false;"><i class="bi bi-check-lg"/></span>
+                                                <button type="button" class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.isChecked(col) ? 'on' : ''}"
+                                                        aria-pressed="#{exportTemplateEditorBean.isChecked(col)}" aria-label="#{col.header}"
+                                                        onclick="event.stopPropagation(); event.preventDefault(); xeToggleCheck([{name: 'ix', value: #{exportTemplateEditorBean.columnIndex(col)}}]); return false;"><i class="bi bi-check-lg"/></button>
                                                 <span class="xe-status #{exportTemplateEditorBean.columnStatus(col)}">
                                                     <i class="bi #{exportTemplateEditorBean.columnStatus(col) eq 'OK' ? 'bi-check-lg' : 'bi-exclamation-lg'}"/>
                                                 </span>
@@ -469,8 +472,9 @@
                                                             title="#{langBean.msg('exportTemplates.editor.preview.openMapping')}"
                                                             onclick="xeSelectColumn([{name: 'ix', value: #{ix}}])"
                                                             onkeydown="if (event.key === 'Enter') { xeSelectColumn([{name: 'ix', value: #{ix}}]); }">
-                                                            <div><span class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.isCheckedAt(ix) ? 'on' : ''}" role="checkbox"
-                                                                       onclick="event.stopPropagation(); xeToggleCheck([{name: 'ix', value: #{ix}}]);"><i class="bi bi-check-lg"/></span>
+                                                            <div><button type="button" class="xe-rowcheck xe-locked-hide #{exportTemplateEditorBean.isCheckedAt(ix) ? 'on' : ''}"
+                                                                       aria-pressed="#{exportTemplateEditorBean.isCheckedAt(ix)}" aria-label="#{exportTemplateEditorBean.previewHeader(ix)}"
+                                                                       onclick="event.stopPropagation(); xeToggleCheck([{name: 'ix', value: #{ix}}]);"><i class="bi bi-check-lg"/></button>
                                                                 #{exportTemplateEditorBean.previewHeader(ix)}
                                                                 <h:panelGroup rendered="#{exportTemplateEditorBean.previewColumnStatus(ix) ne 'OK'}" styleClass="xe-state #{exportTemplateEditorBean.previewColumnStatus(ix)}">
                                                                     #{langBean.msg('exportTemplates.editor.status.'.concat(exportTemplateEditorBean.previewColumnStatus(ix)))}
@@ -642,7 +646,7 @@
                                                     <div class="xe-part">
                                                         <div class="xe-part-body">
                                                             <div class="xe-field xe-part-main">
-                                                                <label>#{langBean.msg('exportTemplates.editor.part.title', ps.index + 1)}</label>
+                                                                <span class="xe-field-title">#{langBean.msg('exportTemplates.editor.part.title', ps.index + 1)}</span>
                                                                 <h:panelGroup rendered="#{part.literalPart}" layout="block">
                                                                     <p:inputText value="#{part.literal}" placeholder="#{langBean.msg('exportTemplates.editor.part.literal')}"/>
                                                                 </h:panelGroup>
@@ -653,7 +657,7 @@
                                                                 </h:panelGroup>
                                                             </div>
                                                             <div class="xe-field xe-part-labelbox">
-                                                                <label>#{langBean.msg('exportTemplates.editor.part.labelTitle')}</label>
+                                                                <span class="xe-field-title">#{langBean.msg('exportTemplates.editor.part.labelTitle')}</span>
                                                                 <p:inputText value="#{part.label}" placeholder="#{langBean.msg('exportTemplates.editor.part.label')}"/>
                                                             </div>
                                                             <p:commandLink styleClass="xe-x" title="#{langBean.msg('exportTemplates.delete')}"

@@ -134,4 +134,27 @@ class ExportFieldResolverTest {
     void listFields_withoutProject_isSystemOnly() {
         assertThat(resolver.listFields(ExportSubject.RECORDING_UNIT, null)).isNotEmpty().allMatch(ExportFieldResolver.FieldOption::system);
     }
+
+    @Test
+    void resolve_legacyReference_isUpgradedForEveryEntity() {
+        ConceptRef legacy = new ConceptRef("th230", "4290928", null);
+
+        for (ExportSubject subject : ExportSubject.values()) {
+            assertThat(resolver.resolve(subject, legacy, 1L, List.of())).isNotNull();
+        }
+    }
+
+    @Test
+    void fieldOption_measurementDefaultsToDecimalSample() {
+        ConceptRef ref = new ConceptRef("th332", "1", null);
+
+        assertThat(new ExportFieldResolver.FieldOption("l", true, ref, true).sample()).isEqualTo(ExportFieldResolver.SampleKind.DECIMAL);
+        assertThat(new ExportFieldResolver.FieldOption("l", true, ref, false).sample()).isEqualTo(ExportFieldResolver.SampleKind.TEXT);
+    }
+
+    @Test
+    void sampleKind_ofABooleanField_isBoolean() {
+        assertThat(ExportFieldResolver.SampleKind.of(org.mockito.Mockito.mock(fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean.class)))
+                .isEqualTo(ExportFieldResolver.SampleKind.BOOLEAN);
+    }
 }

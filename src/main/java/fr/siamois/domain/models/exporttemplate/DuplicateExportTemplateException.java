@@ -4,7 +4,7 @@ import lombok.Getter;
 
 /** Un autre modèle de l'institution porte déjà la même paire nom + version. */
 @Getter
-public class DuplicateExportTemplateException extends InvalidExportTemplateException {
+public class DuplicateExportTemplateException extends RuntimeException {
 
     private final String templateName;
     private final String templateVersion;

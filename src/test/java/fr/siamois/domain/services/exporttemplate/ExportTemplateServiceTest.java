@@ -312,4 +312,65 @@ class ExportTemplateServiceTest {
         verify(repository, never()).save(any());
         verify(permissions, never()).hasInstancePermission(any(), anyString());
     }
+
+    @Test
+    void duplicate_numbersTheNameWhenTheVersionIsTaken() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+        when(repository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, "A (copie)", "1.0.0")).thenReturn(true);
+
+        service.duplicate(userInfo, 5L, "A (copie)");
+
+        ArgumentCaptor<ExportTemplate> captor = ArgumentCaptor.forClass(ExportTemplate.class);
+        verify(repository, atLeastOnce()).save(captor.capture());
+        assertThat(captor.getValue().getName()).isEqualTo("A (copie) 2");
+    }
+
+    @Test
+    void newVersion_skipsVersionsAlreadyTaken_andKeepsTheName() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        existing.setReferenceProject(new ActionUnit());
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+        when(repository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, "A", "1.0.1")).thenReturn(true);
+
+        service.newVersion(userInfo, 5L);
+
+        ArgumentCaptor<ExportTemplate> captor = ArgumentCaptor.forClass(ExportTemplate.class);
+        verify(repository, atLeastOnce()).save(captor.capture());
+        ExportTemplate copy = captor.getValue();
+        assertThat(copy.getName()).isEqualTo("A");
+        assertThat(copy.getVersion()).isEqualTo("1.0.2");
+        assertThat(copy.getTemplateUuid()).isNotEqualTo("u1");
+        assertThat(copy.isPublished()).isFalse();
+    }
+
+    @Test
+    void newVersion_withoutManagePermission_isForbidden() {
+        when(permissions.hasInstancePermission(personDto, PermissionConstants.INSTANCE_MANAGE_SETTINGS)).thenReturn(false);
+        when(permissions.hasOrganizationPermission(userInfo, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.newVersion(userInfo, 5L)).isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void createBlank_withANameAndVersionAlreadyUsed_isRejected() {
+        allowManage();
+        when(repository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, "A", "1.0.0")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createBlank(userInfo, "A", "Feuille"))
+                .isInstanceOf(fr.siamois.domain.models.exporttemplate.DuplicateExportTemplateException.class);
+    }
+
+    @Test
+    void findAll_doesNotProvisionBuiltInsTheInstitutionAlreadyHas() {
+        allowView();
+        when(repository.existsByInstitutionAndTemplateUuid(eq(institution), anyString())).thenReturn(true);
+        when(repository.findByInstitutionOrderByNameAsc(institution)).thenReturn(List.of());
+
+        service.findAll(userInfo);
+
+        verify(repository, never()).save(any());
+    }
 }

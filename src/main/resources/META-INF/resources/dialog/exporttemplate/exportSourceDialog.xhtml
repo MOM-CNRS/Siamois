@@ -35,7 +35,7 @@
                 <h:panelGroup id="xeTree" layout="block" styleClass="xe-tree">
                     <ui:repeat value="#{exportTemplateEditorBean.sourceTree}" var="table">
                         <div class="xe-tree-table">
-                            <div class="xe-tree-row #{table.entityClass} #{table.state ne 'NONE' ? 'picked' : ''}" onclick="if(!event.target.closest('.xe-chevron,.xe-box')){this.querySelector('.xe-box').click();}">
+                            <div class="xe-tree-row #{table.entityClass} #{table.state ne 'NONE' ? 'picked' : ''}">
                                 <p:commandLink styleClass="xe-chevron" rendered="#{table.hasTypes}"
                                                action="#{exportTemplateEditorBean.toggleExpand(table)}" process="@this" update=":xeSourceForm:xeTree">
                                     <i class="bi #{table.expanded ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
@@ -51,7 +51,7 @@
                             </div>
                             <h:panelGroup rendered="#{table.expanded}" layout="block">
                                 <ui:repeat value="#{table.types}" var="type">
-                                    <div class="xe-tree-row xe-tree-type #{table.entityClass}" onclick="if(!event.target.closest('.xe-chevron,.xe-box')){this.querySelector('.xe-box').click();}">
+                                    <div class="xe-tree-row xe-tree-type #{table.entityClass}">
                                         <p:commandLink styleClass="xe-box #{type.picked ? 'ALL' : 'NONE'}" title="#{type.label}"
                                                        action="#{exportTemplateEditorBean.toggleType(table.key, type.key)}" process="@this" update="@form">
                                             <i class="bi #{type.picked ? 'bi-check-lg' : ''}"/>

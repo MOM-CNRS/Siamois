@@ -119,7 +119,7 @@ class ActionUnitServiceTest {
     @BeforeEach
     void setUp() {
         // the "empty" template seeds the default configuration, as before templates existed
-        templateAppliers.add(new EmptyProjectTemplateApplier(defaultProjectIdentifierConfigSeeder, org.mockito.Mockito.mock(fr.siamois.domain.services.actionunit.template.ProjectThesaurusAssigner.class)));
+        templateAppliers.add(new EmptyProjectTemplateApplier(defaultProjectIdentifierConfigSeeder, mock(fr.siamois.domain.services.actionunit.template.ProjectThesaurusAssigner.class)));
 
         spatialUnit1 = new SpatialUnit();
         actionUnit1 = new ActionUnit();

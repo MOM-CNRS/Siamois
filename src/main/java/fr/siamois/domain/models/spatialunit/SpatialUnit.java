@@ -155,7 +155,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.TYPE"))
+            .externalId(SystemConcepts.id(TYPE_FIELD_CODE))
             .build();
     // unit name
     @Transient

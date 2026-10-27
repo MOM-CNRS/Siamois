@@ -490,17 +490,17 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     public void askRemoveColumn(EditColumn column) {
-        confirmKind = "COLUMN";
+        confirmKind = CONFIRM_COLUMN;
         confirmColumn = column;
     }
 
     public void askRemoveSheet(EditSheet sheet) {
-        confirmKind = "SHEET";
+        confirmKind = CONFIRM_SHEET;
         confirmSheet = sheet;
     }
 
     public void askRemoveChecked() {
-        confirmKind = getCheckedCount() > 0 ? "BATCH" : "";
+        confirmKind = getCheckedCount() > 0 ? CONFIRM_BATCH : "";
     }
 
     public void askRemoveSelectedSheet() {
@@ -509,10 +509,10 @@ public class ExportTemplateEditorBean implements Serializable {
 
     public String getConfirmMessage() {
         return switch (confirmKind) {
-            case "COLUMN" -> langBean.msg("exportTemplates.editor.confirm.column", confirmColumn == null ? "" : confirmColumn.getHeader());
-            case "SHEET" -> langBean.msg("exportTemplates.editor.confirm.sheet", confirmSheet == null ? "" : confirmSheet.getName(),
+            case CONFIRM_COLUMN -> langBean.msg("exportTemplates.editor.confirm.column", confirmColumn == null ? "" : confirmColumn.getHeader());
+            case CONFIRM_SHEET -> langBean.msg("exportTemplates.editor.confirm.sheet", confirmSheet == null ? "" : confirmSheet.getName(),
                     confirmSheet == null ? 0 : confirmSheet.getColumns().size());
-            case "BATCH" -> langBean.msg("exportTemplates.editor.confirm.batch", getCheckedCount());
+            case CONFIRM_BATCH -> langBean.msg("exportTemplates.editor.confirm.batch", getCheckedCount());
             default -> "";
         };
     }
@@ -530,19 +530,21 @@ public class ExportTemplateEditorBean implements Serializable {
             return;
         }
         switch (confirmKind) {
-            case "COLUMN" -> removeColumn(confirmColumn);
-            case "SHEET" -> {
+            case CONFIRM_COLUMN -> removeColumn(confirmColumn);
+            case CONFIRM_SHEET -> {
                 if (confirmSheet != null && model.getSheets().size() > 1) {
                     removeSheet(confirmSheet);
                 }
             }
-            case "BATCH" -> {
+            case CONFIRM_BATCH -> {
                 EditSheet sheet = requireSelectedSheet();
                 List<EditColumn> doomed = sheet.getColumns().stream().filter(this::isChecked).toList();
                 doomed.forEach(this::removeColumn);
                 clearChecked();
             }
-            default -> { }
+            default -> {
+                // Aucune suppression en attente : rien à faire.
+            }
         }
         if (previewOpen && referenceProjectId != null) {
             refreshPreview();
@@ -788,7 +790,7 @@ public class ExportTemplateEditorBean implements Serializable {
                 ExportEntityStyle.project(), ExportSubject.PROJECT, null, null));
         for (EntityKind kind : List.of(EntityKind.SPATIAL_UNIT, EntityKind.RECORDING_UNIT, EntityKind.SPECIMEN, EntityKind.PHASE,
                 EntityKind.CONTAINER, EntityKind.DOCUMENT, EntityKind.STUDY)) {
-            defs.add(new TableDef(kind.name(), langBean.msg("exportTemplates.editor.entity." + kind.name()),
+            defs.add(new TableDef(kind.name(), langBean.msg(ENTITY_LABEL_PREFIX + kind.name()),
                     ExportEntityStyle.of(kind), ExportSubject.of(kind), kind, null));
         }
         for (ExportTechnicalSource technical : ExportTechnicalSource.values()) {
@@ -989,8 +991,8 @@ public class ExportTemplateEditorBean implements Serializable {
 
     private Optional<ExportSourceDialog.Table> sourceTreeNode(TableDef def, String q) {
         boolean tableMatch = q.isEmpty() || def.label().toLowerCase().contains(q);
-        List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), def.key().equals(sourceDialog.getTable()) ? sourceDialog.getTypes() : List.of());
         boolean current = def.key().equals(sourceDialog.getTable());
+        List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), current ? sourceDialog.getTypes() : List.of());
         SourceCounts counts = countsOf(def.subject());
         List<ExportSourceDialog.Type> types = items.stream()
                 .filter(i -> tableMatch || i.label().toLowerCase().contains(q))
@@ -1651,6 +1653,10 @@ public class ExportTemplateEditorBean implements Serializable {
     public static final String FILTER_MAPPED = "MAPPED";
     public static final String FILTER_CHECK = "CHECK";
     private static final String ERROR_FORBIDDEN = "common.error.forbidden";
+    private static final String CONFIRM_COLUMN = "COLUMN";
+    private static final String CONFIRM_SHEET = "SHEET";
+    private static final String CONFIRM_BATCH = "BATCH";
+    private static final String ENTITY_LABEL_PREFIX = "exportTemplates.editor.entity.";
     private static final String ERROR_INVALID = "exportTemplates.editor.error.invalid";
 
     private String columnFilter = FILTER_ALL;
@@ -1932,9 +1938,12 @@ public class ExportTemplateEditorBean implements Serializable {
         String labelSeparator = rule.getLabelSeparator() == null ? "" : rule.getLabelSeparator();
         List<String> pieces = new ArrayList<>();
         for (var part : rule.getParts()) {
-            String value = part.isLiteralPart()
-                    ? (part.getLiteral() == null ? "" : part.getLiteral())
-                    : placeholderOf(rule.getSources(), part.getFieldChoice());
+            String value;
+            if (part.isLiteralPart()) {
+                value = part.getLiteral() == null ? "" : part.getLiteral();
+            } else {
+                value = placeholderOf(rule.getSources(), part.getFieldChoice());
+            }
             String label = part.getLabel() == null ? "" : part.getLabel().trim();
             pieces.add(label.isEmpty() ? value : label + labelSeparator + value);
         }
@@ -2041,7 +2050,7 @@ public class ExportTemplateEditorBean implements Serializable {
     private String describe(EditSource source) {
         return switch (source.getKind()) {
             case ExportTemplateEditModel.KIND_ENTITY -> entityOf(source)
-                    .map(k -> langBean.msg("exportTemplates.editor.entity." + k.name())).orElse("?");
+                    .map(k -> langBean.msg(ENTITY_LABEL_PREFIX + k.name())).orElse("?");
             case ExportTemplateEditModel.KIND_TECHNICAL -> source.getTechnicalKey() == null ? "?"
                     : langBean.msg("exportTemplates.editor.technical." + source.getTechnicalKey());
             case ExportTemplateEditModel.KIND_TABLE -> source.getTableName();
@@ -2136,7 +2145,7 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Libellé d'une entité du modèle (projet, lieu, unité d'enregistrement…). */
     private String subjectLabel(ExportSubject subject) {
-        return langBean.msg("exportTemplates.editor.entity." + subject.name());
+        return langBean.msg(ENTITY_LABEL_PREFIX + subject.name());
     }
 
     /** Libellé d'une navigation : son nom lisible, ou à défaut celui de l'entité qu'elle atteint. */
