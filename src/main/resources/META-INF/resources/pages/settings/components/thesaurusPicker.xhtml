@@ -82,6 +82,14 @@
                 <a href="#" onclick="PF('addThesaurusDialog').show(); return false;">
                     <i class="pi pi-plus"/> #{langBean.msg('thesaurusAdd.link')}
                 </a>
+                <p:commandLink id="synchronizeConfig" rendered="#{not empty cc.attrs.bean.thesaurusUrl}"
+                               title="#{langBean.msg('thesaurusMain.synchronize.hint')}"
+                               action="#{cc.attrs.bean.synchronizeConfig()}"
+                               process="@(.sia-settings-form)"
+                               update="@(.sia-settings-form) @(.thesaurus-usages)"
+                               onstart="startProgressBar()" oncomplete="endProgressBar()">
+                    <i class="pi pi-sync"/> #{langBean.msg('thesaurusMain.synchronize')}
+                </p:commandLink>
             </div>
         </div>
     </cc:implementation>
