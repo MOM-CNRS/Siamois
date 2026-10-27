@@ -97,6 +97,9 @@ class FieldConfigurationServiceTest {
     private FieldCodeResolver fieldCodeResolver;
 
     @Mock
+    private CustomFieldCandidateService customFieldCandidateService;
+
+    @Mock
     private ObjectProvider<FieldConfigurationService> selfProvider;
 
     @InjectMocks

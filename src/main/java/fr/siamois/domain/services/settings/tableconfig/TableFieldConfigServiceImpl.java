@@ -18,6 +18,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.LocalizedConceptData;
 import fr.siamois.domain.services.form.layout.FormLayoutSeeds;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.domain.services.vocabulary.CustomFieldCandidateService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -91,6 +92,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final FormLayoutSeeds formLayoutSeeds;
     private final FormConfigGroupRepository formConfigGroupRepository;
     private final UnitDefinitionRepository unitDefinitionRepository;
+    private final CustomFieldCandidateService customFieldCandidateService;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -410,13 +412,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
      * Creates a new additional field on a type from a user-provided name, type and description.
      * The name is stored as the custom field's label and the description as its hint; a custom field
      * subclass matching {@code type} is instantiated so the persisted {@code answer_type}
-     * discriminator stays in step with the type shown in the UI.
+     * discriminator stays in step with the type shown in the UI. A candidate concept is submitted for the field
+     * to the documentation thesaurus of the project, see {@link CustomFieldCandidateService}.
      */
     @Override
     @Transactional
     public TypeFieldFormConfig createField(Long projectId, ConfigurableTable table, String typeName,
                                            String name, FieldType type, String description, FieldOptions options) {
         SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, name, type, description, options);
+        customFieldCandidateService.submitCandidateFor(result.savedReplacement, projectId);
         return toDto(linkField(result.savedReplacement, result.owner, true, false));
     }
 
@@ -491,7 +495,9 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (owned && effective.stored().getGroup() != null) {
             copyPlacement(effective.stored(), link);
         }
+        customFieldCandidateService.transfer(current, result.savedReplacement());
         if (fieldFormConfigRepository.countByFieldId(current.getId()) == 0) {
+            customFieldCandidateService.deletePendingCandidatesOf(current);
             customFieldRepository.delete(current);
         }
         return toDto(link);

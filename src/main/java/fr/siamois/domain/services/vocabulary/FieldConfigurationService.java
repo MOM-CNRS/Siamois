@@ -72,6 +72,7 @@ public class FieldConfigurationService {
     private final DocumentationThesaurusRepository documentationThesaurusRepository;
     private final SiamoisThesaurus siamoisThesaurus;
     private final FieldCodeResolver fieldCodeResolver;
+    private final CustomFieldCandidateService customFieldCandidateService;
     private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
@@ -236,6 +237,7 @@ public class FieldConfigurationService {
     /**
      * Loads the field codes of a thesaurus: for each concept of its fields branch that carries a code SIAMOIS
      * knows, the concept and its subtree. Shared by everyone who reads the thesaurus, so a thesaurus is loaded once.
+     * The additional fields whose candidate is pending in the thesaurus are then searched for again.
      *
      * @return the feedback when the thesaurus misses codes SIAMOIS needs, otherwise empty
      */
@@ -267,6 +269,8 @@ public class FieldConfigurationService {
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();
         }
+
+        customFieldCandidateService.synchronizePendingOf(vocabulary);
 
         if (config.isWrongConfig()) return Optional.of(config);
         return Optional.empty();

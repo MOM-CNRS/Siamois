@@ -106,6 +106,8 @@ class TableFieldConfigServiceImplTest {
     private fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository formConfigGroupRepository;
     @Mock
     private fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository unitDefinitionRepository;
+    @Mock
+    private fr.siamois.domain.services.vocabulary.CustomFieldCandidateService customFieldCandidateService;
 
     @org.mockito.Spy
     private fr.siamois.domain.services.form.layout.FormLayoutSeeds formLayoutSeeds = fr.siamois.utils.TestForms.seeds();
