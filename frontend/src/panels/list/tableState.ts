@@ -5,8 +5,8 @@
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
 // without wiring full route ownership into this phase.
 
-import type { FilterValue } from "../../entities/shared/types";
-import type { ListViewMode } from "./listViews";
+import type {FilterValue} from "../../entities/shared/types";
+import type {ListViewMode} from "./listViews";
 
 export type { FilterValue };
 

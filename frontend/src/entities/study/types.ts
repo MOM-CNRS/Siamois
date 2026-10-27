@@ -2,7 +2,7 @@
 // (list), GET /api/v1/studies?organizationId=… (organization list) and GET /api/v1/studies/{id}
 // (detail) all return this shape. Keep in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../shared/common";
+import type {OrganizationIdentifier, ProjectRef, ResolvedConcept} from "../shared/common";
 
 export interface StudyPermissions {
   canEdit: boolean;

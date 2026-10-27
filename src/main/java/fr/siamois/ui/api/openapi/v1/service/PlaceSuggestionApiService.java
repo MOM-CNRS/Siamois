@@ -3,14 +3,14 @@ package fr.siamois.ui.api.openapi.v1.service;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
+import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.placesource.ExternalPlace;
 import fr.siamois.domain.services.placesource.PlaceSourceConfigResolver;
 import fr.siamois.domain.services.placesource.PlaceSourceProvider;
 import fr.siamois.domain.services.placesource.PlaceSourceRegistry;
-import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.ActionUnitDTO;
@@ -32,14 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

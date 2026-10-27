@@ -1,18 +1,24 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { apiFetch } from "../../api/client";
-import { messageForError } from "../../api/errors";
-import { queryKeys } from "../../api/queryKeys";
-import { qualifiedLabel, refChipStyle } from "../../fields/display";
-import { t } from "../../i18n";
-import { useOpenEntity } from "../../panels/pane/entityNavigation";
-import { addStratigraphyLink, removeStratigraphyLink, searchProjectUnits, updateStratigraphyLink, type StratigraphyZone } from "./api";
-import { FitToViewport } from "./FitToViewport";
-import { InlinePicker, type PickerOption } from "./InlinePicker";
-import { canCreateUnit, NewUnitForm, NewUnitItem } from "./NewUnit";
-import { QualifierFields, type Qualifier } from "./QualifierFields";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useState} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {apiFetch} from "../../api/client";
+import {messageForError} from "../../api/errors";
+import {queryKeys} from "../../api/queryKeys";
+import {qualifiedLabel, refChipStyle} from "../../fields/display";
+import {t} from "../../i18n";
+import {useOpenEntity} from "../../panels/pane/entityNavigation";
+import {
+    addStratigraphyLink,
+    removeStratigraphyLink,
+    searchProjectUnits,
+    type StratigraphyZone,
+    updateStratigraphyLink
+} from "./api";
+import {FitToViewport} from "./FitToViewport";
+import {InlinePicker, type PickerOption} from "./InlinePicker";
+import {canCreateUnit, NewUnitForm, NewUnitItem} from "./NewUnit";
+import {type Qualifier, QualifierFields} from "./QualifierFields";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 interface StratigraphyRef {
   resourceId: string;

@@ -1,19 +1,19 @@
-import type { EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { getContainer, listContainers, patchContainer, patchContainerAnswers } from "./api";
-import { containerColumns } from "./columns";
-import { ContainerCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import { documentsTab } from "../document/documentsTab";
-import type { ContainerDetail, ContainerSummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {getContainer, listContainers, patchContainer, patchContainerAnswers} from "./api";
+import {containerColumns} from "./columns";
+import {ContainerCreateForm} from "./CreateForm";
+import {SchemaEntityHeader} from "../../components/detail/SchemaEntityHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import {documentsTab} from "../document/documentsTab";
+import type {ContainerDetail, ContainerSummary} from "./types";
+import {t} from "../../i18n";
 
 // Container's own EntityTypeConfig (migration plan, lot 3 "Contenants") — registered so it can be
 // looked up by key ("container") both by the registry's generics-erasure boundary and by

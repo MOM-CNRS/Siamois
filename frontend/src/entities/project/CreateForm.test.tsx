@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { FieldResource } from "../../fields/types";
-import type { FieldRendererProps } from "../../fields/registry";
-import { ProjectCreateForm } from "./CreateForm";
-import { getProjectTypes } from "./projectTypes";
-import { createProject, getNextProjectIdentifier, listProjectTemplates } from "./api";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {FieldResource} from "../../fields/types";
+import type {FieldRendererProps} from "../../fields/registry";
+import {ProjectCreateForm} from "./CreateForm";
+import {getProjectTypes} from "./projectTypes";
+import {createProject, getNextProjectIdentifier, listProjectTemplates} from "./api";
+import {notifySpy} from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));

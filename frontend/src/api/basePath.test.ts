@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { apiUrl, configureBasePath } from "./basePath";
+import {describe, expect, it} from "vitest";
+import {apiUrl, configureBasePath} from "./basePath";
 
 describe("basePath", () => {
   it("prefixes paths with the configured base path", () => {

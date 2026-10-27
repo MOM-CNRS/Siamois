@@ -1,5 +1,5 @@
-import { VisibilityChooser } from "./VisibilityChooser";
-import { t } from "../../i18n";
+import {VisibilityChooser} from "./VisibilityChooser";
+import {t} from "../../i18n";
 
 // Mirrors pages/shared/table/tableToolbar.xhtml's gear-overlay column chooser
 // (p:columnToggler → EntityTableViewModel.onToggle): every catalog column, split into the shown

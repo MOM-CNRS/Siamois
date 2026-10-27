@@ -3,11 +3,7 @@ package fr.siamois.domain.models.actionunit.form;
 import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
-import fr.siamois.ui.form.dto.ColumnWidth;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
-import fr.siamois.ui.form.dto.CustomRowUiDto;
-import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.dto.*;
 
 import java.util.Map;
 

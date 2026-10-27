@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { getEntityType } from "../../entities/registry";
-import type { FilterValue, ListScope } from "../../entities/shared/types";
+import {useQuery} from "@tanstack/react-query";
+import {getEntityType} from "../../entities/registry";
+import type {FilterValue, ListScope} from "../../entities/shared/types";
 
 /** A tab's count, as the light grey pill after its title. */
 export function TabCount({ value }: { value: number | string }) {

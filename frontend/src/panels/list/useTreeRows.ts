@@ -1,15 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { t } from "../../i18n";
-import type { TreeTableExpandedKeysType } from "primereact/treetable";
-import type { TreeNode as PrimeTreeNode } from "primereact/treenode";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import type {
-  EntityTypeConfig,
-  ListParams,
-  PagedResult,
-} from "../../entities/shared/types";
-import type { RowRecord } from "./useEntityListData";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {t} from "../../i18n";
+import type {TreeTableExpandedKeysType} from "primereact/treetable";
+import type {TreeNode as PrimeTreeNode} from "primereact/treenode";
+import {useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import type {EntityTypeConfig, ListParams, PagedResult,} from "../../entities/shared/types";
+import type {RowRecord} from "./useEntityListData";
 
 // A parent's children are fetched in one request, up to this many.
 const CHILDREN_LIMIT = 200;

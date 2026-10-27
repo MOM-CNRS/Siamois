@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { getFieldRenderer, registerFallbackFieldRenderer, registerFieldRenderer } from "./registry";
+import {describe, expect, it, vi} from "vitest";
+import {getFieldRenderer, registerFallbackFieldRenderer, registerFieldRenderer} from "./registry";
 
 // The registry module holds module-level Maps, so each test registers only the answerTypes it
 // needs under a unique name to avoid cross-test interference (there's no reset function, by

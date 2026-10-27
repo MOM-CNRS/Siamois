@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { suggestIdentifier } from "./useSuggestedIdentifier";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {suggestIdentifier} from "./useSuggestedIdentifier";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 

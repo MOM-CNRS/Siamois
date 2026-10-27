@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { en } from "./en";
-import { fr } from "./fr";
-import { getLocale, intlLocale, resolveLocale, setLocale, t, tn } from "./index";
+import {afterEach, describe, expect, it} from "vitest";
+import {en} from "./en";
+import {fr} from "./fr";
+import {getLocale, intlLocale, resolveLocale, setLocale, t, tn} from "./index";
 
 afterEach(() => setLocale("fr"));
 

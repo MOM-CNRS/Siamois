@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Button } from "primereact/button";
-import { InputText } from "primereact/inputtext";
-import { BottomSheet } from "../components/layout/BottomSheet";
-import { useDebounced } from "../search/SearchOverlay";
-import { t } from "../i18n";
-import type { FilterOption, OptionList } from "./optionSources";
+import {type CSSProperties, type ReactNode, useEffect, useRef, useState} from "react";
+import {Button} from "primereact/button";
+import {InputText} from "primereact/inputtext";
+import {BottomSheet} from "../components/layout/BottomSheet";
+import {useDebounced} from "../search/SearchOverlay";
+import {t} from "../i18n";
+import type {FilterOption, OptionList} from "./optionSources";
 
 const SEARCH_DEBOUNCE_MS = 250;
 

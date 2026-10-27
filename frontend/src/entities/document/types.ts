@@ -3,7 +3,7 @@
 // list) and GET /api/v1/documents/{id} (detail) all return this shape. The first block is what the mobile
 // API has always served; keep both in sync with that class if it changes.
 
-import type { OrganizationIdentifier, ResolvedConcept, ProjectRef } from "../shared/common";
+import type {OrganizationIdentifier, ProjectRef, ResolvedConcept} from "../shared/common";
 
 export interface DocumentPermissions {
   canEdit: boolean;

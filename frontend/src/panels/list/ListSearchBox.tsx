@@ -1,6 +1,6 @@
-import { memo, useEffect, useRef, useState } from "react";
-import { InputText } from "primereact/inputtext";
-import { t } from "../../i18n";
+import {memo, useEffect, useRef, useState} from "react";
+import {InputText} from "primereact/inputtext";
+import {t} from "../../i18n";
 
 // tableToolbar.xhtml's globalFilter is debounced 500ms server-side; 300ms here errs toward
 // responsiveness since the request itself is already async. Either way: not one query per

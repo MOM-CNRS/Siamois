@@ -1,9 +1,9 @@
 // Runs the conformance cases shared with the Java evaluator (FieldRulesEvaluatorConformanceTest):
 // both sides must produce the same states for the same rules and values.
-import { describe, expect, it } from "vitest";
+import {describe, expect, it} from "vitest";
 import conformance from "../../../src/test/resources/form-rules/cases.json";
-import { evaluateForm } from "./evaluate";
-import type { FieldState, RuledColumn } from "./types";
+import {evaluateForm} from "./evaluate";
+import type {FieldState, RuledColumn} from "./types";
 
 interface ExpectedState {
   enabled?: boolean;

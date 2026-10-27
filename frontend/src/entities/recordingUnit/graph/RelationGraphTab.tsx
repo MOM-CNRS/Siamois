@@ -1,21 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
+import {useEffect, useMemo, useRef, useState} from "react";
+import {
+    Background,
+    Controls,
+    type Edge,
+    Handle,
+    MarkerType,
+    type Node,
+    type NodeProps,
+    Position,
+    ReactFlow
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { usePersistedPaneState } from "../../../panels/pane/persistedPaneState";
-import { useCanEdit } from "../../../panels/pane/writeMode";
-import { entityChipStyle } from "../../../fields/display";
-import { editContextOf } from "../../../fields/editContext";
-import { t } from "../../../i18n";
-import type { EntityPreview } from "../../shared/types";
-import { layoutGraph, type LayoutLabels, type LayoutNode } from "./layout";
-import { zoneTitle } from "./labels";
-import { RelationsList, RelationsListControls, RelationsListEnd } from "./RelationsList";
-import { RelationsToolbar, type RelationsMode } from "./RelationsToolbar";
-import { isHierarchy, isStratigraphy, useRelationLinkEditor } from "./useRelationLinkEditor";
-import { useRelationGraph } from "./useRelationGraph";
-import { useRelationList } from "./useRelationList";
-import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
-import { useToastOnChange } from "../../../notify/NotifyProvider";
+import {usePersistedPaneState} from "../../../panels/pane/persistedPaneState";
+import {useCanEdit} from "../../../panels/pane/writeMode";
+import {entityChipStyle} from "../../../fields/display";
+import {editContextOf} from "../../../fields/editContext";
+import {t} from "../../../i18n";
+import type {EntityPreview} from "../../shared/types";
+import {layoutGraph, type LayoutLabels, type LayoutNode} from "./layout";
+import {zoneTitle} from "./labels";
+import {RelationsList, RelationsListControls, RelationsListEnd} from "./RelationsList";
+import {type RelationsMode, RelationsToolbar} from "./RelationsToolbar";
+import {isHierarchy, isStratigraphy, useRelationLinkEditor} from "./useRelationLinkEditor";
+import {useRelationGraph} from "./useRelationGraph";
+import {useRelationList} from "./useRelationList";
+import type {GraphUnitRef, RelationGraph, ZoneKey} from "./types";
+import {useToastOnChange} from "../../../notify/NotifyProvider";
 
 // What a node can do. Absent when the caller cannot write (a read-only graph still opens units).
 interface NodeActions {

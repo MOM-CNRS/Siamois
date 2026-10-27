@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { PanelToolbar } from "./PanelToolbar";
-import { useOverviewOpen } from "../../panels/pane/overviewOpen";
-import type { PanelToolbarSlot } from "../../mountOptions";
+import type {ReactNode} from "react";
+import {PanelToolbar} from "./PanelToolbar";
+import {useOverviewOpen} from "../../panels/pane/overviewOpen";
+import type {PanelToolbarSlot} from "../../mountOptions";
 
 // The real JSF titlebar (focus.xhtml's `sideview-titlebar`, and panelContent.xhtml's overview
 // equivalent) is ONE div holding both the title/header content and the toolbar form, side by

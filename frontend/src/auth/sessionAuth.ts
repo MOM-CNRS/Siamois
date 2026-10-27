@@ -1,5 +1,5 @@
-import { apiUrl } from "../api/basePath";
-import { setToken, clearToken, getValidToken } from "./tokenStore";
+import {apiUrl} from "../api/basePath";
+import {clearToken, getValidToken, setToken} from "./tokenStore";
 
 // Bridges the JSF session (already authenticated, cookie-based) into a JWT the stateless
 // /api/v1/** chain accepts, by calling the generic POST /api/auth/session-token endpoint

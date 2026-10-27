@@ -1,11 +1,11 @@
-import type { EntityRef, EntityTypeConfig, ListScope } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { relationTab } from "../../panels/detail/relationTab";
-import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { scopeProjectId } from "../shared/scope";
+import type {EntityRef, EntityTypeConfig, ListScope} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {relationTab} from "../../panels/detail/relationTab";
+import {documentsTab} from "../document/documentsTab";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {scopeProjectId} from "../shared/scope";
 import {
   duplicateRecordingUnit,
   duplicateRecordingUnitStructure,
@@ -14,19 +14,16 @@ import {
   listRecordingUnits,
   patchRecordingUnitAnswers,
 } from "./api";
-import { recordingUnitColumns } from "./columns";
-import { RecordingUnitCreateForm } from "./CreateForm";
-import { RecordingUnitDetailHeader } from "./DetailHeader";
-import { RelationGraphTab } from "./graph/RelationGraphTab";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import {
-  getOrganizationRecordingUnitTypes,
-  getRecordingUnitTypes,
-} from "./recordingUnitTypes";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
-import { t } from "../../i18n";
+import {recordingUnitColumns} from "./columns";
+import {RecordingUnitCreateForm} from "./CreateForm";
+import {RecordingUnitDetailHeader} from "./DetailHeader";
+import {RelationGraphTab} from "./graph/RelationGraphTab";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {getOrganizationRecordingUnitTypes, getRecordingUnitTypes,} from "./recordingUnitTypes";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import type {RecordingUnitDetail, RecordingUnitSummary} from "./types";
+import {t} from "../../i18n";
 
 function recordingUnitRef(ru: RecordingUnitSummary): EntityRef {
   return { id: ru.id, label: ru.fullIdentifier };

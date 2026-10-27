@@ -1,24 +1,18 @@
-import { BulkImportDocument } from "../document/BulkImportDocument";
-import { relationTab } from "../../panels/detail/relationTab";
-import { deleteEntity } from "../shared/deleteApi";
-import type { EntityTypeConfig } from "../shared/types";
-import {
-  duplicateProject,
-  getProject,
-  getProjectSiblings,
-  listProjects,
-  patchProject,
-} from "./api";
-import { projectColumns } from "./columns";
-import { ProjectCreateForm } from "./CreateForm";
-import { ProjectDetailHeader } from "./DetailHeader";
-import { ProjectFicheTab } from "./FicheTab";
-import { projectHomeWidgets } from "./homeWidgets";
-import { PlacesTab } from "./PlacesTab";
-import { getProjectTypes } from "./projectTypes";
-import { jsfRoutes } from "../shared/routes";
-import type { ProjectDetail, ProjectSummary } from "./types";
-import { t } from "../../i18n";
+import {BulkImportDocument} from "../document/BulkImportDocument";
+import {relationTab} from "../../panels/detail/relationTab";
+import {deleteEntity} from "../shared/deleteApi";
+import type {EntityTypeConfig} from "../shared/types";
+import {duplicateProject, getProject, getProjectSiblings, listProjects, patchProject,} from "./api";
+import {projectColumns} from "./columns";
+import {ProjectCreateForm} from "./CreateForm";
+import {ProjectDetailHeader} from "./DetailHeader";
+import {ProjectFicheTab} from "./FicheTab";
+import {projectHomeWidgets} from "./homeWidgets";
+import {PlacesTab} from "./PlacesTab";
+import {getProjectTypes} from "./projectTypes";
+import {jsfRoutes} from "../shared/routes";
+import type {ProjectDetail, ProjectSummary} from "./types";
+import {t} from "../../i18n";
 
 // The only Project-specific file this phase produces (plan §3/§4/§8 phase 4) — everything it
 // plugs into (EntityListPanel, EntityDetailPanel, HomePanel, the registry mechanism itself) is

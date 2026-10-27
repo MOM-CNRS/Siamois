@@ -1,20 +1,20 @@
-import type { EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import { relationTab } from "../../panels/detail/relationTab";
-import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { getPhase, listPhases, patchPhase, patchPhaseAnswers } from "./api";
-import { phaseColumns } from "./columns";
-import { PhaseCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import type { PhaseDetail, PhaseSummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import {relationTab} from "../../panels/detail/relationTab";
+import {documentsTab} from "../document/documentsTab";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {getPhase, listPhases, patchPhase, patchPhaseAnswers} from "./api";
+import {phaseColumns} from "./columns";
+import {PhaseCreateForm} from "./CreateForm";
+import {SchemaEntityHeader} from "../../components/detail/SchemaEntityHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import type {PhaseDetail, PhaseSummary} from "./types";
+import {t} from "../../i18n";
 
 // Phase's own EntityTypeConfig (migration plan, lot 2 "Phases") — registered so it can be looked
 // up by key ("phase") both by the registry's generics-erasure boundary and by

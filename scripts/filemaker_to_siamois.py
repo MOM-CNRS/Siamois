@@ -37,6 +37,7 @@ Dépendance externe unique : `openpyxl` (pip install openpyxl).
 from __future__ import annotations
 
 import argparse
+import openpyxl
 import re
 import sys
 import unicodedata
@@ -45,8 +46,6 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-
-import openpyxl
 
 AUTHOR = "Import FileMaker"
 

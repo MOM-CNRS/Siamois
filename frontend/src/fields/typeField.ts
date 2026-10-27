@@ -1,4 +1,4 @@
-import type { FieldResource } from "./types";
+import type {FieldResource} from "./types";
 
 /**
  * An entity's type is bound to `type` on every table. It is a system field of the

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import openapiTS, { astToString } from "openapi-typescript";
+import {describe, expect, it} from "vitest";
+import openapiTS, {astToString} from "openapi-typescript";
 import schema from "./schema.d.ts?raw";
 import snapshot from "../../../openapi/openapi.json?raw";
 

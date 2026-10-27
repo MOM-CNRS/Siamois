@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchItemRequest;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchManifestRequest;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentBatchTargetRequest;
@@ -26,12 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor

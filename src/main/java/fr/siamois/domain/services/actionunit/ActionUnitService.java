@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
@@ -10,20 +9,19 @@ import fr.siamois.domain.models.exceptions.actionunit.FailedActionUnitSaveExcept
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
-import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
+import fr.siamois.domain.services.tree.HierarchyTreeQuery;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.domain.services.tree.HierarchyTreeQuery;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
@@ -38,10 +36,10 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

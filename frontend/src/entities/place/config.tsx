@@ -1,20 +1,20 @@
-import type { EntityRef, EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { relationTab } from "../../panels/detail/relationTab";
-import { documentsTab } from "../document/documentsTab";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { duplicatePlace, getPlace, listPlaces, patchPlaceAnswers } from "./api";
-import { loadPlaceCatalog } from "./catalog";
-import { placeColumns } from "./columns";
-import { PlaceCreateForm } from "./CreateForm";
-import { PlaceDetailHeader } from "./DetailHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import type { PlaceDetail, PlaceSummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityRef, EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {relationTab} from "../../panels/detail/relationTab";
+import {documentsTab} from "../document/documentsTab";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {duplicatePlace, getPlace, listPlaces, patchPlaceAnswers} from "./api";
+import {loadPlaceCatalog} from "./catalog";
+import {placeColumns} from "./columns";
+import {PlaceCreateForm} from "./CreateForm";
+import {PlaceDetailHeader} from "./DetailHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import type {PlaceDetail, PlaceSummary} from "./types";
+import {t} from "../../i18n";
 
 // Place's own EntityTypeConfig (migration plan, lot 4 "Lieux", then the organization-wide list
 // lot). Two list contexts: the organization-wide list (GET /api/v1/places?organizationId=…, JSF's

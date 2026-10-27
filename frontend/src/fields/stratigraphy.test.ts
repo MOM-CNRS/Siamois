@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { stratigraphyPositionOf } from "./stratigraphy";
-import type { FieldResource } from "./types";
+import {describe, expect, it} from "vitest";
+import {stratigraphyPositionOf} from "./stratigraphy";
+import type {FieldResource} from "./types";
 
 const field = (answerType: string, valueBinding?: string) => ({ id: "1", resourceType: "fields", label: "f", answerType, isSystemField: true, valueBinding }) as FieldResource;
 

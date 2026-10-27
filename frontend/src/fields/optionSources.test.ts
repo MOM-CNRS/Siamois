@@ -1,14 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../api/client";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../api/client";
 import {
-  createPlaceFromSuggestion,
-  fetchFieldConceptOptions,
-  fetchPlaceOptions,
-  fetchPlaceSuggestions,
-  optionSourceFor,
-  referenceTargetOf,
+    createPlaceFromSuggestion,
+    fetchFieldConceptOptions,
+    fetchPlaceOptions,
+    fetchPlaceSuggestions,
+    optionSourceFor,
+    referenceTargetOf,
 } from "./optionSources";
-import type { FieldResource } from "./types";
+import type {FieldResource} from "./types";
 
 vi.mock("../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);

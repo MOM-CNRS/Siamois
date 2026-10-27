@@ -1,10 +1,10 @@
-import { useMemo } from "react";
-import { EntityDetailHeader } from "../../components/detail/EntityDetailHeader";
-import { isTypeField } from "../../fields/typeField";
-import type { FieldResource } from "../../fields/types";
-import { patchPlaceHeader } from "./api";
-import type { PlaceDetail } from "./types";
-import { t } from "../../i18n";
+import {useMemo} from "react";
+import {EntityDetailHeader} from "../../components/detail/EntityDetailHeader";
+import {isTypeField} from "../../fields/typeField";
+import type {FieldResource} from "../../fields/types";
+import {patchPlaceHeader} from "./api";
+import type {PlaceDetail} from "./types";
+import {t} from "../../i18n";
 
 // The place's header on the shared fiche header: its name (which is its identifier) as the main
 // chip, then its type. The type field comes with the detail (SpatialUnit.DETAILS_FORM is static).

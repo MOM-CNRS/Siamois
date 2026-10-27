@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { FieldResource } from "../../fields/types";
-import type { FieldRendererProps } from "../../fields/registry";
-import { DocumentCreateForm } from "./CreateForm";
-import { fetchTypesCatalog, getEffectiveForm } from "../shared/typeCatalog";
-import { createDocument, uploadDocumentFile } from "./api";
-import type { CreatePrefill } from "../shared/types";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {FieldResource} from "../../fields/types";
+import type {FieldRendererProps} from "../../fields/registry";
+import {DocumentCreateForm} from "./CreateForm";
+import {fetchTypesCatalog, getEffectiveForm} from "../shared/typeCatalog";
+import {createDocument, uploadDocumentFile} from "./api";
+import type {CreatePrefill} from "../shared/types";
 
 
 vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));

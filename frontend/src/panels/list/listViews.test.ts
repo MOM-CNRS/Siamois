@@ -1,11 +1,6 @@
-import { describe, expect, it } from "vitest";
-import type { EntityTypeConfig } from "../../entities/shared/types";
-import {
-  availableViews,
-  DEFAULT_LIST_VIEW,
-  resolveViewMode,
-  viewOptions,
-} from "./listViews";
+import {describe, expect, it} from "vitest";
+import type {EntityTypeConfig} from "../../entities/shared/types";
+import {availableViews, DEFAULT_LIST_VIEW, resolveViewMode, viewOptions,} from "./listViews";
 
 const config = (list: Record<string, unknown>) =>
   ({ list }) as unknown as EntityTypeConfig<unknown, unknown>;

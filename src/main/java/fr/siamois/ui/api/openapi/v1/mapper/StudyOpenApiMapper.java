@@ -1,8 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.mapper;
 
 import fr.siamois.dto.entity.StudyDTO;
-import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
+import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

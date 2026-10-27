@@ -1,5 +1,5 @@
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import type { FieldCatalog, ListScope } from "../shared/types";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import type {FieldCatalog, ListScope} from "../shared/types";
 
 // SpatialUnit.DETAILS_FORM's system field ids (the same ones api.ts writes through).
 const NAME_FIELD_ID = "-202";

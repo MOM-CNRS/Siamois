@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { PaneSplit } from "./PaneSplit";
+import {afterEach, beforeEach, describe, expect, it} from "vitest";
+import {act, useState} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {PaneSplit} from "./PaneSplit";
 
 
 let container: HTMLDivElement;

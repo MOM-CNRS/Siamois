@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
-import { entityChipStyle, entityColor, renderAnswerCell, renderAnswerValue } from "./display";
-import type { FieldResource } from "./types";
+import {describe, expect, it} from "vitest";
+import {renderToStaticMarkup} from "react-dom/server";
+import {entityChipStyle, entityColor, renderAnswerCell, renderAnswerValue} from "./display";
+import type {FieldResource} from "./types";
 
 function field(overrides: Partial<FieldResource> = {}): FieldResource {
   return {

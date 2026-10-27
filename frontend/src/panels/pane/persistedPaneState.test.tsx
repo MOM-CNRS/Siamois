@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { PersistedTabState, usePersistedPaneState } from "./persistedPaneState";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {PersistedTabState, usePersistedPaneState} from "./persistedPaneState";
 
 let container: HTMLDivElement;
 let root: Root;

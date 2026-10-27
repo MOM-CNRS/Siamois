@@ -1,5 +1,5 @@
-import { t } from "../i18n";
-import type { FilterOption } from "./optionSources";
+import {t} from "../i18n";
+import type {FilterOption} from "./optionSources";
 
 /**
  * A place suggestion: the database or globe icon (a place of the organization, or one still to be

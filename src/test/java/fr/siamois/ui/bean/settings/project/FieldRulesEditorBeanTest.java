@@ -1,12 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
-import fr.siamois.domain.models.form.rules.Condition;
-import fr.siamois.domain.models.form.rules.ConditionOp;
-import fr.siamois.domain.models.form.rules.FieldConstraint;
-import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
-import fr.siamois.domain.models.form.rules.RuleFieldFamily;
+import fr.siamois.domain.models.form.rules.*;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.LayoutRow;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
@@ -23,13 +17,8 @@ import org.mockito.ArgumentCaptor;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class FieldRulesEditorBeanTest {
 

@@ -19,7 +19,6 @@ import lombok.Data;
 import org.hibernate.envers.Audited;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;

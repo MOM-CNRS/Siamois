@@ -2,9 +2,9 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.events.publisher.LangageChangeEventPublisher;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.auth.token.PersonActionToken;
 import fr.siamois.domain.models.auth.token.PersonActionType;
+import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
 import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;

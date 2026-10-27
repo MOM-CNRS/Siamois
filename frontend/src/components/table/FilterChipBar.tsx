@@ -1,14 +1,14 @@
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
-import { flushSync } from "react-dom";
-import { Button } from "primereact/button";
-import { InputText } from "primereact/inputtext";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { BottomSheet } from "../layout/BottomSheet";
-import { useIsMobile } from "../../viewport";
-import { ColumnFilter, describeFilterValue } from "./ColumnFilter";
-import type { FilterKind, FilterOption } from "../../fields/optionSources";
-import type { FilterValue } from "../../panels/list/tableState";
-import { t } from "../../i18n";
+import {type MouseEvent as ReactMouseEvent, useRef, useState} from "react";
+import {flushSync} from "react-dom";
+import {Button} from "primereact/button";
+import {InputText} from "primereact/inputtext";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {BottomSheet} from "../layout/BottomSheet";
+import {useIsMobile} from "../../viewport";
+import {ColumnFilter, describeFilterValue} from "./ColumnFilter";
+import type {FilterKind, FilterOption} from "../../fields/optionSources";
+import type {FilterValue} from "../../panels/list/tableState";
+import {t} from "../../i18n";
 
 /**
  * Notion-style filter bar living in the table's own header: no enable/disable switch and no

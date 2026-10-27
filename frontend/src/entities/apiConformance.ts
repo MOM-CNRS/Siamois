@@ -5,16 +5,16 @@
 //
 // Fields the spec has and the DTO leaves out are fine (the screens simply don't use them). When this file fails
 // after `npm run api:pull`, update the hand-written type named in the error.
-import type { ContainerResource } from "./container/types";
-import type { DocumentResource } from "./document/types";
-import type { FindResource } from "./find/types";
-import type { PhaseResource } from "./phase/types";
-import type { PlaceResource } from "./place/types";
-import type { ProjectCounts, ProjectPermissions, ProjectResource, PlaceLight, ResourceRef } from "./project/types";
-import type { RecordingUnitCounts, RecordingUnitResource } from "./recordingUnit/types";
-import type { StudyResource } from "./study/types";
-import type { FieldResource } from "../fields/types";
-import type { Schemas } from "../api/generated";
+import type {ContainerResource} from "./container/types";
+import type {DocumentResource} from "./document/types";
+import type {FindResource} from "./find/types";
+import type {PhaseResource} from "./phase/types";
+import type {PlaceResource} from "./place/types";
+import type {PlaceLight, ProjectCounts, ProjectPermissions, ProjectResource, ResourceRef} from "./project/types";
+import type {RecordingUnitCounts, RecordingUnitResource} from "./recordingUnit/types";
+import type {StudyResource} from "./study/types";
+import type {FieldResource} from "../fields/types";
+import type {Schemas} from "../api/generated";
 
 type UnknownFields<Hand, Spec> = Exclude<keyof Hand, keyof Spec>;
 

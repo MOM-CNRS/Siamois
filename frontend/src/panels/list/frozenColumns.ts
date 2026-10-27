@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import {useLayoutEffect} from "react";
 
 // Frozen (sticky-left) columns, done here rather than with PrimeReact's Column `frozen`. PrimeReact
 // positions every frozen cell on its own: on mount, each cell reads its left neighbour's width and

@@ -1,11 +1,11 @@
-import { useRef } from "react";
-import { BreadCrumb } from "primereact/breadcrumb";
-import { Button } from "primereact/button";
-import { OverlayPanel } from "primereact/overlaypanel";
-import type { MenuItem, MenuItemOptions } from "primereact/menuitem";
-import { getEntityType } from "../../entities/registry";
-import type { EntityBreadcrumb, EntityBreadcrumbs } from "../../entities/shared/types";
-import { t } from "../../i18n";
+import {useRef} from "react";
+import {BreadCrumb} from "primereact/breadcrumb";
+import {Button} from "primereact/button";
+import {OverlayPanel} from "primereact/overlaypanel";
+import type {MenuItem, MenuItemOptions} from "primereact/menuitem";
+import {getEntityType} from "../../entities/registry";
+import type {EntityBreadcrumb, EntityBreadcrumbs} from "../../entities/shared/types";
+import {t} from "../../i18n";
 
 export interface EntityBreadcrumbTrailProps {
   // createHomeItem: icon only, with a real redirect to the dashboard.

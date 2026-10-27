@@ -1,5 +1,5 @@
-import { apiFetch } from "../api/client";
-import type { SearchFilter } from "./queryParser";
+import {apiFetch} from "../api/client";
+import type {SearchFilter} from "./queryParser";
 
 export interface SearchItem {
   id: number;

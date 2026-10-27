@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
-import { WriteModeProvider, useCanEdit, useWriteMode } from "./writeMode";
+import {describe, expect, it} from "vitest";
+import {renderToStaticMarkup} from "react-dom/server";
+import {useCanEdit, useWriteMode, WriteModeProvider} from "./writeMode";
 
 function ShowWriteMode() {
   return <span>{String(useWriteMode())}</span>;

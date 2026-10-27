@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {fetchAllValues} from "./multiValues";
 
 const apiFetch = vi.fn();
 vi.mock("../api/client", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
-
-import { fetchAllValues } from "./multiValues";
 
 describe("fetchAllValues", () => {
   beforeEach(() => apiFetch.mockReset());

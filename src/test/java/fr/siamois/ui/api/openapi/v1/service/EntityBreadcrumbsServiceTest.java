@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.ui.api.openapi.v1.resource.breadcrumb.BreadcrumbResource;
+import fr.siamois.ui.api.openapi.v1.resource.breadcrumb.BreadcrumbsResource;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,21 +9,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
-import fr.siamois.ui.api.openapi.v1.resource.breadcrumb.BreadcrumbsResource;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.stream.LongStream;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.lenient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 class EntityBreadcrumbsServiceTest {
 

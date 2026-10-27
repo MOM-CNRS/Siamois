@@ -1,14 +1,14 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.study.Study;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
@@ -20,11 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Column catalogs of the organization-wide lists (recording units, finds, phases, containers).

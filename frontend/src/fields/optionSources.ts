@@ -1,7 +1,7 @@
-import { apiFetch } from "../api/client";
-import type { OptionsContext, PlaceContext } from "../rules";
-import type { FieldResource } from "./types";
-import type { EntityKey } from "../entities/keys";
+import {apiFetch} from "../api/client";
+import type {OptionsContext, PlaceContext} from "../rules";
+import type {FieldResource} from "./types";
+import type {EntityKey} from "../entities/keys";
 
 /**
  * Where a filter widget's option list comes from, for {@code answerType}s that reference another

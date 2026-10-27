@@ -1,27 +1,23 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
-import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
+import fr.siamois.dto.FieldQuery;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectNextIdentifierResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectTemplatesResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectSiblingsResponse;
-import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
+import fr.siamois.ui.api.openapi.v1.response.project.*;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,13 +35,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import fr.siamois.dto.TreePage;
-import fr.siamois.dto.FieldQuery;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/projects")

@@ -1,5 +1,5 @@
-import type { SyntheticEvent } from "react";
-import { resolveLocale, type Locale } from "./i18n";
+import type {SyntheticEvent} from "react";
+import {type Locale, resolveLocale} from "./i18n";
 // Shape of the options object focus.xhtml's inline script passes to window.SiamoisMainPanel.mount
 // (plan §7.2/§8 phase 8).
 export type PanelKind = "home" | "list" | "detail";

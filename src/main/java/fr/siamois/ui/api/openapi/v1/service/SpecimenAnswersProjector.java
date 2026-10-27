@@ -1,40 +1,26 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.dto.entity.SpecimenSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Projette les champs de formulaire d'un mobilier en une carte {@code answers} plate, pour une page

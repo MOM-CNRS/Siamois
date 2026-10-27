@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { moveItem } from "./VisibilityChooser";
+import {describe, expect, it} from "vitest";
+import {moveItem} from "./VisibilityChooser";
 
 describe("moveItem", () => {
   it("moves one item to another index", () => {

@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { useTableState } from "./useTableState";
-import { PaneStateProvider, PaneStateScope, PaneStateStore } from "../pane/paneState";
+import {afterEach, beforeEach, describe, expect, it} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {useTableState} from "./useTableState";
+import {PaneStateProvider, PaneStateScope, PaneStateStore} from "../pane/paneState";
 
 // No @testing-library/react in this project (see EntityListPanel.test.tsx's own createRoot/act
 // pattern) — a tiny harness component exposes the hook's latest return value for assertions.

@@ -1,10 +1,10 @@
-import { useRef, useState, type ReactNode } from "react";
-import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { CreateFormField } from "./CreateFormShell";
-import { searchCreatableProjects, type CreatableProject } from "../../entities/shared/creatableProjects";
-import { scopeProjectId } from "../../entities/shared/scope";
-import type { CreatableKind, ListScope } from "../../entities/shared/types";
-import { t } from "../../i18n";
+import {type ReactNode, useRef, useState} from "react";
+import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {CreateFormField} from "./CreateFormShell";
+import {type CreatableProject, searchCreatableProjects} from "../../entities/shared/creatableProjects";
+import {scopeProjectId} from "../../entities/shared/scope";
+import type {CreatableKind, ListScope} from "../../entities/shared/types";
+import {t} from "../../i18n";
 
 export interface CreateProject {
   // The project the entity will be created in: the list's own when it has one, else the picked one.

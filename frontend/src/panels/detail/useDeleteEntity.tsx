@@ -1,13 +1,13 @@
-import { useState, type ReactNode } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError } from "../../api/client";
-import { messageForError } from "../../api/errors";
-import { queryKeys } from "../../api/queryKeys";
-import { DeleteEntityDialog } from "../../components/detail/DeleteEntityDialog";
-import type { EntityTypeConfig } from "../../entities/shared/types";
-import { t } from "../../i18n";
-import { useNotify } from "../../notify/NotifyProvider";
-import { announceEntityDeleted } from "./entityDeleted";
+import {type ReactNode, useState} from "react";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {ApiError} from "../../api/client";
+import {messageForError} from "../../api/errors";
+import {queryKeys} from "../../api/queryKeys";
+import {DeleteEntityDialog} from "../../components/detail/DeleteEntityDialog";
+import type {EntityTypeConfig} from "../../entities/shared/types";
+import {t} from "../../i18n";
+import {useNotify} from "../../notify/NotifyProvider";
+import {announceEntityDeleted} from "./entityDeleted";
 
 interface DeleteTarget {
   id: string | number;

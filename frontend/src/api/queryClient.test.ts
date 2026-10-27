@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { ApiError } from "./client";
-import { queryClient, shouldRetry } from "./queryClient";
+import {describe, expect, it} from "vitest";
+import {ApiError} from "./client";
+import {queryClient, shouldRetry} from "./queryClient";
 
 describe("shouldRetry", () => {
   it("never retries an answer that won't change (4xx)", () => {

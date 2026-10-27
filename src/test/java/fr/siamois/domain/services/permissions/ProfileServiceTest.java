@@ -2,11 +2,7 @@ package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.permissions.Permission;
-import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.permissions.PermissionScopeType;
-import fr.siamois.domain.models.permissions.Profile;
-import fr.siamois.domain.models.permissions.ProfileConstants;
+import fr.siamois.domain.models.permissions.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.ProfileDTO;

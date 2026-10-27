@@ -1,5 +1,5 @@
-import { createEntityApi } from "../shared/createEntityApi";
-import type { ContainerDetail, ContainerSummary } from "./types";
+import {createEntityApi} from "../shared/createEntityApi";
+import type {ContainerDetail, ContainerSummary} from "./types";
 
 // Mirrors ContainerCreateRequest's required pair.
 export interface ContainerCreateBody {

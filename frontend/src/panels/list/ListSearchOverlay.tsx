@@ -1,24 +1,24 @@
-import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { InputText } from "primereact/inputtext";
-import { useQuery } from "@tanstack/react-query";
-import { describeFilterValue } from "../../components/table/ColumnFilter";
-import type { FilterSpec } from "../../components/table/FilterChipBar";
-import type { FilterOption } from "../../fields/optionSources";
-import type { EntityTypeConfig, FilterValue, ListParams, PagedResult } from "../../entities/shared/types";
-import { t } from "../../i18n";
-import { formatFilter, keywordCompletion, parseQuery, tailKeyword, type SearchKeyword } from "../../search/queryParser";
+import {type KeyboardEvent, memo, useEffect, useMemo, useRef, useState} from "react";
+import {InputText} from "primereact/inputtext";
+import {useQuery} from "@tanstack/react-query";
+import {describeFilterValue} from "../../components/table/ColumnFilter";
+import type {FilterSpec} from "../../components/table/FilterChipBar";
+import type {FilterOption} from "../../fields/optionSources";
+import type {EntityTypeConfig, FilterValue, ListParams, PagedResult} from "../../entities/shared/types";
+import {t} from "../../i18n";
+import {formatFilter, keywordCompletion, parseQuery, type SearchKeyword, tailKeyword} from "../../search/queryParser";
 import {
-  anchorOf,
-  Highlighted,
-  KeywordButtons,
-  nextActive,
-  SearchOverlay,
-  SearchRow,
-  useDebounced,
-  type SearchAnchor,
+    anchorOf,
+    Highlighted,
+    KeywordButtons,
+    nextActive,
+    type SearchAnchor,
+    SearchOverlay,
+    SearchRow,
+    useDebounced,
 } from "../../search/SearchOverlay";
-import type { RowRecord } from "./useEntityListData";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import type {RowRecord} from "./useEntityListData";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 export const PREVIEW_DEBOUNCE_MS = 250;
 const PREVIEW_LIMIT = 8;

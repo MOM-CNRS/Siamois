@@ -1,13 +1,13 @@
-import type { ContainerDetail, ContainerSummary } from "./container/types";
-import type { DocumentDetail, DocumentSummary } from "./document/types";
-import type { FindDetail, FindSummary } from "./find/types";
-import type { EntityKey } from "./keys";
-import type { PhaseDetail, PhaseSummary } from "./phase/types";
-import type { PlaceDetail, PlaceSummary } from "./place/types";
-import type { ProjectDetail, ProjectSummary } from "./project/types";
-import type { RecordingUnitDetail, RecordingUnitSummary } from "./recordingUnit/types";
-import type { EntityTypeConfig } from "./shared/types";
-import type { StudyDetail, StudySummary } from "./study/types";
+import type {ContainerDetail, ContainerSummary} from "./container/types";
+import type {DocumentDetail, DocumentSummary} from "./document/types";
+import type {FindDetail, FindSummary} from "./find/types";
+import type {EntityKey} from "./keys";
+import type {PhaseDetail, PhaseSummary} from "./phase/types";
+import type {PlaceDetail, PlaceSummary} from "./place/types";
+import type {ProjectDetail, ProjectSummary} from "./project/types";
+import type {RecordingUnitDetail, RecordingUnitSummary} from "./recordingUnit/types";
+import type {EntityTypeConfig} from "./shared/types";
+import type {StudyDetail, StudySummary} from "./study/types";
 
 // One module per entity registers itself here (entities/project/config.tsx is the first, phase
 // 4). EntityTypeConfig<TSummary, TDetail> is concretely typed within each entity's own config.tsx;

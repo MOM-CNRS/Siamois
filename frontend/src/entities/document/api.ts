@@ -1,6 +1,6 @@
-import { createEntityApi } from "../shared/createEntityApi";
-import type { DocumentDetail, DocumentSummary } from "./types";
-import { apiBlob, apiFetch } from "../../api/client";
+import {createEntityApi} from "../shared/createEntityApi";
+import type {DocumentDetail, DocumentSummary} from "./types";
+import {apiBlob, apiFetch} from "../../api/client";
 
 // Mirrors DocumentCreateRequest's required pair (the title is editable afterwards, on the fiche).
 export interface DocumentCreateBody {

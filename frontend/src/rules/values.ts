@@ -7,7 +7,7 @@
 //   midnight, which is exactly how the server stores and sends it back)
 // - a multi-valued answer (array)                 → an array of the above
 
-import type { FieldValueSpec } from "./types";
+import type {FieldValueSpec} from "./types";
 
 export type Scalar = string | number | boolean;
 

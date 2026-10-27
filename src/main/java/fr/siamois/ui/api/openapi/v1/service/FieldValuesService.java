@@ -2,18 +2,14 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.DocumentDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
@@ -27,11 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Every value of one multi-valued answer, a page at a time

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiBlob, apiFetch, ApiError } from "./client";
-import { setLocale } from "../i18n";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiBlob, ApiError, apiFetch} from "./client";
+import {setLocale} from "../i18n";
 
 vi.mock("../auth/sessionAuth", () => ({
   getAccessToken: vi.fn().mockResolvedValue("test-token"),

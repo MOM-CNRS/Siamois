@@ -1,13 +1,13 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Chip } from "primereact/chip";
-import { EntityDetailHeader } from "../../components/detail/EntityDetailHeader";
-import type { FieldResource } from "../../fields/types";
-import { patchProject, type ProjectPatch } from "./api";
-import { getProjectTypes } from "./projectTypes";
-import type { ProjectDetail } from "./types";
-import { queryKeys } from "../../api/queryKeys";
-import { t } from "../../i18n";
+import {useMemo} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {Chip} from "primereact/chip";
+import {EntityDetailHeader} from "../../components/detail/EntityDetailHeader";
+import type {FieldResource} from "../../fields/types";
+import {patchProject, type ProjectPatch} from "./api";
+import {getProjectTypes} from "./projectTypes";
+import type {ProjectDetail} from "./types";
+import {queryKeys} from "../../api/queryKeys";
+import {t} from "../../i18n";
 
 // actionUnitPanelHeader.xhtml's content on the shared fiche header: the name as the main chip, the
 // identifier and the type as secondary chips, the location read-only after them. The identifier,

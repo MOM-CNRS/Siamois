@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { InlinePicker, type PickerOption } from "./InlinePicker";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {InlinePicker, type PickerOption} from "./InlinePicker";
 
 let container: HTMLDivElement;
 let root: Root;

@@ -9,11 +9,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.ObjIntConsumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 
 /**
  * Typed declaration of the entity-specific inputs and outputs used by

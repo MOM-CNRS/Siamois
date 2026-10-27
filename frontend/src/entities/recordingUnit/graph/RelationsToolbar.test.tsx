@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { RelationsToolbar, type RelationsMode } from "./RelationsToolbar";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {type RelationsMode, RelationsToolbar} from "./RelationsToolbar";
 
 let container: HTMLDivElement;
 let root: Root;

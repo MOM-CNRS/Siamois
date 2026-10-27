@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { ProjectSummary } from "./types";
-import { t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {ProjectSummary} from "./types";
+import {t} from "../../i18n";
 
 // Pinned, hand-written columns only — the identifier chip (also the navigation link), the name
 // (ActionUnitTableDefinitionFactory's own leading FormFieldColumn, kept hand-written rather than

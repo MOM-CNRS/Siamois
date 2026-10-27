@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Dropdown } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
-import { createHomeAccess } from "../../api/resources/homeAccesses";
-import { queryKeys } from "../../api/queryKeys";
-import { messageForError } from "../../api/errors";
-import { getAllEntityTypes } from "../../entities/registry";
-import { t } from "../../i18n";
-import { useTableTypes } from "./useTableTypes";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useState} from "react";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {Dropdown} from "primereact/dropdown";
+import {InputText} from "primereact/inputtext";
+import {createHomeAccess} from "../../api/resources/homeAccesses";
+import {queryKeys} from "../../api/queryKeys";
+import {messageForError} from "../../api/errors";
+import {getAllEntityTypes} from "../../entities/registry";
+import {t} from "../../i18n";
+import {useTableTypes} from "./useTableTypes";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /**
  * « Créer une nouvelle vue »: a table and one of its types, both required, and the view's name (« Table – Type »

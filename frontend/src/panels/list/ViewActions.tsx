@@ -1,15 +1,15 @@
-import { useState, type FormEvent } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { InputText } from "primereact/inputtext";
-import { SplitButton } from "primereact/splitbutton";
-import { createView, updateView, type ViewResource, type ViewTableState } from "../../api/resources/views";
-import { messageForError } from "../../api/errors";
-import { queryKeys } from "../../api/queryKeys";
-import { t } from "../../i18n";
-import { useNotify } from "../../notify/NotifyProvider";
-import { useBridge } from "../pane/bridge";
+import {type FormEvent, useState} from "react";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {InputText} from "primereact/inputtext";
+import {SplitButton} from "primereact/splitbutton";
+import {createView, updateView, type ViewResource, type ViewTableState} from "../../api/resources/views";
+import {messageForError} from "../../api/errors";
+import {queryKeys} from "../../api/queryKeys";
+import {t} from "../../i18n";
+import {useNotify} from "../../notify/NotifyProvider";
+import {useBridge} from "../pane/bridge";
 
 export interface ViewActionsProps {
   // The type the views are of: the list's own registry key.

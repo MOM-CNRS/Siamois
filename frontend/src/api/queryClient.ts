@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import {QueryClient} from "@tanstack/react-query";
 
 /**
  * Retries a failed request at most twice, and only when retrying can help: a server error or a

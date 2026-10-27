@@ -1,22 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../../entities/registry";
-import type { CreateFormContext, EntityTypeConfig, PagedResult } from "../../entities/shared/types";
-import { EntityListPanel } from "../EntityListPanel";
-import { WriteModeProvider } from "../pane/writeMode";
-import { listPrefsKey, saveListPrefs } from "./listPreferences";
-import { onEntityDeleted } from "../detail/entityDeleted";
-import { ApiError } from "../../api/client";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../../entities/registry";
+import type {CreateFormContext, EntityTypeConfig, PagedResult} from "../../entities/shared/types";
+import {EntityListPanel} from "../EntityListPanel";
+import {WriteModeProvider} from "../pane/writeMode";
+import {listPrefsKey, saveListPrefs} from "./listPreferences";
+import {onEntityDeleted} from "../detail/entityDeleted";
+import {ApiError} from "../../api/client";
+import {createBookmark, deleteBookmark} from "../../api/resources/bookmarks";
+import {notifySpy} from "../../test/notifySpy";
 
 vi.mock("../../api/resources/bookmarks", () => ({
   createBookmark: vi.fn().mockResolvedValue(undefined),
   deleteBookmark: vi.fn().mockResolvedValue(undefined),
   getBookmarkStatus: vi.fn().mockResolvedValue(false),
 }));
-import { createBookmark, deleteBookmark } from "../../api/resources/bookmarks";
-import { notifySpy } from "../../test/notifySpy";
 
 
 // The row actions column as the generic mechanism it is — a throwaway entity with a duplicate

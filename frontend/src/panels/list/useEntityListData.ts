@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { isOwningProjectField } from "../../fields/types";
-import type { EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult } from "../../entities/shared/types";
-import { usePagedList } from "./usePagedList";
-import { useRowRules, useRuleFields } from "./useRowRules";
-import { useTableState } from "./useTableState";
-import { differsFromView, parsePersisted, toPersisted, viewToBody } from "./listState";
-import { getView } from "../../api/resources/views";
-import { useUserViewState } from "./useUserViewState";
-import { availableFilters, isSortAvailable } from "./listStateValidity";
-import { usePaneState } from "../pane/paneState";
-import { DEFAULT_LIMIT } from "./tableState";
-import { availableViews, resolveViewMode } from "./listViews";
-import { useProjectIdsOf, useTypeRules, type RowTypeRef } from "./useTypeRules";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {isOwningProjectField} from "../../fields/types";
+import type {EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult} from "../../entities/shared/types";
+import {usePagedList} from "./usePagedList";
+import {useRowRules, useRuleFields} from "./useRowRules";
+import {useTableState} from "./useTableState";
+import {differsFromView, parsePersisted, toPersisted, viewToBody} from "./listState";
+import {getView} from "../../api/resources/views";
+import {useUserViewState} from "./useUserViewState";
+import {availableFilters, isSortAvailable} from "./listStateValidity";
+import {usePaneState} from "../pane/paneState";
+import {DEFAULT_LIMIT} from "./tableState";
+import {availableViews, resolveViewMode} from "./listViews";
+import {type RowTypeRef, useProjectIdsOf, useTypeRules} from "./useTypeRules";
 
 export type RowRecord = Record<string, unknown> & { id?: string | number };
 

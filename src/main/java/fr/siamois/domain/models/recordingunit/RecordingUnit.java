@@ -15,10 +15,10 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultipl
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

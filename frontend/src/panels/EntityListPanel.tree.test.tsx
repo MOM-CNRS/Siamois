@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../entities/registry";
-import type { ListParams, PagedResult } from "../entities/shared/types";
-import { EntityListPanel } from "./EntityListPanel";
-import { WriteModeProvider } from "./pane/writeMode";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../entities/registry";
+import type {ListParams, PagedResult} from "../entities/shared/types";
+import {EntityListPanel} from "./EntityListPanel";
+import {WriteModeProvider} from "./pane/writeMode";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.events.LoginEvent;
-import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;

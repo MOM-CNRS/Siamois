@@ -1,11 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { SelectManyConceptRenderer, SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneRefRenderer, SelectOneSpatialUnitRenderer } from "./renderers";
-import { registerEntityType } from "../entities/registry";
-import { EntityNavigationProvider } from "../panels/pane/entityNavigation";
-import type { FieldRendererProps } from "./registry";
-import type { FieldResource } from "./types";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {
+    SelectManyConceptRenderer,
+    SelectManyRefRenderer,
+    SelectOneConceptRenderer,
+    SelectOneRefRenderer,
+    SelectOneSpatialUnitRenderer
+} from "./renderers";
+import {registerEntityType} from "../entities/registry";
+import {EntityNavigationProvider} from "../panels/pane/entityNavigation";
+import type {FieldRendererProps} from "./registry";
+import type {FieldResource} from "./types";
+import {createPlaceFromSuggestion, type FilterOption, optionSourceFor} from "./optionSources";
 
 
 vi.mock("./optionSources", async (importOriginal) => {
@@ -16,7 +23,6 @@ vi.mock("./optionSources", async (importOriginal) => {
     createPlaceFromSuggestion: vi.fn(),
   };
 });
-import { createPlaceFromSuggestion, optionSourceFor, type FilterOption } from "./optionSources";
 const mockedOptionSourceFor = vi.mocked(optionSourceFor);
 const mockedCreatePlace = vi.mocked(createPlaceFromSuggestion);
 

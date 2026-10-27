@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import {beforeEach, describe, expect, it} from "vitest";
 
 const entry = (name: string) => ({ url: `/focus/${name}`, mainPath: `/${name}` });
 

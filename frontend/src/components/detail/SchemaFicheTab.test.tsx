@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
-import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/pane/writeMode";
-import { getEffectiveForm } from "../../entities/shared/typeCatalog";
-import { SchemaFicheTab, type SchemaFicheEntity } from "./SchemaFicheTab";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerDefaultFieldRenderers} from "../../fields/registerDefaultRenderers";
+import type {FieldResource} from "../../fields/types";
+import {WriteModeProvider} from "../../panels/pane/writeMode";
+import {getEffectiveForm} from "../../entities/shared/typeCatalog";
+import {type SchemaFicheEntity, SchemaFicheTab} from "./SchemaFicheTab";
+import {notifySpy} from "../../test/notifySpy";
 
 vi.mock("../../entities/shared/typeCatalog", () => ({ getEffectiveForm: vi.fn() }));
 const mockedGetEffectiveForm = vi.mocked(getEffectiveForm);

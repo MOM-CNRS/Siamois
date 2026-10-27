@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {getRelationGraph, getRelationList} from "./api";
 
 const apiFetch = vi.fn();
 vi.mock("../../../api/client", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
-
-import { getRelationGraph, getRelationList } from "./api";
 
 describe("relation graph reads", () => {
   beforeEach(() => apiFetch.mockReset());

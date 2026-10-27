@@ -1,9 +1,9 @@
-import { useMemo } from "react";
-import { useQueries } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { fetchTypesCatalog, type TypesCatalogBody } from "../../entities/shared/typeCatalog";
-import { parseLayout } from "../../fields/layout";
-import type { FieldRules, RuledColumn } from "../../rules";
+import {useMemo} from "react";
+import {useQueries} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {fetchTypesCatalog, type TypesCatalogBody} from "../../entities/shared/typeCatalog";
+import {parseLayout} from "../../fields/layout";
+import type {FieldRules, RuledColumn} from "../../rules";
 
 /**
  * The conditional rules of a list's cells, per (project, type). They belong to the configuration of
