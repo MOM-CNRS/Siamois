@@ -286,14 +286,28 @@ class CustomFieldCandidateServiceTest {
     }
 
     @Test
-    void transfer_doesNotTakeTheTypeOfAMeasurementForItsConcept() {
-        CustomFieldMeasurement measurement = CustomFieldMeasurement.builder().id(13L).label("Hauteur").build();
-        measurement.setConcept(new Concept());
+    void transfer_givesTheReplacementTheDocumentationOfAMeasurementNotItsType() {
+        Concept documentation = new Concept();
+        CustomFieldMeasurement measurement = CustomFieldMeasurement.builder().id(13L).label("Hauteur")
+                .measurementType(new Concept()).concept(documentation).build();
         CustomField replacement = CustomFieldText.builder().id(12L).label("Hauteur").build();
 
         service.transfer(measurement, replacement);
 
-        assertThat(replacement.getConcept()).isNull();
+        assertThat(replacement.getConcept()).isSameAs(documentation);
+    }
+
+    @Test
+    void submitCandidateFor_measurementWithAType_isStillDocumented() throws JsonProcessingException {
+        CustomFieldMeasurement measurement = CustomFieldMeasurement.builder().id(13L).label("Hauteur")
+                .measurementType(new Concept()).build();
+        projectThesaurus();
+        withApiKey();
+        when(candidateApi.postCandidateFor(eq(apiKey), any())).thenReturn(true);
+
+        service.submitCandidateFor(measurement, PROJECT_ID);
+
+        assertThat(savedPendingCandidate().getField()).isSameAs(measurement);
     }
 
     private CustomFieldPendingCandidate savedPendingCandidate() {

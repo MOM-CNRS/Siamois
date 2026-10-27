@@ -1927,7 +1927,8 @@ class TableFieldConfigServiceImplTest {
         service.updateField(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Hauteur", new FieldDefinition("Hauteur maximale",
                 FieldType.MEASUREMENT, "", FieldOptions.units(1L, Set.of(1L)).measuring(50L, 51L)));
 
-        assertThat(existing.getConcept()).isSameAs(height);
+        assertThat(existing.getMeasurementType()).isSameAs(height);
+        assertThat(existing.getConcept()).isNull();
         assertThat(existing.getMeasurementNature()).isSameAs(maximal);
     }
 
@@ -1990,7 +1991,7 @@ class TableFieldConfigServiceImplTest {
         Concept height = new Concept();
         height.setId(50L);
         CustomFieldMeasurement field = CustomFieldMeasurement.builder().id(1L).label("Hauteur").hint("depuis la base")
-                .isSystemField(false).concept(height).build();
+                .isSystemField(false).measurementType(height).build();
         when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(prefLabel("Hauteur"));
 
         TypeFieldFormConfig described = service.describe(field, true, false, false);

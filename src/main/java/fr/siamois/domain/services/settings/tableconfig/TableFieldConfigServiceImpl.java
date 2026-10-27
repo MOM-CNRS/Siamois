@@ -597,7 +597,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             applyUnits(measurement, given);
             Long typeId = given.measureTypeConceptId();
             if (typeId != null) {
-                measurement.setConcept(requireConcept(typeId));
+                measurement.setMeasurementType(requireConcept(typeId));
             }
             Long natureId = given.measureNatureConceptId();
             measurement.setMeasurementNature(natureId == null ? null : requireConcept(natureId));
@@ -1154,7 +1154,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 .valueBinding(field.getValueBinding())
                 .build();
         if (field instanceof CustomFieldMeasurement measurement) {
-            dto.setMeasureType(summaryOf(measurement.getConcept()));
+            dto.setMeasureType(summaryOf(measurement.getMeasurementType()));
             dto.setMeasureNature(summaryOf(measurement.getMeasurementNature()));
         }
         return dto;

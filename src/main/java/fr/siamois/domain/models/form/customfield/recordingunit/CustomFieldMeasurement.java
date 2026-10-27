@@ -49,6 +49,11 @@ public class CustomFieldMeasurement extends CustomFieldOnTheFly {
             inverseJoinColumns = @JoinColumn(name = "fk_unit_id"))
     private Set<UnitDefinition> allowedUnits = new LinkedHashSet<>();
 
+    /** What is measured (SIAMD.TYPE), e.g. a height; the field's own {@link #getConcept() concept} documents it. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_measurement_type")
+    private Concept measurementType;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_nature")
     private Concept measurementNature;

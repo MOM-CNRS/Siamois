@@ -3,7 +3,6 @@ package fr.siamois.domain.services.vocabulary;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.settings.DocumentationThesaurus;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.CustomFieldPendingCandidate;
@@ -58,8 +57,8 @@ public class CustomFieldCandidateService {
 
     /**
      * Submits a candidate for a field just created in a project, to the documentation thesaurus of the project or,
-     * failing that, of the current user's organisation. A field that already has a concept (the type of a
-     * measurement) is left alone. Never throws: the thesaurus being unreachable must not prevent the field's
+     * failing that, of the current user's organisation. A field already documented by a concept is left alone.
+     * Never throws: the thesaurus being unreachable must not prevent the field's
      * creation, the candidate stays pending.
      */
     @Transactional
@@ -122,12 +121,12 @@ public class CustomFieldCandidateService {
 
     /**
      * Gives a field replacing another one (a type change) the concept of the field it replaces, or its pending
-     * candidates. The type of a measurement is not its documentation concept, so it is not carried over.
+     * candidates.
      */
     @Transactional
     public void transfer(@NonNull CustomField from, @NonNull CustomField to) {
         if (to.getConcept() != null) return;
-        if (from.getConcept() != null && !(from instanceof CustomFieldMeasurement)) {
+        if (from.getConcept() != null) {
             linkConcept(to, from.getConcept());
             return;
         }
