@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.vocabulary.VocabularyNotFoundExceptio
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.api.dto.ThesaurusDTO;
@@ -101,6 +102,18 @@ public class VocabularyService {
         }
 
         return savedVocabulary;
+    }
+
+    /**
+     * The documentation thesauri of the organisations and projects whose settings a person manages, labelled
+     * in the given language.
+     */
+    public List<ThesaurusInfo> findDocumentationThesauriIn(@NonNull ProfilePermissionService.SettingsScope scope, @NonNull String langCode) {
+        return vocabularyRepository.findDocumentationThesauriOf(scope.allInstitutions(), scope.institutionIds(),
+                        scope.allProjects(), scope.projectInstitutionIds(), scope.actionUnitIds()).stream()
+                .map(vocabulary -> new ThesaurusInfo(vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(),
+                        labelService.findLabelOf(vocabulary, langCode).getValue(), langCode))
+                .toList();
     }
 
     /** The public thesauri of an OpenTheso instance that are meant for Siamois. */

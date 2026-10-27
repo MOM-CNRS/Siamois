@@ -4,6 +4,8 @@ import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
+import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.api.dto.ThesaurusDTO;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,6 +61,23 @@ class VocabularyServiceTest {
 
         assertEquals("https://pactols.frantiq.fr/?idc=246344&idt=TH_1",
                 vocabularyService.resolveRedirections("https://ark.frantiq.fr/ark:/26678/pcrtA40nPyUzoy"));
+    }
+
+    @Test
+    void findDocumentationThesauriIn_shouldLabelTheThesauriOfTheScope() {
+        vocabulary.setBaseUri("https://opentheso.huma-num.fr/opentheso/");
+        vocabulary.setExternalVocabularyId("th230");
+        VocabularyLabel label = new VocabularyLabel();
+        label.setValue("Siamois test");
+        ProfilePermissionService.SettingsScope scope =
+                new ProfilePermissionService.SettingsScope(false, Set.of(12L), false, Set.of(), Set.of(40L));
+        when(vocabularyRepository.findDocumentationThesauriOf(false, Set.of(12L), false, Set.of(), Set.of(40L)))
+                .thenReturn(List.of(vocabulary));
+        when(labelService.findLabelOf(vocabulary, "fr")).thenReturn(label);
+
+        List<ThesaurusInfo> result = vocabularyService.findDocumentationThesauriIn(scope, "fr");
+
+        assertEquals(List.of(new ThesaurusInfo("https://opentheso.huma-num.fr/opentheso/", "th230", "Siamois test", "fr")), result);
     }
 
     @Test

@@ -164,7 +164,8 @@ main form.sia-profile-form .field-value-group {
     background-color: var(--siamois-green-light-100);
 }
 
-.sia-profile-rights {
+.sia-profile-rights,
+.sia-profile-api-keys {
     margin-top: 1em;
 }
 
@@ -940,6 +941,32 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     background-color: transparent;
     border-color: transparent;
     color: var(--siamois-green-active);
+}
+
+// Profile page, OpenTheso API keys: the thesaurus name followed by an icon link to it in OpenTheso,
+// and a key field filling its cell. Both columns lift the 18rem cap of the profile tables' cells and
+// share the width at fixed ratios: a "width: 100%" key column would squeeze the name column, whose cells
+// hide their overflow, down to nothing.
+.api-key-open-link {
+    margin-left: 0.5rem;
+    color: var(--siamois-green-active);
+}
+
+.field-value-content .ui-datatable-tablewrapper .api-key-thesaurus-cell {
+    width: 40%;
+    max-width: none;
+}
+
+.field-value-content .ui-datatable-tablewrapper .api-key-cell {
+    width: 60%;
+    max-width: none;
+}
+
+.api-key-cell .ui-password,
+.api-key-cell .ui-password input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 // Filter bar of the settings lists, the same pattern as the React lists: one chip per active filter
