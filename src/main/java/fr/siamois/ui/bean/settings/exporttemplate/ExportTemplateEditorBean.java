@@ -142,7 +142,6 @@ public class ExportTemplateEditorBean implements Serializable {
         selectedSheetIndex = 0;
         selectedColumn = null;
         sourceDialog.reset();
-        addColumnOpen = false;
         clearCaches();
         loadProjects();
         // L'aperçu est la vue par défaut ; sans projet de référence, il invite à en choisir un.
@@ -257,6 +256,7 @@ public class ExportTemplateEditorBean implements Serializable {
         selectedColumn = null;
         gapSource = -1;
         sourceDialog.reset();
+        refreshPreviewIfStale();
     }
 
     public boolean isSelected(EditSheet sheet) {
@@ -275,6 +275,14 @@ public class ExportTemplateEditorBean implements Serializable {
         selectedColumn = null;
         gapSource = -1;
         sourceDialog.reset();
+        refreshPreviewIfStale();
+    }
+
+    /** Recalcule l'aperçu quand la feuille affichée n'en fait pas partie (feuille ajoutée ou renommée depuis le dernier calcul). */
+    private void refreshPreviewIfStale() {
+        if (previewOpen && referenceProjectId != null && getPreviewOfSelectedSheet() == null) {
+            refreshPreview();
+        }
     }
 
     private String nextSheetName() {
@@ -345,9 +353,9 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         List<String> reindexed = new ArrayList<>();
         for (String s : rule.getSources()) {
-            int index = Integer.parseInt(s);
+            int index = srcIndex(s);
             if (index != removed) {
-                reindexed.add(String.valueOf(index > removed ? index - 1 : index));
+                reindexed.add((index > removed ? index - 1 : index) + s.substring(s.indexOf(':') < 0 ? s.length() : s.indexOf(':')));
             }
         }
         rule.setSources(reindexed);
@@ -490,7 +498,7 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         normalizeFieldKinds();
         try {
-            ExportTemplateDefinition definition = ExportTemplateJson.parse(ExportTemplateJson.toJson(model.toDefinition()));
+            ExportTemplateDefinition definition = ExportTemplateJson.parse(ExportTemplateJson.toJson(model.toPreviewDefinition()));
             preview = exportService.preview(userInfoUser(), definition, referenceProjectId, PREVIEW_ROWS);
             previewWarnings = preview.warnings().stream().map(w -> ExportWarningMessages.of(langBean, w)).toList();
             previewOpen = true;
@@ -791,7 +799,7 @@ public class ExportTemplateEditorBean implements Serializable {
 
     private List<String> typeKeysOf(String tableKey) {
         return tableDef(tableKey).map(TableDef::entity)
-                .map(kind -> typeItemsFor(kind, sourceDialog.getTypes()).stream().map(Item::value).toList())
+                .map(kind -> typeItemsFor(kind, tableKey.equals(sourceDialog.getTable()) ? sourceDialog.getTypes() : List.<String>of()).stream().map(Item::value).toList())
                 .orElse(List.of());
     }
 
@@ -807,7 +815,7 @@ public class ExportTemplateEditorBean implements Serializable {
 
     private Optional<ExportSourceDialog.Table> sourceTreeNode(TableDef def, String q) {
         boolean tableMatch = q.isEmpty() || def.label().toLowerCase().contains(q);
-        List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), sourceDialog.getTypes());
+        List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), def.key().equals(sourceDialog.getTable()) ? sourceDialog.getTypes() : List.of());
         boolean current = def.key().equals(sourceDialog.getTable());
         SourceCounts counts = countsOf(def.subject());
         List<ExportSourceDialog.Type> types = items.stream()
@@ -997,8 +1005,12 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         applyTable(source);
         importFields(sheet, index);
+        normalizeTargets();
         sourceDialog.reset();
         selectedColumn = null;
+        if (previewOpen && referenceProjectId != null) {
+            refreshPreview();
+        }
     }
 
     private void applyTable(EditSource source) {
@@ -1093,7 +1105,7 @@ public class ExportTemplateEditorBean implements Serializable {
         if (rule.getSources().isEmpty()) {
             return java.util.stream.IntStream.range(0, sheet.getSources().size()).boxed().toList();
         }
-        return rule.getSources().stream().map(Integer::valueOf).filter(i -> i < sheet.getSources().size()).toList();
+        return rule.getSources().stream().map(ExportTemplateEditorBean::srcIndex).filter(i -> i < sheet.getSources().size()).distinct().toList();
     }
 
     /** Une ligne du menu de suggestions de la recherche. */
@@ -1273,18 +1285,36 @@ public class ExportTemplateEditorBean implements Serializable {
         return sheet == null ? List.of() : getVisibleColumns().stream().map(c -> sheet.getColumns().indexOf(c)).toList();
     }
 
+    /** Nom de la colonne tel que saisi dans le modèle : il s'affiche même si l'aperçu est périmé ou la colonne pas encore mappée. */
     public String previewHeader(int index) {
-        ExportEngine.SheetPreview sp = getPreviewOfSelectedSheet();
-        return sp == null || index < 0 || index >= sp.headers().size() ? "" : sp.headers().get(index);
+        EditSheet sheet = getSelectedSheet();
+        if (sheet == null || index < 0 || index >= sheet.getColumns().size()) {
+            return "";
+        }
+        String header = sheet.getColumns().get(index).getHeader();
+        return header == null ? "" : header;
     }
 
-    /** Champ mappé de la colonne, affiché sous son nom dans l'en-tête de l'aperçu. */
+    /** Champ mappé de la colonne, affiché sous son nom dans l'en-tête de l'aperçu (vide tant qu'aucun mapping n'est défini). */
     public String previewFieldText(int index) {
         EditSheet sheet = getSelectedSheet();
         if (sheet == null || index < 0 || index >= sheet.getColumns().size()) {
             return "";
         }
-        return mappingSummary(sheet.getColumns().get(index));
+        EditColumn column = sheet.getColumns().get(index);
+        return previewColumnStatus(index).equals("NONE") ? "" : mappingSummary(column);
+    }
+
+    /** Statut (OK, CHECK, NONE) de la colonne à cette position, pour le chip d'alerte de l'en-tête de l'aperçu. */
+    public String previewColumnStatus(int index) {
+        EditSheet sheet = getSelectedSheet();
+        if (sheet == null || index < 0 || index >= sheet.getColumns().size()) {
+            return "OK";
+        }
+        EditColumn column = sheet.getColumns().get(index);
+        String status = columnStatus(column);
+        // un mapping sans champ choisi (« ? ») compte comme non défini
+        return !"NONE".equals(status) && mappingText(column).contains("?") ? "NONE" : status;
     }
 
     public String previewCell(List<String> row, int index) {
@@ -1432,8 +1462,6 @@ public class ExportTemplateEditorBean implements Serializable {
 
     private String columnFilter = FILTER_ALL;
     private String columnSearch = "";
-    private boolean addColumnOpen;
-    private String newColumnName = "";
 
     public void selectColumnFilter(String filter) {
         columnFilter = filter;
@@ -1441,9 +1469,8 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Règle qui produit la valeur de la colonne pour la source donnée (une règle sans source vaut pour toutes). */
     public Optional<EditRule> ruleAt(EditColumn column, int sourceIndex) {
-        String index = String.valueOf(sourceIndex);
         return column.getRules().stream()
-                .filter(r -> r.getSources().isEmpty() || r.getSources().contains(index))
+                .filter(r -> r.getSources().isEmpty() || r.getSources().stream().anyMatch(t -> srcIndex(t) == sourceIndex))
                 .findFirst();
     }
 
@@ -1549,7 +1576,7 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         try {
             normalizeFieldKinds();
-            ExportTemplateDefinition definition = ExportTemplateJson.parse(ExportTemplateJson.toJson(model.toDefinition()));
+            ExportTemplateDefinition definition = ExportTemplateJson.parse(ExportTemplateJson.toJson(model.toPreviewDefinition()));
             String key = referenceProjectId + ExportTemplateJson.toJson(definition);
             if (!key.equals(sampleKey)) {
                 sample = exportService.preview(userInfoUser(), definition, referenceProjectId, SAMPLE_ROWS);
@@ -1573,30 +1600,20 @@ public class ExportTemplateEditorBean implements Serializable {
         return sheet == null || selectedColumn == null ? -1 : sheet.getColumns().indexOf(selectedColumn);
     }
 
-    public void openAddColumn() {
-        if (published) {
-            return;
-        }
-        addColumnOpen = true;
-        newColumnName = "";
-    }
-
-    public void closeAddColumn() {
-        addColumnOpen = false;
-    }
-
-    /** Ajoute une colonne sans mapping (nommée « colonne_n » si le nom est vide) et la sélectionne. */
-    public void confirmAddColumn() {
+    /** Ajoute une colonne sans mapping, au nom générique « colonne_n », et l'ouvre dans le volet de détail. */
+    public void addColumn() {
         if (published) {
             return;
         }
         EditSheet sheet = requireSelectedSheet();
+        int n = sheet.getColumns().size() + 1;
+        while (headerTaken(sheet, "colonne_" + n)) {
+            n++;
+        }
         EditColumn column = new EditColumn();
-        String name = newColumnName == null ? "" : newColumnName.trim();
-        column.setHeader(name.isEmpty() ? "colonne_" + (sheet.getColumns().size() + 1) : name);
+        column.setHeader("colonne_" + n);
         sheet.getColumns().add(column);
         selectColumn(column);
-        addColumnOpen = false;
     }
 
     /** Le nom de la colonne sélectionnée a changé : l'ordre de tri de la feuille suit. */
@@ -1650,7 +1667,7 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     public boolean ruleCovers(EditRule rule, int sourceIndex) {
-        return rule.getSources().isEmpty() || rule.getSources().contains(String.valueOf(sourceIndex));
+        return rule.getSources().isEmpty() || rule.getSources().stream().anyMatch(t -> srcIndex(t) == sourceIndex);
     }
 
     /** Cible ou retire une source pour un mapping (une règle sans source visait toutes les sources). */
@@ -1670,7 +1687,7 @@ public class ExportTemplateEditorBean implements Serializable {
         if (!now.remove(index)) {
             now.add(index);
         }
-        now.sort(Comparator.comparingInt(Integer::parseInt));
+        now.sort(Comparator.comparingInt(ExportTemplateEditorBean::srcIndex));
         rule.setSources(now);
     }
 
@@ -1696,9 +1713,45 @@ public class ExportTemplateEditorBean implements Serializable {
                 .reduce((a, b) -> a + ", " + b).orElse("");
     }
 
-    /** Valeur d'exemple d'un mapping : celle de la première ligne de l'aperçu pour la colonne. */
-    public String getRulePreview() {
-        return selectedColumn == null ? "" : previewValue(selectedColumn);
+    /**
+     * Exemple d'un mapping : la valeur réelle de la colonne quand elle n'a que ce mapping et que le projet de référence en
+     * donne une, sinon un texte construit à partir du mapping avec des valeurs fictives pour les champs.
+     */
+    public String rulePreview(EditRule rule) {
+        if (selectedColumn == null || rule == null) {
+            return "";
+        }
+        if (selectedColumn.getRules().size() == 1) {
+            String real = previewValue(selectedColumn);
+            if (!real.isBlank()) {
+                return real;
+            }
+        }
+        return switch (rule.getType()) {
+            case ExportTemplateEditModel.RULE_CONSTANT -> rule.getConstantValue() == null ? "" : rule.getConstantValue();
+            case ExportTemplateEditModel.RULE_CONCAT -> concatPlaceholder(rule);
+            default -> placeholderOf(rule.getSources(), rule.getFieldChoice());
+        };
+    }
+
+    private String concatPlaceholder(EditRule rule) {
+        String separator = rule.getSeparator() == null ? "" : rule.getSeparator();
+        String labelSeparator = rule.getLabelSeparator() == null ? "" : rule.getLabelSeparator();
+        List<String> pieces = new ArrayList<>();
+        for (var part : rule.getParts()) {
+            String value = part.isLiteralPart()
+                    ? (part.getLiteral() == null ? "" : part.getLiteral())
+                    : placeholderOf(rule.getSources(), part.getFieldChoice());
+            String label = part.getLabel() == null ? "" : part.getLabel().trim();
+            pieces.add(label.isEmpty() ? value : label + labelSeparator + value);
+        }
+        return String.join(separator, pieces);
+    }
+
+    /** Valeur fictive d'un champ : son libellé entre chevrons, ou « valeur » tant qu'aucun champ n'est choisi. */
+    private String placeholderOf(List<String> sourceChoices, String choice) {
+        String label = choiceLabel(sourceChoices, choice);
+        return "?".equals(label) ? "‹valeur›" : "‹" + label + "›";
     }
 
     private String describeRule(EditRule rule) {
@@ -1737,6 +1790,28 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     // ------------------------------------------------------------------ listes déroulantes
+
+    /**
+     * Cibles d'un mapping : une entrée par type de chaque source (valeur « i:type »), ou par source quand elle n'a pas
+     * de types précis (valeur « i », libellé de sa table).
+     */
+    public List<Item> getSourceItems() {
+        EditSheet sheet = getSelectedSheet();
+        List<Item> items = new ArrayList<>();
+        for (int i = 0; sheet != null && i < sheet.getSources().size(); i++) {
+            EditSource source = sheet.getSources().get(i);
+            List<Item> types = typeItems(source);
+            if (source.getTypeKeys().isEmpty()) {
+                items.add(new Item(describe(source), String.valueOf(i)));
+                continue;
+            }
+            for (String key : source.getTypeKeys()) {
+                String label = types.stream().filter(t -> t.value().equals(key)).map(Item::label).findFirst().orElse(key);
+                items.add(new Item(label, source.getTypeKeys().size() == 1 ? String.valueOf(i) : i + ":" + key));
+            }
+        }
+        return items;
+    }
 
     public List<Item> getOutputItems() {
         return Arrays.stream(OutputType.values())
@@ -1935,9 +2010,47 @@ public class ExportTemplateEditorBean implements Serializable {
         if (choices.isEmpty()) {
             for (int i = 0; i < sheet.getSources().size(); i++) out.add(i);
         } else {
-            choices.stream().map(Integer::valueOf).filter(i -> i >= 0 && i < sheet.getSources().size()).sorted().forEach(out::add);
+            choices.stream().map(ExportTemplateEditorBean::srcIndex).filter(i -> i >= 0 && i < sheet.getSources().size()).distinct().sorted().forEach(out::add);
         }
         return out;
+    }
+
+    /** Aligne les cibles des mappings sur les types des sources (« i » pour une source à un seul type, « i:type » sinon). */
+    public void normalizeTargets() {
+        EditSheet sheet = getSelectedSheet();
+        if (sheet == null) {
+            return;
+        }
+        for (EditColumn column : sheet.getColumns()) {
+            for (EditRule rule : column.getRules()) {
+                rule.setSources(normalizedTargets(sheet, rule.getSources()));
+            }
+        }
+    }
+
+    private static List<String> normalizedTargets(EditSheet sheet, List<String> targets) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (String target : targets) {
+            int index = srcIndex(target);
+            if (index < 0 || index >= sheet.getSources().size()) {
+                continue;
+            }
+            List<String> types = sheet.getSources().get(index).getTypeKeys();
+            if (types.size() <= 1) {
+                out.add(String.valueOf(index));
+            } else if (target.indexOf(':') < 0) {
+                types.forEach(k -> out.add(index + ":" + k));
+            } else if (types.contains(target.substring(target.indexOf(':') + 1))) {
+                out.add(target);
+            }
+        }
+        return new ArrayList<>(out);
+    }
+
+    /** Position de la source visée par une cible de mapping (« i », ou « i:type » pour un type précis d'une source). */
+    private static int srcIndex(String target) {
+        int colon = target.indexOf(':');
+        return Integer.parseInt(colon < 0 ? target : target.substring(0, colon));
     }
 
     private Optional<EditSource> firstSource(List<String> choices) {

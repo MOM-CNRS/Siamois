@@ -40,6 +40,17 @@ class ExportTemplateEditModelTest {
     }
 
     @Test
+    void toPreviewDefinition_skipsRulesWithoutAField_whereToDefinitionFails() {
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
+        EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
+        direct.getField().setKey("");
+
+        assertThatThrownBy(model::toDefinition).isInstanceOf(IllegalArgumentException.class);
+        assertThat(model.toPreviewDefinition().sheets().get(0).columns().get(0).rules())
+                .hasSize(model.getSheets().get(0).getColumns().get(0).getRules().size() - 1);
+    }
+
+    @Test
     void from_exposesTextualFormValues() {
         ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
 

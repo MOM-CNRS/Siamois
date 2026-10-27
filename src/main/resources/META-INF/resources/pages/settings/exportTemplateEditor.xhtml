@@ -195,13 +195,13 @@
                                                oncomplete="PF('xeSourceDlg').show()">
                                     + #{langBean.msg('exportTemplates.editor.sheet.add')}
                                 </p:commandLink>
+                                <p:commandButton id="sheetSettingsBtn" type="button" styleClass="xe-tab-add xe-edit xe-sheet-settings"
+                                                 icon="bi bi-gear" value="#{langBean.msg('exportTemplates.editor.sheetSettings')}"/>
                             </div>
 
-                            <!-- Réglages de la feuille : popover sous le bouton, à droite de la ligne d'onglets -->
-                            <p:commandButton id="sheetSettingsBtn" type="button" styleClass="xt-btn-flat xe-edit xe-sheet-settings"
-                                             icon="bi bi-gear" value="#{langBean.msg('exportTemplates.editor.sheetSettings')}"/>
+                            <!-- Réglages de la feuille : popover sous le bouton, à côté de « Ajouter une feuille » -->
                             <p:overlayPanel for="sheetSettingsBtn" widgetVar="xeSheetPanel" styleClass="xe-popover" appendTo="@form"
-                                            my="right top" at="right bottom" dismissable="true" showCloseIcon="false">
+                                            my="left top" at="left bottom" dismissable="true" showCloseIcon="false">
                                 <div class="xe-pop-body" style="width: 360px">
                                     <div class="xe-field">
                                         <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.sheet.name')}"/>
@@ -225,7 +225,7 @@
                                                               disabled="#{exportTemplateEditorBean.published}">
                                             <f:selectItems value="#{exportTemplateEditorBean.typeItems(src)}" var="ti"
                                                            itemLabel="#{ti.label()}" itemValue="#{ti.value()}"/>
-                                            <p:ajax event="change" process="@this" update="@(.xe-source-chips)"/>
+                                            <p:ajax event="change" listener="#{exportTemplateEditorBean.normalizeTargets()}" process="@this" update="@(.xe-source-chips)"/>
                                         </p:selectCheckboxMenu>
                                         <p:commandLink styleClass="xe-x xe-edit" title="#{langBean.msg('exportTemplates.editor.source.remove')}"
                                                        action="#{exportTemplateEditorBean.removeSource(src)}" process="@form" update="@form">
@@ -293,9 +293,9 @@
                             <div class="xe-list-tools">
                                 <div class="xe-search xe-grow">
                                     <i class="bi bi-search"/>
-                                    <p:autoComplete id="xeSearch" value="#{exportTemplateEditorBean.searchPick}" styleClass="xe-search-ac" inputStyleClass="xe-search-input"
+                                    <p:autoComplete id="xeSearch" widgetVar="xeSearchW" value="#{exportTemplateEditorBean.searchPick}" styleClass="xe-search-ac" inputStyleClass="xe-search-input"
                                                     completeMethod="#{exportTemplateEditorBean.completeSearch}" converter="#{exportSearchHitConverter}"
-                                                    var="o" itemLabel="#{o.text}" itemValue="#{o}" groupBy="#{o.group}" dropdown="true"
+                                                    var="o" itemLabel="#{o.text}" itemValue="#{o}" groupBy="#{o.group}" dropdown="false" onfocus="var w = PF('xeSearchW'); if (w &amp;&amp; !w.input.val()) { w.search(''); }"
                                                     minQueryLength="0" scrollHeight="320" appendTo="@form" forceSelection="false"
                                                     placeholder="#{langBean.msg('exportTemplates.editor.columns.search')}">
                                         <p:ajax event="query" update="xeResults"/>
@@ -321,21 +321,9 @@
                                     </p:commandLink>
                                 </h:panelGroup>
                                 <span class="xe-list-count">#{langBean.msg('exportTemplates.editor.columns.count', exportTemplateEditorBean.mappedColumnCount, exportTemplateEditorBean.selectedSheet.columns.size())}</span>
-                                <h:panelGroup rendered="#{not exportTemplateEditorBean.addColumnOpen}">
-                                    <p:commandLink styleClass="xe-dashed small" action="#{exportTemplateEditorBean.openAddColumn()}" process="@this" update="@form">
-                                        + #{langBean.msg('exportTemplates.editor.column.add')}
-                                    </p:commandLink>
-                                </h:panelGroup>
-                                <h:panelGroup rendered="#{exportTemplateEditorBean.addColumnOpen}" styleClass="xe-addcol">
-                                    <p:inputText value="#{exportTemplateEditorBean.newColumnName}" style="width: 160px"
-                                                 placeholder="#{langBean.msg('exportTemplates.editor.column.namePlaceholder')}"/>
-                                    <p:commandLink styleClass="xe-btn solid" action="#{exportTemplateEditorBean.confirmAddColumn()}" process="@form" update="@form">
-                                        #{langBean.msg('exportTemplates.editor.column.addConfirm')}
-                                    </p:commandLink>
-                                    <p:commandLink styleClass="xe-textbtn" action="#{exportTemplateEditorBean.closeAddColumn()}" process="@this" update="@form">
-                                        #{langBean.msg('exportTemplates.editor.cancel')}
-                                    </p:commandLink>
-                                </h:panelGroup>
+                                <p:commandLink styleClass="xe-dashed small" action="#{exportTemplateEditorBean.addColumn()}" process="@this" update="@form">
+                                    + #{langBean.msg('exportTemplates.editor.column.add')}
+                                </p:commandLink>
                             </div>
                         <h:panelGroup id="xeResults" layout="block" styleClass="xe-results">
                         <h:panelGroup layout="block" styleClass="xe-pane-wrap">
@@ -364,6 +352,17 @@
                                             <span class="xe-cell xe-mono">#{exportTemplateEditorBean.previewValue(col)}</span>
                                         </p:commandLink>
                                     </ui:repeat>
+                                    <ui:fragment rendered="#{empty exportTemplateEditorBean.visibleColumns}">
+                                        <div class="xe-empty-row">
+                                            <h:panelGroup rendered="#{not empty exportTemplateEditorBean.selectedSheet.columns}">
+                                                #{langBean.msg('exportTemplates.editor.columns.noMatch')}
+                                            </h:panelGroup>
+                                            <p:commandLink rendered="#{empty exportTemplateEditorBean.selectedSheet.columns}" styleClass="xe-dashed small"
+                                                           action="#{exportTemplateEditorBean.addColumn()}" process="@this" update="@form">
+                                                + #{langBean.msg('exportTemplates.editor.column.add')}
+                                            </p:commandLink>
+                                        </div>
+                                    </ui:fragment>
                                 </div>
                                 </h:panelGroup>
                                 <!-- Aperçu des données : mêmes colonnes que la liste (recherche et filtres communs) ; un clic ouvre le panneau -->
@@ -392,7 +391,11 @@
                                                             title="#{langBean.msg('exportTemplates.editor.preview.openMapping')}"
                                                             onclick="xeSelectColumn([{name: 'ix', value: #{ix}}])"
                                                             onkeydown="if (event.key === 'Enter') { xeSelectColumn([{name: 'ix', value: #{ix}}]); }">
-                                                            <div>#{exportTemplateEditorBean.previewHeader(ix)}</div>
+                                                            <div>#{exportTemplateEditorBean.previewHeader(ix)}
+                                                                <h:panelGroup rendered="#{exportTemplateEditorBean.previewColumnStatus(ix) ne 'OK'}" styleClass="xe-state #{exportTemplateEditorBean.previewColumnStatus(ix)}">
+                                                                    #{langBean.msg('exportTemplates.editor.status.'.concat(exportTemplateEditorBean.previewColumnStatus(ix)))}
+                                                                </h:panelGroup>
+                                                            </div>
                                                             <div class="xe-th-field">#{exportTemplateEditorBean.previewFieldText(ix)}</div>
                                                         </th>
                                                     </ui:repeat>
@@ -408,12 +411,22 @@
                                                         </ui:repeat>
                                                     </tr>
                                                 </ui:repeat>
+                                                <ui:fragment rendered="#{empty exportTemplateEditorBean.previewOfSelectedSheet.rows()}">
+                                                    <tr class="xe-empty-row">
+                                                        <td colspan="#{exportTemplateEditorBean.previewColumnIndexes.size() gt 0 ? exportTemplateEditorBean.previewColumnIndexes.size() : 1}">
+                                                            <h:panelGroup rendered="#{not empty exportTemplateEditorBean.selectedSheet.columns}">
+                                                                #{langBean.msg('exportTemplates.editor.preview.empty')}
+                                                            </h:panelGroup>
+                                                            <p:commandLink rendered="#{empty exportTemplateEditorBean.selectedSheet.columns}" styleClass="xe-dashed small"
+                                                                           action="#{exportTemplateEditorBean.addColumn()}" process="@this" update="@form">
+                                                                + #{langBean.msg('exportTemplates.editor.column.add')}
+                                                            </p:commandLink>
+                                                        </td>
+                                                    </tr>
+                                                </ui:fragment>
                                                 </tbody>
                                             </table>
                                         </div>
-                                        <h:panelGroup rendered="#{empty exportTemplateEditorBean.previewOfSelectedSheet.rows()}" layout="block" styleClass="xe-empty">
-                                            #{langBean.msg('exportTemplates.editor.preview.empty')}
-                                        </h:panelGroup>
                                     </h:panelGroup>
                                     <h:panelGroup rendered="#{not empty exportTemplateEditorBean.previewWarnings}"
                                                   layout="block" styleClass="xe-warn" style="margin: 12px">
@@ -436,31 +449,28 @@
                                 </h:panelGroup>
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.selectedColumn != null}" layout="block">
                                     <div class="xe-detail-head">
+                                        <p:commandLink styleClass="xe-x xe-close" title="#{langBean.msg('exportTemplates.editor.close')}"
+                                                       action="#{exportTemplateEditorBean.closeDetail()}" process="@this" update="@form">
+                                            <i class="bi bi-chevron-bar-right"/>
+                                        </p:commandLink>
                                         <p:inputText value="#{exportTemplateEditorBean.selectedColumn.header}" styleClass="xe-colname" maxlength="150"
-                                                     style="width: #{exportTemplateEditorBean.nameWidth(exportTemplateEditorBean.selectedColumn)}">
+                                                     title="#{langBean.msg('exportTemplates.editor.columns.target')}">
                                             <p:ajax event="change" listener="#{exportTemplateEditorBean.onColumnRenamed()}" process="@this" update="@form"/>
                                         </p:inputText>
                                         <span class="xe-state #{exportTemplateEditorBean.columnStatus(exportTemplateEditorBean.selectedColumn)}">
                                             #{langBean.msg('exportTemplates.editor.status.'.concat(exportTemplateEditorBean.columnStatus(exportTemplateEditorBean.selectedColumn)))}
                                         </span>
-                                        <p:commandLink styleClass="xe-x xe-close" title="#{langBean.msg('exportTemplates.editor.close')}"
-                                                       action="#{exportTemplateEditorBean.closeDetail()}" process="@this" update="@form">
-                                            <i class="bi bi-x-lg"/>
-                                        </p:commandLink>
-                                    </div>
-                                    <div class="xe-detail-sub">
-                                        <span>#{langBean.msg('exportTemplates.editor.columns.target')}</span>
                                         <span class="xe-detail-tools">
                                             <p:selectOneMenu value="#{exportTemplateEditorBean.selectedColumn.output}" styleClass="xe-select" title="#{langBean.msg('exportTemplates.editor.column.output')}">
                                                 <f:selectItems value="#{exportTemplateEditorBean.outputItems}" var="o" itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
                                             </p:selectOneMenu>
                                             <p:commandLink styleClass="xe-x" title="#{langBean.msg('exportTemplates.editor.moveUp')}"
                                                            action="#{exportTemplateEditorBean.moveColumn(exportTemplateEditorBean.selectedColumn, -1)}" process="@form" update="@form">
-                                                <i class="bi bi-arrow-up"/>
+                                                <i class="bi bi-arrow-left"/>
                                             </p:commandLink>
                                             <p:commandLink styleClass="xe-x" title="#{langBean.msg('exportTemplates.editor.moveDown')}"
                                                            action="#{exportTemplateEditorBean.moveColumn(exportTemplateEditorBean.selectedColumn, 1)}" process="@form" update="@form">
-                                                <i class="bi bi-arrow-down"/>
+                                                <i class="bi bi-arrow-right"/>
                                             </p:commandLink>
                                         </span>
                                     </div>
@@ -474,15 +484,14 @@
                                     <ui:repeat value="#{exportTemplateEditorBean.selectedColumn.rules}" var="rule">
                                         <div class="xe-rule">
                                             <div class="xe-rule-head">
-                                                <div class="xe-source-chips">
-                                                    <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.sources}" var="rsrc" varStatus="rs">
-                                                        <p:commandLink styleClass="xe-schip #{exportTemplateEditorBean.entityStyleOf(rsrc).cssClass()} #{exportTemplateEditorBean.ruleCovers(rule, rs.index) ? 'on' : ''}"
-                                                                       action="#{exportTemplateEditorBean.toggleRuleSource(rule, rs.index)}" process="@form" update="@form">
-                                                            <i class="bi #{exportTemplateEditorBean.entityStyleOf(rsrc).icon()} xe-ent-icon"/>
-                                                            #{exportTemplateEditorBean.sourceChipLabel(rsrc)}
-                                                        </p:commandLink>
-                                                    </ui:repeat>
-                                                </div>
+                                                <p:selectCheckboxMenu value="#{rule.sources}" multiple="true" filter="true" appendTo="@this"
+                                                                      styleClass="xe-rule-sources" panelStyleClass="xe-src-menu"
+                                                                      emptyLabel="#{langBean.msg('exportTemplates.editor.source.allSources')}"
+                                                                      disabled="#{exportTemplateEditorBean.published}">
+                                                    <f:selectItems value="#{exportTemplateEditorBean.sourceItems}" var="si"
+                                                                   itemLabel="#{si.label()}" itemValue="#{si.value()}"/>
+                                                    <p:ajax event="change" process="@this" update="@form"/>
+                                                </p:selectCheckboxMenu>
                                                 <p:commandLink styleClass="xe-x" action="#{exportTemplateEditorBean.removeRule(rule)}" process="@form" update="@form">
                                                     <i class="bi bi-x-lg"/>
                                                 </p:commandLink>
@@ -550,20 +559,29 @@
                                                         <p:inputText value="#{rule.labelSeparator}"/>
                                                     </div>
                                                 </div>
-                                                <ui:repeat value="#{rule.parts}" var="part">
+                                                <ui:repeat value="#{rule.parts}" var="part" varStatus="ps">
                                                     <div class="xe-part">
-                                                        <p:inputText value="#{part.label}" placeholder="#{langBean.msg('exportTemplates.editor.part.label')}"/>
-                                                        <h:panelGroup rendered="#{part.literalPart}" layout="block">
-                                                            <p:inputText value="#{part.literal}" placeholder="#{langBean.msg('exportTemplates.editor.part.literal')}"/>
-                                                        </h:panelGroup>
-                                                        <h:panelGroup rendered="#{not part.literalPart}" layout="block">
-                                                            <p:selectOneMenu value="#{part.fieldChoice}" styleClass="xe-select" style="width: 100%" filter="true" filterMatchMode="contains">
-                                                                <f:selectItems value="#{exportTemplateEditorBean.fieldChoices(rule, part)}"/>
-                                                            </p:selectOneMenu>
-                                                        </h:panelGroup>
-                                                        <p:commandLink styleClass="xe-textbtn danger" action="#{exportTemplateEditorBean.removePart(rule, part)}" process="@form" update="@form">
-                                                            #{langBean.msg('exportTemplates.delete')}
-                                                        </p:commandLink>
+                                                        <div class="xe-part-body">
+                                                            <div class="xe-field xe-part-main">
+                                                                <label>#{langBean.msg('exportTemplates.editor.part.title', ps.index + 1)}</label>
+                                                                <h:panelGroup rendered="#{part.literalPart}" layout="block">
+                                                                    <p:inputText value="#{part.literal}" placeholder="#{langBean.msg('exportTemplates.editor.part.literal')}"/>
+                                                                </h:panelGroup>
+                                                                <h:panelGroup rendered="#{not part.literalPart}" layout="block">
+                                                                    <p:selectOneMenu value="#{part.fieldChoice}" styleClass="xe-select" style="width: 100%" filter="true" filterMatchMode="contains">
+                                                                        <f:selectItems value="#{exportTemplateEditorBean.fieldChoices(rule, part)}"/>
+                                                                    </p:selectOneMenu>
+                                                                </h:panelGroup>
+                                                            </div>
+                                                            <div class="xe-field xe-part-labelbox">
+                                                                <label>#{langBean.msg('exportTemplates.editor.part.labelTitle')}</label>
+                                                                <p:inputText value="#{part.label}" placeholder="#{langBean.msg('exportTemplates.editor.part.label')}"/>
+                                                            </div>
+                                                            <p:commandLink styleClass="xe-x" title="#{langBean.msg('exportTemplates.delete')}"
+                                                                           action="#{exportTemplateEditorBean.removePart(rule, part)}" process="@form" update="@form">
+                                                                <i class="bi bi-trash"/>
+                                                            </p:commandLink>
+                                                        </div>
                                                     </div>
                                                 </ui:repeat>
                                                 <div class="xe-row2">
@@ -577,7 +595,7 @@
                                             </h:panelGroup>
 
                                             <div class="xe-previewlabel">#{langBean.msg('exportTemplates.editor.columns.preview')}</div>
-                                            <div class="xe-previewbox">#{exportTemplateEditorBean.rulePreview}</div>
+                                            <div class="xe-previewbox">#{exportTemplateEditorBean.rulePreview(rule)}</div>
                                         </div>
                                     </ui:repeat>
 
