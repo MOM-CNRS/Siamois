@@ -2,15 +2,14 @@ package fr.siamois.domain.models.form.config;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import jakarta.persistence.*;
-import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
-import org.hibernate.envers.RelationTargetAuditMode;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.RelationTargetAuditMode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.lang.NonNull;
 
 import java.util.Objects;

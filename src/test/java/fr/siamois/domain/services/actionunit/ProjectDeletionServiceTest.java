@@ -4,16 +4,8 @@ import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.infrastructure.database.repositories.ArkRepository;
-import fr.siamois.infrastructure.database.repositories.ContainerRepository;
-import fr.siamois.infrastructure.database.repositories.DocumentRepository;
-import fr.siamois.infrastructure.database.repositories.PhaseRepository;
-import fr.siamois.infrastructure.database.repositories.StudyRepository;
-import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
-import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
-import fr.siamois.infrastructure.database.repositories.form.config.FormConfigAnswerRepository;
-import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
-import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
+import fr.siamois.infrastructure.database.repositories.*;
+import fr.siamois.infrastructure.database.repositories.form.config.*;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
@@ -33,15 +25,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

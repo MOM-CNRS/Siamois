@@ -1,16 +1,15 @@
 package fr.siamois.ui.bean.settings.project;
 
-import fr.siamois.dto.entity.PersonDTO;
-import static org.mockito.ArgumentMatchers.nullable;
-import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
+import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProjectMemberDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.project.NewProjectMemberDialogBean;
 import fr.siamois.ui.email.InvitationMailer;
-import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.utils.MessageUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +19,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectMembersListBeanSettingsAccessTest {

@@ -3,24 +3,20 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTechnicalSource;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptRef;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntitySource;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ProjectSource;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
-import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
@@ -30,13 +26,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Lit les lignes d'une source de feuille pour un projet : les entités du projet (filtrées par type), le

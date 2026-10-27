@@ -16,8 +16,11 @@ import fr.siamois.infrastructure.database.repositories.specimen.SpecimenReposito
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
-import fr.siamois.ui.form.dto.*;
 import fr.siamois.ui.bean.LabelBean;
+import fr.siamois.ui.form.dto.CustomColUiDto;
+import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
+import fr.siamois.ui.form.dto.CustomRowUiDto;
+import fr.siamois.ui.form.dto.FormUiDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;

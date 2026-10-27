@@ -2,13 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.MeasurementAnswerDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -16,12 +10,7 @@ import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import org.junit.jupiter.api.Test;
 
-import java.util.LinkedHashSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

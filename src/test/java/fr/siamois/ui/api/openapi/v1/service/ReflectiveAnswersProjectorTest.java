@@ -7,13 +7,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.dto.entity.AbstractEntityDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.dto.entity.SpecimenSummaryDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import org.junit.jupiter.api.Test;
 

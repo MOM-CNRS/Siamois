@@ -1,7 +1,6 @@
 package fr.siamois.domain.models.phase.form;
 
 
-import java.util.List;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -12,6 +11,8 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
+
+import java.util.List;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 

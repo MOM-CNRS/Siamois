@@ -1,8 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.request.find;
 
-import fr.siamois.domain.models.ValidationStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;

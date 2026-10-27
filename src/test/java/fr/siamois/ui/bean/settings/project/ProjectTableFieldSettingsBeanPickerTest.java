@@ -1,7 +1,6 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import org.mockito.ArgumentCaptor;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -17,11 +16,7 @@ import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
-import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
-import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.domain.services.vocabulary.*;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
@@ -29,19 +24,14 @@ import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /** The instance / thesaurus pickers of a field's vocabulary, the opening on a type and the list of saved values. */
 class ProjectTableFieldSettingsBeanPickerTest {

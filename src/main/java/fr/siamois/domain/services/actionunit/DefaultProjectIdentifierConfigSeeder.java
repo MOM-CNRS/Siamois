@@ -2,9 +2,9 @@ package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
-import fr.siamois.domain.models.study.form.StudyDefaults;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
+import fr.siamois.domain.models.study.form.StudyDefaults;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptService;

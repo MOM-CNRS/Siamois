@@ -1,8 +1,6 @@
 package fr.siamois.domain.services.spatialunit;
 
-import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
@@ -17,14 +15,15 @@ import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.TreePage;
 import fr.siamois.dto.PlaceSuggestionDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;

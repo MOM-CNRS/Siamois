@@ -1,6 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import java.util.function.LongFunction;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
@@ -13,11 +12,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.LongFunction;
 
 /**
  * A {@link RelationField}'s values in their API shape: {@link ResourceRef}s, each stratigraphic one
