@@ -38,6 +38,7 @@
         </sql>
     </changeSet>
 
+    <!--
     Sert à avertir si des doublons existent déjà dans la BD
     -->
 
