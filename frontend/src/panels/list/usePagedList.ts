@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { ListParams, PagedResult } from "../../entities/shared/types";
-import { queryKeys } from "../../api/queryKeys";
+import {useMemo, useState} from "react";
+import {keepPreviousData, useQuery} from "@tanstack/react-query";
+import type {ListParams, PagedResult} from "../../entities/shared/types";
+import {queryKeys} from "../../api/queryKeys";
 
 // Set on a row while one of its visible columns is still being fetched (see usePagedList's column
 // supplements) — the cell renders a skeleton instead of an empty value.

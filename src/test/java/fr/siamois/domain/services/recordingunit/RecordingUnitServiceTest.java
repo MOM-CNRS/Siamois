@@ -26,7 +26,6 @@ import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
 import fr.siamois.dto.entity.*;
-import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
@@ -39,6 +38,7 @@ import fr.siamois.mapper.RecordingUnitMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -49,11 +49,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.*;
@@ -220,6 +216,45 @@ class RecordingUnitServiceTest {
         when(recordingUnitRepository.findByFullIdentifierAndActionUnitId("RU-CONFLICT", 5L))
                 .thenReturn(List.of(conflicting));
         assertThat(spec.identifierAlreadyUsed().test(recordingUnit, "RU-CONFLICT")).isTrue();
+    }
+
+    @Test
+    void suggestFullIdentifier_returnsTheSuggestedValueWithoutTouchingTheUnit() {
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(5L);
+        actionUnit.setFullIdentifier("UA-5");
+
+        SpatialUnit spatialUnit = new SpatialUnit();
+        spatialUnit.setPlaceNumber(7);
+        Concept type = new Concept();
+        type.setId(42L);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(100L);
+        recordingUnit.setType(type);
+        recordingUnit.setSpatialUnit(spatialUnit);
+        recordingUnit.setIdentifier(55);
+        recordingUnit.setFullIdentifier("RU-55");
+
+        when(entityIdentifierGenerator.suggestIdentifier(eq(recordingUnit), any()))
+                .thenReturn(new GeneratedIdentifier(12, "UA-5-007-012"));
+
+        String result = recordingUnitService.suggestFullIdentifier(actionUnit, recordingUnit);
+
+        assertThat(result).isEqualTo("UA-5-007-012");
+        // A suggestion never modifies the unit: neither the number nor the identifier is overwritten.
+        assertThat(recordingUnit.getIdentifier()).isEqualTo(55);
+        assertThat(recordingUnit.getFullIdentifier()).isEqualTo("RU-55");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<IdentifierGenerationSpec<RecordingUnit>> specCaptor =
+                ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(entityIdentifierGenerator).suggestIdentifier(eq(recordingUnit), specCaptor.capture());
+        IdentifierGenerationSpec<RecordingUnit> spec = specCaptor.getValue();
+        assertThat(spec.table()).isEqualTo(ConfigurableTable.UE);
+        assertThat(spec.actionUnit().apply(recordingUnit)).isSameAs(actionUnit);
+        assertThat(spec.typeId().apply(recordingUnit)).isEqualTo(42L);
+        assertThat(spec.displayValues().get("NUM_USPATIAL").apply(recordingUnit)).isEqualTo(7);
+        assertThat(spec.displayValues().get("ID_UA").apply(recordingUnit)).isEqualTo("UA-5");
     }
 
     @Test

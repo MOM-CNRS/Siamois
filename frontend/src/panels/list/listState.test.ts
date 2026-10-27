@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { parsePersisted, toPersisted } from "./listState";
-import { createTableState } from "./tableState";
+import {describe, expect, it} from "vitest";
+import {parsePersisted, toPersisted} from "./listState";
+import {createTableState} from "./tableState";
 
 describe("toPersisted", () => {
   it("keeps the limit, sort, filters and view mode, but neither the page nor the search", () => {

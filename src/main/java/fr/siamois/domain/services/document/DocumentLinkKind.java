@@ -4,8 +4,8 @@ import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
 import org.springframework.data.jpa.domain.Specification;
 

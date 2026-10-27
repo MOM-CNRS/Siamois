@@ -1,22 +1,15 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.domain.models.permissions.Permission;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.permissions.PersonProfileAssignmentRepository;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

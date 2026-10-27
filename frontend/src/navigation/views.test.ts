@@ -1,11 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { configureBasePath } from "../api/basePath";
-import { registerEntityType } from "../entities/registry";
-import type { EntityTypeConfig } from "../entities/shared/types";
-import type { MountOptions } from "../mountOptions";
-import { listPath, resolveEntityPath, viewIdOfPath } from "./paths";
-import { decodeUrl, encodeUrl, initialNavState, navReducer } from "./reducer";
-import { encodeFocusUrl } from "./url";
+import {beforeAll, beforeEach, describe, expect, it} from "vitest";
+import {configureBasePath} from "../api/basePath";
+import {registerEntityType} from "../entities/registry";
+import type {EntityTypeConfig} from "../entities/shared/types";
+import type {MountOptions} from "../mountOptions";
+import {listPath, resolveEntityPath, viewIdOfPath} from "./paths";
+import {decodeUrl, encodeUrl, initialNavState, navReducer} from "./reducer";
+import {encodeFocusUrl} from "./url";
 
 // A list opens on a saved view through its address: `/recording-unit?viewId=12`.
 

@@ -1,6 +1,6 @@
-import { useWriteMode } from "../../panels/pane/writeMode";
-import { ValidationStatusButton } from "../detail/ValidationStatusButton";
-import { ValidationStatusBadge } from "./ValidationStatusBadge";
+import {useWriteMode} from "../../panels/pane/writeMode";
+import {ValidationStatusButton} from "../detail/ValidationStatusButton";
+import {ValidationStatusBadge} from "./ValidationStatusBadge";
 
 export interface ValidationStatusCellProps {
   entityType: string;

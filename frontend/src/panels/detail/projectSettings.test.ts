@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { openProjectSettings, openTablesSettings, settingsTableOf } from "./projectSettings";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {openProjectSettings, openTablesSettings, settingsTableOf} from "./projectSettings";
 
 const assign = vi.fn();
 const originalLocation = window.location;

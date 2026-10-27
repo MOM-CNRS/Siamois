@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Chip } from "primereact/chip";
-import { InputText } from "primereact/inputtext";
-import { messageForError } from "../../api/errors";
-import { queryKeys } from "../../api/queryKeys";
-import { getEffectiveForm } from "../../entities/shared/typeCatalog";
-import { getEntityType } from "../../entities/registry";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import type { FieldResource } from "../../fields/types";
-import type { FilterOption } from "../../fields/optionSources";
-import { isTypeField } from "../../fields/typeField";
-import { useCanEdit } from "../../panels/pane/writeMode";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {type KeyboardEvent, type ReactNode, useEffect, useMemo, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Chip} from "primereact/chip";
+import {InputText} from "primereact/inputtext";
+import {messageForError} from "../../api/errors";
+import {queryKeys} from "../../api/queryKeys";
+import {getEffectiveForm} from "../../entities/shared/typeCatalog";
+import {getEntityType} from "../../entities/registry";
+import {SelectOneConceptRenderer} from "../../fields/renderers";
+import type {FieldResource} from "../../fields/types";
+import type {FilterOption} from "../../fields/optionSources";
+import {isTypeField} from "../../fields/typeField";
+import {useCanEdit} from "../../panels/pane/writeMode";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /** A text shown as a chip, edited in place as a text input. */
 export interface HeaderText {

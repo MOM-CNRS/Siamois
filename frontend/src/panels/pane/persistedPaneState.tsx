@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { usePaneState } from "./paneState";
+import {createContext, type Dispatch, type ReactNode, type SetStateAction, useContext, useEffect, useRef} from "react";
+import {usePaneState} from "./paneState";
 
 // The state of a fiche is more than its active tab: the folded sections of a tab, the graph/list mode of
 // the relations, the filters of the relation list… all are kept per user, per type of fiche (never per

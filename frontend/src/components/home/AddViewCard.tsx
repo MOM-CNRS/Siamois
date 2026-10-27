@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dropdown } from "primereact/dropdown";
-import { createHomeAccess } from "../../api/resources/homeAccesses";
-import { listViews } from "../../api/resources/views";
-import { queryKeys } from "../../api/queryKeys";
-import { messageForError } from "../../api/errors";
-import { getAllEntityTypes } from "../../entities/registry";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Dropdown} from "primereact/dropdown";
+import {createHomeAccess} from "../../api/resources/homeAccesses";
+import {listViews} from "../../api/resources/views";
+import {queryKeys} from "../../api/queryKeys";
+import {messageForError} from "../../api/errors";
+import {getAllEntityTypes} from "../../entities/registry";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /**
  * The last slot of the featured views, in edit mode: a transparent card holding the search of the organization's

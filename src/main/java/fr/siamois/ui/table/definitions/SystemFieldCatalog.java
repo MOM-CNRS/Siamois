@@ -1,16 +1,16 @@
 package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.container.form.ContainerForm;
-import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.document.form.DocumentForm;
-import fr.siamois.domain.models.study.form.StudyForm;
-import fr.siamois.domain.models.phase.form.PhaseForm;
-import fr.siamois.domain.models.recordingunit.form.RecordingUnitForm;
-import fr.siamois.domain.models.specimen.form.SpecimenForm;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
+import fr.siamois.domain.models.phase.form.PhaseForm;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.recordingunit.form.RecordingUnitForm;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.specimen.form.SpecimenForm;
+import fr.siamois.domain.models.study.form.StudyForm;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;

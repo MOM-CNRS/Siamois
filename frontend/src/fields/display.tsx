@@ -1,16 +1,16 @@
 // Read-only cell formatting for a dynamic (schema-driven) list column. Deliberately separate from
 // fields/renderers.tsx: those are full PrimeReact edit-mode widgets meant for a form or an edit
 // overlay, which is far more machinery than a table cell needs. A cell just needs a string.
-import { Checkbox } from "primereact/checkbox";
-import { TriStateCheckbox } from "primereact/tristatecheckbox";
-import type { CSSProperties, ReactNode, SyntheticEvent } from "react";
-import { isTypeField } from "./typeField";
-import type { FieldResource } from "./types";
-import { readMultiValue, unwrapAnswer } from "./types";
-import { getEntityType } from "../entities/registry";
-import { isEntityKey, type EntityKey } from "../entities/keys";
-import { useOpenEntity } from "../panels/pane/entityNavigation";
-import { t } from "../i18n";
+import {Checkbox} from "primereact/checkbox";
+import {TriStateCheckbox} from "primereact/tristatecheckbox";
+import type {CSSProperties, ReactNode, SyntheticEvent} from "react";
+import {isTypeField} from "./typeField";
+import type {FieldResource} from "./types";
+import {readMultiValue, unwrapAnswer} from "./types";
+import {getEntityType} from "../entities/registry";
+import {type EntityKey, isEntityKey} from "../entities/keys";
+import {useOpenEntity} from "../panels/pane/entityNavigation";
+import {t} from "../i18n";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.
 interface StratigraphicQualifier {

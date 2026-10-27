@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Menu } from "primereact/menu";
-import type { MenuItem } from "primereact/menuitem";
-import { createBookmark, deleteBookmark, getBookmarkStatus } from "../../api/resources/bookmarks";
-import type { PanelActions, PanelChrome } from "../../mountOptions";
-import { useBridge } from "../../panels/pane/bridge";
-import { queryKeys } from "../../api/queryKeys";
-import { t } from "../../i18n";
-import { useIsMobile } from "../../viewport";
+import {type ReactNode, type SyntheticEvent, useEffect, useRef, useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Menu} from "primereact/menu";
+import type {MenuItem} from "primereact/menuitem";
+import {createBookmark, deleteBookmark, getBookmarkStatus} from "../../api/resources/bookmarks";
+import type {PanelActions, PanelChrome} from "../../mountOptions";
+import {useBridge} from "../../panels/pane/bridge";
+import {queryKeys} from "../../api/queryKeys";
+import {t} from "../../i18n";
+import {useIsMobile} from "../../viewport";
 
 // Generic panel titlebar (plan §7.3/§8 phase 8) — one component for both the main panel's
 // titlebar (focus.xhtml) and the overview pane's own (panelContent.xhtml): same actions

@@ -1,19 +1,19 @@
-import type { EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { getDocument, listDocuments, patchDocument, patchDocumentAnswers } from "./api";
-import { documentColumns } from "./columns";
-import { BulkImportDocument } from "./BulkImportDocument";
-import { DocumentCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import type { DocumentDetail, DocumentSummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {getDocument, listDocuments, patchDocument, patchDocumentAnswers} from "./api";
+import {documentColumns} from "./columns";
+import {BulkImportDocument} from "./BulkImportDocument";
+import {DocumentCreateForm} from "./CreateForm";
+import {SchemaEntityHeader} from "../../components/detail/SchemaEntityHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import type {DocumentDetail, DocumentSummary} from "./types";
+import {t} from "../../i18n";
 
 // The document's own EntityTypeConfig: an independent card on the home, an organization-wide list, a
 // project list, and a fiche composed from the project's configuration of the document table (its

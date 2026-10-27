@@ -1,10 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.resource.concept;
 
-import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
-import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
+import fr.siamois.dto.entity.vocabulary.*;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import org.junit.jupiter.api.Test;
 

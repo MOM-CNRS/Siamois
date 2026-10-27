@@ -1,14 +1,14 @@
-import { useState, type SyntheticEvent } from "react";
-import { CellEditOverlay, type CellEditTarget } from "../components/table/CellEditOverlay";
-import type { FieldState } from "../rules";
-import { renderAnswerCell, renderAnswerValue } from "./display";
-import { FileCell, type StoredFile } from "./FileCell";
-import { useCanEdit } from "../panels/pane/writeMode";
-import { describeIncoherence } from "./incoherence";
-import { hasFieldRenderer } from "./registry";
-import { stratigraphyPositionOf } from "./stratigraphy";
-import type { AnswerInputBody, FieldResource } from "./types";
-import { t } from "../i18n";
+import {type SyntheticEvent, useState} from "react";
+import {CellEditOverlay, type CellEditTarget} from "../components/table/CellEditOverlay";
+import type {FieldState} from "../rules";
+import {renderAnswerCell, renderAnswerValue} from "./display";
+import {FileCell, type StoredFile} from "./FileCell";
+import {useCanEdit} from "../panels/pane/writeMode";
+import {describeIncoherence} from "./incoherence";
+import {hasFieldRenderer} from "./registry";
+import {stratigraphyPositionOf} from "./stratigraphy";
+import type {AnswerInputBody, FieldResource} from "./types";
+import {t} from "../i18n";
 
 /**
  * The fiche's own field value, edited exactly the way a table cell is: a plain read-only display

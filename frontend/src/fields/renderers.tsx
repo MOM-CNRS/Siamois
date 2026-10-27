@@ -1,38 +1,38 @@
-import { ConceptOptionItem, useFieldWidthCap } from "./ConceptOptionItem";
-import { PlaceOptionItem } from "./PlaceOptionItem";
-import { ReferencePickerSheet } from "./ReferencePickerSheet";
-import { useIsMobile } from "../viewport";
-import { useRef, useState, type CSSProperties } from "react";
-import { InputText } from "primereact/inputtext";
-import { InputTextarea } from "primereact/inputtextarea";
-import { InputNumber } from "primereact/inputnumber";
-import { Checkbox } from "primereact/checkbox";
-import { Dropdown } from "primereact/dropdown";
-import { Calendar } from "primereact/calendar";
-import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { Button } from "primereact/button";
-import { CreateEntityOverlay } from "../components/create/CreateEntityOverlay";
-import { useOpenEntity } from "../panels/pane/entityNavigation";
-import { getEntityType } from "../entities/registry";
-import { PROJECT_KEY } from "../entities/keys";
-import type { Bound } from "../rules";
-import type { FieldRendererProps } from "./registry";
-import type { FieldEditContext } from "./editContext";
-import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
-import { refColor, YesNoTriState } from "./display";
+import {ConceptOptionItem, useFieldWidthCap} from "./ConceptOptionItem";
+import {PlaceOptionItem} from "./PlaceOptionItem";
+import {ReferencePickerSheet} from "./ReferencePickerSheet";
+import {useIsMobile} from "../viewport";
+import {type CSSProperties, useRef, useState} from "react";
+import {InputText} from "primereact/inputtext";
+import {InputTextarea} from "primereact/inputtextarea";
+import {InputNumber} from "primereact/inputnumber";
+import {Checkbox} from "primereact/checkbox";
+import {Dropdown} from "primereact/dropdown";
+import {Calendar} from "primereact/calendar";
+import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {Button} from "primereact/button";
+import {CreateEntityOverlay} from "../components/create/CreateEntityOverlay";
+import {useOpenEntity} from "../panels/pane/entityNavigation";
+import {getEntityType} from "../entities/registry";
+import {PROJECT_KEY} from "../entities/keys";
+import type {Bound} from "../rules";
+import type {FieldRendererProps} from "./registry";
+import type {FieldEditContext} from "./editContext";
+import {formatDateAnswer, parseDateAnswer} from "./dateAnswer";
+import {refColor, YesNoTriState} from "./display";
 import {
-  createPlaceFromSuggestion,
-  entityRowLabel,
-  isExternalSuggestion,
-  optionSourceFor,
-  referenceTargetOf,
-  type FilterOption,
-  type OptionList,
-  type ReferenceTarget,
+    createPlaceFromSuggestion,
+    entityRowLabel,
+    type FilterOption,
+    isExternalSuggestion,
+    type OptionList,
+    optionSourceFor,
+    type ReferenceTarget,
+    referenceTargetOf,
 } from "./optionSources";
-import { t } from "../i18n";
-import { useNotify } from "../notify/NotifyProvider";
-import { messageForError } from "../api/errors";
+import {t} from "../i18n";
+import {useNotify} from "../notify/NotifyProvider";
+import {messageForError} from "../api/errors";
 
 // Base renderers for the answerTypes that need no backend lookup — plain scalar inputs — then one
 // generic reference picker (ResourceRefRenderer) for every answerType that points at a concept,

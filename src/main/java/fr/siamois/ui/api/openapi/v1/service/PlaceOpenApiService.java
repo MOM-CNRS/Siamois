@@ -1,7 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
-
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
@@ -18,8 +16,6 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.FieldQuery;
-import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -30,15 +26,18 @@ import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.FormResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResourceCounts;
-import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
@@ -53,13 +52,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor

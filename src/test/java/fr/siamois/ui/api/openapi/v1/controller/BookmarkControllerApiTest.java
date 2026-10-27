@@ -5,8 +5,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -20,7 +20,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -41,15 +41,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Set;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,7 +121,7 @@ class BookmarkControllerApiTest {
 
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(objectMapper))
                 .build();
 

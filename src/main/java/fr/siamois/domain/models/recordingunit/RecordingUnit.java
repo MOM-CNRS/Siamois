@@ -15,6 +15,7 @@ import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultipl
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -40,7 +41,8 @@ import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
         @Index(columnList = "full_identifier", name = "idx_ru_full_identifier"),
         @Index(columnList = "fk_institution_id", name = "idx_ru_institution"),
         @Index(columnList = "fk_action_unit_id", name = "idx_ru_fk_action_unit_id")
-})
+}, uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.RECORDING_UNIT,
+        columnNames = {"fk_action_unit_id", "full_identifier"}))
 @NoArgsConstructor
 @Audited
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

@@ -1,21 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useState } from "react";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../entities/registry";
-import type { EntityPreview, EntityTypeConfig } from "../entities/shared/types";
-import { EntityDetailPanel } from "./EntityDetailPanel";
-import { recallListContext, rememberListContext } from "./list/listContext";
-import { WriteModeProvider } from "./pane/writeMode";
-import { onEntityDeleted } from "./detail/entityDeleted";
-import { BridgeProvider } from "./pane/bridge";
-import type { PanelBridge } from "../mountOptions";
-import { openProjectSettings, openTablesSettings } from "./detail/projectSettings";
-import { getViewState, putViewState } from "../api/resources/views";
-import { getFicheConfig } from "../api/resources/ficheConfigs";
-import { SAVE_DELAY_MS } from "./list/useUserViewState";
-import { usePersistedPaneState } from "./pane/persistedPaneState";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act, useState} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../entities/registry";
+import type {EntityPreview, EntityTypeConfig} from "../entities/shared/types";
+import {EntityDetailPanel} from "./EntityDetailPanel";
+import {recallListContext, rememberListContext} from "./list/listContext";
+import {WriteModeProvider} from "./pane/writeMode";
+import {onEntityDeleted} from "./detail/entityDeleted";
+import {BridgeProvider} from "./pane/bridge";
+import type {PanelBridge} from "../mountOptions";
+import {openProjectSettings, openTablesSettings} from "./detail/projectSettings";
+import {getViewState, putViewState} from "../api/resources/views";
+import {getFicheConfig} from "../api/resources/ficheConfigs";
+import {SAVE_DELAY_MS} from "./list/useUserViewState";
+import {usePersistedPaneState} from "./pane/persistedPaneState";
 
 vi.mock("./detail/projectSettings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./detail/projectSettings")>()),

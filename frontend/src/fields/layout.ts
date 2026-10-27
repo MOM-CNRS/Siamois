@@ -1,5 +1,5 @@
-import type { FieldRules } from "../rules/types";
-import { t, type MessageKey } from "../i18n";
+import type {FieldRules} from "../rules/types";
+import {type MessageKey, t} from "../i18n";
 
 // The fiche layout of every entity type: the JSON FormUiDtoLayoutJson.serialize produces for
 // FormResource.layoutJson — panels/rows/columns whose fieldId points into the sibling `fields`

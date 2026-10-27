@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import type { FilterSpec } from "../../components/table/FilterChipBar";
-import { keywordsOf } from "./ListSearchOverlay";
+import {describe, expect, it} from "vitest";
+import type {FilterSpec} from "../../components/table/FilterChipBar";
+import {keywordsOf} from "./ListSearchOverlay";
 
 const options = async () => [];
 

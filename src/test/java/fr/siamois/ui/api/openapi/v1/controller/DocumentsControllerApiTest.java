@@ -3,7 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentFormData;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentFormFieldApi;
 import fr.siamois.ui.api.openapi.v1.service.*;
@@ -29,19 +29,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.argThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,7 +66,7 @@ class DocumentsControllerApiTest {
                 documentOpenApiService,
                 documentBulkOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
 
         person = new Person();
@@ -110,7 +101,7 @@ class DocumentsControllerApiTest {
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
 
-        byte[] data = new byte[]{1, 2, 3};
+        byte[] data = {1, 2, 3};
         when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
                 .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(
                         new ByteArrayInputStream(data),
@@ -148,7 +139,7 @@ class DocumentsControllerApiTest {
         DocumentContentOpenApiService.DocumentFilePayload original = new DocumentContentOpenApiService.DocumentFilePayload(
                 new ByteArrayInputStream(new byte[]{1}), MediaType.IMAGE_PNG, "photo.png");
         when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L))).thenReturn(original);
-        byte[] reduced = new byte[]{9, 9};
+        byte[] reduced = {9, 9};
         when(documentContentOpenApiService.thumbnailOf(original, 200))
                 .thenReturn(Optional.of(new DocumentContentOpenApiService.DocumentFilePayload(
                         new ByteArrayInputStream(reduced), MediaType.IMAGE_JPEG, "photo.png")));
@@ -165,7 +156,7 @@ class DocumentsControllerApiTest {
         login();
         when(projectApiService.requireCaller())
                 .thenReturn(new ProjectApiCaller(personDto, Set.of(10L), List.of()));
-        byte[] data = new byte[]{1, 2, 3};
+        byte[] data = {1, 2, 3};
         // The attempt at a thumbnail used up the first stream: the file is opened again.
         when(documentContentOpenApiService.requireDownloadableContent(42L, Set.of(10L)))
                 .thenReturn(new DocumentContentOpenApiService.DocumentFilePayload(

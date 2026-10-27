@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { studyEntityConfig } from "./config";
-import { apiFetch } from "../../api/client";
+import {describe, expect, it, vi} from "vitest";
+import {studyEntityConfig} from "./config";
+import {apiFetch} from "../../api/client";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);

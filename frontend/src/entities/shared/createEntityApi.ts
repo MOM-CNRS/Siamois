@@ -1,7 +1,7 @@
-import { apiFetch } from "../../api/client";
-import type { AnswerInputBody } from "../../fields/types";
-import { fetchList } from "./listApi";
-import type { ListParams, PagedResult } from "./types";
+import {apiFetch} from "../../api/client";
+import type {AnswerInputBody} from "../../fields/types";
+import {fetchList} from "./listApi";
+import type {ListParams, PagedResult} from "./types";
 
 interface DataBody<T> {
   data: T;

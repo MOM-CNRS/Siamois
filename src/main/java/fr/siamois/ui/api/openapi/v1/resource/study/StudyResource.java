@@ -1,11 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.resource.study;
 
 
-import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.ValidationStatus;
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;

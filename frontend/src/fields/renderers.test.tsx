@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
-import { BooleanRenderer, FallbackRenderer, MeasurementRenderer, TextRenderer } from "./renderers";
-import type { FieldResource } from "./types";
+import {describe, expect, it} from "vitest";
+import {renderToStaticMarkup} from "react-dom/server";
+import {BooleanRenderer, FallbackRenderer, MeasurementRenderer, TextRenderer} from "./renderers";
+import type {FieldResource} from "./types";
 
 function field(overrides: Partial<FieldResource> = {}): FieldResource {
   return {

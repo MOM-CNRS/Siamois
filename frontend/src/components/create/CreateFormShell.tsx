@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
-import { Button } from "primereact/button";
-import { getEntityType } from "../../entities/registry";
-import { entityChipStyle } from "../../fields/display";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import type {ReactNode} from "react";
+import {Button} from "primereact/button";
+import {getEntityType} from "../../entities/registry";
+import {entityChipStyle} from "../../fields/display";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /**
  * The frame every entity's create form shares — JSF's newUnitDialog.xhtml, as an overlay: a header

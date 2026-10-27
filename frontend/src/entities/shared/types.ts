@@ -2,10 +2,10 @@
 // only this + the field-renderer registry — no per-entity branching in the generic components.
 // Permission flags are deliberately NOT part of this config: they come straight off each API
 // response's own `_permissions` object, never recomputed or guessed client-side.
-import type { ReactNode } from "react";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import type { PanelChrome } from "../../mountOptions";
-import type { EntityKey } from "../keys";
+import type {ReactNode} from "react";
+import type {AnswerInputBody, FieldResource} from "../../fields/types";
+import type {PanelChrome} from "../../mountOptions";
+import type {EntityKey} from "../keys";
 
 // The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
 export type CreatableKind = Extract<

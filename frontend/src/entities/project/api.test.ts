@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { duplicateProject, getProject, getProjectSiblings, listProjects, patchProject } from "./api";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {duplicateProject, getProject, getProjectSiblings, listProjects, patchProject} from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),

@@ -1,9 +1,8 @@
 package fr.siamois.domain.models.container.form;
 
 
-import java.util.List;
-import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -14,6 +13,8 @@ import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
+
+import java.util.List;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 

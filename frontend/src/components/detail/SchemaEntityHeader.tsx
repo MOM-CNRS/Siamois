@@ -1,7 +1,7 @@
-import { EntityDetailHeader, useFormFields, type HeaderChanges } from "./EntityDetailHeader";
-import { useDeclaredTypes } from "../../entities/shared/useDeclaredTypes";
-import { toAnswerInput, type AnswerInputBody } from "../../fields/types";
-import { t } from "../../i18n";
+import {EntityDetailHeader, type HeaderChanges, useFormFields} from "./EntityDetailHeader";
+import {useDeclaredTypes} from "../../entities/shared/useDeclaredTypes";
+import {type AnswerInputBody, toAnswerInput} from "../../fields/types";
+import {t} from "../../i18n";
 
 export interface SchemaEntityHeaderProps {
   entityType: string;

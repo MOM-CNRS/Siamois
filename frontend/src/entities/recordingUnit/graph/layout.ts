@@ -1,4 +1,4 @@
-import type { GraphUnitRef, GraphZone, RelationGraph, ZoneKey } from "./types";
+import type {GraphUnitRef, GraphZone, RelationGraph, ZoneKey} from "./types";
 
 // Where each zone sits around the center unit: parents above, children below, the stratigraphic
 // relations in a column on the right — the more recent units above the center's level, the

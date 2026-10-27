@@ -9,11 +9,7 @@ import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Ce qu'une page de liste de projets doit résoudre <strong>par lot</strong>, en plus des lignes elles-mêmes :

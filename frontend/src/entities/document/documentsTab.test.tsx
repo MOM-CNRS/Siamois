@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { RowActionContext, RowActionDef } from "../shared/types";
-import { unlinkDocument } from "./api";
-import { documentsTab } from "./documentsTab";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import type {RowActionContext, RowActionDef} from "../shared/types";
+import {unlinkDocument} from "./api";
+import {documentsTab} from "./documentsTab";
 
 // relationTab hands back its own spec: the tab's wiring is what is under test, not the list it renders.
 vi.mock("../../panels/detail/relationTab", () => ({ relationTab: (spec: unknown) => spec }));

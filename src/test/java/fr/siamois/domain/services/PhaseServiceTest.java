@@ -21,9 +21,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -265,7 +265,6 @@ class PhaseServiceTest {
         // id is null → new entity
 
         Phase newEntity = new Phase();
-        newEntity.setIdentifier("P-NEW");
         ActionUnit actionUnit = new ActionUnit();
         actionUnit.setId(7L);
         actionUnit.setFullIdentifier("UA-7");
@@ -299,6 +298,10 @@ class PhaseServiceTest {
         IdentifierGenerationSpec<Phase> spec = specCaptor.getValue();
         assertEquals(ConfigurableTable.PHASE, spec.table());
         assertTrue(spec.generationRequired().test(newEntity));
+        // A new phase that brings its own identifier (chosen in the creation form) keeps it.
+        newEntity.setIdentifier("P-CHOSEN");
+        assertFalse(spec.generationRequired().test(newEntity));
+        newEntity.setIdentifier(null);
         assertSame(actionUnit, spec.actionUnit().apply(newEntity));
         assertEquals(42L, spec.typeId().apply(newEntity));
         assertNull(spec.displayValues().get("NUM_PARENT").apply(newEntity));
@@ -784,5 +787,24 @@ class PhaseServiceTest {
                 () -> phaseService.deleteById(4L));
 
         verify(phaseRepository, never()).delete(any(Phase.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void suggestIdentifier_peeksForTheMappedNewEntity_withoutWritingAnything() {
+        fr.siamois.dto.entity.PhaseDTO dto = new fr.siamois.dto.entity.PhaseDTO();
+        fr.siamois.domain.models.phase.Phase entity = new fr.siamois.domain.models.phase.Phase();
+        when(phaseMapper.invertConvert(dto)).thenReturn(entity);
+        when(identifierGenerator.suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(3, "SUGGESTED-3"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("SUGGESTED-3", phaseService.suggestIdentifier(dto));
+
+        ArgumentCaptor<fr.siamois.domain.services.identifier.IdentifierGenerationSpec<fr.siamois.domain.models.phase.Phase>> specCaptor = ArgumentCaptor.forClass(fr.siamois.domain.services.identifier.IdentifierGenerationSpec.class);
+        verify(identifierGenerator).suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), specCaptor.capture());
+        // Same spec as the save's generation, so the suggestion is what the creation would allocate.
+        org.junit.jupiter.api.Assertions.assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.PHASE, specCaptor.getValue().table());
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(phaseRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

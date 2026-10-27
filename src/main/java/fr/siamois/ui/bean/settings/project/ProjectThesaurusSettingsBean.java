@@ -3,7 +3,6 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.utils.MessageUtils;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.ThesaurusUsageService;
@@ -11,6 +10,7 @@ import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.settings.AbstractThesaurusSettingsBean;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.model.SelectItem;
 import jakarta.faces.model.SelectItemGroup;
 import lombok.Getter;
@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 
 import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 

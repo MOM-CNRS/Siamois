@@ -1,4 +1,4 @@
-import { flushSync } from "react-dom";
+import {flushSync} from "react-dom";
 
 // The four pane changes that get an animation (styles/main-panel.css keys its directions off this).
 export type PanelTransitionKind = "overview-open" | "overview-close" | "focus-enter" | "focus-exit";

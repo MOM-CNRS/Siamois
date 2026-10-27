@@ -8,6 +8,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -40,7 +41,7 @@ import java.util.Set;
 @Entity
 @Table(name = "siamois_document", schema = "public",
         indexes = @Index(name = "idx_document_action_unit", columnList = "fk_action_unit_id"),
-        uniqueConstraints = @UniqueConstraint(name = "uk_document_project_identifier",
+        uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.DOCUMENT,
                 columnNames = {"fk_action_unit_id", "identifier"}))
 @Audited
 public class Document extends TraceableEntity implements ArkEntity {

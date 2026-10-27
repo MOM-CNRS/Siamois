@@ -1,14 +1,14 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { getEffectiveForm } from "../../entities/shared/typeCatalog";
-import { FormLayoutView } from "../../fields/FormLayoutView";
-import { parseLayout } from "../../fields/layout";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { useCanEdit } from "../../panels/pane/writeMode";
-import { FormSkeleton } from "../layout/DetailSkeleton";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useMemo} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {getEffectiveForm} from "../../entities/shared/typeCatalog";
+import {FormLayoutView} from "../../fields/FormLayoutView";
+import {parseLayout} from "../../fields/layout";
+import type {AnswerInputBody, FieldResource} from "../../fields/types";
+import {useCanEdit} from "../../panels/pane/writeMode";
+import {FormSkeleton} from "../layout/DetailSkeleton";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /** What the fiche reads off an entity: its project and type, or the form served with it. */
 export interface SchemaFicheEntity {

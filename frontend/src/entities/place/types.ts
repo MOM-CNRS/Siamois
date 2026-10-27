@@ -3,8 +3,8 @@
 // and GET /api/v1/places/{id} (detail, all of it) both return this shape. Keep in sync with that
 // class if it changes.
 
-import type { FieldResource } from "../../fields/types";
-import type { OrganizationIdentifier, ResolvedConcept } from "../shared/common";
+import type {FieldResource} from "../../fields/types";
+import type {OrganizationIdentifier, ResolvedConcept} from "../shared/common";
 
 export interface GeometryDTO {
   type?: string | null;

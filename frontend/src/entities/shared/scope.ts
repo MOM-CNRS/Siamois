@@ -1,5 +1,5 @@
-import { PROJECT_KEY } from "../keys";
-import type { ListScope } from "./types";
+import {PROJECT_KEY} from "../keys";
+import type {ListScope} from "./types";
 
 // The project a scoped list lives in: the scope itself when it IS a project (a project's own
 // relation tabs), otherwise the project its relationTab passed along (a recording unit's children,

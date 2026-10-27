@@ -34,9 +34,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -1938,4 +1938,29 @@ class SpecimenServiceTest {
         });
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void suggestFullIdentifier_readsTheRecordingUnit_andPeeksWithoutWriting() {
+        fr.siamois.dto.entity.SpecimenDTO dto = new fr.siamois.dto.entity.SpecimenDTO();
+        Specimen entity = new Specimen();
+        RecordingUnit unitRef = new RecordingUnit();
+        unitRef.setId(42L);
+        entity.setRecordingUnit(unitRef);
+        RecordingUnit managedUnit = new RecordingUnit();
+        managedUnit.setId(42L);
+        managedUnit.setFullIdentifier("UE-42");
+        when(specimenMapper.invertConvert(dto)).thenReturn(entity);
+        when(recordingUnitRepository.findById(42L)).thenReturn(java.util.Optional.of(managedUnit));
+        when(identifierGenerator.suggestIdentifier(eq(entity), any())).thenReturn(new GeneratedIdentifier(1, "UE-42-M1"));
+
+        assertEquals("UE-42-M1", specimenService.suggestFullIdentifier(dto));
+
+        // The unit's identifiers feed the format: the managed unit replaces the mapped reference.
+        assertSame(managedUnit, entity.getRecordingUnit());
+        ArgumentCaptor<IdentifierGenerationSpec<Specimen>> specCaptor = ArgumentCaptor.forClass(IdentifierGenerationSpec.class);
+        verify(identifierGenerator).suggestIdentifier(eq(entity), specCaptor.capture());
+        assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.MOBILIER, specCaptor.getValue().table());
+        assertEquals("UE-42", specCaptor.getValue().displayValues().get("ID_UE").apply(entity));
+        verify(specimenRepository, never()).save(any());
+    }
 }

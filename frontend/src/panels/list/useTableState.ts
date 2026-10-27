@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from "react";
-import { usePaneState } from "../pane/paneState";
-import { createTableState, type FilterValue, type TableState } from "./tableState";
-import { loadListPrefs, saveListPrefs } from "./listPreferences";
-import { parsePersisted, type PersistedListState } from "./listState";
-import type { ListViewMode } from "./listViews";
-import type { ViewStateBody } from "../../api/resources/views";
+import {useCallback, useRef, useState} from "react";
+import {usePaneState} from "../pane/paneState";
+import {createTableState, type FilterValue, type TableState} from "./tableState";
+import {loadListPrefs, saveListPrefs} from "./listPreferences";
+import {parsePersisted, type PersistedListState} from "./listState";
+import type {ListViewMode} from "./listViews";
+import type {ViewStateBody} from "../../api/resources/views";
 
 export interface UseTableStateOptions {
   defaultSort?: string;

@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { FindSummary } from "./types";
-import { intlLocale, t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {FindSummary} from "./types";
+import {intlLocale, t} from "../../i18n";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Find yet (reduced
 // scope, migration plan lot 1: dynamic columns via GET /api/v1/projects/{id}/find-types are

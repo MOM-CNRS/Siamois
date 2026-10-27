@@ -11,6 +11,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierException;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -35,7 +36,8 @@ import static org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED;
 @Table(name = "specimen", indexes = {
         @Index(columnList = "full_identifier", name = "idx_specimen_full_identifier"),
         @Index(columnList = "fk_institution_id", name = "idx_specimen_institution")
-})
+}, uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.SPECIMEN,
+        columnNames = {"fk_action_unit_id", "full_identifier"}))
 @Audited
 @NoArgsConstructor
 public class Specimen extends TraceableEntity implements ArkEntity {

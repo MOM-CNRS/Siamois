@@ -1,10 +1,10 @@
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { Chip } from "primereact/chip";
-import type { DetailTabHelpers } from "../shared/types";
-import type { PlaceLight, ProjectDetail } from "./types";
-import { entityChipStyle } from "../../fields/display";
-import { t } from "../../i18n";
+import {DataTable} from "primereact/datatable";
+import {Column} from "primereact/column";
+import {Chip} from "primereact/chip";
+import type {DetailTabHelpers} from "../shared/types";
+import type {PlaceLight, ProjectDetail} from "./types";
+import {entityChipStyle} from "../../fields/display";
+import {t} from "../../i18n";
 
 // Migration plan Lot 4 ("Lieux") decision: unlike the other relation tabs on this fiche
 // (recording-units/containers/phases/finds, all built with panels/detail/relationTab.tsx's generic

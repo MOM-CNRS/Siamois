@@ -9,11 +9,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.ObjIntConsumer;
-import java.util.function.Predicate;
+import java.util.function.*;
 
 /**
  * Typed declaration of the entity-specific inputs and outputs used by
@@ -115,6 +111,17 @@ public record IdentifierGenerationSpec<E>(
         Objects.requireNonNull(identifierAlreadyUsed, "A collision predicate is required");
         Objects.requireNonNull(numberSetter, "A number setter is required");
         Objects.requireNonNull(identifierSetter, "An identifier setter is required");
+    }
+
+    /**
+     * The usual {@code generationRequired}: a new entity that does not bring its own identifier — one
+     * chosen in the creation form, or typed, keeps it.
+     */
+    public static <E> Predicate<E> whenNewWithoutIdentifier(Function<E, ?> id, Function<E, String> identifier) {
+        return entity -> {
+            String current = identifier.apply(entity);
+            return id.apply(entity) == null && (current == null || current.isBlank());
+        };
     }
 
 }

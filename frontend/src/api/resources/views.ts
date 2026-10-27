@@ -1,4 +1,4 @@
-import { apiFetch } from "../client";
+import {apiFetch} from "../client";
 
 // GET/PUT/DELETE /api/v1/view-states — what the current user changed on one view (filters, sort,
 // columns, page size, list/tree mode, the active tab of a fiche…), kept server-side so they find the

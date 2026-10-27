@@ -2,6 +2,8 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
+import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
+import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.document.ImageThumbnailer;
@@ -10,14 +12,12 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.multipart.MultipartFile;
-import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
-import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;

@@ -7,7 +7,7 @@ import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.HistoryBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -28,7 +28,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Session-wide state of the main page: read/write and field/office modes, the organization switch,

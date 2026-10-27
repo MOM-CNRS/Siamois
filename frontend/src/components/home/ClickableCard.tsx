@@ -1,5 +1,5 @@
-import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { Card } from "primereact/card";
+import type {CSSProperties, KeyboardEvent, MouseEvent, ReactNode} from "react";
+import {Card} from "primereact/card";
 
 // A Card that is itself the link — no inner button. Keyboard-reachable like a real link
 // (Tab + Enter/Space), since a clickable <div> is otherwise invisible to keyboard users.

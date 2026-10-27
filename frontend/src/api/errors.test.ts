@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { ApiError } from "./client";
-import { messageForError } from "./errors";
+import {describe, expect, it} from "vitest";
+import {ApiError} from "./client";
+import {messageForError} from "./errors";
 
 describe("messageForError", () => {
   it("keeps the server's message on a 400 and a 409", () => {

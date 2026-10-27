@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { registerDefaultFieldRenderers } from "./registerDefaultRenderers";
-import { hasFieldRenderer } from "./registry";
+import {describe, expect, it} from "vitest";
+import {registerDefaultFieldRenderers} from "./registerDefaultRenderers";
+import {hasFieldRenderer} from "./registry";
 
 registerDefaultFieldRenderers();
 

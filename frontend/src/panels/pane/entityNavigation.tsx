@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import {createContext, type ReactNode, useContext} from "react";
 
 // Opens an entity in the overview pane from anywhere below App — a field's reference chip needs it without
 // every panel, form and edit overlay in between threading `onOpenOverview` through as a prop. Same

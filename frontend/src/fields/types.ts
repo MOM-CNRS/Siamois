@@ -1,7 +1,7 @@
 // Mirrors fr.siamois.ui.api.openapi.v1.resource.form.FieldResource exactly (field-side of the
 // "field vs field-configuration" split, plan §6) — this is the shared catalog entry, not a
 // per-type config row. Keep in sync with that record if it changes.
-import type { FieldRules } from "../rules/types";
+import type {FieldRules} from "../rules/types";
 
 export interface FieldResource {
   id: string;

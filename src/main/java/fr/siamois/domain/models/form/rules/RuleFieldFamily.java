@@ -1,11 +1,7 @@
 package fr.siamois.domain.models.form.rules;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 

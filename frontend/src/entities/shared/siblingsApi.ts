@@ -1,5 +1,5 @@
-import { apiFetch } from "../../api/client";
-import type { EntitySiblings } from "./types";
+import {apiFetch} from "../../api/client";
+import type {EntitySiblings} from "./types";
 
 interface SiblingsResponseBody {
   data: { previous?: EntitySiblings["previous"] | null; next?: EntitySiblings["next"] | null };

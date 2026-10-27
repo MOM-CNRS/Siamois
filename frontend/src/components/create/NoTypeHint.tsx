@@ -1,6 +1,6 @@
-import { apiUrl } from "../../api/basePath";
-import type { CreatableKind } from "../../entities/shared/types";
-import { t } from "../../i18n";
+import {apiUrl} from "../../api/basePath";
+import type {CreatableKind} from "../../entities/shared/types";
+import {t} from "../../i18n";
 
 // The configurable table (ConfigurableTable) each creatable entity's types are declared on.
 const TABLE_OF: Record<CreatableKind, string> = {

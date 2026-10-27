@@ -1,8 +1,8 @@
-import { useMemo } from "react";
-import { valueOfField } from "../../fields/values";
-import type { FieldResource } from "../../fields/types";
-import { columnsDependencies, evaluateForm, type FieldState, type RuledColumn } from "../../rules";
-import type { RowTypeRef, TypeRules } from "./useTypeRules";
+import {useMemo} from "react";
+import {valueOfField} from "../../fields/values";
+import type {FieldResource} from "../../fields/types";
+import {columnsDependencies, evaluateForm, type FieldState, type RuledColumn} from "../../rules";
+import type {RowTypeRef, TypeRules} from "./useTypeRules";
 
 /**
  * The conditional rules of a list's cells, evaluated per row against the row's own values.

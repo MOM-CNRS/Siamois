@@ -1,13 +1,13 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { apiFetch } from "../../api/client";
-import { configureBasePath } from "../../api/basePath";
-import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig } from "../../entities/shared/types";
-import { homeShortcutWidgets } from "./HomeShortcuts";
-import { openSidebarDrawer } from "./sidebar";
+import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {apiFetch} from "../../api/client";
+import {configureBasePath} from "../../api/basePath";
+import {registerEntityType} from "../../entities/registry";
+import type {EntityTypeConfig} from "../../entities/shared/types";
+import {homeShortcutWidgets} from "./HomeShortcuts";
+import {openSidebarDrawer} from "./sidebar";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);

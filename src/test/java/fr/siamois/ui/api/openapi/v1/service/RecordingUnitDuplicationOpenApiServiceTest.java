@@ -8,6 +8,7 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitStructureDuplicatio
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitDuplicationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitStructureResource;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,13 +24,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RecordingUnitDuplicationOpenApiServiceTest {
@@ -171,6 +167,6 @@ class RecordingUnitDuplicationOpenApiServiceTest {
                 .thenThrow(new RecordingUnitIdentifierAlreadyExistsException("UE-9"));
 
         assertThatThrownBy(() -> service.duplicateStructure("1", 1, List.of(), person, INSTITUTIONS, "fr"))
-                .isInstanceOfSatisfying(ResponseStatusException.class, e -> assertThat(e.getStatusCode().value()).isEqualTo(409));
+                .isInstanceOf(IdentifierConflictException.class);
     }
 }

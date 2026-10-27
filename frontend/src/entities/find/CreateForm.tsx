@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { CreateFormField, CreateFormShell } from "../../components/create/CreateFormShell";
-import { CreateLinkField } from "../../components/create/CreateLinkField";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import { useDeclaredTypesState } from "../shared/useDeclaredTypes";
-import { NoTypeHint } from "../../components/create/NoTypeHint";
-import type { FieldResource } from "../../fields/types";
-import type { CreateFormContext } from "../shared/types";
-import { fetchList } from "../shared/listApi";
-import { createFind } from "./api";
-import { getEffectiveForm } from "../shared/typeCatalog";
-import { queryKeys } from "../../api/queryKeys";
-import { useCreateProject } from "../../components/create/useCreateProject";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useEffect, useMemo, useRef, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {CreateFormField, CreateFormShell} from "../../components/create/CreateFormShell";
+import {CreateLinkField} from "../../components/create/CreateLinkField";
+import {SelectOneConceptRenderer} from "../../fields/renderers";
+import {useDeclaredTypesState} from "../shared/useDeclaredTypes";
+import {NoTypeHint} from "../../components/create/NoTypeHint";
+import type {FieldResource} from "../../fields/types";
+import type {CreateFormContext} from "../shared/types";
+import {fetchList} from "../shared/listApi";
+import {createFind} from "./api";
+import {getEffectiveForm} from "../shared/typeCatalog";
+import {queryKeys} from "../../api/queryKeys";
+import {useCreateProject} from "../../components/create/useCreateProject";
+import {useSuggestedIdentifier} from "../../components/create/useSuggestedIdentifier";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 // The "Mobilier" relation tab's own "Créer" overlay (migration plan follow-up — see
 // entities/project/CreateForm.tsx for the overlay-not-dialog rationale). Unlike Project's and
@@ -58,6 +59,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   }, [projectId]);
   const [error, setError] = useState<string | null>(null);
   const autoCompleteRef = useRef<AutoComplete>(null);
+  // A find's identifier follows its recording unit (and its type): suggested once both are picked.
+  const identifier = useSuggestedIdentifier("find", recordingUnitId, type?.resourceId);
 
   const typesQuery = useQuery({
     queryKey: queryKeys.effectiveForm("find-types", projectId, null),
@@ -84,7 +87,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
   }
 
   const mutation = useMutation({
-    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: type!.resourceId }),
+    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: type!.resourceId, ...identifier.chosen }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(messageForError(err, t("create.failed")));
@@ -151,6 +154,7 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
         )}
       </CreateFormField>
 
+      {identifier.field}
     </CreateFormShell>
   );
 }

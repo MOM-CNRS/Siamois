@@ -2,6 +2,7 @@ package fr.siamois.domain.services.study;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -12,26 +13,13 @@ import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
-import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
-import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import java.time.OffsetDateTime;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpecimenSummaryDTO;
-import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
 import fr.siamois.mapper.StudyMapper;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -42,25 +30,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudyServiceTest {
@@ -421,5 +404,24 @@ class StudyServiceTest {
                 () -> studyService.deleteById(4L));
 
         verify(studyRepository, never()).delete(any(Study.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void suggestIdentifier_peeksForTheMappedNewEntity_withoutWritingAnything() {
+        fr.siamois.dto.entity.StudyDTO dto = new fr.siamois.dto.entity.StudyDTO();
+        fr.siamois.domain.models.study.Study entity = new fr.siamois.domain.models.study.Study();
+        when(studyMapper.invertConvert(dto)).thenReturn(entity);
+        when(identifierGenerator.suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(3, "SUGGESTED-3"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("SUGGESTED-3", studyService.suggestIdentifier(dto));
+
+        ArgumentCaptor<fr.siamois.domain.services.identifier.IdentifierGenerationSpec<fr.siamois.domain.models.study.Study>> specCaptor = ArgumentCaptor.forClass(fr.siamois.domain.services.identifier.IdentifierGenerationSpec.class);
+        verify(identifierGenerator).suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), specCaptor.capture());
+        // Same spec as the save's generation, so the suggestion is what the creation would allocate.
+        org.junit.jupiter.api.Assertions.assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.STUDY, specCaptor.getValue().table());
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(studyRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

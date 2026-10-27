@@ -5,6 +5,15 @@
 
     <changeSet id="2026.10.05-0-document-import-draft" author="siamois" dbms="postgresql">
         <preConditions onFail="MARK_RAN">
+            <!-- On a fresh database the referenced tables do not exist yet: Hibernate's ddl-auto creates
+                 everything, document_import_draft/item included (DocumentImportDraft, DocumentImportItem). -->
+            <tableExists tableName="person"/>
+            <tableExists tableName="institution"/>
+            <tableExists tableName="concept"/>
+            <tableExists tableName="action_unit"/>
+            <tableExists tableName="recording_unit"/>
+            <tableExists tableName="specimen"/>
+            <tableExists tableName="spatial_unit"/>
             <not>
                 <tableExists tableName="document_import_draft"/>
             </not>

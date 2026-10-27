@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -34,7 +35,7 @@ import java.util.Set;
 @Entity
 @Table(name = "study",
         indexes = @Index(name = "idx_study_action_unit", columnList = "fk_action_unit_id"),
-        uniqueConstraints = @UniqueConstraint(name = "uk_study_project_identifier",
+        uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.STUDY,
                 columnNames = {"fk_action_unit_id", "identifier"}))
 @Audited
 @NoArgsConstructor

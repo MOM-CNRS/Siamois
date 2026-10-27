@@ -3,15 +3,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Order;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,10 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitSpecTest {

@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { patchRecordingUnit } from "./api";
-import { RecordingUnitDetailHeader } from "./DetailHeader";
-import { getRecordingUnitTypes } from "./recordingUnitTypes";
-import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/pane/writeMode";
-import type { RecordingUnitDetail } from "./types";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {patchRecordingUnit} from "./api";
+import {RecordingUnitDetailHeader} from "./DetailHeader";
+import {getRecordingUnitTypes} from "./recordingUnitTypes";
+import type {FieldResource} from "../../fields/types";
+import {WriteModeProvider} from "../../panels/pane/writeMode";
+import type {RecordingUnitDetail} from "./types";
 
 
 vi.mock("./api", () => ({ patchRecordingUnit: vi.fn() }));

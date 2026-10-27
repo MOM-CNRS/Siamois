@@ -42,6 +42,11 @@ public class RecordingUnitCreateRequest {
     @Schema(description = "Phase existante (phase_id) à laquelle la nouvelle UE est rattachée ; même projet obligatoire")
     private Long phaseId;
 
+    @Schema(description = "Identifiant complet (full_identifier) choisi par l'utilisateur. Optionnel : "
+            + "absent ou vide, le serveur génère l'identifiant comme d'habitude. "
+            + "S'il est fourni, il est utilisé tel quel (unicité vérifiée).")
+    private String identifier;
+
     /**
      * Contrat legacy client mobile : scalaires / listes bruts indexés par fieldId.
      * Stockage interne uniquement — désérialisé via {@link #setFieldAnswers(Map)}.

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import {useEffect, useRef} from "react";
 
 /**
  * Gives the focus back to what opened an overlay (the cell or the chip clicked) once it closes, so the keyboard

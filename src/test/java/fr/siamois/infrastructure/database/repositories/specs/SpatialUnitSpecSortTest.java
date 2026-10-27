@@ -1,12 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Order;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

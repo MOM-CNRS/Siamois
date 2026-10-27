@@ -1,14 +1,13 @@
 package fr.siamois.domain.services;
 
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
@@ -22,6 +21,7 @@ import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.mapper.ContainerMapper;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -177,11 +177,20 @@ public class ContainerService {
         return containerMapper.convert(entity);
     }
 
+    /**
+     * The identifier a new container like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. Nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(ContainerDTO dto) {
+        return identifierGenerator.suggestIdentifier(containerMapper.invertConvert(dto), containerIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Container> containerIdentifierSpec() {
         return IdentifierGenerationSpec.<Container>builder()
                 .table(ConfigurableTable.CONTENANT)
                 .entityName("container")
-                .generationRequired(container -> container.getId() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Container::getId, Container::getIdentifier))
                 .actionUnit(Container::getActionUnit)
                 .typeId(container -> container.getType() == null ? null : container.getType().getId())
                 .displayValue("NUM_PARENT", container -> container.getParent() == null

@@ -2,44 +2,38 @@ package fr.siamois.ui.api.openapi.v1.controller.place;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.ui.api.openapi.v1.service.FieldQueryService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
-import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
-import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
-import fr.siamois.ui.api.openapi.v1.service.ProjectListAssembler;
-import io.swagger.v3.oas.annotations.Parameter;
-import org.springframework.data.domain.Page;
-import org.springframework.util.MultiValueMap;
-
-import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
-
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
+import fr.siamois.ui.api.openapi.v1.response.SiblingsResponse;
 import fr.siamois.ui.api.openapi.v1.response.find.FindListResponse;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.ProjectListResponse;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitListResponse;
+import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceResponse;
-import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 
 @RestController
 @RequestMapping("/api/v1/places")

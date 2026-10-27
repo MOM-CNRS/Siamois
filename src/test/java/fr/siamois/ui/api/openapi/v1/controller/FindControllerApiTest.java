@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
@@ -65,7 +65,7 @@ class FindControllerApiTest {
 
         FindControllerApi controller = new FindControllerApi(projectApiService, recordingUnitOpenApiService, findOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
 

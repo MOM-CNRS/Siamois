@@ -6,9 +6,10 @@ import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -23,7 +24,10 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "container", indexes = @Index(name = "idx_container_action_unit", columnList = "fk_action_unit_id"))
+@Table(name = "container",
+        indexes = @Index(name = "idx_container_action_unit", columnList = "fk_action_unit_id"),
+        uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.CONTAINER,
+                columnNames = {"fk_action_unit_id", "identifier"}))
 @Audited
 @NoArgsConstructor
 public class Container extends TraceableEntity {

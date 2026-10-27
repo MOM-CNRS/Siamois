@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { containerColumns } from "./columns";
-import type { ContainerSummary } from "./types";
+import {describe, expect, it} from "vitest";
+import {containerColumns} from "./columns";
+import type {ContainerSummary} from "./types";
 
 describe("containerColumns", () => {
   it("marks exactly one column as the identifier", () => {

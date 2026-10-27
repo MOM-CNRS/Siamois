@@ -1,6 +1,6 @@
-import { apiFetch } from "../client";
-import type { FilterValue } from "../../entities/shared/types";
-import type { ViewTableState } from "./views";
+import {apiFetch} from "../client";
+import type {FilterValue} from "../../entities/shared/types";
+import type {ViewTableState} from "./views";
 
 // GET/POST/DELETE /api/v1/home-accesses — the cards of the home page's « Accès aux données » section: a table on a
 // view (which holds the type to show). Every member sees them; who may edit the organization's default views

@@ -1,9 +1,8 @@
 package fr.siamois.domain.models.specimen.form;
 
 
-import java.util.List;
-import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
@@ -22,6 +21,8 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
+
+import java.util.List;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 

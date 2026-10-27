@@ -1,40 +1,36 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import org.hibernate.Hibernate;
+import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.ui.form.dto.CustomColUiDto;
-import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
-import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.VocabularyOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.vocabulary.VocabularyResource;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesData;
 import fr.siamois.ui.api.openapi.v1.response.vocabulary.VocabulariesResponse;
+import fr.siamois.ui.form.dto.CustomColUiDto;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**

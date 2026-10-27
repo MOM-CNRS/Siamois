@@ -1,6 +1,6 @@
-import { apiFetch } from "../../api/client";
-import { getEntityType } from "../../entities/registry";
-import { entityRowLabel } from "../../fields/optionSources";
+import {apiFetch} from "../../api/client";
+import {getEntityType} from "../../entities/registry";
+import {entityRowLabel} from "../../fields/optionSources";
 
 export type HierarchyZone = "parents" | "children";
 export type StratigraphyZone = "anterior" | "synchronous" | "posterior";

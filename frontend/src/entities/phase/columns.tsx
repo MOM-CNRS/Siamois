@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { PhaseSummary } from "./types";
-import { t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {PhaseSummary} from "./types";
+import {t} from "../../i18n";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Phase yet (reduced
 // scope, migration plan lot 2: dynamic columns via GET /api/v1/projects/{id}/phase-types are

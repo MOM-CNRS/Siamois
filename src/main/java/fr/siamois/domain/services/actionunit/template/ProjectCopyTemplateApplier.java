@@ -2,11 +2,7 @@ package fr.siamois.domain.services.actionunit.template;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
-import fr.siamois.domain.models.form.config.ConceptFieldState;
-import fr.siamois.domain.models.form.config.FieldFormConfig;
-import fr.siamois.domain.models.form.config.FormConfig;
-import fr.siamois.domain.models.form.config.FormConfigGroup;
+import fr.siamois.domain.models.form.config.*;
 import fr.siamois.domain.models.settings.DocumentationThesaurus;
 import fr.siamois.domain.models.settings.ProjectCodeSource;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
@@ -20,11 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Copies the configuration of an existing project (templates {@code project:<id>}): the project's thesaurus

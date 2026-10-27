@@ -3,16 +3,12 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.recordingunit.RecordingUnitDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
-import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,16 +20,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** The recording unit's documents: the historical unpaged list for the mobile, the paged one for the Documents tab. */
 @ExtendWith(MockitoExtension.class)
@@ -53,7 +43,7 @@ class RecordingUnitDocumentsControllerApiTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new RecordingUnitDocumentsControllerApi(
                         projectApiService, documentWriteOpenApiService, documentLinksOpenApiService, ListQueryStubs.none()))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
         PersonDTO person = new PersonDTO();
         person.setId(3L);

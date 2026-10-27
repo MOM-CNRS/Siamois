@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "../../api/client";
-import { queryKeys } from "../../api/queryKeys";
+import {useQuery} from "@tanstack/react-query";
+import {apiFetch} from "../../api/client";
+import {queryKeys} from "../../api/queryKeys";
 
 // Mirrors OrganizationResourcePermissions: what the user may do in the organization on their own.
 export interface OrganizationPermissions {

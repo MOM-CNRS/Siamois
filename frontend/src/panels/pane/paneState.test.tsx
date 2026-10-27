@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { PaneStateProvider, PaneStateScope, PaneStateStore, usePaneState } from "./paneState";
+import {afterEach, beforeEach, describe, expect, it} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {PaneStateProvider, PaneStateScope, PaneStateStore, usePaneState} from "./paneState";
 
 let container: HTMLDivElement;
 let root: Root;

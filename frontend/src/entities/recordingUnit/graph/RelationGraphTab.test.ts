@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { toFlow } from "./RelationGraphTab";
-import type { GraphUnitRef, GraphZone, RelationGraph } from "./types";
+import {describe, expect, it, vi} from "vitest";
+import {toFlow} from "./RelationGraphTab";
+import type {GraphUnitRef, GraphZone, RelationGraph} from "./types";
 
 const ref = (id: string): GraphUnitRef => ({ resourceId: id, resourceType: "recording-units", label: `US ${id}` });
 const zone = (...ids: string[]): GraphZone => ({ values: ids.map(ref), total: ids.length, complete: true });

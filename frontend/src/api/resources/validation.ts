@@ -1,5 +1,5 @@
-import { apiFetch } from "../client";
-import type { ValidationStatusValue } from "../../components/table/ValidationStatusBadge";
+import {apiFetch} from "../client";
+import type {ValidationStatusValue} from "../../components/table/ValidationStatusBadge";
 
 // The status rides every entity's own PATCH (`validationStatus`), not a dedicated endpoint: the server
 // applies the rights rule (edit right for en cours/terminé/annulé, validator right for validé).

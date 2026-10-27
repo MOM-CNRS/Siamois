@@ -1,19 +1,24 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { Chip } from "primereact/chip";
-import { Dialog } from "primereact/dialog";
-import { Panel } from "primereact/panel";
-import { deleteHomeAccess, listHomeAccesses, reorderHomeAccesses, type HomeAccess } from "../../api/resources/homeAccesses";
-import { queryKeys } from "../../api/queryKeys";
-import { getEntityType } from "../../entities/registry";
-import type { HomeWidgetContext } from "../../entities/shared/types";
-import { t } from "../../i18n";
-import { usePaneState } from "../../panels/pane/paneState";
-import { AddDataAccessDialog } from "./AddDataAccessDialog";
-import { AddViewCard } from "./AddViewCard";
-import { ClickableCard } from "./ClickableCard";
-import { openSidebarDrawer } from "./sidebar";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {Chip} from "primereact/chip";
+import {Dialog} from "primereact/dialog";
+import {Panel} from "primereact/panel";
+import {
+    deleteHomeAccess,
+    type HomeAccess,
+    listHomeAccesses,
+    reorderHomeAccesses
+} from "../../api/resources/homeAccesses";
+import {queryKeys} from "../../api/queryKeys";
+import {getEntityType} from "../../entities/registry";
+import type {HomeWidgetContext} from "../../entities/shared/types";
+import {t} from "../../i18n";
+import {usePaneState} from "../../panels/pane/paneState";
+import {AddDataAccessDialog} from "./AddDataAccessDialog";
+import {AddViewCard} from "./AddViewCard";
+import {ClickableCard} from "./ClickableCard";
+import {openSidebarDrawer} from "./sidebar";
 
 /**
  * « Accès aux données »: the cards the organization's managers set up — a table on a view (so, say, only one type) —

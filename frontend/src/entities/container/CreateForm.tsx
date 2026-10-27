@@ -1,7 +1,7 @@
-import { TypeOnlyCreateForm } from "../../components/create/TypeOnlyCreateForm";
-import type { CreateFormContext } from "../shared/types";
-import { createContainer } from "./api";
-import { t } from "../../i18n";
+import {TypeOnlyCreateForm} from "../../components/create/TypeOnlyCreateForm";
+import type {CreateFormContext} from "../shared/types";
+import {createContainer} from "./api";
+import {t} from "../../i18n";
 
 // ContainerNewUnitForm only requires a type; spatial unit, dimensions and weight are edited
 // afterwards on the fiche.
@@ -12,7 +12,7 @@ export function ContainerCreateForm(ctx: CreateFormContext) {
       entityType="container"
       title={t("create.newContainer")}
       typesSegment="container-types"
-      create={(projectId, typeId) => createContainer({ projectId, typeId })}
+      create={createContainer}
     />
   );
 }

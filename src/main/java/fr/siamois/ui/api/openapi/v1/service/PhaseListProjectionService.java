@@ -9,11 +9,7 @@ import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The phase-list pendant of {@link RecordingUnitListProjectionService} — what a page of phases

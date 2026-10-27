@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { StudySummary } from "./types";
-import { t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {StudySummary} from "./types";
+import {t} from "../../i18n";
 
 // The pinned columns; the rest of the table comes from the project's study forms (the dynamic
 // catalog, entities/shared/typeCatalog.ts). Field ids are the study table's system fields (StudyForm).

@@ -1,6 +1,6 @@
-import { EntityCountCard } from "../../components/home/EntityCountCard";
-import { useOrganizationCounts, type OrganizationCounts } from "./organizationCounts";
-import type { HomeWidgetContext, HomeWidgetDef } from "./types";
+import {EntityCountCard} from "../../components/home/EntityCountCard";
+import {type OrganizationCounts, useOrganizationCounts} from "./organizationCounts";
+import type {HomeWidgetContext, HomeWidgetDef} from "./types";
 
 export interface CountCardSpec {
   entityType: string;

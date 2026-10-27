@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { MOUNT_CONTRACT_VERSION, MountContractError, parseMountOptions, type MountDataset } from "./mountOptions";
+import {describe, expect, it, vi} from "vitest";
+import {MOUNT_CONTRACT_VERSION, MountContractError, type MountDataset, parseMountOptions} from "./mountOptions";
 
 // What Facelets renders for a project list in focus mode (reactPanelMount.xhtml): a null EL value
 // is an empty attribute.

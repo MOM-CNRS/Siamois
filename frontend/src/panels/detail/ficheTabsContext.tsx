@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react";
-import type { FilterValue } from "../../entities/shared/types";
+import {createContext, useContext} from "react";
+import type {FilterValue} from "../../entities/shared/types";
 
 /**
  * What a list shown as a tab of a fiche can ask of that fiche: to keep the list it is showing, with its filters,

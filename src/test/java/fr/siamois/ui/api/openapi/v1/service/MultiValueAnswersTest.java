@@ -2,13 +2,13 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MeasurementRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -17,13 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class MultiValueAnswersTest {
 

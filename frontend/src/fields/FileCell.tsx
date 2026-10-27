@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { messageForError } from "../api/errors";
-import { fetchDocumentFile, removeDocumentFile, uploadDocumentFile } from "../entities/document/api";
-import { t } from "../i18n";
-import { useToastOnChange } from "../notify/NotifyProvider";
+import {useEffect, useRef, useState} from "react";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {messageForError} from "../api/errors";
+import {fetchDocumentFile, removeDocumentFile, uploadDocumentFile} from "../entities/document/api";
+import {t} from "../i18n";
+import {useToastOnChange} from "../notify/NotifyProvider";
 
 /** What the server shows of a document's stored file (DocumentAnswersProjector's FILE value). */
 export interface StoredFile {

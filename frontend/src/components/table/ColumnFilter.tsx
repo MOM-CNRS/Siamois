@@ -1,15 +1,15 @@
-import { ConceptOptionItem, useFieldWidthCap } from "../../fields/ConceptOptionItem";
-import { useEffect, useRef, useState } from "react";
-import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { Calendar } from "primereact/calendar";
-import { InputNumber } from "primereact/inputnumber";
-import { InputText } from "primereact/inputtext";
-import { SelectButton } from "primereact/selectbutton";
-import type { FilterValue } from "../../panels/list/tableState";
-import type { FilterKind, FilterOption } from "../../fields/optionSources";
-import { t } from "../../i18n";
-import { ReferencePickerSheet } from "../../fields/ReferencePickerSheet";
-import { useIsMobile } from "../../viewport";
+import {ConceptOptionItem, useFieldWidthCap} from "../../fields/ConceptOptionItem";
+import {useEffect, useRef, useState} from "react";
+import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {Calendar} from "primereact/calendar";
+import {InputNumber} from "primereact/inputnumber";
+import {InputText} from "primereact/inputtext";
+import {SelectButton} from "primereact/selectbutton";
+import type {FilterValue} from "../../panels/list/tableState";
+import type {FilterKind, FilterOption} from "../../fields/optionSources";
+import {t} from "../../i18n";
+import {ReferencePickerSheet} from "../../fields/ReferencePickerSheet";
+import {useIsMobile} from "../../viewport";
 
 /**
  * One filter widget, dispatching on {@link FilterKind} — the client-side counterpart of

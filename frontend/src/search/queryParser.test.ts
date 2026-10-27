@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { formatFilter, keywordCompletion, parseQuery, tailKeyword } from "./queryParser";
+import {describe, expect, it} from "vitest";
+import {formatFilter, keywordCompletion, parseQuery, tailKeyword} from "./queryParser";
 
 describe("parseQuery", () => {
   it("returns plain text untouched", () => {

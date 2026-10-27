@@ -1,5 +1,5 @@
-import type { EntityTypeConfig, ListScope } from "../../entities/shared/types";
-import { t, type MessageKey } from "../../i18n";
+import type {EntityTypeConfig, ListScope} from "../../entities/shared/types";
+import {type MessageKey, t} from "../../i18n";
 
 /**
  * How a list is shown. The table's own views are "list" (flat, paged) and "tree" (the hierarchy);

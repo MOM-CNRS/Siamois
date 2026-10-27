@@ -1,14 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
-import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
-import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
-import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -25,7 +22,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectRecordingUnitsControllerApi;
@@ -33,13 +30,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
-import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectAnswersProjector;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitAnswersProjector;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,14 +49,8 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -173,7 +158,7 @@ class ProjectSiblingsControllerApiTest {
                 ListQueryStubs.none());
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller, recordingUnitsController, documentsController)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
 

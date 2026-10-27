@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { ficheScopeOf, parseFicheTabs, resolveTabs } from "./ficheConfig";
-import { registerEntityType } from "../../entities/registry";
-import type { DetailTabDef, EntityTypeConfig } from "../../entities/shared/types";
+import {describe, expect, it} from "vitest";
+import {ficheScopeOf, parseFicheTabs, resolveTabs} from "./ficheConfig";
+import {registerEntityType} from "../../entities/registry";
+import type {DetailTabDef, EntityTypeConfig} from "../../entities/shared/types";
 
 interface Fake {
   id: string;

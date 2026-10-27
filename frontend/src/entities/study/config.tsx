@@ -1,18 +1,18 @@
-import type { EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { getStudy, listStudies, patchStudy, patchStudyAnswers } from "./api";
-import { studyColumns } from "./columns";
-import { StudyCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import type { StudyDetail, StudySummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {getStudy, listStudies, patchStudy, patchStudyAnswers} from "./api";
+import {studyColumns} from "./columns";
+import {StudyCreateForm} from "./CreateForm";
+import {SchemaEntityHeader} from "../../components/detail/SchemaEntityHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import type {StudyDetail, StudySummary} from "./types";
+import {t} from "../../i18n";
 
 // The study's own EntityTypeConfig: an independent card on the home, an organization-wide list, a
 // project list, and a fiche composed from the project's configuration of the study table. Its

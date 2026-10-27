@@ -1,40 +1,20 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
-import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
-import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
-import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
-import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.dto.entity.*;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
-import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.mapper.PhaseOpenApiMapper;
-import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.*;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
+import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
-import fr.siamois.ui.api.openapi.v1.service.ContainerListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.OrganizationListService;
-import fr.siamois.ui.api.openapi.v1.service.DocumentListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.PhaseListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,18 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrganizationListsControllerApiTest {
@@ -99,7 +71,7 @@ class OrganizationListsControllerApiTest {
                 phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
                 mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))
                 .build();
 
