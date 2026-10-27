@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
+import fr.siamois.domain.models.vocabulary.DocumentationThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
@@ -65,6 +66,7 @@ class VocabularyServiceTest {
 
     @Test
     void findDocumentationThesauriIn_shouldLabelTheThesauriOfTheScope() {
+        vocabulary.setId(7L);
         vocabulary.setBaseUri("https://opentheso.huma-num.fr/opentheso/");
         vocabulary.setExternalVocabularyId("th230");
         VocabularyLabel label = new VocabularyLabel();
@@ -75,9 +77,10 @@ class VocabularyServiceTest {
                 .thenReturn(List.of(vocabulary));
         when(labelService.findLabelOf(vocabulary, "fr")).thenReturn(label);
 
-        List<ThesaurusInfo> result = vocabularyService.findDocumentationThesauriIn(scope, "fr");
+        List<DocumentationThesaurusInfo> result = vocabularyService.findDocumentationThesauriIn(scope, "fr");
 
-        assertEquals(List.of(new ThesaurusInfo("https://opentheso.huma-num.fr/opentheso/", "th230", "Siamois test", "fr")), result);
+        assertEquals(List.of(new DocumentationThesaurusInfo(7L,
+                new ThesaurusInfo("https://opentheso.huma-num.fr/opentheso/", "th230", "Siamois test", "fr"))), result);
     }
 
     @Test

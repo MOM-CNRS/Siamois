@@ -2,9 +2,12 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.vocabulary.ThesaurusConfigService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.utils.MessageUtils;
 import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +40,7 @@ public class OpenthesoApiKeySettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient VocabularyService vocabularyService;
+    private final transient ThesaurusConfigService thesaurusConfigService;
 
     private List<ThesaurusApiKey> thesauri = List.of();
 
@@ -44,15 +49,23 @@ public class OpenthesoApiKeySettingsBean implements Serializable {
         if (FacesContext.getCurrentInstance().isPostback()) {
             return;
         }
-        ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(sessionSettingsBean.getAuthenticatedUser());
+        PersonDTO user = sessionSettingsBean.getAuthenticatedUser();
+        ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(user);
+        // a key already saved is shown, masked, in its field
+        Map<Long, String> savedKeys = thesaurusConfigService.findApiKeysOf(user.getId());
         thesauri = vocabularyService.findDocumentationThesauriIn(scope, langBean.getLanguageCode()).stream()
-                .map(thesaurus -> new ThesaurusApiKey(thesaurus.label(), thesaurus.completeThesaurusUrl(), null))
+                .map(info -> new ThesaurusApiKey(info.vocabularyId(), info.thesaurus().label(),
+                        info.thesaurus().completeThesaurusUrl(), savedKeys.get(info.vocabularyId())))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public void saveApiKeys() {
-        for (ThesaurusApiKey apiKey : thesauri) {
-            log.trace("Thesaurus Info : {} : {}", apiKey.getLabel(), apiKey.getApiKey());
+        try {
+            thesaurusConfigService.updateThesaurusApiKeyConfig(thesauri);
+            MessageUtils.displayInfoMessage(langBean, "myProfile.openthesoApiKey.saved");
+        } catch (RuntimeException e) {
+            log.error("Could not save the OpenTheso API keys", e);
+            MessageUtils.displayErrorMessage(langBean, "common.error.internal");
         }
     }
 
