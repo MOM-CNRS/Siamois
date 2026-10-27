@@ -72,6 +72,32 @@ public interface PersonProfileAssignmentRepository extends CrudRepository<Person
                                                @Param("institutionIds") Collection<Long> institutionIds,
                                                @Param("permissionCode") String permissionCode);
 
+    /** Every institution on which the person holds the permission through an ORGANISATION-scoped profile. */
+    @Query("""
+            SELECT DISTINCT prof.institution.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            JOIN prof.permissions perm
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.ORGANISATION
+              AND perm.code = :permissionCode
+            """)
+    Set<Long> findAllInstitutionIdsWithPermission(@Param("personId") Long personId,
+                                                  @Param("permissionCode") String permissionCode);
+
+    /** Every action unit, whatever its institution, on which the person holds the permission through a PROJECT-scoped profile. */
+    @Query("""
+            SELECT DISTINCT prof.actionUnit.id
+            FROM PersonProfileAssignment a
+            JOIN a.profile prof
+            JOIN prof.permissions perm
+            WHERE a.person.id = :personId
+              AND prof.scope = fr.siamois.domain.models.permissions.PermissionScopeType.PROJECT
+              AND perm.code = :permissionCode
+            """)
+    Set<Long> findAllActionUnitIdsWithPermission(@Param("personId") Long personId,
+                                                 @Param("permissionCode") String permissionCode);
+
     @Query("""
             SELECT COUNT(a) > 0
             FROM PersonProfileAssignment a

@@ -7,6 +7,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,28 @@ public interface VocabularyRepository extends CrudRepository<Vocabulary, Long>, 
                     """
     )
     List<Vocabulary> findDistinctByInstitutionId(@Param("institutionId") Long institutionId);
+
+    /**
+     * The documentation thesauri of the given organisations (set at the organisation level) and of the given
+     * projects (one by one, or every project of an organisation).
+     */
+    @Query("""
+            SELECT DISTINCT v
+            FROM DocumentationThesaurus dt
+            JOIN dt.vocabulary v
+            WHERE (dt.actionUnit IS NULL
+                   AND (:allInstitutions = true OR dt.institution.id IN :institutionIds))
+               OR (dt.actionUnit IS NOT NULL
+                   AND (:allProjects = true
+                        OR dt.institution.id IN :projectInstitutionIds
+                        OR dt.actionUnit.id IN :actionUnitIds))
+            ORDER BY v.id
+            """)
+    List<Vocabulary> findDocumentationThesauriOf(@Param("allInstitutions") boolean allInstitutions,
+                                                 @Param("institutionIds") Collection<Long> institutionIds,
+                                                 @Param("allProjects") boolean allProjects,
+                                                 @Param("projectInstitutionIds") Collection<Long> projectInstitutionIds,
+                                                 @Param("actionUnitIds") Collection<Long> actionUnitIds);
 
     /**
      * Find a vocabulary by its baseUri and externalId ignoring case.

@@ -17,7 +17,7 @@ public class CustomFieldMeasurementDTO implements Serializable
 {
     private UnitDefinitionDTO unit;
     private ConceptDTO measurementNature; // nature
-    private ConceptDTO concept; // type
+    private ConceptDTO measurementType; // type
     private boolean isSystemField;
     private String label;
 }

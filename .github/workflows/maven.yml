@@ -10,6 +10,10 @@ jobs:
     name: Build and analyze
     runs-on: ubuntu-latest
     environment: 'SONAR'
+    env:
+      # Le front est construit et testé par les steps npm dédiés : on désactive
+      # le frontend-maven-plugin dans les commandes Maven.
+      MAVEN_SKIP_FRONT: -Dskip.installnodenpm -Dskip.npm
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,6 +23,12 @@ jobs:
         with:
           java-version: 17
           distribution: 'zulu' # Alternative distribution options are available.
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.17.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Cache SonarQube packages
         uses: actions/cache@v4
         with:
@@ -31,7 +41,26 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Build and analyze
+
+      # frontend/dist doit exister avant la compilation back : maven-resources-plugin
+      # le copie dans le jar (execution copy-react-main-panel).
+      - name: Compilation frontend - React
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+      - name: Tests frontend - React
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm test
+
+      - name: Compilation backend - Spring Boot/JSF
+        run: mvn -B compile $MAVEN_SKIP_FRONT
+      - name: Tests backend - Spring Boot/JSF
+        run: mvn -B test -Pcoverage $MAVEN_SKIP_FRONT
+
+      - name: Analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Pcoverage
+        run: mvn -B jacoco:report@report org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Pcoverage $MAVEN_SKIP_FRONT

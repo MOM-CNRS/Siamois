@@ -8,6 +8,7 @@
     <ui:define name="metadata">
     <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
     <f:event type="preRenderView" listener="#{profileSettingsBean.init()}"/>
+    <f:event type="preRenderView" listener="#{openthesoApiKeySettingsBean.init()}"/>
     </ui:define>
 
     <ui:define name="head">
@@ -98,6 +99,40 @@
                 </div>
             </h:form>
             </div>
+            <h:form id="openthesoApiKeyForm" styleClass="sia-settings-form sia-profile-form sia-profile-api-keys">
+                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+                <div class="field-value-group">
+                    <h2 class="field-value-title">#{langBean.msg('myProfile.section.openthesoApiKey')}</h2>
+                    <div class="field-value-content">
+                        <p class="rights-description">#{langBean.msg('myProfile.openthesoApiKey.description')}</p>
+                        <p:dataTable id="thesauri"
+                                     value="#{openthesoApiKeySettingsBean.thesauri}"
+                                     var="thesaurus"
+                                     emptyMessage="#{langBean.msg('myProfile.openthesoApiKey.empty')}">
+                            <p:column headerText="#{langBean.msg('myProfile.openthesoApiKey.thesaurus')}" styleClass="api-key-thesaurus-cell">
+                                <h:outputText value="#{thesaurus.label}"/>
+                                <h:outputLink value="#{thesaurus.url}" target="_blank" rel="noopener noreferrer"
+                                              rendered="#{not empty thesaurus.url}"
+                                              styleClass="api-key-open-link"
+                                              title="#{langBean.msg('myProfile.openthesoApiKey.open')}">
+                                    <i class="bi bi-box-arrow-up-right"/>
+                                </h:outputLink>
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('myProfile.openthesoApiKey.key')}" styleClass="api-key-cell">
+                                <p:password id="apiKey" toggleMask="true" redisplay="true"
+                                            value="#{thesaurus.apiKey}"/>
+                            </p:column>
+                        </p:dataTable>
+                        <p:commandButton
+                                id="saveApiKeys"
+                                rendered="#{not empty openthesoApiKeySettingsBean.thesauri}"
+                                styleClass="field-value-save"
+                                value="#{langBean.msg('common.action.save')}"
+                                actionListener="#{openthesoApiKeySettingsBean.saveApiKeys()}"
+                                process="@form"/>
+                    </div>
+                </div>
+            </h:form>
             <h:form id="rightsForm" styleClass="sia-settings-form sia-profile-form sia-profile-rights">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
                 <div class="field-value-group">

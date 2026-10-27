@@ -35,6 +35,8 @@ import static fr.siamois.utils.MessageUtils.displayErrorMessage;
 @Slf4j
 public abstract class AbstractThesaurusSettingsBean implements Serializable {
 
+    public static final String MY_PROFILE_THESAURUS_URI_INVALID = "myProfile.thesaurus.uri.invalid";
+
     /** A thesaurus of the database, as offered by the drop-down; {@code url} is the value stored in {@code thesaurusUrl}. */
     @Value
     public static class ThesaurusOption implements Serializable {
@@ -235,7 +237,30 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
             reloadUsages();
             askToRewire(previousUrl, thesaurusUrl);
         } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+            displayErrorMessage(langBean, MY_PROFILE_THESAURUS_URI_INVALID);
+        } catch (NotSiamoisThesaurusException e) {
+            displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
+        } catch (ErrorProcessingExpansionException e) {
+            displayErrorMessage(langBean, "thesaurus.error.processingExpansion");
+        } finally {
+            progressWrapper.reset();
+        }
+    }
+
+    /**
+     * Loads the selected thesaurus again, to bring its field codes up to date and look again for the concepts of the
+     * fields whose candidate is pending in it. The selection is not applied. A failure is reported to the user.
+     *
+     * @param load how the thesaurus is loaded
+     */
+    protected void synchronizeThesaurus(ThesaurusSetup load) {
+        if (StringUtils.isBlank(thesaurusUrl)) return;
+        try {
+            load.run(vocabularyService.findOrCreateVocabularyOfUri(thesaurusUrl));
+            MessageUtils.displayInfoMessage(langBean, "thesaurusMain.synchronized");
+            reloadUsages();
+        } catch (InvalidEndpointException e) {
+            displayErrorMessage(langBean, MY_PROFILE_THESAURUS_URI_INVALID);
         } catch (NotSiamoisThesaurusException e) {
             displayErrorMessage(langBean, "myProfile.thesaurus.siamois.invalid");
         } catch (ErrorProcessingExpansionException e) {
@@ -259,7 +284,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
             thesaurusUrl = urlOf(vocabulary);
             pickedThesaurus = null;
         } catch (InvalidEndpointException e) {
-            displayErrorMessage(langBean, "myProfile.thesaurus.uri.invalid");
+            displayErrorMessage(langBean, MY_PROFILE_THESAURUS_URI_INVALID);
         }
     }
 

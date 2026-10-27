@@ -214,6 +214,16 @@ public class ConceptService {
         }
     }
 
+    /**
+     * Fetches from the thesaurus a concept that is still a stub, saved with its URI only; a loaded concept is left
+     * as it is.
+     */
+    public void loadIfUnloaded(@NonNull Concept concept) {
+        if (!concept.isLoaded()) {
+            loadConceptFromThesaurus(concept, null);
+        }
+    }
+
     private void loadConceptFromThesaurus(@NonNull Concept concept, @Nullable Concept fieldParentConcept) {
         String uri = concept.getUri();
         if (uri == null || uri.isBlank()) {

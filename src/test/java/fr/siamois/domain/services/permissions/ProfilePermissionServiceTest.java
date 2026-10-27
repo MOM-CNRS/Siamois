@@ -50,6 +50,43 @@ class ProfilePermissionServiceTest {
     }
 
     @Test
+    void settingsScopeOf_shouldListOrganisationsAndProjectsManagedThroughProfiles() {
+        when(assignmentRepository.personHasInstancePermission(eq(3L), anyString())).thenReturn(false);
+        when(assignmentRepository.findAllInstitutionIdsWithPermission(3L, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS))
+                .thenReturn(Set.of(12L));
+        when(assignmentRepository.findAllInstitutionIdsWithPermission(3L, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS))
+                .thenReturn(Set.of(13L));
+        when(assignmentRepository.findAllActionUnitIdsWithPermission(3L, PermissionConstants.PROJECT_MANAGE_SETTINGS))
+                .thenReturn(Set.of(40L));
+
+        ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(person);
+
+        assertEquals(new ProfilePermissionService.SettingsScope(false, Set.of(12L), false, Set.of(13L), Set.of(40L)), scope);
+    }
+
+    @Test
+    void settingsScopeOf_shouldCoverEverythingForAnInstanceManager() {
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_SETTINGS)).thenReturn(true);
+        when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS)).thenReturn(true);
+
+        ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(person);
+
+        assertTrue(scope.allInstitutions());
+        assertTrue(scope.allProjects());
+        verify(assignmentRepository, never()).findAllInstitutionIdsWithPermission(anyLong(), anyString());
+        verify(assignmentRepository, never()).findAllActionUnitIdsWithPermission(anyLong(), anyString());
+    }
+
+    @Test
+    void settingsScopeOf_shouldBeEmptyWithoutPerson() {
+        ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(null);
+
+        assertFalse(scope.allInstitutions());
+        assertTrue(scope.institutionIds().isEmpty());
+        verifyNoInteractions(assignmentRepository);
+    }
+
+    @Test
     void canAccessInstitution_shouldReturnTrueWhenPersonManagesTheInstitution() {
         when(assignmentRepository.personHasAnyProfileInInstitution(3L, 12L)).thenReturn(false);
         when(assignmentRepository.personHasInstancePermission(3L, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS))

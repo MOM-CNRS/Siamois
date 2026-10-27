@@ -222,8 +222,13 @@ public class ConceptApi {
             builder.queryParam("lang", lang);
         }
         URI uri = builder.build().encode().toUri();
+        log.trace("Remote autocomplete request: GET {}", uri);
         ResponseEntity<String> response = sendRequestAcceptJson(uri);
         String body = response.getBody();
+        log.trace("Remote autocomplete response: {} {}", response.getStatusCode(), body);
+        if (body == null || body.isBlank()) {
+            return new ArrayList<>();
+        }
 
         TypeReference<List<ConceptRemoteAutocompleteDTO>> typeReference = new TypeReference<>() {};
         return mapper.readValue(body, typeReference);

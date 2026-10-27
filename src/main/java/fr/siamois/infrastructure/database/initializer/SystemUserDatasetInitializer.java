@@ -17,7 +17,9 @@ import java.util.Optional;
 @Slf4j
 public class SystemUserDatasetInitializer implements DatabaseInitializer {
 
-    private final PersonRepository personRepository;
+    /** The identifier of the organisation created on an empty database. */
+    public static final String DEFAULT_INSTITUTION_IDENTIFIER = "siamois";
+
     private final InstitutionRepository institutionRepository;
 
     @Override
@@ -31,7 +33,7 @@ public class SystemUserDatasetInitializer implements DatabaseInitializer {
         Institution institution = new Institution();
         institution.setName("Organisation par défaut");
         institution.setDescription("DEFAULT");
-        institution.setIdentifier("siamois");
+        institution.setIdentifier(DEFAULT_INSTITUTION_IDENTIFIER);
 
         institutionRepository.save(institution);
 
@@ -39,7 +41,7 @@ public class SystemUserDatasetInitializer implements DatabaseInitializer {
     }
 
     protected boolean processExistingInstitution() {
-        Optional<Institution> optInstitution = institutionRepository.findInstitutionByIdentifier("siamois");
+        Optional<Institution> optInstitution = institutionRepository.findInstitutionByIdentifier(DEFAULT_INSTITUTION_IDENTIFIER);
         return optInstitution.isPresent();
     }
 
