@@ -4,22 +4,25 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyApiKey;
+import fr.siamois.infrastructure.crypto.ApiKeyEncryptor;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyKeyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.settings.ThesaurusApiKey;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ThesaurusConfigService {
@@ -27,12 +30,24 @@ public class ThesaurusConfigService {
     private final VocabularyRepository vocabularyRepository;
     private final PersonMapper personMapper;
     private final VocabularyKeyRepository vocabularyKeyRepository;
+    private final ApiKeyEncryptor apiKeyEncryptor;
 
-    /** The API keys a person saved, by the id of their vocabulary. */
+    /**
+     * The API keys a person saved, decrypted, by the id of their vocabulary. A key that no longer decrypts (the
+     * encryption password or salt changed) is left out: the person types it again.
+     */
     @Transactional(readOnly = true)
     public Map<Long, String> findApiKeysOf(Long personId) {
-        return vocabularyKeyRepository.findAllByPersonId(personId).stream()
-                .collect(Collectors.toMap(key -> key.getId().getVocabularyId(), VocabularyApiKey::getEncryptedKey));
+        Map<Long, String> keys = new HashMap<>();
+        for (VocabularyApiKey key : vocabularyKeyRepository.findAllByPersonId(personId)) {
+            try {
+                keys.put(key.getId().getVocabularyId(), apiKeyEncryptor.decrypt(key.getEncryptedKey()));
+            } catch (IllegalStateException e) {
+                log.warn("API key of person {} for vocabulary {} cannot be decrypted, ignored",
+                        personId, key.getId().getVocabularyId());
+            }
+        }
+        return keys;
     }
 
     /** Saves every key filled in, all or none: a failure on one key leaves the others as they were. */
@@ -56,7 +71,7 @@ public class ThesaurusConfigService {
                     key.setVocabulary(vocabulary);
                     key.setPerson(person);
                 }
-                key.setEncryptedKey(apiKey.getApiKey());
+                key.setEncryptedKey(apiKeyEncryptor.encrypt(apiKey.getApiKey()));
                 vocabularyKeyRepository.save(key);
             }
         }

@@ -30,6 +30,8 @@ SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésau
 | SIAMOIS_ADMIN_EMAIL      | Adresse email du superadministrateur de l'instance.                                                                                  |
 | SIAMOIS_DOCUMENTS_PATH   | Indique le dossier où les documents seront stockés.                                                                                  |
 | SIAMOIS_JWT_SECRET       | Valeur secrète du Json Web Token. **À remplacer par une clé d'au moins 256 bits**.                                                   |
+| SIAMOIS_API_KEY_ENCRYPTION_PASSWORD | Mot de passe chiffrant les clés API (OpenTheso) stockées en base. **À remplacer par une valeur forte et secrète**.              |
+| SIAMOIS_API_KEY_ENCRYPTION_SALT     | Sel du chiffrement des clés API, en hexadécimal (au moins 16 caractères). **À remplacer** ; le changer rend les clés existantes illisibles. |
 | DB_URL                   | Adresse JDBC permettant de se connecter à la base de données.                                                                        |
 | DB_USERNAME              | Nom d'utilisateur pour l'instance sur la base de données.                                                                            |
 | DB_PASSWORD              | Mot de passe de l'utilisateur de l'instance sur la base de données.                                                                  |

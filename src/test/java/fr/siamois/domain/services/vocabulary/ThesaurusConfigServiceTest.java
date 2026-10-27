@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyApiKey;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.infrastructure.crypto.ApiKeyEncryptor;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyKeyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.mapper.PersonMapper;
@@ -38,6 +39,8 @@ class ThesaurusConfigServiceTest {
     private PersonMapper personMapper;
     @Mock
     private VocabularyKeyRepository vocabularyKeyRepository;
+    @Mock
+    private ApiKeyEncryptor apiKeyEncryptor;
 
     @InjectMocks
     private ThesaurusConfigService service;
@@ -72,10 +75,21 @@ class ThesaurusConfigServiceTest {
     }
 
     @Test
-    void findApiKeysOf_returnsTheKeysByVocabularyId() {
-        when(vocabularyKeyRepository.findAllByPersonId(3L)).thenReturn(List.of(savedKey(7L, "k7"), savedKey(8L, "k8")));
+    void findApiKeysOf_returnsTheDecryptedKeysByVocabularyId() {
+        when(vocabularyKeyRepository.findAllByPersonId(3L)).thenReturn(List.of(savedKey(7L, "enc7"), savedKey(8L, "enc8")));
+        when(apiKeyEncryptor.decrypt("enc7")).thenReturn("k7");
+        when(apiKeyEncryptor.decrypt("enc8")).thenReturn("k8");
 
         assertThat(service.findApiKeysOf(3L)).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(7L, "k7", 8L, "k8"));
+    }
+
+    @Test
+    void findApiKeysOf_leavesOutAKeyThatNoLongerDecrypts() {
+        when(vocabularyKeyRepository.findAllByPersonId(3L)).thenReturn(List.of(savedKey(7L, "enc7"), savedKey(8L, "stale")));
+        when(apiKeyEncryptor.decrypt("enc7")).thenReturn("k7");
+        when(apiKeyEncryptor.decrypt("stale")).thenThrow(new IllegalStateException("bad key"));
+
+        assertThat(service.findApiKeysOf(3L)).containsExactlyEntriesOf(java.util.Map.of(7L, "k7"));
     }
 
     @Test
@@ -84,12 +98,13 @@ class ThesaurusConfigServiceTest {
         when(personMapper.invertConvert(personDto)).thenReturn(person);
         when(vocabularyRepository.findById(7L)).thenReturn(Optional.of(vocabulary));
         when(vocabularyKeyRepository.findByVocabularyAndPerson(vocabulary, person)).thenReturn(Optional.empty());
+        when(apiKeyEncryptor.encrypt("secret")).thenReturn("encrypted-secret");
 
         service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "Thésaurus", "https://t/?idt=th1", "secret")));
 
         ArgumentCaptor<VocabularyApiKey> saved = ArgumentCaptor.forClass(VocabularyApiKey.class);
         verify(vocabularyKeyRepository).save(saved.capture());
-        assertThat(saved.getValue().getEncryptedKey()).isEqualTo("secret");
+        assertThat(saved.getValue().getEncryptedKey()).isEqualTo("encrypted-secret");
         assertThat(saved.getValue().getId().getVocabularyId()).isEqualTo(7L);
         assertThat(saved.getValue().getId().getPersonId()).isEqualTo(3L);
     }

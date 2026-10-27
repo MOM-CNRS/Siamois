@@ -38,6 +38,12 @@ siamois:
       mobilier: ${SIAMOIS_DEFAULT_TYPE_STUDY_MOBILIER:https://thesaurus.mom.fr/?idc=4291173&idt=th252}
       ue: ${SIAMOIS_DEFAULT_TYPE_STUDY_UE:https://thesaurus.mom.fr/?idc=4291172&idt=th252}
       traitement: ${SIAMOIS_DEFAULT_TYPE_STUDY_TRAITEMENT:https://thesaurus.mom.fr/?idc=4291174&idt=th252}
+  api-key-encryption:
+    # Chiffre les clés API stockées en BD (clés OpenTheso). Valeurs fortes en prod : le mot de passe est
+    # secret, le sel est en hexadécimal (au moins 16 caractères, générable par KeyGenerators.string()).
+    # Les changer rend illisibles les clés déjà enregistrées.
+    password: ${SIAMOIS_API_KEY_ENCRYPTION_PASSWORD:change-me-api-key-encryption-password}
+    salt: ${SIAMOIS_API_KEY_ENCRYPTION_SALT:5c0744940b5c369b}
   jwt:
     # HS256 : au moins 256 bits — utiliser une valeur forte en prod (variable SIAMOIS_JWT_SECRET).
     secret: ${SIAMOIS_JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}

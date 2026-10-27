@@ -22,7 +22,8 @@ public class VocabularyApiKey {
     @JoinColumn(name = "fk_person_id")
     private Person person;
 
-    @Column(name = "encrypted_key", nullable = false)
+    /** Hex-encoded AES-GCM: about twice the key's length plus 64 characters. */
+    @Column(name = "encrypted_key", nullable = false, length = 1024)
     private String encryptedKey;
 
     public VocabularyApiKey() {
