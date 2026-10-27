@@ -99,7 +99,7 @@ Une entrée = une cellule (cible × source primaire). Au plus une entrée par co
   `{"column": "nom"}` *(profil Siamois)* : colonne d'une source technique.
 - `P` = `{"literal":"texte"}` ou `{"label":"libellé","source":alias,"field":F}` ; l'alias d'une partie doit
   descendre de la même source primaire que l'entrée.
-- `Concept` = `{"thesaurus":"th230","id":"4290928","uri":"…"}` : thésaurus et concept externes (+ URI),
+- `Concept` = `{"thesaurus":"th332","id":"1005","uri":"…"}` : thésaurus et concept externes (+ URI),
   jamais d'identifiant de base ; c'est ce qui rend le modèle portable d'une instance à l'autre.
 - `status` (`draft`/`validated`, ShareQ3) est accepté et ignoré par Siamois.
 

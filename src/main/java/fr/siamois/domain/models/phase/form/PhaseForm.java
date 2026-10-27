@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMul
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
@@ -20,27 +21,27 @@ public abstract class PhaseForm {
     protected PhaseForm() {}
 
     protected static final Concept identifierConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.identifier").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.identifier")).build();
     protected static final Concept typeConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.type").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.TYPE")).build();
     protected static final Concept titleConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.title").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.title")).build();
     protected static final Concept descriptionConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.description").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.description")).build();
     protected static final Concept orderNumberConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.orderNumber").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.orderNumber")).build();
     protected static final Concept lowerBoundConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.lowerBound").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.lowerBound")).build();
     protected static final Concept upperBoundConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.upperBound").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.upperBound")).build();
     protected static final Concept periodsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.periods").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.PERIOD")).build();
     protected static final Concept keywordsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.keywords").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.KEYWORD")).build();
     protected static final Concept actionUnitConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.actionUnit").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.actionUnit")).build();
     protected static final Concept recordingUnitsConcept = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId("phase.recordingUnits").build();
+            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAPHASE.recordingUnits")).build();
 
     @Transient
     protected static final CustomFieldText identifierField = CustomFieldText.builder()
