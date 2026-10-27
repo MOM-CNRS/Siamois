@@ -32,6 +32,8 @@ public class ExportSourceDialog implements Serializable {
     /** Types cochés de la table choisie (clés {@code thesaurus|id|uri}). */
     private Set<String> types = new LinkedHashSet<>();
     private String expanded;
+    /** Étape affichée : 1 = choix de la table et des types, 2 = choix des champs. */
+    private int step = 1;
     private String query = "";
     private String fieldQuery = "";
     private List<FieldRow> fieldRows = new ArrayList<>();
@@ -41,6 +43,7 @@ public class ExportSourceDialog implements Serializable {
         table = null;
         types = new LinkedHashSet<>();
         expanded = null;
+        step = 1;
         query = "";
         fieldQuery = "";
         fieldRows = new ArrayList<>();
@@ -129,6 +132,10 @@ public class ExportSourceDialog implements Serializable {
         private final transient ExportTemplateEditModel.EditSource source;
         private final int index;
         private final String table;
+        /** Texte de la puce : le type, ou la table quand la source n'est pas filtrée par type. */
+        private final String label;
+        /** Clé du type que montre la puce ; nulle si elle représente toute la source. */
+        private final String typeKey;
         private final String icon;
         private final String entityClass;
         private final String typesLabel;
@@ -138,11 +145,14 @@ public class ExportSourceDialog implements Serializable {
         private final boolean editable;
         private final boolean gapActive;
 
-        public Chip(ExportTemplateEditModel.EditSource source, int index, String table, ExportEntityStyle style, String typesLabel,
+        public Chip(ExportTemplateEditModel.EditSource source, int index, String table, String label, String typeKey,
+                    ExportEntityStyle style, String typesLabel,
                     String rowsLabel, int covered, int total, boolean editable, boolean gapActive) {
             this.source = source;
             this.index = index;
             this.table = table;
+            this.label = label;
+            this.typeKey = typeKey;
             this.icon = style.icon();
             this.entityClass = style.cssClass();
             this.typesLabel = typesLabel;

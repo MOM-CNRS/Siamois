@@ -141,9 +141,24 @@ public class ExportTemplateEditorBean implements Serializable {
         selectedColumn = null;
         sourceDialog.reset();
         addColumnOpen = false;
-        closePreview();
         clearCaches();
         loadProjects();
+        // L'aperçu est la vue par défaut ; sans projet de référence, il invite à en choisir un.
+        previewOpen = false;
+        preview = null;
+        previewWarnings = new ArrayList<>();
+        refreshPreview();
+    }
+
+    /** Choix du projet de référence depuis l'aperçu : écrit tout de suite, puis l'aperçu est recalculé. */
+    public void onPreviewProjectChange() {
+        onReferenceProjectChange();
+        refreshPreview();
+    }
+
+    /** Vrai quand l'aperçu est affiché mais qu'aucun projet de référence ne permet de le calculer. */
+    public boolean isPreviewNeedsProject() {
+        return previewOpen && referenceProjectId == null;
     }
 
     private fr.siamois.domain.models.UserInfo userInfoUser() {
@@ -308,6 +323,19 @@ public class ExportTemplateEditorBean implements Serializable {
         }
     }
 
+    /** Croix d'une puce : retire le type qu'elle montre, ou toute la source s'il n'en reste qu'un (ou si elle n'est pas filtrée). */
+    public void removeChip(ExportSourceDialog.Chip chip) {
+        if (published) {
+            return;
+        }
+        EditSource source = chip.getSource();
+        if (chip.getTypeKey() != null && source.getTypeKeys().size() > 1) {
+            source.getTypeKeys().remove(chip.getTypeKey());
+        } else {
+            removeSource(source);
+        }
+    }
+
     /** @return true si la règle n'avait que la source retirée (elle doit être supprimée) */
     private static boolean reindexAfterRemoval(EditRule rule, int removed) {
         if (rule.getSources().isEmpty()) {
@@ -453,7 +481,9 @@ public class ExportTemplateEditorBean implements Serializable {
             return;
         }
         if (referenceProjectId == null) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.editor.preview.noProject");
+            preview = null;
+            previewWarnings = new ArrayList<>();
+            previewOpen = true;
             return;
         }
         normalizeFieldKinds();
@@ -515,6 +545,9 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         if (!Objects.equals(referenceProjectId, referenceProjectBefore)) {
             onReferenceProjectChange();
+            if (previewOpen) {
+                refreshPreview();
+            }
         }
     }
 
@@ -651,8 +684,18 @@ public class ExportTemplateEditorBean implements Serializable {
             Optional<TableDef> def = key == null ? Optional.empty() : tableDef(key);
             ExportEntityStyle style = def.map(TableDef::style).orElse(ExportEntityStyle.neutral());
             int covered = coveredColumns(sheet, i);
-            chips.add(new ExportSourceDialog.Chip(source, i, describe(source), style, sourceTypesLabel(source), sourceRowsLabel(source),
-                    covered, sheet.getColumns().size(), key != null, gapSource == i));
+            List<String> typeKeys = ExportTemplateEditModel.KIND_ENTITY.equals(source.getKind()) ? source.getTypeKeys() : List.of();
+            if (typeKeys.isEmpty()) {
+                chips.add(new ExportSourceDialog.Chip(source, i, describe(source), describe(source), null, style, "", "",
+                        covered, sheet.getColumns().size(), key != null, gapSource == i));
+                continue;
+            }
+            List<Item> items = typeItems(source);
+            for (String typeKey : typeKeys) {
+                String label = items.stream().filter(it -> it.value().equals(typeKey)).map(Item::label).findFirst().orElse(typeKey);
+                chips.add(new ExportSourceDialog.Chip(source, i, describe(source), label, typeKey, style, "", "",
+                        covered, sheet.getColumns().size(), key != null, gapSource == i));
+            }
         }
         return chips;
     }
@@ -747,6 +790,17 @@ public class ExportTemplateEditorBean implements Serializable {
             }
         });
         rebuildFieldRows();
+    }
+
+    /** « Suivant » : passe au choix des champs de la table choisie. */
+    public void goToFieldsStep() {
+        if (sourceDialog.isPicked()) {
+            sourceDialog.setStep(2);
+        }
+    }
+
+    public void goToTreeStep() {
+        sourceDialog.setStep(1);
     }
 
     private List<String> typeKeysOf(String tableKey) {
@@ -1040,6 +1094,9 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Une ligne du menu de suggestions de la recherche. */
     public record Suggestion(String label, String sub, EditColumn column, String fieldKind, String fieldKey) implements Serializable {
+        // EL 5 (Tomcat 10) ne lit pas les accesseurs de record : getters explicites
+        public String getLabel() { return label; }
+        public String getSub() { return sub; }
     }
 
     private static final int SUGGEST_COLUMNS = 5;
@@ -1100,6 +1157,78 @@ public class ExportTemplateEditorBean implements Serializable {
             }
         }
         return found.values().stream().limit(SUGGEST_FIELDS).toList();
+    }
+
+    /** Un résultat de la recherche (liste standard groupée) : une colonne à ouvrir, ou un champ dont créer une colonne. */
+    public record SearchHit(String group, String text, int columnIndex, String fieldKind, String fieldKey, String label) implements Serializable {
+        public String getGroup() { return group; }
+        public String getText() { return text; }
+
+        private static final String SEP = "\u0001";
+
+        public String encoded() {
+            return String.join(SEP, group, text, String.valueOf(columnIndex), fieldKind == null ? "" : fieldKind,
+                    fieldKey == null ? "" : fieldKey, label);
+        }
+
+        /** Nulle si la valeur n'est pas un résultat encodé (texte tapé librement). */
+        public static SearchHit decode(String value) {
+            if (value == null) {
+                return null;
+            }
+            String[] p = value.split(SEP, -1);
+            if (p.length != 6) {
+                return null;
+            }
+            return new SearchHit(p[0], p[1], Integer.parseInt(p[2]), p[3].isEmpty() ? null : p[3], p[4].isEmpty() ? null : p[4], p[5]);
+        }
+    }
+
+    /** Résultat choisi dans la recherche ; l'action est faite aussitôt puis la valeur est vidée. */
+    private SearchHit searchPick;
+
+    public SearchHit getSearchPick() {
+        return null;
+    }
+
+    public void setSearchPick(SearchHit hit) {
+        this.searchPick = hit;
+    }
+
+    /** Résultats de la recherche : colonnes, colonnes mappées sur le texte cherché, puis champs pour créer un mapping. */
+    public List<SearchHit> completeSearch(String query) {
+        columnSearch = query == null ? "" : query;
+        EditSheet sheet = getSelectedSheet();
+        List<SearchHit> hits = new ArrayList<>();
+        String columns = langBean.msg("exportTemplates.editor.suggest.columns");
+        String mapped = langBean.msg("exportTemplates.editor.suggest.mapped");
+        String fields = langBean.msg("exportTemplates.editor.suggest.fields");
+        for (Suggestion sg : getSuggestedColumns()) {
+            hits.add(new SearchHit(columns, sg.label() + " · " + sg.sub(), sheet.getColumns().indexOf(sg.column()), null, null, sg.label()));
+        }
+        for (Suggestion sg : getSuggestedMappedColumns()) {
+            hits.add(new SearchHit(mapped, sg.label() + " · " + sg.sub(), sheet.getColumns().indexOf(sg.column()), null, null, sg.label()));
+        }
+        for (Suggestion sg : getSuggestedFields()) {
+            hits.add(new SearchHit(fields, sg.label() + " · " + sg.sub(), -1, sg.fieldKind(), sg.fieldKey(), sg.label()));
+        }
+        return hits;
+    }
+
+    /** Choix d'un résultat : ouvre la colonne, ou crée une colonne mappée sur le champ. */
+    public void onSearchPick() {
+        SearchHit hit = searchPick;
+        searchPick = null;
+        EditSheet sheet = getSelectedSheet();
+        if (hit == null || sheet == null) {
+            return;
+        }
+        if (hit.columnIndex() >= 0 && hit.columnIndex() < sheet.getColumns().size()) {
+            columnSearch = "";
+            selectColumn(sheet.getColumns().get(hit.columnIndex()));
+        } else if (hit.fieldKind() != null) {
+            createFromSuggestedField(new Suggestion(hit.label(), "", null, hit.fieldKind(), hit.fieldKey()));
+        }
     }
 
     public boolean isNoSuggestion() {
@@ -1206,6 +1335,10 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Champ proposé par la saisie d'un mapping : libellé, choix ({@code chemin::clé::propriété}) et « relation » si le chemin traverse une jointure. */
     public record FieldSuggestion(String label, String choice, boolean relation) implements Serializable {
+
+        public String getLabel() { return label; }
+        public String getChoice() { return choice; }
+        public boolean isRelation() { return relation; }
 
         private static final String SEPARATOR = "@@@";
 
@@ -1580,6 +1713,17 @@ public class ExportTemplateEditorBean implements Serializable {
     /** Libellé d'une source : « Table · types » pour une entité, sinon le libellé de sa nature. */
     public String sourceLabel(EditSource source) {
         return describe(source);
+    }
+
+    /** Libellé d'une source dans les puces d'une règle : ses types s'il y en a un filtre, sinon sa table. */
+    public String sourceChipLabel(EditSource source) {
+        String types = sourceTypes(source);
+        return types.isBlank() ? describe(source) : types;
+    }
+
+    /** Vrai si la source est une entité, dont on peut choisir les types. */
+    public boolean isTypedSource(EditSource source) {
+        return ExportTemplateEditModel.KIND_ENTITY.equals(source.getKind());
     }
 
     /** Types d'une source, résumés pour le bandeau de sources ; vide s'il n'y a pas de filtre. */

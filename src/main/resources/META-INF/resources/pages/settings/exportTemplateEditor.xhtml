@@ -27,6 +27,22 @@
                         if (detail.style.flex !== flex) { detail.style.flex = flex; }
                     }
                 }
+                function savePct(detail, pct) {
+                    detail.style.flex = '0 0 ' + pct + '%';
+                    try { localStorage.setItem(KEY, String(pct)); } catch (x) { /* stockage indisponible */ }
+                }
+                /* Poignée au clavier : flèches gauche/droite, 2 % par pas. */
+                document.addEventListener('keydown', function (e) {
+                    var t = e.target;
+                    if (t.classList &amp;&amp; t.classList.contains('xe-splitter') &amp;&amp; (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                        var detail = document.querySelector('.xe-detail'), pane = document.querySelector('.xe-pane');
+                        if (!detail || !pane) { return; }
+                        var cur = detail.getBoundingClientRect().width / pane.getBoundingClientRect().width * 100;
+                        savePct(detail, Math.round(Math.max(MIN, Math.min(cur + (e.key === 'ArrowLeft' ? 2 : -2), MAX)) * 10) / 10);
+                        e.preventDefault();
+                        return;
+                    }
+                });
                 new MutationObserver(apply).observe(document.documentElement, {childList: true, subtree: true});
                 document.addEventListener('pointerdown', function (e) {
                     if (!e.target.classList || !e.target.classList.contains('xe-splitter')) { return; }
@@ -37,8 +53,7 @@
                     function move(ev) {
                         var box = pane.getBoundingClientRect();
                         var pct = Math.round(Math.max(MIN, Math.min((box.right - ev.clientX) / box.width * 100, MAX)) * 10) / 10;
-                        detail.style.flex = '0 0 ' + pct + '%';
-                        try { localStorage.setItem(KEY, String(pct)); } catch (x) { /* stockage indisponible */ }
+                        savePct(detail, pct);
                     }
                     function up() {
                         document.removeEventListener('pointermove', move);
@@ -114,11 +129,13 @@
                                         </div>
                                         <div class="xe-field">
                                             <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.refProject.label')}"/>
-                                            <p:selectOneMenu value="#{exportTemplateEditorBean.referenceProject}" styleClass="xe-select" style="width: 100%" appendTo="@this">
+                                            <p:selectOneMenu rendered="#{not empty exportTemplateEditorBean.projectItems}" value="#{exportTemplateEditorBean.referenceProject}" styleClass="xe-select" style="width: 100%" appendTo="@this">
                                                 <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.referenceProject.none')}" itemValue=""/>
                                                 <f:selectItems value="#{exportTemplateEditorBean.projectItems}" var="o"
                                                                itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
                                             </p:selectOneMenu>
+                                            <p:commandLink rendered="#{empty exportTemplateEditorBean.projectItems}" styleClass="xe-dashed small" ajax="false" immediate="true"
+                                                           action="#{navBean.goToProjectsSettings()}" value="+ #{langBean.msg('exportTemplates.editor.refProject.create')}"/>
                                         </div>
                                         <div class="xe-pop-foot">
                                             <p:commandButton value="#{langBean.msg('exportTemplates.editor.cancel')}" styleClass="xt-btn-flat"
@@ -157,8 +174,10 @@
 
                         <!-- Projet de référence, en petit texte sous l'en-tête -->
                         <div class="xe-refbar">
-                            <span class="xe-refbar-label">#{langBean.msg('exportTemplates.editor.refProject.label')} :</span>
+                            <span class="xe-refbar-label">#{langBean.msg('exportTemplates.editor.refProject.label')}</span>
                             <span class="xe-refbar-value">#{exportTemplateEditorBean.referenceProjectLabel}</span>
+                            <p:commandLink rendered="#{empty exportTemplateEditorBean.projectItems}" styleClass="xe-chip" ajax="false" immediate="true"
+                                           action="#{navBean.goToProjectsSettings()}" value="+ #{langBean.msg('exportTemplates.editor.refProject.create')}"/>
                             <span class="xe-refbar-hint">#{langBean.msg('exportTemplates.editor.refProject.hint')}</span>
                         </div>
 
@@ -183,12 +202,42 @@
                                              icon="bi bi-gear" value="#{langBean.msg('exportTemplates.editor.sheetSettings')}"/>
                             <p:overlayPanel for="sheetSettingsBtn" widgetVar="xeSheetPanel" styleClass="xe-popover" appendTo="@form"
                                             my="right top" at="right bottom" dismissable="true" showCloseIcon="false">
-                                <div class="xe-pop-body" style="width: 320px">
+                                <div class="xe-pop-body" style="width: 360px">
                                     <div class="xe-field">
                                         <p:outputLabel for="@next" value="#{langBean.msg('exportTemplates.editor.sheet.name')}"/>
                                         <p:inputText value="#{exportTemplateEditorBean.selectedSheet.name}" maxlength="31">
                                             <p:ajax event="change" process="@this" update="@(.xe-tabs)"/>
                                         </p:inputText>
+                                    </div>
+                                    <div class="xe-field">#{langBean.msg('exportTemplates.editor.sources.title')}
+                                        <div class="xe-sources-list xe-src-list">
+                                <ui:repeat value="#{exportTemplateEditorBean.selectedSheet.sources}" var="src">
+                                    <div class="xe-src-row #{exportTemplateEditorBean.entityStyleOf(src).cssClass()}">
+                                        <i class="bi #{exportTemplateEditorBean.entityStyleOf(src).icon()} xe-ent-icon"/>
+                                        <p:commandLink styleClass="xe-src-name" title="#{langBean.msg('exportTemplates.editor.source.edit')}"
+                                                       action="#{exportTemplateEditorBean.editSource(src)}"
+                                                       process="@this" update=":xeSourceForm" oncomplete="PF('xeSheetPanel').hide();PF('xeSourceDlg').show()">
+                                            #{exportTemplateEditorBean.sourceLabel(src)}
+                                        </p:commandLink>
+                                        <p:selectCheckboxMenu value="#{src.typeKeys}" rendered="#{exportTemplateEditorBean.isTypedSource(src)}"
+                                                              multiple="true" filter="true" appendTo="@this" panelStyleClass="xe-src-menu"
+                                                              emptyLabel="#{langBean.msg('exportTemplates.editor.source.allTypes')}"
+                                                              disabled="#{exportTemplateEditorBean.published}">
+                                            <f:selectItems value="#{exportTemplateEditorBean.typeItems(src)}" var="ti"
+                                                           itemLabel="#{ti.label()}" itemValue="#{ti.value()}"/>
+                                            <p:ajax event="change" process="@this" update="@(.xe-source-chips)"/>
+                                        </p:selectCheckboxMenu>
+                                        <p:commandLink styleClass="xe-x xe-edit" title="#{langBean.msg('exportTemplates.editor.source.remove')}"
+                                                       action="#{exportTemplateEditorBean.removeSource(src)}" process="@form" update="@form">
+                                            <i class="bi bi-x-lg"/>
+                                        </p:commandLink>
+                                    </div>
+                                </ui:repeat>
+                                <p:commandLink styleClass="xe-dashed xe-edit" action="#{exportTemplateEditorBean.openSourceDialog()}"
+                                               process="@this" update=":xeSourceForm" oncomplete="PF('xeSheetPanel').hide();PF('xeSourceDlg').show()">
+                                    + #{langBean.msg('exportTemplates.editor.source.add')}
+                                </p:commandLink>
+                                        </div>
                                     </div>
                                     <div class="xe-switch">
                                         #{langBean.msg('exportTemplates.editor.sheet.omitShort')}
@@ -228,85 +277,30 @@
                         </div>
 
                         <h:panelGroup layout="block" styleClass="xe-body xe-block">
-                        <!-- Sources de la feuille : pastille de l'entité, types, lignes, couverture des colonnes -->
-                        <div class="xe-sources">
+                        <!-- Sources : choisies dans les réglages de la feuille ; sans source, on propose d'en ajouter une -->
+                        <h:panelGroup layout="block" styleClass="xe-sources" rendered="#{exportTemplateEditorBean.noSources}">
                             <div class="xe-sources-list">
-                                <h:panelGroup rendered="#{exportTemplateEditorBean.noSources}" styleClass="xe-sources-empty">
-                                    #{langBean.msg('exportTemplates.editor.sources.none')}
-                                </h:panelGroup>
-                                <ui:repeat value="#{exportTemplateEditorBean.sourceChips}" var="chip">
-                                    <div class="xe-source #{chip.entityClass} #{chip.gapActive ? 'gap' : ''}">
-                                        <i class="bi #{chip.icon} xe-ent-icon"/>
-                                        <p:commandLink styleClass="xe-source-label" disabled="#{not chip.editable}"
-                                                       title="#{langBean.msg('exportTemplates.editor.source.edit')}"
-                                                       action="#{exportTemplateEditorBean.editSource(chip.source)}"
-                                                       process="@this" update=":xeSourceForm" oncomplete="PF('xeSourceDlg').show()">
-                                            <strong>#{chip.table}</strong>
-                                            <h:panelGroup rendered="#{not empty chip.detail}" layout="block" styleClass="muted">#{chip.detail}</h:panelGroup>
-                                        </p:commandLink>
-                                        <p:commandLink styleClass="xe-cover #{chip.full ? 'full' : 'gaps'}"
-                                                       title="#{langBean.msg('exportTemplates.editor.source.showGaps')}"
-                                                       action="#{exportTemplateEditorBean.showGaps(chip.index)}" process="@this" update="@form">
-                                            #{langBean.msg('exportTemplates.editor.source.coverage', chip.covered, chip.total)}
-                                        </p:commandLink>
-                                        <p:commandLink styleClass="xe-x xe-edit" title="#{langBean.msg('exportTemplates.editor.source.remove')}"
-                                                       action="#{exportTemplateEditorBean.removeSource(chip.source)}" process="@form" update="@form">
-                                            <i class="bi bi-x-lg"/>
-                                        </p:commandLink>
-                                    </div>
-                                </ui:repeat>
+                                <span class="xe-sources-empty">#{langBean.msg('exportTemplates.editor.sources.none')}</span>
                                 <p:commandLink styleClass="xe-dashed xe-edit" action="#{exportTemplateEditorBean.openSourceDialog()}"
                                                process="@this" update=":xeSourceForm" oncomplete="PF('xeSourceDlg').show()">
                                     + #{langBean.msg('exportTemplates.editor.source.add')}
                                 </p:commandLink>
                             </div>
-                        </div>
+                        </h:panelGroup>
 
                         <!-- Colonnes (liste) et mappings de la colonne sélectionnée -->
                         <div class="xe-cols #{exportTemplateEditorBean.noSources ? 'ui-state-disabled xe-off' : ''}">
                             <div class="xe-list-tools">
                                 <div class="xe-search xe-grow">
                                     <i class="bi bi-search"/>
-                                    <p:inputText id="xeSearch" value="#{exportTemplateEditorBean.columnSearch}" autocomplete="off"
-                                                 placeholder="#{langBean.msg('exportTemplates.editor.columns.search')}">
-                                        <p:ajax event="keyup" delay="250" process="@this" update="xeSuggest xeResults"/>
-                                    </p:inputText>
-                                    <p:overlayPanel for="xeSearch" widgetVar="xeSuggestPanel" showEvent="focus" dismissable="true"
-                                                    showCloseIcon="false" appendTo="@form" my="left top" at="left bottom" styleClass="xe-suggest">
-                                        <h:panelGroup id="xeSuggest" layout="block">
-                                            <h:panelGroup rendered="#{not empty exportTemplateEditorBean.suggestedColumns}" layout="block">
-                                                <div class="xe-suggest-title">#{langBean.msg('exportTemplates.editor.suggest.columns')}</div>
-                                                <ui:repeat value="#{exportTemplateEditorBean.suggestedColumns}" var="sg">
-                                                    <p:commandLink styleClass="xe-suggest-item" action="#{exportTemplateEditorBean.pickSuggestedColumn(sg)}"
-                                                                   process="@this" update="@form" oncomplete="PF('xeSuggestPanel').hide()">
-                                                        <strong>#{sg.label}</strong><span class="xe-suggest-sub">#{sg.sub}</span>
-                                                    </p:commandLink>
-                                                </ui:repeat>
-                                            </h:panelGroup>
-                                            <h:panelGroup rendered="#{not empty exportTemplateEditorBean.suggestedMappedColumns}" layout="block">
-                                                <div class="xe-suggest-title">#{langBean.msg('exportTemplates.editor.suggest.mapped')}</div>
-                                                <ui:repeat value="#{exportTemplateEditorBean.suggestedMappedColumns}" var="sg">
-                                                    <p:commandLink styleClass="xe-suggest-item" action="#{exportTemplateEditorBean.pickSuggestedColumn(sg)}"
-                                                                   process="@this" update="@form" oncomplete="PF('xeSuggestPanel').hide()">
-                                                        <strong>#{sg.label}</strong><span class="xe-suggest-sub">#{sg.sub}</span>
-                                                    </p:commandLink>
-                                                </ui:repeat>
-                                            </h:panelGroup>
-                                            <h:panelGroup rendered="#{not empty exportTemplateEditorBean.suggestedFields}" layout="block">
-                                                <div class="xe-suggest-title">#{langBean.msg('exportTemplates.editor.suggest.fields')}</div>
-                                                <ui:repeat value="#{exportTemplateEditorBean.suggestedFields}" var="sg">
-                                                    <p:commandLink styleClass="xe-suggest-item" action="#{exportTemplateEditorBean.createFromSuggestedField(sg)}"
-                                                                   process="@this" update="@form" oncomplete="PF('xeSuggestPanel').hide()">
-                                                        <strong>#{sg.label}</strong><span class="xe-suggest-sub">#{sg.sub}</span>
-                                                        <span class="xe-suggest-new">+ #{langBean.msg('exportTemplates.editor.suggest.new')}</span>
-                                                    </p:commandLink>
-                                                </ui:repeat>
-                                            </h:panelGroup>
-                                            <h:panelGroup rendered="#{exportTemplateEditorBean.noSuggestion}" layout="block" styleClass="xe-suggest-none">
-                                                #{langBean.msg('exportTemplates.editor.suggest.none')}
-                                            </h:panelGroup>
-                                        </h:panelGroup>
-                                    </p:overlayPanel>
+                                    <p:autoComplete id="xeSearch" value="#{exportTemplateEditorBean.searchPick}" styleClass="xe-search-ac" inputStyleClass="xe-search-input"
+                                                    completeMethod="#{exportTemplateEditorBean.completeSearch}" converter="#{exportSearchHitConverter}"
+                                                    var="o" itemLabel="#{o.text}" itemValue="#{o}" groupBy="#{o.group}" dropdown="true"
+                                                    minQueryLength="0" scrollHeight="320" appendTo="@form" forceSelection="false"
+                                                    placeholder="#{langBean.msg('exportTemplates.editor.columns.search')}">
+                                        <p:ajax event="query" update="xeResults"/>
+                                        <p:ajax event="itemSelect" listener="#{exportTemplateEditorBean.onSearchPick()}" process="@this" update="@form"/>
+                                    </p:autoComplete>
                                 </div>
                                 <p:commandLink styleClass="xe-filter #{exportTemplateEditorBean.columnFilter eq 'ALL' ? 'active' : ''}"
                                                action="#{exportTemplateEditorBean.selectColumnFilter('ALL')}" process="@this" update="@form">
@@ -376,6 +370,18 @@
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.previewOpen}" layout="block" styleClass="xe-list-preview">
                                     <p:remoteCommand name="xeSelectColumn" action="#{exportTemplateEditorBean.selectColumnAt()}"
                                                      process="@this" update="@form"/>
+                                    <h:panelGroup rendered="#{exportTemplateEditorBean.previewNeedsProject}" layout="block" styleClass="xe-empty">
+                                        <p>#{langBean.msg('exportTemplates.editor.preview.noProject')}</p>
+                                        <p:selectOneMenu rendered="#{not empty exportTemplateEditorBean.projectItems}" value="#{exportTemplateEditorBean.referenceProject}"
+                                                         styleClass="xe-select" style="min-width: 260px" appendTo="@this">
+                                            <p:ajax listener="#{exportTemplateEditorBean.onPreviewProjectChange()}" process="@this" update="@form"/>
+                                            <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.referenceProject.none')}" itemValue=""/>
+                                            <f:selectItems value="#{exportTemplateEditorBean.projectItems}" var="o"
+                                                           itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                                        </p:selectOneMenu>
+                                        <p:commandLink rendered="#{empty exportTemplateEditorBean.projectItems}" styleClass="xe-dashed small" ajax="false" immediate="true"
+                                                       action="#{navBean.goToProjectsSettings()}" value="+ #{langBean.msg('exportTemplates.editor.refProject.create')}"/>
+                                    </h:panelGroup>
                                     <h:panelGroup rendered="#{exportTemplateEditorBean.previewOfSelectedSheet != null}" layout="block">
                                         <div class="xe-preview-scroll">
                                             <table class="xe-preview-table">
@@ -421,7 +427,7 @@
                             </div>
 
                             <ui:fragment rendered="#{exportTemplateEditorBean.detailVisible}">
-                            <div class="xe-splitter" title="#{langBean.msg('exportTemplates.editor.columns.resize')}"></div>
+                            <div class="xe-splitter" tabindex="0" role="separator" aria-orientation="vertical" title="#{langBean.msg('exportTemplates.editor.columns.resize')}"></div>
 
                             <div class="xe-detail">
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.selectedColumn == null}" layout="block" styleClass="xe-empty">
@@ -472,7 +478,7 @@
                                                         <p:commandLink styleClass="xe-schip #{exportTemplateEditorBean.entityStyleOf(rsrc).cssClass()} #{exportTemplateEditorBean.ruleCovers(rule, rs.index) ? 'on' : ''}"
                                                                        action="#{exportTemplateEditorBean.toggleRuleSource(rule, rs.index)}" process="@form" update="@form">
                                                             <i class="bi #{exportTemplateEditorBean.entityStyleOf(rsrc).icon()} xe-ent-icon"/>
-                                                            #{exportTemplateEditorBean.sourceLabel(rsrc)}
+                                                            #{exportTemplateEditorBean.sourceChipLabel(rsrc)}
                                                         </p:commandLink>
                                                     </ui:repeat>
                                                 </div>

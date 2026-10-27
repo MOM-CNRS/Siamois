@@ -231,4 +231,42 @@ class ExportTemplateEditorBeanSourceTest {
 
         assertThat(sheet.getSources()).isEmpty();
     }
+
+    @Test
+    void fieldItemsWriteTheRuleChoice_andAnEmptyValueRemovesTheField() {
+        ExportTemplateEditModel.EditRule rule = new ExportTemplateEditModel.EditRule();
+
+        bean.getFieldItems().put(rule, new ExportTemplateEditorBean.FieldSuggestion("Nom", "::th-sys|name::", false));
+        assertThat(rule.getFieldChoice()).isEqualTo("::th-sys|name::");
+
+        bean.getFieldItems().put(rule, null);
+        assertThat(rule.getFieldChoice()).isBlank();
+        assertThat(bean.getFieldItems().get(rule)).isNull();
+    }
+
+    @Test
+    void aFieldSuggestionSurvivesTheRoundTripThroughTheBrowser() {
+        ExportTemplateEditorBean.FieldSuggestion joined = new ExportTemplateEditorBean.FieldSuggestion("Lieu › Nom", "place::th-sys|name::", true);
+
+        ExportTemplateEditorBean.FieldSuggestion decoded = ExportTemplateEditorBean.FieldSuggestion.decode(joined.encoded());
+
+        assertThat(decoded.choice()).isEqualTo("place::th-sys|name::");
+        assertThat(decoded.label()).isEqualTo("Lieu › Nom");
+        assertThat(ExportTemplateEditorBean.FieldSuggestion.decode(" ")).isNull();
+    }
+
+    @Test
+    void thePreviewOpensTheDetailPanelOnlyWithASelectedColumn() {
+        assertThat(bean.isDetailVisible()).isTrue();
+        bean.setPreviewOpen(true);
+        assertThat(bean.isDetailVisible()).isFalse();
+
+        EditColumn column = new EditColumn();
+        sheet.getColumns().add(column);
+        bean.selectColumn(column);
+        assertThat(bean.isDetailVisible()).isTrue();
+
+        bean.closeDetail();
+        assertThat(bean.isDetailVisible()).isFalse();
+    }
 }

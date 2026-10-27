@@ -10,6 +10,10 @@ import java.io.Serializable;
  */
 public record ExportEntityStyle(String icon, String cssClass) implements Serializable {
 
+    // EL 5 (Tomcat 10) ne lit pas les accesseurs de record : getters explicites
+    public String getIcon() { return icon; }
+    public String getCssClass() { return cssClass; }
+
     private static final ExportEntityStyle CONTEXT_PROJECT = new ExportEntityStyle("bi-arrow-down-square", "xe-ent-context");
     private static final ExportEntityStyle CONTEXT_PLACE = new ExportEntityStyle("bi-geo-alt", "xe-ent-context");
     private static final ExportEntityStyle GROUND_UNIT = new ExportEntityStyle("bi-pencil-square", "xe-ent-ground");
