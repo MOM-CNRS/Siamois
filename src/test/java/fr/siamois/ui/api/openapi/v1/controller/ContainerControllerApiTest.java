@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
 import fr.siamois.ui.api.openapi.v1.service.ContainerOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -56,7 +56,7 @@ class ContainerControllerApiTest {
 
         ContainerControllerApi controller = new ContainerControllerApi(projectApiService, containerOpenApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
 

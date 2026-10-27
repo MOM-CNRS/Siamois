@@ -25,7 +25,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectRecordingUnitsControllerApi;
@@ -173,7 +173,7 @@ class ProjectSiblingsControllerApiTest {
                 ListQueryStubs.none());
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller, recordingUnitsController, documentsController)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
 

@@ -320,13 +320,27 @@ public class DocumentService implements ArkEntityService {
         return saved;
     }
 
+    /**
+     * The identifier a new document like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. {@code null} where the project's format is not configured: the
+     * document is then named {@code DOC-<id>} once it exists (see {@link #allocateIdentifierIfNew}).
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(DocumentDTO dto) {
+        Document document = documentMapper.invertConvert(dto);
+        if (document.getActionUnit() == null || !tableFieldConfigService.isTypeFieldConfigured(
+                document.getActionUnit().getId(), ConfigurableTable.DOCUMENT)) {
+            return null;
+        }
+        return identifierGenerator.suggestIdentifier(document, documentIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Document> documentIdentifierSpec() {
         return IdentifierGenerationSpec.<Document>builder()
                 .table(ConfigurableTable.DOCUMENT)
                 .entityName("document")
                 // A document that already carries an identifier (typed, or migrated) keeps it.
-                .generationRequired(document -> document.getId() == null
-                        && (document.getIdentifier() == null || document.getIdentifier().isBlank()))
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Document::getId, Document::getIdentifier))
                 .actionUnit(Document::getActionUnit)
                 .typeId(document -> document.getType() == null ? null : document.getType().getId())
                 .displayValue("ID_UA", document -> document.getActionUnit().getFullIdentifier())

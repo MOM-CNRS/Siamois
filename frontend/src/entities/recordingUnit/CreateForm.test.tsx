@@ -6,11 +6,14 @@ import type { FieldResource } from "../../fields/types";
 import type { FieldRendererProps } from "../../fields/registry";
 import { RecordingUnitCreateForm } from "./CreateForm";
 import { fetchTypesCatalog, getEffectiveForm } from "../shared/typeCatalog";
-import { createRecordingUnit, suggestRecordingUnitIdentifier } from "./api";
+import { createRecordingUnit } from "./api";
+import { apiFetch } from "../../api/client";
 
 
 vi.mock("../shared/typeCatalog", () => ({ getEffectiveForm: vi.fn(), fetchTypesCatalog: vi.fn() }));
-vi.mock("./api", () => ({ createRecordingUnit: vi.fn(), suggestRecordingUnitIdentifier: vi.fn() }));
+vi.mock("./api", () => ({ createRecordingUnit: vi.fn() }));
+// The identifier suggestion (components/create/useSuggestedIdentifier) is the only apiFetch left unmocked.
+vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 vi.mock("../shared/creatableProjects", () => ({ searchCreatableProjects: vi.fn() }));
 
 // The project picker (useCreateProject) — PrimeReact's AutoComplete reduced to a button picking
@@ -46,7 +49,8 @@ vi.mock("../../fields/renderers", () => ({
 
 const mockedGetRecordingUnitTypes = vi.mocked(getEffectiveForm);
 const mockedCreateRecordingUnit = vi.mocked(createRecordingUnit);
-const mockedSuggestIdentifier = vi.mocked(suggestRecordingUnitIdentifier);
+// What GET /api/v1/identifier-suggestions answers, called with the request's project and type.
+const mockedSuggestIdentifier = vi.fn<(projectId: string | null, typeId: string | null) => Promise<string>>();
 
 const typeField: FieldResource = {
   id: "-101",
@@ -103,6 +107,13 @@ beforeEach(() => {
   mockedCreateRecordingUnit.mockReset();
   mockedSuggestIdentifier.mockReset();
   mockedSuggestIdentifier.mockResolvedValue("INST-PROJ-UE1");
+  vi.mocked(apiFetch).mockReset();
+  vi.mocked(apiFetch).mockImplementation(async (path: string) => {
+    const url = new URL(path, "http://localhost");
+    expect(url.pathname).toBe("/api/v1/identifier-suggestions");
+    expect(url.searchParams.get("entityType")).toBe("recording-units");
+    return { suggestedIdentifier: await mockedSuggestIdentifier(url.searchParams.get("projectId"), url.searchParams.get("typeId")) };
+  });
   mocks.typePick = { resourceId: "9", resourceType: "concepts", label: "US" };
   vi.mocked(fetchTypesCatalog).mockReset();
   vi.mocked(fetchTypesCatalog).mockRejectedValue(new Error("not needed here"));

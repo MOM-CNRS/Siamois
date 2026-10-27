@@ -156,11 +156,20 @@ public class StudyService {
         return ids;
     }
 
+    /**
+     * The identifier a new study like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. Nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(StudyDTO dto) {
+        return identifierGenerator.suggestIdentifier(studyMapper.invertConvert(dto), studyIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Study> studyIdentifierSpec() {
         return IdentifierGenerationSpec.<Study>builder()
                 .table(ConfigurableTable.STUDY)
                 .entityName("study")
-                .generationRequired(study -> study.getId() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Study::getId, Study::getIdentifier))
                 .actionUnit(Study::getActionUnit)
                 .typeId(study -> study.getType() == null ? null : study.getType().getId())
                 .displayValue("ID_UA", study -> study.getActionUnit().getFullIdentifier())

@@ -1,13 +1,20 @@
 package fr.siamois.ui.api.handler;
 
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
+import fr.siamois.domain.services.LangService;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
+import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +33,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -33,6 +41,7 @@ import java.util.UUID;
  * {@code error} code. The 401 of the security filters ({@code ApiUnauthorizedJsonWriter}) uses the same body.
  */
 @Slf4j
+@RequiredArgsConstructor
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(basePackages = "fr.siamois.ui.api.openapi.v1")
 public class RestExceptionHandler {
@@ -47,6 +56,11 @@ public class RestExceptionHandler {
     public static final String PAYLOAD_TOO_LARGE = "payload_too_large";
     public static final String UNSUPPORTED_MEDIA_TYPE = "unsupported_media_type";
     public static final String INTERNAL_ERROR = "internal_error";
+
+    static final String IDENTIFIER_CONFLICT_KEY = "api.error.identifier.alreadyExists";
+    static final String IDENTIFIER_CONFLICT_NAMED_KEY = "api.error.identifier.alreadyExistsNamed";
+
+    private final LangService langService;
 
     /** The stable code of an HTTP status. */
     public static String codeOf(HttpStatusCode status) {
@@ -150,6 +164,20 @@ public class RestExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new SyncConflictResponse(ex.getConflictData()));
     }
 
+    @ExceptionHandler(IdentifierConflictException.class)
+    public ResponseEntity<ApiError> identifierConflict(IdentifierConflictException ex, HttpServletRequest request) {
+        return answer(HttpStatus.CONFLICT, ApiError.of(CONFLICT, identifierConflictMessage(ex.getIdentifier(), request)));
+    }
+
+    /** "Identifier already in the project", in the language of the request's {@code Accept-Language}. */
+    private String identifierConflictMessage(String identifier, HttpServletRequest request) {
+        Locale locale = langService.localeForApiLang(
+                ProjectApiService.primaryAcceptLanguage(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)));
+        return identifier == null
+                ? langService.msg(IDENTIFIER_CONFLICT_KEY, locale)
+                : langService.msg(IDENTIFIER_CONFLICT_NAMED_KEY, locale, identifier);
+    }
+
     @ExceptionHandler(ApiValidationException.class)
     public ResponseEntity<ApiError> validation(ApiValidationException ex) {
         return answer(ex.getStatusCode(), new ApiError(VALIDATION_FAILED, ex.getReason(), ex.getDetails(), null));
@@ -166,7 +194,13 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> unhandled(Exception ex) {
+    public ResponseEntity<ApiError> unhandled(Exception ex, HttpServletRequest request) {
+        // An identifier already used in its project, caught by the database (two writes raced past the
+        // service's check) — raw, or wrapped by a save or a commit: the cause chain tells.
+        if (ProjectIdentifierConstraints.isViolatedBy(ex)) {
+            log.debug("Project identifier uniqueness violated", ex);
+            return answer(HttpStatus.CONFLICT, ApiError.of(CONFLICT, identifierConflictMessage(null, request)));
+        }
         String correlationId = UUID.randomUUID().toString();
         log.error("[{}] Unhandled exception in API", correlationId, ex);
         return answer(HttpStatus.INTERNAL_SERVER_ERROR,

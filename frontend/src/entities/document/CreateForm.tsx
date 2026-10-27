@@ -18,10 +18,9 @@ export function DocumentCreateForm(ctx: CreateFormContext) {
       entityType="document"
       title={t("create.newDocument")}
       typesSegment="document-types"
-      create={async (projectId, typeId) => {
+      create={async (body) => {
         const created = await createDocument({
-          projectId,
-          typeId,
+          ...body,
           ...(link ? { [link.field]: [link.ref.id] } : {}),
         });
         if (file) await uploadDocumentFile(created.id, file);

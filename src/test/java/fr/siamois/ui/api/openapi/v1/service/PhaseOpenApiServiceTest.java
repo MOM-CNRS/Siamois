@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -88,7 +89,7 @@ class PhaseOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PhaseOpenApiService(phaseService, actionUnitService, conceptService, conceptMapper,
+        service = new PhaseOpenApiService(phaseService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
                 profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
 
@@ -387,8 +388,7 @@ class PhaseOpenApiServiceTest {
         request.setIdentifier("NEW-1");
         var scope = Set.of(10L);
         assertThatThrownBy(() -> service.patchPhase(5L, request, personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(phaseService, never()).save(any());
     }
 
@@ -433,4 +433,73 @@ class PhaseOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }
+
+    // --- identifier chosen in the creation form ---
+
+    private ConceptDTO allowCreationOfType2InProject7() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(2L);
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(2L);
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        return typeDto;
+    }
+
+    private PhaseCreateRequest creationRequest(String identifier) {
+        PhaseCreateRequest req = new PhaseCreateRequest();
+        req.setProjectId("7");
+        req.setTypeId("2");
+        req.setIdentifier(identifier);
+        return req;
+    }
+
+    @Test
+    void createPhase_chosenIdentifier_isSavedTrimmedOnceCheckedFree() {
+        allowCreationOfType2InProject7();
+        PhaseDTO saved = new PhaseDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(phaseService.save(any(PhaseDTO.class))).thenReturn(saved);
+
+        service.createPhase(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
+        verify(phaseService).save(captor.capture());
+        // Set before the save: the service then skips its own generation.
+        assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
+        verify(phaseService).identifierAlreadyExistInAction(captor.getValue());
+    }
+
+    @Test
+    void createPhase_chosenIdentifierAlreadyTaken_throws409WithoutSaving() {
+        allowCreationOfType2InProject7();
+        when(phaseService.identifierAlreadyExistInAction(any(PhaseDTO.class))).thenReturn(true);
+
+        var req = creationRequest("TAKEN");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createPhase(req, personDto, scope, "fr"))
+                .isInstanceOf(IdentifierConflictException.class);
+        verify(phaseService, never()).save(any(PhaseDTO.class));
+    }
+
+    @Test
+    void createPhase_blankIdentifier_leavesItToTheServer() {
+        allowCreationOfType2InProject7();
+        PhaseDTO saved = new PhaseDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(phaseService.save(any(PhaseDTO.class))).thenReturn(saved);
+
+        service.createPhase(creationRequest("   "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
+        verify(phaseService).save(captor.capture());
+        assertThat(captor.getValue().getIdentifier()).isNull();
+        verify(phaseService, never()).identifierAlreadyExistInAction(any(PhaseDTO.class));
+    }
+
 }

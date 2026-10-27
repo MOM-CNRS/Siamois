@@ -73,28 +73,21 @@ public class FindOpenApiService {
 
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, accessibleInstitutionIds, null);
-        InstitutionDTO institution = ru.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
+        UserInfo userInfo = userInfoOn(ru, personDto, lang);
         if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de mobilier non autorisée sur cette UE");
         }
 
-        Concept typeConcept = conceptRepository.findById(typeConceptId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de mobilier introuvable"));
-        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
-
-        SpecimenDTO shell = new SpecimenDTO();
-        shell.setRecordingUnit(new RecordingUnitSummaryDTO(ru));
-        shell.setCreatedByInstitution(institution);
-        shell.setType(typeDto);
-        shell.setCreatedBy(personDto);
+        SpecimenDTO shell = newFind(ru, requireType(typeConceptId), personDto);
         shell.setAuthors(new ArrayList<>(List.of(personDto)));
         shell.setCollectors(new ArrayList<>(List.of(personDto)));
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidationStatus(ValidationStatus.INCOMPLETE);
+        IdentifierPatch.applyChosen(request.getIdentifier(), identifier -> {
+            shell.setFullIdentifier(identifier);
+            // Generation is what sets the project otherwise — and the uniqueness check is scoped to it.
+            shell.setActionUnit(ru.getActionUnit());
+        }, () -> specimenService.fullIdentifierAlreadyExistInAction(shell));
 
         Map<String, Object> fieldAnswers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
         SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
@@ -104,6 +97,47 @@ public class FindOpenApiService {
             return specimenService.save(shell);
         });
         return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
+    }
+
+    /**
+     * The full identifier a new find of this type would be given on this recording unit, without
+     * consuming the counter ({@code GET /api/v1/identifier-suggestions?entityType=finds}) — shown, modifiable, in the
+     * creation form. No permission is required: nothing is written, and the unit is in the caller's scope.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(String recordingUnitId, String typeId, PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds, String lang) {
+        String recordingUnitKey = OpenApiParamIds.requireNonBlank(recordingUnitId, "recordingUnitId");
+        long typeConceptId = OpenApiParamIds.parseRequiredConceptId(typeId, "typeId");
+        RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
+                recordingUnitKey, accessibleInstitutionIds, null);
+        UserInfo userInfo = userInfoOn(ru, personDto, lang);
+        SpecimenDTO shell = newFind(ru, requireType(typeConceptId), personDto);
+        // The identifier format is read in the caller's context.
+        return OpenApiExecutionContext.callWithUserInfo(userInfo, () -> specimenService.suggestFullIdentifier(shell));
+    }
+
+    private static UserInfo userInfoOn(RecordingUnitDTO ru, PersonDTO personDto, String lang) {
+        InstitutionDTO institution = ru.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE sans organisation");
+        }
+        return new UserInfo(institution, personDto, lang);
+    }
+
+    private ConceptDTO requireType(long typeConceptId) {
+        Concept typeConcept = conceptRepository.findById(typeConceptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de mobilier introuvable"));
+        return conceptMapper.convert(typeConcept);
+    }
+
+    private static SpecimenDTO newFind(RecordingUnitDTO ru, ConceptDTO type, PersonDTO personDto) {
+        SpecimenDTO shell = new SpecimenDTO();
+        shell.setRecordingUnit(new RecordingUnitSummaryDTO(ru));
+        shell.setCreatedByInstitution(ru.getCreatedByInstitution());
+        shell.setType(type);
+        shell.setCreatedBy(personDto);
+        return shell;
     }
 
     @Transactional

@@ -64,6 +64,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private Set<PhaseDTO> phases;
 
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public RecordingUnitDTO(RecordingUnitDTO original) {
         type = original.getType();
         actionUnit = original.getActionUnit();
@@ -81,14 +82,6 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
 
     public boolean phasesIsInitialized() {
       return phases != null;
-    }
-
-    /**
-     * Resets the full identifier to it's base format.
-     */
-    public void resetFullIdentifier() {
-        if (actionUnit == null) return;
-        fullIdentifier = actionUnit.getFullIdentifier();
     }
 
     @Override

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessOrderRequest;
 import fr.siamois.ui.api.openapi.v1.request.view.HomeAccessRequest;
 import fr.siamois.ui.api.openapi.v1.resource.view.HomeAccessListResponse;
@@ -29,8 +29,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -51,7 +50,7 @@ class HomeAccessControllerApiTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new HomeAccessControllerApi(projectApiService, homeAccessService))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
                 .build();
         PersonDTO person = new PersonDTO();
@@ -133,7 +132,7 @@ class HomeAccessControllerApiTest {
     @Test
     void reorder_withoutThePermission_returns403() throws Exception {
         inScope();
-        org.mockito.Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN))
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN))
                 .when(homeAccessService).reorder(any(UserInfo.class), any(HomeAccessOrderRequest.class));
 
         mockMvc.perform(put("/api/v1/home-accesses/order").contentType(MediaType.APPLICATION_JSON)

@@ -2,7 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller.place;
 
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -47,7 +47,7 @@ class PlaceDocumentsControllerApiTest {
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
                         new PlaceDocumentsControllerApi(projectApiService, documentWriteOpenApiService))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .build();
         person = new Person();
         person.setId(3L);

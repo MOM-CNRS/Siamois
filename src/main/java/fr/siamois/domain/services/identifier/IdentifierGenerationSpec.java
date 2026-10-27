@@ -117,4 +117,15 @@ public record IdentifierGenerationSpec<E>(
         Objects.requireNonNull(identifierSetter, "An identifier setter is required");
     }
 
+    /**
+     * The usual {@code generationRequired}: a new entity that does not bring its own identifier — one
+     * chosen in the creation form, or typed, keeps it.
+     */
+    public static <E> Predicate<E> whenNewWithoutIdentifier(Function<E, ?> id, Function<E, String> identifier) {
+        return entity -> {
+            String current = identifier.apply(entity);
+            return id.apply(entity) == null && (current == null || current.isBlank());
+        };
+    }
+
 }

@@ -61,15 +61,5 @@ export async function duplicateRecordingUnitStructure(
   return body.data;
 }
 
-// GET /api/v1/recording-units/suggest-identifier — the identifier the server would generate for a
-// new UE of this type in this project, without consuming the counter. The creation form shows it
-// pre-filled and editable; an unedited suggestion is not sent, the server allocates it itself.
-export async function suggestRecordingUnitIdentifier(projectId: string | number, typeId: string | number): Promise<string> {
-  const body = await apiFetch<{ suggestedIdentifier: string }>(
-    `/api/v1/recording-units/suggest-identifier?projectId=${encodeURIComponent(String(projectId))}&typeId=${encodeURIComponent(String(typeId))}`,
-  );
-  return body.suggestedIdentifier;
-}
-
 // Mirrors RecordingUnitCreateRequest's required pair (projectId/typeId — answers/geom both
 // optional and unused here, see CreateForm.tsx's own doc for why the overlay stays this small).

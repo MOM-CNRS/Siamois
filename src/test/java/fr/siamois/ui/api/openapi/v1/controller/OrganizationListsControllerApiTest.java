@@ -14,7 +14,7 @@ import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.ContainerOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
@@ -99,7 +99,7 @@ class OrganizationListsControllerApiTest {
                 phaseListProjectionService, containerOpenApiMapper, containerListProjectionService,
                 mock(fr.siamois.ui.api.openapi.v1.service.FindListProjectionService.class), mock(ResourceBookmarkService.class), mock(FirstImageService.class), ListQueryStubs.none());
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper().registerModule(new JavaTimeModule())))
                 .build();
 

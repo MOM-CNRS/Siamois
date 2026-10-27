@@ -422,4 +422,23 @@ class StudyServiceTest {
 
         verify(studyRepository, never()).delete(any(Study.class));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void suggestIdentifier_peeksForTheMappedNewEntity_withoutWritingAnything() {
+        fr.siamois.dto.entity.StudyDTO dto = new fr.siamois.dto.entity.StudyDTO();
+        fr.siamois.domain.models.study.Study entity = new fr.siamois.domain.models.study.Study();
+        when(studyMapper.invertConvert(dto)).thenReturn(entity);
+        when(identifierGenerator.suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(3, "SUGGESTED-3"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("SUGGESTED-3", studyService.suggestIdentifier(dto));
+
+        ArgumentCaptor<fr.siamois.domain.services.identifier.IdentifierGenerationSpec<fr.siamois.domain.models.study.Study>> specCaptor = ArgumentCaptor.forClass(fr.siamois.domain.services.identifier.IdentifierGenerationSpec.class);
+        verify(identifierGenerator).suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), specCaptor.capture());
+        // Same spec as the save's generation, so the suggestion is what the creation would allocate.
+        org.junit.jupiter.api.Assertions.assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.STUDY, specCaptor.getValue().table());
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(studyRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
 }
