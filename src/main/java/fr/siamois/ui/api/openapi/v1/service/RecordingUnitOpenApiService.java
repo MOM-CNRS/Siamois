@@ -606,15 +606,10 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Formulaire de création d'une UE pour un type donné, résolu pour un projet précis.
-     *
-     * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
-     * {@link #buildProjectRecordingUnitTypeSettings} qui retourne tous les types configurés du projet
-     * en un seul appel. Reste correct fonctionnellement (résolution effective par projet + type via
-     * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, comme le fait
-     * {@link #buildProjectRecordingUnitTypeSettings}).
+     * Formulaire de création d'une UE pour un type donné, résolu pour un projet précis (résolution effective
+     * par projet + type via {@link fr.siamois.domain.services.form.EffectiveFormResolver}). Pour tous les types
+     * configurés du projet en un seul appel : {@link #buildProjectRecordingUnitTypeSettings}.
      */
-    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public RecordingUnitCreateFormData buildRecordingUnitCreateForm(String projectId,
                                                                     long recordingUnitTypeConceptId,
@@ -641,14 +636,12 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Gabarit UI pour création d'un mobilier pour un type donné, résolu pour un projet précis.
-     *
-     * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
-     * {@link #buildProjectFindTypeSettings} qui retourne tous les types configurés du projet en un seul
+     * <p>
+     * Préférez {@link #buildProjectFindTypeSettings} qui retourne tous les types configurés du projet en un seul
      * appel. Reste correct fonctionnellement (résolution effective par projet + type via
      * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, comme le fait
      * {@link #buildProjectFindTypeSettings}).
      */
-    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public FindCreateFormData buildFindCreateForm(String projectId,
                                                   long findTypeConceptId,
@@ -1109,68 +1102,91 @@ public class RecordingUnitOpenApiService {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
         RecordingUnitDTO dto = bundle.dto();
-        RecordingUnit entity = bundle.entity();
 
         assertSyncRevisionIfRequested(
                 recordingUnitKey,
                 request.getExpectedRevision(),
-                entity.getSyncRevision(),
+                bundle.entity().getSyncRevision(),
                 personDto,
                 accessibleInstitutionIds,
                 lang);
 
+        UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        String changedIdentifier = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier()) ? newIdentifier : null;
+        boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || changedIdentifier != null;
+        requirePatchAllowed(dto, request.getValidationStatus(), contentChange, userInfo, projectId);
+
+        if (contentChange) {
+            saveContentPatch(dto, request, answers, changedIdentifier, userInfo, projectId);
+        }
+        // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too. After a
+        // content save: it writes the DTO's (old) status back onto the entity, so it comes after.
+        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
+
+        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    /** 400 when the unit has no organization: the caller's context is read in it. */
+    private static InstitutionDTO requireOrganization(RecordingUnitDTO dto) {
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
         }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        return institution;
+    }
+
+    /**
+     * 403 unless the caller may make this change: a validator may change the status alone without the edit
+     * right; anything else needs it, and the status transition its own rights.
+     */
+    private void requirePatchAllowed(RecordingUnitDTO dto, ValidationStatus requestedStatus, boolean contentChange,
+                                     UserInfo userInfo, Long projectId) {
         boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto);
-        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
-        boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || identifierChange;
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), requestedStatus);
         if ((contentChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit,
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), requestedStatus, canEdit,
                 profilePermissionService.hasValidatePermission(userInfo, projectId));
+    }
 
-        if (!contentChange) {
-            // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too.
-            validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
-            return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
-        }
-
-        if (identifierChange) {
-            dto.setFullIdentifier(newIdentifier);
+    /**
+     * Applies the identifier (409 when already used in the project), the geometry and the field answers
+     * of a PATCH, then saves the unit.
+     *
+     * @param changedIdentifier the new identifier, or {@code null} when the PATCH leaves it unchanged
+     */
+    private void saveContentPatch(RecordingUnitDTO dto, RecordingUnitPatchRequest request, Map<String, Object> answers,
+                                  String changedIdentifier, UserInfo userInfo, Long projectId) {
+        if (changedIdentifier != null) {
+            dto.setFullIdentifier(changedIdentifier);
             IdentifierPatch.requireFree(recordingUnitService.fullIdentifierAlreadyExistInAction(dto));
         }
-
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             if (request.isGeomPresent()) {
                 dto.setGeom(request.getGeom());
             }
-            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = Map.of();
-            if (!answers.isEmpty()) {
-                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
-                        dto.getType() != null ? dto.getType().getId() : null);
-                // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
-                additionalAnswers = fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);
-            }
-
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                    answers.isEmpty() ? Map.of() : applyFieldAnswers(dto, answers, projectId);
             try {
                 recordingUnitService.save(dto, additionalAnswers);
             } catch (FailedRecordingUnitSaveException e) {
                 throw IdentifierPatch.saveFailed(e);
             }
         });
-        // After the save: it writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
+    }
 
-        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    /** The PATCH's field answers, applied against the unit's effective form; returns the additional ones. */
+    private Map<CustomField, CustomFieldAnswerViewModel> applyFieldAnswers(RecordingUnitDTO dto,
+                                                                          Map<String, Object> answers,
+                                                                          Long projectId) {
+        FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
+                dto.getType() != null ? dto.getType().getId() : null);
+        // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
+        return fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);
     }
 
     private void assertSyncRevisionIfRequested(String recordingUnitKey,
