@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 /**
  * Imports the field codes of the SIAMOIS thesaurus when the application starts, and makes it the documentation
  * thesaurus of the default organisation while that one has none (an empty database).
@@ -50,10 +52,11 @@ public class DefaultInstitionConceptInitializer implements DatabaseInitializer {
             log.error("Could not set up field configuration for institution", e);
             throw new DatabaseDataInitException("Could not set up field configuration for institution", e);
         }
+
         // SystemUserDatasetInitializer (ordered first) has created the default organisation
         institutionRepository.findInstitutionByIdentifier(SystemUserDatasetInitializer.DEFAULT_INSTITUTION_IDENTIFIER)
                 .ifPresent(institution -> fieldConfigurationService.setDocumentationThesaurusIfAbsent(
-                        institutionMapper.convert(institution), vocabulary));
+                        Objects.requireNonNull(institutionMapper.convert(institution)), vocabulary));
     }
 
 }

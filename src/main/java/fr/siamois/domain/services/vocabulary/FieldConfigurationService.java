@@ -24,7 +24,6 @@ import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldS
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ActionUnitMapper;
@@ -62,7 +61,6 @@ public class FieldConfigurationService {
     public static final int NUMBER_OF_STEPS_IN_CONCEPT_UPDATE = 5;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
-    private final ConceptRepository conceptRepository;
     private final ConceptService conceptService;
 
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
@@ -129,14 +127,12 @@ public class FieldConfigurationService {
      *
      * @param institution the institution
      * @param vocabulary  the vocabulary to use for configuration
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    @NonNull
     @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
+    public void setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
     }
 
     /**
@@ -535,9 +531,7 @@ public class FieldConfigurationService {
      * Where a field code is read when nothing names a thesaurus for it: in the SIAMOIS thesaurus if it
      * defines the code, otherwise in the thesaurus the project documents its fields and types in, then
      * the institution's. A code SIAMOIS defines therefore never moves to a project's thesaurus on its own:
-     * a field has to be pointed at another thesaurus explicitly.
-     * A field code the thesaurus doesn't define yet but that has a {@link #FALLBACK_FIELD_CODES fallback} is read through it.
-     *
+     * a field has to be pointed at another thesaurus explicitly.*
      * @param info         the user information containing institution and user details
      * @param fieldCode    the field code for which to find the configuration
      * @param actionUnitId the action unit (project) whose documentation thesaurus is read, or null for institution-only

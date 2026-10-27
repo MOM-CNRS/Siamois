@@ -20,7 +20,6 @@ public class SystemUserDatasetInitializer implements DatabaseInitializer {
     /** The identifier of the organisation created on an empty database. */
     public static final String DEFAULT_INSTITUTION_IDENTIFIER = "siamois";
 
-    private final PersonRepository personRepository;
     private final InstitutionRepository institutionRepository;
 
     @Override
