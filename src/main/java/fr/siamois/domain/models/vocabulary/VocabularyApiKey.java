@@ -23,7 +23,7 @@ public class VocabularyApiKey {
     private Person person;
 
     /** Hex-encoded AES-GCM: about twice the key's length plus 64 characters. */
-    @Column(name = "encrypted_key", nullable = false, length = 1024)
+    @Column(name = "encrypted_key", nullable = false, length = Integer.MAX_VALUE)
     private String encryptedKey;
 
     public VocabularyApiKey() {
