@@ -85,7 +85,7 @@ class InstitutionSeederTest {
                 new InstitutionSeeder.InstitutionSpec("Mon institution", "Test", "test", null, "https://thesaurus.mom.fr", "th240")
         );
 
-        doReturn(null).when(fieldConfigurationService).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
+        doNothing().when(fieldConfigurationService).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
         when(thesaurusSeeder.findVocabularyOrReturnNull("https://thesaurus.mom.fr", "th240")).thenReturn(new Vocabulary());
         when(institutionRepository.findInstitutionByIdentifier(anyString())).thenReturn(Optional.of(i));
         when(institutionMapper.convert(any(Institution.class))).thenReturn(new InstitutionDTO());
@@ -130,7 +130,7 @@ class InstitutionSeederTest {
                         List.of("user@siamois.fr"),"https://thesaurus.mom.fr", "th240")
         );
 
-        doReturn(null).when(fieldConfigurationService).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
+        doNothing().when(fieldConfigurationService).setupFieldConfigurationForInstitution(any(InstitutionDTO.class), any(Vocabulary.class));
         when(thesaurusSeeder.findVocabularyOrReturnNull("https://thesaurus.mom.fr", "th240")).thenReturn(new Vocabulary());
         when(personSeeder.findPersonOrReturnNull(anyString())).thenReturn(p);
         when(institutionRepository.findInstitutionByIdentifier(anyString())).thenReturn(Optional.empty());

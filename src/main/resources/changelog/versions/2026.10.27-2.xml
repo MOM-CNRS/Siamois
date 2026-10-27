@@ -11,7 +11,7 @@
     On a fresh database custom_field does not exist yet: every statement is guarded.
     -->
 
-    <changeSet id="2026.10.27-2-custom-field-measurement-type" author="Julien Linget" dbms="postgresql">
+    <changeSet id="2026.10.27-2" author="Julien Linget">
         <sql splitStatements="false">
             DO $$
             BEGIN
