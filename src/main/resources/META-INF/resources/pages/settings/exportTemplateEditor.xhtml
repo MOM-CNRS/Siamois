@@ -23,12 +23,12 @@
                     var detail = document.querySelector('.xe-detail');
                     var pct = stored();
                     if (detail &amp;&amp; !isNaN(pct)) {
-                        var flex = '0 0 ' + pct + '%';
-                        if (detail.style.flex !== flex) { detail.style.flex = flex; }
+                        var basis = pct + '%';
+                        if (detail.style.getPropertyValue('--xe-detail-basis') !== basis) { detail.style.setProperty('--xe-detail-basis', basis); }
                     }
                 }
                 function savePct(detail, pct) {
-                    detail.style.flex = '0 0 ' + pct + '%';
+                    detail.style.setProperty('--xe-detail-basis', pct + '%');
                     try { localStorage.setItem(KEY, String(pct)); } catch (x) { /* stockage indisponible */ }
                 }
                 /* Poignée au clavier : flèches gauche/droite, 2 % par pas. */
@@ -403,7 +403,8 @@
                                                     <tr>
                                                         <ui:repeat value="#{exportTemplateEditorBean.previewColumnIndexes}" var="ix">
                                                             <td class="xe-clickable #{ix eq exportTemplateEditorBean.previewSelectedIndex ? 'sel' : ''}"
-                                                                onclick="xeSelectColumn([{name: 'ix', value: #{ix}}])">#{exportTemplateEditorBean.previewCell(row, ix)}</td>
+                                                                onclick="xeSelectColumn([{name: 'ix', value: #{ix}}])"
+                                                                onkeydown="if (event.key === 'Enter') { xeSelectColumn([{name: 'ix', value: #{ix}}]); }">#{exportTemplateEditorBean.previewCell(row, ix)}</td>
                                                         </ui:repeat>
                                                     </tr>
                                                 </ui:repeat>
@@ -427,7 +428,7 @@
                             </div>
 
                             <ui:fragment rendered="#{exportTemplateEditorBean.detailVisible}">
-                            <div class="xe-splitter" tabindex="0" role="separator" aria-orientation="vertical" title="#{langBean.msg('exportTemplates.editor.columns.resize')}"></div>
+                            <button type="button" class="xe-splitter" aria-orientation="vertical" aria-label="#{langBean.msg('exportTemplates.editor.columns.resize')}" title="#{langBean.msg('exportTemplates.editor.columns.resize')}"></button>
 
                             <div class="xe-detail">
                                 <h:panelGroup rendered="#{exportTemplateEditorBean.selectedColumn == null}" layout="block" styleClass="xe-empty">

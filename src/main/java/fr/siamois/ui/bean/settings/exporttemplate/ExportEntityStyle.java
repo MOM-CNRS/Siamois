@@ -14,14 +14,18 @@ public record ExportEntityStyle(String icon, String cssClass) implements Seriali
     public String getIcon() { return icon; }
     public String getCssClass() { return cssClass; }
 
-    private static final ExportEntityStyle CONTEXT_PROJECT = new ExportEntityStyle("bi-arrow-down-square", "xe-ent-context");
-    private static final ExportEntityStyle CONTEXT_PLACE = new ExportEntityStyle("bi-geo-alt", "xe-ent-context");
-    private static final ExportEntityStyle GROUND_UNIT = new ExportEntityStyle("bi-pencil-square", "xe-ent-ground");
-    private static final ExportEntityStyle GROUND_SPECIMEN = new ExportEntityStyle("bi-bucket", "xe-ent-ground");
-    private static final ExportEntityStyle GROUND_PHASE = new ExportEntityStyle("bi-layers", "xe-ent-ground");
-    private static final ExportEntityStyle THIRD_CONTAINER = new ExportEntityStyle("bi-box-seam", "xe-ent-third");
-    private static final ExportEntityStyle THIRD_DOCUMENT = new ExportEntityStyle("bi-file-earmark-text", "xe-ent-third");
-    private static final ExportEntityStyle THIRD_STUDY = new ExportEntityStyle("bi-clipboard-data", "xe-ent-third");
+    private static final String CTX = "xe-ent-context";
+    private static final String GROUND = "xe-ent-ground";
+    private static final String THIRD = "xe-ent-third";
+
+    private static final ExportEntityStyle CONTEXT_PROJECT = new ExportEntityStyle("bi-arrow-down-square", CTX);
+    private static final ExportEntityStyle CONTEXT_PLACE = new ExportEntityStyle("bi-geo-alt", CTX);
+    private static final ExportEntityStyle GROUND_UNIT = new ExportEntityStyle("bi-pencil-square", GROUND);
+    private static final ExportEntityStyle GROUND_SPECIMEN = new ExportEntityStyle("bi-bucket", GROUND);
+    private static final ExportEntityStyle GROUND_PHASE = new ExportEntityStyle("bi-layers", GROUND);
+    private static final ExportEntityStyle THIRD_CONTAINER = new ExportEntityStyle("bi-box-seam", THIRD);
+    private static final ExportEntityStyle THIRD_DOCUMENT = new ExportEntityStyle("bi-file-earmark-text", THIRD);
+    private static final ExportEntityStyle THIRD_STUDY = new ExportEntityStyle("bi-clipboard-data", THIRD);
     private static final ExportEntityStyle NEUTRAL = new ExportEntityStyle("bi-table", "xe-ent-neutral");
 
     public static ExportEntityStyle of(EntityKind kind) {

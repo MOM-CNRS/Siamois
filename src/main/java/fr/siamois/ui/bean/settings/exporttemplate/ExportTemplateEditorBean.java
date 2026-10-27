@@ -74,6 +74,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ExportTemplateEditorBean implements Serializable {
 
+    private static final String ERR_NOT_FOUND = "exportTemplates.error.notFound";
+
     /** Option d'une liste déroulante : libellé affiché et valeur stockée. */
     public record Item(String label, String value) implements Serializable {
     }
@@ -119,7 +121,7 @@ public class ExportTemplateEditorBean implements Serializable {
         try {
             load(id);
         } catch (NoSuchElementException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
+            MessageUtils.displayErrorMessage(langBean, ERR_NOT_FOUND);
             return null;
         } catch (InvalidExportTemplateException e) {
             // Modèle enregistré dans un ancien format ou corrompu : on le signale, la liste permet de le supprimer.
@@ -497,7 +499,7 @@ public class ExportTemplateEditorBean implements Serializable {
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         } catch (NoSuchElementException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
+            MessageUtils.displayErrorMessage(langBean, ERR_NOT_FOUND);
         }
     }
 
@@ -686,46 +688,30 @@ public class ExportTemplateEditorBean implements Serializable {
             int covered = coveredColumns(sheet, i);
             List<String> typeKeys = ExportTemplateEditModel.KIND_ENTITY.equals(source.getKind()) ? source.getTypeKeys() : List.of();
             if (typeKeys.isEmpty()) {
-                chips.add(new ExportSourceDialog.Chip(source, i, describe(source), describe(source), null, style, "", "",
-                        covered, sheet.getColumns().size(), key != null, gapSource == i));
+                chips.add(chipOf(sheet, source, i, describe(source), null, style, covered, key != null));
                 continue;
             }
             List<Item> items = typeItems(source);
             for (String typeKey : typeKeys) {
                 String label = items.stream().filter(it -> it.value().equals(typeKey)).map(Item::label).findFirst().orElse(typeKey);
-                chips.add(new ExportSourceDialog.Chip(source, i, describe(source), label, typeKey, style, "", "",
-                        covered, sheet.getColumns().size(), key != null, gapSource == i));
+                chips.add(chipOf(sheet, source, i, label, typeKey, style, covered, key != null));
             }
         }
         return chips;
     }
 
+    private ExportSourceDialog.Chip chipOf(EditSheet sheet, EditSource source, int index, String label, String typeKey,
+                                           ExportEntityStyle style, int covered, boolean editable) {
+        ExportSourceDialog.Chip chip = new ExportSourceDialog.Chip(source, index, label, typeKey, style);
+        chip.setCovered(covered);
+        chip.setTotal(sheet.getColumns().size());
+        chip.setEditable(editable);
+        chip.setGapActive(gapSource == index);
+        return chip;
+    }
+
     private int coveredColumns(EditSheet sheet, int sourceIndex) {
         return (int) sheet.getColumns().stream().filter(c -> ruleAt(c, sourceIndex).isPresent()).count();
-    }
-
-    private String sourceTypesLabel(EditSource source) {
-        if (!ExportTemplateEditModel.KIND_ENTITY.equals(source.getKind())) {
-            return "";
-        }
-        return source.getTypeKeys().isEmpty() ? langBean.msg("exportTemplates.editor.source.allTypes") : sourceTypes(source);
-    }
-
-    private String sourceRowsLabel(EditSource source) {
-        Integer rows = switch (source.getKind()) {
-            case ExportTemplateEditModel.KIND_ENTITY -> entityOf(source)
-                    .map(k -> countsOf(ExportSubject.of(k)))
-                    .map(c -> c.rowsOf(source.getTypeKeys().stream().map(ExportTemplateEditorBean::conceptRefOf).toList()))
-                    .orElse(null);
-            case ExportTemplateEditModel.KIND_TECHNICAL -> ExportTechnicalSource.ofKey(source.getTechnicalKey())
-                    .map(this::technicalCountOf).orElse(null);
-            case ExportTemplateEditModel.KIND_TABLE -> null;
-            default -> countsOf(ExportSubject.PROJECT) == null ? null : 1;
-        };
-        if (rows == null) {
-            return "";
-        }
-        return langBean.msg(rows > 1 ? "exportTemplates.editor.source.rows.many" : "exportTemplates.editor.source.rows.one", String.valueOf(rows));
     }
 
     /** Pas de source : la recherche et le tableau restent grisés. */
@@ -814,25 +800,36 @@ public class ExportTemplateEditorBean implements Serializable {
         String q = sourceDialog.getQuery() == null ? "" : sourceDialog.getQuery().trim().toLowerCase();
         List<ExportSourceDialog.Table> tree = new ArrayList<>();
         for (TableDef def : tableDefs()) {
-            boolean tableMatch = q.isEmpty() || def.label().toLowerCase().contains(q);
-            List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), sourceDialog.getTypes());
-            boolean current = def.key().equals(sourceDialog.getTable());
-            SourceCounts counts = countsOf(def.subject());
-            List<ExportSourceDialog.Type> types = items.stream()
-                    .filter(i -> tableMatch || i.label().toLowerCase().contains(q))
-                    .map(i -> typeNode(i, current, counts))
-                    .toList();
-            if (!tableMatch && types.isEmpty()) {
-                continue;
-            }
-            String state = !current ? ExportSourceDialog.STATE_NONE
-                    : items.isEmpty() || sourceDialog.getTypes().containsAll(items.stream().map(Item::value).toList())
-                    ? ExportSourceDialog.STATE_ALL : ExportSourceDialog.STATE_SOME;
-            String expandedKey = sourceDialog.getExpanded();
-            boolean expanded = !types.isEmpty() && (!q.isEmpty() || def.key().equals(expandedKey) || (expandedKey == null && current));
-            tree.add(new ExportSourceDialog.Table(def.key(), def.label(), def.style(), totalLabel(def, counts), expanded, state, types));
+            sourceTreeNode(def, q).ifPresent(tree::add);
         }
         return tree;
+    }
+
+    private Optional<ExportSourceDialog.Table> sourceTreeNode(TableDef def, String q) {
+        boolean tableMatch = q.isEmpty() || def.label().toLowerCase().contains(q);
+        List<Item> items = def.entity() == null ? List.of() : typeItemsFor(def.entity(), sourceDialog.getTypes());
+        boolean current = def.key().equals(sourceDialog.getTable());
+        SourceCounts counts = countsOf(def.subject());
+        List<ExportSourceDialog.Type> types = items.stream()
+                .filter(i -> tableMatch || i.label().toLowerCase().contains(q))
+                .map(i -> typeNode(i, current, counts))
+                .toList();
+        if (!tableMatch && types.isEmpty()) {
+            return Optional.empty();
+        }
+        String expandedKey = sourceDialog.getExpanded();
+        boolean expanded = !types.isEmpty() && (!q.isEmpty() || def.key().equals(expandedKey) || (expandedKey == null && current));
+        return Optional.of(new ExportSourceDialog.Table(def.key(), def.label(), def.style(), totalLabel(def, counts), expanded,
+                tableState(current, items), types));
+    }
+
+    /** État de la case d'une table : rien si ce n'est pas la table choisie, sinon tout ou une partie de ses types. */
+    private String tableState(boolean current, List<Item> items) {
+        if (!current) {
+            return ExportSourceDialog.STATE_NONE;
+        }
+        boolean all = items.isEmpty() || sourceDialog.getTypes().containsAll(items.stream().map(Item::value).toList());
+        return all ? ExportSourceDialog.STATE_ALL : ExportSourceDialog.STATE_SOME;
     }
 
     private ExportSourceDialog.Type typeNode(Item item, boolean tablePicked, SourceCounts counts) {
@@ -957,7 +954,10 @@ public class ExportTemplateEditorBean implements Serializable {
     public String getFieldsSelectionState() {
         long checked = getCheckedFieldCount();
         int total = getVisibleFieldRows().size();
-        return checked == 0 ? ExportSourceDialog.STATE_NONE : checked == total ? ExportSourceDialog.STATE_ALL : ExportSourceDialog.STATE_SOME;
+        if (checked == 0) {
+            return ExportSourceDialog.STATE_NONE;
+        }
+        return checked == total ? ExportSourceDialog.STATE_ALL : ExportSourceDialog.STATE_SOME;
     }
 
     public void toggleAllFields() {
@@ -1022,23 +1022,23 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     private void importFields(EditSheet sheet, int sourceIndex) {
-        for (ExportSourceDialog.FieldRow row : sourceDialog.getFieldRows()) {
-            if (!row.isChecked()) {
-                continue;
-            }
-            Optional<EditColumn> existing = row.getTarget() == null || row.getTarget().isEmpty() ? Optional.empty()
-                    : sheet.getColumns().stream().filter(c -> row.getTarget().equals(c.getHeader())).findFirst();
-            EditColumn column = existing.orElseGet(() -> newColumn(sheet, row.getLabel()));
-            if (ruleAt(column, sourceIndex).isPresent()) {
-                continue;
-            }
-            EditRule rule = new EditRule();
-            rule.setType(ExportTemplateEditModel.RULE_DIRECT);
-            rule.setSources(new ArrayList<>(List.of(String.valueOf(sourceIndex))));
-            rule.getField().setKind(row.getKind());
-            rule.getField().setKey(row.getKey());
-            column.getRules().add(rule);
+        sourceDialog.getFieldRows().stream().filter(ExportSourceDialog.FieldRow::isChecked)
+                .forEach(row -> importField(sheet, sourceIndex, row));
+    }
+
+    private void importField(EditSheet sheet, int sourceIndex, ExportSourceDialog.FieldRow row) {
+        Optional<EditColumn> existing = row.getTarget() == null || row.getTarget().isEmpty() ? Optional.empty()
+                : sheet.getColumns().stream().filter(c -> row.getTarget().equals(c.getHeader())).findFirst();
+        EditColumn column = existing.orElseGet(() -> newColumn(sheet, row.getLabel()));
+        if (ruleAt(column, sourceIndex).isPresent()) {
+            return;
         }
+        EditRule rule = new EditRule();
+        rule.setType(ExportTemplateEditModel.RULE_DIRECT);
+        rule.setSources(new ArrayList<>(List.of(String.valueOf(sourceIndex))));
+        rule.getField().setKind(row.getKind());
+        rule.getField().setKey(row.getKey());
+        column.getRules().add(rule);
     }
 
     private EditColumn newColumn(EditSheet sheet, String wanted) {
@@ -1068,21 +1068,25 @@ public class ExportTemplateEditorBean implements Serializable {
     private String haystack(EditSheet sheet, EditColumn column) {
         StringBuilder text = new StringBuilder(column.getHeader() == null ? "" : column.getHeader());
         for (EditRule rule : column.getRules()) {
-            text.append(' ').append(describeRule(rule));
-            if (rule.getField() != null && rule.getField().getKey() != null) {
-                text.append(' ').append(rule.getField().getKey());
-            }
-            if (rule.getConstantValue() != null) {
-                text.append(' ').append(rule.getConstantValue());
-            }
-            for (EditPart part : rule.getParts()) {
-                text.append(' ').append(part.getLabel() == null ? "" : part.getLabel())
-                        .append(' ').append(part.getLiteral() == null ? "" : part.getLiteral())
-                        .append(' ').append(part.isLiteralPart() ? "" : choiceLabel(rule.getSources(), part.getFieldChoice()));
-            }
-            ruleSourceIndexes(sheet, rule).forEach(i -> text.append(' ').append(describe(sheet.getSources().get(i))));
+            appendRuleText(text, sheet, rule);
         }
         return text.toString().toLowerCase();
+    }
+
+    private void appendRuleText(StringBuilder text, EditSheet sheet, EditRule rule) {
+        text.append(' ').append(describeRule(rule));
+        if (rule.getField() != null && rule.getField().getKey() != null) {
+            text.append(' ').append(rule.getField().getKey());
+        }
+        if (rule.getConstantValue() != null) {
+            text.append(' ').append(rule.getConstantValue());
+        }
+        for (EditPart part : rule.getParts()) {
+            text.append(' ').append(Objects.toString(part.getLabel(), ""))
+                    .append(' ').append(Objects.toString(part.getLiteral(), ""))
+                    .append(' ').append(part.isLiteralPart() ? "" : choiceLabel(rule.getSources(), part.getFieldChoice()));
+        }
+        ruleSourceIndexes(sheet, rule).forEach(i -> text.append(' ').append(describe(sheet.getSources().get(i))));
     }
 
     private static List<Integer> ruleSourceIndexes(EditSheet sheet, EditRule rule) {
@@ -1147,14 +1151,9 @@ public class ExportTemplateEditorBean implements Serializable {
         for (EditSource source : sheet.getSources()) {
             String key = tableKeyOf(source);
             Optional<TableDef> def = key == null ? Optional.empty() : tableDef(key);
-            if (def.isEmpty()) {
-                continue;
-            }
-            for (FieldCandidate f : candidatesOf(def.get())) {
-                if (needle.isEmpty() || f.label().toLowerCase().contains(needle) || f.key().toLowerCase().contains(needle)) {
-                    found.putIfAbsent(f.kind() + "\u0000" + f.key(), new Suggestion(f.label(), def.get().label(), null, f.kind(), f.key()));
-                }
-            }
+            def.ifPresent(d -> candidatesOf(d).stream()
+                    .filter(f -> needle.isEmpty() || f.label().toLowerCase().contains(needle) || f.key().toLowerCase().contains(needle))
+                    .forEach(f -> found.putIfAbsent(f.kind() + "\u0000" + f.key(), new Suggestion(f.label(), d.label(), null, f.kind(), f.key()))));
         }
         return found.values().stream().limit(SUGGEST_FIELDS).toList();
     }
@@ -2020,7 +2019,7 @@ public class ExportTemplateEditorBean implements Serializable {
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
         } catch (NoSuchElementException e) {
-            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.notFound");
+            MessageUtils.displayErrorMessage(langBean, ERR_NOT_FOUND);
         }
         return null;
     }

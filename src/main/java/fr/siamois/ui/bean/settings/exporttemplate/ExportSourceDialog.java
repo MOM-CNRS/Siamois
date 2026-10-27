@@ -126,51 +126,33 @@ public class ExportSourceDialog implements Serializable {
         }
     }
 
-    /** Une source de la feuille, en puce : table, types, lignes du projet de référence et couverture des colonnes. */
+    /** Une source de la feuille, en puce : une puce par type (ou une seule si la source n'est pas filtrée par type). */
     @Getter
+    @Setter
     public static class Chip implements Serializable {
         private final transient ExportTemplateEditModel.EditSource source;
         private final int index;
-        private final String table;
-        /** Texte de la puce : le type, ou la table quand la source n'est pas filtrée par type. */
         private final String label;
-        /** Clé du type que montre la puce ; nulle si elle représente toute la source. */
         private final String typeKey;
         private final String icon;
         private final String entityClass;
-        private final String typesLabel;
-        private final String rowsLabel;
-        private final int covered;
-        private final int total;
-        private final boolean editable;
-        private final boolean gapActive;
+        private int covered;
+        private int total;
+        private boolean editable;
+        private boolean gapActive;
 
-        public Chip(ExportTemplateEditModel.EditSource source, int index, String table, String label, String typeKey,
-                    ExportEntityStyle style, String typesLabel,
-                    String rowsLabel, int covered, int total, boolean editable, boolean gapActive) {
+        public Chip(ExportTemplateEditModel.EditSource source, int index, String label, String typeKey, ExportEntityStyle style) {
             this.source = source;
             this.index = index;
-            this.table = table;
             this.label = label;
             this.typeKey = typeKey;
             this.icon = style.icon();
             this.entityClass = style.cssClass();
-            this.typesLabel = typesLabel;
-            this.rowsLabel = rowsLabel;
-            this.covered = covered;
-            this.total = total;
-            this.editable = editable;
-            this.gapActive = gapActive;
         }
 
         /** Vrai si toutes les colonnes de la feuille sont couvertes par cette source. */
         public boolean isFull() {
             return covered >= total;
-        }
-
-        /** Deuxième ligne de la puce : types · lignes. */
-        public String getDetail() {
-            return typesLabel.isEmpty() ? rowsLabel : rowsLabel.isEmpty() ? typesLabel : typesLabel + " · " + rowsLabel;
         }
     }
 }
