@@ -14,6 +14,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,7 +41,7 @@ import java.util.Set;
 @Entity
 @Table(name = "siamois_document", schema = "public",
         indexes = @Index(name = "idx_document_action_unit", columnList = "fk_action_unit_id"),
-        uniqueConstraints = @UniqueConstraint(name = "uk_document_project_identifier",
+        uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.DOCUMENT,
                 columnNames = {"fk_action_unit_id", "identifier"}))
 @Audited
 public class Document extends TraceableEntity implements ArkEntity {

@@ -162,7 +162,7 @@ public class RecordingUnitService implements ArkEntityService {
             return recordingUnitMapper.convert(save(recordingUnit));
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 
@@ -184,7 +184,7 @@ public class RecordingUnitService implements ArkEntityService {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
         return saved;
     }
@@ -248,7 +248,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 
@@ -1012,6 +1012,27 @@ public class RecordingUnitService implements ArkEntityService {
                         recordingUnit, recordingUnitIdentifierSpec(actionUnit))
                 .orElseThrow(() -> new IllegalStateException("Recording-unit identifier generation was skipped"))
                 .value();
+    }
+
+    /**
+     * The identifier that would be generated for a recording unit with this action unit and type,
+     * without consuming the counter — the creation form's suggestion. The entity is never modified.
+     */
+    public String suggestFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
+        log.trace("Suggesting full identifier for recording unit");
+        return entityIdentifierGenerator.suggestIdentifier(recordingUnit, recordingUnitIdentifierSpec(actionUnit))
+                .value();
+    }
+
+    /**
+     * DTO variant of {@link #suggestFullIdentifier(ActionUnit, RecordingUnit)} for a unit not yet
+     * persisted (the creation form): maps the DTOs to transient entities, suggests, returns.
+     */
+    @Transactional(readOnly = true)
+    public String suggestFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
+        return suggestFullIdentifier(actionUnit, recordingUnit);
     }
 
     private IdentifierGenerationSpec<RecordingUnit> recordingUnitIdentifierSpec(ActionUnit actionUnit) {

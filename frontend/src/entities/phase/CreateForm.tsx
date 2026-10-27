@@ -11,7 +11,7 @@ export function PhaseCreateForm(ctx: CreateFormContext) {
       entityType="phase"
       title={t("create.newPhase")}
       typesSegment="phase-types"
-      create={(projectId, typeId) => createPhase({ projectId, typeId })}
+      create={createPhase}
     />
   );
 }

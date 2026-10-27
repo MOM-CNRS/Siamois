@@ -6,6 +6,9 @@ import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
 export interface RecordingUnitCreateBody {
   projectId: string;
   typeId: string;
+  // An identifier chosen in the creation form (the auto-generated one, edited). Undefined when the
+  // user kept the suggestion: the server then generates it itself.
+  identifier?: string;
   // The new UE becomes a direct child of parentRecordingUnitId / the direct parent of
   // childRecordingUnitId — linked server-side in the same transaction as the creation.
   parentRecordingUnitId?: string | number;
@@ -20,6 +23,7 @@ const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, Recording
   toCreateBody: (body) => ({
     projectId: body.projectId,
     typeId: body.typeId,
+    identifier: body.identifier?.trim() ? body.identifier.trim() : undefined,
     parentRecordingUnitId: body.parentRecordingUnitId != null ? Number(body.parentRecordingUnitId) : undefined,
     childRecordingUnitId: body.childRecordingUnitId != null ? Number(body.childRecordingUnitId) : undefined,
     phaseId: body.phaseId != null ? Number(body.phaseId) : undefined,

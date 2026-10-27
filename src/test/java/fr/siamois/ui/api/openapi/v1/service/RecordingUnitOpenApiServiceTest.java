@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import fr.siamois.mapper.SpatialUnitSummaryMapper;
 import fr.siamois.mapper.RecordingUnitSummaryMapper;
@@ -1233,9 +1234,7 @@ class RecordingUnitOpenApiServiceTest {
         request.setTypeId("42");
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
 
         verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
         verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saved);
@@ -1275,6 +1274,54 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifier_isUsedAsIs_andGenerationIsSkipped() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("INST-PROJ-UE42");
+
+        RecordingUnitResource data = service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        assertThat(data.getId()).isEqualTo("1026");
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        // The chosen identifier is set on the saved unit before the second save...
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("INST-PROJ-UE42");
+        // ...its uniqueness is checked...
+        verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saves.getAllValues().get(1));
+        // ...and the server's own generation is not even attempted.
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifierAlreadyTaken_throwsConflict() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("RU-3000");
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(IdentifierConflictException.class);
+
+        // The unit was saved once (the identifier is set only once it exists); the conflict rolls the rest back.
+        verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_blankIdentifier_fallsBackToGeneration() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("   ");
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        verify(recordingUnitService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any());
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("RU-3000");
     }
 
     @Test
@@ -3523,7 +3570,6 @@ class RecordingUnitOpenApiServiceTest {
         var request = new RecordingUnitPatchRequest();
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
     }
 }

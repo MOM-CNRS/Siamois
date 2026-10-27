@@ -6,7 +6,7 @@ import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.place.PlaceSearchControllerApi;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -51,7 +51,7 @@ class PlaceSearchControllerApiTest {
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
         PlaceSearchControllerApi controller = new PlaceSearchControllerApi(projectApiService, spatialUnitService, labelService, placeSuggestionApiService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
     }

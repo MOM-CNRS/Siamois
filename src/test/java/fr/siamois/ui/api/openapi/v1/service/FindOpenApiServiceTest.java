@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
@@ -1055,8 +1056,112 @@ class FindOpenApiServiceTest {
         FindPatchRequest request = new FindPatchRequest();
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(specimenService, never()).save(any());
+    }
+
+    // --- identifier chosen in the creation form / suggested ---
+
+    private void stubEmptyCreationForm() {
+        FormUiDto formUi = new FormUiDto();
+        formUi.setLayout(List.of());
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
+        SpecimenDTO saved = new SpecimenDTO();
+        saved.setId(99L);
+        when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
+    }
+
+    @Test
+    void createFind_chosenIdentifier_isSavedWithTheProject_onceCheckedFree() {
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(7L);
+        recordingUnit.setActionUnit(project);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+        stubTypeConcept();
+        stubEmptyCreationForm();
+        FindCreateRequest request = createRequest("UE-1", "3");
+        request.setIdentifier(" UE1-M7 ");
+
+        service.createFind(request, personDto, SCOPE, LANG);
+
+        ArgumentCaptor<SpecimenDTO> captor = ArgumentCaptor.forClass(SpecimenDTO.class);
+        verify(specimenService).save(captor.capture());
+        // Set before the save, so the service skips its generation — which otherwise sets the project.
+        assertThat(captor.getValue().getFullIdentifier()).isEqualTo("UE1-M7");
+        assertThat(captor.getValue().getActionUnit()).isSameAs(project);
+        verify(specimenService).fullIdentifierAlreadyExistInAction(captor.getValue());
+    }
+
+    @Test
+    void createFind_chosenIdentifierAlreadyTaken_throws409WithoutSaving() {
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+        stubTypeConcept();
+        when(specimenService.fullIdentifierAlreadyExistInAction(any(SpecimenDTO.class))).thenReturn(true);
+        FindCreateRequest request = createRequest("UE-1", "3");
+        request.setIdentifier("TAKEN");
+
+        assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
+                .isInstanceOf(IdentifierConflictException.class);
+        verify(specimenService, never()).save(any(SpecimenDTO.class));
+    }
+
+    @Test
+    void createFind_withoutIdentifier_leavesItToTheServer() {
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+        stubTypeConcept();
+        stubEmptyCreationForm();
+
+        service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG);
+
+        ArgumentCaptor<SpecimenDTO> captor = ArgumentCaptor.forClass(SpecimenDTO.class);
+        verify(specimenService).save(captor.capture());
+        assertThat(captor.getValue().getFullIdentifier()).isNull();
+        verify(specimenService, never()).fullIdentifierAlreadyExistInAction(any(SpecimenDTO.class));
+    }
+
+    @Test
+    void suggestIdentifier_suggestsForANewFindOfTheTypeOnTheUnit_inTheCallersContext() {
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+        stubTypeConcept();
+        when(specimenService.suggestFullIdentifier(any(SpecimenDTO.class))).thenAnswer(invocation -> {
+            // The identifier format is read in the caller's context (the unit's organization, their language).
+            fr.siamois.domain.models.UserInfo current = fr.siamois.utils.context.ExecutionContextHolder.get();
+            assertThat(current.getInstitution()).isSameAs(institution);
+            assertThat(current.getUser()).isSameAs(personDto);
+            return "UE1-M1";
+        });
+
+        String suggested = service.suggestIdentifier("UE-1", "3", personDto, SCOPE, LANG);
+
+        assertThat(suggested).isEqualTo("UE1-M1");
+        ArgumentCaptor<SpecimenDTO> captor = ArgumentCaptor.forClass(SpecimenDTO.class);
+        verify(specimenService).suggestFullIdentifier(captor.capture());
+        assertThat(captor.getValue().getId()).isNull();
+        assertThat(captor.getValue().getRecordingUnit().getId()).isEqualTo(42L);
+        assertThat(captor.getValue().getType()).isSameAs(typeDto);
+        // A suggestion writes nothing — and needs no edit right.
+        verify(specimenService, never()).save(any(SpecimenDTO.class));
+        verify(profilePermissionService, never()).hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void suggestIdentifier_unitWithoutOrganization_throws400() {
+        recordingUnit.setCreatedByInstitution(null);
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+
+        assertThatThrownBy(() -> service.suggestIdentifier("UE-1", "3", personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(specimenService, never()).suggestFullIdentifier(any(SpecimenDTO.class));
+    }
+
+    @Test
+    void suggestIdentifier_unknownType_throws404() {
+        when(recordingUnitService.findAccessibleRecordingUnitByKey("UE-1", SCOPE, null)).thenReturn(recordingUnit);
+        when(conceptRepository.findById(3L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.suggestIdentifier("UE-1", "3", personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 }

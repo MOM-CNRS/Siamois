@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationPermissionsControllerApi;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -40,7 +40,7 @@ class OrganizationPermissionsControllerApiTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new OrganizationPermissionsControllerApi(projectApiService, profilePermissionService))
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
                 .build();
         PersonDTO person = new PersonDTO();

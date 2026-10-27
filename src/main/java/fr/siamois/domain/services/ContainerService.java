@@ -177,11 +177,20 @@ public class ContainerService {
         return containerMapper.convert(entity);
     }
 
+    /**
+     * The identifier a new container like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. Nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(ContainerDTO dto) {
+        return identifierGenerator.suggestIdentifier(containerMapper.invertConvert(dto), containerIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Container> containerIdentifierSpec() {
         return IdentifierGenerationSpec.<Container>builder()
                 .table(ConfigurableTable.CONTENANT)
                 .entityName("container")
-                .generationRequired(container -> container.getId() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Container::getId, Container::getIdentifier))
                 .actionUnit(Container::getActionUnit)
                 .typeId(container -> container.getType() == null ? null : container.getType().getId())
                 .displayValue("NUM_PARENT", container -> container.getParent() == null

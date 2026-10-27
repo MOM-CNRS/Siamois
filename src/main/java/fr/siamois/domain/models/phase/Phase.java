@@ -7,6 +7,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,7 +22,10 @@ import java.util.Set;
 
 @Data
 @Entity
-@Table(name = "phase", indexes = @Index(name = "idx_phase_action_unit", columnList = "fk_action_unit_id"))
+@Table(name = "phase",
+        indexes = @Index(name = "idx_phase_action_unit", columnList = "fk_action_unit_id"),
+        uniqueConstraints = @UniqueConstraint(name = ProjectIdentifierConstraints.PHASE,
+                columnNames = {"fk_action_unit_id", "identifier"}))
 @Audited
 @NoArgsConstructor
 public class Phase extends TraceableEntity {

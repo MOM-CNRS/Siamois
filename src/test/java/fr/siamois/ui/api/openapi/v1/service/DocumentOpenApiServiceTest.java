@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -88,7 +89,7 @@ class DocumentOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentOpenApiService(documentService, actionUnitService, conceptService, conceptMapper,
+        service = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
                 profilePermissionService, documentOpenApiMapper, documentListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentLinkService);
 
@@ -462,8 +463,7 @@ class DocumentOpenApiServiceTest {
                 new fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource(null, null);
         EntitySiblingsService siblingsService = mock(EntitySiblingsService.class);
         when(siblingsService.findSiblings(EntitySiblingsService.Kind.DOCUMENT, 7L, 5L)).thenReturn(siblings);
-        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, actionUnitService, conceptService,
-                conceptMapper, profilePermissionService, documentOpenApiMapper, documentListProjectionService,
+        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService), profilePermissionService, documentOpenApiMapper, documentListProjectionService,
                 ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), siblingsService,
                 new ValidationOpenApiService(validationStatusService), fieldAnswerPatchService, fieldAnswerWireService,
                 customFieldAnswerService, effectiveFormResolver, documentLinkService);
@@ -510,9 +510,76 @@ class DocumentOpenApiServiceTest {
         request.setIdentifier("NEW-1");
         var scope = Set.of(10L);
         assertThatThrownBy(() -> service.patchDocument(5L, request, personDto, scope, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(documentService, never()).save(any(DocumentDTO.class));
+    }
+
+    // --- identifier chosen in the creation form ---
+
+    private ConceptDTO allowCreationOfType2InProject7() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(2L);
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(2L);
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        return typeDto;
+    }
+
+    private DocumentCreateRequest creationRequest(String identifier) {
+        DocumentCreateRequest req = new DocumentCreateRequest();
+        req.setProjectId("7");
+        req.setTypeId("2");
+        req.setIdentifier(identifier);
+        return req;
+    }
+
+    @Test
+    void createDocument_chosenIdentifier_isSavedTrimmedOnceCheckedFree() {
+        allowCreationOfType2InProject7();
+        DocumentDTO saved = new DocumentDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(documentService.save(any(DocumentDTO.class))).thenReturn(saved);
+
+        service.createDocument(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
+        verify(documentService).save(captor.capture());
+        // Set before the save: the service then skips its own generation.
+        assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
+        verify(documentService).identifierAlreadyExistInProject(captor.getValue());
+    }
+
+    @Test
+    void createDocument_chosenIdentifierAlreadyTaken_throws409WithoutSaving() {
+        allowCreationOfType2InProject7();
+        when(documentService.identifierAlreadyExistInProject(any(DocumentDTO.class))).thenReturn(true);
+
+        var req = creationRequest("TAKEN");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createDocument(req, personDto, scope, "fr"))
+                .isInstanceOf(IdentifierConflictException.class);
+        verify(documentService, never()).save(any(DocumentDTO.class));
+    }
+
+    @Test
+    void createDocument_blankIdentifier_leavesItToTheServer() {
+        allowCreationOfType2InProject7();
+        DocumentDTO saved = new DocumentDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(documentService.save(any(DocumentDTO.class))).thenReturn(saved);
+
+        service.createDocument(creationRequest("   "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
+        verify(documentService).save(captor.capture());
+        assertThat(captor.getValue().getIdentifier()).isNull();
+        verify(documentService, never()).identifierAlreadyExistInProject(any(DocumentDTO.class));
     }
 
 }

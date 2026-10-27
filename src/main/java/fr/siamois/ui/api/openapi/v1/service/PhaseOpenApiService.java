@@ -14,18 +14,13 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.PhaseService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.PhaseOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.phase.PhaseCreateRequest;
@@ -55,9 +50,7 @@ import java.util.Set;
 public class PhaseOpenApiService {
 
     private final PhaseService phaseService;
-    private final ActionUnitService actionUnitService;
-    private final ConceptService conceptService;
-    private final ConceptMapper conceptMapper;
+    private final ProjectTypedCreationService projectTypedCreationService;
     private final ProfilePermissionService profilePermissionService;
     private final PhaseOpenApiMapper phaseOpenApiMapper;
     private final PhaseListProjectionService phaseListProjectionService;
@@ -86,38 +79,21 @@ public class PhaseOpenApiService {
     @Transactional
     public PhaseResource createPhase(PhaseCreateRequest request, PersonDTO personDto,
                                      Set<Long> accessibleInstitutionIds, String lang) {
-        String projectId = requireNonBlank(request.getProjectId(), "projectId");
-        String typeId = requireNonBlank(request.getTypeId(), "typeId");
-
-        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
-        ActionUnitDTO au = project.actionUnit();
-        InstitutionDTO institution = au.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(),
+        ProjectContext project = projectTypedCreationService.resolveProject(
+                request.getProjectId(), personDto, accessibleInstitutionIds, lang);
+        projectTypedCreationService.requirePermission(project, "Création de phase non autorisée sur ce projet",
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_PHASES)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création de phase non autorisée sur ce projet");
-        }
-
-        Concept typeConcept = conceptService.findById(parseLong(typeId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type de phase introuvable"));
-
-        PhaseDTO shell = new PhaseDTO();
-        shell.setActionUnit(new ActionUnitSummaryDTO(au));
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(personDto);
-        shell.setCreatedByInstitution(institution);
-        shell.setType(conceptMapper.convert(typeConcept));
+                PermissionConstants.PROJECT_EDIT_PHASES);
+        PhaseDTO shell = projectTypedCreationService.newEntity(Kind.PHASE, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.PHASE));
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
+        IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
+                () -> phaseService.identifierAlreadyExistInAction(shell));
 
-        PhaseDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> phaseService.save(shell));
+        PhaseDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> phaseService.save(shell));
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }
 
@@ -204,21 +180,6 @@ public class PhaseOpenApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Phase introuvable ou hors périmètre");
         }
         return phase;
-    }
-
-    private static String requireNonBlank(String value, String name) {
-        if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " est requis");
-        }
-        return value;
-    }
-
-    private static long parseLong(String value) {
-        try {
-            return Long.parseLong(value.trim());
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
-        }
     }
 
     /**

@@ -4,9 +4,10 @@ import type { CreateFormContext } from "../shared/types";
 import { createRecordingUnit } from "./api";
 import { t } from "../../i18n";
 
-// A recording unit needs only its type (the identifier is generated server-side, as in JSF). Created
-// from another UE's row action, it is linked to it in the same transaction: as its child (`parent`)
-// or its parent (`child`).
+// A recording unit needs only its type. Its identifier is suggested by the server (a peek at the
+// counter, not a consumption), shown pre-filled and modifiable — an edited one is sent, an
+// untouched suggestion lets the server generate it, as in JSF. Created from another UE's row
+// action, it is linked to it in the same transaction: as its child (`parent`) or its parent (`child`).
 export function RecordingUnitCreateForm(ctx: CreateFormContext) {
   const { prefill } = ctx;
   return (
@@ -15,10 +16,9 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
       entityType="recordingUnit"
       title={t("create.newRecordingUnit")}
       typesSegment="recording-unit-types"
-      create={(projectId, typeId) =>
+      create={(body) =>
         createRecordingUnit({
-          projectId,
-          typeId,
+          ...body,
           parentRecordingUnitId: prefill?.parent?.id,
           childRecordingUnitId: prefill?.child?.id,
           phaseId: prefill?.phase?.id,

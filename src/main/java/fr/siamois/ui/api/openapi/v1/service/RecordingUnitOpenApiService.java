@@ -44,6 +44,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.OpenApiParamIds;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
@@ -401,8 +402,8 @@ public class RecordingUnitOpenApiService {
         Map<String, FieldResource> baseFields = baseFieldsOf(configurable ? au.getId() : null, ConfigurableTable.DOCUMENT,
                 Document.class, institution, personDto, lang);
 
-        List<Concept> configuredTypes = !configurable ? List.<Concept>of() : OpenApiExecutionContext.callWithUserInfo(userInfo,
-                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT));
+        List<Concept> configuredTypes = configurable ? OpenApiExecutionContext.callWithUserInfo(userInfo,
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT)) : List.<Concept>of();
         Locale locale = langService.localeForApiLang(lang);
         List<DocumentType> types = configuredTypes.stream()
                 .map(concept -> buildDocumentType(au.getId(), concept, userInfo, locale,
@@ -605,15 +606,10 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Formulaire de création d'une UE pour un type donné, résolu pour un projet précis.
-     *
-     * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
-     * {@link #buildProjectRecordingUnitTypeSettings} qui retourne tous les types configurés du projet
-     * en un seul appel. Reste correct fonctionnellement (résolution effective par projet + type via
-     * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, comme le fait
-     * {@link #buildProjectRecordingUnitTypeSettings}).
+     * Formulaire de création d'une UE pour un type donné, résolu pour un projet précis (résolution effective
+     * par projet + type via {@link fr.siamois.domain.services.form.EffectiveFormResolver}). Pour tous les types
+     * configurés du projet en un seul appel : {@link #buildProjectRecordingUnitTypeSettings}.
      */
-    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public RecordingUnitCreateFormData buildRecordingUnitCreateForm(String projectId,
                                                                     long recordingUnitTypeConceptId,
@@ -640,14 +636,12 @@ public class RecordingUnitOpenApiService {
 
     /**
      * Gabarit UI pour création d'un mobilier pour un type donné, résolu pour un projet précis.
-     *
-     * @deprecated Retourne un seul type à la fois (un appel par type) ; préférer
-     * {@link #buildProjectFindTypeSettings} qui retourne tous les types configurés du projet en un seul
+     * <p>
+     * Préférez {@link #buildProjectFindTypeSettings} qui retourne tous les types configurés du projet en un seul
      * appel. Reste correct fonctionnellement (résolution effective par projet + type via
      * {@link fr.siamois.domain.services.form.EffectiveFormResolver}, comme le fait
      * {@link #buildProjectFindTypeSettings}).
      */
-    @Deprecated(forRemoval = true)
     @Transactional(readOnly = true)
     public FindCreateFormData buildFindCreateForm(String projectId,
                                                   long findTypeConceptId,
@@ -977,7 +971,7 @@ public class RecordingUnitOpenApiService {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                     fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
-            RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell);
+            RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell, request.getIdentifier());
             // Additional answers hang off the unit's id, so only once it exists.
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);
             return saved;
@@ -1046,7 +1040,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO shell = new RecordingUnitDTO();
         shell.setType(typeDto);
         shell.setCreatedByInstitution(institution);
-        shell.setActionUnit(actionUnitSummaryFromFull(au));
+        shell.setActionUnit(ProjectTypedCreationService.summaryOf(au));
         shell.setAuthor(personDto);
         shell.setCreatedBy(personDto);
         shell.setContributors(new ArrayList<>(List.of(personDto)));
@@ -1058,28 +1052,41 @@ public class RecordingUnitOpenApiService {
         if (!suOptions.isEmpty()) {
             shell.setSpatialUnit(suOptions.get(0));
         }
-        shell.resetFullIdentifier();
-        if (shell.getFullIdentifier() == null || shell.getFullIdentifier().isBlank()) shell.setFullIdentifier("PENDING");
+        // Left empty: the first save gives it a random temporary code, unique in the project, until the real
+        // identifier is set — the project's own identifier would collide between concurrent creations.
+        shell.setFullIdentifier(null);
         shell.setIdentifier("0");
         return shell;
     }
 
     private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto) {
+        return saveWithGeneratedIdentifier(dto, null);
+    }
+
+    /**
+     * Saves the unit, then sets its identifier: the caller's {@code customIdentifier} when one was
+     * given (uniqueness checked), otherwise the generated one. The two-step save is unchanged — the
+     * identifier hangs off the unit's id, so only once it exists.
+     */
+    private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto, String customIdentifier) {
         RecordingUnitDTO saved;
         try {
             saved = recordingUnitService.save(dto);
         } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            throw IdentifierPatch.saveFailed(e);
         }
-        String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
-        saved.setFullIdentifier(generated);
-        if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Generated recording-unit identifier already exists");
+        if (!IdentifierPatch.applyChosen(customIdentifier, saved::setFullIdentifier,
+                () -> recordingUnitService.fullIdentifierAlreadyExistInAction(saved))) {
+            String generated = recordingUnitService.generateFullIdentifier(saved.getActionUnit(), saved);
+            saved.setFullIdentifier(generated);
+            if (recordingUnitService.fullIdentifierAlreadyExistInAction(saved)) {
+                throw new IdentifierConflictException(generated, null);
+            }
         }
         try {
             return recordingUnitService.save(saved);
         } catch (FailedRecordingUnitSaveException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            throw IdentifierPatch.saveFailed(e);
         }
     }
 
@@ -1095,68 +1102,91 @@ public class RecordingUnitOpenApiService {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
         RecordingUnitDTO dto = bundle.dto();
-        RecordingUnit entity = bundle.entity();
 
         assertSyncRevisionIfRequested(
                 recordingUnitKey,
                 request.getExpectedRevision(),
-                entity.getSyncRevision(),
+                bundle.entity().getSyncRevision(),
                 personDto,
                 accessibleInstitutionIds,
                 lang);
 
+        UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
+        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
+        String changedIdentifier = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier()) ? newIdentifier : null;
+        boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || changedIdentifier != null;
+        requirePatchAllowed(dto, request.getValidationStatus(), contentChange, userInfo, projectId);
+
+        if (contentChange) {
+            saveContentPatch(dto, request, answers, changedIdentifier, userInfo, projectId);
+        }
+        // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too. After a
+        // content save: it writes the DTO's (old) status back onto the entity, so it comes after.
+        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
+
+        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    /** 400 when the unit has no organization: the caller's context is read in it. */
+    private static InstitutionDTO requireOrganization(RecordingUnitDTO dto) {
         InstitutionDTO institution = dto.getCreatedByInstitution();
         if (institution == null || institution.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
         }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        return institution;
+    }
+
+    /**
+     * 403 unless the caller may make this change: a validator may change the status alone without the edit
+     * right; anything else needs it, and the status transition its own rights.
+     */
+    private void requirePatchAllowed(RecordingUnitDTO dto, ValidationStatus requestedStatus, boolean contentChange,
+                                     UserInfo userInfo, Long projectId) {
         boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto);
-        Map<String, Object> answers = request.getFieldAnswers() != null ? request.getFieldAnswers() : Map.of();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
-        boolean contentChange = !answers.isEmpty() || request.isGeomPresent() || identifierChange;
-        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
+        boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), requestedStatus);
         if ((contentChange || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
-        validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit,
+        validationOpenApiService.requireAllowed(dto.getValidationStatus(), requestedStatus, canEdit,
                 profilePermissionService.hasValidatePermission(userInfo, projectId));
+    }
 
-        if (!contentChange) {
-            // Status only (or nothing): syncRevision is the entity's @Version, so this bumps it too.
-            validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
-            return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
-        }
-
-        if (identifierChange) {
-            dto.setFullIdentifier(newIdentifier);
+    /**
+     * Applies the identifier (409 when already used in the project), the geometry and the field answers
+     * of a PATCH, then saves the unit.
+     *
+     * @param changedIdentifier the new identifier, or {@code null} when the PATCH leaves it unchanged
+     */
+    private void saveContentPatch(RecordingUnitDTO dto, RecordingUnitPatchRequest request, Map<String, Object> answers,
+                                  String changedIdentifier, UserInfo userInfo, Long projectId) {
+        if (changedIdentifier != null) {
+            dto.setFullIdentifier(changedIdentifier);
             IdentifierPatch.requireFree(recordingUnitService.fullIdentifierAlreadyExistInAction(dto));
         }
-
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             if (request.isGeomPresent()) {
                 dto.setGeom(request.getGeom());
             }
-            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers = Map.of();
-            if (!answers.isEmpty()) {
-                FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
-                        dto.getType() != null ? dto.getType().getId() : null);
-                // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
-                additionalAnswers = fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);
-            }
-
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                    answers.isEmpty() ? Map.of() : applyFieldAnswers(dto, answers, projectId);
             try {
                 recordingUnitService.save(dto, additionalAnswers);
             } catch (FailedRecordingUnitSaveException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+                throw IdentifierPatch.saveFailed(e);
             }
         });
-        // After the save: it writes the DTO's (old) status back onto the entity.
-        validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
+    }
 
-        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    /** The PATCH's field answers, applied against the unit's effective form; returns the additional ones. */
+    private Map<CustomField, CustomFieldAnswerViewModel> applyFieldAnswers(RecordingUnitDTO dto,
+                                                                          Map<String, Object> answers,
+                                                                          Long projectId) {
+        FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
+                dto.getType() != null ? dto.getType().getId() : null);
+        // Lenient: the mobile client's legacy payloads may carry fields this form lacks.
+        return fieldAnswerPatchService.applyLenient(dto, formUiDto, answers, projectId);
     }
 
     private void assertSyncRevisionIfRequested(String recordingUnitKey,
@@ -1180,18 +1210,6 @@ public class RecordingUnitOpenApiService {
                 expectedRevision,
                 current,
                 serverState));
-    }
-
-    private static ActionUnitSummaryDTO actionUnitSummaryFromFull(ActionUnitDTO au) {
-        ActionUnitSummaryDTO s = new ActionUnitSummaryDTO(au);
-        s.setId(au.getId());
-        s.setName(au.getName());
-        s.setFullIdentifier(au.getFullIdentifier());
-        s.setIdentifier(au.getIdentifier());
-        s.setType(au.getType());
-        s.setBeginDate(au.getBeginDate());
-        s.setEndDate(au.getEndDate());
-        return s;
     }
 
     /**

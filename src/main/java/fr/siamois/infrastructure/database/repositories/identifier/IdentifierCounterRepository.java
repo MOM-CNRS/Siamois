@@ -18,4 +18,16 @@ public interface IdentifierCounterRepository extends CrudRepository<IdentifierCo
                   @Param("formConfigId") Long formConfigId,
                   @Param("canonicalKey") String canonicalKey,
                   @Param("minCode") int minCode);
+
+    /**
+     * The next number that {@link #nextValue} would allocate, without consuming it — for the
+     * creation form's identifier suggestion.
+     */
+    @QueryHints(@QueryHint(name = HibernateHints.HINT_FLUSH_MODE, value = "COMMIT"))
+    @Query(nativeQuery = true,
+            value = "SELECT identifier_peekval(:actionUnitId, :formConfigId, :canonicalKey, :minCode)")
+    int peekValue(@Param("actionUnitId") Long actionUnitId,
+                   @Param("formConfigId") Long formConfigId,
+                   @Param("canonicalKey") String canonicalKey,
+                   @Param("minCode") int minCode);
 }
