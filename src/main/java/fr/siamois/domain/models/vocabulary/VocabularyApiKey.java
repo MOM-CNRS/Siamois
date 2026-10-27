@@ -13,7 +13,7 @@ public class VocabularyApiKey {
     private VocabularyApiKeyId id;
 
     @MapsId("vocabularyId")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_vocabulary_id")
     private Vocabulary vocabulary;
 
