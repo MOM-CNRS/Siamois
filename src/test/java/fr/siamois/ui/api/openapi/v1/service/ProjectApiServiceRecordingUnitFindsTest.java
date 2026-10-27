@@ -2,8 +2,8 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -38,9 +38,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectApiServiceRecordingUnitFindsTest {

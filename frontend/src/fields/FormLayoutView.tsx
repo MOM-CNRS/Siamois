@@ -1,14 +1,14 @@
-import { useMemo } from "react";
-import { usePersistedPaneState } from "../panels/pane/persistedPaneState";
-import { Panel } from "primereact/panel";
-import { evaluateForm, type FieldState } from "../rules";
-import { panelLabel, toGridClass, type FormLayoutCol, type FormLayoutPanel } from "./layout";
-import { FieldEditCell } from "./FieldEditCell";
-import { FieldLabel } from "./FieldLabel";
-import { isTypeField } from "./typeField";
-import { resolveValueBinding, type AnswerInputBody, type FieldResource } from "./types";
-import { valueOfField } from "./values";
-import { t } from "../i18n";
+import {useMemo} from "react";
+import {usePersistedPaneState} from "../panels/pane/persistedPaneState";
+import {Panel} from "primereact/panel";
+import {evaluateForm, type FieldState} from "../rules";
+import {type FormLayoutCol, type FormLayoutPanel, panelLabel, toGridClass} from "./layout";
+import {FieldEditCell} from "./FieldEditCell";
+import {FieldLabel} from "./FieldLabel";
+import {isTypeField} from "./typeField";
+import {type AnswerInputBody, type FieldResource, resolveValueBinding} from "./types";
+import {valueOfField} from "./values";
+import {t} from "../i18n";
 
 /**
  * The fiche's form, for every entity type: panels → rows → columns of FieldLabel + FieldEditCell,

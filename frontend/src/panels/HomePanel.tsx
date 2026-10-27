@@ -1,9 +1,9 @@
-import type { HomeWidgetDef } from "../entities/shared/types";
-import { Panel } from "primereact/panel";
-import { PanelHeaderBar } from "../components/layout/PanelHeaderBar";
-import type { PanelToolbarSlot } from "../mountOptions";
-import { t } from "../i18n";
-import { usePaneState } from "./pane/paneState";
+import type {HomeWidgetDef} from "../entities/shared/types";
+import {Panel} from "primereact/panel";
+import {PanelHeaderBar} from "../components/layout/PanelHeaderBar";
+import type {PanelToolbarSlot} from "../mountOptions";
+import {t} from "../i18n";
+import {usePaneState} from "./pane/paneState";
 
 // Widget-slot design (plan §3/§8 phase 2): HomePanel itself never knows about "recent projects"
 // or "Project card" — those are widgets each entity's config.tsx contributes via its optional

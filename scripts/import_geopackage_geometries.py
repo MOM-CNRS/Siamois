@@ -23,11 +23,10 @@ from __future__ import annotations
 import argparse
 import getpass
 import re
+import requests
 import sqlite3
 import sys
 from dataclasses import dataclass, field
-
-import requests
 
 
 # ---------------------------------------------------------------------------

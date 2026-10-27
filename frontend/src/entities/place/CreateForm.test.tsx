@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { FieldRendererProps } from "../../fields/registry";
-import { PlaceCreateForm } from "./CreateForm";
-import type { CreatePrefill } from "../shared/types";
-import { createPlace } from "./api";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import type {FieldRendererProps} from "../../fields/registry";
+import {PlaceCreateForm} from "./CreateForm";
+import type {CreatePrefill} from "../shared/types";
+import {createPlace} from "./api";
 
 
 vi.mock("./api", () => ({ createPlace: vi.fn() }));

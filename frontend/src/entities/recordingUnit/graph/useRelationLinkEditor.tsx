@@ -1,20 +1,23 @@
-import { useCallback, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
-import { messageForError } from "../../../api/errors";
-import { queryKeys } from "../../../api/queryKeys";
+import {type ReactNode, useCallback, useState} from "react";
+import {useQueryClient} from "@tanstack/react-query";
+import {ConfirmPopup, confirmPopup} from "primereact/confirmpopup";
+import {messageForError} from "../../../api/errors";
+import {queryKeys} from "../../../api/queryKeys";
+import type {UnitOption} from "../../../components/relationLinks/api";
 import {
-  addHierarchyLink, removeHierarchyLink, removeStratigraphyLink,
-  type HierarchyZone, type StratigraphyZone,
+    addHierarchyLink,
+    type HierarchyZone,
+    removeHierarchyLink,
+    removeStratigraphyLink,
+    type StratigraphyZone,
 } from "../../../components/relationLinks/api";
-import { LinkOverlay } from "../../../components/relationLinks/LinkOverlay";
-import { CellEditOverlay } from "../../../components/table/CellEditOverlay";
-import { STRATIGRAPHY_ANSWER_TYPE } from "../../../fields/stratigraphy";
-import type { FieldResource } from "../../../fields/types";
-import type { UnitOption } from "../../../components/relationLinks/api";
-import { t } from "../../../i18n";
-import { zoneTitle } from "./labels";
-import type { GraphUnitRef, RelationGraph, ZoneKey } from "./types";
+import {LinkOverlay} from "../../../components/relationLinks/LinkOverlay";
+import {CellEditOverlay} from "../../../components/table/CellEditOverlay";
+import {STRATIGRAPHY_ANSWER_TYPE} from "../../../fields/stratigraphy";
+import type {FieldResource} from "../../../fields/types";
+import {t} from "../../../i18n";
+import {zoneTitle} from "./labels";
+import type {GraphUnitRef, RelationGraph, ZoneKey} from "./types";
 
 const STRATIGRAPHY_ZONES: ZoneKey[] = ["anterior", "synchronous", "posterior"];
 export const isStratigraphy = (zone?: ZoneKey): zone is StratigraphyZone => zone != null && STRATIGRAPHY_ZONES.includes(zone);

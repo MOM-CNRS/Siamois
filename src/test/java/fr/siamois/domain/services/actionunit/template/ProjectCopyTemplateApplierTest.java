@@ -9,8 +9,8 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.DocumentationThesaurus;
 import fr.siamois.domain.models.settings.ProjectCodeSource;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
@@ -28,11 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.*;
 
 class ProjectCopyTemplateApplierTest {
 

@@ -14,18 +14,21 @@ import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
-import fr.siamois.ui.bean.settings.components.SortState;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.dialog.institution.InstitutionDialogBean;
+import fr.siamois.ui.bean.settings.components.SortState;
 import fr.siamois.ui.bean.settings.institution.InstitutionMembersListBean;
 import fr.siamois.utils.DateUtils;
 import fr.siamois.utils.MessageUtils;
+import jakarta.faces.context.ExternalContext;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.primefaces.PrimeFaces;
+import org.primefaces.event.SelectEvent;
 import org.primefaces.model.SortMeta;
 import org.primefaces.model.SortOrder;
 import org.springframework.context.annotation.Scope;
@@ -34,15 +37,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import jakarta.faces.context.ExternalContext;
-import jakarta.faces.context.FacesContext;
-import org.primefaces.event.SelectEvent;
-
 import java.io.IOException;
-import java.util.stream.Collectors;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter

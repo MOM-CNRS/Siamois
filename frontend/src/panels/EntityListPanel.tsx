@@ -1,49 +1,49 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { PaneStateScope, usePaneState } from "./pane/paneState";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Skeleton } from "primereact/skeleton";
-import { Panel } from "primereact/panel";
-import { Chip } from "primereact/chip";
-import { Button } from "primereact/button";
-import { getEntityType } from "../entities/registry";
-import { scopeProjectId } from "../entities/shared/scope";
-import { searchCreatableProjects } from "../entities/shared/creatableProjects";
+import {type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState} from "react";
+import {PaneStateScope, usePaneState} from "./pane/paneState";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {Skeleton} from "primereact/skeleton";
+import {Panel} from "primereact/panel";
+import {Chip} from "primereact/chip";
+import {Button} from "primereact/button";
+import {getEntityType} from "../entities/registry";
+import {scopeProjectId} from "../entities/shared/scope";
+import {searchCreatableProjects} from "../entities/shared/creatableProjects";
 import type {
-  CreatePrefill,
-  EntityPreview,
-  EntityTypeConfig,
-  FilterValue,
-  ListScope,
-  RowActionDef,
+    CreatePrefill,
+    EntityPreview,
+    EntityTypeConfig,
+    FilterValue,
+    ListScope,
+    RowActionDef,
 } from "../entities/shared/types";
-import { PanelHeaderBar } from "../components/layout/PanelHeaderBar";
-import { FilterChipBar } from "../components/table/FilterChipBar";
-import { withLabels } from "../components/table/ColumnFilter";
-import type { FilterOption } from "../fields/optionSources";
-import { entityColor } from "../fields/display";
-import type { PanelToolbarSlot } from "../mountOptions";
-import { queryKeys } from "../api/queryKeys";
-import { EntityCardGrid } from "./list/EntityCardGrid";
-import { EntityTable } from "./list/EntityTable";
-import { useTreeRows } from "./list/useTreeRows";
-import { EntityTableSettings } from "./list/EntityTableSettings";
-import { viewOptions } from "./list/listViews";
-import { ViewActions } from "./list/ViewActions";
-import { ViewTitle } from "./list/ViewTitle";
-import { fixedTypeOf } from "./list/fixedType";
-import { toViewState } from "./list/listState";
-import { useNotify, useToastOnChange } from "../notify/NotifyProvider";
-import { t } from "../i18n";
-import { useFicheTabsActions } from "./detail/ficheTabsContext";
-import { listPath } from "../navigation/paths";
-import { ListSearchOverlayBox } from "./list/ListSearchOverlay";
-import { ListToolbar } from "./list/ListToolbar";
-import { useEntityListData, type RowRecord } from "./list/useEntityListData";
-import { useListColumns } from "./list/useListColumns";
-import { defaultOpenMode, listPrefsKey, loadListPrefs, saveListPrefs, type OpenMode } from "./list/listPreferences";
-import { useRowActions } from "./list/useRowActions";
-import { useWriteMode } from "./pane/writeMode";
-import type { ListSeed } from "../navigation/externalBus";
+import {PanelHeaderBar} from "../components/layout/PanelHeaderBar";
+import {FilterChipBar} from "../components/table/FilterChipBar";
+import {withLabels} from "../components/table/ColumnFilter";
+import type {FilterOption} from "../fields/optionSources";
+import {entityColor} from "../fields/display";
+import type {PanelToolbarSlot} from "../mountOptions";
+import {queryKeys} from "../api/queryKeys";
+import {EntityCardGrid} from "./list/EntityCardGrid";
+import {EntityTable} from "./list/EntityTable";
+import {useTreeRows} from "./list/useTreeRows";
+import {EntityTableSettings} from "./list/EntityTableSettings";
+import {viewOptions} from "./list/listViews";
+import {ViewActions} from "./list/ViewActions";
+import {ViewTitle} from "./list/ViewTitle";
+import {fixedTypeOf} from "./list/fixedType";
+import {toViewState} from "./list/listState";
+import {useNotify, useToastOnChange} from "../notify/NotifyProvider";
+import {t} from "../i18n";
+import {useFicheTabsActions} from "./detail/ficheTabsContext";
+import {listPath} from "../navigation/paths";
+import {ListSearchOverlayBox} from "./list/ListSearchOverlay";
+import {ListToolbar} from "./list/ListToolbar";
+import {type RowRecord, useEntityListData} from "./list/useEntityListData";
+import {useListColumns} from "./list/useListColumns";
+import {defaultOpenMode, listPrefsKey, loadListPrefs, type OpenMode, saveListPrefs} from "./list/listPreferences";
+import {useRowActions} from "./list/useRowActions";
+import {useWriteMode} from "./pane/writeMode";
+import type {ListSeed} from "../navigation/externalBus";
 
 export interface EntityListPanelProps {
   entityType: string;

@@ -53,4 +53,29 @@ class RecordingUnitCreateRequestJacksonTest {
         assertThat(request.getFieldAnswers()).containsEntry("1", "A");
         assertThat(request.getFieldAnswers()).containsEntry("2", "B");
     }
+
+    @Test
+    void deserialize_identifier_readsTheCustomIdentifier() throws Exception {
+        String json = """
+                {
+                  "projectId": "10",
+                  "typeId": "42",
+                  "identifier": "INST-PROJ-UE42"
+                }
+                """;
+
+        RecordingUnitCreateRequest request = mapper.readValue(json, RecordingUnitCreateRequest.class);
+
+        assertThat(request.getProjectId()).isEqualTo("10");
+        assertThat(request.getTypeId()).isEqualTo("42");
+        assertThat(request.getIdentifier()).isEqualTo("INST-PROJ-UE42");
+    }
+
+    @Test
+    void deserialize_withoutIdentifier_leavesItNull_soTheServerGeneratesIt() throws Exception {
+        RecordingUnitCreateRequest request = mapper.readValue(
+                "{\"projectId\": \"10\", \"typeId\": \"42\"}", RecordingUnitCreateRequest.class);
+
+        assertThat(request.getIdentifier()).isNull();
+    }
 }

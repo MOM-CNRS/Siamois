@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.InstitutionService;
@@ -9,7 +10,6 @@ import fr.siamois.domain.services.placesource.ExternalPlace;
 import fr.siamois.domain.services.placesource.PlaceSourceConfigResolver;
 import fr.siamois.domain.services.placesource.PlaceSourceProvider;
 import fr.siamois.domain.services.placesource.PlaceSourceRegistry;
-import fr.siamois.domain.models.exceptions.spatialunit.SpatialUnitNotFoundException;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;

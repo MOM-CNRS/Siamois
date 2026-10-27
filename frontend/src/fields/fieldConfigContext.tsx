@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react";
-import type { FieldResource } from "./types";
+import {createContext, useContext} from "react";
+import type {FieldResource} from "./types";
 
 /**
  * What a field's label menu can ask of the fiche it is in: to open that field in the project's configuration.

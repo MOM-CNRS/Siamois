@@ -1,10 +1,8 @@
 package fr.siamois.ui.bean.settings.project;
 
-import fr.siamois.dto.entity.PersonDTO;
-import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.ArgumentMatchers.any;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -15,9 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectDetailsBeanSettingsAccessTest {

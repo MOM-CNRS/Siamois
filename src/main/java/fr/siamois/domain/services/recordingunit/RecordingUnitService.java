@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.recordingunit;
 
-import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -20,16 +19,17 @@ import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.EntityLinkGuard;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.dto.FilterDTO;
 import fr.siamois.domain.services.tree.HierarchyTreeQuery;
-import fr.siamois.dto.TreePage;
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
+import fr.siamois.dto.TreePage;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.ArkRepository;
@@ -67,8 +67,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static fr.siamois.domain.models.ValidationStatus.*;
 
 /**
  * Service to manage RecordingUnit
@@ -162,7 +160,7 @@ public class RecordingUnitService implements ArkEntityService {
             return recordingUnitMapper.convert(save(recordingUnit));
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 
@@ -184,7 +182,7 @@ public class RecordingUnitService implements ArkEntityService {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
         return saved;
     }
@@ -248,7 +246,7 @@ public class RecordingUnitService implements ArkEntityService {
 
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
-            throw new FailedRecordingUnitSaveException(e.getMessage());
+            throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
     }
 
@@ -1012,6 +1010,27 @@ public class RecordingUnitService implements ArkEntityService {
                         recordingUnit, recordingUnitIdentifierSpec(actionUnit))
                 .orElseThrow(() -> new IllegalStateException("Recording-unit identifier generation was skipped"))
                 .value();
+    }
+
+    /**
+     * The identifier that would be generated for a recording unit with this action unit and type,
+     * without consuming the counter — the creation form's suggestion. The entity is never modified.
+     */
+    public String suggestFullIdentifier(@NonNull ActionUnit actionUnit, @NonNull RecordingUnit recordingUnit) {
+        log.trace("Suggesting full identifier for recording unit");
+        return entityIdentifierGenerator.suggestIdentifier(recordingUnit, recordingUnitIdentifierSpec(actionUnit))
+                .value();
+    }
+
+    /**
+     * DTO variant of {@link #suggestFullIdentifier(ActionUnit, RecordingUnit)} for a unit not yet
+     * persisted (the creation form): maps the DTOs to transient entities, suggests, returns.
+     */
+    @Transactional(readOnly = true)
+    public String suggestFullIdentifier(@NonNull ActionUnitSummaryDTO actionUnitDTO, @NonNull RecordingUnitDTO recordingUnitDTO) {
+        RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
+        ActionUnit actionUnit = actionUnitSummaryMapper.invertConvert(actionUnitDTO);
+        return suggestFullIdentifier(actionUnit, recordingUnit);
     }
 
     private IdentifierGenerationSpec<RecordingUnit> recordingUnitIdentifierSpec(ActionUnit actionUnit) {

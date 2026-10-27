@@ -1,7 +1,19 @@
-import { describe, expect, it } from "vitest";
-import { registerEntityType } from "../../entities/registry";
-import type { DetailTabDef, EntityTypeConfig } from "../../entities/shared/types";
-import { editableTabs, hasVisibleTab, moveTab, moveTabTo, newListTab, relationTargets, removeTab, restorableTabs, restoreTab, shownTabs, toConfigTabs } from "./ficheTabsModel";
+import {describe, expect, it} from "vitest";
+import {registerEntityType} from "../../entities/registry";
+import type {DetailTabDef, EntityTypeConfig} from "../../entities/shared/types";
+import {
+    editableTabs,
+    hasVisibleTab,
+    moveTab,
+    moveTabTo,
+    newListTab,
+    relationTargets,
+    removeTab,
+    restorableTabs,
+    restoreTab,
+    shownTabs,
+    toConfigTabs
+} from "./ficheTabsModel";
 
 registerEntityType({
   key: "tabs-model-target",

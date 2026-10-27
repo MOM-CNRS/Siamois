@@ -2,7 +2,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.organization.OrganizationCountsControllerApi;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationCountsResource;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationCountsService;
@@ -42,7 +42,7 @@ class OrganizationCountsControllerApiTest {
     void setUp() {
         OrganizationCountsControllerApi controller = new OrganizationCountsControllerApi(projectApiService, organizationCountsService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
                 .build();
         PersonDTO person = new PersonDTO();

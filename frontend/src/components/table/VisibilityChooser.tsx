@@ -1,7 +1,7 @@
-import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
-import { InputText } from "primereact/inputtext";
-import { InputSwitch } from "primereact/inputswitch";
-import { t } from "../../i18n";
+import {type DragEvent, type KeyboardEvent, type ReactNode, useState} from "react";
+import {InputText} from "primereact/inputtext";
+import {InputSwitch} from "primereact/inputswitch";
+import {t} from "../../i18n";
 
 // The gear's two settings overlays (columns, row actions) are the same control: what is shown, in
 // which order, and what is put away. Two sections — the shown items, reorderable by dragging their

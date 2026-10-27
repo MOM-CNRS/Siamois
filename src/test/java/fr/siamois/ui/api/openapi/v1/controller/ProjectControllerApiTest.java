@@ -1,16 +1,14 @@
 package fr.siamois.ui.api.openapi.v1.controller;
 
-import fr.siamois.ui.api.openapi.v1.service.FirstImageService;
-import fr.siamois.ui.api.openapi.v1.service.ListQueryStubs;
-import fr.siamois.ui.api.openapi.v1.service.ResourceBookmarkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import fr.siamois.domain.models.actionunit.form.ActionUnitForm;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.services.BookmarkService;
-import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ContainerService;
+import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.document.DocumentService;
@@ -19,8 +17,8 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.domain.models.actionunit.form.ActionUnitForm;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -29,7 +27,7 @@ import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
-import fr.siamois.ui.api.handler.RestExceptionHandler;
+import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectDocumentsControllerApi;
 import fr.siamois.ui.api.openapi.v1.controller.project.ProjectRecordingUnitsControllerApi;
@@ -40,21 +38,14 @@ import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
-import fr.siamois.ui.api.openapi.v1.service.DocumentWriteOpenApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectAnswersProjector;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitAnswersProjector;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.ProjectListProjectionService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -177,7 +168,7 @@ class ProjectControllerApiTest {
                 ListQueryStubs.none());
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller, recordingUnitsController, documentsController)
-                .setControllerAdvice(new RestExceptionHandler())
+                .setControllerAdvice(TestRestExceptionHandlers.create())
                 .setMessageConverters(jsonConverter)
                 .build();
 

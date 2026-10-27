@@ -1,7 +1,7 @@
-import { getEntityType } from "../../entities/registry";
-import { AnchoredFormOverlay } from "../layout/AnchoredFormOverlay";
-import type { CreatePrefill, ListScope } from "../../entities/shared/types";
-import { t } from "../../i18n";
+import {getEntityType} from "../../entities/registry";
+import {AnchoredFormOverlay} from "../layout/AnchoredFormOverlay";
+import type {CreatePrefill, ListScope} from "../../entities/shared/types";
+import {t} from "../../i18n";
 
 export interface CreateEntityOverlayProps {
   entityType: string;

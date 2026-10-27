@@ -1,22 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../entities/registry";
-import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
-import type { EntityTypeConfig, PagedResult } from "../entities/shared/types";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../entities/registry";
+import {registerDefaultFieldRenderers} from "../fields/registerDefaultRenderers";
+import type {EntityTypeConfig, PagedResult} from "../entities/shared/types";
 import {
-  createView,
-  deleteViewState,
-  getView,
-  getViewState,
-  updateView,
-  type ViewResource,
+    createView,
+    deleteViewState,
+    getView,
+    getViewState,
+    updateView,
+    type ViewResource,
 } from "../api/resources/views";
-import { getBookmarkStatus } from "../api/resources/bookmarks";
-import { ApiError } from "../api/client";
-import { EntityListPanel } from "./EntityListPanel";
-import { BridgeProvider } from "./pane/bridge";
+import {getBookmarkStatus} from "../api/resources/bookmarks";
+import {ApiError} from "../api/client";
+import {EntityListPanel} from "./EntityListPanel";
+import {BridgeProvider} from "./pane/bridge";
 
 registerDefaultFieldRenderers();
 

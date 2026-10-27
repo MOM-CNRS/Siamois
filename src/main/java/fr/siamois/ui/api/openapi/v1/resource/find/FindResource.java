@@ -1,14 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.resource.find;
 
 
-import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
-import fr.siamois.ui.api.openapi.v1.resource.FirstImageCarrier;
-
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
+import fr.siamois.ui.api.openapi.v1.resource.BookmarkableResource;
+import fr.siamois.ui.api.openapi.v1.resource.FirstImageCarrier;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.resource.organization.OrganizationResourceIdentifier;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;

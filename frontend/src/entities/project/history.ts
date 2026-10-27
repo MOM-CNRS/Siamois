@@ -1,4 +1,4 @@
-import { apiFetch } from "../../api/client";
+import {apiFetch} from "../../api/client";
 
 // GET /api/v1/projects/{id}/history (plan §5/§8 phase 6) — backs the fiche header's "last
 // modified" line, not a separate tab/table: JSF's own equivalent (versionTab.xhtml) is a stubbed,

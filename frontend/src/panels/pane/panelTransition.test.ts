@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { paneTransitionName, withPanelTransition } from "./panelTransition";
+import {afterEach, describe, expect, it, vi} from "vitest";
+import {paneTransitionName, withPanelTransition} from "./panelTransition";
 
 type StartViewTransition = (update: () => void) => { finished: Promise<void> };
 

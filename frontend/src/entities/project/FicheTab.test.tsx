@@ -1,17 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ApiError } from "../../api/client";
-import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
-import type { FieldResource } from "../../fields/types";
-import { WriteModeProvider } from "../../panels/pane/writeMode";
-import { ProjectFicheTab, buildPatch, isEmptyValue } from "./FicheTab";
-import { getProjectTypes } from "./projectTypes";
-import { getProjectHistory } from "./history";
-import { patchProject } from "./api";
-import type { ProjectDetail } from "./types";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ApiError} from "../../api/client";
+import {registerDefaultFieldRenderers} from "../../fields/registerDefaultRenderers";
+import type {FieldResource} from "../../fields/types";
+import {WriteModeProvider} from "../../panels/pane/writeMode";
+import {buildPatch, isEmptyValue, ProjectFicheTab} from "./FicheTab";
+import {getProjectTypes} from "./projectTypes";
+import {getProjectHistory} from "./history";
+import {patchProject} from "./api";
+import type {ProjectDetail} from "./types";
+import {notifySpy} from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));

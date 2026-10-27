@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { registerEntityType } from "../registry";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {registerEntityType} from "../registry";
 import {
-  createRecordingUnit,
-  duplicateRecordingUnitStructure,
-  getRecordingUnit,
-  getRecordingUnitStructure,
-  listRecordingUnits,
-  patchRecordingUnitAnswers,
+    createRecordingUnit,
+    duplicateRecordingUnitStructure,
+    getRecordingUnit,
+    getRecordingUnitStructure,
+    listRecordingUnits,
+    patchRecordingUnitAnswers,
 } from "./api";
 
 vi.mock("../../api/client", () => ({
@@ -130,5 +130,23 @@ describe("createRecordingUnit", () => {
     const body = (mockedApiFetch.mock.calls[0][1] as { body: Record<string, unknown> }).body;
     expect(body.phaseId).toBeUndefined();
     expect(body.parentRecordingUnitId).toBeUndefined();
+  });
+
+  it("sends the chosen identifier, trimmed", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "9" } });
+
+    await createRecordingUnit({ projectId: "5", typeId: "42", identifier: " INST-PROJ-UE42 " });
+
+    const body = (mockedApiFetch.mock.calls[0][1] as { body: Record<string, unknown> }).body;
+    expect(body.identifier).toBe("INST-PROJ-UE42");
+  });
+
+  it("omits a blank identifier, so the server generates it", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "9" } });
+
+    await createRecordingUnit({ projectId: "5", typeId: "42", identifier: "   " });
+
+    const body = (mockedApiFetch.mock.calls[0][1] as { body: Record<string, unknown> }).body;
+    expect(body.identifier).toBeUndefined();
   });
 });

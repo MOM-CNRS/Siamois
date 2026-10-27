@@ -1,4 +1,4 @@
-import { t } from "../../i18n";
+import {t} from "../../i18n";
 // The left-hand half of JSF's merged "statut | identifiant" column (entityDataTable.xhtml's
 // statusIdActionsCol → /panel/header/validationButton.xhtml), read-only: what a list row shows when
 // its status can't be changed right now (ValidationStatusCell swaps in the picker otherwise).

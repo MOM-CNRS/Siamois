@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { announceEntityDeleted, onEntityDeleted } from "./entityDeleted";
+import {describe, expect, it, vi} from "vitest";
+import {announceEntityDeleted, onEntityDeleted} from "./entityDeleted";
 
 describe("entityDeleted", () => {
   it("tells every listener which entity went away, until it unsubscribes", () => {

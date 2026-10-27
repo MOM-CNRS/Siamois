@@ -1,5 +1,5 @@
-import { createContext, useContext, type ReactNode } from "react";
-import type { PanelBridge } from "../../mountOptions";
+import {createContext, type ReactNode, useContext} from "react";
+import type {PanelBridge} from "../../mountOptions";
 
 // MountOptions.bridge, for any panel below App — the calls into the JSF session without every
 // intermediate component threading them through as a prop. Same approach as WriteModeProvider.

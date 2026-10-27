@@ -1,13 +1,13 @@
 package fr.siamois.infrastructure.database.initializer;
 
-import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.services.vocabulary.SiamoisThesaurus;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.services.vocabulary.SiamoisThesaurus;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

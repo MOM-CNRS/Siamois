@@ -1,14 +1,7 @@
 package fr.siamois.domain.services;
 
 
-import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
-import fr.siamois.dto.FieldQuery;
-import fr.siamois.domain.services.actionunit.ProjectTreeQuery;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.services.identifier.GeneratedIdentifier;
-import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
-import fr.siamois.domain.services.actionunit.template.EmptyProjectTemplateApplier;
-import fr.siamois.domain.services.actionunit.ProjectIdentifierService;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
@@ -23,10 +16,16 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.actionunit.DefaultProjectIdentifierConfigSeeder;
+import fr.siamois.domain.services.actionunit.ProjectIdentifierService;
+import fr.siamois.domain.services.actionunit.ProjectTreeQuery;
+import fr.siamois.domain.services.actionunit.template.EmptyProjectTemplateApplier;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplateApplier;
+import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.permissions.ProfileService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
@@ -43,16 +42,13 @@ import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.mapper.ProfileMapper;
+import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.*;
@@ -67,10 +63,10 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Answers.CALLS_REAL_METHODS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class ActionUnitServiceTest {

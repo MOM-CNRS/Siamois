@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { registerEntityType } from "../entities/registry";
-import { registerDefaultFieldRenderers } from "../fields/registerDefaultRenderers";
-import type { EntityTypeConfig, PagedResult } from "../entities/shared/types";
-import { deleteViewState, getViewState, putViewState } from "../api/resources/views";
-import { ApiError } from "../api/client";
-import { EntityListPanel } from "./EntityListPanel";
-import { SAVE_DELAY_MS } from "./list/useUserViewState";
-import { FicheTabsProvider } from "./detail/ficheTabsContext";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {registerEntityType} from "../entities/registry";
+import {registerDefaultFieldRenderers} from "../fields/registerDefaultRenderers";
+import type {EntityTypeConfig, PagedResult} from "../entities/shared/types";
+import {deleteViewState, getViewState, putViewState} from "../api/resources/views";
+import {ApiError} from "../api/client";
+import {EntityListPanel} from "./EntityListPanel";
+import {SAVE_DELAY_MS} from "./list/useUserViewState";
+import {FicheTabsProvider} from "./detail/ficheTabsContext";
 
 registerDefaultFieldRenderers();
 

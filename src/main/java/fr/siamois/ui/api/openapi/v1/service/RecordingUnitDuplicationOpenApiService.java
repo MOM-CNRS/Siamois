@@ -10,6 +10,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitDuplicationResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitStructureResource;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * "Dupliquer la structure" of a recording unit: the tree the user picks from, and the duplication
@@ -92,7 +88,7 @@ public class RecordingUnitDuplicationOpenApiService {
             result = OpenApiExecutionContext.callWithUserInfo(userInfo,
                     () -> recordingUnitService.duplicateStructure(root, selected, count));
         } catch (RecordingUnitIdentifierAlreadyExistsException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Identifiant généré déjà attribué : " + e.getIdentifier(), e);
+            throw new IdentifierConflictException(e.getIdentifier(), e);
         } catch (ForbiddenOperationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Duplication non autorisée", e);
         }

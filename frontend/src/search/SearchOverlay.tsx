@@ -1,7 +1,7 @@
-import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
-import { t } from "../i18n";
-import { formatFilter, highlightSegments, type SearchKeyword } from "./queryParser";
+import {createPortal} from "react-dom";
+import {type KeyboardEvent, type ReactNode, type RefObject, useEffect, useRef, useState} from "react";
+import {t} from "../i18n";
+import {formatFilter, highlightSegments, type SearchKeyword} from "./queryParser";
 
 const MIN_PANEL_WIDTH = 520;
 

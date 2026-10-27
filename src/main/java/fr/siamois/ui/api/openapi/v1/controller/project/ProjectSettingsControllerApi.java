@@ -1,11 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectStudyTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectDocumentTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
+import fr.siamois.ui.api.openapi.v1.response.project.type.*;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;

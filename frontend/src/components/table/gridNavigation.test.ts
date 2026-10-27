@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { gridTarget } from "./gridNavigation";
+import {beforeEach, describe, expect, it} from "vitest";
+import {gridTarget} from "./gridNavigation";
 
 // Three rows of three cells; the middle row's last cell and the last row's first have nothing to focus.
 function build() {

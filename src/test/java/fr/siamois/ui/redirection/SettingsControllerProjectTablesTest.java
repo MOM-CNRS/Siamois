@@ -1,12 +1,10 @@
 package fr.siamois.ui.redirection;
 
-import fr.siamois.dto.entity.PersonDTO;
-import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.ArgumentMatchers.any;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.NavBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -24,9 +22,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SettingsControllerProjectTablesTest {

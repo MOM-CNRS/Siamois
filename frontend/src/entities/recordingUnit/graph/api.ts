@@ -1,6 +1,5 @@
-import { apiFetch } from "../../../api/client";
-import type { RelationKind, RelationList } from "./types";
-import type { RelationGraph } from "./types";
+import {apiFetch} from "../../../api/client";
+import type {RelationGraph, RelationKind, RelationList} from "./types";
 
 // GET /api/v1/recording-units/{id}/relation-graph — the unit's relations grouped by graph zone.
 export async function getRelationGraph(id: string | number): Promise<RelationGraph> {

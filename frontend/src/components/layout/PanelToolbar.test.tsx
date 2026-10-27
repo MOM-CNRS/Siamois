@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { apiFetch } from "../../api/client";
-import { PanelToolbar } from "./PanelToolbar";
-import type { PanelActions, PanelChrome } from "../../mountOptions";
-import { BridgeProvider } from "../../panels/pane/bridge";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {apiFetch} from "../../api/client";
+import {PanelToolbar} from "./PanelToolbar";
+import type {PanelActions, PanelChrome} from "../../mountOptions";
+import {BridgeProvider} from "../../panels/pane/bridge";
 
 
 vi.mock("../../api/client", () => ({

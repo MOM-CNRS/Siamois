@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { isFieldPending, mergeSupplementRows, missingFields } from "./usePagedList";
+import {describe, expect, it} from "vitest";
+import {isFieldPending, mergeSupplementRows, missingFields} from "./usePagedList";
 
 describe("mergeSupplementRows", () => {
   const base: { id: string; name: string; answers: Record<string, unknown> }[] = [

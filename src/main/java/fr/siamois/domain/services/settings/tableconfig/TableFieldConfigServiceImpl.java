@@ -4,30 +4,11 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
-import fr.siamois.domain.models.form.config.FieldFormConfig;
-import fr.siamois.domain.models.form.config.FieldUnits;
-import fr.siamois.domain.models.form.config.FieldWidth;
-import fr.siamois.domain.models.form.config.FormConfig;
-import fr.siamois.domain.models.form.config.FormConfigGroup;
+import fr.siamois.domain.models.form.config.*;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
-import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
-import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.customfield.vocabulary.*;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.rules.FieldRules;
@@ -64,9 +45,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.stream.Collectors;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Reads and writes the per-type field configuration of a table on top of {@code FormConfig} /

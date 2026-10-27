@@ -8,9 +8,9 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
 import fr.siamois.infrastructure.api.ConceptApi;
 import fr.siamois.infrastructure.api.dto.concept.ConceptBranchDTO;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptHierarchyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ProjectCodeSourceRepository;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +26,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CodeSourceServiceTest {

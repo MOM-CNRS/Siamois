@@ -1,8 +1,8 @@
-import type { AnyEntityTypeConfig } from "../../entities/registry";
-import type { EntitySibling, EntitySiblings, PagedResult } from "../../entities/shared/types";
-import { entityRowLabel } from "../../fields/optionSources";
-import type { ListContext } from "../list/listContext";
-import { queryKeys } from "../../api/queryKeys";
+import type {AnyEntityTypeConfig} from "../../entities/registry";
+import type {EntitySibling, EntitySiblings, PagedResult} from "../../entities/shared/types";
+import {entityRowLabel} from "../../fields/optionSources";
+import type {ListContext} from "../list/listContext";
+import {queryKeys} from "../../api/queryKeys";
 
 type Row = { id?: string | number | null } & Record<string, unknown>;
 

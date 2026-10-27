@@ -1,14 +1,11 @@
 package fr.siamois.domain.services.specimen;
 
-import fr.siamois.domain.services.EntityLinkGuard;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -17,6 +14,8 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
+import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.measurement.UnitDefinitionService;
@@ -36,6 +35,7 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptReposit
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -268,11 +268,23 @@ public class SpecimenService implements ArkEntityService {
         return specimenMapper.convert(savedSpecimen);
     }
 
+    /**
+     * The full identifier a new specimen like {@code dto} would be given, without consuming the
+     * counter — the creation form's suggestion. Its recording unit is read from the database (its
+     * identifiers feed the format); nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestFullIdentifier(SpecimenDTO dto) {
+        Specimen specimen = specimenMapper.invertConvert(dto);
+        attachRecordingUnit(specimen, specimen);
+        return identifierGenerator.suggestIdentifier(specimen, specimenIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Specimen> specimenIdentifierSpec() {
         return IdentifierGenerationSpec.<Specimen>builder()
                 .table(ConfigurableTable.MOBILIER)
                 .entityName("specimen")
-                .generationRequired(specimen -> specimen.getId() == null && specimen.getFullIdentifier() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Specimen::getId, Specimen::getFullIdentifier))
                 .actionUnit(this::resolveIdentifierActionUnit)
                 .typeId(specimen -> specimen.getType() == null ? null : specimen.getType().getId())
                 .displayValue("NUM_PARENT", specimen -> {

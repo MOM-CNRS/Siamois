@@ -1,6 +1,6 @@
-import type { EntityTypeConfig, FieldCatalog } from "../../entities/shared/types";
-import { filterKindForField } from "../../fields/optionSources";
-import type { FilterValue } from "./tableState";
+import type {EntityTypeConfig, FieldCatalog} from "../../entities/shared/types";
+import {filterKindForField} from "../../fields/optionSources";
+import type {FilterValue} from "./tableState";
 
 // What a user kept on a list may name a field or a column the list no longer has: a custom field removed
 // since, a column the entity stopped declaring. The server answers 400 « Champ inconnu » to a filter or a

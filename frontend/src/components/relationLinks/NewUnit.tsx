@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { getEntityType } from "../../entities/registry";
-import { t } from "../../i18n";
-import { createdUnitOption, type UnitOption } from "./api";
-import { FitToViewport } from "./FitToViewport";
+import type {ReactNode} from "react";
+import {getEntityType} from "../../entities/registry";
+import {t} from "../../i18n";
+import {createdUnitOption, type UnitOption} from "./api";
+import {FitToViewport} from "./FitToViewport";
 
 // Whether a unit can be created on the spot, in this project.
 export const canCreateUnit = (projectId?: string | number | null): boolean =>

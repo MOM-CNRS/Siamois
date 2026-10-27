@@ -25,9 +25,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -40,10 +40,10 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.isNull;
 
 @ExtendWith(MockitoExtension.class)
 class ContainerServiceTest {
@@ -350,7 +350,11 @@ class ContainerServiceTest {
         verify(identifierGenerator).generateIdentifierIfRequired(eq(newContainer), specCaptor.capture());
         IdentifierGenerationSpec<Container> spec = specCaptor.getValue();
         assertEquals(ConfigurableTable.CONTENANT, spec.table());
+        // Generated now: a new container carrying an identifier (generated, or chosen in the form) keeps it.
+        assertFalse(spec.generationRequired().test(newContainer));
+        newContainer.setIdentifier(" ");
         assertTrue(spec.generationRequired().test(newContainer));
+        newContainer.setIdentifier("CONT-006");
         assertSame(actionUnit, spec.actionUnit().apply(newContainer));
         assertEquals(42L, spec.typeId().apply(newContainer));
         assertEquals(5, spec.displayValues().get("NUM_PARENT").apply(newContainer));
@@ -545,5 +549,24 @@ class ContainerServiceTest {
                 () -> containerService.deleteById(4L));
 
         verify(containerRepository, never()).delete(any(Container.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void suggestIdentifier_peeksForTheMappedNewEntity_withoutWritingAnything() {
+        fr.siamois.dto.entity.ContainerDTO dto = new fr.siamois.dto.entity.ContainerDTO();
+        fr.siamois.domain.models.container.Container entity = new fr.siamois.domain.models.container.Container();
+        when(containerMapper.invertConvert(dto)).thenReturn(entity);
+        when(identifierGenerator.suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(3, "SUGGESTED-3"));
+
+        org.junit.jupiter.api.Assertions.assertEquals("SUGGESTED-3", containerService.suggestIdentifier(dto));
+
+        ArgumentCaptor<fr.siamois.domain.services.identifier.IdentifierGenerationSpec<fr.siamois.domain.models.container.Container>> specCaptor = ArgumentCaptor.forClass(fr.siamois.domain.services.identifier.IdentifierGenerationSpec.class);
+        verify(identifierGenerator).suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), specCaptor.capture());
+        // Same spec as the save's generation, so the suggestion is what the creation would allocate.
+        org.junit.jupiter.api.Assertions.assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.CONTENANT, specCaptor.getValue().table());
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(containerRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

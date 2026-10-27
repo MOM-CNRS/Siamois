@@ -1,18 +1,18 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Dropdown } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
-import { CreateFormField, CreateFormShell } from "../../components/create/CreateFormShell";
-import { CreateLinkField } from "../../components/create/CreateLinkField";
-import { SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer } from "../../fields/renderers";
-import type { FieldResource } from "../../fields/types";
-import { placeContextOf as placeContextFrom } from "../../rules";
-import type { CreateFormContext } from "../shared/types";
-import { createProject, getNextProjectIdentifier, listProjectTemplates } from "./api";
-import { getProjectTypes } from "./projectTypes";
-import { queryKeys } from "../../api/queryKeys";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
+import {useMemo, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {Dropdown} from "primereact/dropdown";
+import {InputText} from "primereact/inputtext";
+import {CreateFormField, CreateFormShell} from "../../components/create/CreateFormShell";
+import {CreateLinkField} from "../../components/create/CreateLinkField";
+import {SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer} from "../../fields/renderers";
+import type {FieldResource} from "../../fields/types";
+import {placeContextOf as placeContextFrom} from "../../rules";
+import type {CreateFormContext} from "../shared/types";
+import {createProject, getNextProjectIdentifier, listProjectTemplates} from "./api";
+import {getProjectTypes} from "./projectTypes";
+import {queryKeys} from "../../api/queryKeys";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
 
 // The list toolbar's "Créer" overlay (migration plan follow-up — see entities/shared/types.ts's own
 // CreateFormContext doc for why this is an overlay, not a JSF-style modal dialog). Deliberately

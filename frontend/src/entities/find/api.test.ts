@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { registerEntityType } from "../registry";
-import { duplicateFind, getFind, listFinds, patchFindAnswers } from "./api";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {registerEntityType} from "../registry";
+import {duplicateFind, getFind, listFinds, patchFindAnswers} from "./api";
 
 vi.mock("../../api/client", () => ({
   apiFetch: vi.fn(),

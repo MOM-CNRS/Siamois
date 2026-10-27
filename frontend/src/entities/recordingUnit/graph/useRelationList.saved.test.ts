@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { isSavedRelationListState } from "./useRelationList";
+import {describe, expect, it} from "vitest";
+import {isSavedRelationListState} from "./useRelationList";
 
 describe("isSavedRelationListState", () => {
   const ok = { filters: { kind: { op: "in", v: ["parents", "anterior"] } }, sort: "label:desc", limit: 50 };

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { InputText } from "primereact/inputtext";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useEffect, useState} from "react";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {InputText} from "primereact/inputtext";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 export interface DeleteEntityDialogProps {
   visible: boolean;

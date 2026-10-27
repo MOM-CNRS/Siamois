@@ -1,35 +1,30 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import fr.siamois.domain.models.study.Study;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
-import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.services.form.EffectiveFormResolver;
-import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
-
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.study.StudyService;
-import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.models.study.Study;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
-import fr.siamois.domain.services.vocabulary.ConceptService;
-import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
-import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
+import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
+import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -51,9 +46,7 @@ import java.util.Set;
 public class StudyOpenApiService {
 
     private final StudyService studyService;
-    private final ActionUnitService actionUnitService;
-    private final ConceptService conceptService;
-    private final ConceptMapper conceptMapper;
+    private final ProjectTypedCreationService projectTypedCreationService;
     private final ProfilePermissionService profilePermissionService;
     private final StudyOpenApiMapper studyOpenApiMapper;
     private final StudyListProjectionService studyListProjectionService;
@@ -78,35 +71,18 @@ public class StudyOpenApiService {
     @Transactional
     public StudyResource createStudy(StudyCreateRequest request, PersonDTO personDto,
                                              Set<Long> accessibleInstitutionIds, String lang) {
-        String projectId = requireNonBlank(request.getProjectId(), "projectId");
-        String typeId = requireNonBlank(request.getTypeId(), "typeId");
-
-        AccessibleProjectForApi project = actionUnitService.findAccessibleProjectByKey(projectId, accessibleInstitutionIds);
-        ActionUnitDTO au = project.actionUnit();
-        InstitutionDTO institution = au.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation");
-        }
-        UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        if (!profilePermissionService.hasProjectPermission(userInfo, au.getId(),
+        ProjectContext project = projectTypedCreationService.resolveProject(
+                request.getProjectId(), personDto, accessibleInstitutionIds, lang);
+        projectTypedCreationService.requirePermission(project, "Création d'étude non autorisée sur ce projet",
                 PermissionConstants.INSTANCE_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
-                PermissionConstants.PROJECT_EDIT_STUDIES)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Création d'étude non autorisée sur ce projet");
-        }
+                PermissionConstants.PROJECT_EDIT_STUDIES);
+        StudyDTO shell = projectTypedCreationService.newEntity(Kind.STUDY, project,
+                projectTypedCreationService.resolveType(request.getTypeId(), Kind.STUDY));
+        IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
+                () -> studyService.identifierAlreadyExistInAction(shell));
 
-        Concept typeConcept = conceptService.findById(parseLong(typeId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'étude introuvable"));
-
-        StudyDTO shell = new StudyDTO();
-        shell.setActionUnit(new ActionUnitSummaryDTO(au));
-        // Required by TraceableEntity (NOT NULL); the service does not fill them in — same as the
-        // find creation (FindOpenApiService): the caller, in the project's organization.
-        shell.setCreatedBy(personDto);
-        shell.setCreatedByInstitution(institution);
-        shell.setType(conceptMapper.convert(typeConcept));
-
-        StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> studyService.save(shell));
+        StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> studyService.save(shell));
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }
 
@@ -198,21 +174,6 @@ public class StudyOpenApiService {
         boolean inScope = institution != null && institution.getId() != null
                 && accessibleInstitutionIds != null && accessibleInstitutionIds.contains(institution.getId());
         return inScope && profilePermissionService.canViewProject(personDto, institution, project.getId());
-    }
-
-    private static String requireNonBlank(String value, String name) {
-        if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " est requis");
-        }
-        return value;
-    }
-
-    private static long parseLong(String value) {
-        try {
-            return Long.parseLong(value.trim());
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant numérique attendu : " + value);
-        }
     }
 
     /** Previous/next study in the same project ({@code GET /api/v1/studies/{id}/siblings}). */

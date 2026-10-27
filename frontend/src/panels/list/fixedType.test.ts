@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { fixedTypeOf } from "./fixedType";
+import {describe, expect, it} from "vitest";
+import {fixedTypeOf} from "./fixedType";
 
 describe("fixedTypeOf", () => {
   it("is the one type an 'in' filter on the type field keeps", () => {

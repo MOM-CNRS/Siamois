@@ -1,7 +1,7 @@
 package fr.siamois.domain.services.vocabulary;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
-import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -13,7 +13,6 @@ import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
@@ -23,8 +22,8 @@ import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConf
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -32,14 +31,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

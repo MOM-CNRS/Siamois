@@ -10,9 +10,9 @@ import jakarta.persistence.FlushModeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -169,6 +169,111 @@ class EntityIdentifierGeneratorTest {
                 .isEqualTo(new GeneratedIdentifier(1, "1"));
 
         verifyNoInteractions(entityManager);
+    }
+
+    @Test
+    void suggest_peeksTheCounterWithoutConsumingIt() {
+        ActionUnit actionUnit = actionUnit(7L);
+        FormConfig config = config(12L, "UE-{NUM_UE:000}", 4, 99);
+        Map<String, Object> displayValues = new HashMap<>(Map.of("ID_UA", "UA-7"));
+        Map<String, Object> partitionValues = new HashMap<>(Map.of("PARENT_RU", 31L));
+
+        when(tableFieldConfigService.resolveIdentifierConfig(7L, ConfigurableTable.UE, 42L)).thenReturn(config);
+        when(partitionService.canonicalKey(eq(ConfigurableTable.UE), eq(config.getIdentifierFormat()), any()))
+                .thenReturn("v1|PARENT_RU=31");
+        when(counterRepository.peekValue(7L, 12L, "v1|PARENT_RU=31", 4)).thenReturn(4);
+        when(resolverRegistry.ownNumericalToken(ConfigurableTable.UE)).thenReturn("NUM_UE");
+        when(resolverRegistry.render(eq(ConfigurableTable.UE), eq(config.getIdentifierFormat()), any()))
+                .thenAnswer(invocation -> {
+                    IdentifierRenderContext context = invocation.getArgument(2);
+                    return "UE-00" + context.value("NUM_UE");
+                });
+
+        GeneratedIdentifier result = generator.suggest(ConfigurableTable.UE, actionUnit, 42L,
+                displayValues, partitionValues, candidate -> false);
+
+        assertThat(result).isEqualTo(new GeneratedIdentifier(4, "UE-004"));
+        // A peek is read-only: the caller's maps are left alone and nothing is allocated.
+        assertThat(displayValues).containsExactly(Map.entry("ID_UA", "UA-7"));
+        assertThat(partitionValues).containsExactly(Map.entry("PARENT_RU", 31L));
+        verify(counterRepository, never()).nextValue(anyLong(), anyLong(), anyString(), anyInt());
+        verifyNoInteractions(entityManager);
+    }
+
+    @Test
+    void suggest_skipsTakenIdentifiersWithoutConsumingTheCounter() {
+        ActionUnit actionUnit = actionUnit(7L);
+        FormConfig config = config(12L, "UE-{NUM_UE}", 10, 99);
+        when(tableFieldConfigService.resolveIdentifierConfig(7L, ConfigurableTable.UE, null)).thenReturn(config);
+        when(partitionService.canonicalKey(any(), anyString(), any())).thenReturn("v1");
+        when(counterRepository.peekValue(7L, 12L, "v1", 10)).thenReturn(10);
+        when(resolverRegistry.ownNumericalToken(ConfigurableTable.UE)).thenReturn("NUM_UE");
+        when(resolverRegistry.render(eq(ConfigurableTable.UE), anyString(), any()))
+                .thenAnswer(invocation -> "UE-" + ((IdentifierRenderContext) invocation.getArgument(2)).value("NUM_UE"));
+
+        GeneratedIdentifier result = generator.suggest(ConfigurableTable.UE, actionUnit, null,
+                Map.of(), Map.of(), "UE-10"::equals);
+
+        assertThat(result).isEqualTo(new GeneratedIdentifier(11, "UE-11"));
+        verify(counterRepository, times(1)).peekValue(7L, 12L, "v1", 10);
+        verify(counterRepository, never()).nextValue(anyLong(), anyLong(), anyString(), anyInt());
+    }
+
+    @Test
+    void suggest_throwsWhenRangeIsExhausted() {
+        ActionUnit actionUnit = actionUnit(7L);
+        FormConfig config = config(12L, "{NUM_UE}", 0, 10);
+        when(tableFieldConfigService.resolveIdentifierConfig(7L, ConfigurableTable.UE, null)).thenReturn(config);
+        when(partitionService.canonicalKey(any(), anyString(), any())).thenReturn("v1");
+        when(counterRepository.peekValue(7L, 12L, "v1", 0)).thenReturn(11);
+
+        assertThatThrownBy(() -> generator.suggest(ConfigurableTable.UE, actionUnit, null,
+                NO_VALUES, NO_VALUES, IDENTIFIER_UNUSED))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Identifier range exhausted for form config 12");
+
+        verifyNoInteractions(resolverRegistry);
+    }
+
+    @Test
+    void suggestIdentifier_resolvesSpecAndLeavesTheEntityUntouched() {
+        EntityIdentifierGenerator spyGenerator = spy(generator);
+        TestEntity entity = new TestEntity(actionUnit(7L), 42L, "parent");
+        IdentifierGenerationSpec<TestEntity> spec = testSpec(candidate -> candidate.equals("UE-4"));
+        doReturn(new GeneratedIdentifier(4, "UE-4")).when(spyGenerator)
+                .suggest(eq(ConfigurableTable.UE), eq(entity.actionUnit), eq(42L), anyMap(), anyMap(), any());
+
+        assertThat(spyGenerator.suggestIdentifier(entity, spec)).isEqualTo(new GeneratedIdentifier(4, "UE-4"));
+        // A suggestion never writes: neither the number nor the identifier is assigned.
+        assertThat(entity.number).isZero();
+        assertThat(entity.identifier).isNull();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> displayValues = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> partitionValues = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Predicate<String>> collision = ArgumentCaptor.forClass(Predicate.class);
+        verify(spyGenerator).suggest(eq(ConfigurableTable.UE), eq(entity.actionUnit), eq(42L),
+                displayValues.capture(), partitionValues.capture(), collision.capture());
+        assertThat(displayValues.getValue()).containsEntry("ID_PARENT", "parent");
+        assertThat(partitionValues.getValue()).containsEntry("PARENT_RU", 31L);
+        assertThat(collision.getValue()).accepts("UE-4").rejects("UE-5");
+    }
+
+    @Test
+    void suggestIdentifier_validatesRequiredInputs() {
+        IdentifierGenerationSpec<TestEntity> spec = testSpec(candidate -> false);
+
+        assertThatThrownBy(() -> generator.suggestIdentifier(null, spec))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A test entity is required to suggest an identifier");
+
+        TestEntity withoutActionUnit = new TestEntity(null, 42L, "parent");
+        assertThatThrownBy(() -> generator.suggestIdentifier(withoutActionUnit, spec))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("An action unit is required to suggest a test entity identifier");
+        verifyNoInteractions(tableFieldConfigService, counterRepository);
     }
 
     @Test

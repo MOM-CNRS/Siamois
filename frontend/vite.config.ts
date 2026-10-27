@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react";
 
 // Builds the main-panel React app as a small set of static assets (JS/CSS/fonts) with fixed,

@@ -16,11 +16,12 @@ Pour les tables de --all-types (DOCUMENT par défaut), les types sont tous ceux 
 Il s'arrête si un type de la définition n'existe plus dans le thésaurus.
 """
 import argparse
-import json
 import os
 import re
 import sys
 from html import unescape
+
+import json
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFINITION = os.path.join(HERE, "..", "..", "src", "main", "resources", "default-project", "definition.json")

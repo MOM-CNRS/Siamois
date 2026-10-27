@@ -1,5 +1,5 @@
-import type { StratigraphyZone } from "../components/relationLinks/api";
-import type { FieldResource } from "./types";
+import type {StratigraphyZone} from "../components/relationLinks/api";
+import type {FieldResource} from "./types";
 
 // The answer type of the three fields that hold a unit's stratigraphic relationships. Their values are
 // not answers to patch: they are added, edited and removed by the unit's own endpoints.

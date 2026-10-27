@@ -1,35 +1,23 @@
 package fr.siamois.domain.services.vocabulary;
 
-import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.ConceptCollection;
-import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
-import fr.siamois.domain.models.vocabulary.ThesaurusUsage;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
-import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
-import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
-import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.settings.ConceptFieldConfig;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.settings.tableconfig.FieldType;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldsConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeSummary;
+import fr.siamois.domain.models.settings.tableconfig.*;
+import fr.siamois.domain.models.vocabulary.*;
+import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
+import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
 import fr.siamois.domain.services.form.FormConfigService;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.dto.entity.vocabulary.VocabularyDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.dto.entity.vocabulary.*;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptAutocompleteDetachedDTO;
 import fr.siamois.infrastructure.api.dto.concept.ConceptCollectionDetachedDTO;
+import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
-import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -38,20 +26,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ThesaurusUsageServiceTest {

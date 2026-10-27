@@ -1,9 +1,9 @@
-import type { MountOptions, PanelKind } from "../mountOptions";
-import type { EntityPreview } from "../panels/EntityDetailPanel";
-import type { PanelTransitionKind } from "../panels/pane/panelTransition";
-import { entityPath, resolveEntityPath } from "./paths";
-import { decodeFocusUrl, encodeFocusUrl } from "./url";
-import type { ListSeed } from "./externalBus";
+import type {MountOptions, PanelKind} from "../mountOptions";
+import type {EntityPreview} from "../panels/EntityDetailPanel";
+import type {PanelTransitionKind} from "../panels/pane/panelTransition";
+import {entityPath, resolveEntityPath} from "./paths";
+import {decodeFocusUrl, encodeFocusUrl} from "./url";
+import type {ListSeed} from "./externalBus";
 
 // What's actually on screen in the main pane right now: starts from the mount options JSF gave us,
 // but from then on this is owned entirely client-side. Deliberately NOT the same object as

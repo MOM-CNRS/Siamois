@@ -1,25 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.mapper.geom;
 
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.LineStringDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPointDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.*;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.MultiPoint;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.locationtech.jts.geom.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.offset;
+import static org.assertj.core.api.Assertions.*;
 
 class GeometryDtoMapperTest {
 

@@ -13,12 +13,7 @@ import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FilterDTO;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpecimenSummaryDTO;
-import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
@@ -156,11 +151,20 @@ public class StudyService {
         return ids;
     }
 
+    /**
+     * The identifier a new study like {@code dto} would be given, without consuming the counter —
+     * the creation form's suggestion. Nothing is written.
+     */
+    @Transactional(readOnly = true)
+    public String suggestIdentifier(StudyDTO dto) {
+        return identifierGenerator.suggestIdentifier(studyMapper.invertConvert(dto), studyIdentifierSpec()).value();
+    }
+
     private IdentifierGenerationSpec<Study> studyIdentifierSpec() {
         return IdentifierGenerationSpec.<Study>builder()
                 .table(ConfigurableTable.STUDY)
                 .entityName("study")
-                .generationRequired(study -> study.getId() == null)
+                .generationRequired(IdentifierGenerationSpec.whenNewWithoutIdentifier(Study::getId, Study::getIdentifier))
                 .actionUnit(Study::getActionUnit)
                 .typeId(study -> study.getType() == null ? null : study.getType().getId())
                 .displayValue("ID_UA", study -> study.getActionUnit().getFullIdentifier())

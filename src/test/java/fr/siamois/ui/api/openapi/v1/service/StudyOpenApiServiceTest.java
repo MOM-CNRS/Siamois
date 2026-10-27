@@ -1,32 +1,29 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
-import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
-import fr.siamois.ui.form.dto.FormUiDto;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
-import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.StudyDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.StudyOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
-import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
+import fr.siamois.ui.api.openapi.v1.resource.study.StudyResource;
+import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerTextViewModel;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,8 +40,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,7 +81,7 @@ class StudyOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StudyOpenApiService(studyService, actionUnitService, conceptService, conceptMapper,
+        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
                 profilePermissionService, studyOpenApiMapper,
                 studyListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), entitySiblingsService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
@@ -397,8 +393,7 @@ class StudyOpenApiServiceTest {
         req.setIdentifier("TAKEN");
         var ids = Set.of(10L);
         assertThatThrownBy(() -> service.patchStudy(5L, req, personDto, ids, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
         verify(studyService, never()).save(any(), any());
     }
 
@@ -459,4 +454,73 @@ class StudyOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
     }
+
+    // --- identifier chosen in the creation form ---
+
+    private ConceptDTO allowCreationOfType2InProject7() {
+        ActionUnitDTO au = projectWithInstitution();
+        when(actionUnitService.findAccessibleProjectByKey("7", Set.of(10L))).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+        Concept typeConcept = new Concept();
+        typeConcept.setId(2L);
+        when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(2L);
+        when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
+        return typeDto;
+    }
+
+    private StudyCreateRequest creationRequest(String identifier) {
+        StudyCreateRequest req = new StudyCreateRequest();
+        req.setProjectId("7");
+        req.setTypeId("2");
+        req.setIdentifier(identifier);
+        return req;
+    }
+
+    @Test
+    void createStudy_chosenIdentifier_isSavedTrimmedOnceCheckedFree() {
+        allowCreationOfType2InProject7();
+        StudyDTO saved = new StudyDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+
+        service.createStudy(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
+        verify(studyService).save(captor.capture());
+        // Set before the save: the service then skips its own generation.
+        assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
+        verify(studyService).identifierAlreadyExistInAction(captor.getValue());
+    }
+
+    @Test
+    void createStudy_chosenIdentifierAlreadyTaken_throws409WithoutSaving() {
+        allowCreationOfType2InProject7();
+        when(studyService.identifierAlreadyExistInAction(any(StudyDTO.class))).thenReturn(true);
+
+        var req = creationRequest("TAKEN");
+        var scope = Set.of(10L);
+        assertThatThrownBy(() -> service.createStudy(req, personDto, scope, "fr"))
+                .isInstanceOf(IdentifierConflictException.class);
+        verify(studyService, never()).save(any(StudyDTO.class));
+    }
+
+    @Test
+    void createStudy_blankIdentifier_leavesItToTheServer() {
+        allowCreationOfType2InProject7();
+        StudyDTO saved = new StudyDTO();
+        saved.setId(5L);
+        saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
+        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+
+        service.createStudy(creationRequest("   "), personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
+        verify(studyService).save(captor.capture());
+        assertThat(captor.getValue().getIdentifier()).isNull();
+        verify(studyService, never()).identifierAlreadyExistInAction(any(StudyDTO.class));
+    }
+
 }

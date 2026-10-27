@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { findColumns } from "./columns";
-import type { FindSummary } from "./types";
+import {describe, expect, it} from "vitest";
+import {findColumns} from "./columns";
+import type {FindSummary} from "./types";
 
 describe("findColumns", () => {
   it("marks exactly one column as the identifier", () => {

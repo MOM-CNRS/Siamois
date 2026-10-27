@@ -1,27 +1,13 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.mapper.SpecimenSummaryMapper;
-import fr.siamois.mapper.SpatialUnitSummaryMapper;
-import fr.siamois.mapper.RecordingUnitSummaryMapper;
-import fr.siamois.mapper.ContainerMapper;
-import fr.siamois.mapper.ActionUnitSummaryMapper;
-import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
-import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
-import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
-import fr.siamois.infrastructure.database.repositories.ContainerRepository;
-import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.domain.models.spatialunit.SpatialUnit;
-import fr.siamois.domain.services.form.CustomFieldAnswerService;
-import org.springframework.test.util.ReflectionTestUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
-import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.config.ConceptState;
 import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.form.config.VocabularyMode;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
@@ -40,19 +26,19 @@ import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.form.config.ConceptState;
-import fr.siamois.domain.models.form.config.VocabularyMode;
-import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
-import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
@@ -61,38 +47,38 @@ import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.mapper.PersonMapper;
-import fr.siamois.mapper.PhaseMapper;
-import fr.siamois.mapper.UnitDefinitionMapper;
+import fr.siamois.mapper.*;
+import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindCreateFormData;
-import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectOneFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
+import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectFindTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectPhaseTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectContainerTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectRecordingUnitTypeListResponse;
-import fr.siamois.ui.api.openapi.v1.response.project.type.ProjectTypeListResponse;
-import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
+import fr.siamois.ui.api.openapi.v1.response.project.type.*;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
 import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.form.fieldsource.FieldSource;
+import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,11 +86,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
-import org.mockito.Spy;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
@@ -1233,9 +1220,7 @@ class RecordingUnitOpenApiServiceTest {
         request.setTypeId("42");
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
 
         verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
         verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saved);
@@ -1275,6 +1260,54 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifier_isUsedAsIs_andGenerationIsSkipped() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("INST-PROJ-UE42");
+
+        RecordingUnitResource data = service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        assertThat(data.getId()).isEqualTo("1026");
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        // The chosen identifier is set on the saved unit before the second save...
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("INST-PROJ-UE42");
+        // ...its uniqueness is checked...
+        verify(recordingUnitService).fullIdentifierAlreadyExistInAction(saves.getAllValues().get(1));
+        // ...and the server's own generation is not even attempted.
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_customIdentifierAlreadyTaken_throwsConflict() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("RU-3000");
+        when(recordingUnitService.fullIdentifierAlreadyExistInAction(any(RecordingUnitDTO.class))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(IdentifierConflictException.class);
+
+        // The unit was saved once (the identifier is set only once it exists); the conflict rolls the rest back.
+        verify(recordingUnitService, times(1)).save(any(RecordingUnitDTO.class));
+        verify(recordingUnitService, never()).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void createRecordingUnit_blankIdentifier_fallsBackToGeneration() {
+        stubSuccessfulCreation();
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setIdentifier("   ");
+
+        service.createRecordingUnit(request, personDto, SCOPE, "fr");
+
+        verify(recordingUnitService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any());
+        ArgumentCaptor<RecordingUnitDTO> saves = ArgumentCaptor.forClass(RecordingUnitDTO.class);
+        verify(recordingUnitService, times(2)).save(saves.capture());
+        assertThat(saves.getAllValues().get(1).getFullIdentifier()).isEqualTo("RU-3000");
     }
 
     @Test
@@ -3523,7 +3556,6 @@ class RecordingUnitOpenApiServiceTest {
         var request = new RecordingUnitPatchRequest();
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+                .isInstanceOf(IdentifierConflictException.class);
     }
 }

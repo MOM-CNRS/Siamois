@@ -1,5 +1,5 @@
-import { t } from "../../../i18n";
-import type { RelationKind, ZoneKey } from "./types";
+import {t} from "../../../i18n";
+import type {RelationKind, ZoneKey} from "./types";
 
 // The title of each graph zone.
 export function zoneTitle(zone: ZoneKey): string {

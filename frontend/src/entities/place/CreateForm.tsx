@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { InputText } from "primereact/inputtext";
-import { CreateFormField, CreateFormShell } from "../../components/create/CreateFormShell";
-import { CreateLinkField } from "../../components/create/CreateLinkField";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import type { FieldResource } from "../../fields/types";
-import type { CreateFormContext } from "../shared/types";
-import { createPlace } from "./api";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
+import {useState} from "react";
+import {useMutation} from "@tanstack/react-query";
+import {InputText} from "primereact/inputtext";
+import {CreateFormField, CreateFormShell} from "../../components/create/CreateFormShell";
+import {CreateLinkField} from "../../components/create/CreateLinkField";
+import {SelectOneConceptRenderer} from "../../fields/renderers";
+import type {FieldResource} from "../../fields/types";
+import type {CreateFormContext} from "../shared/types";
+import {createPlace} from "./api";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
 
 // The list toolbar's "Créer" overlay for places — name and type only (PlaceCreateRequest's
 // required pair), like the other create overlays. Unlike them, places belong to the organization,

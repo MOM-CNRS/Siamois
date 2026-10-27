@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../../api/client";
-import { getOrganizationCounts } from "./organizationCounts";
+import {describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../../api/client";
+import {getOrganizationCounts} from "./organizationCounts";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 

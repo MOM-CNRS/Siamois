@@ -1,30 +1,25 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
-import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.resource.form.SelectManyFieldAnswer;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Gives every multi-valued answer of a response its API shape: at most {@code valuesLimit} values,

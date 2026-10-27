@@ -660,4 +660,36 @@ class DocumentServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> documentService.saveFile(userInfo, document, inputStream, "/ctx"));
     }
+
+    @Test
+    void suggestIdentifier_withAConfiguredFormat_peeksForTheMappedNewDocument() {
+        fr.siamois.dto.entity.DocumentDTO dto = new fr.siamois.dto.entity.DocumentDTO();
+        Document entity = new Document();
+        fr.siamois.domain.models.actionunit.ActionUnit project = new fr.siamois.domain.models.actionunit.ActionUnit();
+        project.setId(7L);
+        entity.setActionUnit(project);
+        when(documentMapper.invertConvert(dto)).thenReturn(entity);
+        when(tableFieldConfigService.isTypeFieldConfigured(7L, fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.DOCUMENT)).thenReturn(true);
+        when(identifierGenerator.suggestIdentifier(org.mockito.ArgumentMatchers.eq(entity), any()))
+                .thenReturn(new fr.siamois.domain.services.identifier.GeneratedIdentifier(3, "DOC-003"));
+
+        assertEquals("DOC-003", documentService.suggestIdentifier(dto));
+        verify(identifierGenerator, never()).generateIdentifierIfRequired(any(), any());
+        verify(documentRepository, never()).save(any());
+    }
+
+    @Test
+    void suggestIdentifier_withoutAConfiguredFormat_suggestsNothing() {
+        // The document is then named DOC-<id> once it exists: there is nothing to suggest beforehand.
+        fr.siamois.dto.entity.DocumentDTO dto = new fr.siamois.dto.entity.DocumentDTO();
+        Document entity = new Document();
+        fr.siamois.domain.models.actionunit.ActionUnit project = new fr.siamois.domain.models.actionunit.ActionUnit();
+        project.setId(7L);
+        entity.setActionUnit(project);
+        when(documentMapper.invertConvert(dto)).thenReturn(entity);
+        when(tableFieldConfigService.isTypeFieldConfigured(7L, fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.DOCUMENT)).thenReturn(false);
+
+        assertNull(documentService.suggestIdentifier(dto));
+        verifyNoInteractions(identifierGenerator);
+    }
 }

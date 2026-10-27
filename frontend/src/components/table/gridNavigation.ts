@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import type {KeyboardEvent} from "react";
 
 // Keyboard navigation of a table's body, as in a spreadsheet: the arrows move the focus to the neighbouring
 // cell, Home/End to the ends of the row, and Enter/Space open what a focused cell offers (its cells are

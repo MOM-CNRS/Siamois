@@ -18,20 +18,8 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
-import fr.siamois.dto.entity.ActionUnitDTO;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
-import fr.siamois.dto.entity.SpatialUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.dto.entity.SpecimenSummaryDTO;
-import fr.siamois.mapper.ActionUnitMapper;
-import fr.siamois.mapper.ConceptMapper;
-import fr.siamois.mapper.RecordingUnitSummaryMapper;
-import fr.siamois.mapper.SpatialUnitMapper;
-import fr.siamois.mapper.SpecimenSummaryMapper;
+import fr.siamois.dto.entity.*;
+import fr.siamois.mapper.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import jakarta.servlet.ServletContext;
@@ -52,15 +40,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentBulkImportBeanTest {

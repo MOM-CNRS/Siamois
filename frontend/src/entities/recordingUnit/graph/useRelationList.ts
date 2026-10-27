@@ -1,10 +1,15 @@
-import { useCallback, useMemo } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../../api/queryKeys";
-import { usePersistedPaneState } from "../../../panels/pane/persistedPaneState";
-import { DEFAULT_LIMIT, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue } from "../../../panels/list/tableState";
-import { getRelationList, type RelationListParams } from "./api";
-import type { RelationKind, RelationRow } from "./types";
+import {useCallback, useMemo} from "react";
+import {keepPreviousData, useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../../api/queryKeys";
+import {usePersistedPaneState} from "../../../panels/pane/persistedPaneState";
+import {
+    DEFAULT_LIMIT,
+    type FilterValue,
+    LEGACY_DEFAULT_LIMIT,
+    PAGE_SIZE_OPTIONS
+} from "../../../panels/list/tableState";
+import {getRelationList, type RelationListParams} from "./api";
+import type {RelationKind, RelationRow} from "./types";
 
 // What the list is showing: the same shape every list of the app remembers.
 interface ListState {

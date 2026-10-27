@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "../../api/client";
-import { queryKeys } from "../../api/queryKeys";
+import {useQuery} from "@tanstack/react-query";
+import {apiFetch} from "../../api/client";
+import {queryKeys} from "../../api/queryKeys";
 
 // Mirrors OrganizationCountsResource — one request feeds every home "database access" card.
 export interface OrganizationCounts {

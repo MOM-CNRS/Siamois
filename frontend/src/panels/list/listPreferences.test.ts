@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { defaultOpenMode, listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs } from "./listPreferences";
+import {beforeEach, describe, expect, it} from "vitest";
+import {defaultOpenMode, listPrefsKey, loadListPrefs, reconcileActionBar, saveListPrefs} from "./listPreferences";
 
 beforeEach(() => window.localStorage.clear());
 

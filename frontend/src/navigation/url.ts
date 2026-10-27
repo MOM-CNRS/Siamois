@@ -1,4 +1,4 @@
-import { apiUrl } from "../api/basePath";
+import {apiUrl} from "../api/basePath";
 
 // Base64url, no padding: exactly Java's Base64.getUrlEncoder().withoutPadding(), which is what
 // FlowBean.redirectToFocus and FocusViewBean's own decode use for the `/focus/<main>?s=<overview>`

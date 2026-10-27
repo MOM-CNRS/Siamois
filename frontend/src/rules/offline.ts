@@ -1,9 +1,9 @@
 // Offline counterpart of the server-side options filters, for the mobile app: filters an already
 // downloaded option list with the relations shipped in the vocabulary bundle (relatedByConcept).
 
-import type { IsAllowed } from "./evaluate";
-import type { OptionsContext } from "./types";
-import { scalarsOf } from "./values";
+import type {IsAllowed} from "./evaluate";
+import type {OptionsContext} from "./types";
+import {scalarsOf} from "./values";
 
 export type RelatedByConcept = Record<string, string[]>;
 

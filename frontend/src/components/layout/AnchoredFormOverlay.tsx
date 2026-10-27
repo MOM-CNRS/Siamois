@@ -1,7 +1,7 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { useIsMobile } from "../../viewport";
-import { BottomSheet } from "./BottomSheet";
+import {type ReactNode, useEffect, useRef} from "react";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {useIsMobile} from "../../viewport";
+import {BottomSheet} from "./BottomSheet";
 
 export interface AnchoredFormOverlayProps {
   // The element the overlay opens next to (the button or field the creation was started from);

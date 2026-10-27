@@ -35,6 +35,11 @@ public class FindCreateRequest {
     @JsonAlias("specimenTypeConceptId")
     private String typeId;
 
+    @Schema(description = "Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : "
+            + "absent ou vide, le serveur génère l'identifiant comme d'habitude. "
+            + "S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet).")
+    private String identifier;
+
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();
 

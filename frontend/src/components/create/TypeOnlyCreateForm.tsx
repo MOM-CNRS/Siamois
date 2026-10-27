@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { getEffectiveForm } from "../../entities/shared/typeCatalog";
-import type { CreatableKind, CreateFormContext } from "../../entities/shared/types";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import { referenceTargetOf } from "../../fields/optionSources";
-import { useDeclaredTypesState } from "../../entities/shared/useDeclaredTypes";
-import { NoTypeHint } from "./NoTypeHint";
-import type { FieldResource } from "../../fields/types";
-import { CreateFormField, CreateFormShell } from "./CreateFormShell";
-import { useCreateProject } from "./useCreateProject";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {type ReactNode, useEffect, useMemo, useRef, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {getEffectiveForm} from "../../entities/shared/typeCatalog";
+import type {CreatableKind, CreateFormContext} from "../../entities/shared/types";
+import {SelectOneConceptRenderer} from "../../fields/renderers";
+import {referenceTargetOf} from "../../fields/optionSources";
+import {useDeclaredTypesState} from "../../entities/shared/useDeclaredTypes";
+import {NoTypeHint} from "./NoTypeHint";
+import type {FieldResource} from "../../fields/types";
+import {CreateFormField, CreateFormShell} from "./CreateFormShell";
+import {useCreateProject} from "./useCreateProject";
+import {useSuggestedIdentifier} from "./useSuggestedIdentifier";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 interface ConceptPick {
   resourceId: string;
@@ -25,16 +26,17 @@ export interface TypeOnlyCreateFormProps extends CreateFormContext {
   title: string;
   // The project catalog whose untyped form carries the type field (valueBinding "type").
   typesSegment: string;
-  create: (projectId: string, typeId: string) => Promise<{ id: string | number }>;
+  // `identifier` is set only when the user replaced the suggested one: otherwise the server generates it.
+  create: (body: { projectId: string; typeId: string; identifier?: string }) => Promise<{ id: string | number }>;
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
 }
 
 /**
  * The creation overlay of an entity created in a project with nothing but its type (phase,
- * container, recording unit): the server generates the identifier, and every other field is edited
- * afterwards on the fiche the overlay opens. The project is the list's own, or picked first in the
- * form on an organization-wide list.
+ * container, study, document, recording unit): the server generates the identifier — shown as a
+ * modifiable suggestion — and every other field is edited afterwards on the fiche the overlay opens.
+ * The project is the list's own, or picked first in the form on an organization-wide list.
  */
 export function TypeOnlyCreateForm({
   entityType,
@@ -55,6 +57,7 @@ export function TypeOnlyCreateForm({
     setType(null);
   }, [projectId]);
   const [error, setError] = useState<string | null>(null);
+  const identifier = useSuggestedIdentifier(entityType, projectId, type?.resourceId);
 
   const formQuery = useQuery({
     queryKey: queryKeys.effectiveForm(typesSegment, projectId, null),
@@ -82,7 +85,7 @@ export function TypeOnlyCreateForm({
   }, [prefilledType, typeField, typesLoaded, declaredTypes]);
 
   const mutation = useMutation({
-    mutationFn: () => create(projectId as string, type!.resourceId),
+    mutationFn: () => create({ projectId: projectId as string, typeId: type!.resourceId, ...identifier.chosen }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => setError(messageForError(err, t("create.failed"))),
   });
@@ -119,6 +122,8 @@ export function TypeOnlyCreateForm({
           <span className="sia-create-form-hint">{projectId == null ? t("create.chooseProjectFirst") : t("common.loading")}</span>
         )}
       </CreateFormField>
+
+      {identifier.field}
 
       {children}
     </CreateFormShell>
