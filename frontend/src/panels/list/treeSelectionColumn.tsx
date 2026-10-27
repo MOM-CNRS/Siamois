@@ -1,9 +1,9 @@
-import { Checkbox } from "primereact/checkbox";
-import { Column } from "primereact/column";
-import type { TreeNode } from "primereact/treenode";
-import type { TreeTableExpandedKeysType } from "primereact/treetable";
-import { FROZEN_COLUMN_CLASS } from "./frozenColumns";
-import type { RowRecord } from "./useEntityListData";
+import {Checkbox} from "primereact/checkbox";
+import {Column} from "primereact/column";
+import type {TreeNode} from "primereact/treenode";
+import type {TreeTableExpandedKeysType} from "primereact/treetable";
+import {FROZEN_COLUMN_CLASS} from "./frozenColumns";
+import type {RowRecord} from "./useEntityListData";
 
 // The tree view has no PrimeReact selection (a TreeTable's would tick whole branches): a plain checkbox
 // per row, keyed on the row's place in the tree (an entity under two parents is two rows).

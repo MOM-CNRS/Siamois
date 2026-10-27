@@ -1,10 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.request.project;
 
-import fr.siamois.domain.models.ValidationStatus;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -14,8 +14,8 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.utils.MessageUtils;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.primefaces.PrimeFaces;
 

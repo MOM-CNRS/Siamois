@@ -1,14 +1,14 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { EntityDetailHeader, type HeaderChanges } from "../../components/detail/EntityDetailHeader";
-import { toAnswerInput } from "../../fields/types";
-import type { AnswerInputBody, FieldResource } from "../../fields/types";
-import { patchRecordingUnit } from "./api";
-import { useDeclaredTypes } from "../shared/useDeclaredTypes";
-import { getRecordingUnitTypes } from "./recordingUnitTypes";
-import type { RecordingUnitDetail } from "./types";
-import { queryKeys } from "../../api/queryKeys";
-import { t } from "../../i18n";
+import {useMemo} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {EntityDetailHeader, type HeaderChanges} from "../../components/detail/EntityDetailHeader";
+import type {AnswerInputBody, FieldResource} from "../../fields/types";
+import {toAnswerInput} from "../../fields/types";
+import {patchRecordingUnit} from "./api";
+import {useDeclaredTypes} from "../shared/useDeclaredTypes";
+import {getRecordingUnitTypes} from "./recordingUnitTypes";
+import type {RecordingUnitDetail} from "./types";
+import {queryKeys} from "../../api/queryKeys";
+import {t} from "../../i18n";
 
 // recordingUnitPanelHeader.xhtml's content on the shared fiche header: the identifier as the main
 // chip, then the type. The identifier is written through RecordingUnitPatchRequest's flat

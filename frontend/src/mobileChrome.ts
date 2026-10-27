@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { MOBILE_QUERY } from "./viewport";
+import {useEffect} from "react";
+import {MOBILE_QUERY} from "./viewport";
 
 // What slides away: the page's top bar and the fiche's breadcrumb. The panel's header only sheds its toolbar and
 // secondary chips (main-panel.css, on the attribute set below): the status and the title chip stay, with the tabs.

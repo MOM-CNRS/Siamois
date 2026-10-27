@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import type { EntityTypeConfig, FieldCatalog } from "../../entities/shared/types";
-import type { FieldResource } from "../../fields/types";
-import { availableFilters, isFilterAvailable, isSortAvailable } from "./listStateValidity";
+import {describe, expect, it} from "vitest";
+import type {EntityTypeConfig, FieldCatalog} from "../../entities/shared/types";
+import type {FieldResource} from "../../fields/types";
+import {availableFilters, isFilterAvailable, isSortAvailable} from "./listStateValidity";
 
 const field = (id: string, query?: FieldResource["query"]) =>
   ({ id, resourceType: "fields", label: id, answerType: "TEXT", isSystemField: false, query }) as FieldResource;

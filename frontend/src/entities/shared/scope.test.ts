@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { scopeProjectId } from "./scope";
+import {describe, expect, it} from "vitest";
+import {scopeProjectId} from "./scope";
 
 describe("scopeProjectId", () => {
   it("is the scope itself for a project scope", () => {

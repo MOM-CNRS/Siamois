@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { getAllEntityTypes, getEntityType, registerEntityType } from "./registry";
-import type { EntityTypeConfig } from "./shared/types";
+import {describe, expect, it} from "vitest";
+import {getAllEntityTypes, getEntityType, registerEntityType} from "./registry";
+import type {EntityTypeConfig} from "./shared/types";
 
 function fakeConfig(key: string): EntityTypeConfig {
   return {

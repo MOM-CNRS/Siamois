@@ -2,12 +2,7 @@ package fr.siamois.ui.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldFile;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
@@ -27,11 +22,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerSelectOneActionUnit;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerBoolean;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDateTime;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerDecimal;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerInteger;
-import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.*;
 import fr.siamois.domain.models.form.customfieldanswer.measurement.CustomFieldAnswerMeasurement;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfieldanswer.person.CustomFieldAnswerSelectOnePerson;

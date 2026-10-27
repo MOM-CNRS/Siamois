@@ -1,5 +1,5 @@
-import type { IncoherenceReason } from "../rules";
-import { t } from "../i18n";
+import type {IncoherenceReason} from "../rules";
+import {t} from "../i18n";
 
 const CONSTRAINT_MESSAGE = {
   GT: "cell.boundMinExcl",

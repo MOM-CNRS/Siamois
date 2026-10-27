@@ -2,11 +2,10 @@ package fr.siamois.ui.table.definitions;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.utils.TestForms;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import fr.siamois.utils.TestForms;
 
 import java.util.List;
 import java.util.Map;

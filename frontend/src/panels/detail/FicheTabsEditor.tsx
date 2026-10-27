@@ -1,29 +1,29 @@
-import { useRef, useState, type KeyboardEvent } from "react";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Menu } from "primereact/menu";
-import { InputText } from "primereact/inputtext";
-import type { DetailTabDef } from "../../entities/shared/types";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
-import { useNotify } from "../../notify/NotifyProvider";
-import { AddListTabDialog } from "./AddListTabDialog";
-import type { FicheScope } from "./ficheConfig";
-import { addTabItems } from "./addTabMenu";
+import {type KeyboardEvent, useRef, useState} from "react";
+import {Button} from "primereact/button";
+import {Dialog} from "primereact/dialog";
+import {Menu} from "primereact/menu";
+import {InputText} from "primereact/inputtext";
+import type {DetailTabDef} from "../../entities/shared/types";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
+import {useNotify} from "../../notify/NotifyProvider";
+import {AddListTabDialog} from "./AddListTabDialog";
+import type {FicheScope} from "./ficheConfig";
+import {addTabItems} from "./addTabMenu";
 import {
-  editableTabs,
-  hasVisibleTab,
-  moveTab,
-  moveTabTo,
-  relationTargets,
-  removeTab,
-  restorableTabs,
-  restoreTab,
-  shownTabs,
-  targetLabel,
-  type EditableTab,
+    type EditableTab,
+    editableTabs,
+    hasVisibleTab,
+    moveTab,
+    moveTabTo,
+    relationTargets,
+    removeTab,
+    restorableTabs,
+    restoreTab,
+    shownTabs,
+    targetLabel,
 } from "./ficheTabsModel";
-import { useFicheTabsSave } from "./useFicheTabsSave";
+import {useFicheTabsSave} from "./useFicheTabsSave";
 
 export interface FicheTabsEditorProps {
   entityType: string;

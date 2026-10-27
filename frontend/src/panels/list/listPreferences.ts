@@ -1,5 +1,5 @@
-import type { ListScope } from "../../entities/shared/types";
-import type { ListViewMode } from "./listViews";
+import type {ListScope} from "../../entities/shared/types";
+import type {ListViewMode} from "./listViews";
 
 // What a user arranged on one list — which columns, in which order, and how the row actions are
 // laid out — remembered in this browser (localStorage), per entity type and per context: the

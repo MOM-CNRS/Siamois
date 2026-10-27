@@ -1,7 +1,5 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.dto.FieldQuery;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
@@ -10,6 +8,7 @@ import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -18,6 +17,7 @@ import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import fr.siamois.ui.api.openapi.v1.service.OrganizationListService.EditPermissions;
@@ -40,9 +40,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

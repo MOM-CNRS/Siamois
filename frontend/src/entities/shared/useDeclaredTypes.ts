@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import type { FilterOption } from "../../fields/optionSources";
-import { fetchTypesCatalog } from "./typeCatalog";
+import {useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import type {FilterOption} from "../../fields/optionSources";
+import {fetchTypesCatalog} from "./typeCatalog";
 
 /**
  * The types a project has declared for a table (its `<x>-types` catalog), as the options of a type

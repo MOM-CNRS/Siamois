@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getViewState, putViewState, deleteViewState, type ViewStateBody, type ViewStateResponse } from "../../api/resources/views";
-import { queryKeys } from "../../api/queryKeys";
+import {useCallback, useEffect, useRef} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {
+    deleteViewState,
+    getViewState,
+    putViewState,
+    type ViewStateBody,
+    type ViewStateResponse
+} from "../../api/resources/views";
+import {queryKeys} from "../../api/queryKeys";
 
 // How long a burst of changes (typing a filter, dragging a column) waits before it is sent.
 export const SAVE_DELAY_MS = 600;

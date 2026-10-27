@@ -1,6 +1,6 @@
-import type { MenuItem } from "primereact/menuitem";
-import { t } from "../../i18n";
-import type { EditableTab } from "./ficheTabsModel";
+import type {MenuItem} from "primereact/menuitem";
+import {t} from "../../i18n";
+import type {EditableTab} from "./ficheTabsModel";
 
 /**
  * The entries of the « Ajouter » menu: the built-in tabs that were removed (to put back), then a new list tab.

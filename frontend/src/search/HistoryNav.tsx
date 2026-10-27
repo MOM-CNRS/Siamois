@@ -1,12 +1,19 @@
-import { useState, useSyncExternalStore } from "react";
-import { Tooltip } from "primereact/tooltip";
-import { listHistory, type HistoryShortcut } from "../api/resources/homeShortcuts";
-import { getEntityType } from "../entities/registry";
-import { t } from "../i18n";
-import { getNavigation } from "../navigation/externalBus";
-import { moveTrail, nextEntry, previousEntry, subscribeTrail, trailVersion, type TrailEntry } from "../navigation/navTrail";
-import { resolveEntityPath } from "../navigation/paths";
-import { apiUrl } from "../api/basePath";
+import {useState, useSyncExternalStore} from "react";
+import {Tooltip} from "primereact/tooltip";
+import {type HistoryShortcut, listHistory} from "../api/resources/homeShortcuts";
+import {getEntityType} from "../entities/registry";
+import {t} from "../i18n";
+import {getNavigation} from "../navigation/externalBus";
+import {
+    moveTrail,
+    nextEntry,
+    previousEntry,
+    subscribeTrail,
+    type TrailEntry,
+    trailVersion
+} from "../navigation/navTrail";
+import {resolveEntityPath} from "../navigation/paths";
+import {apiUrl} from "../api/basePath";
 
 const HISTORY_LOOKUP_LIMIT = 50;
 

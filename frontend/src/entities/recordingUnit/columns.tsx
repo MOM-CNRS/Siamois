@@ -1,6 +1,6 @@
-import type { ColumnDef } from "../shared/types";
-import type { RecordingUnitSummary } from "./types";
-import { t } from "../../i18n";
+import type {ColumnDef} from "../shared/types";
+import type {RecordingUnitSummary} from "./types";
+import {t} from "../../i18n";
 
 // The one pinned, hand-written column — the identifier chip RecordingUnitTableColumnDefaults
 // excludes (identifierCol): no CustomField behind it, built from `fullIdentifier` directly. Every

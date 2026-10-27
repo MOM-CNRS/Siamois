@@ -1,12 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { getFicheConfig } from "../../api/resources/ficheConfigs";
-import { queryKeys } from "../../api/queryKeys";
-import { ListTabCount } from "./TabCount";
-import { getEntityType } from "../../entities/registry";
-import { PROJECT_KEY } from "../../entities/keys";
-import type { DetailTabDef, FilterValue } from "../../entities/shared/types";
-import { EntityListPanel } from "../EntityListPanel";
-import { isFilterValue } from "../list/listState";
+import {useQuery} from "@tanstack/react-query";
+import {getFicheConfig} from "../../api/resources/ficheConfigs";
+import {queryKeys} from "../../api/queryKeys";
+import {ListTabCount} from "./TabCount";
+import {getEntityType} from "../../entities/registry";
+import {PROJECT_KEY} from "../../entities/keys";
+import type {DetailTabDef, FilterValue} from "../../entities/shared/types";
+import {EntityListPanel} from "../EntityListPanel";
+import {isFilterValue} from "../list/listState";
 
 /**
  * The tabs a project configured for a fiche (GET /api/v1/fiche-configs), on top of those the code declares:

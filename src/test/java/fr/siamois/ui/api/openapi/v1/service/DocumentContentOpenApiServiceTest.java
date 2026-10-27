@@ -1,11 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.services.document.ImageThumbnailer;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.document.DocumentService;
+import fr.siamois.domain.services.document.ImageThumbnailer;
 import fr.siamois.domain.services.document.compressor.BrowserDisplayableCompressor;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.PersonDTO;

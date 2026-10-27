@@ -1,18 +1,18 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Checkbox } from "primereact/checkbox";
-import { InputNumber } from "primereact/inputnumber";
-import { Skeleton } from "primereact/skeleton";
-import { getEntityType } from "../../entities/registry";
-import type { DuplicationConfig, DuplicationResult, DuplicationStructure } from "../../entities/shared/types";
-import { entityChipStyle } from "../../fields/display";
-import { AnchoredFormOverlay } from "../layout/AnchoredFormOverlay";
-import { CreateFormShell } from "../create/CreateFormShell";
-import { check, createdCount, indexStructure, selectAll, uncheck } from "./duplicateSelection";
-import { queryKeys } from "../../api/queryKeys";
-import { messageForError } from "../../api/errors";
-import { t, tn } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useMemo, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {Checkbox} from "primereact/checkbox";
+import {InputNumber} from "primereact/inputnumber";
+import {Skeleton} from "primereact/skeleton";
+import {getEntityType} from "../../entities/registry";
+import type {DuplicationConfig, DuplicationResult, DuplicationStructure} from "../../entities/shared/types";
+import {entityChipStyle} from "../../fields/display";
+import {AnchoredFormOverlay} from "../layout/AnchoredFormOverlay";
+import {CreateFormShell} from "../create/CreateFormShell";
+import {check, createdCount, indexStructure, selectAll, uncheck} from "./duplicateSelection";
+import {queryKeys} from "../../api/queryKeys";
+import {messageForError} from "../../api/errors";
+import {t, tn} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 export interface DuplicateStructureOverlayProps {
   entityType: string;

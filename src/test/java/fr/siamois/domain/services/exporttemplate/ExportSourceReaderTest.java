@@ -2,12 +2,7 @@ package fr.siamois.domain.services.exporttemplate;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptRef;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntityKind;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntitySource;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ProjectSource;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Source;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.TechnicalSource;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -15,9 +10,9 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
-import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
+import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
@@ -28,11 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

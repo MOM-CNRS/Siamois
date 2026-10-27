@@ -1,6 +1,6 @@
-import { apiUrl } from "./basePath";
-import { getLocale } from "../i18n";
-import { getAccessToken, resetSession } from "../auth/sessionAuth";
+import {apiUrl} from "./basePath";
+import {getLocale} from "../i18n";
+import {getAccessToken, resetSession} from "../auth/sessionAuth";
 
 export class ApiError extends Error {
   constructor(

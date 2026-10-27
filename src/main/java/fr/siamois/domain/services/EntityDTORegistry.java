@@ -4,11 +4,11 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.dto.entity.*;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
-import { useState, type CSSProperties, type MouseEvent } from "react";
-import type { AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { t } from "../i18n";
-import type { FilterOption } from "./optionSources";
+import {type CSSProperties, type MouseEvent, useState} from "react";
+import type {AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {t} from "../i18n";
+import type {FilterOption} from "./optionSources";
 
 /**
  * A concept suggestion: label, the preferred label it stands for when it is an alternative one,

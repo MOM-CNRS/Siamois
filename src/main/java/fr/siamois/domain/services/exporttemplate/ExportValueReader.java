@@ -3,7 +3,6 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
-import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ColumnField;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptField;
@@ -11,8 +10,9 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.FieldRef
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService.ListOwner;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -23,13 +23,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

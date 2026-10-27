@@ -1,16 +1,12 @@
 package fr.siamois.ui.api.openapi.v1.controller.recordingunit;
 
 import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
+import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationGraphResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitRelationRow;
 import fr.siamois.ui.api.openapi.v1.response.recordingunit.RecordingUnitRelationsResponse;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitRelationGraphService;
-import fr.siamois.ui.api.openapi.v1.service.RecordingUnitRelationKind;
-import fr.siamois.ui.api.openapi.v1.service.RelationFieldService;
+import fr.siamois.ui.api.openapi.v1.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,12 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;

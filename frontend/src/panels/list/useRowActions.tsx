@@ -1,20 +1,26 @@
-import { useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "primereact/button";
-import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
-import { Menu } from "primereact/menu";
-import type { MenuItem } from "primereact/menuitem";
-import { createBookmark, deleteBookmark } from "../../api/resources/bookmarks";
-import { CreateEntityOverlay } from "../../components/create/CreateEntityOverlay";
-import { DuplicateStructureOverlay } from "../../components/duplicate/DuplicateStructureOverlay";
-import type { CreatePrefill, EntityTypeConfig, ListScope, RowActionContext, RowActionDef } from "../../entities/shared/types";
-import { loadListPrefs, reconcileActionBar, saveListPrefs, type ActionBarPrefs } from "./listPreferences";
-import { useBridge } from "../pane/bridge";
-import { useDeleteEntity } from "../detail/useDeleteEntity";
-import { queryKeys } from "../../api/queryKeys";
-import { messageForError } from "../../api/errors";
-import { useNotify } from "../../notify/NotifyProvider";
-import { t } from "../../i18n";
+import {type ReactNode, type SyntheticEvent, useMemo, useRef, useState} from "react";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {Button} from "primereact/button";
+import {ConfirmPopup, confirmPopup} from "primereact/confirmpopup";
+import {Menu} from "primereact/menu";
+import type {MenuItem} from "primereact/menuitem";
+import {createBookmark, deleteBookmark} from "../../api/resources/bookmarks";
+import {CreateEntityOverlay} from "../../components/create/CreateEntityOverlay";
+import {DuplicateStructureOverlay} from "../../components/duplicate/DuplicateStructureOverlay";
+import type {
+    CreatePrefill,
+    EntityTypeConfig,
+    ListScope,
+    RowActionContext,
+    RowActionDef
+} from "../../entities/shared/types";
+import {type ActionBarPrefs, loadListPrefs, reconcileActionBar, saveListPrefs} from "./listPreferences";
+import {useBridge} from "../pane/bridge";
+import {useDeleteEntity} from "../detail/useDeleteEntity";
+import {queryKeys} from "../../api/queryKeys";
+import {messageForError} from "../../api/errors";
+import {useNotify} from "../../notify/NotifyProvider";
+import {t} from "../../i18n";
 
 type Row = Record<string, unknown> & {
   id?: string | number;

@@ -1,24 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.mapper.geom;
 
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.LineStringDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPointDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
-import fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LineString;
-import org.locationtech.jts.geom.LinearRing;
-import org.locationtech.jts.geom.MultiPoint;
-import org.locationtech.jts.geom.MultiPolygon;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.*;
+import org.locationtech.jts.geom.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 /**
  * Converts between JTS geometries and the GeoJSON-style {@link GeometryDTO} hierarchy.

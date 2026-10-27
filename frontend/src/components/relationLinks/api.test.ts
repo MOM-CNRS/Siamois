@@ -1,9 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {
+    addHierarchyLink,
+    addStratigraphyLink,
+    removeHierarchyLink,
+    removeStratigraphyLink,
+    updateStratigraphyLink
+} from "./api";
 
 const apiFetch = vi.fn();
 vi.mock("../../api/client", () => ({ apiFetch: (...args: unknown[]) => apiFetch(...args) }));
-
-import { addHierarchyLink, addStratigraphyLink, removeHierarchyLink, removeStratigraphyLink, updateStratigraphyLink } from "./api";
 
 describe("relation graph writes", () => {
   beforeEach(() => apiFetch.mockReset().mockResolvedValue(undefined));

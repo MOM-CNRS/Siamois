@@ -1,15 +1,15 @@
-import { useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { AutoComplete, type AutoCompleteCompleteEvent } from "primereact/autocomplete";
-import { Button } from "primereact/button";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { messageForError } from "../../api/errors";
-import { queryKeys } from "../../api/queryKeys";
-import { useNotify } from "../../notify/NotifyProvider";
-import { useWriteMode } from "../../panels/pane/writeMode";
-import { t } from "../../i18n";
-import { linkDocument, listDocuments } from "./api";
-import type { DocumentSummary } from "./types";
+import {useRef, useState} from "react";
+import {useQueryClient} from "@tanstack/react-query";
+import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
+import {Button} from "primereact/button";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {messageForError} from "../../api/errors";
+import {queryKeys} from "../../api/queryKeys";
+import {useNotify} from "../../notify/NotifyProvider";
+import {useWriteMode} from "../../panels/pane/writeMode";
+import {t} from "../../i18n";
+import {linkDocument, listDocuments} from "./api";
+import type {DocumentSummary} from "./types";
 
 export interface AssociateDocumentProps {
   // The entity's REST segment ("phases", "recording-units"…) and its id: PUT /{segment}/{id}/documents/{documentId}.

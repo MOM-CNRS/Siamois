@@ -1,5 +1,5 @@
-import { ApiError } from "./client";
-import { t } from "../i18n";
+import {ApiError} from "./client";
+import {t} from "../i18n";
 
 /**
  * The sentence shown to the user for a failed call. A server message is kept when there is one

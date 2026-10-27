@@ -1,5 +1,5 @@
-import type { ProjectRef } from "../../components/ProjectName";
-import { apiFetch } from "../client";
+import type {ProjectRef} from "../../components/ProjectName";
+import {apiFetch} from "../client";
 
 // The pages the user opened lately (GET /api/v1/history), for the home page. Paths of the app
 // (`/action-unit/12`, `/recording-unit?viewId=3`), opened like a sidebar entry would be.

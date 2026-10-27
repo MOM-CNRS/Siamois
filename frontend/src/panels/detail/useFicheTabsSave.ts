@@ -1,8 +1,8 @@
-import { useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { deleteFicheConfig, putFicheConfig, type FicheConfigScope } from "../../api/resources/ficheConfigs";
-import type { FicheScope } from "./ficheConfig";
-import { toConfigTabs, type EditableTab } from "./ficheTabsModel";
+import {useCallback} from "react";
+import {useQueryClient} from "@tanstack/react-query";
+import {deleteFicheConfig, type FicheConfigScope, putFicheConfig} from "../../api/resources/ficheConfigs";
+import type {FicheScope} from "./ficheConfig";
+import {type EditableTab, toConfigTabs} from "./ficheTabsModel";
 
 /**
  * Saves (or gives up) the tabs of a fiche's project. Saved for the fiche's sub-type alone, or for every

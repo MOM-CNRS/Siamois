@@ -4,14 +4,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
-import fr.siamois.domain.models.form.rules.Condition;
-import fr.siamois.domain.models.form.rules.ConditionOp;
-import fr.siamois.domain.models.form.rules.FieldConstraint;
-import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
-import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
-import fr.siamois.domain.models.form.rules.RuleFieldFamily;
+import fr.siamois.domain.models.form.rules.*;
 import fr.siamois.domain.models.settings.tableconfig.LayoutRow;
 import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
 import fr.siamois.domain.services.form.layout.FormLayoutService;
@@ -29,11 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

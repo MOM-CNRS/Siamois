@@ -1,4 +1,4 @@
-import { PROJECT_KEY } from "../entities/keys";
+import {PROJECT_KEY} from "../entities/keys";
 
 /**
  * Where a field is being edited: what a relation picker needs besides the field itself — the

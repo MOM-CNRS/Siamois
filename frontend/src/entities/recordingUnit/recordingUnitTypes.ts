@@ -1,6 +1,6 @@
-import { fetchTypesCatalog } from "../shared/typeCatalog";
-import type { FieldResource } from "../../fields/types";
-import type { ProjectTableColumnDefault } from "../shared/common";
+import {fetchTypesCatalog} from "../shared/typeCatalog";
+import type {FieldResource} from "../../fields/types";
+import type {ProjectTableColumnDefault} from "../shared/common";
 
 // The recording unit list's column catalog: the union of every type's fields (root `fields`) and
 // the default columns (RecordingUnitTableColumnDefaults, the JSF table's own source).

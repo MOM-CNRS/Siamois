@@ -1,8 +1,8 @@
 // Refreshes openapi/openapi.json from a running backend, then regenerates the TypeScript types.
 //   npm run api:pull                       (defaults to the local dev server)
 //   OPENAPI_URL=https://… npm run api:pull
-import { writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import {writeFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
 
 const url = process.env.OPENAPI_URL ?? "http://localhost:8099/siamois/v3/api-docs";
 const response = await fetch(url);

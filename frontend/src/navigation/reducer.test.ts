@@ -1,10 +1,20 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { configureBasePath } from "../api/basePath";
-import { registerEntityType } from "../entities/registry";
-import type { EntityTypeConfig } from "../entities/shared/types";
-import type { MountOptions } from "../mountOptions";
-import { decodeUrl, encodeUrl, initialNavState, navReducer, sameEntity, serverSync, transitionOf, type NavAction, type NavState } from "./reducer";
-import { encodeFocusUrl } from "./url";
+import {beforeAll, beforeEach, describe, expect, it} from "vitest";
+import {configureBasePath} from "../api/basePath";
+import {registerEntityType} from "../entities/registry";
+import type {EntityTypeConfig} from "../entities/shared/types";
+import type {MountOptions} from "../mountOptions";
+import {
+    decodeUrl,
+    encodeUrl,
+    initialNavState,
+    type NavAction,
+    navReducer,
+    type NavState,
+    sameEntity,
+    serverSync,
+    transitionOf
+} from "./reducer";
+import {encodeFocusUrl} from "./url";
 
 function fake(key: string, segment: string): EntityTypeConfig<unknown, unknown> {
   return {

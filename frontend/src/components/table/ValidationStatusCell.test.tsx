@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WriteModeProvider } from "../../panels/pane/writeMode";
-import { ValidationStatusCell, type ValidationStatusCellProps } from "./ValidationStatusCell";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {WriteModeProvider} from "../../panels/pane/writeMode";
+import {ValidationStatusCell, type ValidationStatusCellProps} from "./ValidationStatusCell";
 
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));

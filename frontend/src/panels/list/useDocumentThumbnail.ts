@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchDocumentFile, fetchDocumentThumbnail } from "../../entities/document/api";
+import {useEffect, useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {fetchDocumentFile, fetchDocumentThumbnail} from "../../entities/document/api";
 
 const THUMBNAIL_WIDTH = 480;
 

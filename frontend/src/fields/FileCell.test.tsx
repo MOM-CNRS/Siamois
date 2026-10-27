@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { FileCell, formatFileSize } from "./FileCell";
-import { fetchDocumentFile, removeDocumentFile, uploadDocumentFile } from "../entities/document/api";
-import { notifySpy } from "../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {FileCell, formatFileSize} from "./FileCell";
+import {fetchDocumentFile, removeDocumentFile, uploadDocumentFile} from "../entities/document/api";
+import {notifySpy} from "../test/notifySpy";
 
 vi.mock("../entities/document/api", () => ({
   fetchDocumentFile: vi.fn(),

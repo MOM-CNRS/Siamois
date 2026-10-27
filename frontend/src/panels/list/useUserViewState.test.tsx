@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { deleteViewState, getViewState, putViewState } from "../../api/resources/views";
-import { SAVE_DELAY_MS, useUserViewState, type UserViewState } from "./useUserViewState";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {deleteViewState, getViewState, putViewState} from "../../api/resources/views";
+import {SAVE_DELAY_MS, type UserViewState, useUserViewState} from "./useUserViewState";
 
 let container: HTMLDivElement;
 let root: Root;

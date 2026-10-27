@@ -1,29 +1,36 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { createPortal } from "react-dom";
-import { Button } from "primereact/button";
-import { ZIndexUtils } from "primereact/utils";
-import { commitsImmediately, sameValue, staysOpenAfterSave } from "../../fields/commit";
-import { renderAnswerCell } from "../../fields/display";
-import { editContextOf } from "../../fields/editContext";
-import { isEmptyValue } from "../../fields/FieldLabel";
-import { getFieldRenderer } from "../../fields/registry";
-import { fetchAllValues } from "../../fields/multiValues";
-import { stratigraphyPositionOf } from "../../fields/stratigraphy";
 import {
-  readMultiValue,
-  resolveValueBinding,
-  toAnswerInput,
-  type AnswerInputBody,
-  type FieldResource,
+    type KeyboardEvent as ReactKeyboardEvent,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState
+} from "react";
+import {createPortal} from "react-dom";
+import {Button} from "primereact/button";
+import {ZIndexUtils} from "primereact/utils";
+import {commitsImmediately, sameValue, staysOpenAfterSave} from "../../fields/commit";
+import {renderAnswerCell} from "../../fields/display";
+import {editContextOf} from "../../fields/editContext";
+import {isEmptyValue} from "../../fields/FieldLabel";
+import {getFieldRenderer} from "../../fields/registry";
+import {fetchAllValues} from "../../fields/multiValues";
+import {stratigraphyPositionOf} from "../../fields/stratigraphy";
+import {
+    type AnswerInputBody,
+    type FieldResource,
+    readMultiValue,
+    resolveValueBinding,
+    toAnswerInput,
 } from "../../fields/types";
-import { numberOf, type Bound, type FieldState } from "../../rules";
-import { StratigraphyEditor } from "../relationLinks/StratigraphyEditor";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
-import { useIsMobile } from "../../viewport";
-import { BottomSheet } from "../layout/BottomSheet";
-import { useToastOnChange } from "../../notify/NotifyProvider";
-import { useRestoreFocus } from "../../panels/pane/useRestoreFocus";
+import {type Bound, type FieldState, numberOf} from "../../rules";
+import {StratigraphyEditor} from "../relationLinks/StratigraphyEditor";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
+import {useIsMobile} from "../../viewport";
+import {BottomSheet} from "../layout/BottomSheet";
+import {useToastOnChange} from "../../notify/NotifyProvider";
+import {useRestoreFocus} from "../../panels/pane/useRestoreFocus";
 
 /**
  * One shared edit surface for every editable cell in the list — rendered ON TOP of the clicked

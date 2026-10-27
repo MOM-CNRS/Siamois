@@ -1,7 +1,7 @@
 package fr.siamois.domain.services.form.rules;
 
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.models.form.rules.ConceptIdLookup;
+import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

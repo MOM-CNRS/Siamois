@@ -1,10 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
-import fr.siamois.ui.api.openapi.v1.resource.form.BooleanFieldAnswer;
-import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.ui.api.openapi.v1.resource.form.BooleanFieldAnswer;
+import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 

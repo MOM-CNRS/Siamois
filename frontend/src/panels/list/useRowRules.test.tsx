@@ -1,10 +1,10 @@
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { describe, expect, it } from "vitest";
-import type { FieldResource } from "../../fields/types";
-import type { FieldRules } from "../../rules";
-import { useRowRules, useRuleFields } from "./useRowRules";
-import type { TypeRules } from "./useTypeRules";
+import {act} from "react";
+import {createRoot} from "react-dom/client";
+import {describe, expect, it} from "vitest";
+import type {FieldResource} from "../../fields/types";
+import type {FieldRules} from "../../rules";
+import {useRowRules, useRuleFields} from "./useRowRules";
+import type {TypeRules} from "./useTypeRules";
 
 // Two fields: #10 is greyed unless #20 equals 7 — but only for the type "A"; type "B" has no rule.
 const fields = {

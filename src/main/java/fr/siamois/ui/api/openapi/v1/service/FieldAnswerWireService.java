@@ -1,15 +1,11 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
-import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.PlaceSuggestionDTO;

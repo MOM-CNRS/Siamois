@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import type { CreatePrefill, DetailTabDef, DetailTabHelpers, RowActionDef } from "../../entities/shared/types";
-import { EntityListPanel } from "../EntityListPanel";
+import type {ReactNode} from "react";
+import type {CreatePrefill, DetailTabDef, DetailTabHelpers, RowActionDef} from "../../entities/shared/types";
+import {EntityListPanel} from "../EntityListPanel";
 
 // Builds a DetailTabDef whose content is another entity type's own list, scoped to this detail's
 // entity — "the recording units of this project", and (per plan) the next relation after it

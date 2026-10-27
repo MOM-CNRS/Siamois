@@ -4,29 +4,17 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
-import fr.siamois.domain.services.document.DocumentService;
-import fr.siamois.domain.services.study.StudyService;
-import fr.siamois.dto.entity.StudyDTO;
-import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
+import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
+import fr.siamois.dto.entity.*;
+import fr.siamois.infrastructure.database.repositories.specs.*;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
-import fr.siamois.dto.entity.ActionUnitSummaryDTO;
-import fr.siamois.dto.entity.ContainerDTO;
-import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.dto.entity.DocumentDTO;
-import fr.siamois.dto.entity.PhaseDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.dto.entity.SpecimenDTO;
-import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
-import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
-import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
-import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
-import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import lombok.RequiredArgsConstructor;
@@ -39,12 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Organization-wide lists ({@code GET /api/v1/recording-units|finds|phases|containers?organizationId=…})

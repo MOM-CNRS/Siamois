@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../api/queryKeys";
-import { getEffectiveForm } from "../../entities/shared/typeCatalog";
-import type { CreatableKind, CreateFormContext } from "../../entities/shared/types";
-import { SelectOneConceptRenderer } from "../../fields/renderers";
-import { referenceTargetOf } from "../../fields/optionSources";
-import { useDeclaredTypesState } from "../../entities/shared/useDeclaredTypes";
-import { NoTypeHint } from "./NoTypeHint";
-import type { FieldResource } from "../../fields/types";
-import { CreateFormField, CreateFormShell } from "./CreateFormShell";
-import { useCreateProject } from "./useCreateProject";
-import { useSuggestedIdentifier } from "./useSuggestedIdentifier";
-import { messageForError } from "../../api/errors";
-import { t } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {type ReactNode, useEffect, useMemo, useRef, useState} from "react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {queryKeys} from "../../api/queryKeys";
+import {getEffectiveForm} from "../../entities/shared/typeCatalog";
+import type {CreatableKind, CreateFormContext} from "../../entities/shared/types";
+import {SelectOneConceptRenderer} from "../../fields/renderers";
+import {referenceTargetOf} from "../../fields/optionSources";
+import {useDeclaredTypesState} from "../../entities/shared/useDeclaredTypes";
+import {NoTypeHint} from "./NoTypeHint";
+import type {FieldResource} from "../../fields/types";
+import {CreateFormField, CreateFormShell} from "./CreateFormShell";
+import {useCreateProject} from "./useCreateProject";
+import {useSuggestedIdentifier} from "./useSuggestedIdentifier";
+import {messageForError} from "../../api/errors";
+import {t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 interface ConceptPick {
   resourceId: string;

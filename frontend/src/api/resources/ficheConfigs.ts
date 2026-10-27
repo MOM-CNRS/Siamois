@@ -1,4 +1,4 @@
-import { apiFetch } from "../client";
+import {apiFetch} from "../client";
 
 // GET/PUT/DELETE /api/v1/fiche-configs — how a project arranges the tabs of a record type's fiche (which ones,
 // in which order, under which name, and the list tabs added to the built-in ones). Everybody reads it; saving

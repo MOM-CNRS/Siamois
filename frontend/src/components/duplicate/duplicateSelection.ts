@@ -4,7 +4,7 @@
 // parent copy to sit under) and nothing below it, unchecking one unchecks everything under it. What
 // the summary counts is then exactly what gets created.
 
-import type { DuplicationNode } from "../../entities/shared/types";
+import type {DuplicationNode} from "../../entities/shared/types";
 
 export interface StructureIndex {
   childrenOf: Map<string, string[]>;

@@ -1,7 +1,7 @@
-import { apiFetch } from "../../api/client";
-import { createEntityApi } from "../shared/createEntityApi";
-import type { DuplicationNode, DuplicationResult, DuplicationStructure } from "../shared/types";
-import type { RecordingUnitDetail, RecordingUnitSummary } from "./types";
+import {apiFetch} from "../../api/client";
+import {createEntityApi} from "../shared/createEntityApi";
+import type {DuplicationNode, DuplicationResult, DuplicationStructure} from "../shared/types";
+import type {RecordingUnitDetail, RecordingUnitSummary} from "./types";
 
 export interface RecordingUnitCreateBody {
   projectId: string;

@@ -1,20 +1,20 @@
-import { useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Toolbar } from "primereact/toolbar";
-import { FormLayoutView } from "../../fields/FormLayoutView";
-import { isEmptyValue } from "../../fields/FieldLabel";
-import { toAnswerInput, unwrapAnswer, type AnswerInputBody } from "../../fields/types";
-import type { FieldResource } from "../../fields/types";
-import { useCanEdit } from "../../panels/pane/writeMode";
-import { getProjectHistory, type ProjectHistoryEntry } from "./history";
-import { parseLayout } from "../../fields/layout";
-import { getProjectTypes } from "./projectTypes";
-import { patchProject, type ProjectPatch } from "./api";
-import type { ProjectDetail } from "./types";
-import { FormSkeleton } from "../../components/layout/DetailSkeleton";
-import { queryKeys } from "../../api/queryKeys";
-import { t, intlLocale } from "../../i18n";
-import { useToastOnChange } from "../../notify/NotifyProvider";
+import {useCallback, useMemo} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {Toolbar} from "primereact/toolbar";
+import {FormLayoutView} from "../../fields/FormLayoutView";
+import {isEmptyValue} from "../../fields/FieldLabel";
+import type {FieldResource} from "../../fields/types";
+import {type AnswerInputBody, toAnswerInput, unwrapAnswer} from "../../fields/types";
+import {useCanEdit} from "../../panels/pane/writeMode";
+import {getProjectHistory, type ProjectHistoryEntry} from "./history";
+import {parseLayout} from "../../fields/layout";
+import {getProjectTypes} from "./projectTypes";
+import {patchProject, type ProjectPatch} from "./api";
+import type {ProjectDetail} from "./types";
+import {FormSkeleton} from "../../components/layout/DetailSkeleton";
+import {queryKeys} from "../../api/queryKeys";
+import {intlLocale, t} from "../../i18n";
+import {useToastOnChange} from "../../notify/NotifyProvider";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
 // panel/row/field ActionUnit.DETAILS_FORM's layout defines (4 panels, 33 fields), same as JSF's

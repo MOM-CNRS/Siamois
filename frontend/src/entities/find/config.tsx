@@ -1,19 +1,19 @@
-import type { EntityTypeConfig } from "../shared/types";
-import { deleteEntity } from "../shared/deleteApi";
-import { loadTypeCatalog } from "../shared/typeCatalog";
-import { bookmarkChrome } from "../shared/chrome";
-import { fetchSiblings } from "../shared/siblingsApi";
-import { fetchBreadcrumbs } from "../shared/breadcrumbsApi";
-import { duplicateFind, getFind, listFinds, patchFind, patchFindAnswers } from "./api";
-import { findColumns } from "./columns";
-import { FindCreateForm } from "./CreateForm";
-import { SchemaEntityHeader } from "../../components/detail/SchemaEntityHeader";
-import { SchemaFicheTab } from "../../components/detail/SchemaFicheTab";
-import { jsfRoutes } from "../shared/routes";
-import { countCardWidgets } from "../shared/countCard";
-import { documentsTab } from "../document/documentsTab";
-import type { FindDetail, FindSummary } from "./types";
-import { t } from "../../i18n";
+import type {EntityTypeConfig} from "../shared/types";
+import {deleteEntity} from "../shared/deleteApi";
+import {loadTypeCatalog} from "../shared/typeCatalog";
+import {bookmarkChrome} from "../shared/chrome";
+import {fetchSiblings} from "../shared/siblingsApi";
+import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
+import {duplicateFind, getFind, listFinds, patchFind, patchFindAnswers} from "./api";
+import {findColumns} from "./columns";
+import {FindCreateForm} from "./CreateForm";
+import {SchemaEntityHeader} from "../../components/detail/SchemaEntityHeader";
+import {SchemaFicheTab} from "../../components/detail/SchemaFicheTab";
+import {jsfRoutes} from "../shared/routes";
+import {countCardWidgets} from "../shared/countCard";
+import {documentsTab} from "../document/documentsTab";
+import type {FindDetail, FindSummary} from "./types";
+import {t} from "../../i18n";
 
 // Find's own EntityTypeConfig (migration plan, lot 1 "Mobilier") — registered so it can be looked
 // up by key ("find") both by the registry's generics-erasure boundary and by

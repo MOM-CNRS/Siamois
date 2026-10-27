@@ -10,18 +10,18 @@
 // - a constraint `A op B` is declared on A only, but bounds and incoherence apply to both sides.
 
 import type {
-  Bound,
-  Condition,
-  FieldConstraint,
-  FieldState,
-  IncoherenceReason,
-  LeafCondition,
-  OptionsContext,
-  PlaceContext,
-  PlaceSourceSpec,
-  RuledColumn,
+    Bound,
+    Condition,
+    FieldConstraint,
+    FieldState,
+    IncoherenceReason,
+    LeafCondition,
+    OptionsContext,
+    PlaceContext,
+    PlaceSourceSpec,
+    RuledColumn,
 } from "./types";
-import { expectedScalar, idOf, isEmptyValue, numberOf, sameScalar, scalarsOf } from "./values";
+import {expectedScalar, idOf, isEmptyValue, numberOf, sameScalar, scalarsOf} from "./values";
 
 export type ValueOf = (fieldId: string) => unknown;
 

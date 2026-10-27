@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { configureBasePath } from "../api/basePath";
-import { decodeFocusUrl, encodeFocusUrl } from "./url";
+import {beforeEach, describe, expect, it} from "vitest";
+import {configureBasePath} from "../api/basePath";
+import {decodeFocusUrl, encodeFocusUrl} from "./url";
 
 function locationOf(url: string) {
   const { pathname, search } = new URL(url, "http://localhost");

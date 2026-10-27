@@ -5,12 +5,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
-import fr.siamois.domain.models.form.rules.Condition;
-import fr.siamois.domain.models.form.rules.ConditionOp;
-import fr.siamois.domain.models.form.rules.FieldConstraint;
-import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
+import fr.siamois.domain.models.form.rules.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

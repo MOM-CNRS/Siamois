@@ -1,10 +1,10 @@
-import { useRef, type ReactNode } from "react";
-import { Button } from "primereact/button";
-import { Checkbox } from "primereact/checkbox";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { RadioButton } from "primereact/radiobutton";
-import { Toolbar } from "primereact/toolbar";
-import { t } from "../../../i18n";
+import {type ReactNode, useRef} from "react";
+import {Button} from "primereact/button";
+import {Checkbox} from "primereact/checkbox";
+import {OverlayPanel} from "primereact/overlaypanel";
+import {RadioButton} from "primereact/radiobutton";
+import {Toolbar} from "primereact/toolbar";
+import {t} from "../../../i18n";
 
 export type RelationsMode = "graph" | "list";
 

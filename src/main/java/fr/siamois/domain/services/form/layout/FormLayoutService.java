@@ -2,11 +2,7 @@ package fr.siamois.domain.services.form.layout;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.siamois.domain.models.form.config.FieldFormConfig;
-import fr.siamois.domain.models.form.config.FieldUnits;
-import fr.siamois.domain.models.form.config.FieldWidth;
-import fr.siamois.domain.models.form.config.FormConfig;
-import fr.siamois.domain.models.form.config.FormConfigGroup;
+import fr.siamois.domain.models.form.config.*;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.rules.FieldRules;
@@ -24,14 +20,7 @@ import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Reads the stored layout of a (project, table, type): the groups of its {@code FormConfig} and the

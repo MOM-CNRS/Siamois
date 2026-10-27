@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { EntityTypeConfig } from "../../entities/shared/types";
-import { fetchListSiblings } from "./listSiblings";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import type {EntityTypeConfig} from "../../entities/shared/types";
+import {fetchListSiblings} from "./listSiblings";
 
 // A list of ten rows, "r0".."r9", served by offset/limit like the real endpoints.
 const ROWS = Array.from({ length: 10 }, (_, i) => ({ id: String(100 + i), fullIdentifier: `r${i}` }));

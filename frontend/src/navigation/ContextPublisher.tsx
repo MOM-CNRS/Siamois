@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchBreadcrumbs } from "../entities/shared/breadcrumbsApi";
-import { PROJECT_KEY } from "../entities/keys";
-import { getEntityType } from "../entities/registry";
-import { publishContext } from "./externalBus";
-import type { NavigationView } from "./reducer";
+import {useEffect} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {fetchBreadcrumbs} from "../entities/shared/breadcrumbsApi";
+import {PROJECT_KEY} from "../entities/keys";
+import {getEntityType} from "../entities/registry";
+import {publishContext} from "./externalBus";
+import type {NavigationView} from "./reducer";
 
 /**
  * Tells the search bar (another React root: see externalBus) where the user is: the organization,

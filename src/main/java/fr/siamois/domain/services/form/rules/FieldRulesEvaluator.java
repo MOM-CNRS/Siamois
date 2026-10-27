@@ -1,10 +1,6 @@
 package fr.siamois.domain.services.form.rules;
 
-import fr.siamois.domain.models.form.rules.Condition;
-import fr.siamois.domain.models.form.rules.FieldConstraint;
-import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
+import fr.siamois.domain.models.form.rules.*;
 import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;

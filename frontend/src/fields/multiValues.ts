@@ -1,5 +1,5 @@
-import { apiFetch } from "../api/client";
-import type { MultiValueAnswer } from "./types";
+import {apiFetch} from "../api/client";
+import type {MultiValueAnswer} from "./types";
 
 // The API's page size ceiling (ProjectApiService.MAX_PAGE_SIZE): the fewest round trips.
 const PAGE_SIZE = 200;

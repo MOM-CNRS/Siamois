@@ -1,10 +1,10 @@
-import { useRef } from "react";
-import { Button } from "primereact/button";
-import { Menu } from "primereact/menu";
-import { Tooltip } from "primereact/tooltip";
-import type { FieldResource } from "./types";
-import { t } from "../i18n";
-import { useFieldConfigActions } from "./fieldConfigContext";
+import {useRef} from "react";
+import {Button} from "primereact/button";
+import {Menu} from "primereact/menu";
+import {Tooltip} from "primereact/tooltip";
+import type {FieldResource} from "./types";
+import {t} from "../i18n";
+import {useFieldConfigActions} from "./fieldConfigContext";
 
 /**
  * panelField.xhtml's header-toggle-container: the flat label button — the field's own icon

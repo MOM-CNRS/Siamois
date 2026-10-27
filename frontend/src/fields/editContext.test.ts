@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { editContextOf } from "./editContext";
+import {describe, expect, it} from "vitest";
+import {editContextOf} from "./editContext";
 
 describe("editContextOf", () => {
   it("reads the project off a detail's projectId", () => {

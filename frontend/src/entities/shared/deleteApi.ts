@@ -1,4 +1,4 @@
-import { apiFetch } from "../../api/client";
+import {apiFetch} from "../../api/client";
 
 /**
  * DELETE /api/v1/{collectionPath}/{id}. Answers 204, or 409 with a readable message when the

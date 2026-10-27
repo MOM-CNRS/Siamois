@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { deleteFicheConfig, putFicheConfig } from "../../api/resources/ficheConfigs";
-import type { DetailTabDef } from "../../entities/shared/types";
-import { FicheTabsEditor } from "./FicheTabsEditor";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {deleteFicheConfig, putFicheConfig} from "../../api/resources/ficheConfigs";
+import type {DetailTabDef} from "../../entities/shared/types";
+import {FicheTabsEditor} from "./FicheTabsEditor";
 
 const code = [
   { key: "fiche", label: "Fiche", render: () => null },

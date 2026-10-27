@@ -1,6 +1,6 @@
-import type { ViewStateBody, ViewTableState } from "../../api/resources/views";
-import { LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type FilterValue, type TableState } from "./tableState";
-import type { ListViewMode } from "./listViews";
+import type {ViewStateBody, ViewTableState} from "../../api/resources/views";
+import {type FilterValue, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type TableState} from "./tableState";
+import type {ListViewMode} from "./listViews";
 
 // What of a list's TableState is kept for the user (GET/PUT /api/v1/view-states), and how it reads
 // back. The page (`offset`) and the search text are deliberately not: coming back to page 7 of

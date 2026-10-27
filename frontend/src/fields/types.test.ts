@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { readMultiValue, resolveValueBinding, toAnswerInput, unwrapAnswer, type FieldResource } from "./types";
+import {describe, expect, it} from "vitest";
+import {type FieldResource, readMultiValue, resolveValueBinding, toAnswerInput, unwrapAnswer} from "./types";
 
 function field(overrides: Partial<FieldResource>): FieldResource {
   return {

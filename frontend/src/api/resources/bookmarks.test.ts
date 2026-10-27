@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "../client";
-import { createBookmark, deleteBookmark } from "./bookmarks";
+import {beforeEach, describe, expect, it, vi} from "vitest";
+import {apiFetch} from "../client";
+import {createBookmark, deleteBookmark} from "./bookmarks";
 
 vi.mock("../client", () => ({
   apiFetch: vi.fn(),

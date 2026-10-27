@@ -1,4 +1,4 @@
-import type { PanelChrome } from "../../mountOptions";
+import type {PanelChrome} from "../../mountOptions";
 
 // The one shape every entity's `detail.chrome` derives from — `resourceUri` and `bookmarked` both come
 // straight off the REST resource (ResourceBookmarkService server-side), never a hardcoded route

@@ -1,11 +1,11 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { InputText } from "primereact/inputtext";
-import { apiFetch } from "../../api/client";
-import { queryKeys } from "../../api/queryKeys";
-import type { CreatableKind } from "../../entities/shared/types";
-import { CreateFormField } from "./CreateFormShell";
-import { t } from "../../i18n";
+import {type ReactNode, useEffect, useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {InputText} from "primereact/inputtext";
+import {apiFetch} from "../../api/client";
+import {queryKeys} from "../../api/queryKeys";
+import type {CreatableKind} from "../../entities/shared/types";
+import {CreateFormField} from "./CreateFormShell";
+import {t} from "../../i18n";
 
 // Every creatable kind has a generated identifier, suggested by the one endpoint for all of them,
 // named by the kind's collection.

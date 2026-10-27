@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { formatDateAnswer, parseDateAnswer } from "./dateAnswer";
+import {describe, expect, it} from "vitest";
+import {formatDateAnswer, parseDateAnswer} from "./dateAnswer";
 
 // A date-only answer is a calendar day: it must round-trip through the picker's local Date without
 // drifting a day (toISOString() used to turn local midnight in France into the previous day, UTC).

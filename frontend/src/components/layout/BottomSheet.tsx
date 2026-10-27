@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { Sidebar } from "primereact/sidebar";
+import {type PointerEvent, type ReactNode, useEffect, useRef, useState} from "react";
+import {Sidebar} from "primereact/sidebar";
 
 export interface BottomSheetProps {
   visible: boolean;

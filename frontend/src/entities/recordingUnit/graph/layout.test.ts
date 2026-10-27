@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { layoutGraph, NODE_HEIGHT, type LayoutLabels } from "./layout";
-import type { GraphUnitRef, GraphZone, RelationGraph } from "./types";
+import {describe, expect, it} from "vitest";
+import {layoutGraph, type LayoutLabels, NODE_HEIGHT} from "./layout";
+import type {GraphUnitRef, GraphZone, RelationGraph} from "./types";
 
 const labels: LayoutLabels = {
   zone: { parents: "P", children: "C", anterior: "A", synchronous: "S", posterior: "N", others: "O" },

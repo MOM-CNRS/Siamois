@@ -1,6 +1,6 @@
-import type { QueryClient } from "@tanstack/react-query";
-import type { PagedResult } from "../entities/shared/types";
-import { queryKeys } from "./queryKeys";
+import type {QueryClient} from "@tanstack/react-query";
+import type {PagedResult} from "../entities/shared/types";
+import {queryKeys} from "./queryKeys";
 
 /**
  * Writes a known change of one entity into every cached copy of it — the rows of its type's lists

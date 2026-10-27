@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 
 // A phone-width window: the overview pane has no room next to the main one, so entities open in the main pane
 // and the toolbar folds into its "…" menu.

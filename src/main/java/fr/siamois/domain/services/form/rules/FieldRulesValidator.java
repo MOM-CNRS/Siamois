@@ -1,17 +1,10 @@
 package fr.siamois.domain.services.form.rules;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.rules.Condition;
-import fr.siamois.domain.models.form.rules.ConditionOp;
-import fr.siamois.domain.models.form.rules.FieldConstraint;
-import fr.siamois.domain.models.form.rules.FieldRules;
-import fr.siamois.domain.models.form.rules.FieldValueSpec;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
-import fr.siamois.domain.models.form.rules.PlaceSourceSpec;
-import fr.siamois.domain.models.form.rules.RuleFieldFamily;
+import fr.siamois.domain.models.form.rules.*;
 import fr.siamois.domain.services.placesource.PlaceSourceProvider;
 import fr.siamois.domain.services.placesource.PlaceSourceRegistry;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Checks the rules a user wrote before they are stored: they may only read other fields of the same

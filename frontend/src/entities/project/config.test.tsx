@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { projectEntityConfig } from "./config";
-import type { ProjectDetail } from "./types";
+import {describe, expect, it} from "vitest";
+import {projectEntityConfig} from "./config";
+import type {ProjectDetail} from "./types";
 
 describe("projectEntityConfig detail tabs", () => {
   it("declares the fiche tab first, then documents, studies, recording-units, containers, phases, finds and places", () => {

@@ -1,4 +1,4 @@
-import { apiFetch } from "../client";
+import {apiFetch} from "../client";
 
 // POST/DELETE /api/v1/bookmarks (plan §5/§8 phase 8) — generic, not Project-specific:
 // resourceUri is the plain app route (e.g. "/action-unit/123"), not a REST path. The caller

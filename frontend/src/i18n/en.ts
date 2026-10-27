@@ -1,4 +1,4 @@
-import type { MessageKey } from "./fr";
+import type {MessageKey} from "./fr";
 
 export const en: Record<MessageKey, string> = {
   "toolbar.closeFocus": "Close focus mode",

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { QueryClient } from "@tanstack/react-query";
-import { patchCachedEntity } from "./entityCache";
-import { queryKeys } from "./queryKeys";
+import {describe, expect, it} from "vitest";
+import {QueryClient} from "@tanstack/react-query";
+import {patchCachedEntity} from "./entityCache";
+import {queryKeys} from "./queryKeys";
 
 describe("patchCachedEntity", () => {
   it("patches the entity's rows in its type's lists and its detail, whatever the id's type", () => {

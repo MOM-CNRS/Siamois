@@ -1,16 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { registerDefaultFieldRenderers } from "../../fields/registerDefaultRenderers";
-import { registerFieldRenderer } from "../../fields/registry";
-import { ApiError } from "../../api/client";
-import { CellEditOverlay, type CellEditTarget } from "./CellEditOverlay";
-import type { FieldResource } from "../../fields/types";
-import { registerEntityType } from "../../entities/registry";
-import type { EntityTypeConfig } from "../../entities/shared/types";
-import { EntityNavigationProvider } from "../../panels/pane/entityNavigation";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { notifySpy } from "../../test/notifySpy";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {registerDefaultFieldRenderers} from "../../fields/registerDefaultRenderers";
+import {registerFieldRenderer} from "../../fields/registry";
+import {ApiError} from "../../api/client";
+import {CellEditOverlay, type CellEditTarget} from "./CellEditOverlay";
+import type {FieldResource} from "../../fields/types";
+import {registerEntityType} from "../../entities/registry";
+import type {EntityTypeConfig} from "../../entities/shared/types";
+import {EntityNavigationProvider} from "../../panels/pane/entityNavigation";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {notifySpy} from "../../test/notifySpy";
 
 
 const { fetchAllValues } = vi.hoisted(() => ({ fetchAllValues: vi.fn() }));

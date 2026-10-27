@@ -1,43 +1,34 @@
 package fr.siamois.ui.bean.settings.project;
 
 import fr.siamois.domain.models.form.config.FieldUnits;
+import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
-import fr.siamois.domain.models.settings.tableconfig.ConceptSummary;
-import fr.siamois.domain.models.settings.tableconfig.FieldOptions;
-import fr.siamois.domain.models.settings.tableconfig.FieldType;
-import fr.siamois.domain.services.measurement.UnitDefinitionService;
-import fr.siamois.dto.entity.UnitDefinitionDTO;
-import fr.siamois.dto.entity.vocabulary.ConceptDTO;
-import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
-import org.mockito.ArgumentCaptor;
-import fr.siamois.domain.models.form.config.FieldWidth;
-import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.settings.tableconfig.LayoutRow;
-import fr.siamois.domain.models.settings.tableconfig.TypeFieldFormConfig;
-import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
+import fr.siamois.domain.models.settings.tableconfig.*;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.identifier.IdentifierResolver;
 import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.ConceptCollectionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
 import fr.siamois.dto.entity.ActionUnitDTO;
+import fr.siamois.dto.entity.UnitDefinitionDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.vocabulary.VocabularyMapper;
 import fr.siamois.ui.bean.LangBean;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class ProjectTableFieldSettingsBeanTest {
 

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ENTITY_KEYS, isEntityKey } from "./keys";
+import {describe, expect, it} from "vitest";
+import {ENTITY_KEYS, isEntityKey} from "./keys";
 
 describe("isEntityKey", () => {
   it("accepts every registry key of the application", () => {

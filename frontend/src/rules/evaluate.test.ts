@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { columnsDependencies, ruleDependencies } from "./dependencies";
-import { evaluateForm } from "./evaluate";
-import { filterOptionsOffline, offlineIsAllowed } from "./offline";
-import type { RuledColumn } from "./types";
+import {describe, expect, it} from "vitest";
+import {columnsDependencies, ruleDependencies} from "./dependencies";
+import {evaluateForm} from "./evaluate";
+import {filterOptionsOffline, offlineIsAllowed} from "./offline";
+import type {RuledColumn} from "./types";
 
 describe("evaluateForm", () => {
   it("disables a field whose condition throws rather than crashing the form", () => {

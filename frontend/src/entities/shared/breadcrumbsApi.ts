@@ -1,5 +1,5 @@
-import { apiFetch } from "../../api/client";
-import type { EntityBreadcrumbs } from "./types";
+import {apiFetch} from "../../api/client";
+import type {EntityBreadcrumbs} from "./types";
 
 interface BreadcrumbsResponseBody {
   data: EntityBreadcrumbs;

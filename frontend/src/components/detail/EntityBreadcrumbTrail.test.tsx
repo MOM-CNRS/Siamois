@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { EntityBreadcrumbTrail } from "./EntityBreadcrumbTrail";
-import type { EntityBreadcrumbs } from "../../entities/shared/types";
-import { registerEntityType } from "../../entities/registry";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {act} from "react";
+import {createRoot, type Root} from "react-dom/client";
+import {EntityBreadcrumbTrail} from "./EntityBreadcrumbTrail";
+import type {EntityBreadcrumbs} from "../../entities/shared/types";
+import {registerEntityType} from "../../entities/registry";
 
 let container: HTMLDivElement;
 let root: Root;
