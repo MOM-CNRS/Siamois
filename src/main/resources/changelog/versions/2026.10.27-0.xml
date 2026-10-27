@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    An export template is identified, within an institution, by its name and version: two different templates cannot
+    share the pair. Existing duplicates keep their oldest row as is; the others get a numbered version
+    ("1.0.0" becomes "1.0.0-2"), both in the version column and in the shared JSON definition.
+    On a fresh database the table may not exist yet: every statement is guarded.
+    -->
+
+    <changeSet id="2026.10.27-0-export-template-unique-name-version" author="Gregory Bliault" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $$
+            BEGIN
+                IF to_regclass('public.export_template') IS NULL THEN
+                    RETURN;
+                END IF;
+
+                WITH ranked AS (
+                    SELECT export_template_id,
+                           version,
+                           row_number() OVER (PARTITION BY fk_institution_id, lower(name), version ORDER BY export_template_id) AS rn
+                    FROM export_template
+                )
+                UPDATE export_template t
+                SET version = left(r.version, 40) || '-' || r.rn,
+                    definition = jsonb_set(t.definition, '{version}', to_jsonb(left(r.version, 40) || '-' || r.rn))
+                FROM ranked r
+                WHERE t.export_template_id = r.export_template_id AND r.rn > 1;
+
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uk_export_template_institution_name_version') THEN
+                    ALTER TABLE export_template
+                        ADD CONSTRAINT uk_export_template_institution_name_version UNIQUE (fk_institution_id, name, version);
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

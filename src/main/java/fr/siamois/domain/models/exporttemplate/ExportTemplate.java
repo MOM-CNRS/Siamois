@@ -25,7 +25,11 @@ import java.time.Instant;
 @Entity
 @Table(
         name = "export_template",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"fk_institution_id", "template_uuid"}))
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"fk_institution_id", "template_uuid"}),
+                @UniqueConstraint(name = "uk_export_template_institution_name_version",
+                        columnNames = {"fk_institution_id", "name", "version"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor

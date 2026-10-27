@@ -9,6 +9,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptR
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntityKind;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.OutputType;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateJson;
+import fr.siamois.domain.models.exporttemplate.DuplicateExportTemplateException;
 import fr.siamois.domain.models.exporttemplate.InvalidExportTemplateException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -60,6 +61,7 @@ import jakarta.faces.model.SelectItem;
 import jakarta.faces.model.SelectItemGroup;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Éditeur de mapping d'un modèle d'export (paramètres, JSF) : feuilles, sources, colonnes, règles.
@@ -130,6 +132,27 @@ public class ExportTemplateEditorBean implements Serializable {
             return null;
         }
         return "/pages/settings/exportTemplateEditor.xhtml?faces-redirect=true";
+    }
+
+    /** Clic sur une ligne de la liste des modèles : ouvre l'éditeur sur ce modèle. */
+    public void openFromRow(org.primefaces.event.SelectEvent<ExportTemplateDTO> event) throws java.io.IOException {
+        String path = open(event.getObject().id());
+        if (path == null) {
+            return;
+        }
+        jakarta.faces.context.ExternalContext external = jakarta.faces.context.FacesContext.getCurrentInstance().getExternalContext();
+        external.redirect(external.getRequestContextPath() + path.replace("?faces-redirect=true", ""));
+    }
+
+    /** Ligne sélectionnée de la liste ; remise à vide aussitôt (le clic ouvre le modèle). */
+    private transient ExportTemplateDTO selectedRow;
+
+    public ExportTemplateDTO getSelectedRow() {
+        return null;
+    }
+
+    public void setSelectedRow(ExportTemplateDTO row) {
+        this.selectedRow = row;
     }
 
     private void load(Long id) {
@@ -254,6 +277,7 @@ public class ExportTemplateEditorBean implements Serializable {
     public void selectSheet(EditSheet sheet) {
         selectedSheetIndex = model.getSheets().indexOf(sheet);
         selectedColumn = null;
+        clearChecked();
         gapSource = -1;
         sourceDialog.reset();
         refreshPreviewIfStale();
@@ -273,6 +297,7 @@ public class ExportTemplateEditorBean implements Serializable {
         model.getSheets().add(sheet);
         selectedSheetIndex = model.getSheets().size() - 1;
         selectedColumn = null;
+        clearChecked();
         gapSource = -1;
         sourceDialog.reset();
         refreshPreviewIfStale();
@@ -305,6 +330,7 @@ public class ExportTemplateEditorBean implements Serializable {
         }
         model.getSheets().remove(sheet);
         selectedColumn = null;
+        clearChecked();
     }
 
     public void moveSheet(EditSheet sheet, int delta) {
@@ -374,6 +400,154 @@ public class ExportTemplateEditorBean implements Serializable {
         if (selectedColumn == column) {
             selectedColumn = null;
         }
+    }
+
+    // ------------------------------------------------------------------ sélection de colonnes et suppressions confirmées
+
+    private transient Set<EditColumn> checkedColumns;
+    private String confirmKind = "";
+    private transient EditColumn confirmColumn;
+    private transient EditSheet confirmSheet;
+
+    private Set<EditColumn> checked() {
+        if (checkedColumns == null) {
+            checkedColumns = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        }
+        return checkedColumns;
+    }
+
+    public boolean isChecked(EditColumn column) {
+        return checked().contains(column);
+    }
+
+    public void toggleChecked(EditColumn column) {
+        if (published || column == null) {
+            return;
+        }
+        if (!checked().remove(column)) {
+            checked().add(column);
+        }
+    }
+
+    /** Coche ou décoche la colonne à la position {@code ix} de la feuille (paramètre de requête). */
+    public void toggleCheckedAt() {
+        EditSheet sheet = getSelectedSheet();
+        String ix = jakarta.faces.context.FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("ix");
+        if (sheet == null || ix == null) {
+            return;
+        }
+        try {
+            int at = Integer.parseInt(ix);
+            if (at >= 0 && at < sheet.getColumns().size()) {
+                toggleChecked(sheet.getColumns().get(at));
+            }
+        } catch (NumberFormatException e) {
+            log.debug("Ignoring column index '{}'", ix);
+        }
+    }
+
+    /** Position de la colonne dans la feuille affichée (-1 si absente). */
+    public int columnIndex(EditColumn column) {
+        EditSheet sheet = getSelectedSheet();
+        return sheet == null ? -1 : sheet.getColumns().indexOf(column);
+    }
+
+    public boolean isCheckedAt(int index) {
+        EditSheet sheet = getSelectedSheet();
+        return sheet != null && index >= 0 && index < sheet.getColumns().size() && isChecked(sheet.getColumns().get(index));
+    }
+
+    public void clearChecked() {
+        checked().clear();
+    }
+
+    /** Nombre de colonnes cochées de la feuille affichée. */
+    public int getCheckedCount() {
+        EditSheet sheet = getSelectedSheet();
+        if (sheet == null) {
+            return 0;
+        }
+        checked().removeIf(c -> !sheet.getColumns().contains(c));
+        return checked().size();
+    }
+
+    public boolean isAllVisibleChecked() {
+        List<EditColumn> visible = getVisibleColumns();
+        return !visible.isEmpty() && visible.stream().allMatch(this::isChecked);
+    }
+
+    /** Coche toutes les colonnes visibles, ou les décoche si elles le sont déjà. */
+    public void toggleCheckAllVisible() {
+        if (published) {
+            return;
+        }
+        List<EditColumn> visible = getVisibleColumns();
+        if (isAllVisibleChecked()) {
+            visible.forEach(checked()::remove);
+        } else {
+            checked().addAll(visible);
+        }
+    }
+
+    public void askRemoveColumn(EditColumn column) {
+        confirmKind = "COLUMN";
+        confirmColumn = column;
+    }
+
+    public void askRemoveSheet(EditSheet sheet) {
+        confirmKind = "SHEET";
+        confirmSheet = sheet;
+    }
+
+    public void askRemoveChecked() {
+        confirmKind = getCheckedCount() > 0 ? "BATCH" : "";
+    }
+
+    public void askRemoveSelectedSheet() {
+        askRemoveSheet(getSelectedSheet());
+    }
+
+    public String getConfirmMessage() {
+        return switch (confirmKind) {
+            case "COLUMN" -> langBean.msg("exportTemplates.editor.confirm.column", confirmColumn == null ? "" : confirmColumn.getHeader());
+            case "SHEET" -> langBean.msg("exportTemplates.editor.confirm.sheet", confirmSheet == null ? "" : confirmSheet.getName(),
+                    confirmSheet == null ? 0 : confirmSheet.getColumns().size());
+            case "BATCH" -> langBean.msg("exportTemplates.editor.confirm.batch", getCheckedCount());
+            default -> "";
+        };
+    }
+
+    public void cancelRemoval() {
+        confirmKind = "";
+        confirmColumn = null;
+        confirmSheet = null;
+    }
+
+    /** Exécute la suppression demandée (colonne, feuille ou lot de colonnes cochées) après confirmation. */
+    public void confirmRemoval() {
+        if (published) {
+            cancelRemoval();
+            return;
+        }
+        switch (confirmKind) {
+            case "COLUMN" -> removeColumn(confirmColumn);
+            case "SHEET" -> {
+                if (confirmSheet != null && model.getSheets().size() > 1) {
+                    removeSheet(confirmSheet);
+                }
+            }
+            case "BATCH" -> {
+                EditSheet sheet = requireSelectedSheet();
+                List<EditColumn> doomed = sheet.getColumns().stream().filter(this::isChecked).toList();
+                doomed.forEach(this::removeColumn);
+                clearChecked();
+            }
+            default -> { }
+        }
+        if (previewOpen && referenceProjectId != null) {
+            refreshPreview();
+        }
+        cancelRemoval();
     }
 
     public void moveColumn(EditColumn column, int delta) {
@@ -1433,20 +1607,22 @@ public class ExportTemplateEditorBean implements Serializable {
         for (SelectItem item : fieldChoices(editRule)) {
             if (item instanceof SelectItemGroup group) {
                 for (SelectItem child : group.getSelectItems()) {
-                    addSuggestion(out, group.getLabel(), child, needle);
+                    addSuggestion(out, child, needle);
                 }
+            } else {
+                addSuggestion(out, item, needle);
             }
         }
         return out.size() > MAX_FIELD_SUGGESTIONS ? out.subList(0, MAX_FIELD_SUGGESTIONS) : out;
     }
 
-    private static void addSuggestion(List<FieldSuggestion> out, String group, SelectItem item, String needle) {
+    private static void addSuggestion(List<FieldSuggestion> out, SelectItem item, String needle) {
         String choice = String.valueOf(item.getValue());
         if (choice.isBlank()) {
             return;
         }
         boolean relation = !ExportTemplateEditModel.splitChoice(choice)[0].isEmpty();
-        String label = relation ? group + " › " + item.getLabel() : item.getLabel();
+        String label = item.getLabel();
         if (needle.isEmpty() || label.toLowerCase().contains(needle) || choice.toLowerCase().contains(needle)) {
             out.add(new FieldSuggestion(label, choice, relation));
         }
@@ -1500,7 +1676,7 @@ public class ExportTemplateEditorBean implements Serializable {
         return sheet.getColumns().stream()
                 .filter(c -> needle.isEmpty() || haystack(sheet, c).contains(needle))
                 .filter(c -> gapSource < 0 || ruleAt(c, gapSource).isEmpty())
-                .filter(c -> switch (columnFilter == null ? FILTER_ALL : columnFilter) {
+                .filter(c -> switch (columnFilter == null || published ? FILTER_ALL : columnFilter) {
                     case FILTER_MAPPED -> isMapped(c);
                     case FILTER_CHECK -> needsCheck(c);
                     default -> true;
@@ -1911,11 +2087,15 @@ public class ExportTemplateEditorBean implements Serializable {
             if (columns.length > 0) {
                 out.add(new SelectItemGroup(langBean.msg("exportTemplates.editor.choices.columns"), "", false, columns));
             }
-            technical.get().ends().entrySet().stream().sorted(java.util.Map.Entry.comparingByKey())
-                    .forEach(e -> addSubjectChoices(out, e.getValue(), List.of(e.getKey()), NAVIGATION_DEPTH - 1));
+            java.util.Map<String, ExportSubject> ends = technical.get().ends();
+            ends.entrySet().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(e -> {
+                long sameTarget = ends.values().stream().filter(e.getValue()::equals).count();
+                String label = subjectLabel(e.getValue()) + (sameTarget > 1 ? " (" + e.getKey() + ")" : "");
+                addSubjectChoices(out, e.getValue(), List.of(e.getKey()), List.of(label), NAVIGATION_DEPTH - 1);
+            });
         } else {
             firstSource(sourceChoices).flatMap(ExportTemplateEditorBean::subjectOf)
-                    .ifPresent(subject -> addSubjectChoices(out, subject, List.of(), NAVIGATION_DEPTH));
+                    .ifPresent(subject -> addSubjectChoices(out, subject, List.of(), List.of(), NAVIGATION_DEPTH));
         }
         if (current != null && !current.isBlank() && !containsChoice(out, current)) {
             out.add(choice(current, langBean.msg("exportTemplates.editor.unresolved", current)));
@@ -1923,31 +2103,42 @@ public class ExportTemplateEditorBean implements Serializable {
         return out;
     }
 
-    private void addSubjectChoices(List<SelectItem> out, ExportSubject subject, List<String> path, int depth) {
-        List<SelectItem> items = new ArrayList<>();
+    /** Libellé d'une entité du modèle (projet, lieu, unité d'enregistrement…). */
+    private String subjectLabel(ExportSubject subject) {
+        return langBean.msg("exportTemplates.editor.entity." + subject.name());
+    }
+
+    /** Libellé d'une navigation : son nom lisible, ou à défaut celui de l'entité qu'elle atteint. */
+    private String navigationLabel(String name, ExportSubject target) {
+        String key = "exportTemplates.editor.nav." + name;
+        String label = langBean.msg(key);
+        return label == null || label.isBlank() || label.equals(key) || label.contains(key) ? subjectLabel(target) : label;
+    }
+
+    /** Ajoute à plat les champs de l'entité, libellés « chemin › champ », puis ceux des entités atteignables. */
+    private void addSubjectChoices(List<SelectItem> out, ExportSubject subject, List<String> path, List<String> labels, int depth) {
         String prefix = String.join(",", path);
+        String labelPrefix = labels.isEmpty() ? "" : String.join(" › ", labels) + " › ";
         for (FieldOption o : fieldsOf(subject)) {
-            String label = o.system() ? langBean.msg(o.label()) : o.label();
+            String label = labelPrefix + (o.system() ? langBean.msg(o.label()) : o.label());
             String key = ExportTemplateEditModel.keyOf(o.concept());
             String sep = ExportTemplateEditModel.CHOICE_SEPARATOR;
-            items.add(choice(prefix + sep + key + sep, label));
+            out.add(choice(prefix + sep + key + sep, label));
             if (o.measurement()) {
                 for (String property : ExportTemplateDefinition.ConceptField.MEASUREMENT_PROPERTIES) {
-                    items.add(choice(prefix + sep + key + sep + property,
+                    out.add(choice(prefix + sep + key + sep + property,
                             label + " › " + langBean.msg("exportTemplates.editor.property." + property)));
                 }
             }
-        }
-        if (!items.isEmpty()) {
-            String label = path.isEmpty() ? langBean.msg("exportTemplates.editor.choices.own")
-                    : String.join(" › ", path);
-            out.add(new SelectItemGroup(label, "", false, items.toArray(SelectItem[]::new)));
         }
         if (depth > 0) {
             ExportNavigations.names(subject).stream().sorted().forEach(nav -> {
                 List<String> next = new ArrayList<>(path);
                 next.add(nav);
-                addSubjectChoices(out, ExportNavigations.targetOf(subject, List.of(nav)), next, depth - 1);
+                ExportSubject target = ExportNavigations.targetOf(subject, List.of(nav));
+                List<String> nextLabels = new ArrayList<>(labels);
+                nextLabels.add(navigationLabel(nav, target));
+                addSubjectChoices(out, target, next, nextLabels, depth - 1);
             });
         }
     }
@@ -2137,6 +2328,20 @@ public class ExportTemplateEditorBean implements Serializable {
         return null;
     }
 
+    /** Nouvelle version du modèle ouvert : même nom, nouvelle étiquette de version, ouverte aussitôt. */
+    public String newVersionOfTemplate() {
+        try {
+            ExportTemplateDTO copy = exportTemplateService.newVersion(userInfoUser(), templateId);
+            load(copy.id());
+            MessageUtils.displayInfoMessage(langBean, "exportTemplates.newVersionDone", copy.name(), copy.version());
+        } catch (ForbiddenOperationException e) {
+            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
+        } catch (NoSuchElementException e) {
+            MessageUtils.displayErrorMessage(langBean, ERR_NOT_FOUND);
+        }
+        return null;
+    }
+
     /** @return vrai si le modèle a été enregistré */
     private boolean persist(boolean notify) {
         if (model == null) {
@@ -2168,6 +2373,8 @@ public class ExportTemplateEditorBean implements Serializable {
                 MessageUtils.displayInfoMessage(langBean, "exportTemplates.editor.saved");
             }
             return true;
+        } catch (DuplicateExportTemplateException e) {
+            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.duplicateVersion", e.getTemplateName(), e.getTemplateVersion());
         } catch (InvalidExportTemplateException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_INVALID, e.getMessage());
         } catch (ForbiddenOperationException e) {

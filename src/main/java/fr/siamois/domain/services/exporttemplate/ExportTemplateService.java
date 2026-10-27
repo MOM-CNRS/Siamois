@@ -3,6 +3,7 @@ package fr.siamois.domain.services.exporttemplate;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.exporttemplate.DuplicateExportTemplateException;
 import fr.siamois.domain.models.exporttemplate.ExportTemplate;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Sheet;
@@ -58,9 +59,11 @@ public class ExportTemplateService {
 
     // ------------------------------------------------------------------ lecture
 
-    @Transactional(readOnly = true)
+    /** Liste des modèles de l'institution ; les modèles livrés avec l'application y sont ajoutés, publiés, s'ils manquent. */
+    @Transactional
     public List<ExportTemplateDTO> findAll(UserInfo userInfo) {
         assertCanView(userInfo);
+        provisionBuiltIns(userInfo);
         return exportTemplateRepository.findByInstitutionOrderByNameAsc(institutionOf(userInfo)).stream()
                 .map(ExportTemplateService::toDto)
                 .toList();
@@ -108,10 +111,22 @@ public class ExportTemplateService {
         return toDto(save(userInfo, ExportTemplateJson.parse(json)));
     }
 
-    @Transactional
-    public ExportTemplateDTO createFromBuiltIn(UserInfo userInfo, BuiltInTemplate builtIn) {
-        assertCanManage(userInfo);
-        return toDto(save(userInfo, ExportTemplateJson.parse(readResource(builtIn.resource))));
+    /**
+     * Ajoute à l'institution les modèles livrés (référentiel national, milieu sous-marin) qu'elle n'a pas encore,
+     * publiés donc en lecture seule : on les duplique ou on en fait une nouvelle version pour les adapter.
+     */
+    private void provisionBuiltIns(UserInfo userInfo) {
+        Institution institution = institutionOf(userInfo);
+        for (BuiltInTemplate builtIn : BuiltInTemplate.values()) {
+            ExportTemplateDefinition definition = ExportTemplateJson.parse(readResource(builtIn.resource));
+            if (exportTemplateRepository.existsByInstitutionAndTemplateUuid(institution, definition.id())
+                    || exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, definition.name(), definition.version())) {
+                continue;
+            }
+            ExportTemplate template = save(userInfo, definition);
+            template.setPublished(true);
+            exportTemplateRepository.save(template);
+        }
     }
 
     @Transactional
@@ -119,10 +134,40 @@ public class ExportTemplateService {
         assertCanManage(userInfo);
         ExportTemplate source = load(userInfo, id);
         ExportTemplateDefinition d = ExportTemplateJson.parse(source.getDefinition());
+        Institution institution = source.getInstitution();
+        String name = newName;
+        for (int n = 2; exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, name, d.version()); n++) {
+            name = newName + " " + n;
+        }
         ExportTemplate copy = save(userInfo, new ExportTemplateDefinition(
-                d.schemaVersion(), UUID.randomUUID().toString(), d.version(), newName, d.fileNamePattern(), d.sheets()));
+                d.schemaVersion(), UUID.randomUUID().toString(), d.version(), name, d.fileNamePattern(), d.sheets()));
         copy.setReferenceProject(source.getReferenceProject());
         return toDto(exportTemplateRepository.save(copy));
+    }
+
+    /** Nouvelle version d'un modèle : même nom, nouvelle étiquette de version, non publiée. */
+    @Transactional
+    public ExportTemplateDTO newVersion(UserInfo userInfo, Long id) {
+        assertCanManage(userInfo);
+        ExportTemplate source = load(userInfo, id);
+        ExportTemplateDefinition d = ExportTemplateJson.parse(source.getDefinition());
+        String version = d.version();
+        do {
+            version = nextVersion(version);
+        } while (exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(source.getInstitution(), d.name(), version));
+        ExportTemplate copy = save(userInfo, new ExportTemplateDefinition(
+                d.schemaVersion(), UUID.randomUUID().toString(), version, d.name(), d.fileNamePattern(), d.sheets()));
+        copy.setReferenceProject(source.getReferenceProject());
+        return toDto(exportTemplateRepository.save(copy));
+    }
+
+    /** Étiquette suivante : le dernier nombre est incrémenté (1.0.0 → 1.0.1, v2 → v3), sinon « .1 » est ajouté. */
+    static String nextVersion(String version) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(.*?)(\\d+)$").matcher(version == null ? "" : version);
+        if (!m.matches()) {
+            return (version == null || version.isBlank() ? "1.0.0" : version + ".1");
+        }
+        return m.group(1) + (Long.parseLong(m.group(2)) + 1);
     }
 
     // ------------------------------------------------------------------ modification
@@ -138,6 +183,7 @@ public class ExportTemplateService {
         if (!template.getTemplateUuid().equals(definition.id())) {
             throw new InvalidExportTemplateException("The template id cannot change");
         }
+        assertUnique(template.getInstitution(), definition.name(), definition.version(), template.getId());
         // Un aller-retour par le codec garantit que ce qui est stocké respecte la grammaire.
         String json = ExportTemplateJson.toJson(ExportTemplateJson.parse(ExportTemplateJson.toJson(definition)));
         apply(template, definition, json);
@@ -187,11 +233,22 @@ public class ExportTemplateService {
                     definition.schemaVersion(), UUID.randomUUID().toString(), definition.version(),
                     definition.name(), definition.fileNamePattern(), definition.sheets());
         }
+        assertUnique(institution, definition.name(), definition.version(), null);
         ExportTemplate template = new ExportTemplate();
         template.setInstitution(institution);
         template.setCreatedBy(personMapper.invertConvert(userInfo.getUser()));
         apply(template, definition, ExportTemplateJson.toJson(definition));
         return exportTemplateRepository.save(template);
+    }
+
+    /** La paire nom + version identifie un modèle dans l'institution. */
+    private void assertUnique(Institution institution, String name, String version, @Nullable Long excludeId) {
+        boolean taken = excludeId == null
+                ? exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, name, version)
+                : exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersionAndIdNot(institution, name, version, excludeId);
+        if (taken) {
+            throw new DuplicateExportTemplateException(name, version);
+        }
     }
 
     private static void apply(ExportTemplate template, ExportTemplateDefinition definition, String json) {

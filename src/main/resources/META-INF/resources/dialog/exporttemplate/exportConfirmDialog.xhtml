@@ -1,0 +1,22 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!-- Confirmation d'une suppression : colonne, feuille ou lot de colonnes cochées -->
+    <p:dialog widgetVar="xeConfirmDlg" id="xeConfirmDlg" modal="true" width="420" draggable="false" resizable="false"
+              closeOnEscape="true" styleClass="xe-source-dlg xe-confirm-dlg" header="#{langBean.msg('exportTemplates.editor.confirm.title')}">
+        <h:form id="xeConfirmForm">
+            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+            <p class="xe-dlg-hint">#{exportTemplateEditorBean.confirmMessage}</p>
+            <div class="xe-pop-foot">
+                <p:commandButton value="#{langBean.msg('exportTemplates.editor.cancel')}" styleClass="xt-btn-flat"
+                                 action="#{exportTemplateEditorBean.cancelRemoval()}" process="@this" update="@form"
+                                 oncomplete="PF('xeConfirmDlg').hide()"/>
+                <p:commandButton value="#{langBean.msg('exportTemplates.delete')}" styleClass="xt-btn-primary"
+                                 action="#{exportTemplateEditorBean.confirmRemoval()}" process="@this"
+                                 update=":xeEditorCc:exportTemplateEditorForm @form" oncomplete="PF('xeConfirmDlg').hide()"/>
+            </div>
+        </h:form>
+    </p:dialog>
+</ui:fragment>

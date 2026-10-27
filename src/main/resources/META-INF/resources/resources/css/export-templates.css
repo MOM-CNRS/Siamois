@@ -547,3 +547,53 @@ a.xe-row { color: var(--text); text-decoration: none; cursor: pointer; }
 :is(.xt, .xe-source-dlg) :is(.ui-button.xt-btn-primary, .xt-btn-primary, .xe-btn.solid):is(*, *) {
     background: var(--primary-dark); border-color: var(--primary-dark); color: #fff;
 }
+
+/* Bouton scindé « Sauvegarder » : mêmes dimensions que les autres boutons, en principal */
+.xt .ui-splitbutton.xe-split { display: inline-flex; align-items: stretch; box-shadow: none; }
+.xt .ui-splitbutton.xe-split .ui-button {
+    box-sizing: border-box; min-height: 36px; height: auto; padding: 0 16px; margin: 0;
+    font-size: 13px; font-weight: 500; line-height: 1.2; box-shadow: none;
+    background: var(--primary-dark); border: 1px solid var(--primary-dark); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.xt .ui-splitbutton.xe-split .ui-button:first-child { border-radius: 6px 0 0 6px; }
+.xt .ui-splitbutton.xe-split .ui-button:last-child { border-radius: 0 6px 6px 0; padding: 0 10px; border-left-color: color-mix(in srgb, #fff 35%, var(--primary-dark)); }
+.xt .ui-splitbutton.xe-split .ui-button .ui-icon, .xt .ui-splitbutton.xe-split .ui-button .ui-button-icon { margin: 0; position: static; }
+
+/* Suggestions de champs : une seule colonne, lignes compactes */
+.ui-autocomplete-panel .ui-autocomplete-items.ui-autocomplete-table td { padding: 7px 12px; font-size: 13px; border: 0; }
+.ui-autocomplete-panel .ui-autocomplete-items.ui-autocomplete-table tr { border-bottom: 1px solid var(--border); }
+.ui-autocomplete-panel .ui-autocomplete-items.ui-autocomplete-table tr:last-child { border-bottom: 0; }
+.ui-autocomplete-panel .ui-autocomplete-items.ui-autocomplete-table tr.ui-state-highlight td { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--text); }
+.ui-autocomplete-panel .xe-ac-label { font-weight: 500; }
+.ui-autocomplete-panel .xe-rel { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--primary-dark);
+    background: color-mix(in srgb, var(--primary) 12%, var(--surface)); border-radius: 10px; padding: 1px 8px; }
+
+/* Modèle publié : les boutons d'édition disparaissent (les champs restent visibles, grisés) */
+.xt.xe-locked :is(.xe-edit, .xe-tab-add, .xe-dashed, .xe-textbtn.danger, .xe-detail .xe-x:not(.xe-close), .xe-sources-list .xe-x,
+        .xe-rule-head .xe-x, .xe-part .xe-x, .xe-gapchip .xe-x) { display: none !important; }
+
+/* Liste des modèles : état et ligne cliquable */
+.xt-state { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 10px; padding: 2px 10px; }
+.xt-state.draft { background: color-mix(in srgb, var(--third, #c98a1f) 14%, var(--surface)); color: var(--warn-ink, #8a5a00); }
+.xt-state.published { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary-dark); }
+tr.row-clickable { cursor: pointer; }
+
+/* Modèle publié : pas de chip d'état dans le détail, et le bouton de repli reste actif */
+.xt.xe-locked .xe-detail-head .xe-state { display: none; }
+.xt.xe-locked .xe-detail .xe-close { pointer-events: auto; opacity: 1; }
+
+/* Onglets : poubelle dans le titre */
+.xe-tabwrap { position: relative; display: inline-flex; align-items: flex-end; }
+.xe-tabwrap.has-del .xe-tab { padding-right: 38px; }
+.xe-tab-del { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); opacity: .55; font-size: 13px; text-decoration: none; }
+.xe-tab-del:hover { opacity: 1; color: var(--danger, #b3412f); }
+
+/* Sélection de colonnes */
+.xe-rowcheck { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-right: 8px; flex: 0 0 auto; vertical-align: middle;
+    border: 1.5px solid var(--text-secondary); border-radius: 4px; background: var(--surface); cursor: pointer; color: transparent; font-size: 12px; }
+.xe-rowcheck.on { background: var(--primary-dark); border-color: var(--primary-dark); color: #fff; }
+.xe-selbar { display: flex; align-items: center; gap: 14px; padding: 8px 28px; background: color-mix(in srgb, var(--primary) 10%, var(--surface)); border-bottom: 1px solid var(--border); font-size: 13px; }
+.xe-selcount { font-weight: 600; color: var(--primary-dark); }
+.xt.xe-locked .xe-locked-hide { display: none; }
+.xe-confirm-dlg .xe-pop-foot { margin-top: 16px; }
