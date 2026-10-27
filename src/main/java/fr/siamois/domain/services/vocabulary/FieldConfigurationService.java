@@ -211,6 +211,17 @@ public class FieldConfigurationService {
         return feedback;
     }
 
+    /**
+     * Makes {@code vocabulary} the thesaurus where the institution documents its fields and types, unless it already
+     * has one: a thesaurus an administrator chose is never replaced. The field codes of the vocabulary are not loaded.
+     */
+    @Transactional
+    public void setDocumentationThesaurusIfAbsent(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) {
+        if (documentationThesaurusRepository.findOfInstitution(institution.getId()).isEmpty()) {
+            saveDocumentationThesaurus(institution, null, vocabulary);
+        }
+    }
+
     /** Makes {@code vocabulary} the thesaurus where the institution, or the project, documents its fields and types. */
     private void saveDocumentationThesaurus(InstitutionDTO institutionDTO, @Nullable ActionUnitDTO actionUnitDTO, Vocabulary vocabulary) {
         Optional<DocumentationThesaurus> existing = actionUnitDTO == null

@@ -185,6 +185,28 @@ class FieldConfigurationServiceTest {
     }
 
     @Test
+    void setDocumentationThesaurusIfAbsent_shouldAttachTheThesaurus_whenTheInstitutionHasNone() {
+        when(documentationThesaurusRepository.findOfInstitution(12L)).thenReturn(Optional.empty());
+
+        service.setDocumentationThesaurusIfAbsent(userInfo.getInstitution(), vocabulary);
+
+        ArgumentCaptor<DocumentationThesaurus> thesaurus = ArgumentCaptor.forClass(DocumentationThesaurus.class);
+        verify(documentationThesaurusRepository).save(thesaurus.capture());
+        assertThat(thesaurus.getValue().getVocabulary()).isEqualTo(vocabulary);
+        assertThat(thesaurus.getValue().getActionUnit()).isNull();
+        verifyNoInteractions(conceptApi);
+    }
+
+    @Test
+    void setDocumentationThesaurusIfAbsent_shouldKeepTheChosenThesaurus_whenTheInstitutionHasOne() {
+        when(documentationThesaurusRepository.findOfInstitution(12L)).thenReturn(Optional.of(new DocumentationThesaurus()));
+
+        service.setDocumentationThesaurusIfAbsent(userInfo.getInstitution(), vocabulary);
+
+        verify(documentationThesaurusRepository, never()).save(any());
+    }
+
+    @Test
     void setupFieldConfigurationForInstitution_shouldThrowNotSiamoisThesaurusException_whenSIAAUTOCOMPLETEmissing() throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         when(conceptApi.fetchFieldsBranch(vocabulary)).thenThrow(NotSiamoisThesaurusException.class);
         assertThrows(NotSiamoisThesaurusException.class, () -> service.setupFieldConfigurationForInstitution(userInfo, vocabulary));
