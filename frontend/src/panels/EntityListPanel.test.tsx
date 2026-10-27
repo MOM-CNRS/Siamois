@@ -3,7 +3,7 @@ import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {registerEntityType} from "../entities/registry";
-import {DEFAULT_LIMIT} from "./list/tableState";
+import {SCROLL_CHUNK_SIZE} from "./list/tableState";
 import {registerDefaultFieldRenderers} from "../fields/registerDefaultRenderers";
 import type {EntityTypeConfig, PagedResult} from "../entities/shared/types";
 import {recallListContext} from "./list/listContext";
@@ -177,7 +177,7 @@ describe("EntityListPanel", () => {
     await flush();
 
     expect(listMock).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 0, limit: DEFAULT_LIMIT, sort: "name:asc", search: undefined }),
+      expect.objectContaining({ offset: 0, limit: SCROLL_CHUNK_SIZE, sort: "name:asc", search: undefined }),
     );
     expect(container.textContent).toContain("Row A");
   });
@@ -458,22 +458,21 @@ describe("EntityListPanel", () => {
     expect(container.querySelector(".entity-list-panel-identifier-select")).toBeNull();
   });
 
-  it("paginates 100 rows per page by default, with 25/50/100/200 to choose from", async () => {
+  it("scrolls virtually through the whole result set, with no paginator", async () => {
     renderPanel();
     await flush();
 
-    expect(container.querySelector(".p-paginator")).toBeTruthy();
-    expect(container.querySelector(".p-virtualscroller")).toBeNull();
-    const dropdown = container.querySelector(".p-paginator .p-dropdown");
-    expect(dropdown?.textContent).toContain("100");
+    expect(container.querySelector(".p-virtualscroller")).toBeTruthy();
+    expect(container.querySelector(".p-paginator")).toBeNull();
   });
 
-  it("fetches the page the user moves to, and counts the whole result set", async () => {
+  it("fetches the rows the user scrolls to, and counts the whole result set", async () => {
+    const total = SCROLL_CHUNK_SIZE * 3;
     listMock.mockImplementation((params: unknown) => {
       const p = params as { offset: number; limit: number };
       return Promise.resolve({
         data: Array.from({ length: p.limit }, (_, i) => ({ id: String(p.offset + i + 1), name: `Row ${p.offset + i + 1}` })),
-        totalCount: DEFAULT_LIMIT * 3,
+        totalCount: total,
         limit: p.limit,
         offset: p.offset,
       });
@@ -482,16 +481,21 @@ describe("EntityListPanel", () => {
     await flush();
 
     const chips = Array.from(container.querySelectorAll(".p-chip-text")).map((c) => c.textContent);
-    expect(chips).toContain(String(DEFAULT_LIMIT * 3));
+    expect(chips).toContain(String(total));
+    expect(listMock).toHaveBeenCalledTimes(1);
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0, limit: SCROLL_CHUNK_SIZE }));
 
-    const next = container.querySelector(".p-paginator-next") as HTMLElement;
+    // Down to the last chunk (38px rows): only its page is fetched, the middle one is skipped.
+    const scroller = container.querySelector(".p-virtualscroller") as HTMLElement;
+    Object.defineProperty(scroller, "scrollTop", { configurable: true, value: (total - 20) * 38 });
     await act(async () => {
-      next.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      scroller.dispatchEvent(new Event("scroll"));
     });
     await flush();
 
-    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: DEFAULT_LIMIT, limit: DEFAULT_LIMIT }));
-    expect(container.textContent).toContain(`Row ${DEFAULT_LIMIT + 1}`);
+    expect(listMock).toHaveBeenLastCalledWith(expect.objectContaining({ offset: SCROLL_CHUNK_SIZE * 2, limit: SCROLL_CHUNK_SIZE }));
+    expect(listMock).not.toHaveBeenCalledWith(expect.objectContaining({ offset: SCROLL_CHUNK_SIZE }));
+    expect(container.textContent).toContain(`Row ${total - 10}`);
   });
 
   it("shows an unsupported message for an unregistered entity type", async () => {

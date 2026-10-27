@@ -1,4 +1,4 @@
-import {type ReactNode, useRef} from "react";
+import {type ReactNode, useEffect, useRef} from "react";
 import {Button} from "primereact/button";
 import {Chip} from "primereact/chip";
 import {Column} from "primereact/column";
@@ -10,7 +10,7 @@ import {refChipStyle} from "../../../fields/display";
 import type {FilterOption} from "../../../fields/optionSources";
 import {t} from "../../../i18n";
 import {ListSearchBox} from "../../../panels/list/ListSearchBox";
-import {type FilterValue, PAGE_SIZE_OPTIONS} from "../../../panels/list/tableState";
+import type {FilterValue} from "../../../panels/list/tableState";
 import {kindLabel, RELATION_KINDS} from "./labels";
 import {KIND_FILTER, type RelationListModel} from "./useRelationList";
 import type {RelationLinkEditor} from "./useRelationLinkEditor";
@@ -18,8 +18,12 @@ import {isStratigraphy} from "./useRelationLinkEditor";
 import type {RelationRow} from "./types";
 
 const SKELETON_ROW_COUNT = 8;
-const SKELETON_ROWS = Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => ({ key: `__skeleton-${i}`, skeleton: true as const }));
-type ViewRow = (RelationRow & { key: string; skeleton?: undefined }) | (typeof SKELETON_ROWS)[number];
+const skeletonRow = (i: number) => ({ key: `__skeleton-${i}`, skeleton: true as const });
+const SKELETON_ROWS = Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => skeletonRow(i));
+type ViewRow = (RelationRow & { key: string; skeleton?: undefined }) | ReturnType<typeof skeletonRow>;
+
+// The height of every row (--entity-list-row-height in main-panel.css), which the virtual scroller places them by.
+const ROW_HEIGHT_PX = 38;
 
 const kindOptions = (): FilterOption[] => RELATION_KINDS.map((kind) => ({ id: kind, label: kindLabel(kind) }));
 const kindSpecs = (): FilterSpec[] => [{
@@ -90,36 +94,39 @@ const sortOf = (sort: string) => {
   return { field: sort.slice(0, at), order: sort.slice(at + 1) === "desc" ? -1 as const : 1 as const };
 };
 
-// The unit's relations as a table, the design of every list of the app: server-paged, sortable by
-// kind or by the other unit's identifier, one relation per row.
+// The unit's relations as a table, the design of every list of the app: scrolled virtually through the
+// whole result set (fetched page by page as the scroll reaches it), sortable by kind or by the other
+// unit's identifier, one relation per row.
 export function RelationsList({ list, onOpen, editor }: RelationsListProps) {
   const rows: ViewRow[] = list.isLoading
     ? SKELETON_ROWS
-    : list.rows.map((row) => ({ ...row, key: `${row.kind}:${row.unit.resourceId}` }));
+    : list.rows.map((row, i) => (row ? { ...row, key: `${row.kind}:${row.unit.resourceId}` } : skeletonRow(i)));
   const { field, order } = sortOf(list.sort);
 
-  const onPage = (e: DataTableStateEvent) => {
-    const size = e.rows ?? list.limit;
-    // The server takes only offsets that are multiples of the page size.
-    list.setPage(Math.floor((e.first ?? 0) / size) * size, size);
-  };
+  // A new search, filter or sort starts at the top: the scroll position belonged to the rows of the previous one.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const resultSetKey = JSON.stringify([list.search, list.filters, list.sort]);
+  useEffect(() => {
+    const scroller = rootRef.current?.querySelector(".p-virtualscroller");
+    if (scroller) scroller.scrollTop = 0;
+  }, [resultSetKey]);
+
   const onSort = (e: DataTableStateEvent) => list.setSort(e.sortField ? `${e.sortField}:${e.sortOrder === 1 ? "asc" : "desc"}` : undefined);
 
   const cell = (row: ViewRow, render: (row: RelationRow) => ReactNode, width = "70%") =>
     row.skeleton ? <Skeleton height="1rem" width={width} /> : <span className="entity-list-panel-cell">{render(row)}</span>;
 
   return (
-    <div className="sia-contents">
+    <div ref={rootRef} className="sia-contents">
       <DataTable
         value={rows}
         size="small"
         lazy
-        paginator
-        first={list.offset}
-        rows={list.limit}
-        rowsPerPageOptions={PAGE_SIZE_OPTIONS}
-        totalRecords={list.total}
-        onPage={onPage}
+        virtualScrollerOptions={{
+          lazy: true,
+          itemSize: ROW_HEIGHT_PX,
+          onLazyLoad: (e) => list.setScrollWindow(Number(e.first), Number(e.last)),
+        }}
         onSort={onSort}
         sortField={field}
         sortOrder={order}

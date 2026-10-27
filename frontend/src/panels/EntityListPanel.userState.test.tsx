@@ -9,6 +9,7 @@ import {deleteViewState, getViewState, putViewState} from "../api/resources/view
 import {ApiError} from "../api/client";
 import {EntityListPanel} from "./EntityListPanel";
 import {SAVE_DELAY_MS} from "./list/useUserViewState";
+import {SCROLL_CHUNK_SIZE} from "./list/tableState";
 import {FicheTabsProvider} from "./detail/ficheTabsContext";
 
 registerDefaultFieldRenderers();
@@ -114,7 +115,7 @@ describe("EntityListPanel's state kept per user", () => {
     expect(getViewState).toHaveBeenCalledWith(7, "ctx:user-state-entity:project:5-tab");
   });
 
-  it("fetches its first page with the saved sort, page size and filters, never with the defaults first", async () => {
+  it("fetches its first rows with the saved sort and filters, never with the defaults first", async () => {
     vi.mocked(getViewState).mockResolvedValue({
       viewKey: "ctx:user-state-entity:global",
       state: { v: 1, limit: 50, sort: "name:desc", filters: { name: { op: "contains", v: "fos" } } },
@@ -122,10 +123,11 @@ describe("EntityListPanel's state kept per user", () => {
 
     await renderList();
 
-    // The one-row request is the titlebar's unfiltered total, which a filter triggers.
+    // The one-row request is the titlebar's unfiltered total, which a filter triggers. The table scrolls
+    // virtually: it fetches its rows in chunks of its own, whatever page size was kept.
     const pages = listMock.mock.calls.map(([p]) => p as Record<string, unknown>).filter((p) => p.limit !== 1);
     expect(pages).toEqual([
-      expect.objectContaining({ offset: 0, limit: 50, sort: "name:desc", filters: { name: { op: "contains", v: "fos" } } }),
+      expect.objectContaining({ offset: 0, limit: SCROLL_CHUNK_SIZE, sort: "name:desc", filters: { name: { op: "contains", v: "fos" } } }),
     ]);
   });
 
@@ -256,7 +258,7 @@ describe("EntityListPanel's state kept per user", () => {
       await renderList();
 
       expect(pages()).toEqual([
-        expect.objectContaining({ limit: 50, sort: "name:asc", filters: { name: { op: "contains", v: "keep" } } }),
+        expect.objectContaining({ limit: SCROLL_CHUNK_SIZE, sort: "name:asc", filters: { name: { op: "contains", v: "keep" } } }),
       ]);
     });
 

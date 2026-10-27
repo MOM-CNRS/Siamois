@@ -45,14 +45,31 @@ afterEach(() => {
 describe("useRelationList", () => {
   it("starts on the first page, by kind, and reads the total from the answer", () => {
     expect(getRelationList).toHaveBeenCalledWith(42, { kinds: [], search: undefined, sort: "kind:asc", offset: 0, limit: 100 });
-    expect(latest.rows).toHaveLength(1);
     expect(latest.total).toBe(61);
+    expect(latest.rows).toHaveLength(61);
+    expect(latest.rows[0]?.unit.resourceId).toBe("1");
+  });
+
+  it("fetches the pages the scroll reaches, and holds the whole result set", async () => {
+    getRelationList.mockImplementation((_id: number, p: { offset: number }) =>
+      Promise.resolve({ data: [{ kind: "anterior", unit: { resourceId: `at-${p.offset}`, resourceType: "recording-units" } }], meta: { total: 250, limit: 100, offset: p.offset } }),
+    );
+    await act(async () => latest.setScrollWindow(180, 230));
+    await flush();
+
+    expect(getRelationList).toHaveBeenCalledWith(42, expect.objectContaining({ offset: 100, limit: 100 }));
+    expect(getRelationList).toHaveBeenCalledWith(42, expect.objectContaining({ offset: 200, limit: 100 }));
+    expect(latest.total).toBe(250);
+    expect(latest.rows).toHaveLength(250);
+    expect(latest.rows[100]?.unit.resourceId).toBe("at-100");
+    expect(latest.rows[200]?.unit.resourceId).toBe("at-200");
+    expect(latest.rows[150]).toBeNull();
   });
 
   it("asks again for the kinds the filter keeps, from the first page", async () => {
-    await act(async () => latest.setPage(50, 25));
+    await act(async () => latest.setScrollWindow(150, 200));
     await flush();
-    expect(getRelationList).toHaveBeenLastCalledWith(42, expect.objectContaining({ offset: 50 }));
+    expect(getRelationList).toHaveBeenLastCalledWith(42, expect.objectContaining({ offset: 100 }));
 
     await act(async () => latest.setFilters({ kind: { op: "in", v: ["anterior", "synchronous"] } }));
     await flush();
@@ -61,7 +78,7 @@ describe("useRelationList", () => {
   });
 
   it("searches and sorts from the first page too, and falls back on the kind order", async () => {
-    await act(async () => latest.setPage(25, 25));
+    await act(async () => latest.setScrollWindow(150, 200));
     await act(async () => latest.setSearch("us 4"));
     await flush();
     expect(getRelationList).toHaveBeenLastCalledWith(42, expect.objectContaining({ search: "us 4", offset: 0 }));
