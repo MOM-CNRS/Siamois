@@ -70,7 +70,19 @@ public class ExportSourceReader {
 
     private List<ExportRow> readEntities(EntitySource source, Long projectId) {
         ExportSubject subject = ExportSubject.of(source.entity());
-        List<?> entities = switch (subject) {
+        List<?> entities = entitiesOf(subject, projectId);
+        // A place belongs to several projects: its row carries the exported one, for the "project" navigation.
+        Map<String, ExportRow> bound = subject == ExportSubject.SPATIAL_UNIT
+                ? Map.of("project", ExportRow.of(ExportSubject.PROJECT, project(projectId)))
+                : Map.of();
+        return entities.stream()
+                .filter(e -> matchesTypes(typeOf(subject, e), source.types()))
+                .map(e -> new ExportRow(subject, e, bound, Map.of()))
+                .toList();
+    }
+
+    private List<?> entitiesOf(ExportSubject subject, Long projectId) {
+        return switch (subject) {
             case RECORDING_UNIT -> recordingUnitRepository.findAllByActionUnitId(projectId);
             case SPECIMEN -> specimenRepository.findAllByActionUnitId(projectId);
             case PHASE -> phaseRepository.findAllByActionUnitId(projectId);
@@ -80,14 +92,44 @@ public class ExportSourceReader {
             case SPATIAL_UNIT -> spatialUnitsOf(project(projectId));
             case PROJECT -> throw new IllegalArgumentException("Use the PROJECT source for the project itself");
         };
-        // A place belongs to several projects: its row carries the exported one, for the "project" navigation.
-        Map<String, ExportRow> bound = subject == ExportSubject.SPATIAL_UNIT
-                ? Map.of("project", ExportRow.of(ExportSubject.PROJECT, project(projectId)))
-                : Map.of();
-        return entities.stream()
-                .filter(e -> matchesTypes(typeOf(subject, e), source.types()))
-                .map(e -> new ExportRow(subject, e, bound, Map.of()))
-                .toList();
+    }
+
+    /** Nombre d'enregistrements d'une entité du projet : au total, et par type ({@link #countKey}). */
+    public record SourceCounts(int total, Map<String, Integer> byType) {
+
+        /** Lignes d'une source d'entités filtrée par types ; liste vide = tous les types. */
+        public int rowsOf(List<ConceptRef> types) {
+            return types.isEmpty() ? total : types.stream().mapToInt(t -> byType.getOrDefault(countKey(t), 0)).sum();
+        }
+    }
+
+    /** Clé d'un type dans {@link SourceCounts#byType()} : thésaurus et concept, sans tenir compte de la casse. */
+    public static String countKey(ConceptRef ref) {
+        return (ref.thesaurusId() + "|" + ref.conceptId()).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Compte les enregistrements d'une entité du projet, par type. Le projet lui-même compte pour un. */
+    @Transactional(readOnly = true)
+    public SourceCounts count(ExportSubject subject, Long projectId) {
+        if (subject == ExportSubject.PROJECT) {
+            project(projectId);
+            return new SourceCounts(1, Map.of());
+        }
+        List<?> entities = entitiesOf(subject, projectId);
+        Map<String, Integer> byType = new HashMap<>();
+        for (Object entity : entities) {
+            Concept type = typeOf(subject, entity);
+            if (type != null && type.getVocabulary() != null && type.getExternalId() != null) {
+                byType.merge(countKey(new ConceptRef(type.getVocabulary().getExternalVocabularyId(), type.getExternalId(), null)), 1, Integer::sum);
+            }
+        }
+        return new SourceCounts(entities.size(), byType);
+    }
+
+    /** Nombre de lignes d'une table technique pour le projet. */
+    @Transactional(readOnly = true)
+    public int countTechnical(ExportTechnicalSource key, Long projectId) {
+        return readTechnical(key, projectId).size();
     }
 
     /** Lieu principal et contexte spatial du projet, avec tous leurs descendants. */

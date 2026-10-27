@@ -5,7 +5,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exporttemplate.ExportTemplate;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition;
-import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
+import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.Sheet;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateJson;
 import fr.siamois.domain.models.exporttemplate.InvalidExportTemplateException;
 import fr.siamois.domain.models.institution.Institution;
@@ -87,12 +87,11 @@ public class ExportTemplateService {
 
     // ------------------------------------------------------------------ création
 
-    /** Modèle minimal valide : une feuille, la source « projet », une colonne constante. */
+    /** Modèle neuf : une feuille vide, sans source ni colonne. */
     @Transactional
-    public ExportTemplateDTO createBlank(UserInfo userInfo, String name, String sheetName, String columnHeader) {
+    public ExportTemplateDTO createBlank(UserInfo userInfo, String name, String sheetName) {
         assertCanManage(userInfo);
-        Sheet sheet = new Sheet(sheetName, false, List.of(new ProjectSource()), List.of(), List.of(
-                new Column(columnHeader, OutputType.TEXT, List.of(new ConstantRule(List.of(), "")))));
+        Sheet sheet = new Sheet(sheetName, false, List.of(), List.of(), List.of());
         ExportTemplateDefinition definition = new ExportTemplateDefinition(
                 ExportTemplateDefinition.CURRENT_SCHEMA_VERSION, UUID.randomUUID().toString(), "1.0.0", name, null, List.of(sheet));
         return toDto(save(userInfo, definition));
@@ -132,7 +131,7 @@ public class ExportTemplateService {
     @Transactional
     public ExportTemplateDTO updateDefinition(UserInfo userInfo, Long id, ExportTemplateDefinition definition) {
         assertCanManage(userInfo);
-        return replaceDefinition(load(userInfo, id), definition);
+        return replaceDefinition(loadEditable(userInfo, id), definition);
     }
 
     private ExportTemplateDTO replaceDefinition(ExportTemplate template, ExportTemplateDefinition definition) {
@@ -148,7 +147,7 @@ public class ExportTemplateService {
     @Transactional
     public ExportTemplateDTO rename(UserInfo userInfo, Long id, String newName) {
         assertCanManage(userInfo);
-        ExportTemplate template = load(userInfo, id);
+        ExportTemplate template = loadEditable(userInfo, id);
         ExportTemplateDefinition d = ExportTemplateJson.parse(template.getDefinition());
         return replaceDefinition(template, new ExportTemplateDefinition(
                 d.schemaVersion(), d.id(), d.version(), newName, d.fileNamePattern(), d.sheets()));
@@ -158,8 +157,17 @@ public class ExportTemplateService {
     @Transactional
     public ExportTemplateDTO setReferenceProject(UserInfo userInfo, Long id, @Nullable Long projectId) {
         assertCanManage(userInfo);
-        ExportTemplate template = load(userInfo, id);
+        ExportTemplate template = loadEditable(userInfo, id);
         template.setReferenceProject(projectId == null ? null : projectOf(userInfo, projectId));
+        return toDto(exportTemplateRepository.save(template));
+    }
+
+    /** Publie le modèle : il devient en lecture seule, pour tout appel, et ne reste que duplicable. */
+    @Transactional
+    public ExportTemplateDTO publish(UserInfo userInfo, Long id) {
+        assertCanManage(userInfo);
+        ExportTemplate template = load(userInfo, id);
+        template.setPublished(true);
         return toDto(exportTemplateRepository.save(template));
     }
 
@@ -196,6 +204,15 @@ public class ExportTemplateService {
     private ExportTemplate load(UserInfo userInfo, Long id) {
         return exportTemplateRepository.findByIdAndInstitution(id, institutionOf(userInfo))
                 .orElseThrow(() -> new NoSuchElementException("Export template " + id + " not found"));
+    }
+
+    /** Charge un modèle à modifier : un modèle publié est refusé. */
+    private ExportTemplate loadEditable(UserInfo userInfo, Long id) {
+        ExportTemplate template = load(userInfo, id);
+        if (template.isPublished()) {
+            throw new ForbiddenOperationException("The export template " + id + " is published and read-only");
+        }
+        return template;
     }
 
     private ActionUnit projectOf(UserInfo userInfo, Long projectId) {
@@ -239,7 +256,7 @@ public class ExportTemplateService {
         ActionUnit reference = t.getReferenceProject();
         return new ExportTemplateDTO(
                 t.getId(), t.getTemplateUuid(), t.getName(), t.getVersion(),
-                reference == null ? null : reference.getId(), t.getCreatedAt(), t.getUpdatedAt());
+                reference == null ? null : reference.getId(), t.getCreatedAt(), t.getUpdatedAt(), t.isPublished());
     }
 
     private static String readResource(String resource) {

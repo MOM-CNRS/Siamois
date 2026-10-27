@@ -91,6 +91,28 @@ class ExportSourceReaderTest {
     }
 
     @Test
+    void count_groupsTheEntitiesOfTheProjectByType() {
+        Concept pottery = concept("th1", "10");
+        Concept lithic = concept("th1", "11");
+        when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID))
+                .thenReturn(List.of(unit(1L, pottery), unit(2L, pottery), unit(3L, lithic), unit(4L, null)));
+
+        ExportSourceReader.SourceCounts counts = reader.count(ExportSubject.RECORDING_UNIT, PROJECT_ID);
+
+        assertThat(counts.total()).isEqualTo(4);
+        assertThat(counts.byType()).containsEntry("th1|10", 2).containsEntry("th1|11", 1).hasSize(2);
+        assertThat(counts.rowsOf(List.of())).isEqualTo(4);
+        assertThat(counts.rowsOf(List.of(new ConceptRef("TH1", "10", null), new ConceptRef("th1", "99", null)))).isEqualTo(2);
+    }
+
+    @Test
+    void count_projectIsASingleRow() {
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThat(reader.count(ExportSubject.PROJECT, PROJECT_ID).total()).isEqualTo(1);
+    }
+
+    @Test
     void read_unknownProject_isNotFound() {
         when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
 
