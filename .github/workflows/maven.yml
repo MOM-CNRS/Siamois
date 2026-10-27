@@ -44,20 +44,20 @@ jobs:
 
       # frontend/dist doit exister avant la compilation back : maven-resources-plugin
       # le copie dans le jar (execution copy-react-main-panel).
-      - name: Compilation front
+      - name: Compilation frontend - React
         working-directory: frontend
         run: |
           npm ci --ignore-scripts
           npm run build
-      - name: Tests front
+      - name: Tests frontend - React
         working-directory: frontend
         run: |
           npm run lint
           npm test
 
-      - name: Compilation back
+      - name: Compilation backend - Spring Boot/JSF
         run: mvn -B compile $MAVEN_SKIP_FRONT
-      - name: Tests back
+      - name: Tests backend - Spring Boot/JSF
         run: mvn -B test -Pcoverage $MAVEN_SKIP_FRONT
 
       - name: Analyze
