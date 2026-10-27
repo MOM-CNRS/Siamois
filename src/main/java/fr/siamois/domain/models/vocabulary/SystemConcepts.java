@@ -50,12 +50,16 @@ public final class SystemConcepts {
     }
 
     /**
-     * Identifiant du champ {@code binding} de {@code table} quand le thésaurus le décrit, sinon {@code fallback}
-     * (champ système que le thésaurus ne décrit pas encore).
+     * Identifiant du champ {@code binding} de {@code table} : celui que la table de correspondance lui donne (par son
+     * ancien identifiant symbolique {@code legacy}, qui porte les alias comme {@code title} → {@code SIAD.name}, ou par
+     * {@code table.binding}), sinon {@code legacy} lui-même pour un champ système que le thésaurus ne décrit pas encore.
      */
-    public static String id(String table, String binding, String fallback) {
-        String id = CONCEPTS.getProperty(table + "." + binding);
-        return id == null ? fallback : id;
+    public static String id(String table, String binding, String legacy) {
+        String id = upgrade(table, legacy);
+        if (id == null) {
+            id = CONCEPTS.getProperty(table + "." + binding);
+        }
+        return id == null ? legacy : id;
     }
 
     /**

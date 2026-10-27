@@ -74,7 +74,44 @@
                 <form:csrfform id="xeEditorCc" formId="exportTemplateEditorForm">
                     <!-- Le conteneur .xt est hors du formulaire : on y resynchronise l'état verrouillé après chaque mise à jour ajax
                          (duplication d'un modèle publié, publication). -->
-                    <script>document.querySelector('.xt-editor').classList.toggle('xe-locked', #{exportTemplateEditorBean.published});</script>
+                    <script>
+                        document.querySelector('.xt-editor').classList.toggle('xe-locked', #{exportTemplateEditorBean.published});
+                        // Une colonne ouverte ou créée est amenée dans la vue : défilement vertical en mapping, horizontal dans l'aperçu.
+                        // Onglets de feuilles sur une seule ligne : défilement avec boutons précédent / suivant quand ils débordent.
+                        (function () {
+                            function init() {
+                                var scroller = document.querySelector('.xe-tabs-scroll');
+                                if (!scroller) { return; }
+                                var prev = document.querySelector('.xe-tabs-nav.prev'), next = document.querySelector('.xe-tabs-nav.next');
+                                function refresh() {
+                                    var overflow = scroller.scrollWidth &gt; scroller.clientWidth + 1;
+                                    prev.style.display = next.style.display = overflow ? 'inline-flex' : 'none';
+                                    prev.disabled = scroller.scrollLeft &lt;= 0;
+                                    next.disabled = scroller.scrollLeft + scroller.clientWidth &gt;= scroller.scrollWidth - 1;
+                                }
+                                prev.onclick = function () { scroller.scrollBy({left: -Math.max(160, scroller.clientWidth * 0.6), behavior: 'smooth'}); };
+                                next.onclick = function () { scroller.scrollBy({left: Math.max(160, scroller.clientWidth * 0.6), behavior: 'smooth'}); };
+                                scroller.addEventListener('scroll', refresh);
+                                window.addEventListener('resize', refresh);
+                                var active = scroller.querySelector('.xe-tab.active');
+                                if (active) { scroller.scrollLeft = Math.max(0, active.offsetLeft - scroller.offsetLeft - 40); }
+                                refresh();
+                            }
+                            if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+                        })();
+                        (function () {
+                            var key = '#{exportTemplateEditorBean.selectedSheetIndex}:#{exportTemplateEditorBean.previewSelectedIndex}:#{exportTemplateEditorBean.scrollTick}';
+                            if (window.xeLastSelection === key) { return; }
+                            window.xeLastSelection = key;
+                            if (#{exportTemplateEditorBean.previewSelectedIndex} &lt; 0) { return; }
+                            setTimeout(function () {
+                                var row = document.querySelector('.xe-rows .xe-row.selected');
+                                if (row) { row.scrollIntoView({block: 'nearest'}); }
+                                var th = document.querySelector('.xe-preview-table th[data-ix="#{exportTemplateEditorBean.previewSelectedIndex}"]');
+                                if (th) { th.scrollIntoView({block: 'nearest', inline: 'nearest'}); }
+                            }, 60);
+                        })();
+                    </script>
                     <p:remoteCommand name="xeToggleCheck" action="#{exportTemplateEditorBean.toggleCheckedAt()}" process="@this" update="@form"/>
                     <p:remoteCommand name="xeToggleAll" action="#{exportTemplateEditorBean.toggleCheckAllVisible()}" process="@this" update="@form"/>
                     <div class="xe-page">
@@ -194,6 +231,9 @@
                         <!-- Onglets de feuilles et réglages de la feuille -->
                         <div class="xe-tabsbar">
                             <div class="xe-tabs">
+                                <button type="button" class="xe-tabs-nav prev" aria-label="#{langBean.msg('exportTemplates.editor.tabs.previous')}"
+                                        title="#{langBean.msg('exportTemplates.editor.tabs.previous')}"><i class="bi bi-chevron-left"></i></button>
+                                <div class="xe-tabs-scroll">
                                 <ui:repeat value="#{exportTemplateEditorBean.model.sheets}" var="sheet">
                                     <span class="xe-tabwrap #{exportTemplateEditorBean.model.sheets.size() gt 1 and not exportTemplateEditorBean.published ? 'has-del' : ''}">
                                         <p:commandLink styleClass="xe-tab #{exportTemplateEditorBean.isSelected(sheet) ? 'active' : ''}"
@@ -208,6 +248,9 @@
                                         </p:commandLink>
                                     </span>
                                 </ui:repeat>
+                                </div>
+                                <button type="button" class="xe-tabs-nav next" aria-label="#{langBean.msg('exportTemplates.editor.tabs.next')}"
+                                        title="#{langBean.msg('exportTemplates.editor.tabs.next')}"><i class="bi bi-chevron-right"></i></button>
                                 <p:commandLink styleClass="xe-tab-add xe-edit"
                                                action="#{exportTemplateEditorBean.addSheet()}" process="@form" update="@form :xeSourceForm"
                                                oncomplete="PF('xeSourceDlg').show()">
@@ -316,7 +359,6 @@
                                                     var="o" itemLabel="#{o.text}" itemValue="#{o}" groupBy="#{o.group}" dropdown="false" onfocus="var w = PF('xeSearchW'); if (w &amp;&amp; !w.input.val()) { w.search(''); }"
                                                     minQueryLength="0" scrollHeight="320" appendTo="@form" forceSelection="false"
                                                     placeholder="#{langBean.msg('exportTemplates.editor.columns.search')}">
-                                        <p:ajax event="query" update="xeResults"/>
                                         <p:ajax event="itemSelect" listener="#{exportTemplateEditorBean.onSearchPick()}" process="@this" update="@form"/>
                                     </p:autoComplete>
                                 </div>
@@ -341,7 +383,7 @@
                                 <span class="xe-list-count">#{exportTemplateEditorBean.published
                                         ? langBean.msg('exportTemplates.editor.columns.total', exportTemplateEditorBean.selectedSheet.columns.size())
                                         : langBean.msg('exportTemplates.editor.columns.count', exportTemplateEditorBean.mappedColumnCount, exportTemplateEditorBean.selectedSheet.columns.size())}</span>
-                                <p:commandLink styleClass="xe-dashed small" action="#{exportTemplateEditorBean.addColumn()}" process="@this" update="@form">
+                                <p:commandLink styleClass="xe-dashed small xe-add-col" action="#{exportTemplateEditorBean.addColumn()}" process="@this" update="@form">
                                     + #{langBean.msg('exportTemplates.editor.column.add')}
                                 </p:commandLink>
                             </div>
@@ -423,7 +465,7 @@
                                                 <thead>
                                                 <tr>
                                                     <ui:repeat value="#{exportTemplateEditorBean.previewColumnIndexes}" var="ix">
-                                                        <th class="xe-clickable #{ix eq exportTemplateEditorBean.previewSelectedIndex or exportTemplateEditorBean.isCheckedAt(ix) ? 'sel' : ''}" tabindex="0"
+                                                        <th class="xe-clickable #{ix eq exportTemplateEditorBean.previewSelectedIndex or exportTemplateEditorBean.isCheckedAt(ix) ? 'sel' : ''}" tabindex="0" data-ix="#{ix}"
                                                             title="#{langBean.msg('exportTemplates.editor.preview.openMapping')}"
                                                             onclick="xeSelectColumn([{name: 'ix', value: #{ix}}])"
                                                             onkeydown="if (event.key === 'Enter') { xeSelectColumn([{name: 'ix', value: #{ix}}]); }">

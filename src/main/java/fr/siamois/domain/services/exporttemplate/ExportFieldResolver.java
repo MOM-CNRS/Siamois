@@ -96,10 +96,36 @@ public class ExportFieldResolver {
     }
 
     /** Un champ qu'une colonne peut lire : son libellé (clé de message pour un champ système) et son concept. */
-    public record FieldOption(String label, boolean system, ConceptRef concept, boolean measurement) {
+    public record FieldOption(String label, boolean system, ConceptRef concept, boolean measurement, SampleKind sample) {
 
         public FieldOption(String label, boolean system, ConceptRef concept) {
-            this(label, system, concept, false);
+            this(label, system, concept, false, SampleKind.TEXT);
+        }
+
+        public FieldOption(String label, boolean system, ConceptRef concept, boolean measurement) {
+            this(label, system, concept, measurement, measurement ? SampleKind.DECIMAL : SampleKind.TEXT);
+        }
+    }
+
+    /** Nature de la valeur d'un champ, pour fabriquer un exemple quand le projet n'en donne pas. */
+    public enum SampleKind {
+        TEXT, INTEGER, DECIMAL, DATE, BOOLEAN;
+
+        static SampleKind of(CustomField field) {
+            if (field instanceof fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger) {
+                return INTEGER;
+            }
+            if (field instanceof fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal
+                    || field instanceof fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement) {
+                return DECIMAL;
+            }
+            if (field instanceof fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime) {
+                return DATE;
+            }
+            if (field instanceof fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean) {
+                return BOOLEAN;
+            }
+            return TEXT;
         }
     }
 
@@ -134,7 +160,8 @@ public class ExportFieldResolver {
         ConceptRef ref = new ConceptRef(c.getVocabulary().getExternalVocabularyId(), c.getExternalId(), c.getUri());
         String key = (ref.thesaurusId() + "|" + ref.conceptId()).toLowerCase(java.util.Locale.ROOT);
         options.putIfAbsent(key, new FieldOption(field.getLabel(), system, ref,
-                field instanceof fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement));
+                field instanceof fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement,
+                SampleKind.of(field)));
     }
 
     /** Champs système lisibles pour une entité. */

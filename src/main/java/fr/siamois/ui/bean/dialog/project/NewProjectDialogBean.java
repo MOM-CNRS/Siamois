@@ -4,6 +4,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.actionunit.template.ProjectTemplate;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -57,6 +58,13 @@ public class NewProjectDialogBean implements Serializable {
         String label;
     }
 
+    /** A starting point to pick (see {@link ProjectTemplate}): its id and its label in the user's language. */
+    @lombok.Value
+    public static class TemplateChoice implements Serializable {
+        String id;
+        String label;
+    }
+
     private final transient InstitutionService institutionService;
     private final transient ProfilePermissionService profilePermissionService;
     private final transient FieldConfigurationService fieldConfigurationService;
@@ -72,6 +80,8 @@ public class NewProjectDialogBean implements Serializable {
     private String identifier;
     private String typeId;
     private List<TypeChoice> types = List.of();
+    private String templateId = ProjectTemplate.DEFAULT_ID;
+    private List<TemplateChoice> templates = List.of();
 
     /** Refreshes what the user may create — run when the project list page is displayed. */
     public void init() {
@@ -103,6 +113,7 @@ public class NewProjectDialogBean implements Serializable {
         name = null;
         identifier = null;
         typeId = null;
+        templateId = ProjectTemplate.DEFAULT_ID;
         InstitutionDTO active = sessionSettingsBean.getSelectedInstitution();
         institutionId = creatableInstitutions.stream()
                 .map(InstitutionDTO::getId)
@@ -110,6 +121,7 @@ public class NewProjectDialogBean implements Serializable {
                 .findFirst()
                 .orElse(creatableInstitutions.get(0).getId());
         loadTypes();
+        loadTemplates();
         proposeIdentifier();
         PrimeFaces.current().ajax().update("newProjectDialog");
         PrimeFaces.current().executeScript("PF('newProjectDialog').show();");
@@ -118,6 +130,7 @@ public class NewProjectDialogBean implements Serializable {
     /** The organisation changed: its types and its next identifier differ. */
     public void onOrganisationChange() {
         loadTypes();
+        loadTemplates();
         proposeIdentifier();
     }
 
@@ -132,6 +145,26 @@ public class NewProjectDialogBean implements Serializable {
                     projectApiService.requireCaller(), String.valueOf(institutionId), langBean.getLanguageCode()).orElse(null);
         } catch (RuntimeException e) {
             log.warn("Could not preview the next project identifier of institution {}", institutionId, e);
+        }
+    }
+
+    /** The starting points of the chosen organisation: the default project, an empty one, or a copy of one of its projects. */
+    public void loadTemplates() {
+        templateId = ProjectTemplate.DEFAULT_ID;
+        templates = List.of();
+        if (institutionId == null) {
+            return;
+        }
+        try {
+            templates = projectApiService.listProjectTemplates(projectApiService.requireCaller(), String.valueOf(institutionId)).stream()
+                    .map(t -> new TemplateChoice(t.id(), switch (t.kind()) {
+                        case DEFAULT -> langBean.msg("projectList.create.template.default");
+                        case EMPTY -> langBean.msg("projectList.create.template.empty");
+                        case PROJECT -> t.label();
+                    }))
+                    .toList();
+        } catch (RuntimeException e) {
+            log.warn("Could not list the project templates of institution {}", institutionId, e);
         }
     }
 
@@ -168,6 +201,7 @@ public class NewProjectDialogBean implements Serializable {
             request.setOrganizationId(String.valueOf(institutionId));
             request.setName(name);
             request.setTypeId(typeId);
+            request.setTemplateId(templateId);
             projectApiService.createProject(projectApiService.requireCaller(), request, langBean.getLanguageCode());
             created = true;
             MessageUtils.displayInfoMessage(langBean, "projectList.create.success", name);

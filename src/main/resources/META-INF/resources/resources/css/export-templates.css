@@ -597,3 +597,29 @@ tr.row-clickable { cursor: pointer; }
 .xe-selcount { font-weight: 600; color: var(--primary-dark); }
 .xt.xe-locked .xe-locked-hide { display: none; }
 .xe-confirm-dlg .xe-pop-foot { margin-top: 16px; }
+
+/* « Ajouter une colonne » : tout à droite de la barre d'outils de la liste */
+.xe-list-tools .xe-add-col { margin-left: auto; }
+
+/* Onglets de feuilles : une seule ligne, défilement horizontal avec boutons précédent / suivant */
+.xe-tabs { flex-wrap: nowrap; align-items: flex-end; }
+.xe-tabs-scroll { display: flex; gap: 4px; flex: 0 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; align-items: flex-end; }
+.xe-tabs-scroll::-webkit-scrollbar { display: none; }
+.xe-tabs-scroll .xe-tabwrap { flex: 0 0 auto; }
+.xe-tabs-nav { display: none; flex: 0 0 auto; align-items: center; justify-content: center; width: 32px; height: 36px; margin-bottom: 4px;
+    border: 1px solid var(--primary); border-radius: 6px; background: var(--surface); color: var(--primary-dark); cursor: pointer; }
+.xe-tabs-nav:disabled { opacity: .35; cursor: default; }
+.xe-tabs > .xe-tab-add, .xe-tabs > .ui-button.xe-tab-add { flex: 0 0 auto; margin-bottom: 4px; }
+
+/* Titre et actions : souple, passe à la ligne sur petit écran */
+.xe-title { flex-wrap: wrap; }
+.xe-title-main { flex: 1 1 260px; min-width: 0; flex-wrap: wrap; }
+.xe-title h1 { overflow-wrap: anywhere; min-width: 0; }
+.xt-actions { flex-wrap: wrap; }
+@media (max-width: 720px) {
+    .xe-title { gap: 10px; }
+    .xe-title h1 { font-size: 19px; }
+    .xe-title-main { flex-basis: 100%; }
+    .xt-actions { flex: 1 1 100%; justify-content: flex-start; }
+    .xe-tabsbar { margin: 0 -14px; padding: 0 14px; }
+}

@@ -55,7 +55,6 @@ les relations stratigraphiques → `SIARU.STRATI.ANTERIOR / POSTERIOR / SYNCHRON
 | `UnitDefinitionInitializer` | `th252` | définitions d'unités |
 | `SiamoisThesaurus.DEFAULT_URL` | `https://thesaurus.mom.fr/?idt=th252` | thésaurus par défaut proposé |
 | `DefaultProjectIdentifierConfigSeeder` | `th1295`, concepts 4287627 et 4287628 | formats d'identifiant `US{NUM_UE:00}` et `F{NUM_UE:00}` |
-| `ChartresDatasetInitializer` | `th240`, `th230`, `th258` | jeu de données de démonstration (Chartres) |
 
 ## 3. Anciens modèles d'export
 

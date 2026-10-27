@@ -1349,7 +1349,7 @@ public class ExportTemplateEditorBean implements Serializable {
         public String getGroup() { return group; }
         public String getText() { return text; }
 
-        private static final String SEP = "\u0001";
+        private static final String SEP = "\u2016"; // printable: a control character is not valid in the XML ajax response
 
         public String encoded() {
             return String.join(SEP, group, text, String.valueOf(columnIndex), fieldKind == null ? "" : fieldKind,
@@ -1369,6 +1369,9 @@ public class ExportTemplateEditorBean implements Serializable {
         }
     }
 
+    /** Incrémenté à chaque choix dans la recherche : la page défile alors vers la colonne même si elle était déjà ouverte. */
+    private int scrollTick;
+
     /** Résultat choisi dans la recherche ; l'action est faite aussitôt puis la valeur est vidée. */
     private SearchHit searchPick;
 
@@ -1382,7 +1385,17 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Résultats de la recherche : colonnes, colonnes mappées sur le texte cherché, puis champs pour créer un mapping. */
     public List<SearchHit> completeSearch(String query) {
+        // La recherche ne filtre pas la liste : le texte tapé ne sert qu'à construire les suggestions.
+        String previous = columnSearch;
         columnSearch = query == null ? "" : query;
+        try {
+            return searchHits();
+        } finally {
+            columnSearch = previous;
+        }
+    }
+
+    private List<SearchHit> searchHits() {
         EditSheet sheet = getSelectedSheet();
         List<SearchHit> hits = new ArrayList<>();
         String columns = langBean.msg("exportTemplates.editor.suggest.columns");
@@ -1404,6 +1417,7 @@ public class ExportTemplateEditorBean implements Serializable {
     public void onSearchPick() {
         SearchHit hit = searchPick;
         searchPick = null;
+        scrollTick++;
         EditSheet sheet = getSelectedSheet();
         if (hit == null || sheet == null) {
             return;
@@ -1451,6 +1465,9 @@ public class ExportTemplateEditorBean implements Serializable {
         columnFilter = FILTER_ALL;
         gapSource = -1;
         selectColumn(column);
+        if (previewOpen && referenceProjectId != null) {
+            refreshPreview();
+        }
     }
 
     /** Positions, dans la feuille, des colonnes que la recherche et les filtres laissent visibles (pour l'aperçu). */
@@ -1924,10 +1941,24 @@ public class ExportTemplateEditorBean implements Serializable {
         return String.join(separator, pieces);
     }
 
-    /** Valeur fictive d'un champ : son libellé entre chevrons, ou « valeur » tant qu'aucun champ n'est choisi. */
+    /** Nature de la valeur de chaque choix de champ rencontré, pour fabriquer une valeur d'exemple. */
+    private transient java.util.Map<String, ExportFieldResolver.SampleKind> choiceKinds = new java.util.HashMap<>();
+
+    /** Valeur inventée pour un champ sans valeur d'exemple : un nombre, une date, « Oui » ou un texte selon son type. */
     private String placeholderOf(List<String> sourceChoices, String choice) {
         String label = choiceLabel(sourceChoices, choice);
-        return "?".equals(label) ? "‹valeur›" : "‹" + label + "›";
+        if ("?".equals(label)) {
+            return langBean.msg("exportTemplates.editor.sample.text");
+        }
+        ExportFieldResolver.SampleKind kind = choiceKinds == null ? ExportFieldResolver.SampleKind.TEXT
+                : choiceKinds.getOrDefault(choice, ExportFieldResolver.SampleKind.TEXT);
+        return switch (kind) {
+            case INTEGER -> "123";
+            case DECIMAL -> "12.5";
+            case DATE -> "2024-01-15";
+            case BOOLEAN -> langBean.msg("exportTemplates.editor.sample.true");
+            default -> langBean.msg("exportTemplates.editor.sample.text");
+        };
     }
 
     private String describeRule(EditRule rule) {
@@ -2124,10 +2155,15 @@ public class ExportTemplateEditorBean implements Serializable {
             String key = ExportTemplateEditModel.keyOf(o.concept());
             String sep = ExportTemplateEditModel.CHOICE_SEPARATOR;
             out.add(choice(prefix + sep + key + sep, label));
+            if (choiceKinds == null) {
+                choiceKinds = new java.util.HashMap<>();
+            }
+            choiceKinds.put(prefix + sep + key + sep, o.sample());
             if (o.measurement()) {
                 for (String property : ExportTemplateDefinition.ConceptField.MEASUREMENT_PROPERTIES) {
                     out.add(choice(prefix + sep + key + sep + property,
                             label + " › " + langBean.msg("exportTemplates.editor.property." + property)));
+                    choiceKinds.put(prefix + sep + key + sep + property, ExportFieldResolver.SampleKind.DECIMAL);
                 }
             }
         }
