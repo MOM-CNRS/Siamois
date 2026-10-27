@@ -14,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -24,7 +25,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class RestExceptionHandlerTest {
 
@@ -55,7 +55,8 @@ class RestExceptionHandlerTest {
 
     @Test
     void messageNotReadable_returns400() {
-        ResponseEntity<ApiError> response = handler.messageNotReadable(mock(HttpMessageNotReadableException.class));
+        ResponseEntity<ApiError> response = handler.messageNotReadable(
+                new HttpMessageNotReadableException("JSON invalide", new MockHttpInputMessage(new byte[0])));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().error()).isEqualTo("bad_request");
