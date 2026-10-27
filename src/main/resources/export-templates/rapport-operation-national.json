@@ -96,8 +96,8 @@
       "entity": "SPECIMEN",
       "types": [
         {
-          "thesaurus": "TODO",
-          "id": "specimen.type.vab"
+          "thesaurus": "th332",
+          "id": "1338"
         }
       ]
     },
@@ -124,8 +124,8 @@
       "entity": "SPECIMEN",
       "types": [
         {
-          "thesaurus": "TODO",
-          "id": "specimen.type.sample"
+          "thesaurus": "th332",
+          "id": "1339"
         }
       ]
     },
@@ -152,8 +152,8 @@
       "entity": "STUDY",
       "types": [
         {
-          "thesaurus": "th252",
-          "id": "4291174"
+          "thesaurus": "th332",
+          "id": "1464"
         }
       ]
     },
