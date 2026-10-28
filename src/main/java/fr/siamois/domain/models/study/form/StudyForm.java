@@ -32,14 +32,19 @@ public abstract class StudyForm {
     public static final String B_SPECIMENS = "specimens";
     public static final String B_TREATMENT_START = "treatmentStart";
     public static final String B_TREATMENT_END = "treatmentEnd";
+    private static final String B_REPORT_CODE = "reportCode";
+    private static final String B_TREATMENT_PLACE = "treatmentPlace";
+    private static final String B_TREATMENT_MANAGER = "treatmentManager";
+    private static final String B_TREATMENT_IDENTIFIER = "treatmentIdentifier";
+    private static final String B_TREATMENT_COMMENTS = "treatmentComments";
 
     /** Bindings of the fields shared by the study of finds and the study of recording units. */
     public static final List<String> LINK_BINDINGS = List.of(B_RECORDING_UNITS, B_SPECIMENS);
 
     /** Bindings of the fields of the "traitement" sheet. */
     public static final List<String> TREATMENT_BINDINGS = List.of(
-            "reportCode", B_TREATMENT_START, B_TREATMENT_END,
-            "treatmentPlace", "treatmentManager", "treatmentIdentifier", "treatmentComments");
+            B_REPORT_CODE, B_TREATMENT_START, B_TREATMENT_END,
+            B_TREATMENT_PLACE, B_TREATMENT_MANAGER, B_TREATMENT_IDENTIFIER, B_TREATMENT_COMMENTS);
 
     protected StudyForm() {}
 
@@ -47,18 +52,18 @@ public abstract class StudyForm {
     private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
             Map.entry("TYPE", "1641"),
             Map.entry("TYPETRAIT", "1641"),
-            Map.entry("actionUnit", "1642"),
-            Map.entry("recordingUnits", "1643"),
-            Map.entry("reportCode", "1645"),
-            Map.entry("specimens", "1644"),
-            Map.entry("treatmentComments", "1651"),
-            Map.entry("treatmentEnd", "1647"),
-            Map.entry("treatmentIdentifier", "1650"),
-            Map.entry("treatmentManager", "1649"),
-            Map.entry("treatmentPlace", "1648"),
-            Map.entry("treatmentStart", "1646"),
+            Map.entry(B_ACTION_UNIT, "1642"),
+            Map.entry(B_RECORDING_UNITS, "1643"),
+            Map.entry(B_REPORT_CODE, "1645"),
+            Map.entry(B_SPECIMENS, "1644"),
+            Map.entry(B_TREATMENT_COMMENTS, "1651"),
+            Map.entry(B_TREATMENT_END, "1647"),
+            Map.entry(B_TREATMENT_IDENTIFIER, "1650"),
+            Map.entry(B_TREATMENT_MANAGER, "1649"),
+            Map.entry(B_TREATMENT_PLACE, "1648"),
+            Map.entry(B_TREATMENT_START, "1646"),
             Map.entry("treatmentType", "1641"),
-            Map.entry("type", "1641"));
+            Map.entry(B_TYPE, "1641"));
 
     private static Concept concept(String binding) {
         String id = CONCEPT_IDS.get(binding);
@@ -72,17 +77,6 @@ public abstract class StudyForm {
                 .isTextArea(textArea)
                 .id(id)
                 .valueBinding(binding)
-                .concept(concept(binding))
-                .build();
-    }
-
-    private static CustomFieldSelectOneFromFieldCode one(long id, String binding, String fieldCode) {
-        return CustomFieldSelectOneFromFieldCode.builder()
-                .label(LABEL_PREFIX + binding)
-                .isSystemField(true)
-                .id(id)
-                .valueBinding(binding)
-                .fieldCode(fieldCode)
                 .concept(concept(binding))
                 .build();
     }
