@@ -52,12 +52,9 @@ public class EntityIdentifierGenerator {
         FlushModeType previousFlushMode = entityManager == null ? null : entityManager.getFlushMode();
         if (entityManager != null) entityManager.setFlushMode(FlushModeType.COMMIT);
         try {
-            while (true) {
-                int number = counterRepository.nextValue(
-                        actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
-                if (number > config.getMaxCode()) {
-                    throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
-                }
+            int number = counterRepository.nextValue(
+                    actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
+            while (number <= config.getMaxCode()) {
                 values.put(resolverRegistry.ownNumericalToken(table), number);
                 String rendered = resolverRegistry.render(
                         table, config.getIdentifierFormat(),
@@ -65,7 +62,10 @@ public class EntityIdentifierGenerator {
                 if (!identifierAlreadyUsed.test(rendered)) {
                     return new GeneratedIdentifier(number, rendered);
                 }
+                number = counterRepository.nextValue(
+                        actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
             }
+            throw new IdentifierRangeExhaustedException("Identifier range exhausted for form config " + config.getId());
         } finally {
             if (entityManager != null && previousFlushMode != null) {
                 entityManager.setFlushMode(previousFlushMode);
@@ -100,7 +100,7 @@ public class EntityIdentifierGenerator {
                 actionUnit.getId(), config.getId(), canonicalKey, config.getMinCode());
         while (true) {
             if (number > config.getMaxCode()) {
-                throw new IllegalStateException("Identifier range exhausted for form config " + config.getId());
+                throw new IdentifierRangeExhaustedException("Identifier range exhausted for form config " + config.getId());
             }
             values.put(resolverRegistry.ownNumericalToken(table), number);
             String rendered = resolverRegistry.render(

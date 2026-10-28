@@ -144,4 +144,8 @@ public class ProjectThesaurusSettingsBean extends AbstractThesaurusSettingsBean 
         applyThesaurus(vocabulary -> fieldConfigurationService.setupFieldConfigurationForActionUnit(project, vocabulary, progressWrapper));
     }
 
+    public void synchronizeConfig() {
+        synchronizeThesaurus(vocabulary -> fieldConfigurationService.loadFieldCodes(vocabulary, progressWrapper));
+    }
+
 }

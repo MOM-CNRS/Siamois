@@ -79,4 +79,8 @@ public class InstitutionThesaurusSettingsBean extends AbstractThesaurusSettingsB
                 sessionSettingsBean.getUserInfo(), vocabulary, progressWrapper));
     }
 
+    public void synchronizeConfig() {
+        synchronizeThesaurus(vocabulary -> fieldConfigurationService.loadFieldCodes(vocabulary, progressWrapper));
+    }
+
 }

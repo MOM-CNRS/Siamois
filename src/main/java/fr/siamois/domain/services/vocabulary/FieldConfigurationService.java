@@ -24,7 +24,6 @@ import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldS
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.AutocompleteRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptFieldConfigRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.DocumentationThesaurusRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.ActionUnitMapper;
@@ -62,7 +61,6 @@ public class FieldConfigurationService {
     public static final int NUMBER_OF_STEPS_IN_CONCEPT_UPDATE = 5;
     private final ConceptApi conceptApi;
     private final FieldService fieldService;
-    private final ConceptRepository conceptRepository;
     private final ConceptService conceptService;
 
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
@@ -74,6 +72,7 @@ public class FieldConfigurationService {
     private final DocumentationThesaurusRepository documentationThesaurusRepository;
     private final SiamoisThesaurus siamoisThesaurus;
     private final FieldCodeResolver fieldCodeResolver;
+    private final CustomFieldCandidateService customFieldCandidateService;
     private final ObjectProvider<FieldConfigurationService> selfProvider;
 
     private boolean containsFieldCode(FullInfoDTO conceptDTO) {
@@ -129,14 +128,12 @@ public class FieldConfigurationService {
      *
      * @param institution the institution
      * @param vocabulary  the vocabulary to use for configuration
-     * @return an Optional containing GlobalFieldConfig if the configuration is wrong, otherwise empty
      * @throws NotSiamoisThesaurusException      if the vocabulary is not a Siamois thesaurus
      * @throws ErrorProcessingExpansionException if there is an error processing the vocabulary expansion
      */
-    @NonNull
     @Transactional(rollbackFor = ErrorProcessingExpansionException.class)
-    public Optional<FeedbackFieldConfig> setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
-        return setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
+    public void setupFieldConfigurationForInstitution(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
+        setupFieldConfiguration(institution, vocabulary, new ProgressWrapper());
     }
 
     /**
@@ -211,6 +208,17 @@ public class FieldConfigurationService {
         return feedback;
     }
 
+    /**
+     * Makes {@code vocabulary} the thesaurus where the institution documents its fields and types, unless it already
+     * has one: a thesaurus an administrator chose is never replaced. The field codes of the vocabulary are not loaded.
+     */
+    @Transactional
+    public void setDocumentationThesaurusIfAbsent(@NonNull InstitutionDTO institution, @NonNull Vocabulary vocabulary) {
+        if (documentationThesaurusRepository.findOfInstitution(institution.getId()).isEmpty()) {
+            saveDocumentationThesaurus(institution, null, vocabulary);
+        }
+    }
+
     /** Makes {@code vocabulary} the thesaurus where the institution, or the project, documents its fields and types. */
     private void saveDocumentationThesaurus(InstitutionDTO institutionDTO, @Nullable ActionUnitDTO actionUnitDTO, Vocabulary vocabulary) {
         Optional<DocumentationThesaurus> existing = actionUnitDTO == null
@@ -229,6 +237,7 @@ public class FieldConfigurationService {
     /**
      * Loads the field codes of a thesaurus: for each concept of its fields branch that carries a code SIAMOIS
      * knows, the concept and its subtree. Shared by everyone who reads the thesaurus, so a thesaurus is loaded once.
+     * The additional fields whose candidate is pending in the thesaurus are then searched for again.
      *
      * @return the feedback when the thesaurus misses codes SIAMOIS needs, otherwise empty
      */
@@ -260,6 +269,8 @@ public class FieldConfigurationService {
             conceptService.saveAllSubConceptOfIfUpdated(fieldConfig, progressWrapper);
             progressWrapper.incrementStep();
         }
+
+        customFieldCandidateService.synchronizePendingOf(vocabulary);
 
         if (config.isWrongConfig()) return Optional.of(config);
         return Optional.empty();
@@ -524,9 +535,7 @@ public class FieldConfigurationService {
      * Where a field code is read when nothing names a thesaurus for it: in the SIAMOIS thesaurus if it
      * defines the code, otherwise in the thesaurus the project documents its fields and types in, then
      * the institution's. A code SIAMOIS defines therefore never moves to a project's thesaurus on its own:
-     * a field has to be pointed at another thesaurus explicitly.
-     * A field code the thesaurus doesn't define yet but that has a {@link #FALLBACK_FIELD_CODES fallback} is read through it.
-     *
+     * a field has to be pointed at another thesaurus explicitly.*
      * @param info         the user information containing institution and user details
      * @param fieldCode    the field code for which to find the configuration
      * @param actionUnitId the action unit (project) whose documentation thesaurus is read, or null for institution-only

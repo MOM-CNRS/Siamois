@@ -18,6 +18,38 @@ console.error = (...args: unknown[]) => {
   consoleError(...args);
 };
 
+// jsdom lays nothing out, so a table's virtual scroller (PrimeReact's VirtualScroller) would measure a 0px
+// box and draw no row at all. Its box is given a size here — 800px tall, room for a few dozen rows.
+const VIRTUAL_SCROLLER_BOX = { width: 1200, height: 800 };
+const isVirtualScroller = (el: Element) => el.classList?.contains("p-virtualscroller");
+for (const [prop, size] of [["offsetWidth", "width"], ["offsetHeight", "height"]] as const) {
+  const native = Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop)!;
+  Object.defineProperty(HTMLElement.prototype, prop, {
+    configurable: true,
+    get(this: HTMLElement) {
+      return isVirtualScroller(this) ? VIRTUAL_SCROLLER_BOX[size] : native.get!.call(this);
+    },
+  });
+}
+const nativeRect = Element.prototype.getBoundingClientRect;
+Element.prototype.getBoundingClientRect = function (this: Element) {
+  return isVirtualScroller(this)
+    ? DOMRect.fromRect({ x: 0, y: 0, ...VIRTUAL_SCROLLER_BOX })
+    : nativeRect.call(this);
+};
+
+// It also reads its content's padding, which jsdom leaves empty when no stylesheet sets it (NaN rows).
+const nativeComputedStyle = window.getComputedStyle.bind(window);
+window.getComputedStyle = (element: Element, pseudo?: string | null) => {
+  const style = nativeComputedStyle(element, pseudo);
+  if (element.closest?.(".p-virtualscroller")) {
+    for (const side of ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"] as const) {
+      if (!style[side]) style[side] = "0px";
+    }
+  }
+  return style;
+};
+
 // The app's shared cache (catalogs are fetched through it) must not carry one test's data into the next.
 afterEach(() => {
   queryClient.clear();

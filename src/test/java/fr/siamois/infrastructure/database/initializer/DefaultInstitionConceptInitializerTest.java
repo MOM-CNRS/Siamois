@@ -4,11 +4,15 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.SiamoisThesaurus;
 import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.mapper.InstitutionMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultInstitionConceptInitializerTest {
@@ -36,6 +39,10 @@ class DefaultInstitionConceptInitializerTest {
     private FieldConfigurationService fieldConfigurationService;
     @Mock
     private SiamoisThesaurus siamoisThesaurus;
+    @Mock
+    private InstitutionRepository institutionRepository;
+    @Mock
+    private InstitutionMapper institutionMapper;
 
     @InjectMocks
     private DefaultInstitionConceptInitializer initializer;
@@ -57,6 +64,30 @@ class DefaultInstitionConceptInitializerTest {
         assertDoesNotThrow(() -> initializer.initialize());
 
         verify(fieldConfigurationService).loadFieldCodes(any(Vocabulary.class), any(ProgressWrapper.class));
+    }
+
+    @Test
+    void initialize_makesItTheDocumentationThesaurusOfTheDefaultOrganisation() throws Exception {
+        Institution institution = new Institution();
+        InstitutionDTO institutionDto = new InstitutionDTO();
+        when(vocabularyService.findOrCreateVocabularyOfUri(URL)).thenReturn(vocabulary);
+        when(institutionRepository.findInstitutionByIdentifier(SystemUserDatasetInitializer.DEFAULT_INSTITUTION_IDENTIFIER))
+                .thenReturn(Optional.of(institution));
+        when(institutionMapper.convert(institution)).thenReturn(institutionDto);
+
+        initializer.initialize();
+
+        verify(fieldConfigurationService).setDocumentationThesaurusIfAbsent(institutionDto, vocabulary);
+    }
+
+    @Test
+    void initialize_withoutDefaultOrganisation_attachesTheThesaurusToNobody() throws Exception {
+        when(vocabularyService.findOrCreateVocabularyOfUri(URL)).thenReturn(vocabulary);
+        when(institutionRepository.findInstitutionByIdentifier(anyString())).thenReturn(Optional.empty());
+
+        initializer.initialize();
+
+        verify(fieldConfigurationService, never()).setDocumentationThesaurusIfAbsent(any(), any());
     }
 
     @Test

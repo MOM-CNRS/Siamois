@@ -15,8 +15,6 @@ function model(over: Partial<RelationListModel> = {}): RelationListModel {
     search: "",
     filters: {},
     sort: "kind:asc",
-    offset: 0,
-    limit: 25,
     rows: [row("parents", "1"), row("anterior", "2", { concept: { resourceId: "7", label: "coupe" }, uncertain: true })],
     total: 2,
     isLoading: false,
@@ -25,7 +23,7 @@ function model(over: Partial<RelationListModel> = {}): RelationListModel {
     setSearch: vi.fn(),
     setFilters: vi.fn(),
     setSort: vi.fn(),
-    setPage: vi.fn(),
+    setScrollWindow: vi.fn(),
     ...over,
   };
 }

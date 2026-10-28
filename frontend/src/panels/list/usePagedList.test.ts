@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {isFieldPending, mergeSupplementRows, missingFields} from "./usePagedList";
+import {isFieldPending, pagesInRange, mergeSupplementRows, missingFields} from "./usePagedList";
 
 describe("mergeSupplementRows", () => {
   const base: { id: string; name: string; answers: Record<string, unknown> }[] = [
@@ -30,5 +30,18 @@ describe("missingFields", () => {
   it("lists the visible fields a page wasn't fetched with", () => {
     expect(missingFields(["a", "b", "c"], ["a", "c"])).toEqual(["b"]);
     expect(missingFields(["a"], ["a", "b"])).toEqual([]);
+  });
+});
+
+describe("pagesInRange", () => {
+  it("lists every page the scroller's window touches", () => {
+    expect(pagesInRange(0, 44, 100)).toEqual([0]);
+    expect(pagesInRange(180, 230, 100)).toEqual([1, 2]);
+    expect(pagesInRange(200, 300, 100)).toEqual([2]);
+  });
+
+  it("always asks for at least the page holding the first row", () => {
+    expect(pagesInRange(0, 0, 100)).toEqual([0]);
+    expect(pagesInRange(250, 250, 100)).toEqual([2]);
   });
 });

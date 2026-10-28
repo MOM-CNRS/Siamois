@@ -97,6 +97,9 @@ class FieldConfigurationServiceTest {
     private FieldCodeResolver fieldCodeResolver;
 
     @Mock
+    private CustomFieldCandidateService customFieldCandidateService;
+
+    @Mock
     private ObjectProvider<FieldConfigurationService> selfProvider;
 
     @InjectMocks
@@ -182,6 +185,28 @@ class FieldConfigurationServiceTest {
         verify(documentationThesaurusRepository).save(thesaurus.capture());
         assertThat(thesaurus.getValue().getVocabulary()).isEqualTo(vocabulary);
         assertThat(thesaurus.getValue().getActionUnit()).isNull();
+    }
+
+    @Test
+    void setDocumentationThesaurusIfAbsent_shouldAttachTheThesaurus_whenTheInstitutionHasNone() {
+        when(documentationThesaurusRepository.findOfInstitution(12L)).thenReturn(Optional.empty());
+
+        service.setDocumentationThesaurusIfAbsent(userInfo.getInstitution(), vocabulary);
+
+        ArgumentCaptor<DocumentationThesaurus> thesaurus = ArgumentCaptor.forClass(DocumentationThesaurus.class);
+        verify(documentationThesaurusRepository).save(thesaurus.capture());
+        assertThat(thesaurus.getValue().getVocabulary()).isEqualTo(vocabulary);
+        assertThat(thesaurus.getValue().getActionUnit()).isNull();
+        verifyNoInteractions(conceptApi);
+    }
+
+    @Test
+    void setDocumentationThesaurusIfAbsent_shouldKeepTheChosenThesaurus_whenTheInstitutionHasOne() {
+        when(documentationThesaurusRepository.findOfInstitution(12L)).thenReturn(Optional.of(new DocumentationThesaurus()));
+
+        service.setDocumentationThesaurusIfAbsent(userInfo.getInstitution(), vocabulary);
+
+        verify(documentationThesaurusRepository, never()).save(any());
     }
 
     @Test

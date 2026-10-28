@@ -9,16 +9,19 @@ describe("isSavedRelationListState", () => {
     expect(isSavedRelationListState({ ...ok, filters: {} })).toBe(true);
   });
 
-  it("refuses a kind, a sort column, a direction or a page size the list no longer has", () => {
+  it("ignores a page size kept before the list scrolled virtually", () => {
+    expect(isSavedRelationListState({ ...ok, limit: 500 })).toBe(true);
+  });
+
+  it("refuses a kind, a sort column or a direction the list no longer has", () => {
     expect(isSavedRelationListState({ ...ok, filters: { kind: { op: "in", v: ["cousins"] } } })).toBe(false);
     expect(isSavedRelationListState({ ...ok, sort: "identifier:asc" })).toBe(false);
     expect(isSavedRelationListState({ ...ok, sort: "label:sideways" })).toBe(false);
-    expect(isSavedRelationListState({ ...ok, limit: 500 })).toBe(false);
   });
 
   it("refuses anything that is not that shape", () => {
     expect(isSavedRelationListState(null)).toBe(false);
     expect(isSavedRelationListState("x")).toBe(false);
-    expect(isSavedRelationListState({ sort: "label:asc", limit: 25 })).toBe(false);
+    expect(isSavedRelationListState({ sort: "label:asc" })).toBe(false);
   });
 });

@@ -458,6 +458,17 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
   min-height: 0;
 }
 
+/* The flat table scrolls virtually (EntityTable): its scroll box is the virtual scroller inside the
+   wrapper, which takes the whole of it — the sticky header and the frozen columns stick against it. */
+.entity-list-panel .p-datatable-wrapper:has(> .p-virtualscroller) {
+  display: flex;
+  flex-direction: column;
+}
+.entity-list-panel .p-datatable-wrapper > .p-virtualscroller {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Columns keep a usable width instead of being squeezed to fit, so a wide catalog overflows
    sideways — which is the situation frozen columns exist for. Excludes the selection box, which
    is pinned at 3rem, and the frozen identifier, sized just below. */

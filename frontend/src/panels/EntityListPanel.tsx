@@ -160,6 +160,7 @@ function EntityListPanelBody({
 
   const {
     table,
+    onScrollWindow,
     catalog,
     hasSchema,
     pinnedFieldIds,
@@ -514,6 +515,7 @@ function EntityListPanelBody({
         search={state.search}
         sort={state.sort}
         onPage={setPage}
+        onScrollWindow={onScrollWindow}
         onSort={setSort}
         rowRules={rowRules}
         renderRowActions={rowActions.render}

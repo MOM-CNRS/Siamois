@@ -3,6 +3,7 @@ package fr.siamois.ui.api.handler;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
+import fr.siamois.domain.services.identifier.IdentifierRangeExhaustedException;
 import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictData;
@@ -13,6 +14,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -23,7 +25,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 class RestExceptionHandlerTest {
 
@@ -54,7 +55,8 @@ class RestExceptionHandlerTest {
 
     @Test
     void messageNotReadable_returns400() {
-        ResponseEntity<ApiError> response = handler.messageNotReadable(mock(HttpMessageNotReadableException.class));
+        ResponseEntity<ApiError> response = handler.messageNotReadable(
+                new HttpMessageNotReadableException("JSON invalide", new MockHttpInputMessage(new byte[0])));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().error()).isEqualTo("bad_request");
@@ -185,6 +187,21 @@ class RestExceptionHandlerTest {
         ResponseEntity<ApiError> response = handler.identifierConflict(new IdentifierConflictException(), requestIn("en"));
 
         assertThat(response.getBody().message()).isEqualTo("This identifier already exists in the project");
+    }
+
+    @Test
+    void identifierRangeExhausted_returns409InTheCallersLanguage() {
+        ResponseEntity<ApiError> fr = handler.identifierRangeExhausted(
+                new IdentifierRangeExhaustedException("exhausted"), requestIn("fr-FR"));
+        ResponseEntity<ApiError> en = handler.identifierRangeExhausted(
+                new IdentifierRangeExhaustedException("exhausted"), requestIn("en"));
+
+        assertThat(fr.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(fr.getBody().error()).isEqualTo("conflict");
+        assertThat(fr.getBody().message()).isEqualTo(
+                "Impossible de générer de nouveaux identifiants : la valeur maximale configurée a été atteinte");
+        assertThat(en.getBody().message()).isEqualTo(
+                "No new identifier can be generated: the configured maximum value has been reached");
     }
 
     private static MockHttpServletRequest requestIn(String acceptLanguage) {

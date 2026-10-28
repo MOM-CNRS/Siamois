@@ -239,6 +239,41 @@ public class ProfilePermissionService {
     }
 
     /**
+     * Where a person may manage settings: the organisations whose own settings they manage, and the projects
+     * whose settings they manage — one by one, or every project of an organisation.
+     *
+     * @param allInstitutions       the settings of every organisation
+     * @param institutionIds        the organisations whose settings are managed, when not all of them
+     * @param allProjects           the settings of every project
+     * @param projectInstitutionIds the organisations all of whose projects' settings are managed
+     * @param actionUnitIds         the projects whose settings are managed through a project profile
+     */
+    public record SettingsScope(boolean allInstitutions, Set<Long> institutionIds,
+                                boolean allProjects, Set<Long> projectInstitutionIds, Set<Long> actionUnitIds)
+            implements java.io.Serializable {
+    }
+
+    /**
+     * The organisations and projects whose settings the person may manage, consistently with
+     * {@link #institutionIdsPersonCanManageSettings} and {@link #hasProjectSettingsPermission(UserInfo, Long)}.
+     */
+    public SettingsScope settingsScopeOf(PersonDTO person) {
+        if (person == null || person.getId() == null) {
+            return new SettingsScope(false, Set.of(), false, Set.of(), Set.of());
+        }
+        Long personId = person.getId();
+        boolean allInstitutions = hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)
+                || hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_SETTINGS);
+        boolean allProjects = hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_ORGANIZATIONS_ACTIONS);
+        return new SettingsScope(
+                allInstitutions,
+                allInstitutions ? Set.of() : assignmentRepository.findAllInstitutionIdsWithPermission(personId, PermissionConstants.ORGANIZATION_MANAGE_SETTINGS),
+                allProjects,
+                allProjects ? Set.of() : assignmentRepository.findAllInstitutionIdsWithPermission(personId, PermissionConstants.ORGANIZATION_MANAGE_ACTIONS),
+                allProjects ? Set.of() : assignmentRepository.findAllActionUnitIdsWithPermission(personId, PermissionConstants.PROJECT_MANAGE_SETTINGS));
+    }
+
+    /**
      * The "validateur" right on a project's entities (recording units, finds, phases, containers, the
      * project itself): {@code PROJECT_VALIDATE}, or its organisation/instance-wide counterparts.
      */
