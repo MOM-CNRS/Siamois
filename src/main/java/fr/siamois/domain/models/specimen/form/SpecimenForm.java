@@ -453,9 +453,14 @@ public abstract class SpecimenForm {
 
     // ----------- Fields of the national report inventory (no concept in the system thesaurus yet)
 
+    private static final String B_OBJECT_OR_LOT = "objectOrLot";
+    private static final String B_STUDY_POTENTIAL = "studyPotential";
+    private static final String B_VALIDITY_DATE = "validityDate";
+    private static final String B_STORAGE_LOCATION = "storageLocation";
+
     /** Concept of each of these fields in the system thesaurus, by binding. */
     private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
-            Map.entry("objectOrLot", "1388"),
+            Map.entry(B_OBJECT_OR_LOT, "1388"),
             Map.entry("samplingNature", "1401"),
             Map.entry("sanitaryState", "1413"),
             Map.entry("sanitaryAlert", "1414"),
@@ -463,12 +468,12 @@ public abstract class SpecimenForm {
             Map.entry("selectiveConservation", "1416"),
             Map.entry("selectiveConservationComment", "1417"),
             Map.entry("particularInterest", "1418"),
-            Map.entry("studyPotential", "1419"),
+            Map.entry(B_STUDY_POTENTIAL, "1419"),
             Map.entry("studyPotentialComment", "1420"),
             Map.entry("samplingPurpose", "1421"),
             Map.entry("preservationCondition", "1422"),
-            Map.entry("validityDate", "1423"),
-            Map.entry("storageLocation", "1424"));
+            Map.entry(B_VALIDITY_DATE, "1423"),
+            Map.entry(B_STORAGE_LOCATION, "1424"));
 
     private static Concept symbolicConcept(String binding) {
         String id = CONCEPT_IDS.getOrDefault(binding, "specimen." + binding);
@@ -528,8 +533,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.studyPotential")
             .isSystemField(true)
             .id(-430L)
-            .valueBinding("studyPotential")
-            .concept(symbolicConcept("studyPotential"))
+            .valueBinding(B_STUDY_POTENTIAL)
+            .concept(symbolicConcept(B_STUDY_POTENTIAL))
             .build();
 
     @Transient
@@ -550,9 +555,9 @@ public abstract class SpecimenForm {
             .label("specimen.field.validityDate")
             .isSystemField(true)
             .id(-434L)
-            .valueBinding("validityDate")
+            .valueBinding(B_VALIDITY_DATE)
             .showTime(false)
-            .concept(symbolicConcept("validityDate"))
+            .concept(symbolicConcept(B_VALIDITY_DATE))
             .build();
 
     @Transient
@@ -561,8 +566,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.storageLocation")
             .isSystemField(true)
             .id(-435L)
-            .valueBinding("storageLocation")
-            .concept(symbolicConcept("storageLocation"))
+            .valueBinding(B_STORAGE_LOCATION)
+            .concept(symbolicConcept(B_STORAGE_LOCATION))
             .build();
 
     /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
@@ -582,8 +587,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.objectOrLot")
             .isSystemField(true)
             .id(-436L)
-            .valueBinding("objectOrLot")
-            .concept(symbolicConcept("objectOrLot"))
+            .valueBinding(B_OBJECT_OR_LOT)
+            .concept(symbolicConcept(B_OBJECT_OR_LOT))
             .build();
 
     @Transient

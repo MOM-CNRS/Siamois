@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.mapper.geom;
 
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * The text a form shows for a geometry: its WKT, in the SRID it carries (never reprojected). The geometry is
@@ -16,6 +17,7 @@ public final class GeometryText {
 
     /** The WKT of {@code dto}, or null when there is no geometry. */
     public static String of(GeometryDTO dto) {
-        return dto == null ? null : MAPPER.toJts(dto).toText();
+        Geometry geometry = MAPPER.toJts(dto);
+        return geometry == null ? null : geometry.toText();
     }
 }

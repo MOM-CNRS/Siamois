@@ -239,24 +239,34 @@ public class ExportEngine {
         return out;
     }
 
-    /** Propriété imbriquée d'une mesure ; une valeur qui n'est pas une mesure est écartée avec un avertissement. */
+    /** Propriété imbriquée d'une mesure, d'une adresse ou d'une géométrie ; toute autre valeur est écartée avec un avertissement. */
     private static List<Object> property(Where where, ConceptField field, List<Object> values) {
         List<Object> out = new ArrayList<>();
         for (Object value : values) {
-            if (value instanceof MeasurementAnswer m) {
-                Object picked = "unit".equals(field.property()) ? unitLabel(m) : m.getComment();
+            if (value == null) continue;
+            if (isNestedValue(value)) {
+                Object picked = nestedProperty(value, field.property());
                 if (picked != null) out.add(picked);
-            } else if (value instanceof FullAddress address) {
-                Object picked = addressPart(address, field.property());
-                if (picked != null) out.add(picked);
-            } else if (value instanceof org.locationtech.jts.geom.Geometry geometry) {
-                Object picked = geometryPart(geometry, field.property());
-                if (picked != null) out.add(picked);
-            } else if (value != null) {
+            } else {
                 where.warnings().add(new ExportWarning(ExportWarning.Code.UNSUPPORTED_VALUE, where.sheet(), where.column(), field.property()));
             }
         }
         return out;
+    }
+
+    private static boolean isNestedValue(Object value) {
+        return value instanceof MeasurementAnswer || value instanceof FullAddress || value instanceof org.locationtech.jts.geom.Geometry;
+    }
+
+    @Nullable
+    private static Object nestedProperty(Object value, @Nullable String property) {
+        if (value instanceof MeasurementAnswer m) {
+            return "unit".equals(property) ? unitLabel(m) : m.getComment();
+        }
+        if (value instanceof FullAddress address) {
+            return addressPart(address, property);
+        }
+        return geometryPart((org.locationtech.jts.geom.Geometry) value, property);
     }
 
     /** Coordonnée du centroïde d'une géométrie : {@code centroid.x} ou {@code centroid.y}. */
