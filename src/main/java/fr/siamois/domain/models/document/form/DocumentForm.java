@@ -13,10 +13,10 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
@@ -43,8 +43,45 @@ public abstract class DocumentForm {
 
     protected DocumentForm() {}
 
-    private static Concept concept(String externalId) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAD", externalId, "document." + externalId)).build();
+    /** Concept of each field in the system thesaurus, by binding; a field the thesaurus does not describe has no concept yet. */
+    private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
+            Map.entry("CATEGORY", "1678"),
+            Map.entry("FORMAT", "1681"),
+            Map.entry("KEYWORD", "1684"),
+            Map.entry("LANGUAGE", "1683"),
+            Map.entry("NATURE", "1680"),
+            Map.entry("SCALE", "1682"),
+            Map.entry("TYPE", "1679"),
+            Map.entry("actionUnit", "1686"),
+            Map.entry("authors", "1687"),
+            Map.entry("caption", "1691"),
+            Map.entry("castComment", "1697"),
+            Map.entry("category", "1678"),
+            Map.entry("comments", "1692"),
+            Map.entry("containers", "1702"),
+            Map.entry("contributors", "1688"),
+            Map.entry("description", "1691"),
+            Map.entry("file", "1695"),
+            Map.entry("finds", "1699"),
+            Map.entry("format", "1681"),
+            Map.entry("itemCount", "1693"),
+            Map.entry("moldComment", "1697"),
+            Map.entry("name", "1685"),
+            Map.entry("phases", "1701"),
+            Map.entry("places", "1700"),
+            Map.entry("productionDate", "1690"),
+            Map.entry("publisher", "1689"),
+            Map.entry("recordingUnits", "1698"),
+            Map.entry("sizeMb", "1694"),
+            Map.entry("specimens", "1699"),
+            Map.entry("storageLocation", "1696"),
+            Map.entry("supportNatures", "1680"),
+            Map.entry("title", "1685"),
+            Map.entry("type", "1679"));
+
+    private static Concept concept(String binding) {
+        String id = CONCEPT_IDS.get(binding);
+        return id == null ? null : new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(id).build();
     }
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {

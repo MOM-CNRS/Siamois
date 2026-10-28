@@ -19,7 +19,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
@@ -35,13 +34,13 @@ public abstract class SpecimenForm {
     // Specimen identifier
     protected static Concept specimenIdConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.fullIdentifier"))
+            .externalId("1389")
             .build();
 
     // Specimen identifier
     protected static Concept specimenOtherIdConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.otherIdentifier"))
+            .externalId("1390")
             .build();
 
     // Authors
@@ -49,7 +48,7 @@ public abstract class SpecimenForm {
     @JsonIgnore
     protected static Concept authorsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.authors"))
+            .externalId("1395")
             .build();
 
     // Excavators
@@ -57,7 +56,7 @@ public abstract class SpecimenForm {
     @JsonIgnore
     protected static Concept collectorsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.collectors"))
+            .externalId("1396")
             .build();
 
     // Specimen type
@@ -65,7 +64,7 @@ public abstract class SpecimenForm {
     @JsonIgnore
     protected static Concept specimenTypeConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.CAT"))
+            .externalId("1387")
             .build();
 
     // Date
@@ -73,112 +72,112 @@ public abstract class SpecimenForm {
     @JsonIgnore
     protected static Concept collectionDateConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.collectionDate"))
+            .externalId("1397")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept recordingUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.recordingUnit"))
+            .externalId("1392")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept isPartOfConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.parents"))
+            .externalId("1393")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept containsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.children"))
+            .externalId("1394")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept isolationNumberConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.isolationNumber"))
+            .externalId("1391")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept containerConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.containers"))
+            .externalId("1410")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept materialConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.MATIERE"))
+            .externalId("1398")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept descriptionConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.description"))
+            .externalId("1402")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept commentsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.comments"))
+            .externalId("1403")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept materialClassConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.CLASS"))
+            .externalId("1399")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept normalizedInterpretationConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.INTERPRETATION"))
+            .externalId("1400")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept taqConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.taq"))
+            .externalId("1406")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept tpqConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.tpq"))
+            .externalId("1405")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept chronologicalAttributionConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.CHRONO"))
+            .externalId("1404")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept numberOfElementConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.numberOfElements"))
+            .externalId("1407")
             .build();
 
     @Transient
     @JsonIgnore
     protected static Concept weightConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.weight"))
+            .externalId("1408")
             .build();
 
 
@@ -423,7 +422,7 @@ public abstract class SpecimenForm {
 
     protected static Concept phasesConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.phases"))
+            .externalId("1411")
             .build();
 
     @Transient
@@ -438,7 +437,7 @@ public abstract class SpecimenForm {
 
     protected static Concept actionUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAS.actionUnit"))
+            .externalId("1412")
             .build();
 
     @Transient

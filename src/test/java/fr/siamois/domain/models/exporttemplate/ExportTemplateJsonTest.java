@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExportTemplateJsonTest {
 
-    private static final String CONCEPT = "{\"thesaurus\":\"th230\",\"id\":\"4290928\",\"uri\":\"https://thesaurus.mom.fr/?idt=th230&idc=4290928\"}";
+    private static final String CONCEPT = "{\"thesaurus\":\"th337\",\"id\":\"1005\",\"uri\":\"https://thesaurus.mom.fr/?idt=th337&idc=1005\"}";
     private static final String RU = "\"UE_1\":{\"kind\":\"ENTITY\",\"entity\":\"RECORDING_UNIT\"}";
     private static final String PROJECT_JOIN = "\"UE_1_project\":{\"join\":{\"topterm\":\"UE_1\",\"on\":{\"local_key\":\"project\",\"foreign_key\":\"id\"}}}";
     private static final String ROOT = "[{\"target_root\":\"UE\",\"source_topterm\":\"UE_1\"}]";
@@ -56,7 +56,7 @@ class ExportTemplateJsonTest {
         assertThat(ue.sortBy()).containsExactly("type_UE");
         assertThat(ue.sources().get(0)).isInstanceOfSatisfying(EntitySource.class, s -> {
             assertThat(s.entity()).isEqualTo(EntityKind.RECORDING_UNIT);
-            assertThat(s.types()).containsExactly(new ConceptRef("th230", "4290928", "https://thesaurus.mom.fr/?idt=th230&idc=4290928"));
+            assertThat(s.types()).containsExactly(new ConceptRef("th337", "1005", "https://thesaurus.mom.fr/?idt=th337&idc=1005"));
         });
         assertThat(ue.columns()).extracting(Column::header).containsExactly("code_OA_NAT", "type_UE", "desc");
         assertThat(ue.columns().get(0).rules().get(0)).isInstanceOfSatisfying(DirectRule.class, r -> {
@@ -121,19 +121,19 @@ class ExportTemplateJsonTest {
     void roundTrip_isStable() {
         ExportTemplateDefinition d = new ExportTemplateDefinition(3, "u", "1", "T", "f", List.of(
                 new Sheet("UE", true,
-                        List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of(new ConceptRef("th230", "1", null))),
+                        List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of(new ConceptRef("th337", "1", null))),
                                 new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP")),
                         List.of("b"),
                         List.of(
                                 new Column("a", OutputType.NUMBER, List.of(
-                                        new DirectRule(List.of(0), new ConceptField(new ConceptRef("th230", "2", "u")), List.of("project", "mainLocation"),
+                                        new DirectRule(List.of(0), new ConceptField(new ConceptRef("th337", "2", "u")), List.of("project", "mainLocation"),
                                                 new ListOptions(" & ", true)),
                                         new DirectRule(List.of(1), new ColumnField("relationType"), List.of(), null))),
                                 new Column("b", OutputType.DATE, List.of(
                                         new ConstantRule(List.of(0, 1), "v"))),
                                 new Column("c", OutputType.TEXT, List.of(
                                         new ConcatRule(List.of(0), List.of(
-                                                new ConcatPart("l", null, new ConceptField(new ConceptRef("th230", "3", null)), List.of("project")),
+                                                new ConcatPart("l", null, new ConceptField(new ConceptRef("th337", "3", null)), List.of("project")),
                                                 new ConcatPart(null, "-", null, List.of())), "_", "="))))),
                 new Sheet("OA", false, List.of(new ProjectSource()), List.of(),
                         List.of(new Column("x", OutputType.TEXT, List.of(new ConstantRule(List.of(0), "1")))))));
@@ -146,7 +146,7 @@ class ExportTemplateJsonTest {
         ExportTemplateDefinition d = new ExportTemplateDefinition(3, "u", "1", "T", null, List.of(
                 new Sheet("UE", false, List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of())), List.of(),
                         List.of(new Column("a", OutputType.TEXT, List.of(
-                                new DirectRule(List.of(), new ConceptField(new ConceptRef("th230", "2", null)), List.of("project"), null)))))));
+                                new DirectRule(List.of(), new ConceptField(new ConceptRef("th337", "2", null)), List.of("project"), null)))))));
 
         JsonNode wire = new ObjectMapper().readTree(ExportTemplateJson.toJson(d));
 

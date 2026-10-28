@@ -9,10 +9,10 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
@@ -43,8 +43,26 @@ public abstract class StudyForm {
 
     protected StudyForm() {}
 
-    private static Concept concept(String externalId) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAST", externalId, "study." + externalId)).build();
+    /** Concept of each field in the system thesaurus, by binding; a field the thesaurus does not describe has no concept yet. */
+    private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
+            Map.entry("TYPE", "1641"),
+            Map.entry("TYPETRAIT", "1641"),
+            Map.entry("actionUnit", "1642"),
+            Map.entry("recordingUnits", "1643"),
+            Map.entry("reportCode", "1645"),
+            Map.entry("specimens", "1644"),
+            Map.entry("treatmentComments", "1651"),
+            Map.entry("treatmentEnd", "1647"),
+            Map.entry("treatmentIdentifier", "1650"),
+            Map.entry("treatmentManager", "1649"),
+            Map.entry("treatmentPlace", "1648"),
+            Map.entry("treatmentStart", "1646"),
+            Map.entry("treatmentType", "1641"),
+            Map.entry("type", "1641"));
+
+    private static Concept concept(String binding) {
+        String id = CONCEPT_IDS.get(binding);
+        return id == null ? null : new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(id).build();
     }
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {
