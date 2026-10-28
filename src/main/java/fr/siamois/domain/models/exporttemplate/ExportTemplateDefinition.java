@@ -75,7 +75,8 @@ public record ExportTemplateDefinition(
 
     /**
      * Champ désigné par son concept (champ système ou additionnel, résolu pour le projet).
-     * {@code property} choisit une propriété imbriquée d'une mesure ({@code unit}, {@code comment}) ;
+     * {@code property} choisit une propriété imbriquée d'une mesure ({@code unit}, {@code comment}), d'une adresse
+     * ou d'une géométrie ({@code centroid.x}, {@code centroid.y}) ;
      * vide = la valeur du champ.
      */
     public record ConceptField(ConceptRef concept, @Nullable String property) implements FieldRef {
@@ -85,6 +86,9 @@ public record ExportTemplateDefinition(
 
         /** Parties d'une adresse, en plus de son libellé complet. */
         public static final List<String> ADDRESS_PROPERTIES = List.of("street", "postcode", "city", "latitude", "longitude");
+
+        /** Coordonnées du centroïde d'une géométrie (le point lui-même pour un point), dans son SRID, jamais reprojetées. */
+        public static final List<String> GEOMETRY_PROPERTIES = List.of("centroid.x", "centroid.y");
 
         public ConceptField(ConceptRef concept) {
             this(concept, null);

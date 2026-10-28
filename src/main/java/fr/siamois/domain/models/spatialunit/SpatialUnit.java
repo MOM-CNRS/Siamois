@@ -216,6 +216,14 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .build();
 
 
+    // geometry
+    @Transient
+    @JsonIgnore
+    public static final Concept GEOM_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("1162")
+            .build();
+
     // --------------- Fields
 
 
@@ -303,6 +311,18 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .id(-209L)
             .valueBinding("shomMapNumber")
             .concept(SHOM_MAP_NUMBER_CONCEPT)
+            .build();
+
+    /** The place's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .id(-210L)
+            .valueBinding("geom")
+            .concept(GEOM_CONCEPT)
             .build();
 
     @Transient
@@ -413,6 +433,15 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(false)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(COMMENTS_FIELD)
+                                                    .build())
+                                            .build()
+                            ).addRow(
+                                    new CustomRowUiDto.Builder()
+                                            .addColumn(new CustomColUiDto.Builder()
+                                                    .readOnly(true)
+                                                    .isRequired(false)
+                                                    .className(COLUMN_CLASS_NAME)
+                                                    .field(GEOM_FIELD)
                                                     .build())
                                             .build()
                             ).build()

@@ -60,6 +60,7 @@ public record RecordingUnitListFilter(
             Map.entry(RecordingUnitSpec.MATRIX_FILTER, Kind.TEXT_CONTAINS),
             Map.entry(RecordingUnitSpec.TYPE_FILTER, Kind.ID_LIST),
             Map.entry(RecordingUnitSpec.NATURE_FILTER, Kind.ID_LIST),
+            Map.entry(RecordingUnitSpec.CYCLE_FILTER, Kind.ID_LIST),
             Map.entry(RecordingUnitSpec.AGENT_FILTER, Kind.ID_LIST),
             Map.entry(RecordingUnitSpec.INTERPRETATION_FILTER, Kind.ID_LIST),
             Map.entry(RecordingUnitSpec.AUTHOR_FILTER, Kind.ID_LIST),

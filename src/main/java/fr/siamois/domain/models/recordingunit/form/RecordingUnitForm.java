@@ -140,6 +140,13 @@ public abstract class RecordingUnitForm {
     @JsonIgnore
     protected static final Concept NATURE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
+            .externalId("1180")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final Concept GEOMORPHO_CYCLE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
             .externalId("1181")
             .build();
 
@@ -309,7 +316,7 @@ public abstract class RecordingUnitForm {
 
     @Transient
     @JsonIgnore
-    protected static final CustomFieldSelectOneFromFieldCode NATURE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
+    protected static final CustomFieldSelectOneFromFieldCode GEOMORPHO_CYCLE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
             .label("recordingunit.property.geomorpho")
             .isSystemField(true)
             .valueBinding("geomorphologicalCycle")
@@ -317,6 +324,19 @@ public abstract class RecordingUnitForm {
             .styleClass(RecordingUnit.MR_2_RECORDING_UNIT_TYPE_CHIP)
             .iconClass(RecordingUnit.BI_BI_PENCIL_SQUARE)
             .fieldCode(RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE)
+            .concept(GEOMORPHO_CYCLE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldSelectOneFromFieldCode NATURE_FIELD = CustomFieldSelectOneFromFieldCode.builder()
+            .label("recordingunit.property.nature")
+            .isSystemField(true)
+            .valueBinding("nature")
+            .id(-331L)
+            .styleClass(RecordingUnit.MR_2_RECORDING_UNIT_TYPE_CHIP)
+            .iconClass(RecordingUnit.BI_BI_PENCIL_SQUARE)
+            .fieldCode(RecordingUnit.NATURE_FIELD_CODE)
             .concept(NATURE_CONCEPT)
             .build();
 
@@ -331,6 +351,17 @@ public abstract class RecordingUnitForm {
             .iconClass(RecordingUnit.BI_BI_PENCIL_SQUARE)
             .fieldCode(RecordingUnit.INTERPRETATION_FIELD_CODE)
             .concept(INTERPRETATION_CONCEPT)
+            .build();
+
+    /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .id(-332L)
+            .valueBinding("geom")
             .build();
 
     @Transient
@@ -582,6 +613,7 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.readOnly(FINDS_FIELD),
             SystemFieldSpec.hidden(RECORDING_UNIT_TYPE_FIELD),
             SystemFieldSpec.of(NATURE_FIELD),
+            SystemFieldSpec.of(GEOMORPHO_CYCLE_FIELD),
             SystemFieldSpec.of(GEOMORPHO_AGENT_FIELD),
             SystemFieldSpec.of(INTERPRETATION_FIELD),
             SystemFieldSpec.of(MATRIX_COLOR_FIELD),
@@ -601,6 +633,7 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(OPENING_DATE_FIELD),
             SystemFieldSpec.of(CLOSING_DATE_FIELD),
             SystemFieldSpec.of(AUTHOR_FIELD),
-            SystemFieldSpec.of(CONTRIBUTORS_FIELD));
+            SystemFieldSpec.of(CONTRIBUTORS_FIELD),
+            SystemFieldSpec.readOnly(GEOM_FIELD));
     }
 }

@@ -12,13 +12,16 @@ Le script garde les tables, les codes de type, les libellés et les formats d'id
   - l'identifiant du concept de chaque type (retrouvé par son libellé sous le champ type de la table) ;
   - pour chaque type, les collections « Table · Champ — Type  [CODE @ CODE_TYPE:slug] » qui lui sont propres
     (`lists`: code de champ -> identifiant de collection, `listNames`: code de champ -> nom exact de la collection).
-Pour les tables de --all-types (DOCUMENT par défaut), les types sont tous ceux que le thésaurus déclare.
+Pour les tables de --all-types (toutes par défaut), les types sont tous ceux que le thésaurus déclare ; le format d'identifiant
+des types est recalculé d'après PREFIXES ; sinon chaque type reçoit un préfixe
+parlant et unique dans sa table (voir PREFIXES).
 Il s'arrête si un type de la définition n'existe plus dans le thésaurus.
 """
 import argparse
 import os
 import re
 import sys
+import unicodedata
 from html import unescape
 
 import json
@@ -30,7 +33,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--rdf", default=os.path.join(HERE, "siamois-socle-commun.rdf"))
 ap.add_argument("--definition", default=DEFINITION)
 ap.add_argument("--thesaurus-url", help="remplace l'URL du thésaurus de la définition")
-ap.add_argument("--all-types", nargs="*", default=["DOCUMENT"], help="tables dont tous les types du thésaurus sont repris")
+ap.add_argument("--all-types", nargs="*", default=["UE", "MOBILIER", "PHASE", "CONTENANT", "DOCUMENT", "STUDY"],
+                help="tables dont tous les types du thésaurus sont repris (par défaut toutes)")
 args = ap.parse_args()
 
 text = open(args.rdf, encoding="utf8").read()
@@ -59,6 +63,67 @@ def lists_for(type_code, label):
     return {code: found[code][0] for code in sorted(found)}, {code: found[code][1] for code in sorted(found)}
 
 
+# La partie compteur du format d'identifiant par défaut de chaque table (ConfigurableTable).
+COUNTERS = {"UE": "{NUM_UE:000}", "MOBILIER": "{NUM_MOBILIER:000}", "PHASE": "{NUM_PHASE:000}",
+            "CONTENANT": "{NUM_CONTAINER:000}", "DOCUMENT": "{NUM_DOCUMENT:0000}", "STUDY": "{NUM_ETUDE:0000}"}
+# Le préfixe d'identifiant de chaque type, par table : court, parlant, unique dans sa table.
+PREFIXES = {
+    "UE": {"US": "US", "Fait": "F", "Ensemble": "ENS", "UF": "UF", "Sépulture": "SEP", "Sondage": "SD", "Tranchée": "TR",
+           "Zone": "Z", "Secteur": "SECT", "Carré": "CAR", "Log": "LOG", "USlog": "USLOG", "Unité artificielle": "UA",
+           "Passe mécanique": "PM", "Nettoyage": "NET", "Fenêtre de fouille": "FEN"},
+    "MOBILIER": {"Céramique": "CER", "Métal": "MET", "Industrie lithique": "LIT", "Verre": "VER", "Faune": "FAU",
+                 "Terre cuite architecturale": "TCA", "Vestige anthropobiologique (VAB)": "VAB", "Prélèvement": "PRE"},
+    "PHASE": {"Phase d'occupation": "OCC", "Phase de construction": "CON", "Phase d'aménagement ou de transformation": "AME",
+              "Phase d'abandon ou de destruction": "ABA"},
+    "CONTENANT": {"palette": "PAL", "caisse norme Europe": "CAI", "boîte hermétique transparente": "BHT", "chemise": "CHE",
+                  "boîte à archives": "BAR", "carton à dessins": "CDE", "cassette audio": "CAU", "cassette vidéo": "CVI",
+                  "DVD": "DVD", "carte SD": "SD", "adresse du serveur": "SRV", "sachet": "SAC", "Disque dur": "HDD",
+                  "Cédérom": "CD", "Support amovible": "SUP"},
+    "DOCUMENT": {"carnet de fouille": "CAR", "rapport étude": "RAP", "fiche d'UE": "FUE", "fiche d'objet": "FOB",
+                 "fiche de conservation par individu": "FCI", "diagramme stratigraphique": "DST",
+                 "liste de points topographiques": "LPT", "base de données": "BDD", "carte": "CTE", "vue aérienne": "VAE",
+                 "plan topographique": "PTO", "relevé de terrain": "RTE", "relevé d'art rupestre": "RAR",
+                 "dessin d'objet": "DOB", "relevé des traces d'activités humaines et animales": "RTA", "radiographie": "RAD",
+                 "photographie de terrain": "PHT", "photographie redressée": "PHR", "photographie d'objet": "PHO",
+                 "orthophotographie": "ORT", "enregistrement audio": "EAU", "enregistrement vidéo": "EVI", "empreinte": "EMP",
+                 "tirage": "TIR", "arraché de coupe": "ARR", "moule": "MOU", "nuage de points": "NPT", "modèle 3D": "M3D",
+                 "prototypage": "PRO", "Journal de fouille": "JDF", "Fiche de prélèvement": "FPR", "Fiche de structure": "FST",
+                 "Registre de photographies": "RPH", "Minute de fouille": "MIN", "Relevé de coupe": "RCO",
+                 "Relevé en plan": "RPL", "Relevé d'élévation": "REL", "Croquis de terrain": "CRO",
+                 "Log stratigraphique": "LST", "Couche SIG": "SIG"},
+    "STUDY": {"stabilisation": "STA", "consolidation": "CSL", "analyse ADN": "ADN", "étude de pâte ou de pigment": "EPP",
+              "marquage": "MAR", "radiographie": "RAD", "mise en état pour étude": "MEE", "remontage": "REM",
+              "Nettoyage (conservation)": "NET", "Dessalement": "DES", "Lyophilisation": "LYO", "Imprégnation": "IMP",
+              "Dégagement": "DEG", "Collage": "COL", "Comblement de lacune": "CLA", "Constat d'état": "CET", "Lavage": "LAV",
+              "Tamisage à l'eau": "TAM", "Flottation": "FLO", "Tri": "TRI", "Méthode du carbone 14": "C14",
+              "Analyse isotopique": "ISO", "Datation dendrochronologique": "DEN", "Analyse métallographique": "MET",
+              "Lame mince": "LMI"},
+}
+
+
+def assign_prefixes(table):
+    """Chaque type d'une table a un format d'identifiant `<préfixe>{compteur}`, le préfixe étant unique dans la table.
+
+    Le préfixe vient de PREFIXES ; un type qui n'y figure pas garde son format actuel, ou à défaut reçoit les trois
+    premières lettres de son libellé. Le script s'arrête si deux types d'une table partagent un préfixe."""
+    counter = COUNTERS[table["table"]]
+    named = PREFIXES.get(table["table"], {})
+    seen = {}
+    for type_ in table["types"]:
+        label = type_["label"]
+        if label in named:
+            prefix = named[label]
+        elif type_.get("identifierFormat"):
+            prefix = type_["identifierFormat"].split("{")[0]
+        else:
+            ascii_label = unicodedata.normalize("NFKD", label).encode("ascii", "ignore").decode()
+            prefix = re.sub(r"[^A-Za-z0-9]", "", ascii_label)[:3].upper()
+        if prefix in seen:
+            sys.exit("Préfixe %r en double dans %s : %s et %s" % (prefix, table["table"], seen[prefix], label))
+        seen[prefix] = label
+        type_["identifierFormat"] = prefix + counter
+
+
 definition = json.load(open(args.definition, encoding="utf8"))
 if args.thesaurus_url:
     definition["thesaurus"] = args.thesaurus_url
@@ -68,7 +133,12 @@ for table in definition["tables"]:
         sys.exit("Le thésaurus ne définit pas %s (table %s)" % (table["typeCode"], table["table"]))
     children = {concepts[c]["fr"]: c for c in concepts[by_notation[notation]]["narrower"]}
     if table["table"] in args.all_types:
-        table["types"] = [{"label": label, "concept": cid} for label, cid in children.items()]
+        known = {t["label"]: t for t in table["types"]}
+        table["types"] = [{"label": label, "concept": cid,
+                           **({"identifierFormat": known[label]["identifierFormat"]}
+                              if label in known and known[label].get("identifierFormat") else {})}
+                          for label, cid in children.items()]
+        assign_prefixes(table)
     for type_ in table["types"]:
         if type_["label"] not in children:
             sys.exit("Type introuvable sous %s : %s" % (table["typeCode"], type_["label"]))

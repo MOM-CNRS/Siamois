@@ -44,6 +44,8 @@ public final class ActionUnitTableColumnDefaults {
             new ColumnDefault("periods", "actionunit.field.periods", ActionUnitForm.PERIODS_FIELD, true),
             new ColumnDefault("subjects", "actionunit.field.subjects", ActionUnitForm.SUBJECTS_FIELD, true),
             new ColumnDefault("scientificManager", "actionunit.field.scientificManager", ActionUnitForm.SCIENTIFIC_MANAGER_FIELD, true),
+            new ColumnDefault("fieldBeginDate", "actionunit.field.fieldBeginDate", ActionUnitForm.FIELD_BEGIN_DATE_FIELD, false),
+            new ColumnDefault("fieldEndDate", "actionunit.field.fieldEndDate", ActionUnitForm.FIELD_END_DATE_FIELD, false),
             new ColumnDefault("prescriptionOrderNumber", "actionunit.field.prescriptionOrderNumber", ActionUnitForm.PRESCRIPTION_ORDER_NUMBER_FIELD, false),
             new ColumnDefault("prescriptionOrderDate", "actionunit.field.prescriptionOrderDate", ActionUnitForm.PRESCRIPTION_ORDER_DATE_FIELD, false),
             new ColumnDefault("hostStructure", "actionunit.field.hostStructure", ActionUnitForm.HOST_STRUCTURE_FIELD, false),

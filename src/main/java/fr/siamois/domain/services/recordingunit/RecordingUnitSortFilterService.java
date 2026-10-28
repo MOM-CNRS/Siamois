@@ -35,6 +35,7 @@ public class RecordingUnitSortFilterService {
             ids(RecordingUnitSpec.CONTRIBUTORS_FILTER, RecordingUnitSpec::isInContributors),
             concept(RecordingUnitSpec.TYPE_FILTER),
             concept(RecordingUnitSpec.NATURE_FILTER),
+            concept(RecordingUnitSpec.CYCLE_FILTER),
             concept(RecordingUnitSpec.AGENT_FILTER),
             concept(RecordingUnitSpec.INTERPRETATION_FILTER),
             dateRange(RecordingUnitSpec.OPENING_DATE_FILTER),
@@ -159,6 +160,7 @@ public class RecordingUnitSortFilterService {
 
     private static final Map<String, String> CONCEPT_LABEL_SORTS = Map.of(
             RecordingUnitSpec.NATURE_LABEL_SORT, RecordingUnitSpec.NATURE_FILTER,
+            RecordingUnitSpec.CYCLE_LABEL_SORT, RecordingUnitSpec.CYCLE_FILTER,
             RecordingUnitSpec.AGENT_LABEL_SORT, RecordingUnitSpec.AGENT_FILTER,
             RecordingUnitSpec.INTERPRETATION_LABEL_SORT, RecordingUnitSpec.INTERPRETATION_FILTER);
 

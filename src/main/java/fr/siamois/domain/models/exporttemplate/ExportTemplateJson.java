@@ -637,7 +637,8 @@ public final class ExportTemplateJson {
             only(node, FIELD, CONCEPT, PROPERTY);
             String property = node.has(PROPERTY) ? requireText(node, PROPERTY) : null;
             if (property != null && !ConceptField.MEASUREMENT_PROPERTIES.contains(property)
-                    && !ConceptField.ADDRESS_PROPERTIES.contains(property)) {
+                    && !ConceptField.ADDRESS_PROPERTIES.contains(property)
+                    && !ConceptField.GEOMETRY_PROPERTIES.contains(property)) {
                 throw new InvalidExportTemplateException("Unknown field property '" + property + "'");
             }
             return new ConceptField(conceptFromJson(node.get(CONCEPT)), property);

@@ -22,6 +22,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
@@ -452,8 +453,31 @@ public abstract class SpecimenForm {
 
     // ----------- Fields of the national report inventory (no concept in the system thesaurus yet)
 
+    private static final String B_OBJECT_OR_LOT = "objectOrLot";
+    private static final String B_STUDY_POTENTIAL = "studyPotential";
+    private static final String B_VALIDITY_DATE = "validityDate";
+    private static final String B_STORAGE_LOCATION = "storageLocation";
+
+    /** Concept of each of these fields in the system thesaurus, by binding. */
+    private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
+            Map.entry(B_OBJECT_OR_LOT, "1388"),
+            Map.entry("samplingNature", "1401"),
+            Map.entry("sanitaryState", "1413"),
+            Map.entry("sanitaryAlert", "1414"),
+            Map.entry("transferStatus", "1415"),
+            Map.entry("selectiveConservation", "1416"),
+            Map.entry("selectiveConservationComment", "1417"),
+            Map.entry("particularInterest", "1418"),
+            Map.entry(B_STUDY_POTENTIAL, "1419"),
+            Map.entry("studyPotentialComment", "1420"),
+            Map.entry("samplingPurpose", "1421"),
+            Map.entry("preservationCondition", "1422"),
+            Map.entry(B_VALIDITY_DATE, "1423"),
+            Map.entry(B_STORAGE_LOCATION, "1424"));
+
     private static Concept symbolicConcept(String binding) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("specimen." + binding).build();
+        String id = CONCEPT_IDS.getOrDefault(binding, "specimen." + binding);
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(id).build();
     }
 
     private static CustomFieldText textArea(long id, String binding) {
@@ -509,8 +533,8 @@ public abstract class SpecimenForm {
             .label("specimen.field.studyPotential")
             .isSystemField(true)
             .id(-430L)
-            .valueBinding("studyPotential")
-            .concept(symbolicConcept("studyPotential"))
+            .valueBinding(B_STUDY_POTENTIAL)
+            .concept(symbolicConcept(B_STUDY_POTENTIAL))
             .build();
 
     @Transient
@@ -531,9 +555,9 @@ public abstract class SpecimenForm {
             .label("specimen.field.validityDate")
             .isSystemField(true)
             .id(-434L)
-            .valueBinding("validityDate")
+            .valueBinding(B_VALIDITY_DATE)
             .showTime(false)
-            .concept(symbolicConcept("validityDate"))
+            .concept(symbolicConcept(B_VALIDITY_DATE))
             .build();
 
     @Transient
@@ -542,9 +566,35 @@ public abstract class SpecimenForm {
             .label("specimen.field.storageLocation")
             .isSystemField(true)
             .id(-435L)
-            .valueBinding("storageLocation")
-            .concept(symbolicConcept("storageLocation"))
+            .valueBinding(B_STORAGE_LOCATION)
+            .concept(symbolicConcept(B_STORAGE_LOCATION))
             .build();
+
+    /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText geomField = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .id(-438L)
+            .valueBinding("geom")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldBoolean objectOrLotField = CustomFieldBoolean.builder()
+            .label("specimen.field.objectOrLot")
+            .isSystemField(true)
+            .id(-436L)
+            .valueBinding(B_OBJECT_OR_LOT)
+            .concept(symbolicConcept(B_OBJECT_OR_LOT))
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode samplingNatureField =
+            selectOne(-437L, "samplingNature", Specimen.SAMPLING_NATURE_FIELD);
 
     /**
      * The table's system fields, in their default order, with the properties intrinsic to each.
@@ -586,6 +636,9 @@ public abstract class SpecimenForm {
             SystemFieldSpec.of(samplingPurposeField),
             SystemFieldSpec.of(preservationConditionField),
             SystemFieldSpec.of(validityDateField),
-            SystemFieldSpec.of(storageLocationField));
+            SystemFieldSpec.of(storageLocationField),
+            SystemFieldSpec.of(objectOrLotField),
+            SystemFieldSpec.of(samplingNatureField),
+            SystemFieldSpec.readOnly(geomField));
     }
 }

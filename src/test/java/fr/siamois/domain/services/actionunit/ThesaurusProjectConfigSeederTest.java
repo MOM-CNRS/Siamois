@@ -89,6 +89,10 @@ class ThesaurusProjectConfigSeederTest {
         return collection;
     }
 
+    private int ueTypeCount() {
+        return definition.tables().stream().filter(table -> table.table() == ConfigurableTable.UE).findFirst().orElseThrow().types().size();
+    }
+
     private void thesaurusDefinesUeTypes() {
         ConceptFieldConfig typeCode = new ConceptFieldConfig();
         typeCode.setFieldCode(UE_TYPE_CODE);
@@ -105,7 +109,7 @@ class ThesaurusProjectConfigSeederTest {
         seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(codeSourceService).useFieldCode(PROJECT_ID, UE_TYPE_CODE, vocabulary, UE_TYPE_CODE);
-        verify(tableFieldConfigService, times(3)).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
+        verify(tableFieldConfigService, times(ueTypeCount())).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
         org.mockito.ArgumentCaptor<TypeFormConfig> config = org.mockito.ArgumentCaptor.forClass(TypeFormConfig.class);
         verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(Long.parseLong(us.concept())), config.capture());
         assertThat(config.getValue().getIdentifierFormat()).isEqualTo("US{NUM_UE:000}");
@@ -127,8 +131,8 @@ class ThesaurusProjectConfigSeederTest {
         // and it remembers the collection's name, to find it again if the field is moved to another thesaurus
         verify(formConfigService).rememberSourceName(eq(usFormConfig), any(CustomFieldConcept.class),
                 eq(us.listNames().get(RecordingUnit.INTERPRETATION_FIELD_CODE)));
-        // the chronology has no list per type: it follows its code, once for each of the three types
-        verify(formConfigService, times(3)).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
+        // the chronology has no list per type: it follows its code, once for each type
+        verify(formConfigService, times(ueTypeCount())).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
                 eq(RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE));
     }
 
@@ -141,7 +145,7 @@ class ThesaurusProjectConfigSeederTest {
         seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(formConfigService, never()).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollection.class));
-        verify(formConfigService, times(3)).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
+        verify(formConfigService, times(ueTypeCount())).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
                 eq(RecordingUnit.INTERPRETATION_FIELD_CODE));
     }
 
@@ -155,7 +159,7 @@ class ThesaurusProjectConfigSeederTest {
 
         seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
-        verify(tableFieldConfigService, times(2)).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
+        verify(tableFieldConfigService, times(ueTypeCount() - 1)).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
     }
 
     @Test

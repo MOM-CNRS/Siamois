@@ -48,12 +48,12 @@ class EffectiveFormResolverTest {
     @Test
     void withoutAStoredLayout_removesInactiveSystemFieldsByValueBinding() {
         when(tableFieldConfigService.getFieldsConfig(PROJECT_ID, TABLE, TYPE_CONCEPT_ID))
-                .thenReturn(fieldsConfig(inactiveField("geomorphologicalCycle")));
+                .thenReturn(fieldsConfig(inactiveField("nature")));
         noAdditionalFields();
 
         FormUiDto result = resolver.resolveEffectiveForm(PROJECT_ID, TABLE, TYPE_CONCEPT_ID);
 
-        assertThat(bindingsOf(result)).doesNotContain("geomorphologicalCycle").contains("geomorphologicalAgent");
+        assertThat(bindingsOf(result)).doesNotContain("nature").contains("normalizedInterpretation");
     }
 
     @Test
@@ -111,7 +111,7 @@ class EffectiveFormResolverTest {
 
     @Test
     void withoutAStoredLayout_marksMandatoryFieldsRequired() {
-        TypeFieldFormConfig mandatory = TypeFieldFormConfig.builder().active(true).mandatory(true).valueBinding("geomorphologicalCycle").build();
+        TypeFieldFormConfig mandatory = TypeFieldFormConfig.builder().active(true).mandatory(true).valueBinding("nature").build();
         TypeFieldFormConfig additionalMandatory = TypeFieldFormConfig.builder().active(true).mandatory(true).valueBinding("couleur").build();
         when(tableFieldConfigService.getFieldsConfig(PROJECT_ID, TABLE, TYPE_CONCEPT_ID))
                 .thenReturn(fieldsConfig(mandatory, additionalMandatory));
@@ -121,19 +121,19 @@ class EffectiveFormResolverTest {
 
         FormUiDto result = resolver.resolveEffectiveForm(PROJECT_ID, TABLE, TYPE_CONCEPT_ID);
 
-        assertThat(column(result, "geomorphologicalCycle").isRequired()).isTrue();
+        assertThat(column(result, "nature").isRequired()).isTrue();
         assertThat(column(result, "couleur").isRequired()).isTrue();
-        assertThat(column(result, "geomorphologicalAgent").isRequired()).isFalse();
+        assertThat(column(result, "normalizedInterpretation").isRequired()).isFalse();
         // the initial form is rebuilt each time: marking a field never leaks into the next resolution
-        assertThat(column(TestForms.of(TABLE), "geomorphologicalCycle").isRequired()).isFalse();
+        assertThat(column(TestForms.of(TABLE), "nature").isRequired()).isFalse();
     }
 
     @Test
     void aStoredLayoutIsTheFormAsIs_withoutMergingTheLegacyConfiguration() {
         var nature = TestForms.layoutOf(TABLE).groups().stream().flatMap(g -> g.items().stream())
-                .filter(i -> "geomorphologicalCycle".equals(i.field().getValueBinding())).findFirst().orElseThrow();
+                .filter(i -> "nature".equals(i.field().getValueBinding())).findFirst().orElseThrow();
         var agent = TestForms.layoutOf(TABLE).groups().stream().flatMap(g -> g.items().stream())
-                .filter(i -> "geomorphologicalAgent".equals(i.field().getValueBinding())).findFirst().orElseThrow();
+                .filter(i -> "normalizedInterpretation".equals(i.field().getValueBinding())).findFirst().orElseThrow();
         FormLayout stored = new FormLayout(List.of(new FormLayout.Group(1L, "Mon groupe", List.of(
                 new FormLayout.Item(agent.field(), FieldWidth.FULL, true, true, false, FieldRules.NONE),
                 new FormLayout.Item(nature.field(), FieldWidth.HALF, false, false, false, FieldRules.NONE)))));
@@ -144,8 +144,8 @@ class EffectiveFormResolverTest {
         assertThat(result.getLayout()).hasSize(1);
         assertThat(result.getLayout().get(0).getName()).isEqualTo("Mon groupe");
         // the inactive field is dropped; the hidden system fields every form carries are kept
-        assertThat(bindingsOf(result)).contains("geomorphologicalAgent").doesNotContain("geomorphologicalCycle");
-        CustomColUiDto agentColumn = column(result, "geomorphologicalAgent");
+        assertThat(bindingsOf(result)).contains("normalizedInterpretation").doesNotContain("nature");
+        CustomColUiDto agentColumn = column(result, "normalizedInterpretation");
         assertThat(agentColumn.getWidth()).isEqualTo(ColumnWidth.FULL);
         assertThat(agentColumn.isRequired()).isTrue();
         verifyNoInteractions(tableFieldConfigService);

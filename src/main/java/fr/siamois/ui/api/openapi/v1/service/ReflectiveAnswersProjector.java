@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -156,7 +158,7 @@ public abstract class ReflectiveAnswersProjector<D extends AbstractEntityDTO> {
     /** A value that is not a reference: text, number or date. */
     protected Object scalarValue(CustomField field, Object raw) {
         if (field instanceof CustomFieldText) {
-            return String.valueOf(raw);
+            return raw instanceof GeometryDTO geometry ? GeometryText.of(geometry) : String.valueOf(raw);
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;
