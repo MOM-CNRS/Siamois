@@ -11,6 +11,7 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
@@ -25,47 +26,47 @@ public abstract class ContainerForm {
 
     protected static final Concept identifierConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.identifier")
+            .externalId(SystemConcepts.id("SIAC.identifier"))
             .build();
 
     protected static final Concept typeConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.type")
+            .externalId(SystemConcepts.id("SIAC.TYPE"))
             .build();
 
     protected static final Concept spatialUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.spatialUnit")
+            .externalId(SystemConcepts.id("SIAC.spatialUnit"))
             .build();
 
     protected static final Concept actionUnitConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.actionUnit")
+            .externalId(SystemConcepts.id("SIAC.actionUnit"))
             .build();
 
     protected static final Concept lengthConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.length")
+            .externalId(SystemConcepts.id("SIAC.length"))
             .build();
 
     protected static final Concept widthConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.width")
+            .externalId(SystemConcepts.id("SIAC.width"))
             .build();
 
     protected static final Concept heightConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.height")
+            .externalId(SystemConcepts.id("SIAC.height"))
             .build();
 
     protected static final Concept weightConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.weight")
+            .externalId(SystemConcepts.id("SIAC.weight"))
             .build();
 
     protected static final Concept findsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("container.finds")
+            .externalId(SystemConcepts.id("SIAC.specimens"))
             .build();
 
     // --- Fields ---

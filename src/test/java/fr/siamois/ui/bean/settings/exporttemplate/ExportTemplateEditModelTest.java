@@ -40,6 +40,17 @@ class ExportTemplateEditModelTest {
     }
 
     @Test
+    void toPreviewDefinition_skipsRulesWithoutAField_whereToDefinitionFails() {
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
+        EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
+        direct.getField().setKey("");
+
+        assertThatThrownBy(model::toDefinition).isInstanceOf(IllegalArgumentException.class);
+        assertThat(model.toPreviewDefinition().sheets().get(0).columns().get(0).rules())
+                .hasSize(model.getSheets().get(0).getColumns().get(0).getRules().size() - 1);
+    }
+
+    @Test
     void from_exposesTextualFormValues() {
         ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
 
@@ -101,5 +112,36 @@ class ExportTemplateEditModelTest {
                                 new DirectRule(List.of(0), new NameField("NumInventaire"), List.of(), null)))))));
 
         assertThat(ExportTemplateEditModel.from(d).toDefinition()).isEqualTo(d);
+    }
+
+    @Test
+    void multiTypeSource_isExpandedToOneSourcePerType_andTargetsFollow() {
+        ConceptRef other = new ConceptRef("th230", "999", "https://thesaurus.mom.fr/?idt=th230&idc=999");
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
+        var sheet = model.getSheets().get(0);
+        sheet.getSources().get(0).getTypeKeys().add(ExportTemplateEditModel.keyOf(other));
+        EditRule direct = sheet.getColumns().get(0).getRules().get(0);
+        direct.setSources(new java.util.ArrayList<>(List.of("0:" + ExportTemplateEditModel.keyOf(other), "1")));
+        EditRule whole = sheet.getColumns().get(0).getRules().get(1);
+        whole.setSources(new java.util.ArrayList<>(List.of("0")));
+
+        ExportTemplateDefinition definition = model.toDefinition();
+
+        Sheet out = definition.sheets().get(0);
+        assertThat(out.sources()).hasSize(3);
+        assertThat(((EntitySource) out.sources().get(0)).types()).containsExactly(C);
+        assertThat(((EntitySource) out.sources().get(1)).types()).containsExactly(other);
+        assertThat(out.columns().get(0).rules().get(0).sources()).containsExactly(1, 2);
+        assertThat(out.columns().get(0).rules().get(1).sources()).containsExactly(0, 1);
+    }
+
+    @Test
+    void toPreviewDefinition_dropsConceptFieldsWhoseKeyIsMalformed() {
+        ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
+        EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
+        direct.getField().setKey("not-a-concept-key");
+
+        assertThat(model.toPreviewDefinition().sheets().get(0).columns().get(0).rules())
+                .hasSize(model.getSheets().get(0).getColumns().get(0).getRules().size() - 1);
     }
 }

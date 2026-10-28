@@ -9,6 +9,7 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
@@ -45,7 +46,7 @@ public abstract class StudyForm {
     protected StudyForm() {}
 
     private static Concept concept(String externalId) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("study." + externalId).build();
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAST", externalId, "study." + externalId)).build();
     }
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {

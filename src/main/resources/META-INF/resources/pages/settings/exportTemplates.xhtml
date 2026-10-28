@@ -47,20 +47,8 @@
                                        styleClass="member-filter-chip filter-chip-ghost">
                             <i class="bi bi-play-fill"/> #{langBean.msg('exportTemplates.run.title')}
                         </p:commandLink>
-                        <p:commandLink action="#{exportTemplatesSettingsBean.addNationalTemplate()}" process="@this"
-                                       update="@form :exportTemplatesDatatable:formCC:exportTemplatesForm"
-                                       rendered="#{exportTemplatesSettingsBean.canManage()}"
-                                       styleClass="member-filter-chip filter-chip-ghost">
-                            <i class="bi bi-flag"/> #{langBean.msg('exportTemplates.addNational')}
-                        </p:commandLink>
-                        <p:commandLink action="#{exportTemplatesSettingsBean.addUnderwaterTemplate()}" process="@this"
-                                       update="@form :exportTemplatesDatatable:formCC:exportTemplatesForm"
-                                       rendered="#{exportTemplatesSettingsBean.canManage()}"
-                                       styleClass="member-filter-chip filter-chip-ghost">
-                            <i class="bi bi-water"/> #{langBean.msg('exportTemplates.addUnderwater')}
-                        </p:commandLink>
                         <p:commandLink action="#{exportTemplatesSettingsBean.displayImportDialog()}" process="@this"
-                                       rendered="#{exportTemplatesSettingsBean.canManage()}"
+                                       rendered="false"
                                        styleClass="member-filter-chip filter-chip-ghost">
                             <i class="bi bi-upload"/> #{langBean.msg('exportTemplates.import')}
                         </p:commandLink>
@@ -72,7 +60,13 @@
                         value="#{exportTemplatesSettingsBean.filteredTemplates}"
                         var="template"
                         rowKey="#{template.id()}"
+                        selectionMode="single"
+                        selection="#{exportTemplateEditorBean.selectedRow}"
+                        rowStyleClass="#{exportTemplatesSettingsBean.canManage() ? 'row-clickable' : ''}"
                         emptyMessage="#{langBean.msg('exportTemplates.empty')}">
+                    <!-- Toute la ligne ouvre le modèle ; les boutons d'action gardent leur propre clic -->
+                    <p:ajax event="rowSelect" listener="#{exportTemplateEditorBean.openFromRow}"
+                            disabled="#{not exportTemplatesSettingsBean.canManage()}"/>
                     <p:column headerText="#{langBean.msg('common.label.name')}">
                         <p:commandLink action="#{exportTemplateEditorBean.open(template.id())}" process="@this">
                             #{template.name()}
@@ -80,6 +74,11 @@
                     </p:column>
                     <p:column headerText="#{langBean.msg('exportTemplates.version')}">
                         v#{template.version()}
+                    </p:column>
+                    <p:column headerText="#{langBean.msg('exportTemplates.col.state')}">
+                        <span class="xt-state #{template.published() ? 'published' : 'draft'}">
+                            #{langBean.msg(template.published() ? 'exportTemplates.state.published' : 'exportTemplates.state.draft')}
+                        </span>
                     </p:column>
                     <p:column headerText="#{langBean.msg('exportTemplates.col.updated')}">
                         #{exportTemplatesSettingsBean.formatDate(template.updatedAt())}
@@ -94,7 +93,7 @@
                                        title="#{langBean.msg('exportTemplates.run.start')}">
                             <i class="bi bi-play-fill"/>
                         </p:commandLink>
-                        <p:commandLink ajax="false" title="#{langBean.msg('exportTemplates.downloadJson')}">
+                        <p:commandLink ajax="false" rendered="false" title="#{langBean.msg('exportTemplates.downloadJson')}">
                             <p:fileDownload value="#{exportTemplatesSettingsBean.downloadJson(template)}"/>
                             <i class="bi bi-download"/>
                         </p:commandLink>

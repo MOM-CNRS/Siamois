@@ -19,6 +19,7 @@ import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -227,7 +228,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept excavatorsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4286195")
+            .externalId(SystemConcepts.id("SIARU.contributors"))
             .build();
 
     @Transient
@@ -246,7 +247,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept recordingUnitIdConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4286193")
+            .externalId(SystemConcepts.id("SIARU.fullIdentifier"))
             .build();
 
     @Transient
@@ -267,14 +268,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept creationDateConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4286200")
+            .externalId(SystemConcepts.id("SIARU.openingDate"))
             .build();
 
     @Transient
     @JsonIgnore
     private static Concept closingDateConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("4286199")
+            .externalId(SystemConcepts.id("SIARU.closingDate"))
             .build();
 
     // Action Unit
@@ -323,7 +324,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept phasesConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("recordingunit.phases")
+            .externalId(SystemConcepts.id("SIARU.phases"))
             .build();
 
     @Transient

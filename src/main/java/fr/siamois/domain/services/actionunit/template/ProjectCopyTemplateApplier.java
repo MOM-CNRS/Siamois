@@ -37,6 +37,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
     private final ConceptFieldStateRepository conceptFieldStateRepository;
     private final DocumentationThesaurusRepository documentationThesaurusRepository;
     private final ProjectCodeSourceRepository projectCodeSourceRepository;
+    private final ProjectThesaurusAssigner thesaurusAssigner;
 
     @Override
     public boolean supports(String templateId) {
@@ -69,6 +70,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
         }
 
         copyThesaurusOverrides(source, target);
+        thesaurusAssigner.assignInstitutionOrCommonCore(target);
         for (FormConfig sourceConfig : formConfigRepository.findAllByActionUnitId(sourceId)) {
             copyFormConfig(sourceConfig, target);
         }

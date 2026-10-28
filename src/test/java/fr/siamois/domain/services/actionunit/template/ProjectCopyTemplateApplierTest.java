@@ -39,9 +39,10 @@ class ProjectCopyTemplateApplierTest {
     private final ConceptFieldStateRepository stateRepository = mock(ConceptFieldStateRepository.class);
     private final DocumentationThesaurusRepository documentationThesaurusRepository = mock(DocumentationThesaurusRepository.class);
     private final ProjectCodeSourceRepository projectCodeSourceRepository = mock(ProjectCodeSourceRepository.class);
+    private final ProjectThesaurusAssigner assigner = mock(ProjectThesaurusAssigner.class);
 
     private final ProjectCopyTemplateApplier applier = new ProjectCopyTemplateApplier(actionUnitRepository,
-            formConfigRepository, groupRepository, fieldRepository, stateRepository, documentationThesaurusRepository, projectCodeSourceRepository);
+            formConfigRepository, groupRepository, fieldRepository, stateRepository, documentationThesaurusRepository, projectCodeSourceRepository, assigner);
 
     private Institution institution;
     private ActionUnit source;
