@@ -74,7 +74,6 @@ spring:
       data-source-properties:
         reWriteBatchedInserts: true
   jpa:
-    generate-ddl: true
     hibernate:
       ddl-auto: validate
     properties:
