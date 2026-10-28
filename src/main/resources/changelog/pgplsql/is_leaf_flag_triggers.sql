@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset siamois:is_leaf_flag_triggers runOnChange:true splitStatements:false
+
 CREATE OR REPLACE FUNCTION mark_au_as_not_leaf()
     RETURNS TRIGGER AS $$
 BEGIN
