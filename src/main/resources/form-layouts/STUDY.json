@@ -4,11 +4,6 @@
       "label" : "study.header.identification",
       "fields" : [
         {
-          "fieldId" : -804,
-          "binding" : "method",
-          "width" : "HALF"
-        },
-        {
           "fieldId" : -805,
           "binding" : "studyDate",
           "width" : "HALF"
@@ -33,11 +28,6 @@
     {
       "label" : "study.header.treatment",
       "fields" : [
-        {
-          "fieldId" : -808,
-          "binding" : "treatmentType",
-          "width" : "HALF"
-        },
         {
           "fieldId" : -809,
           "binding" : "reportCode",

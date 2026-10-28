@@ -66,7 +66,7 @@ public class DefaultProjectDefinition {
         }
     }
 
-    /** The URL of the thesaurus, e.g. {@code https://thesaurus.mom.fr/?idt=th332}. */
+    /** The URL of the thesaurus, e.g. {@code https://thesaurus.mom.fr/?idt=th337}. */
     public String thesaurusUrl() {
         return content.thesaurus();
     }

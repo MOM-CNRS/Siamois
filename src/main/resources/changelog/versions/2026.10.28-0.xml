@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Les vocabulaires « méthode » (étude), « type de traitement » (étude, remplacé par le type de l'étude) et
+    « méthode de collecte » (mobilier) n'existent plus dans le socle commun : leurs colonnes, et celles des tables d'audit, sont supprimées.
+    -->
+
+    <changeSet id="2026.10.28-0" author="Grégory Bliault">
+        <preConditions onFail="MARK_RAN">
+            <or>
+                <columnExists tableName="study" columnName="fk_method"/>
+                <columnExists tableName="study" columnName="fk_treatment_type"/>
+                <columnExists tableName="study_aud" columnName="fk_method"/>
+                <columnExists tableName="study_aud" columnName="fk_treatment_type"/>
+                <columnExists tableName="specimen" columnName="fk_collection_method"/>
+                <columnExists tableName="specimen_aud" columnName="fk_collection_method"/>
+            </or>
+        </preConditions>
+        <sql>
+            ALTER TABLE IF EXISTS study DROP COLUMN IF EXISTS fk_method;
+            ALTER TABLE IF EXISTS study DROP COLUMN IF EXISTS fk_treatment_type;
+            ALTER TABLE IF EXISTS study_aud DROP COLUMN IF EXISTS fk_method;
+            ALTER TABLE IF EXISTS study_aud DROP COLUMN IF EXISTS fk_treatment_type;
+            ALTER TABLE IF EXISTS specimen DROP COLUMN IF EXISTS fk_collection_method;
+            ALTER TABLE IF EXISTS specimen_aud DROP COLUMN IF EXISTS fk_collection_method;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

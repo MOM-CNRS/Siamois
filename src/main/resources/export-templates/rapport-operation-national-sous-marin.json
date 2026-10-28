@@ -1620,7 +1620,7 @@
       "field": {
         "concept": {
           "thesaurus": "th230",
-          "id": "study.treatmentType"
+          "id": "study.type"
         }
       }
     },

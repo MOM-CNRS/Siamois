@@ -146,6 +146,10 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 
+    /** The nature of the unit, as the national referential defines it ({@code nature_UE}). */
+    @FieldCode
+    public static final String NATURE_FIELD_CODE = "SIARU.NATURE";
+
     @FieldCode
     public static final String GEOMORPHO_CYCLE_FIELD_CODE = "SIARU.GEOMORPHO";
 
@@ -154,9 +158,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @FieldCode
     public static final String INTERPRETATION_FIELD_CODE = "SIARU.INTERPRETATION";
-
-    @FieldCode
-    public static final String METHOD_FIELD_CODE = "SIARU.TYPE";
 
     // The type vocabulary of the relationships a unit has with each side. SIARU.STRATI, which was
     // one list for all three, is still read (import, units already typed) and stands in for each of

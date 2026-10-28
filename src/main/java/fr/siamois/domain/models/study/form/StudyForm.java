@@ -26,11 +26,9 @@ public abstract class StudyForm {
     private static final String LABEL_PREFIX = "study.field.";
     private static final String B_ACTION_UNIT = "actionUnit";
     private static final String B_TYPE = "type";
-    public static final String B_METHOD = "method";
     public static final String B_STUDY_DATE = "studyDate";
     public static final String B_RECORDING_UNITS = "recordingUnits";
     public static final String B_SPECIMENS = "specimens";
-    public static final String B_TREATMENT_TYPE = "treatmentType";
     public static final String B_TREATMENT_START = "treatmentStart";
     public static final String B_TREATMENT_END = "treatmentEnd";
 
@@ -39,7 +37,7 @@ public abstract class StudyForm {
 
     /** Bindings of the fields of the "traitement" sheet. */
     public static final List<String> TREATMENT_BINDINGS = List.of(
-            B_TREATMENT_TYPE, "reportCode", B_TREATMENT_START, B_TREATMENT_END,
+            "reportCode", B_TREATMENT_START, B_TREATMENT_END,
             "treatmentPlace", "treatmentManager", "treatmentIdentifier", "treatmentComments");
 
     protected StudyForm() {}
@@ -106,10 +104,6 @@ public abstract class StudyForm {
             .build();
 
     @Transient
-    protected static final CustomFieldSelectOneFromFieldCode methodField =
-            one(-804L, B_METHOD, Study.METHOD_FIELD_CODE);
-
-    @Transient
     protected static final CustomFieldDateTime studyDateField = date(-805L, B_STUDY_DATE);
 
     // The links to the other entities: optional and multiple, written from the study's side.
@@ -134,10 +128,6 @@ public abstract class StudyForm {
 
     // The columns of the "traitement" sheet. code_OA_NAT and code_element_traite are not fields: they
     // are the project's operation code and the code of the linked find, read at export time.
-
-    @Transient
-    protected static final CustomFieldSelectOneFromFieldCode treatmentTypeField =
-            one(-808L, B_TREATMENT_TYPE, Study.TREATMENT_TYPE_FIELD_CODE);
 
     @Transient
     protected static final CustomFieldText reportCodeField = text(-809L, "reportCode", false);
@@ -170,11 +160,9 @@ public abstract class StudyForm {
                 SystemFieldSpec.hiddenReadOnly(identifierField),
                 SystemFieldSpec.hiddenReadOnly(actionUnitField),
                 SystemFieldSpec.hidden(typeField),
-                SystemFieldSpec.of(methodField),
                 SystemFieldSpec.of(studyDateField),
                 SystemFieldSpec.of(recordingUnitsField),
                 SystemFieldSpec.of(specimensField),
-                SystemFieldSpec.of(treatmentTypeField),
                 SystemFieldSpec.of(reportCodeField),
                 SystemFieldSpec.of(treatmentStartField),
                 SystemFieldSpec.of(treatmentEndField),
