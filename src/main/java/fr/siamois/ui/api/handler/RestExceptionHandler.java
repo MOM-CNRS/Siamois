@@ -5,6 +5,7 @@ import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationExceptio
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.services.LangService;
+import fr.siamois.domain.services.identifier.IdentifierRangeExhaustedException;
 import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictResponse;
@@ -59,6 +60,7 @@ public class RestExceptionHandler {
 
     static final String IDENTIFIER_CONFLICT_KEY = "api.error.identifier.alreadyExists";
     static final String IDENTIFIER_CONFLICT_NAMED_KEY = "api.error.identifier.alreadyExistsNamed";
+    static final String IDENTIFIER_RANGE_EXHAUSTED_KEY = "api.error.identifier.rangeExhausted";
 
     private final LangService langService;
 
@@ -89,7 +91,7 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> accessDenied(AccessDeniedException ex) {
+    public ResponseEntity<ApiError> accessDenied() {
         return answer(HttpStatus.FORBIDDEN, ApiError.of(FORBIDDEN, "Accès refusé"));
     }
 
@@ -136,7 +138,7 @@ public class RestExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> messageNotReadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getMostSpecificCause();
-        log.debug("API request body not readable: {}", cause != null ? cause.getMessage() : ex.getMessage());
+        log.debug("API request body not readable: {}", cause.getMessage());
         return answer(HttpStatus.BAD_REQUEST, ApiError.of(BAD_REQUEST,
                 "Invalid or malformed JSON body. Use strict JSON with double-quoted keys and strings, "
                         + "e.g. {\"name\":\"value\"}. Ensure Content-Type is application/json."));
@@ -154,7 +156,7 @@ public class RestExceptionHandler {
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiError> uploadTooLarge(MaxUploadSizeExceededException ex) {
+    public ResponseEntity<ApiError> uploadTooLarge() {
         return answer(HttpStatus.PAYLOAD_TOO_LARGE, ApiError.of(PAYLOAD_TOO_LARGE, "Le fichier dépasse la taille maximale"));
     }
 
@@ -169,13 +171,26 @@ public class RestExceptionHandler {
         return answer(HttpStatus.CONFLICT, ApiError.of(CONFLICT, identifierConflictMessage(ex.getIdentifier(), request)));
     }
 
+    /** The identifier range of the form config is used up: no creation can get an identifier any more. */
+    @ExceptionHandler(IdentifierRangeExhaustedException.class)
+    public ResponseEntity<ApiError> identifierRangeExhausted(IdentifierRangeExhaustedException ex,
+                                                             HttpServletRequest request) {
+        log.debug("Identifier range exhausted", ex);
+        return answer(HttpStatus.CONFLICT, ApiError.of(CONFLICT,
+                langService.msg(IDENTIFIER_RANGE_EXHAUSTED_KEY, requestLocale(request))));
+    }
+
     /** "Identifier already in the project", in the language of the request's {@code Accept-Language}. */
     private String identifierConflictMessage(String identifier, HttpServletRequest request) {
-        Locale locale = langService.localeForApiLang(
-                ProjectApiService.primaryAcceptLanguage(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)));
+        Locale locale = requestLocale(request);
         return identifier == null
                 ? langService.msg(IDENTIFIER_CONFLICT_KEY, locale)
                 : langService.msg(IDENTIFIER_CONFLICT_NAMED_KEY, locale, identifier);
+    }
+
+    private Locale requestLocale(HttpServletRequest request) {
+        return langService.localeForApiLang(
+                ProjectApiService.primaryAcceptLanguage(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)));
     }
 
     @ExceptionHandler(ApiValidationException.class)
