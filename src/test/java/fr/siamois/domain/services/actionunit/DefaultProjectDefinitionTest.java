@@ -11,9 +11,9 @@ class DefaultProjectDefinitionTest {
 
     @Test
     void readsTheThesaurusAndItsIdentifiers() {
-        assertThat(definition.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idt=th332");
+        assertThat(definition.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idt=th337");
         assertThat(definition.baseUri()).isEqualTo("https://thesaurus.mom.fr");
-        assertThat(definition.externalVocabularyId()).isEqualTo("th332");
+        assertThat(definition.externalVocabularyId()).isEqualTo("th337");
     }
 
     @Test

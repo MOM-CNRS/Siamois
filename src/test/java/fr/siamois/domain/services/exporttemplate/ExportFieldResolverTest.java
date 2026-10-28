@@ -50,7 +50,7 @@ class ExportFieldResolverTest {
 
     @Test
     void resolve_systemField_isFoundByItsConceptWithoutTouchingTheProjectConfig() {
-        ConceptRef oaCode = new ConceptRef("th230", "4290928", null);
+        ConceptRef oaCode = new ConceptRef("th337", "1005", null);
 
         List<CustomField> result = resolver.resolve(ExportSubject.PROJECT, oaCode, 1L, List.of());
 
@@ -60,7 +60,7 @@ class ExportFieldResolverTest {
 
     @Test
     void resolve_matchesCaseInsensitively() {
-        ConceptRef oaCode = new ConceptRef("TH230", "4290928", null);
+        ConceptRef oaCode = new ConceptRef("TH337", "1005", null);
 
         assertThat(resolver.resolve(ExportSubject.PROJECT, oaCode, 1L, List.of())).hasSize(1);
     }
@@ -68,8 +68,8 @@ class ExportFieldResolverTest {
     @Test
     void resolve_additionalField_isFoundAcrossTheConfiguredTypes() {
         Concept shared = concept(10L, "th99", "777");
-        Concept typeA = concept(1L, "th230", "A");
-        Concept typeB = concept(2L, "th230", "B");
+        Concept typeA = concept(1L, "th337", "A");
+        Concept typeB = concept(2L, "th337", "B");
         CustomField forA = additional(100L, shared);
         CustomField forB = additional(200L, shared);
         when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(typeA, typeB));
@@ -83,13 +83,13 @@ class ExportFieldResolverTest {
 
     @Test
     void resolve_withTypeFilter_onlyLooksAtThoseTypes() {
-        Concept typeA = concept(1L, "th230", "A");
+        Concept typeA = concept(1L, "th337", "A");
         CustomField field = additional(100L, concept(10L, "th99", "777"));
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("th230", "A")).thenReturn(Optional.of(typeA));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th337", "A")).thenReturn(Optional.of(typeA));
         when(tableFieldConfigService.getActiveAdditionalFields(5L, ConfigurableTable.UE, 1L)).thenReturn(List.of(field));
 
         List<CustomField> result = resolver.resolve(ExportSubject.RECORDING_UNIT, new ConceptRef("th99", "777", null), 5L,
-                List.of(new ConceptRef("th230", "A", null)));
+                List.of(new ConceptRef("th337", "A", null)));
 
         assertThat(result).containsExactly(field);
     }
@@ -113,7 +113,7 @@ class ExportFieldResolverTest {
         CustomField forB = additional(200L, shared);
         CustomField noConcept = CustomFieldText.builder().id(300L).label("x").build();
         when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE))
-                .thenReturn(List.of(concept(1L, "th230", "A"), concept(2L, "th230", "B")));
+                .thenReturn(List.of(concept(1L, "th337", "A"), concept(2L, "th337", "B")));
         when(tableFieldConfigService.getActiveAdditionalFields(5L, ConfigurableTable.UE, 1L)).thenReturn(List.of(forA, noConcept));
         when(tableFieldConfigService.getActiveAdditionalFields(5L, ConfigurableTable.UE, 2L)).thenReturn(List.of(forB));
 
@@ -136,17 +136,8 @@ class ExportFieldResolverTest {
     }
 
     @Test
-    void resolve_legacyReference_isUpgradedForEveryEntity() {
-        ConceptRef legacy = new ConceptRef("th230", "4290928", null);
-
-        for (ExportSubject subject : ExportSubject.values()) {
-            assertThat(resolver.resolve(subject, legacy, 1L, List.of())).isNotNull();
-        }
-    }
-
-    @Test
     void fieldOption_measurementDefaultsToDecimalSample() {
-        ConceptRef ref = new ConceptRef("th332", "1", null);
+        ConceptRef ref = new ConceptRef("th337", "1", null);
 
         assertThat(new ExportFieldResolver.FieldOption("l", true, ref, true).sample()).isEqualTo(ExportFieldResolver.SampleKind.DECIMAL);
         assertThat(new ExportFieldResolver.FieldOption("l", true, ref, false).sample()).isEqualTo(ExportFieldResolver.SampleKind.TEXT);

@@ -13,7 +13,6 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import fr.siamois.domain.services.attributeconverter.FullAddressConverter;
 import fr.siamois.dto.entity.FullAddress;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -155,28 +154,28 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final Concept SPATIAL_UNIT_TYPE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id(TYPE_FIELD_CODE))
+            .externalId("1154")
             .build();
     // unit name
     @Transient
     @JsonIgnore
     public static final Concept NAME_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.name"))
+            .externalId("1155")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept CODE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.code"))
+            .externalId("1156")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept PLACE_NUMBER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.placeNumber"))
+            .externalId("1157")
             .build();
 
     // National report inventory fields: no concept in the system thesaurus yet.
@@ -184,28 +183,28 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final Concept INSEE_CODE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.inseeCode"))
+            .externalId("1158")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept LOCALITY_NAME_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.localityName"))
+            .externalId("1159")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept COMMENTS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.comments"))
+            .externalId("1163")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept SHOM_MAP_NUMBER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.shomMapNumber"))
+            .externalId("1160")
             .build();
 
     // address
@@ -213,7 +212,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     public static final Concept ADDRESS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIASU.address"))
+            .externalId("1161")
             .build();
 
 

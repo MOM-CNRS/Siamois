@@ -99,7 +99,7 @@ Un champ du référentiel qui revient dans plusieurs feuilles (`code_OA_NAT`, `m
 | `informations_complementaires_prelevement` | 7 Prélèvements | libre | Mobilier · Commentaires (`SIAS.comments`) (type prélèvement) | ≈ |  |
 | `code_element_traite` | 8 Traitements | libre | Étude · Mobilier (`SIAST.specimens`) | ✅ |  |
 | `type_traitement` | 8 Traitements | liste | Étude · Type de traitement (`SIAST.TYPETRAIT`) | ✅ |  |
-| `code_rapport` | 8 Traitements | libre | – (dans l'application : SIAST reportCode) | ❌ | Pas de concept de champ dans le thésaurus (cf. champs-hors-th332.md) |
+| `code_rapport` | 8 Traitements | libre | – (dans l'application : SIAST reportCode) | ❌ | Pas de concept de champ dans le thésaurus (cf. champs-hors-socle.md) |
 | `periode_traitement` | 8 Traitements | libre | – (dans l'application : treatmentStart / treatmentEnd) | ❌ | Idem |
 | `lieu_traitement` | 8 Traitements | libre | – (dans l'application : treatmentPlace) | ❌ | Idem |
 | `nom_responsable_traitement` | 8 Traitements | libre | – (dans l'application : treatmentManager) | ❌ | Idem |
@@ -146,4 +146,4 @@ scientifique…) citent le référentiel mais viennent des chapitres I à III (p
   qui reprennent les mêmes champs que l'objet/lot, ce que le référentiel sépare en trois feuilles.
 - Les 12 ❌ sont surtout les **traitements** (feuille 8), la **documentation** (identifiant, commentaire), les **coordonnées** du
   milieu sous-marin et le **commentaire d'une relation stratigraphique**. Les champs de traitement et de documentation existent
-  dans l'application mais pas dans le thésaurus (voir [champs-hors-th332.md](champs-hors-th332.md)).
+  dans l'application mais pas dans le thésaurus (voir [champs-hors-socle.md](champs-hors-socle.md)).

@@ -26,7 +26,7 @@ public final class FormLayoutConstants {
         THESO_VOCABULARY_TYPE.setLabel("Thesaurus");
         SYSTEM_THESO = new Vocabulary();
         SYSTEM_THESO.setBaseUri("https://thesaurus.mom.fr");
-        SYSTEM_THESO.setExternalVocabularyId("th332");
+        SYSTEM_THESO.setExternalVocabularyId("th337");
         SYSTEM_THESO.setType(THESO_VOCABULARY_TYPE);
     }
 
