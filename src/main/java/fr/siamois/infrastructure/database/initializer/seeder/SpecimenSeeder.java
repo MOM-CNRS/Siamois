@@ -57,7 +57,6 @@ public class SpecimenSeeder {
                                      ConceptSeeder.ConceptKey chronologicalAttribution,
                                      Integer numberOfElements,
                                      OffsetDateTime collectionDate,
-                                     ConceptSeeder.ConceptKey collectionMethod,
                                      ConceptSeeder.ConceptKey sanitaryState,
                                      ConceptSeeder.ConceptKey materialClass,
                                      Integer excelRowNumber) {
@@ -159,7 +158,6 @@ public class SpecimenSeeder {
         existing.setChronologicalAttribution(built.getChronologicalAttribution());
         existing.setNumberOfElements(built.getNumberOfElements());
         existing.setCollectionDate(built.getCollectionDate());
-        existing.setCollectionMethod(built.getCollectionMethod());
         existing.setSanitaryState(built.getSanitaryState());
         existing.setMaterialClass(built.getMaterialClass());
     }
@@ -184,7 +182,6 @@ public class SpecimenSeeder {
             Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
             Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation(), institutionId);
             Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution(), institutionId);
-            Concept collectionMethod = resolveOptionalConcept(conceptsByKey, "collectionMethod", s.collectionMethod(), institutionId);
             Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState(), institutionId);
             Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass(), institutionId);
             Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
@@ -222,7 +219,6 @@ public class SpecimenSeeder {
             toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
             toGetOrCreate.setNumberOfElements(s.numberOfElements());
             toGetOrCreate.setCollectionDate(s.collectionDate());
-            toGetOrCreate.setCollectionMethod(collectionMethod);
             toGetOrCreate.setSanitaryState(sanitaryState);
             toGetOrCreate.setMaterialClass(materialClass != null ? new HashSet<>(Set.of(materialClass)) : new HashSet<>());
             return toGetOrCreate;
@@ -304,7 +300,6 @@ public class SpecimenSeeder {
             addConceptKey(lowerIdcsByVocab, s.material());
             addConceptKey(lowerIdcsByVocab, s.interpretation());
             addConceptKey(lowerIdcsByVocab, s.chronologicalAttribution());
-            addConceptKey(lowerIdcsByVocab, s.collectionMethod());
             addConceptKey(lowerIdcsByVocab, s.sanitaryState());
             addConceptKey(lowerIdcsByVocab, s.materialClass());
         }

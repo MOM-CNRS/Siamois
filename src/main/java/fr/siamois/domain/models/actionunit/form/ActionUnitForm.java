@@ -13,7 +13,6 @@ import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOn
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import fr.siamois.ui.form.FormLayoutConstants;
 import jakarta.persistence.Transient;
 
@@ -33,7 +32,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept ACTION_UNIT_TYPE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.TYPE"))
+            .externalId("1002")
             .build();
 
     // unit name
@@ -41,12 +40,12 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept NAME_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.name"))
+            .externalId("1003")
             .build();
 
     public static final Concept MAIN_LOCATION_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.mainLocation"))
+            .externalId("1011")
             .build();
 
     // unit id
@@ -54,7 +53,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept IDENTIFIER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.identifier"))
+            .externalId("1004")
             .build();
 
 
@@ -63,7 +62,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept SPATIAL_CONTEXT_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.spatialContext"))
+            .externalId("1012")
             .build();
 
     // begin date
@@ -71,7 +70,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept BEGIN_DATE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.beginDate"))
+            .externalId("1007")
             .build();
 
     // end date
@@ -79,7 +78,7 @@ public abstract class ActionUnitForm {
     @JsonIgnore
     public static final Concept END_DATE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.endDate"))
+            .externalId("1008")
             .build();
 
     // --------------- Fields
@@ -157,137 +156,137 @@ public abstract class ActionUnitForm {
             .concept(MAIN_LOCATION_CONCEPT)
             .build();
 
-    // --------------- Documentation / administrative concepts (thesaurus th230, TBL_action)
+    // --------------- Documentation / administrative concepts (TBL_action)
 
     @Transient
     @JsonIgnore
     public static final Concept OA_CODE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.oaCode")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1005").build();
 
     @Transient
     @JsonIgnore
     public static final Concept PRESCRIPTION_ORDER_NUMBER_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.prescriptionOrderNumber")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1019").build();
 
     @Transient
     @JsonIgnore
     public static final Concept PRESCRIPTION_ORDER_DATE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.prescriptionOrderDate")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1020").build();
 
     @Transient
     @JsonIgnore
     public static final Concept SCIENTIFIC_MANAGER_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.scientificManager")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1015").build();
 
     @Transient
     @JsonIgnore
     public static final Concept HOST_STRUCTURE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.hostStructure")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1016").build();
 
     @Transient
     @JsonIgnore
     public static final Concept DEVELOPER_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.developer")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1017").build();
 
     @Transient
     @JsonIgnore
     public static final Concept PERIODS_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.PERIODS")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1023").build();
 
     @Transient
     @JsonIgnore
     public static final Concept SUBJECTS_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.SUBJECTS")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1024").build();
 
     @Transient
     @JsonIgnore
     public static final Concept SCIENTIFIC_NOTICE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.scientificNotice")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1025").build();
 
     @Transient
     @JsonIgnore
     public static final Concept STATUS_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.STATUS")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1006").build();
 
     @Transient
     @JsonIgnore
     public static final Concept COMMENTS_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.comments")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1026").build();
 
     @Transient
     @JsonIgnore
     public static final Concept SYSTEM_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.SYSTEM")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1027").build();
 
     @Transient
     @JsonIgnore
     public static final Concept FIELD_STATUS_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.FIELD_STATUS")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1028").build();
 
     @Transient
     @JsonIgnore
     public static final Concept ZMIN_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.zmin")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1029").build();
 
     @Transient
     @JsonIgnore
     public static final Concept ZMAX_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.zmax")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1030").build();
 
     @Transient
     @JsonIgnore
     public static final Concept DESIGNATION_ORDER_NUMBER_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.designationOrderNumber")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1021").build();
 
     @Transient
     @JsonIgnore
     public static final Concept DESIGNATION_ORDER_DATE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.designationOrderDate")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1022").build();
 
     @Transient
     @JsonIgnore
     public static final Concept EXCAVATED_AREA_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.excavatedArea")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1032").build();
 
     @Transient
     @JsonIgnore
     public static final Concept ACCESSIBLE_AREA_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.accessibleArea")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1033").build();
 
     @Transient
     @JsonIgnore
     public static final Concept OPENING_RATE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.openingRate")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1034").build();
 
     @Transient
     @JsonIgnore
     public static final Concept DEVELOPMENT_NATURE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.DEVELOPMENT_NATURE")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1018").build();
 
     @Transient
     @JsonIgnore
     public static final Concept VOLUME_COUNT_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.volumeCount")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1035").build();
 
     @Transient
     @JsonIgnore
     public static final Concept PAGE_COUNT_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.pageCount")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1036").build();
 
     @Transient
     @JsonIgnore
     public static final Concept FIGURE_COUNT_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.figureCount")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1037").build();
 
     @Transient
     @JsonIgnore
     public static final Concept APPENDIX_COUNT_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.appendixCount")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1038").build();
 
     @Transient
     @JsonIgnore
     public static final Concept PRESCRIBED_AREA_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAAU.prescribedArea")).build();
+            .vocabulary(SYSTEM_THESO).externalId("1031").build();
 
     // --------------- Documentation / administrative fields
 
@@ -564,7 +563,7 @@ public abstract class ActionUnitForm {
     // No concept in the system thesaurus yet.
     public static final Concept REGION_MARITIME_FACADE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.regionMaritimeFacade"))
+            .externalId("1014")
             .build();
 
     @Transient
@@ -579,7 +578,7 @@ public abstract class ActionUnitForm {
 
     public static final Concept GEOREFERENCING_DOCUMENT_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.georeferencingDocument"))
+            .externalId("1039")
             .build();
 
     @Transient
@@ -594,7 +593,7 @@ public abstract class ActionUnitForm {
 
     public static final Concept RECORDING_UNITS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIAAU.recordingUnits"))
+            .externalId("1040")
             .build();
 
     // The recording units of the project: read-only (a unit belongs to its project from its own side),

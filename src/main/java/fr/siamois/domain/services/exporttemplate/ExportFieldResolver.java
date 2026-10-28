@@ -7,7 +7,6 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -46,8 +45,7 @@ public class ExportFieldResolver {
      * @return les champs candidats, système d'abord ; vide si le concept n'est pas résolu
      */
     @Transactional(readOnly = true)
-    public List<CustomField> resolve(ExportSubject subject, ConceptRef reference, Long projectId, List<ConceptRef> typeRefs) {
-        ConceptRef ref = upgraded(subject, reference);
+    public List<CustomField> resolve(ExportSubject subject, ConceptRef ref, Long projectId, List<ConceptRef> typeRefs) {
         List<CustomField> system = systemFields(subject).stream()
                 .filter(f -> matches(f, ref))
                 .toList();
@@ -67,28 +65,6 @@ public class ExportFieldResolver {
             }
         }
         return new ArrayList<>(additional.values());
-    }
-
-    /** Un modèle enregistré avant la migration désigne les champs système par leur ancien identifiant (th230). */
-    private static ConceptRef upgraded(ExportSubject subject, ConceptRef ref) {
-        if (!SystemConcepts.LEGACY_THESAURUS.equalsIgnoreCase(ref.thesaurusId())) {
-            return ref;
-        }
-        String id = SystemConcepts.upgrade(tableCode(subject), ref.conceptId());
-        return id == null ? ref : new ConceptRef(SystemConcepts.THESAURUS, id, ref.uri());
-    }
-
-    private static String tableCode(ExportSubject subject) {
-        return switch (subject) {
-            case PROJECT -> "SIAAU";
-            case SPATIAL_UNIT -> "SIASU";
-            case RECORDING_UNIT -> "SIARU";
-            case SPECIMEN -> "SIAS";
-            case PHASE -> "SIAPHASE";
-            case CONTAINER -> "SIAC";
-            case STUDY -> "SIAST";
-            case DOCUMENT -> "SIAD";
-        };
     }
 
     /** Un champ qu'une colonne peut lire : son libellé (clé de message pour un champ système) et son concept. */

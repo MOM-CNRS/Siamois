@@ -19,7 +19,6 @@ import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -147,6 +146,10 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIARU.TYPE";
 
+    /** The nature of the unit, as the national referential defines it ({@code nature_UE}). */
+    @FieldCode
+    public static final String NATURE_FIELD_CODE = "SIARU.NATURE";
+
     @FieldCode
     public static final String GEOMORPHO_CYCLE_FIELD_CODE = "SIARU.GEOMORPHO";
 
@@ -155,9 +158,6 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @FieldCode
     public static final String INTERPRETATION_FIELD_CODE = "SIARU.INTERPRETATION";
-
-    @FieldCode
-    public static final String METHOD_FIELD_CODE = "SIARU.TYPE";
 
     // The type vocabulary of the relationships a unit has with each side. SIARU.STRATI, which was
     // one list for all three, is still read (import, units already typed) and stands in for each of
@@ -228,7 +228,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept excavatorsConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.contributors"))
+            .externalId("1175")
             .build();
 
     @Transient
@@ -247,7 +247,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept recordingUnitIdConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.fullIdentifier"))
+            .externalId("1173")
             .build();
 
     @Transient
@@ -268,14 +268,14 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept creationDateConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.openingDate"))
+            .externalId("1176")
             .build();
 
     @Transient
     @JsonIgnore
     private static Concept closingDateConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.closingDate"))
+            .externalId("1177")
             .build();
 
     // Action Unit
@@ -324,7 +324,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
     @JsonIgnore
     private static Concept phasesConcept = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.phases"))
+            .externalId("1194")
             .build();
 
     @Transient

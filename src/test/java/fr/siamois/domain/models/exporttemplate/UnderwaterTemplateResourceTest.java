@@ -55,9 +55,11 @@ class UnderwaterTemplateResourceTest {
                 "profondeur_OA", "nom_commune_OA", "numero_INSEE_commune_OA", "informations_complementaires_OA");
     }
 
+    /** The document identifier is not described by the thesaurus yet, so no concept can designate it. */
     @Test
-    void everyColumnIsMapped() {
-        underwater.sheets().forEach(s -> s.columns()
+    void everyColumnIsMapped_exceptTheDocumentIdentifier() {
+        underwater.sheets().forEach(s -> s.columns().stream()
+                .filter(c -> !(s.name().equals("documentation") && c.header().equals("identifiant_documentation")))
                 .forEach(c -> assertThat(c.rules()).as(s.name() + "." + c.header()).isNotEmpty()));
     }
 

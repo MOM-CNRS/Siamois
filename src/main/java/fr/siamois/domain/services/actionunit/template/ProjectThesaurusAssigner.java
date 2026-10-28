@@ -16,8 +16,8 @@ import java.util.Optional;
 
 /**
  * Gives a new project the thesaurus it documents its fields and types in ({@link DocumentationThesaurus}).
- * The default and empty templates rest on the common-core thesaurus (th332); a project copied from another takes the
- * copied project's, and failing that its institution's, and failing that th332.
+ * The default and empty templates rest on the common-core thesaurus (th337); a project copied from another takes the
+ * copied project's, and failing that its institution's, and failing that th337.
  */
 @Slf4j
 @Component

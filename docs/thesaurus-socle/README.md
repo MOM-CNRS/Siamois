@@ -15,10 +15,10 @@ pas des vocabulaires exhaustifs.
 |---|---|---|
 | Projet | `SIAAU` | `TYPE`, `STATUS`, `FIELD_STATUS`, `SYSTEM`, `DEVELOPMENT_NATURE`, `PERIODS`, `SUBJECTS` |
 | Lieu | `SIASU` | `TYPE` |
-| Enregistrement | `SIARU` | `TYPE`, `GEOMORPHO`, `GEOMORPHOAGENT`, `INTERPRETATION`, `EROSIONSHAPE`, `EROSIONPROFILE`, `EROSIONORIENTATION`, `CHRONO` |
+| Enregistrement | `SIARU` | `TYPE`, `NATURE`, `GEOMORPHO`, `GEOMORPHOAGENT`, `INTERPRETATION`, `EROSIONSHAPE`, `EROSIONPROFILE`, `EROSIONORIENTATION`, `CHRONO` |
 | Stratigraphie | `SIARU.STRATI.TABLE` | `STRATI`, `STRATI.ANTERIOR`, `STRATI.POSTERIOR`, `STRATI.SYNCHRONOUS` |
-| Mobilier | `SIAS` | `CAT`, `MATIERE`, `CLASS`, `INTERPRETATION`, `METHOD`, `CHRONO`, `SANITARY`, `TRANSFER`, `SELECTIVECONSERVATION` |
-| Étude | `SIAST` | `TYPE`, `METHODE`, `TYPETRAIT` |
+| Mobilier | `SIAS` | `CAT`, `MATIERE`, `CLASS`, `INTERPRETATION`, `SAMPLINGNATURE`, `SANITARYALERT`, `CHRONO`, `SANITARY`, `TRANSFER`, `SELECTIVECONSERVATION` |
+| Étude | `SIAST` | `TYPE` (type de traitement) |
 | Document | `SIAD` | `TYPE` (pilote), `CATEGORY`, `NATURE`, `FORMAT`, `SCALE`, `LANGUAGE`, `KEYWORD` |
 | Contenant, Phase, Personne, Mesure | `SIAC`, `SIAPHASE`, `SIAP`, `SIAMD` | `TYPE` / `PERIOD`, `KEYWORD` / `ROLE` / `TYPE`, `NATURE` |
 
@@ -38,13 +38,13 @@ l'application, mais ils identifient le champ de façon stable.
    (par exemple `Mobilier · Classe — Métal  [SIAS.CLASS @ SIAS.CAT:metal]`). Ce format est lu par le gabarit « Projet par défaut » de
    l'application: le libellé du pilote, après le tiret cadratin, doit être celui du type dans le thésaurus. Elle sert quand
    on règle la liste d'un type dans la config d'un projet (source « Collection »). Les membres sont dans la branche, donc chargés.
-4. Un lien `skos:related` entre un type et un **champ** dit que le champ ne s'applique qu'à ce type (« Méthode de prélèvement »
+4. Un lien `skos:related` entre un type et un **champ** dit que le champ ne s'applique qu'à ce type (« Objectif du prélèvement »
    pour un prélèvement, « Échelle » pour un document graphique).
 5. La collection `SIAMOIS – Dépendance logique` regroupe les pilotes, comme dans le th230.
 
 Exemples livrés : interprétation d'une unité selon US / fait / ensemble / sépulture ; matière, classe et interprétation d'un
 mobilier selon son type (céramique, métal, lithique, verre, faune, VAB, prélèvement) ; catégorie, support, format et échelle d'un
-document selon son type (de document : un type reprend les valeurs de sa catégorie) ; méthode d'une étude selon son type ; nature d'une mesure selon son type de mesure.
+document selon son type (de document : un type reprend les valeurs de sa catégorie) ; nature d'une mesure selon son type de mesure.
 
 **Alignement sur le référentiel.** Chaque champ ou valeur qui a un équivalent dans le th326 porte un `skos:exactMatch` vers son
 URI, et l'altLabel garde le libellé national quand il diffère (`[métal] ferreux`). Une conversion à l'export peut s'appuyer dessus.
@@ -73,3 +73,57 @@ python3 -I docs/thesaurus-socle/generate_thesaurus_socle.py --ref "<th326>.rdf" 
 ```
 
 Le script s'arrête en erreur si un libellé du référentiel ou du th230 qu'il cite n'existe plus.
+
+## Version 2 (temporaire, `siamois-socle-commun-v2.rdf`)
+
+Le générateur écrit désormais `siamois-socle-commun-v2.rdf` (le th332 n'est pas touché). Changements par rapport à la version précédente :
+
+- **Libellés** : projet `Nom` → `Intitulé`, `Périodes` → `Chronologie`, `Sujets` → `Interprétation`, `Structure porteuse` → `Organisme de
+  rattachement`, `Commentaires` → `Informations complémentaires` (projet, enregistrement, mobilier) ; lieu `Nom` → `Intitulé`,
+  `Commentaires` → `Informations complémentaires parcelle` ; mobilier `Interprétation` → `Détermination` ; document `Nom du document` → `Titre`.
+  Les codes de champ (`SIAAU.PERIODS`, `SIAS.INTERPRETATION`…) ne changent pas.
+- **Nouveaux champs** : projet `Date de début de terrain` / `Date de fin de terrain` (rapprochées de `date_*_terrain_OA`, les dates du projet
+  ne le sont plus) et `Parcelles` (lien vers des lieux, rapproché de `identifiant_parcelle` de la feuille 2) ; lieu `Géométrie` (le modèle
+  d'export la convertit en x / y) ; mobilier `Objet / lot` (case à cocher, rapprochée de `objet-lot`), `Volume` et `Nature du prélèvement`
+  (liste `SIAS.SAMPLINGNATURE`, uniquement pour le type Prélèvement, valeurs du référentiel telles quelles) ; document `Informations complémentaires`.
+- **Types de mobilier** : « objet » et « lot » ne sont plus des types de `SIAS.CAT`.
+- **Interprétation du mobilier** : plus de liste pour le type Prélèvement (ses valeurs sont dans `Nature du prélèvement`).
+- **Étude = traitement** : la table garde son nom, mais elle correspond à la feuille « traitements » du référentiel. Son type (`SIAST.TYPE`) est
+  le type de traitement du référentiel (25 valeurs) ; les anciens types (traitement, datation, analyse, étude spécialisée) disparaissent. Les
+  champs de traitement (code du rapport, début et fin, lieu, responsable, identifiant lié, informations complémentaires) s'appliquent à toute la table.
+- **Plus de méthode** : les champs « Méthode de prélèvement » (`SIAS.METHOD`) et « Méthode » de l'étude (`SIAST.METHODE`) sont supprimés, sans remplacement.
+
+### Vocabulaire du référentiel complété (instance de test des collègues)
+
+Le générateur lit par défaut `Referentiel_th326_instance_test*.rdf` (le th326 avec des valeurs en plus) et, à défaut, le référentiel
+national d'origine. Les valeurs ajoutées sont rangées dans **les listes par type** existantes (fonction `adopt`) : une valeur déjà
+présente reçoit seulement son `skos:exactMatch`, sinon elle est créée. Exemples : interprétation d'une unité (US / fait / ensemble / sépulture),
+détermination d'un mobilier (par type de mobilier, VAB depuis `determination_VAB`), types de document avec leur catégorie, support et format,
+types de traitement, mots-clés d'interprétation du projet.
+
+- **Non repris** : les valeurs de `condition_preservation_prelevement` (le référentiel les décrit en texte libre) et « enduit peint »
+  (aucun type de mobilier ne lui correspond).
+- **Nature de l'unité** (`SIARU.NATURE`, nouveau code) : les 9 valeurs du référentiel (positive, négative, englobante, US construite, dépôt naturel,
+  altération, unité artificielle, interface, anomalie), pour tous les types. « Cycle géomorphologique » (`SIARU.GEOMORPHO`) et « Agent
+  géomorphologique » (`SIARU.GEOMORPHOAGENT`) sont des champs propres à Siamois, sans équivalent dans le référentiel, avec leurs 4 valeurs.
+- **Alerte sanitaire** (`SIAS.SANITARYALERT`, choix multiple) : devenue une liste. Celle de l'objet / lot pour céramique, métal, lithique, verre,
+  faune et terre cuite architecturale ; celle des vestiges anthropobiologiques pour le type VAB.
+- **Matière et classe du mobilier** : le libellé de la classe est celui du référentiel, avec la matière entre crochets (« [métal] ferreux »),
+  sans altLabel. Le lien avec la matière passe aussi par les concepts associés (`skos:related`) et les collections.
+
+### Définitions et notes
+
+Un concept qui a un équivalent dans le référentiel national (un `skos:exactMatch`) **reprend sa définition et ses notes** (éditoriale,
+d'application) telles quelles, sans les réécrire ; la définition écrite par le générateur (type de donnée, code de champ…) ne sert que
+pour les concepts sans équivalent. Dans la dernière génération : 632 concepts concernés. Les notes éditoriales du référentiel sont des
+remarques internes (« SIAMOIS 2026 (non reprise du référentiel) », « contacter… ») : elles sont reprises avec le reste.
+
+### Siamois DEMO
+
+Le thésaurus s'appelle « Siamois DEMO » (libellé du schéma). Changements de cette étape :
+
+- **Types d'unité Log et USlog** (INRAP) ajoutés à `SIARU.TYPE`, sans équivalent dans le référentiel, sans définition ni liste propre.
+- **Mesures** : `SIAMD.TYPE` est ce qui est mesuré (longueur, largeur, hauteur, épaisseur, diamètre, profondeur, altitude, poids, contenance,
+  azimut, pendage) ; `SIAMD.NATURE` est la façon de prendre la valeur (maximale, minimale, moyenne, inférieure, supérieure, sèche), facultative et
+  **indépendante du type** (plus de collections par type de mesure). « Altitude moyenne » devient le type Altitude avec la nature Moyenne, « Poids sec »
+  le type Poids avec la nature Sèche.

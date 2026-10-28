@@ -19,7 +19,6 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
@@ -43,35 +42,35 @@ public abstract class RecordingUnitForm {
     @JsonIgnore
     protected static final Concept AUTHOR_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.author"))
+            .externalId("1174")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept RECORDING_UNIT_TYPE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.TYPE"))
+            .externalId("1172")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept OPENING_DATE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.openingDate"))
+            .externalId("1176")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept SPATIAL_UNIT_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.spatialUnit"))
+            .externalId("1178")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept ACTION_UNIT_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.actionUnit"))
+            .externalId("1179")
             .build();
 
     @Transient
@@ -134,168 +133,168 @@ public abstract class RecordingUnitForm {
     @JsonIgnore
     protected static final Concept FULL_IDENTIFIER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.fullIdentifier"))
+            .externalId("1173")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept NATURE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.GEOMORPHO"))
+            .externalId("1181")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept INTERPRETATION_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.INTERPRETATION"))
+            .externalId("1183")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept CONTRIBUTORS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.contributors"))
+            .externalId("1175")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept GEOMORPHO_AGENT_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.GEOMORPHOAGENT"))
+            .externalId("1182")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept EROSION_SHAPE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.EROSIONSHAPE"))
+            .externalId("1184")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept EROSION_PROFILE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.EROSIONPROFILE"))
+            .externalId("1185")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept EROSION_ORIENTATION_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.EROSIONORIENTATION"))
+            .externalId("1186")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept CHRONOLOGICAL_PHASE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.CHRONO"))
+            .externalId("1189")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept TAQ_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.taq"))
+            .externalId("1191")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept TPQ_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.tpq"))
+            .externalId("1190")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept DESCRIPTION_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.description"))
+            .externalId("1188")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept CLOSING_DATE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.closingDate"))
+            .externalId("1177")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept PARENTS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.parents"))
+            .externalId("1195")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept CHILDREN_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.children"))
+            .externalId("1196")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept FINDS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.specimenList"))
+            .externalId("1197")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept ANTERIOR_RELATIONSHIPS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.STRATI.ANTERIOR"))
+            .externalId("1368")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept POSTERIOR_RELATIONSHIPS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.STRATI.POSTERIOR"))
+            .externalId("1373")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept SYNCHRONOUS_RELATIONSHIPS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.STRATI.SYNCHRONOUS"))
+            .externalId("1378")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept COMMENTS_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.comments"))
+            .externalId("1198")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept Z_INF_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.zInf"))
+            .externalId("1193")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept Z_SUP_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.zSup"))
+            .externalId("1192")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept PHASES_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.phases"))
+            .externalId("1194")
             .build();
 
     @Transient
     @JsonIgnore
     protected static final Concept MATRIX_COLOR_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId(SystemConcepts.id("SIARU.matrixColor"))
+            .externalId("1187")
             .build();
 
     @Transient

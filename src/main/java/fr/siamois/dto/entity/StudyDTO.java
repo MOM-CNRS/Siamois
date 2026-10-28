@@ -20,8 +20,6 @@ public class StudyDTO extends AbstractEntityDTO {
     protected ActionUnitSummaryDTO actionUnit;
     protected ConceptDTO type;
     protected OffsetDateTime studyDate;
-    protected ConceptDTO method;
-    protected ConceptDTO treatmentType;
     protected String reportCode;
     protected OffsetDateTime treatmentStart;
     protected OffsetDateTime treatmentEnd;
@@ -35,7 +33,7 @@ public class StudyDTO extends AbstractEntityDTO {
     private Set<SpecimenSummaryDTO> specimens = new HashSet<>();
 
     public static List<String> getBindableFieldNames() {
-        return List.of("identifier", "generatedNumber", "actionUnit", "type", "studyDate", "method", "treatmentType",
+        return List.of("identifier", "generatedNumber", "actionUnit", "type", "studyDate",
                 "reportCode", "treatmentStart", "treatmentEnd", "treatmentPlace", "treatmentManager",
                 "treatmentIdentifier", "treatmentComments", "recordingUnits", "specimens");
     }
