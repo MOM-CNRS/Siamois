@@ -81,6 +81,7 @@ class SpecimenSeederTest {
                     null,
                     null,
                     null,
+                    null,
                     null
             )
     );

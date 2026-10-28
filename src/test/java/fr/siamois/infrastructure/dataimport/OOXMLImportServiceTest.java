@@ -81,9 +81,9 @@ class OOXMLImportServiceTest {
 
     @Test
     void extractIdtAndIdcFromUri() {
-        String uri = "https://example.fr/th?idt=th337&idc=4287979";
+        String uri = "https://example.fr/th?idt=th230&idc=4287979";
 
-        assertThat(service.extractIdtFromUri(uri)).contains("th337");
+        assertThat(service.extractIdtFromUri(uri)).contains("th230");
         assertThat(service.extractIdcFromUri(uri)).contains("4287979");
     }
 
@@ -572,7 +572,7 @@ class OOXMLImportServiceTest {
         row.createCell(1).setCellValue("Institut national");
         row.createCell(2).setCellValue("INRAP-ID");
         row.createCell(3).setCellValue("a@inrap.fr; b@inrap.fr");
-        row.createCell(4).setCellValue("https://thesaurus.fr/api?idt=th337&idc=999");
+        row.createCell(4).setCellValue("https://thesaurus.fr/api?idt=th230&idc=999");
 
         List<ImportError> errs = errors();
         List<InstitutionSeeder.InstitutionSpec> specs =
@@ -590,7 +590,7 @@ class OOXMLImportServiceTest {
         assertThat(inst.managerEmails())
                 .containsExactly("a@inrap.fr", "b@inrap.fr");
 
-        assertThat(inst.externalId()).isEqualTo("th337");
+        assertThat(inst.externalId()).isEqualTo("th230");
     }
 
     @Test
@@ -676,7 +676,7 @@ class OOXMLImportServiceTest {
     @ParameterizedTest(name = "{index} => input={0}, expected={1}")
     @CsvSource({
             "'https://thesaurus.fr/api', 'https://thesaurus.fr/api'",
-            "'https://thesaurus.fr/api?idt=th337&idc=999', 'https://thesaurus.fr/ap'",
+            "'https://thesaurus.fr/api?idt=th230&idc=999', 'https://thesaurus.fr/ap'",
             "'a?idt=1', ''"
     })
     void extractThesaurusDomain_parametrized(String input, String expected) {
@@ -1036,7 +1036,7 @@ class OOXMLImportServiceTest {
 
     @Test
     void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
-        assertThat(service.extractThesaurusDomain("?idt=th337")).isNull();
+        assertThat(service.extractThesaurusDomain("?idt=th230")).isNull();
     }
 
     // -------------------------------------------------------------------------

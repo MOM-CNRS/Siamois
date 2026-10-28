@@ -740,6 +740,8 @@ public class OOXMLImportService {
                 Specimen.INTERPRETATION_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey chronologicalAttribution = conceptKeyFromColumnOrLabel(row, cols, "chronologie uri", "chronologie label",
                 Specimen.CHRONOLOGICAL_ATTRIBUTION_FIELD, institutionDbId);
+        ConceptSeeder.ConceptKey collectionMethod = conceptKeyFromColumnOrLabel(row, cols, "methode de collecte uri", "methode de collecte label",
+                Specimen.METHOD_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey sanitaryState = conceptKeyFromColumnOrLabel(row, cols, "etat sanitaire uri", "etat sanitaire label",
                 Specimen.SANITARY_STATE_FIELD, institutionDbId);
         ConceptSeeder.ConceptKey materialClass = conceptKeyFromColumnOrLabel(row, cols, "classe matiere uri", "classe matiere label",
@@ -775,6 +777,7 @@ public class OOXMLImportService {
                 chronologicalAttribution,
                 numberOfElements,
                 collectionDate,
+                collectionMethod,
                 sanitaryState,
                 materialClass,
                 row.getRowNum() + 1

@@ -44,6 +44,13 @@ public class Study extends TraceableEntity {
     @FieldCode
     public static final String TYPE_FIELD = "SIAST.TYPE";
 
+    @FieldCode
+    public static final String METHOD_FIELD_CODE = "SIAST.METHODE";
+
+    /** The kind of treatment ({@code type_traitement}); the vocabulary is suggested and can be extended. */
+    @FieldCode
+    public static final String TREATMENT_TYPE_FIELD_CODE = "SIAST.TYPETRAIT";
+
     public static final int MAX_TEXT_LENGTH = 5000;
 
     @Id
@@ -76,7 +83,16 @@ public class Study extends TraceableEntity {
     @Column(name = "study_date")
     protected OffsetDateTime studyDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_method")
+    protected Concept method;
+
     // ---------------------------------------------------------------- Treatment (SDA "traitement" sheet)
+
+    /** {@code type_traitement}. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_treatment_type")
+    protected Concept treatmentType;
 
     /** {@code code_rapport}: inventory code of the related report in the documentation sheet. */
     @Column(name = "report_code")

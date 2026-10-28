@@ -74,16 +74,8 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @NotAudited
     private List<Person> collectors;
 
-    /** What a sample is made of ({@code nature_prelevement}); only for the sample type. */
     @FieldCode
-    public static final String SAMPLING_NATURE_FIELD = "SIAS.SAMPLINGNATURE";
-
-    @FieldCode
-    public static final String SANITARY_ALERT_FIELD = "SIAS.SANITARYALERT";
-
-    /** How a sample is kept ({@code condition_preservation_prelevement}); only for the sample type. */
-    @FieldCode
-    public static final String PRESERVATION_CONDITION_FIELD = "SIAS.PRESERVATIONCONDITION";
+    public static final String METHOD_FIELD = "SIAS.METHOD";
 
     @FieldCode
     public static final String TYPE_FIELD = "SIAS.CAT"; // lot, individu, echantillon
@@ -147,6 +139,10 @@ public class Specimen extends TraceableEntity implements ArkEntity {
             joinColumns = @JoinColumn(name = "fk_specimen_id"),
             inverseJoinColumns = @JoinColumn(name = "fk_material_class__id"))
     private Set<Concept> materialClass;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_collection_method")
+    protected Concept collectionMethod;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_sanitary_state")

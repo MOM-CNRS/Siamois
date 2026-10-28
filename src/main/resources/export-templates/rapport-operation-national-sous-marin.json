@@ -96,8 +96,8 @@
       "entity": "SPECIMEN",
       "types": [
         {
-          "thesaurus": "th337",
-          "id": "1431"
+          "thesaurus": "th332",
+          "id": "1338"
         }
       ]
     },
@@ -124,8 +124,8 @@
       "entity": "SPECIMEN",
       "types": [
         {
-          "thesaurus": "th337",
-          "id": "1432"
+          "thesaurus": "th332",
+          "id": "1339"
         }
       ]
     },
@@ -150,7 +150,12 @@
     "traitement_1": {
       "kind": "ENTITY",
       "entity": "STUDY",
-      "types": []
+      "types": [
+        {
+          "thesaurus": "th332",
+          "id": "1464"
+        }
+      ]
     },
     "traitement_1_project": {
       "join": {
@@ -612,7 +617,7 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -622,8 +627,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1014"
+          "thesaurus": "th332",
+          "id": "1011"
         }
       }
     },
@@ -632,7 +637,7 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1002"
         }
       }
@@ -642,7 +647,7 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1003"
         }
       }
@@ -652,8 +657,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1016"
+          "thesaurus": "th332",
+          "id": "1013"
         }
       }
     },
@@ -662,8 +667,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1015"
+          "thesaurus": "th332",
+          "id": "1012"
         }
       }
     },
@@ -672,7 +677,7 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1007"
         }
       }
@@ -682,7 +687,7 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1008"
         }
       }
@@ -692,8 +697,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1023"
+          "thesaurus": "th332",
+          "id": "1020"
         }
       },
       "list": {
@@ -706,8 +711,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1024"
+          "thesaurus": "th332",
+          "id": "1021"
         }
       },
       "list": {
@@ -720,8 +725,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1039"
+          "thesaurus": "th332",
+          "id": "1036"
         }
       }
     },
@@ -730,8 +735,8 @@
       "source": "OA_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1026"
+          "thesaurus": "th332",
+          "id": "1023"
         }
       }
     },
@@ -740,7 +745,7 @@
       "source": "situation_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -750,8 +755,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1160"
+          "thesaurus": "th332",
+          "id": "1117"
         }
       }
     },
@@ -760,8 +765,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1155"
+          "thesaurus": "th332",
+          "id": "1112"
         }
       }
     },
@@ -770,8 +775,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1161"
+          "thesaurus": "th332",
+          "id": "1118"
         },
         "property": "latitude"
       }
@@ -781,8 +786,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1161"
+          "thesaurus": "th332",
+          "id": "1118"
         },
         "property": "longitude"
       }
@@ -792,8 +797,8 @@
       "source": "situation_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1029"
+          "thesaurus": "th332",
+          "id": "1026"
         }
       }
     },
@@ -802,8 +807,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1161"
+          "thesaurus": "th332",
+          "id": "1118"
         },
         "property": "city"
       }
@@ -813,8 +818,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1158"
+          "thesaurus": "th332",
+          "id": "1115"
         }
       }
     },
@@ -823,8 +828,8 @@
       "source": "situation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1163"
+          "thesaurus": "th332",
+          "id": "1119"
         }
       }
     },
@@ -833,7 +838,7 @@
       "source": "UE_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -843,8 +848,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1172"
+          "thesaurus": "th332",
+          "id": "1128"
         }
       }
     },
@@ -853,8 +858,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1173"
+          "thesaurus": "th332",
+          "id": "1129"
         }
       }
     },
@@ -863,8 +868,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1181"
+          "thesaurus": "th332",
+          "id": "1136"
         }
       }
     },
@@ -873,8 +878,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1188"
+          "thesaurus": "th332",
+          "id": "1143"
         }
       }
     },
@@ -883,8 +888,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1183"
+          "thesaurus": "th332",
+          "id": "1138"
         }
       }
     },
@@ -893,8 +898,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1192"
+          "thesaurus": "th332",
+          "id": "1147"
         }
       }
     },
@@ -903,8 +908,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1193"
+          "thesaurus": "th332",
+          "id": "1148"
         }
       }
     },
@@ -913,8 +918,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1189"
+          "thesaurus": "th332",
+          "id": "1144"
         }
       }
     },
@@ -923,8 +928,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1190"
+          "thesaurus": "th332",
+          "id": "1145"
         }
       }
     },
@@ -933,8 +938,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1191"
+          "thesaurus": "th332",
+          "id": "1146"
         }
       }
     },
@@ -943,8 +948,8 @@
       "source": "UE_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1198"
+          "thesaurus": "th332",
+          "id": "1153"
         }
       }
     },
@@ -953,7 +958,7 @@
       "source": "relation_1_unit1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -963,8 +968,8 @@
       "source": "relation_1_unit1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1173"
+          "thesaurus": "th332",
+          "id": "1129"
         }
       }
     },
@@ -980,8 +985,8 @@
       "source": "relation_1_unit2",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1173"
+          "thesaurus": "th332",
+          "id": "1129"
         }
       }
     },
@@ -1007,7 +1012,7 @@
       "source": "mobilier_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -1017,8 +1022,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1389"
+          "thesaurus": "th332",
+          "id": "1297"
         }
       }
     },
@@ -1027,8 +1032,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1387"
+          "thesaurus": "th332",
+          "id": "1296"
         }
       }
     },
@@ -1037,8 +1042,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1398"
+          "thesaurus": "th332",
+          "id": "1306"
         }
       },
       "list": {
@@ -1051,8 +1056,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1399"
+          "thesaurus": "th332",
+          "id": "1307"
         }
       },
       "list": {
@@ -1065,8 +1070,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1400"
+          "thesaurus": "th332",
+          "id": "1308"
         }
       }
     },
@@ -1075,8 +1080,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1404"
+          "thesaurus": "th332",
+          "id": "1312"
         }
       }
     },
@@ -1085,8 +1090,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1405"
+          "thesaurus": "th332",
+          "id": "1313"
         }
       }
     },
@@ -1095,8 +1100,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1407"
+          "thesaurus": "th332",
+          "id": "1315"
         }
       }
     },
@@ -1105,8 +1110,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         }
       }
     },
@@ -1115,8 +1120,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         },
         "property": "unit"
       }
@@ -1126,8 +1131,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1413"
+          "thesaurus": "th332",
+          "id": "1320"
         }
       }
     },
@@ -1136,8 +1141,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1414"
+          "thesaurus": "th332",
+          "id": "1321"
         }
       }
     },
@@ -1146,8 +1151,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1415"
+          "thesaurus": "th332",
+          "id": "1322"
         }
       }
     },
@@ -1156,8 +1161,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1416"
+          "thesaurus": "th332",
+          "id": "1323"
         }
       }
     },
@@ -1166,8 +1171,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1417"
+          "thesaurus": "th332",
+          "id": "1324"
         }
       }
     },
@@ -1176,8 +1181,8 @@
       "source": "mobilier_1_recordingUnit",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1173"
+          "thesaurus": "th332",
+          "id": "1129"
         }
       }
     },
@@ -1186,8 +1191,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1418"
+          "thesaurus": "th332",
+          "id": "1325"
         }
       }
     },
@@ -1196,8 +1201,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1397"
+          "thesaurus": "th332",
+          "id": "1305"
         }
       }
     },
@@ -1206,8 +1211,8 @@
       "source": "mobilier_1_recordingUnit_spatialUnit",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1155"
+          "thesaurus": "th332",
+          "id": "1112"
         }
       }
     },
@@ -1216,8 +1221,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1410"
+          "thesaurus": "th332",
+          "id": "1317"
         }
       },
       "list": {
@@ -1230,8 +1235,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1424"
+          "thesaurus": "th332",
+          "id": "1331"
         }
       }
     },
@@ -1240,8 +1245,8 @@
       "source": "mobilier_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1403"
+          "thesaurus": "th332",
+          "id": "1311"
         }
       }
     },
@@ -1250,7 +1255,7 @@
       "source": "VAB_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -1260,8 +1265,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1389"
+          "thesaurus": "th332",
+          "id": "1297"
         }
       }
     },
@@ -1270,8 +1275,8 @@
       "source": "VAB_1_recordingUnit",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1173"
+          "thesaurus": "th332",
+          "id": "1129"
         }
       }
     },
@@ -1280,8 +1285,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1393"
+          "thesaurus": "th332",
+          "id": "1301"
         }
       },
       "list": {
@@ -1304,8 +1309,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1400"
+          "thesaurus": "th332",
+          "id": "1308"
         }
       }
     },
@@ -1314,8 +1319,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1407"
+          "thesaurus": "th332",
+          "id": "1315"
         }
       }
     },
@@ -1324,8 +1329,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         }
       }
     },
@@ -1334,8 +1339,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         },
         "property": "unit"
       }
@@ -1345,8 +1350,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1394"
+          "thesaurus": "th332",
+          "id": "1302"
         }
       },
       "list": {
@@ -1359,8 +1364,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1414"
+          "thesaurus": "th332",
+          "id": "1321"
         }
       }
     },
@@ -1369,8 +1374,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1415"
+          "thesaurus": "th332",
+          "id": "1322"
         }
       }
     },
@@ -1379,8 +1384,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1419"
+          "thesaurus": "th332",
+          "id": "1326"
         }
       }
     },
@@ -1389,8 +1394,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1420"
+          "thesaurus": "th332",
+          "id": "1327"
         }
       }
     },
@@ -1399,8 +1404,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1410"
+          "thesaurus": "th332",
+          "id": "1317"
         }
       },
       "list": {
@@ -1413,8 +1418,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1424"
+          "thesaurus": "th332",
+          "id": "1331"
         }
       }
     },
@@ -1423,8 +1428,8 @@
       "source": "VAB_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1403"
+          "thesaurus": "th332",
+          "id": "1311"
         }
       }
     },
@@ -1433,7 +1438,7 @@
       "source": "prelevement_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -1443,8 +1448,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1389"
+          "thesaurus": "th332",
+          "id": "1297"
         }
       }
     },
@@ -1453,8 +1458,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1402"
+          "thesaurus": "th332",
+          "id": "1310"
         }
       }
     },
@@ -1463,8 +1468,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1396"
+          "thesaurus": "th332",
+          "id": "1304"
         }
       },
       "list": {
@@ -1477,8 +1482,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1421"
+          "thesaurus": "th332",
+          "id": "1328"
         }
       }
     },
@@ -1487,8 +1492,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         }
       }
     },
@@ -1497,8 +1502,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1408"
+          "thesaurus": "th332",
+          "id": "1316"
         },
         "property": "unit"
       }
@@ -1514,8 +1519,8 @@
             "source": "prelevement_1_recordingUnit",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1173"
+                "thesaurus": "th332",
+                "id": "1129"
               }
             }
           },
@@ -1523,8 +1528,8 @@
             "source": "prelevement_1",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1393"
+                "thesaurus": "th332",
+                "id": "1301"
               }
             }
           }
@@ -1536,8 +1541,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1422"
+          "thesaurus": "th332",
+          "id": "1329"
         }
       }
     },
@@ -1546,8 +1551,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1423"
+          "thesaurus": "th332",
+          "id": "1330"
         }
       }
     },
@@ -1556,8 +1561,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1410"
+          "thesaurus": "th332",
+          "id": "1317"
         }
       },
       "list": {
@@ -1570,8 +1575,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1424"
+          "thesaurus": "th332",
+          "id": "1331"
         }
       }
     },
@@ -1580,8 +1585,8 @@
       "source": "prelevement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1403"
+          "thesaurus": "th332",
+          "id": "1311"
         }
       }
     },
@@ -1590,7 +1595,7 @@
       "source": "traitement_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
         }
       }
@@ -1600,8 +1605,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1644"
+          "thesaurus": "th332",
+          "id": "1463"
         }
       },
       "list": {
@@ -1614,8 +1619,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1641"
+          "thesaurus": "th332",
+          "id": "1460"
         }
       }
     },
@@ -1624,8 +1629,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1645"
+          "thesaurus": "th332",
+          "id": "study.reportCode"
         }
       }
     },
@@ -1640,8 +1645,8 @@
             "source": "traitement_1",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1646"
+                "thesaurus": "th332",
+                "id": "study.treatmentStart"
               }
             }
           },
@@ -1649,8 +1654,8 @@
             "source": "traitement_1",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1647"
+                "thesaurus": "th332",
+                "id": "study.treatmentEnd"
               }
             }
           }
@@ -1662,8 +1667,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1648"
+          "thesaurus": "th332",
+          "id": "study.treatmentPlace"
         }
       }
     },
@@ -1672,8 +1677,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1649"
+          "thesaurus": "th332",
+          "id": "study.treatmentManager"
         }
       }
     },
@@ -1682,8 +1687,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1650"
+          "thesaurus": "th332",
+          "id": "study.treatmentIdentifier"
         }
       }
     },
@@ -1692,8 +1697,8 @@
       "source": "traitement_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1651"
+          "thesaurus": "th332",
+          "id": "study.treatmentComments"
         }
       }
     },
@@ -1702,8 +1707,18 @@
       "source": "documentation_1_project",
       "field": {
         "concept": {
-          "thesaurus": "th337",
+          "thesaurus": "th332",
           "id": "1005"
+        }
+      }
+    },
+    {
+      "target": "documentation.identifiant_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th332",
+          "id": "document.identifier"
         }
       }
     },
@@ -1712,8 +1727,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1685"
+          "thesaurus": "th332",
+          "id": "1503"
         }
       }
     },
@@ -1722,8 +1737,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1678"
+          "thesaurus": "th332",
+          "id": "1496"
         }
       }
     },
@@ -1732,8 +1747,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1679"
+          "thesaurus": "th332",
+          "id": "1497"
         }
       }
     },
@@ -1742,8 +1757,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1680"
+          "thesaurus": "th332",
+          "id": "1498"
         }
       },
       "list": {
@@ -1756,8 +1771,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1681"
+          "thesaurus": "th332",
+          "id": "1499"
         }
       }
     },
@@ -1766,8 +1781,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1687"
+          "thesaurus": "th332",
+          "id": "1505"
         }
       },
       "list": {
@@ -1780,8 +1795,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1688"
+          "thesaurus": "th332",
+          "id": "1506"
         }
       },
       "list": {
@@ -1794,8 +1809,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1689"
+          "thesaurus": "th332",
+          "id": "1507"
         }
       }
     },
@@ -1804,8 +1819,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1690"
+          "thesaurus": "th332",
+          "id": "1508"
         }
       }
     },
@@ -1814,8 +1829,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1691"
+          "thesaurus": "th332",
+          "id": "1509"
         }
       }
     },
@@ -1824,8 +1839,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1693"
+          "thesaurus": "th332",
+          "id": "1510"
         }
       }
     },
@@ -1840,8 +1855,8 @@
             "source": "documentation_1",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1698"
+                "thesaurus": "th332",
+                "id": "1515"
               }
             }
           },
@@ -1849,8 +1864,8 @@
             "source": "documentation_1",
             "field": {
               "concept": {
-                "thesaurus": "th337",
-                "id": "1699"
+                "thesaurus": "th332",
+                "id": "1516"
               }
             }
           }
@@ -1862,8 +1877,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1702"
+          "thesaurus": "th332",
+          "id": "1519"
         }
       },
       "list": {
@@ -1876,8 +1891,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1697"
+          "thesaurus": "th332",
+          "id": "1514"
         }
       }
     },
@@ -1886,8 +1901,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1696"
+          "thesaurus": "th332",
+          "id": "1513"
         }
       }
     },
@@ -1896,8 +1911,8 @@
       "source": "documentation_1",
       "field": {
         "concept": {
-          "thesaurus": "th337",
-          "id": "1692"
+          "thesaurus": "th332",
+          "id": "document.comments"
         }
       }
     }

@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StudyAnswersProjectorTest {
 
     private static final String IDENTIFIER_ID = "-801";
-    private static final String TYPE_ID = "-803";
+    private static final String METHOD_ID = "-804";
     private static final String DATE_ID = "-805";
     private static final String RECORDING_UNITS_ID = "-806";
     private static final String PLACE_ID = "-812";
@@ -35,7 +35,7 @@ class StudyAnswersProjectorTest {
         StudyDTO study = new StudyDTO();
         study.setId(1L);
         study.setIdentifier("ETU0001");
-        study.setType(concept(9L));
+        study.setMethod(concept(9L));
         study.setStudyDate(OffsetDateTime.parse("2026-10-14T10:00:00Z"));
         study.setTreatmentPlace("Laboratoire");
         RecordingUnitSummaryDTO unit = new RecordingUnitSummaryDTO();
@@ -46,10 +46,10 @@ class StudyAnswersProjectorTest {
 
     @Test
     void fieldById_findsTheSystemFieldsOfTheStudyTable() {
-        CustomField field = StudyAnswersProjector.fieldById(TYPE_ID);
+        CustomField field = StudyAnswersProjector.fieldById(METHOD_ID);
 
         assertThat(field).isNotNull();
-        assertThat(field.getValueBinding()).isEqualTo("type");
+        assertThat(field.getValueBinding()).isEqualTo("method");
         assertThat(StudyAnswersProjector.fieldById("nope")).isNull();
     }
 
@@ -57,17 +57,17 @@ class StudyAnswersProjectorTest {
     void resolveRequestedFieldIds_acceptsAllOrAKnownSubset() {
         assertThat(projector.resolveRequestedFieldIds(null)).isNull();
         assertThat(projector.resolveRequestedFieldIds(" ")).isNull();
-        assertThat(projector.resolveRequestedFieldIds("all")).contains(IDENTIFIER_ID, TYPE_ID, PLACE_ID);
-        assertThat(projector.resolveRequestedFieldIds(TYPE_ID + ", nope," + DATE_ID)).containsExactly(TYPE_ID, DATE_ID);
+        assertThat(projector.resolveRequestedFieldIds("all")).contains(IDENTIFIER_ID, METHOD_ID, PLACE_ID);
+        assertThat(projector.resolveRequestedFieldIds(METHOD_ID + ", nope," + DATE_ID)).containsExactly(METHOD_ID, DATE_ID);
     }
 
     @Test
     void collectConcepts_gathersTheConceptsOfTheRequestedFields() {
         StudyDTO study = study();
 
-        assertThat(projector.collectConcepts(List.of(study), Set.of(TYPE_ID))).containsExactly(study.getType());
+        assertThat(projector.collectConcepts(List.of(study), Set.of(METHOD_ID))).containsExactly(study.getMethod());
         assertThat(projector.collectConcepts(List.of(study), Set.of(DATE_ID))).isEmpty();
-        assertThat(projector.collectConcepts(null, Set.of(TYPE_ID))).isEmpty();
+        assertThat(projector.collectConcepts(null, Set.of(METHOD_ID))).isEmpty();
         assertThat(projector.collectConcepts(List.of(study), null)).isEmpty();
     }
 
@@ -76,15 +76,15 @@ class StudyAnswersProjectorTest {
         StudyDTO study = study();
 
         Map<Long, Map<String, Object>> projected = projector.project(List.of(study),
-                Set.of(IDENTIFIER_ID, TYPE_ID, DATE_ID, PLACE_ID, RECORDING_UNITS_ID), Map.of(9L, "Radiographie"));
+                Set.of(IDENTIFIER_ID, METHOD_ID, DATE_ID, PLACE_ID, RECORDING_UNITS_ID), Map.of(9L, "Microscopie"));
 
         Map<String, Object> answers = projected.get(1L);
         assertThat(answers).containsEntry(IDENTIFIER_ID, "ETU0001");
         assertThat(answers).containsEntry(PLACE_ID, "Laboratoire");
         assertThat(answers).containsEntry(DATE_ID, study.getStudyDate());
-        assertThat(answers.get(TYPE_ID)).isInstanceOfSatisfying(ResourceRef.class, ref -> {
+        assertThat(answers.get(METHOD_ID)).isInstanceOfSatisfying(ResourceRef.class, ref -> {
             assertThat(ref.resourceId()).isEqualTo("9");
-            assertThat(ref.label()).isEqualTo("Radiographie");
+            assertThat(ref.label()).isEqualTo("Microscopie");
         });
         // the links are references, whose list MultiValueAnswers cuts afterwards
         assertThat(answers.get(RECORDING_UNITS_ID)).isInstanceOf(List.class);
@@ -97,9 +97,9 @@ class StudyAnswersProjectorTest {
 
     @Test
     void project_skipsRowsWithoutIdAndEmptySelections() {
-        assertThat(projector.project(List.of(new StudyDTO()), Set.of(TYPE_ID), Map.of())).isEmpty();
+        assertThat(projector.project(List.of(new StudyDTO()), Set.of(METHOD_ID), Map.of())).isEmpty();
         assertThat(projector.project(List.of(study()), Set.of("nope"), Map.of())).isEmpty();
-        assertThat(projector.project(null, Set.of(TYPE_ID), Map.of())).isEmpty();
+        assertThat(projector.project(null, Set.of(METHOD_ID), Map.of())).isEmpty();
     }
 
     @Test
@@ -110,9 +110,9 @@ class StudyAnswersProjectorTest {
         project.setFullIdentifier("PRJ-3");
         study.setActionUnit(project);
 
-        Map<String, Object> answers = projector.projectOne(study, Map.of(9L, "Radiographie"));
+        Map<String, Object> answers = projector.projectOne(study, Map.of(9L, "Microscopie"));
 
-        assertThat(answers).containsKeys(IDENTIFIER_ID, TYPE_ID, DATE_ID, PLACE_ID);
+        assertThat(answers).containsKeys(IDENTIFIER_ID, METHOD_ID, DATE_ID, PLACE_ID);
         assertThat(answers.get("-802")).isInstanceOfSatisfying(ResourceRef.class,
                 ref -> assertThat(ref.label()).isEqualTo("PRJ-3"));
         assertThat(projector.projectOne(null, Map.of())).isEmpty();

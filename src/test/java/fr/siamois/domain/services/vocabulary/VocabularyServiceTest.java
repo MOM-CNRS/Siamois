@@ -68,7 +68,7 @@ class VocabularyServiceTest {
     void findDocumentationThesauriIn_shouldLabelTheThesauriOfTheScope() {
         vocabulary.setId(7L);
         vocabulary.setBaseUri("https://opentheso.huma-num.fr/opentheso/");
-        vocabulary.setExternalVocabularyId("th337");
+        vocabulary.setExternalVocabularyId("th230");
         VocabularyLabel label = new VocabularyLabel();
         label.setValue("Siamois test");
         ProfilePermissionService.SettingsScope scope =
@@ -80,7 +80,7 @@ class VocabularyServiceTest {
         List<DocumentationThesaurusInfo> result = vocabularyService.findDocumentationThesauriIn(scope, "fr");
 
         assertEquals(List.of(new DocumentationThesaurusInfo(7L,
-                new ThesaurusInfo("https://opentheso.huma-num.fr/opentheso/", "th337", "Siamois test", "fr"))), result);
+                new ThesaurusInfo("https://opentheso.huma-num.fr/opentheso/", "th230", "Siamois test", "fr"))), result);
     }
 
     @Test

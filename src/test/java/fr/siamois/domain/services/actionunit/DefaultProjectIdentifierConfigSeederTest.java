@@ -184,8 +184,11 @@ class DefaultProjectIdentifierConfigSeederTest {
         for (long id : new long[]{101L, 102L}) {
             verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.recordingUnits", true);
             verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.specimens", true);
+            verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, id, "study.field.treatmentType", false);
         }
-        // the treatment uses the columns of the SDA sheet (its type is the study type), the treated find being mandatory
+        // the treatment uses the columns of the SDA sheet, the treated find being mandatory
+        verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentType", true);
+        verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentType", true);
         verify(tableFieldConfigService).setFieldMandatory(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.specimens", true);
         verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.recordingUnits", false);
         verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 103L, "study.field.treatmentComments", true);

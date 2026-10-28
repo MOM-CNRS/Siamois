@@ -48,7 +48,7 @@ class CustomFieldSeederTest {
         // 1. Prepare Data
         Concept mainConcept = new Concept();
         Concept unitConcept = new Concept();
-        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th230", "123456");
 
         // Prepare DTO hierarchy for the Spec
         VocabularyDTO vocabDTO = new VocabularyDTO();
@@ -99,7 +99,7 @@ class CustomFieldSeederTest {
     @Test
     void seed_AlreadyExists() throws DatabaseDataInitException {
         Concept c = new Concept();
-        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th230", "123456");
         List<CustomFieldSeederSpec> toInsert = List.of(
                 new CustomFieldSeederSpec(CustomFieldText.class, true, "", key, "type", "", "", "")
         );
@@ -114,7 +114,7 @@ class CustomFieldSeederTest {
 
     @Test
     void seed_throw_ifConceptNotFound()  {
-        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th230", "123456");
         List<CustomFieldSeederSpec> toInsert = List.of(
                 new CustomFieldSeederSpec(CustomFieldText.class, true, "", key, "type", "", "", "")
         );
@@ -126,7 +126,7 @@ class CustomFieldSeederTest {
     @Test
     void seed_Create() throws DatabaseDataInitException {
         Concept c = new Concept();
-        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key =  new ConceptSeeder.ConceptKey("th230", "123456");
         List<CustomFieldSeederSpec> toInsert = List.of(
                 new CustomFieldSeederSpec(CustomFieldSelectOneFromFieldCode.class, true, "", key, "type", "", "", "")
         );
@@ -142,7 +142,7 @@ class CustomFieldSeederTest {
     @Test
     void findFieldOrThrow_returnsField() {
         Concept c = new Concept();
-        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th230", "123456");
         CustomFieldSeederSpec spec = new CustomFieldSeederSpec(CustomFieldText.class, true, "", key, "type", "", "", "");
         CustomFieldText expected = new CustomFieldText();
 
@@ -157,7 +157,7 @@ class CustomFieldSeederTest {
     @Test
     void findFieldOrThrow_throwsWhenFieldMissing() {
         Concept c = new Concept();
-        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th337", "123456");
+        ConceptSeeder.ConceptKey key = new ConceptSeeder.ConceptKey("th230", "123456");
         CustomFieldSeederSpec spec = new CustomFieldSeederSpec(CustomFieldText.class, true, "", key, "type", "", "", "");
 
         when(conceptSeeder.findConceptOrThrow(key)).thenReturn(c);

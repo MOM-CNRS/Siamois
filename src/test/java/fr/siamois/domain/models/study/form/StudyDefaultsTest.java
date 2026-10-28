@@ -52,8 +52,8 @@ class StudyDefaultsTest {
         assertTrue(treatment.isActive("specimens"));
         assertFalse(treatment.isActive("recordingUnits"));
         StudyForm.TREATMENT_BINDINGS.forEach(binding -> assertTrue(treatment.isActive(binding), binding));
-        // the reference's mandatory columns (the treatment type is the study's own type)
-        for (String mandatory : List.of("specimens", "reportCode", "treatmentStart", "treatmentPlace")) {
+        // the reference's mandatory columns
+        for (String mandatory : List.of("specimens", "treatmentType", "reportCode", "treatmentStart", "treatmentPlace")) {
             assertTrue(treatment.isMandatory(mandatory), mandatory);
         }
         // and its optional ones

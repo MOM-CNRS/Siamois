@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
  *     {"target":"UE.ref","source":"UE_1","concat":{"separator":"_","labelSeparator":": ","parts":[{"label":"…","source":"UE_1","field":Field} | {"literal":"…"}]}}
  *   ]
  * }
- * Concept = {"thesaurus":"th337","id":"1005","uri":"…"}
+ * Concept = {"thesaurus":"th332","id":"1005","uri":"…"}
  * Field   = {"concept":Concept,"property":"unit|comment"?} | {"column":"nom"} | "nom" (cœur commun)
  * ("property" : propriété imbriquée d'une mesure ; sans elle, la valeur — extension du profil Siamois)
  * </pre>

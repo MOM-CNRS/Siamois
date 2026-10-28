@@ -49,7 +49,7 @@ stocké et envoyé par son id interne, `{conceptId}` (chaîne), que le client co
 ### Règles actuellement définies (en code)
 
 Dans `RecordingUnitDetailsForm` : forme, profil et orientation d'érosion actifs si nature = « Erosion »
-(thésaurus **th252** sur la base de dev) ; interprétation = concepts liés à la
+(thésaurus **th252** sur la base de dev — `th230` ne matche rien) ; interprétation = concepts liés à la
 nature ; fermeture ≥ ouverture, TAQ ≥ TPQ, Z sup ≥ Z inf. Dans `ActionUnitDetailsForm` : fin ≥ début,
 ZMAX ≥ ZMIN.
 

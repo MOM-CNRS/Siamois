@@ -9,10 +9,10 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
-import java.util.Map;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
@@ -27,9 +27,11 @@ public abstract class StudyForm {
     private static final String LABEL_PREFIX = "study.field.";
     private static final String B_ACTION_UNIT = "actionUnit";
     private static final String B_TYPE = "type";
+    public static final String B_METHOD = "method";
     public static final String B_STUDY_DATE = "studyDate";
     public static final String B_RECORDING_UNITS = "recordingUnits";
     public static final String B_SPECIMENS = "specimens";
+    public static final String B_TREATMENT_TYPE = "treatmentType";
     public static final String B_TREATMENT_START = "treatmentStart";
     public static final String B_TREATMENT_END = "treatmentEnd";
 
@@ -38,31 +40,13 @@ public abstract class StudyForm {
 
     /** Bindings of the fields of the "traitement" sheet. */
     public static final List<String> TREATMENT_BINDINGS = List.of(
-            "reportCode", B_TREATMENT_START, B_TREATMENT_END,
+            B_TREATMENT_TYPE, "reportCode", B_TREATMENT_START, B_TREATMENT_END,
             "treatmentPlace", "treatmentManager", "treatmentIdentifier", "treatmentComments");
 
     protected StudyForm() {}
 
-    /** Concept of each field in the system thesaurus, by binding; a field the thesaurus does not describe has no concept yet. */
-    private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
-            Map.entry("TYPE", "1641"),
-            Map.entry("TYPETRAIT", "1641"),
-            Map.entry("actionUnit", "1642"),
-            Map.entry("recordingUnits", "1643"),
-            Map.entry("reportCode", "1645"),
-            Map.entry("specimens", "1644"),
-            Map.entry("treatmentComments", "1651"),
-            Map.entry("treatmentEnd", "1647"),
-            Map.entry("treatmentIdentifier", "1650"),
-            Map.entry("treatmentManager", "1649"),
-            Map.entry("treatmentPlace", "1648"),
-            Map.entry("treatmentStart", "1646"),
-            Map.entry("treatmentType", "1641"),
-            Map.entry("type", "1641"));
-
-    private static Concept concept(String binding) {
-        String id = CONCEPT_IDS.get(binding);
-        return id == null ? null : new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(id).build();
+    private static Concept concept(String externalId) {
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAST", externalId, "study." + externalId)).build();
     }
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {
@@ -123,6 +107,10 @@ public abstract class StudyForm {
             .build();
 
     @Transient
+    protected static final CustomFieldSelectOneFromFieldCode methodField =
+            one(-804L, B_METHOD, Study.METHOD_FIELD_CODE);
+
+    @Transient
     protected static final CustomFieldDateTime studyDateField = date(-805L, B_STUDY_DATE);
 
     // The links to the other entities: optional and multiple, written from the study's side.
@@ -147,6 +135,10 @@ public abstract class StudyForm {
 
     // The columns of the "traitement" sheet. code_OA_NAT and code_element_traite are not fields: they
     // are the project's operation code and the code of the linked find, read at export time.
+
+    @Transient
+    protected static final CustomFieldSelectOneFromFieldCode treatmentTypeField =
+            one(-808L, B_TREATMENT_TYPE, Study.TREATMENT_TYPE_FIELD_CODE);
 
     @Transient
     protected static final CustomFieldText reportCodeField = text(-809L, "reportCode", false);
@@ -179,9 +171,11 @@ public abstract class StudyForm {
                 SystemFieldSpec.hiddenReadOnly(identifierField),
                 SystemFieldSpec.hiddenReadOnly(actionUnitField),
                 SystemFieldSpec.hidden(typeField),
+                SystemFieldSpec.of(methodField),
                 SystemFieldSpec.of(studyDateField),
                 SystemFieldSpec.of(recordingUnitsField),
                 SystemFieldSpec.of(specimensField),
+                SystemFieldSpec.of(treatmentTypeField),
                 SystemFieldSpec.of(reportCodeField),
                 SystemFieldSpec.of(treatmentStartField),
                 SystemFieldSpec.of(treatmentEndField),
