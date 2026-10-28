@@ -39,8 +39,8 @@ class UnitDefinitionInitializerTest {
     @BeforeEach
     void setUp() throws Exception {
         vocabulary = new Vocabulary();
-        when(thesaurusSeeder.seed(List.of(new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th252"))))
-                .thenReturn(Map.of("th252", vocabulary));
+        when(thesaurusSeeder.seed(List.of(new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th337"))))
+                .thenReturn(Map.of("th337", vocabulary));
     }
 
     /**
@@ -48,7 +48,7 @@ class UnitDefinitionInitializerTest {
      * create the metre went away with the default forms dataset.
      */
     @Test
-    @DisplayName("Startup gives the instance the metre, in the thesaurus the units belong to")
+    @DisplayName("Startup gives the instance the metre, in the units catalogue")
     void initialize_seedsTheMetre() throws Exception {
         initializer.initialize();
 
@@ -58,8 +58,6 @@ class UnitDefinitionInitializerTest {
             assertThat(metre.getDimension()).isEqualTo(UnitDefinition.Dimension.LENGTH);
             assertThat(metre.getFactorToBase()).isEqualTo(1.0);
             assertThat(metre.isSystemBase()).isTrue();
-            assertThat(metre.getConcept().getExternalId()).isEqualTo("4289327");
-            assertThat(metre.getConcept().getVocabulary().getExternalVocabularyId()).isEqualTo("th252");
         });
     }
 

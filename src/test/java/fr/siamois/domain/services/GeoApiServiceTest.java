@@ -85,7 +85,7 @@ class GeoApiServiceTest {
         when(restTemplate.getForObject(uri, CommuneListResponse.class))
                 .thenReturn(apiResponse);
 
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("th252", "4287976")).thenReturn(Optional.of(mockConcept));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th337", "1164")).thenReturn(Optional.of(mockConcept));
         when(conceptMapper.convert(mockConcept)).thenReturn(mockConceptDTO);
 
         // Act

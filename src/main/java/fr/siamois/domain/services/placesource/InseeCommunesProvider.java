@@ -19,8 +19,8 @@ import java.util.Set;
 public class InseeCommunesProvider implements PlaceSourceProvider {
 
     public static final String SOURCE_ID = "INSEE";
-    private static final String THESAURUS = "th252";
-    private static final String COMMUNE_CONCEPT = "4287976";
+    private static final String THESAURUS = "th337";
+    private static final String COMMUNE_CONCEPT = "1164";
 
     private final GeoApiService geoApiService;
     private final ConceptRepository conceptRepository;

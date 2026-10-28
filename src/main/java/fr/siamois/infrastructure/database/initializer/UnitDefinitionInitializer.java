@@ -22,7 +22,7 @@ import java.util.List;
 public class UnitDefinitionInitializer implements DatabaseInitializer {
 
     private static final String THESAURUS_BASE_URI = "https://thesaurus.mom.fr";
-    private static final String UNITS_VOCABULARY_ID = "th252";
+    private static final String UNITS_VOCABULARY_ID = "th337";
 
     private final ThesaurusSeeder thesaurusSeeder;
     private final UnitDefinitionSeeder unitDefinitionSeeder;
@@ -34,7 +34,7 @@ public class UnitDefinitionInitializer implements DatabaseInitializer {
      * {@code ContainerForm}, {@code SpecimenForm}), matched on symbol and dimension.
      */
     private static final List<UnitDefinitionDTO> UNITS = List.of(
-            unit("4289327", "Mètres", "m", UnitDefinition.Dimension.LENGTH, 1.0, true),
+            unit(null, "Mètres", "m", UnitDefinition.Dimension.LENGTH, 1.0, true),
             unit(null, "Centimètre", "cm", UnitDefinition.Dimension.LENGTH, 0.01, false),
             unit(null, "Millimètre", "mm", UnitDefinition.Dimension.LENGTH, 0.001, false),
             unit(null, "Kilomètre", "km", UnitDefinition.Dimension.LENGTH, 1000.0, false),
