@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset siamois:institution_identifier_nextval runOnChange:true splitStatements:false
+
 CREATE OR REPLACE FUNCTION institution_identifier_nextval(
     p_institution_id BIGINT,
     p_form_config_id BIGINT,

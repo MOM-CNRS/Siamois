@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GlobalSearchSqlTest {
 
     private String sql() throws IOException {
-        try (var stream = getClass().getResourceAsStream("/pgplsql/global_search.sql")) {
+        try (var stream = getClass().getResourceAsStream("/changelog/pgplsql/global_search.sql")) {
             assertThat(stream).isNotNull();
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }

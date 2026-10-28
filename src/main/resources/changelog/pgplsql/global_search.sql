@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset siamois:global_search runOnChange:true splitStatements:false
+
 DROP FUNCTION IF EXISTS global_search;
 
 -- Recherche globale sectionnée (barre du haut) : au plus p_limit lignes par type d'entité, avec le

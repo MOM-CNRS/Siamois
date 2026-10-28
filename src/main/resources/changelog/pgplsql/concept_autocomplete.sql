@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset siamois:concept_autocomplete runOnChange:true splitStatements:false
+
 DROP FUNCTION IF EXISTS concept_autocomplete;
 DROP FUNCTION IF EXISTS concept_autocomplete_related;
 DROP FUNCTION IF EXISTS concept_autocomplete_branch;

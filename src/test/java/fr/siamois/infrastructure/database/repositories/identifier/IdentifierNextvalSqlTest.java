@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class IdentifierNextvalSqlTest {
     @Test
     void function_shouldAllocateThroughOneAtomicUpsert() throws IOException {
-        try (var stream = getClass().getResourceAsStream("/pgplsql/identifier_nextval.sql")) {
+        try (var stream = getClass().getResourceAsStream("/changelog/pgplsql/identifier_nextval.sql")) {
             assertThat(stream).isNotNull();
             String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             assertThat(sql).contains("ON CONFLICT (fk_action_unit_id, fk_form_config_id, canonical_key)");
@@ -33,7 +33,7 @@ class IdentifierNextvalSqlTest {
     }
 
     private String sql() throws IOException {
-        try (var stream = getClass().getResourceAsStream("/pgplsql/identifier_nextval.sql")) {
+        try (var stream = getClass().getResourceAsStream("/changelog/pgplsql/identifier_nextval.sql")) {
             assertThat(stream).isNotNull();
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }
@@ -41,7 +41,7 @@ class IdentifierNextvalSqlTest {
 
     @Test
     void institutionFunction_shouldAllocateThroughOneAtomicUpsertOnTheInstitutionScope() throws IOException {
-        try (var stream = getClass().getResourceAsStream("/pgplsql/institution_identifier_nextval.sql")) {
+        try (var stream = getClass().getResourceAsStream("/changelog/pgplsql/institution_identifier_nextval.sql")) {
             assertThat(stream).isNotNull();
             String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             assertThat(sql).contains("ON CONFLICT (fk_institution_id, fk_form_config_id, canonical_key)");
