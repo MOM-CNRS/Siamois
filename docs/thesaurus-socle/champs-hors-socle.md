@@ -16,6 +16,14 @@ Pour les rendre exportables, dans l'ordre :
 4. rebrancher la règle dans les modèles livrés `export-templates/*.json` et retirer l'exception des tests
    `NationalTemplateResourceTest` et `UnderwaterTemplateResourceTest`.
 
+### Géométrie (`geom`, tables UE, projet, mobilier)
+
+Le champ système `geom` (lecture seule, affiché en WKT) existe sur les enregistrements, les projets, les lieux et le mobilier. Seul le lieu a un
+concept dans le thésaurus (`SIASU.geometry`). Pour les trois autres, il faut ajouter `geometry` (notation `SIAMOISFIELD#SIARU.geometry`,
+`SIAAU.geometry`, `SIAS.geometry`) dans `generate_thesaurus_socle.py`, importer le RDF, puis écrire l'identifiant du concept dans le champ
+(`RecordingUnitForm.GEOM_FIELD`, `ActionUnitForm.GEOM_FIELD`, `SpecimenForm.geomField`). Un modèle d'export peut ensuite lire le WKT, ou
+`centroid.x` / `centroid.y` en propriété du champ.
+
 ### Étude (`StudyForm`, table `SIAST`)
 
 | Binding | Remarque |

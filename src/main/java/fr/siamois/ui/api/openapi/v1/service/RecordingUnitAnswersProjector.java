@@ -1,5 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
@@ -202,7 +204,7 @@ public class RecordingUnitAnswersProjector {
             return null;
         }
         if (field instanceof CustomFieldText) {
-            return String.valueOf(raw);
+            return raw instanceof GeometryDTO geometry ? GeometryText.of(geometry) : String.valueOf(raw);
         }
         if (field instanceof CustomFieldInteger) {
             return raw instanceof Number n ? n.intValue() : null;

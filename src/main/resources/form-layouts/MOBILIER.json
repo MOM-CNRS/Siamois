@@ -26,6 +26,10 @@
       "binding" : "objectOrLot",
       "width" : "QUARTER"
     }, {
+      "fieldId" : -438,
+      "binding" : "geom",
+      "width" : "FULL"
+    }, {
       "fieldId" : -406,
       "binding" : "isolationNumber",
       "width" : "QUARTER"

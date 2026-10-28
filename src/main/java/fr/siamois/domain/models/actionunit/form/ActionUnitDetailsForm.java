@@ -93,6 +93,15 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                                         .build())
                                                 .build()
                                 )
+                                .addRow(
+                                        new CustomRowUiDto.Builder()
+                                                .addColumn(new CustomColUiDto.Builder()
+                                                        .readOnly(true)
+                                                        .width(ColumnWidth.STANDARD)
+                                                        .field(GEOM_FIELD)
+                                                        .build())
+                                                .build()
+                                )
 
                                 .addRow(
                                         new CustomRowUiDto.Builder()

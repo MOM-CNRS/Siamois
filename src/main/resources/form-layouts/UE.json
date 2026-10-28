@@ -107,6 +107,10 @@
       "fieldId" : -321,
       "binding" : "comments",
       "width" : "FULL"
+    }, {
+      "fieldId" : -332,
+      "binding" : "geom",
+      "width" : "FULL"
     } ]
   }, {
     "label" : "recordingunit.panel.chronology",

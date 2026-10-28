@@ -186,6 +186,17 @@ public abstract class ActionUnitForm {
             .concept(FIELD_END_DATE_CONCEPT)
             .build();
 
+    /** The project's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .valueBinding("geom")
+            .id(-140L)
+            .build();
+
     public static final CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()
             .label("common.label.mainLocation")
             .isSystemField(true)

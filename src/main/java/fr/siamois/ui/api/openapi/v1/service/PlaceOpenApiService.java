@@ -273,6 +273,7 @@ public class PlaceOpenApiService {
         answers.put(String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId()), dto.getLocalityName());
         answers.put(String.valueOf(SpatialUnit.SHOM_MAP_NUMBER_FIELD.getId()), dto.getShomMapNumber());
         answers.put(String.valueOf(SpatialUnit.COMMENTS_FIELD.getId()), dto.getComments());
+        answers.put(String.valueOf(SpatialUnit.GEOM_FIELD.getId()), fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText.of(dto.getGeom()));
         if (dto.getType() != null && resolvedType != null) {
             answers.put(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId()),
                     new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));

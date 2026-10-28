@@ -445,4 +445,30 @@ class ExportEngineTest {
             assertThat(s.getRow(1).getCell(2).getStringCellValue()).isEqualTo("fragile");
         }
     }
+
+    @Test
+    void geometryProperty_readsTheCentroid_theWholeGeometryBeingItsWkt() throws IOException {
+        stubFieldReads();
+        org.locationtech.jts.geom.GeometryFactory factory = new org.locationtech.jts.geom.GeometryFactory();
+        org.locationtech.jts.geom.Point point = factory.createPoint(new org.locationtech.jts.geom.Coordinate(2.5, 48.5));
+        org.locationtech.jts.geom.Polygon square = factory.createPolygon(new org.locationtech.jts.geom.Coordinate[]{
+                new org.locationtech.jts.geom.Coordinate(0, 0), new org.locationtech.jts.geom.Coordinate(4, 0),
+                new org.locationtech.jts.geom.Coordinate(4, 2), new org.locationtech.jts.geom.Coordinate(0, 2),
+                new org.locationtech.jts.geom.Coordinate(0, 0)});
+        rows(UE, row(Map.of("1", List.of(point))), row(Map.of("1", List.of(square))));
+
+        ExportEngine.Result result = run(template(null, sheet("UE", false, List.of(), List.of(UE),
+                column("wkt", OutputType.TEXT, direct(CODE, null)),
+                column("x", OutputType.TEXT, new DirectRule(List.of(), new ConceptField(CODE, "centroid.x"), List.of(), null)),
+                column("y", OutputType.TEXT, new DirectRule(List.of(), new ConceptField(CODE, "centroid.y"), List.of(), null)))));
+
+        try (Workbook wb = open(result)) {
+            Sheet s = wb.getSheet("UE");
+            assertThat(s.getRow(1).getCell(0).getStringCellValue()).isEqualTo("POINT (2.5 48.5)");
+            assertThat(s.getRow(1).getCell(1).getStringCellValue()).isEqualTo("2.5");
+            assertThat(s.getRow(1).getCell(2).getStringCellValue()).isEqualTo("48.5");
+            assertThat(s.getRow(2).getCell(1).getStringCellValue()).isEqualTo("2");
+            assertThat(s.getRow(2).getCell(2).getStringCellValue()).isEqualTo("1");
+        }
+    }
 }

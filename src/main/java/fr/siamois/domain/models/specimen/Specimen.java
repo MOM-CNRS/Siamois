@@ -257,6 +257,11 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @Column(name = "validity_date")
     protected OffsetDateTime validityDate;
 
+    /** Where the find was found: any geometry (usually a point). */
+    @Column(name = "geom", columnDefinition = "geometry")
+    @JsonIgnore
+    protected org.locationtech.jts.geom.Geometry geom;
+
     /** Whether the record is a lot (checked) or an individual object (unchecked): {@code objet-lot}. */
     @Column(name = "object_or_lot")
     protected Boolean objectOrLot;

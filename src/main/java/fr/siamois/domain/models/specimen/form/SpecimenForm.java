@@ -565,6 +565,17 @@ public abstract class SpecimenForm {
             .concept(symbolicConcept("storageLocation"))
             .build();
 
+    /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldText geomField = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .id(-438L)
+            .valueBinding("geom")
+            .build();
+
     @Transient
     @JsonIgnore
     protected static CustomFieldBoolean objectOrLotField = CustomFieldBoolean.builder()
@@ -622,6 +633,7 @@ public abstract class SpecimenForm {
             SystemFieldSpec.of(validityDateField),
             SystemFieldSpec.of(storageLocationField),
             SystemFieldSpec.of(objectOrLotField),
-            SystemFieldSpec.of(samplingNatureField));
+            SystemFieldSpec.of(samplingNatureField),
+            SystemFieldSpec.readOnly(geomField));
     }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.dto.entity;
 
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -53,6 +54,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private OffsetDateTime validityDate;
     private String storageLocation;
     private Boolean objectOrLot;
+    private GeometryDTO geom;
     private ConceptDTO samplingNature;
 
     /**
@@ -92,6 +94,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
         validityDate = original.getValidityDate();
         storageLocation = original.getStorageLocation();
         objectOrLot = original.getObjectOrLot();
+        geom = original.getGeom();
         samplingNature = original.getSamplingNature();
         if (original.getWeight() != null) {
             MeasurementAnswerDTO w = original.getWeight();
@@ -137,6 +140,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "validityDate",
                 "storageLocation",
                 "objectOrLot",
+                "geom",
                 "samplingNature"
         );
     }

@@ -249,11 +249,26 @@ public class ExportEngine {
             } else if (value instanceof FullAddress address) {
                 Object picked = addressPart(address, field.property());
                 if (picked != null) out.add(picked);
+            } else if (value instanceof org.locationtech.jts.geom.Geometry geometry) {
+                Object picked = geometryPart(geometry, field.property());
+                if (picked != null) out.add(picked);
             } else if (value != null) {
                 where.warnings().add(new ExportWarning(ExportWarning.Code.UNSUPPORTED_VALUE, where.sheet(), where.column(), field.property()));
             }
         }
         return out;
+    }
+
+    /** Coordonnée du centroïde d'une géométrie : {@code centroid.x} ou {@code centroid.y}. */
+    @Nullable
+    private static Object geometryPart(org.locationtech.jts.geom.Geometry geometry, @Nullable String property) {
+        if (geometry.isEmpty()) return null;
+        org.locationtech.jts.geom.Point centroid = geometry.getCentroid();
+        return switch (property == null ? "" : property) {
+            case "centroid.x" -> centroid.getX();
+            case "centroid.y" -> centroid.getY();
+            default -> null;
+        };
     }
 
     /** Partie d'une adresse : {@code street}, {@code postcode}, {@code city}, {@code latitude}, {@code longitude}. */

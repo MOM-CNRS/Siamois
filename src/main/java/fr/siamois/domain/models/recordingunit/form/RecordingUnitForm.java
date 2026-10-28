@@ -353,6 +353,17 @@ public abstract class RecordingUnitForm {
             .concept(INTERPRETATION_CONCEPT)
             .build();
 
+    /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    @Transient
+    @JsonIgnore
+    protected static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
+            .label("common.field.geometry")
+            .isSystemField(true)
+            .isTextArea(true)
+            .id(-332L)
+            .valueBinding("geom")
+            .build();
+
     @Transient
     @JsonIgnore
     protected static final CustomFieldSelectMultiplePerson CONTRIBUTORS_FIELD = CustomFieldSelectMultiplePerson.builder()
@@ -622,6 +633,7 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(OPENING_DATE_FIELD),
             SystemFieldSpec.of(CLOSING_DATE_FIELD),
             SystemFieldSpec.of(AUTHOR_FIELD),
-            SystemFieldSpec.of(CONTRIBUTORS_FIELD));
+            SystemFieldSpec.of(CONTRIBUTORS_FIELD),
+            SystemFieldSpec.readOnly(GEOM_FIELD));
     }
 }
