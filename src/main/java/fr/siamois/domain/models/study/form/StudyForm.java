@@ -143,7 +143,7 @@ public abstract class StudyForm {
     // are the project's operation code and the code of the linked find, read at export time.
 
     @Transient
-    protected static final CustomFieldText reportCodeField = text(-809L, "reportCode", false);
+    protected static final CustomFieldText reportCodeField = text(-809L, B_REPORT_CODE, false);
 
     @Transient
     protected static final CustomFieldDateTime treatmentStartField = date(-810L, B_TREATMENT_START);
@@ -152,16 +152,16 @@ public abstract class StudyForm {
     protected static final CustomFieldDateTime treatmentEndField = date(-811L, B_TREATMENT_END);
 
     @Transient
-    protected static final CustomFieldText treatmentPlaceField = text(-812L, "treatmentPlace", false);
+    protected static final CustomFieldText treatmentPlaceField = text(-812L, B_TREATMENT_PLACE, false);
 
     @Transient
-    protected static final CustomFieldText treatmentManagerField = text(-813L, "treatmentManager", false);
+    protected static final CustomFieldText treatmentManagerField = text(-813L, B_TREATMENT_MANAGER, false);
 
     @Transient
-    protected static final CustomFieldText treatmentIdentifierField = text(-814L, "treatmentIdentifier", false);
+    protected static final CustomFieldText treatmentIdentifierField = text(-814L, B_TREATMENT_IDENTIFIER, false);
 
     @Transient
-    protected static final CustomFieldText treatmentCommentsField = text(-815L, "treatmentComments", true);
+    protected static final CustomFieldText treatmentCommentsField = text(-815L, B_TREATMENT_COMMENTS, true);
 
     /**
      * The table's system fields, in their default order, with the properties intrinsic to each.
