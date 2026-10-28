@@ -257,6 +257,15 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @Column(name = "validity_date")
     protected OffsetDateTime validityDate;
 
+    /** Whether the record is a lot (checked) or an individual object (unchecked): {@code objet-lot}. */
+    @Column(name = "object_or_lot")
+    protected Boolean objectOrLot;
+
+    /** Samples: what the sample is made of ({@code nature_prelevement}). */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_sampling_nature")
+    protected Concept samplingNature;
+
     /** Where the find is kept when it is not physically handed over to the State. */
     @Column(name = "storage_location", length = 1000)
     protected String storageLocation;

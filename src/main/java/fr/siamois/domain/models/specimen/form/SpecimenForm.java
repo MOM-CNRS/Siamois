@@ -22,6 +22,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.Transient;
 
 import java.util.List;
+import java.util.Map;
 
 import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 
@@ -452,8 +453,26 @@ public abstract class SpecimenForm {
 
     // ----------- Fields of the national report inventory (no concept in the system thesaurus yet)
 
+    /** Concept of each of these fields in the system thesaurus, by binding. */
+    private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
+            Map.entry("objectOrLot", "1388"),
+            Map.entry("samplingNature", "1401"),
+            Map.entry("sanitaryState", "1413"),
+            Map.entry("sanitaryAlert", "1414"),
+            Map.entry("transferStatus", "1415"),
+            Map.entry("selectiveConservation", "1416"),
+            Map.entry("selectiveConservationComment", "1417"),
+            Map.entry("particularInterest", "1418"),
+            Map.entry("studyPotential", "1419"),
+            Map.entry("studyPotentialComment", "1420"),
+            Map.entry("samplingPurpose", "1421"),
+            Map.entry("preservationCondition", "1422"),
+            Map.entry("validityDate", "1423"),
+            Map.entry("storageLocation", "1424"));
+
     private static Concept symbolicConcept(String binding) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("specimen." + binding).build();
+        String id = CONCEPT_IDS.getOrDefault(binding, "specimen." + binding);
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(id).build();
     }
 
     private static CustomFieldText textArea(long id, String binding) {
@@ -546,6 +565,21 @@ public abstract class SpecimenForm {
             .concept(symbolicConcept("storageLocation"))
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldBoolean objectOrLotField = CustomFieldBoolean.builder()
+            .label("specimen.field.objectOrLot")
+            .isSystemField(true)
+            .id(-436L)
+            .valueBinding("objectOrLot")
+            .concept(symbolicConcept("objectOrLot"))
+            .build();
+
+    @Transient
+    @JsonIgnore
+    protected static CustomFieldSelectOneFromFieldCode samplingNatureField =
+            selectOne(-437L, "samplingNature", Specimen.SAMPLING_NATURE_FIELD);
+
     /**
      * The table's system fields, in their default order, with the properties intrinsic to each.
      * This is the field set everything reads; layouts (groups, order, widths) live in configuration.
@@ -586,6 +620,8 @@ public abstract class SpecimenForm {
             SystemFieldSpec.of(samplingPurposeField),
             SystemFieldSpec.of(preservationConditionField),
             SystemFieldSpec.of(validityDateField),
-            SystemFieldSpec.of(storageLocationField));
+            SystemFieldSpec.of(storageLocationField),
+            SystemFieldSpec.of(objectOrLotField),
+            SystemFieldSpec.of(samplingNatureField));
     }
 }

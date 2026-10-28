@@ -34,6 +34,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     protected Boolean treeMatch;
     protected OffsetDateTime openingDate;
     protected OffsetDateTime closingDate;
+    protected ConceptDTO nature;
     protected ConceptDTO geomorphologicalCycle;
     protected ConceptDTO geomorphologicalAgent;
     protected ConceptDTO normalizedInterpretation;
@@ -97,7 +98,7 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         return List.of("creationTime", "openingDate", "closingDate", "description", "identifier",
                 "contributors", "type", "secondaryType", "thirdType", "actionUnit", "spatialUnit",
                 "parents", "children", "comments", "zInf", "zSup",
-                "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
+                "nature", "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
                 "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier", "phases");
     }

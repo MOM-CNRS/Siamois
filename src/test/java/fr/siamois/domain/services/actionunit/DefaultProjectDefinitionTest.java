@@ -27,15 +27,24 @@ class DefaultProjectDefinitionTest {
     }
 
     @Test
-    void recordingUnitsStartWithUsFaitAndEnsemble_eachWithItsOwnIdentifierFormat() {
+    void recordingUnitsListUsFaitAndEnsembleFirst_eachWithItsOwnIdentifierFormat() {
         DefaultProjectDefinition.Table ue = definition.tables().stream()
                 .filter(table -> table.table() == ConfigurableTable.UE).findFirst().orElseThrow();
 
-        assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::label).containsExactly("US", "Fait", "Ensemble");
+        assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::label).startsWith("US", "Fait", "Ensemble");
         assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::identifierFormat)
-                .containsExactly("US{NUM_UE:000}", "F{NUM_UE:000}", "ENS{NUM_UE:000}");
+                .startsWith("US{NUM_UE:000}", "F{NUM_UE:000}", "ENS{NUM_UE:000}");
         assertThat(ue.types().get(0).lists()).containsKeys("SIARU.GEOMORPHO", "SIARU.INTERPRETATION");
         assertThat(ue.types().get(0).listNames()).containsOnlyKeys(ue.types().get(0).lists().keySet().toArray(String[]::new));
+    }
+
+    @Test
+    void everyTypeHasItsOwnIdentifierPrefix_uniqueInItsTable() {
+        assertThat(definition.tables()).allSatisfy(table -> {
+            assertThat(table.types()).allSatisfy(type -> assertThat(type.identifierFormat())
+                    .matches("^[A-Z0-9]+\\{NUM_[A-Z_]+:0+\\}$"));
+            assertThat(table.types()).extracting(type -> type.identifierFormat().substring(0, type.identifierFormat().indexOf('{'))).doesNotHaveDuplicates();
+        });
     }
 
     @Test

@@ -123,6 +123,12 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "end_date")
     protected OffsetDateTime endDate;
 
+    @Column(name = "field_begin_date")
+    protected OffsetDateTime fieldBeginDate;
+
+    @Column(name = "field_end_date")
+    protected OffsetDateTime fieldEndDate;
+
     @NotNull
     @Column(name = "name", nullable = false)
     protected String name;

@@ -43,6 +43,77 @@
             "SIARU.GEOMORPHO": "Enregistrement · Cycle géomorphologique — Ensemble  [SIARU.GEOMORPHO @ SIARU.TYPE:ensemble]",
             "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Ensemble  [SIARU.INTERPRETATION @ SIARU.TYPE:ensemble]"
           }
+        },
+        {
+          "label": "UF",
+          "concept": "1202",
+          "identifierFormat": "UF{NUM_UE:000}"
+        },
+        {
+          "label": "Sépulture",
+          "concept": "1203",
+          "identifierFormat": "SEP{NUM_UE:000}",
+          "lists": {
+            "SIARU.INTERPRETATION": "g110"
+          },
+          "listNames": {
+            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Sépulture  [SIARU.INTERPRETATION @ SIARU.TYPE:sepulture]"
+          }
+        },
+        {
+          "label": "Sondage",
+          "concept": "1204",
+          "identifierFormat": "SD{NUM_UE:000}"
+        },
+        {
+          "label": "Tranchée",
+          "concept": "1205",
+          "identifierFormat": "TR{NUM_UE:000}"
+        },
+        {
+          "label": "Zone",
+          "concept": "1206",
+          "identifierFormat": "Z{NUM_UE:000}"
+        },
+        {
+          "label": "Secteur",
+          "concept": "1207",
+          "identifierFormat": "SECT{NUM_UE:000}"
+        },
+        {
+          "label": "Carré",
+          "concept": "1208",
+          "identifierFormat": "CAR{NUM_UE:000}"
+        },
+        {
+          "label": "Log",
+          "concept": "1209",
+          "identifierFormat": "LOG{NUM_UE:000}"
+        },
+        {
+          "label": "USlog",
+          "concept": "1210",
+          "identifierFormat": "USLOG{NUM_UE:000}"
+        },
+        {
+          "label": "Unité artificielle",
+          "concept": "1211",
+          "identifierFormat": "UA{NUM_UE:000}"
+        },
+        {
+          "label": "Passe mécanique",
+          "concept": "1212",
+          "identifierFormat": "PM{NUM_UE:000}"
+        },
+        {
+          "label": "Nettoyage",
+          "concept": "1213",
+          "identifierFormat": "NET{NUM_UE:000}"
+        },
+        {
+          "label": "Fenêtre de fouille",
+          "concept": "1214",
+          "identifierFormat": "FEN{NUM_UE:000}"
         }
       ]
     },
@@ -53,6 +124,7 @@
         {
           "label": "Céramique",
           "concept": "1425",
+          "identifierFormat": "CER{NUM_MOBILIER:000}",
           "lists": {
             "SIAS.CLASS": "g119",
             "SIAS.INTERPRETATION": "g126",
@@ -69,6 +141,7 @@
         {
           "label": "Métal",
           "concept": "1426",
+          "identifierFormat": "MET{NUM_MOBILIER:000}",
           "lists": {
             "SIAS.CLASS": "g121",
             "SIAS.INTERPRETATION": "g127",
@@ -85,6 +158,7 @@
         {
           "label": "Industrie lithique",
           "concept": "1427",
+          "identifierFormat": "LIT{NUM_MOBILIER:000}",
           "lists": {
             "SIAS.CLASS": "g122",
             "SIAS.INTERPRETATION": "g128",
@@ -101,6 +175,7 @@
         {
           "label": "Verre",
           "concept": "1428",
+          "identifierFormat": "VER{NUM_MOBILIER:000}",
           "lists": {
             "SIAS.CLASS": "g123",
             "SIAS.INTERPRETATION": "g129",
@@ -117,6 +192,7 @@
         {
           "label": "Faune",
           "concept": "1429",
+          "identifierFormat": "FAU{NUM_MOBILIER:000}",
           "lists": {
             "SIAS.CLASS": "g124",
             "SIAS.INTERPRETATION": "g130",
@@ -129,6 +205,51 @@
             "SIAS.MATIERE": "Mobilier · Matière — Faune  [SIAS.MATIERE @ SIAS.CAT:faune]",
             "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Faune  [SIAS.SANITARYALERT @ SIAS.CAT:faune]"
           }
+        },
+        {
+          "label": "Terre cuite architecturale",
+          "concept": "1430",
+          "identifierFormat": "TCA{NUM_MOBILIER:000}",
+          "lists": {
+            "SIAS.CLASS": "g120",
+            "SIAS.INTERPRETATION": "g132",
+            "SIAS.MATIERE": "g112",
+            "SIAS.SANITARYALERT": "g145"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Terre cuite architecturale  [SIAS.CLASS @ SIAS.CAT:tca]",
+            "SIAS.INTERPRETATION": "Mobilier · Détermination — Terre cuite architecturale  [SIAS.INTERPRETATION @ SIAS.CAT:tca]",
+            "SIAS.MATIERE": "Mobilier · Matière — Terre cuite architecturale  [SIAS.MATIERE @ SIAS.CAT:tca]",
+            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Terre cuite architecturale  [SIAS.SANITARYALERT @ SIAS.CAT:tca]"
+          }
+        },
+        {
+          "label": "Vestige anthropobiologique (VAB)",
+          "concept": "1431",
+          "identifierFormat": "VAB{NUM_MOBILIER:000}",
+          "lists": {
+            "SIAS.CLASS": "g125",
+            "SIAS.INTERPRETATION": "g131",
+            "SIAS.MATIERE": "g117",
+            "SIAS.SANITARYALERT": "g146"
+          },
+          "listNames": {
+            "SIAS.CLASS": "Mobilier · Classe — Vestige anthropobiologique (VAB)  [SIAS.CLASS @ SIAS.CAT:vab]",
+            "SIAS.INTERPRETATION": "Mobilier · Détermination — Vestige anthropobiologique (VAB)  [SIAS.INTERPRETATION @ SIAS.CAT:vab]",
+            "SIAS.MATIERE": "Mobilier · Matière — Vestige anthropobiologique (VAB)  [SIAS.MATIERE @ SIAS.CAT:vab]",
+            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Vestige anthropobiologique (VAB)  [SIAS.SANITARYALERT @ SIAS.CAT:vab]"
+          }
+        },
+        {
+          "label": "Prélèvement",
+          "concept": "1432",
+          "identifierFormat": "PRE{NUM_MOBILIER:000}",
+          "lists": {
+            "SIAS.MATIERE": "g118"
+          },
+          "listNames": {
+            "SIAS.MATIERE": "Mobilier · Matière — Prélèvement  [SIAS.MATIERE @ SIAS.CAT:prelevement]"
+          }
         }
       ]
     },
@@ -138,19 +259,23 @@
       "types": [
         {
           "label": "Phase d'occupation",
-          "concept": "1865"
+          "concept": "1865",
+          "identifierFormat": "OCC{NUM_PHASE:000}"
         },
         {
           "label": "Phase de construction",
-          "concept": "1866"
+          "concept": "1866",
+          "identifierFormat": "CON{NUM_PHASE:000}"
         },
         {
           "label": "Phase d'aménagement ou de transformation",
-          "concept": "1867"
+          "concept": "1867",
+          "identifierFormat": "AME{NUM_PHASE:000}"
         },
         {
           "label": "Phase d'abandon ou de destruction",
-          "concept": "1868"
+          "concept": "1868",
+          "identifierFormat": "ABA{NUM_PHASE:000}"
         }
       ]
     },
@@ -159,16 +284,79 @@
       "typeCode": "SIAC.TYPE",
       "types": [
         {
+          "label": "palette",
+          "concept": "1838",
+          "identifierFormat": "PAL{NUM_CONTAINER:000}"
+        },
+        {
           "label": "caisse norme Europe",
-          "concept": "1839"
+          "concept": "1839",
+          "identifierFormat": "CAI{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "boîte hermétique transparente",
+          "concept": "1840",
+          "identifierFormat": "BHT{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "chemise",
+          "concept": "1841",
+          "identifierFormat": "CHE{NUM_CONTAINER:000}"
         },
         {
           "label": "boîte à archives",
-          "concept": "1842"
+          "concept": "1842",
+          "identifierFormat": "BAR{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "carton à dessins",
+          "concept": "1843",
+          "identifierFormat": "CDE{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "cassette audio",
+          "concept": "1844",
+          "identifierFormat": "CAU{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "cassette vidéo",
+          "concept": "1845",
+          "identifierFormat": "CVI{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "DVD",
+          "concept": "1846",
+          "identifierFormat": "DVD{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "carte SD",
+          "concept": "1847",
+          "identifierFormat": "SD{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "adresse du serveur",
+          "concept": "1848",
+          "identifierFormat": "SRV{NUM_CONTAINER:000}"
         },
         {
           "label": "sachet",
-          "concept": "1849"
+          "concept": "1849",
+          "identifierFormat": "SAC{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "Disque dur",
+          "concept": "1850",
+          "identifierFormat": "HDD{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "Cédérom",
+          "concept": "1851",
+          "identifierFormat": "CD{NUM_CONTAINER:000}"
+        },
+        {
+          "label": "Support amovible",
+          "concept": "1852",
+          "identifierFormat": "SUP{NUM_CONTAINER:000}"
         }
       ]
     },
@@ -179,6 +367,7 @@
         {
           "label": "carnet de fouille",
           "concept": "1708",
+          "identifierFormat": "CAR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g147",
             "SIAD.FORMAT": "g227",
@@ -193,6 +382,7 @@
         {
           "label": "rapport étude",
           "concept": "1709",
+          "identifierFormat": "RAP{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g148",
             "SIAD.FORMAT": "g228",
@@ -207,6 +397,7 @@
         {
           "label": "fiche d'UE",
           "concept": "1710",
+          "identifierFormat": "FUE{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g149",
             "SIAD.FORMAT": "g229",
@@ -221,6 +412,7 @@
         {
           "label": "fiche d'objet",
           "concept": "1711",
+          "identifierFormat": "FOB{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g150",
             "SIAD.FORMAT": "g230",
@@ -235,6 +427,7 @@
         {
           "label": "fiche de conservation par individu",
           "concept": "1712",
+          "identifierFormat": "FCI{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g151",
             "SIAD.FORMAT": "g231",
@@ -249,6 +442,7 @@
         {
           "label": "diagramme stratigraphique",
           "concept": "1713",
+          "identifierFormat": "DST{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g152",
             "SIAD.FORMAT": "g232",
@@ -265,6 +459,7 @@
         {
           "label": "liste de points topographiques",
           "concept": "1714",
+          "identifierFormat": "LPT{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g153",
             "SIAD.FORMAT": "g233",
@@ -279,6 +474,7 @@
         {
           "label": "base de données",
           "concept": "1715",
+          "identifierFormat": "BDD{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g154",
             "SIAD.FORMAT": "g234",
@@ -293,6 +489,7 @@
         {
           "label": "carte",
           "concept": "1716",
+          "identifierFormat": "CTE{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g159",
             "SIAD.FORMAT": "g239",
@@ -309,6 +506,7 @@
         {
           "label": "vue aérienne",
           "concept": "1717",
+          "identifierFormat": "VAE{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g160",
             "SIAD.FORMAT": "g240",
@@ -325,6 +523,7 @@
         {
           "label": "plan topographique",
           "concept": "1718",
+          "identifierFormat": "PTO{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g161",
             "SIAD.FORMAT": "g241",
@@ -341,6 +540,7 @@
         {
           "label": "relevé de terrain",
           "concept": "1719",
+          "identifierFormat": "RTE{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g162",
             "SIAD.FORMAT": "g242",
@@ -357,6 +557,7 @@
         {
           "label": "relevé d'art rupestre",
           "concept": "1720",
+          "identifierFormat": "RAR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g163",
             "SIAD.FORMAT": "g243",
@@ -373,6 +574,7 @@
         {
           "label": "dessin d'objet",
           "concept": "1721",
+          "identifierFormat": "DOB{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g164",
             "SIAD.FORMAT": "g244",
@@ -389,6 +591,7 @@
         {
           "label": "relevé des traces d'activités humaines et animales",
           "concept": "1722",
+          "identifierFormat": "RTA{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g165",
             "SIAD.FORMAT": "g245",
@@ -405,6 +608,7 @@
         {
           "label": "radiographie",
           "concept": "1723",
+          "identifierFormat": "RAD{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g172",
             "SIAD.FORMAT": "g252",
@@ -419,6 +623,7 @@
         {
           "label": "photographie de terrain",
           "concept": "1724",
+          "identifierFormat": "PHT{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g173",
             "SIAD.FORMAT": "g253",
@@ -433,6 +638,7 @@
         {
           "label": "photographie redressée",
           "concept": "1725",
+          "identifierFormat": "PHR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g174",
             "SIAD.FORMAT": "g254",
@@ -447,6 +653,7 @@
         {
           "label": "photographie d'objet",
           "concept": "1726",
+          "identifierFormat": "PHO{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g175",
             "SIAD.FORMAT": "g255",
@@ -461,6 +668,7 @@
         {
           "label": "orthophotographie",
           "concept": "1727",
+          "identifierFormat": "ORT{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g176",
             "SIAD.FORMAT": "g256",
@@ -475,6 +683,7 @@
         {
           "label": "enregistrement audio",
           "concept": "1728",
+          "identifierFormat": "EAU{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g177",
             "SIAD.FORMAT": "g257",
@@ -489,6 +698,7 @@
         {
           "label": "enregistrement vidéo",
           "concept": "1729",
+          "identifierFormat": "EVI{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g178",
             "SIAD.FORMAT": "g258",
@@ -503,6 +713,7 @@
         {
           "label": "empreinte",
           "concept": "1730",
+          "identifierFormat": "EMP{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g179",
             "SIAD.NATURE": "g219"
@@ -515,6 +726,7 @@
         {
           "label": "tirage",
           "concept": "1731",
+          "identifierFormat": "TIR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g180",
             "SIAD.NATURE": "g220"
@@ -527,6 +739,7 @@
         {
           "label": "arraché de coupe",
           "concept": "1732",
+          "identifierFormat": "ARR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g181",
             "SIAD.NATURE": "g221"
@@ -539,6 +752,7 @@
         {
           "label": "moule",
           "concept": "1733",
+          "identifierFormat": "MOU{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g182",
             "SIAD.NATURE": "g222"
@@ -551,6 +765,7 @@
         {
           "label": "nuage de points",
           "concept": "1734",
+          "identifierFormat": "NPT{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g183",
             "SIAD.FORMAT": "g259",
@@ -565,6 +780,7 @@
         {
           "label": "modèle 3D",
           "concept": "1735",
+          "identifierFormat": "M3D{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g184",
             "SIAD.FORMAT": "g260",
@@ -579,6 +795,7 @@
         {
           "label": "prototypage",
           "concept": "1736",
+          "identifierFormat": "PRO{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g185",
             "SIAD.FORMAT": "g261",
@@ -593,6 +810,7 @@
         {
           "label": "Journal de fouille",
           "concept": "1798",
+          "identifierFormat": "JDF{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g155",
             "SIAD.FORMAT": "g235",
@@ -607,6 +825,7 @@
         {
           "label": "Fiche de prélèvement",
           "concept": "1799",
+          "identifierFormat": "FPR{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g156",
             "SIAD.FORMAT": "g236",
@@ -621,6 +840,7 @@
         {
           "label": "Fiche de structure",
           "concept": "1800",
+          "identifierFormat": "FST{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g157",
             "SIAD.FORMAT": "g237",
@@ -635,6 +855,7 @@
         {
           "label": "Registre de photographies",
           "concept": "1801",
+          "identifierFormat": "RPH{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g158",
             "SIAD.FORMAT": "g238",
@@ -649,6 +870,7 @@
         {
           "label": "Minute de fouille",
           "concept": "1802",
+          "identifierFormat": "MIN{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g166",
             "SIAD.FORMAT": "g246",
@@ -665,6 +887,7 @@
         {
           "label": "Relevé de coupe",
           "concept": "1803",
+          "identifierFormat": "RCO{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g167",
             "SIAD.FORMAT": "g247",
@@ -681,6 +904,7 @@
         {
           "label": "Relevé en plan",
           "concept": "1804",
+          "identifierFormat": "RPL{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g168",
             "SIAD.FORMAT": "g248",
@@ -697,6 +921,7 @@
         {
           "label": "Relevé d'élévation",
           "concept": "1805",
+          "identifierFormat": "REL{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g169",
             "SIAD.FORMAT": "g249",
@@ -713,6 +938,7 @@
         {
           "label": "Croquis de terrain",
           "concept": "1806",
+          "identifierFormat": "CRO{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g170",
             "SIAD.FORMAT": "g250",
@@ -729,6 +955,7 @@
         {
           "label": "Log stratigraphique",
           "concept": "1807",
+          "identifierFormat": "LST{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g171",
             "SIAD.FORMAT": "g251",
@@ -745,6 +972,7 @@
         {
           "label": "Couche SIG",
           "concept": "1808",
+          "identifierFormat": "SIG{NUM_DOCUMENT:0000}",
           "lists": {
             "SIAD.CATEGORY": "g186",
             "SIAD.FORMAT": "g262",
@@ -764,103 +992,128 @@
       "types": [
         {
           "label": "stabilisation",
-          "concept": "1652"
+          "concept": "1652",
+          "identifierFormat": "STA{NUM_ETUDE:0000}"
         },
         {
           "label": "consolidation",
-          "concept": "1653"
+          "concept": "1653",
+          "identifierFormat": "CSL{NUM_ETUDE:0000}"
         },
         {
           "label": "analyse ADN",
-          "concept": "1654"
+          "concept": "1654",
+          "identifierFormat": "ADN{NUM_ETUDE:0000}"
         },
         {
           "label": "étude de pâte ou de pigment",
-          "concept": "1655"
+          "concept": "1655",
+          "identifierFormat": "EPP{NUM_ETUDE:0000}"
         },
         {
           "label": "marquage",
-          "concept": "1656"
+          "concept": "1656",
+          "identifierFormat": "MAR{NUM_ETUDE:0000}"
         },
         {
           "label": "radiographie",
-          "concept": "1657"
+          "concept": "1657",
+          "identifierFormat": "RAD{NUM_ETUDE:0000}"
         },
         {
           "label": "mise en état pour étude",
-          "concept": "1658"
+          "concept": "1658",
+          "identifierFormat": "MEE{NUM_ETUDE:0000}"
         },
         {
           "label": "remontage",
-          "concept": "1659"
+          "concept": "1659",
+          "identifierFormat": "REM{NUM_ETUDE:0000}"
         },
         {
           "label": "Nettoyage (conservation)",
-          "concept": "1660"
+          "concept": "1660",
+          "identifierFormat": "NET{NUM_ETUDE:0000}"
         },
         {
           "label": "Dessalement",
-          "concept": "1661"
+          "concept": "1661",
+          "identifierFormat": "DES{NUM_ETUDE:0000}"
         },
         {
           "label": "Lyophilisation",
-          "concept": "1662"
+          "concept": "1662",
+          "identifierFormat": "LYO{NUM_ETUDE:0000}"
         },
         {
           "label": "Imprégnation",
-          "concept": "1663"
+          "concept": "1663",
+          "identifierFormat": "IMP{NUM_ETUDE:0000}"
         },
         {
           "label": "Dégagement",
-          "concept": "1664"
+          "concept": "1664",
+          "identifierFormat": "DEG{NUM_ETUDE:0000}"
         },
         {
           "label": "Collage",
-          "concept": "1665"
+          "concept": "1665",
+          "identifierFormat": "COL{NUM_ETUDE:0000}"
         },
         {
           "label": "Comblement de lacune",
-          "concept": "1666"
+          "concept": "1666",
+          "identifierFormat": "CLA{NUM_ETUDE:0000}"
         },
         {
           "label": "Constat d'état",
-          "concept": "1667"
+          "concept": "1667",
+          "identifierFormat": "CET{NUM_ETUDE:0000}"
         },
         {
           "label": "Lavage",
-          "concept": "1668"
+          "concept": "1668",
+          "identifierFormat": "LAV{NUM_ETUDE:0000}"
         },
         {
           "label": "Tamisage à l'eau",
-          "concept": "1669"
+          "concept": "1669",
+          "identifierFormat": "TAM{NUM_ETUDE:0000}"
         },
         {
           "label": "Flottation",
-          "concept": "1670"
+          "concept": "1670",
+          "identifierFormat": "FLO{NUM_ETUDE:0000}"
         },
         {
           "label": "Tri",
-          "concept": "1671"
+          "concept": "1671",
+          "identifierFormat": "TRI{NUM_ETUDE:0000}"
         },
         {
           "label": "Méthode du carbone 14",
-          "concept": "1672"
+          "concept": "1672",
+          "identifierFormat": "C14{NUM_ETUDE:0000}"
         },
         {
           "label": "Analyse isotopique",
-          "concept": "1673"
+          "concept": "1673",
+          "identifierFormat": "ISO{NUM_ETUDE:0000}"
         },
         {
           "label": "Datation dendrochronologique",
-          "concept": "1674"
+          "concept": "1674",
+          "identifierFormat": "DEN{NUM_ETUDE:0000}"
         },
         {
           "label": "Analyse métallographique",
-          "concept": "1675"
+          "concept": "1675",
+          "identifierFormat": "MET{NUM_ETUDE:0000}"
         },
         {
           "label": "Lame mince",
-          "concept": "1676"
+          "concept": "1676",
+          "identifierFormat": "LMI{NUM_ETUDE:0000}"
         }
       ]
     }

@@ -81,6 +81,22 @@ public abstract class ActionUnitForm {
             .externalId("1008")
             .build();
 
+    // field begin date
+    @Transient
+    @JsonIgnore
+    public static final Concept FIELD_BEGIN_DATE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("1009")
+            .build();
+
+    // field end date
+    @Transient
+    @JsonIgnore
+    public static final Concept FIELD_END_DATE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("1010")
+            .build();
+
     // --------------- Fields
     @Transient
     @JsonIgnore
@@ -146,6 +162,28 @@ public abstract class ActionUnitForm {
             .id(-106L)
             .showTime(false)
             .concept(END_DATE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldDateTime FIELD_BEGIN_DATE_FIELD = CustomFieldDateTime.builder()
+            .label("actionunit.field.fieldBeginDate")
+            .isSystemField(true)
+            .valueBinding("fieldBeginDate")
+            .id(-138L)
+            .showTime(false)
+            .concept(FIELD_BEGIN_DATE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldDateTime FIELD_END_DATE_FIELD = CustomFieldDateTime.builder()
+            .label("actionunit.field.fieldEndDate")
+            .isSystemField(true)
+            .valueBinding("fieldEndDate")
+            .id(-139L)
+            .showTime(false)
+            .concept(FIELD_END_DATE_CONCEPT)
             .build();
 
     public static final CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()

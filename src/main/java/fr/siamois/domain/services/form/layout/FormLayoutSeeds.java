@@ -48,7 +48,7 @@ public class FormLayoutSeeds {
     private final ConceptIdLookup conceptIds;
     private final Map<ConfigurableTable, JsonNode> raw = new EnumMap<>(ConfigurableTable.class);
 
-    /** The table's initial layout: every field active, mandatory where the seed says so. */
+    /** The table's initial layout: every field active unless the seed says {@code "active": false}, mandatory where it says so. */
     public FormLayout layoutOf(ConfigurableTable table) {
         Map<Long, CustomField> catalog = SystemFieldCatalog.sharedFieldsOf(table).stream()
                 .collect(Collectors.toMap(CustomField::getId, f -> f));
@@ -65,7 +65,7 @@ public class FormLayoutSeeds {
                 items.add(new FormLayout.Item(
                         customField,
                         FieldWidth.valueOf(field.path("width").asText(FieldWidth.QUARTER.name())),
-                        true,
+                        field.path("active").asBoolean(true),
                         field.path("required").asBoolean(false),
                         false,
                         rulesOf(table, fieldId, field.get("rules"))));

@@ -22,6 +22,10 @@
       "binding" : "otherIdentifier",
       "width" : "QUARTER"
     }, {
+      "fieldId" : -436,
+      "binding" : "objectOrLot",
+      "width" : "QUARTER"
+    }, {
       "fieldId" : -406,
       "binding" : "isolationNumber",
       "width" : "QUARTER"
@@ -140,6 +144,10 @@
   }, {
     "label" : "specimen.header.sampling",
     "fields" : [ {
+      "fieldId" : -437,
+      "binding" : "samplingNature",
+      "width" : "QUARTER"
+    }, {
       "fieldId" : -434,
       "binding" : "validityDate",
       "width" : "QUARTER"

@@ -44,6 +44,10 @@ public abstract class RecordingUnitParent extends TraceableEntity {
     protected Concept type;
 
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_nature")
+    protected Concept nature;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_geomorphological_cycle")
     protected Concept geomorphologicalCycle;
 

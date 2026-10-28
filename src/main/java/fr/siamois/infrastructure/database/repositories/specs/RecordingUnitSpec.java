@@ -27,7 +27,8 @@ public class RecordingUnitSpec {
     public static final String ID_FILTER = "id";
     public static final String PARENTS_FILTER = "parents";
     public static final String CHILDREN_FILTER = "children";
-    public static final String NATURE_FILTER = "geomorphologicalCycle";
+    public static final String NATURE_FILTER = "nature";
+    public static final String CYCLE_FILTER = "geomorphologicalCycle";
     public static final String AGENT_FILTER = "geomorphologicalAgent";
     public static final String INTERPRETATION_FILTER = "normalizedInterpretation";
     public static final String TPQ_FILTER = "tpq";
@@ -41,7 +42,9 @@ public class RecordingUnitSpec {
     /** Synthetic sort key: not a real JPA path, resolved via {@link #orderByChildrenCount(Sort.Direction)}. */
     public static final String CHILDREN_COUNT_SORT = "childrenCount";
     /** Synthetic sort key: alphabetical on the nature's label, via {@link #orderByConceptLabel}. */
-    public static final String NATURE_LABEL_SORT = "geomorphologicalCycleLabel";
+    public static final String NATURE_LABEL_SORT = "natureLabel";
+    /** Synthetic sort key: alphabetical on the geomorphological cycle's label, via {@link #orderByConceptLabel}. */
+    public static final String CYCLE_LABEL_SORT = "geomorphologicalCycleLabel";
     /** Synthetic sort key: alphabetical on the agent's label, via {@link #orderByConceptLabel}. */
     public static final String AGENT_LABEL_SORT = "geomorphologicalAgentLabel";
     /** Synthetic sort key: alphabetical on the interpretation's label, via {@link #orderByConceptLabel}. */
@@ -69,6 +72,7 @@ public class RecordingUnitSpec {
                 PARENTS_COUNT_SORT,
                 CHILDREN_COUNT_SORT,
                 NATURE_LABEL_SORT,
+                CYCLE_LABEL_SORT,
                 AGENT_LABEL_SORT,
                 INTERPRETATION_LABEL_SORT,
                 TPQ_FILTER,

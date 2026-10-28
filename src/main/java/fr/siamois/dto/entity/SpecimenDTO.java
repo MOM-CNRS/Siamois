@@ -52,6 +52,8 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private String preservationCondition;
     private OffsetDateTime validityDate;
     private String storageLocation;
+    private Boolean objectOrLot;
+    private ConceptDTO samplingNature;
 
     /**
      * A new, unsaved find with the descriptive data of {@code original}: what a duplication starts
@@ -89,6 +91,8 @@ public class SpecimenDTO extends AbstractEntityDTO {
         preservationCondition = original.getPreservationCondition();
         validityDate = original.getValidityDate();
         storageLocation = original.getStorageLocation();
+        objectOrLot = original.getObjectOrLot();
+        samplingNature = original.getSamplingNature();
         if (original.getWeight() != null) {
             MeasurementAnswerDTO w = original.getWeight();
             weight = new MeasurementAnswerDTO(null, w.getNumericValue(), w.getUnit(), w.getNormalizedValue(), w.getComment());
@@ -131,7 +135,9 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "samplingPurpose",
                 "preservationCondition",
                 "validityDate",
-                "storageLocation"
+                "storageLocation",
+                "objectOrLot",
+                "samplingNature"
         );
     }
 }

@@ -30,13 +30,19 @@
       "binding" : "specimenList",
       "width" : "QUARTER"
     }, {
+      "fieldId" : -331,
+      "binding" : "nature",
+      "width" : "QUARTER"
+    }, {
       "fieldId" : -307,
       "binding" : "geomorphologicalCycle",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "active" : false
     }, {
       "fieldId" : -310,
       "binding" : "geomorphologicalAgent",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "active" : false
     }, {
       "fieldId" : -308,
       "binding" : "normalizedInterpretation",
