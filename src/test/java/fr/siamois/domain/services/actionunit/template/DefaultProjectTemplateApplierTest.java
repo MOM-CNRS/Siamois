@@ -11,7 +11,8 @@ import static org.mockito.Mockito.verify;
 class DefaultProjectTemplateApplierTest {
 
     private final ThesaurusProjectConfigSeeder seeder = mock(ThesaurusProjectConfigSeeder.class);
-    private final DefaultProjectTemplateApplier applier = new DefaultProjectTemplateApplier(seeder);
+    private final ProjectThesaurusAssigner assigner = mock(ProjectThesaurusAssigner.class);
+    private final DefaultProjectTemplateApplier applier = new DefaultProjectTemplateApplier(seeder, assigner);
 
     @Test
     void supports_onlyTheDefaultTemplate() {
@@ -29,5 +30,6 @@ class DefaultProjectTemplateApplierTest {
 
         assertThat(applier.transactional()).isFalse();
         verify(seeder).seed(info, 42L);
+        verify(assigner).assignCommonCore(42L);
     }
 }

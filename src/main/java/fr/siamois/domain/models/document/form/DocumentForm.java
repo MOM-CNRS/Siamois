@@ -13,6 +13,7 @@ import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMulti
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.SystemConcepts;
 import jakarta.persistence.Transient;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public abstract class DocumentForm {
     protected DocumentForm() {}
 
     private static Concept concept(String externalId) {
-        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId("document." + externalId).build();
+        return new Concept.Builder().vocabulary(SYSTEM_THESO).externalId(SystemConcepts.id("SIAD", externalId, "document." + externalId)).build();
     }
 
     private static CustomFieldText text(long id, String binding, boolean textArea) {

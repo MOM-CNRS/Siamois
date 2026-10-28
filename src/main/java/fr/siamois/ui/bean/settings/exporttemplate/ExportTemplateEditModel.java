@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Copie modifiable d'un {@link ExportTemplateDefinition} pour les formulaires de l'éditeur : les
@@ -262,24 +263,109 @@ public class ExportTemplateEditModel implements Serializable {
                 sheets.stream().map(ExportTemplateEditModel::sheetTo).toList());
     }
 
+    /** Définition pour l'aperçu : les règles encore incomplètes (champ pas choisi) sont ignorées au lieu de faire échouer le calcul. */
+    public ExportTemplateDefinition toPreviewDefinition() {
+        return new ExportTemplateDefinition(schemaVersion, id, version, name, blankToNull(fileNamePattern),
+                sheets.stream().map(s -> {
+                    Map<String, List<Integer>> map = tokenIndexes(s);
+                    return new Sheet(s.name, s.omitIfEmpty, expandedSources(s), List.copyOf(s.sortBy),
+                            s.columns.stream().map(c -> previewColumnTo(c, map)).toList());
+                }).toList());
+    }
+
+    private static Column previewColumnTo(EditColumn c, Map<String, List<Integer>> map) {
+        return new Column(c.header, OutputType.valueOf(c.output),
+                c.rules.stream().filter(ExportTemplateEditModel::isComplete).map(r -> ruleTo(r, map)).toList());
+    }
+
+    private static boolean isComplete(EditRule r) {
+        return switch (r.type) {
+            case RULE_CONSTANT -> true;
+            case RULE_CONCAT -> r.parts.stream().allMatch(p -> p.isLiteralPart() || hasField(p.field));
+            default -> hasField(r.field);
+        };
+    }
+
+    private static boolean hasField(EditField f) {
+        if (f == null || f.key == null || f.key.isBlank()) {
+            return false;
+        }
+        if (!FIELD_CONCEPT.equals(f.kind)) {
+            return true;
+        }
+        try {
+            refOf(f.key);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     /** Copie profonde d'une feuille (par un aller-retour par la définition). */
     public static EditSheet copyOf(EditSheet sheet) {
         return sheetFrom(sheetTo(sheet));
     }
 
     private static Sheet sheetTo(EditSheet s) {
-        return new Sheet(s.name, s.omitIfEmpty, s.sources.stream().map(ExportTemplateEditModel::sourceTo).toList(),
-                List.copyOf(s.sortBy), s.columns.stream().map(ExportTemplateEditModel::columnTo).toList());
+        Map<String, List<Integer>> map = tokenIndexes(s);
+        return new Sheet(s.name, s.omitIfEmpty, expandedSources(s), List.copyOf(s.sortBy),
+                s.columns.stream().map(c -> columnTo(c, map)).toList());
+    }
+
+    /**
+     * Sources de la définition : une source d'entité filtrée sur plusieurs types est éclatée en une source par type,
+     * pour qu'un mapping puisse cibler un type précis.
+     */
+    private static List<Source> expandedSources(EditSheet s) {
+        List<Source> out = new ArrayList<>();
+        for (EditSource src : s.sources) {
+            if (KIND_ENTITY.equals(src.kind) && src.typeKeys.size() > 1) {
+                for (String key : src.typeKeys) {
+                    out.add(sourceTo(src, List.of(key)));
+                }
+            } else {
+                out.add(sourceTo(src));
+            }
+        }
+        return out;
+    }
+
+    /** Pour chaque cible de mapping (« i » ou « i:typeKey »), les positions correspondantes dans les sources éclatées. */
+    private static Map<String, List<Integer>> tokenIndexes(EditSheet s) {
+        Map<String, List<Integer>> map = new java.util.HashMap<>();
+        int next = 0;
+        for (int i = 0; i < s.sources.size(); i++) {
+            EditSource src = s.sources.get(i);
+            if (KIND_ENTITY.equals(src.kind) && src.typeKeys.size() > 1) {
+                List<Integer> all = new ArrayList<>();
+                for (String key : src.typeKeys) {
+                    map.put(i + ":" + key, List.of(next));
+                    all.add(next++);
+                }
+                map.put(String.valueOf(i), all);
+            } else {
+                map.put(String.valueOf(i), List.of(next));
+                if (src.typeKeys.size() == 1) {
+                    map.put(i + ":" + src.typeKeys.get(0), List.of(next));
+                }
+                next++;
+            }
+        }
+        return map;
     }
 
     private static Source sourceTo(EditSource s) {
+        return sourceTo(s, s.typeKeys);
+    }
+
+    private static Source sourceTo(EditSource s, List<String> typeKeys) {
         return switch (s.kind) {
             case KIND_ENTITY -> {
                 if (s.entity == null || s.entity.isBlank()) {
                     throw new IllegalArgumentException("An entity source needs an entity");
                 }
                 yield new EntitySource(EntityKind.valueOf(s.entity),
-                        s.typeKeys.stream().map(ExportTemplateEditModel::refOf).toList());
+                        typeKeys.stream().map(ExportTemplateEditModel::refOf).toList());
             }
             case KIND_TECHNICAL -> new TechnicalSource(s.technicalKey);
             case KIND_TABLE -> new TableSource(s.tableName);
@@ -287,12 +373,14 @@ public class ExportTemplateEditModel implements Serializable {
         };
     }
 
-    private static Column columnTo(EditColumn c) {
-        return new Column(c.header, OutputType.valueOf(c.output), c.rules.stream().map(ExportTemplateEditModel::ruleTo).toList());
+    private static Column columnTo(EditColumn c, Map<String, List<Integer>> map) {
+        return new Column(c.header, OutputType.valueOf(c.output), c.rules.stream().map(r -> ruleTo(r, map)).toList());
     }
 
-    private static Rule ruleTo(EditRule r) {
-        List<Integer> sources = r.sources.stream().map(Integer::valueOf).distinct().sorted().toList();
+    private static Rule ruleTo(EditRule r, Map<String, List<Integer>> map) {
+        List<Integer> sources = r.sources.stream()
+                .flatMap(t -> map.getOrDefault(t, List.of(Integer.valueOf(t.contains(":") ? t.substring(0, t.indexOf(':')) : t))).stream())
+                .distinct().sorted().toList();
         return switch (r.type) {
             case RULE_CONSTANT -> new ConstantRule(sources, r.constantValue == null ? "" : r.constantValue);
             case RULE_CONCAT -> new ConcatRule(sources, r.parts.stream().map(ExportTemplateEditModel::partTo).toList(),

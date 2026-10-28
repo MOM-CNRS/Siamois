@@ -28,7 +28,7 @@
                             <f:selectItems value="#{newProjectDialogBean.creatableInstitutions}" var="org"
                                            itemValue="#{org.id}" itemLabel="#{org.name}"/>
                             <p:ajax event="change" listener="#{newProjectDialogBean.onOrganisationChange()}" process="@this"
-                                    update="type identifier"/>
+                                    update="type templateGroup identifier"/>
                         </p:selectOneMenu>
                     </div>
 
@@ -43,6 +43,15 @@
                                        styleClass="sia-create-form-label"/>
                         <p:inputText id="identifier" value="#{newProjectDialogBean.identifier}" maxlength="50"/>
                     </div>
+
+                    <h:panelGroup id="templateGroup" rendered="#{newProjectDialogBean.templates.size() gt 1}" layout="block" styleClass="sia-create-form-field">
+                        <p:outputLabel for="template" value="#{langBean.msg('projectList.create.template')}"
+                                       styleClass="sia-create-form-label"/>
+                        <p:selectOneMenu id="template" value="#{newProjectDialogBean.templateId}" filter="#{newProjectDialogBean.templates.size() gt 8}" filterMatchMode="contains">
+                            <f:selectItems value="#{newProjectDialogBean.templates}" var="tpl"
+                                           itemValue="#{tpl.id}" itemLabel="#{tpl.label}"/>
+                        </p:selectOneMenu>
+                    </h:panelGroup>
 
                     <div class="sia-create-form-field">
                         <p:outputLabel for="type" value="#{langBean.msg('projectList.create.type')}"

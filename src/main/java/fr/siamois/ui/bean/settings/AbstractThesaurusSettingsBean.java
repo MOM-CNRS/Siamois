@@ -42,7 +42,7 @@ public abstract class AbstractThesaurusSettingsBean implements Serializable {
     public static class ThesaurusOption implements Serializable {
         String url;
         String label;
-        /** The identifier of the thesaurus on its instance (th332). */
+        /** The identifier of the thesaurus on its instance (th337). */
         String externalId;
         /** The address of the OpenTheso instance. */
         String server;

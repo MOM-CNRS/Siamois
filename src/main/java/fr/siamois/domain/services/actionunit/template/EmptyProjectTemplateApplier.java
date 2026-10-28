@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 public class EmptyProjectTemplateApplier implements ProjectTemplateApplier {
 
     private final DefaultProjectIdentifierConfigSeeder seeder;
+    private final ProjectThesaurusAssigner thesaurusAssigner;
 
     @Override
     public boolean supports(String templateId) {
@@ -25,5 +26,6 @@ public class EmptyProjectTemplateApplier implements ProjectTemplateApplier {
     @Override
     public void apply(UserInfo info, String templateId, Long newProjectId) {
         seeder.seed(info, newProjectId);
+        thesaurusAssigner.assignCommonCore(newProjectId);
     }
 }

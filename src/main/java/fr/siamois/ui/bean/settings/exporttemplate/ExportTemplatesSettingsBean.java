@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.settings.exporttemplate;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.exporttemplate.DuplicateExportTemplateException;
 import fr.siamois.domain.models.exporttemplate.InvalidExportTemplateException;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.exporttemplate.ExportTemplateService;
@@ -140,6 +141,9 @@ public class ExportTemplatesSettingsBean implements Serializable {
         try {
             exportTemplateService.createBlank(userInfo(), newTemplateName.trim(),
                     langBean.msg("exportTemplates.blank.sheetName"));
+        } catch (DuplicateExportTemplateException e) {
+            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.duplicateVersion", e.getTemplateName(), e.getTemplateVersion());
+            return;
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
@@ -162,6 +166,9 @@ public class ExportTemplatesSettingsBean implements Serializable {
         try {
             ExportTemplateDTO imported = exportTemplateService.importJson(userInfo(), importedJson);
             MessageUtils.displayInfoMessage(langBean, "exportTemplates.imported", imported.name());
+        } catch (DuplicateExportTemplateException e) {
+            MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.duplicateVersion", e.getTemplateName(), e.getTemplateVersion());
+            return;
         } catch (InvalidExportTemplateException e) {
             MessageUtils.displayErrorMessage(langBean, "exportTemplates.error.invalidJson", e.getMessage());
             return;
@@ -173,34 +180,13 @@ public class ExportTemplatesSettingsBean implements Serializable {
         init();
     }
 
-    /** Ajoute à l'institution le modèle national livré avec l'application (référentiel du rapport d'opération). */
-    public void addNationalTemplate() {
-        addBuiltInTemplate(ExportTemplateService.BuiltInTemplate.NATIONAL_REPORT);
-    }
-
-    /** Ajoute à l'institution le modèle national des opérations en milieu sous-marin. */
-    public void addUnderwaterTemplate() {
-        addBuiltInTemplate(ExportTemplateService.BuiltInTemplate.UNDERWATER_REPORT);
-    }
-
-    private void addBuiltInTemplate(ExportTemplateService.BuiltInTemplate template) {
-        try {
-            ExportTemplateDTO added = exportTemplateService.createFromBuiltIn(userInfo(), template);
-            MessageUtils.displayInfoMessage(langBean, "exportTemplates.imported", added.name());
-        } catch (ForbiddenOperationException e) {
-            MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
-            return;
-        }
-        init();
-    }
-
     // ------------------------------------------------------------------ actions de ligne
 
+    /** Duplique depuis la liste : une nouvelle version du modèle (même nom, nouvelle étiquette de version). */
     public void duplicate(ExportTemplateDTO template) {
         try {
-            exportTemplateService.duplicate(userInfo(), template.id(),
-                    langBean.msg("exportTemplates.copyName", template.name()));
-            MessageUtils.displayInfoMessage(langBean, "exportTemplates.duplicated", template.name());
+            ExportTemplateDTO created = exportTemplateService.newVersion(userInfo(), template.id());
+            MessageUtils.displayInfoMessage(langBean, "exportTemplates.newVersionDone", created.name(), created.version());
         } catch (ForbiddenOperationException e) {
             MessageUtils.displayErrorMessage(langBean, ERROR_FORBIDDEN);
             return;
