@@ -3,7 +3,7 @@ import {useQuery} from "@tanstack/react-query";
 import {queryKeys} from "../../api/queryKeys";
 import {isOwningProjectField} from "../../fields/types";
 import type {EntityTypeConfig, FilterValue, ListParams, ListScope, PagedResult} from "../../entities/shared/types";
-import {usePagedList} from "./usePagedList";
+import {pagesInRange, usePagedList} from "./usePagedList";
 import {useRowRules, useRuleFields} from "./useRowRules";
 import {useTableState} from "./useTableState";
 import {differsFromView, parsePersisted, toPersisted, viewToBody} from "./listState";
@@ -11,7 +11,7 @@ import {getView} from "../../api/resources/views";
 import {useUserViewState} from "./useUserViewState";
 import {availableFilters, isSortAvailable} from "./listStateValidity";
 import {usePaneState} from "../pane/paneState";
-import {DEFAULT_LIMIT} from "./tableState";
+import {DEFAULT_LIMIT, SCROLL_CHUNK_SIZE} from "./tableState";
 import {availableViews, resolveViewMode} from "./listViews";
 import {type RowTypeRef, useProjectIdsOf, useTypeRules} from "./useTypeRules";
 
@@ -162,19 +162,37 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
   const typeRules = useTypeRules(config?.list.typesSegment, useProjectIdsOf(seenRows as RowTypeRef[]));
   const ruleFields = useRuleFields(catalog?.fields, shownFieldIds, typeRules);
 
+  // The flat table scrolls through the whole result set (virtual scroll): it fetches the pages its
+  // window touches, reported by the scroller as the user scrolls. A new result set starts again at the
+  // top. The cards (and the tree, which fetches its own rows) keep their paginator, and so the page the
+  // table state holds.
+  const virtual = viewMode !== "cards" && !showTree;
+  const resultSetKey = JSON.stringify(params);
+  const [scrollWindow, setScrollWindow] = useState({ key: resultSetKey, first: 0, last: SCROLL_CHUNK_SIZE });
+  const shownWindow = scrollWindow.key === resultSetKey ? scrollWindow : { first: 0, last: SCROLL_CHUNK_SIZE };
+  const onScrollWindow = useCallback(
+    (first: number, last: number) =>
+      setScrollWindow((current) =>
+        current.key === resultSetKey && current.first === first && current.last === last
+          ? current
+          : { key: resultSetKey, first, last },
+      ),
+    [resultSetKey],
+  );
   const page = usePagedList<RowRecord>({
     entityType,
     params,
-    offset: state.offset,
-    limit: state.limit,
+    pages: virtual ? pagesInRange(shownWindow.first, shownWindow.last, SCROLL_CHUNK_SIZE) : [Math.floor(state.offset / state.limit)],
+    limit: virtual ? SCROLL_CHUNK_SIZE : state.limit,
+    virtual,
     fields: useMemo(() => [...state.visibleColumns, ...ruleFields], [state.visibleColumns, ruleFields]),
     fetch: (p) => config!.api.list(p) as Promise<PagedResult<RowRecord>>,
     // A list with a schema waits for its columns, rather than fetching once without them and then
     // adding each one (a failed catalog just means no dynamic columns).
     enabled: !showTree && listReady && config != null && (!hasSchema || columnsSeeded || catalogFailed),
   });
-  const { rows, totalCount } = page;
-  useEffect(() => setSeenRows(rows), [rows]);
+  const { loadedRows, totalCount } = page;
+  useEffect(() => setSeenRows(loadedRows), [loadedRows]);
 
   // The user's changes are kept as they happen — not the state the list opened with, nor what merely
   // equals it: the first settled state is the baseline, a later difference is what gets saved.
@@ -220,7 +238,7 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
       save(body);
     }
   }, [baselineReady, state, columnsSeeded, viewKey, organizationId, save]);
-  const rowRules = useRowRules(catalog?.fields, shownFieldIds, ruleFields, rows, typeRules);
+  const rowRules = useRowRules(catalog?.fields, shownFieldIds, ruleFields, loadedRows, typeRules);
 
   // The titlebar's count chip is the whole collection — on a saved view, what the view's own filters keep —
   // not the filtered result set (that one is the toolbar's selected/total chip). While nothing narrows the list
@@ -240,5 +258,5 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
   // A view whose own filters the server refuses (a field that is gone) falls back on the page's total.
   const collectionTotal = narrowed ? (unfilteredTotal.data ?? (unfilteredTotal.isError ? totalCount : undefined)) : totalCount;
 
-  return { table, catalog, hasSchema, pinnedFieldIds, params, page, rowRules, collectionTotal, views, viewMode, userState, listReady, view: viewQuery.data, viewMissing, modified, hasUserState, resetToBase };
+  return { table, onScrollWindow, catalog, hasSchema, pinnedFieldIds, params, page, rowRules, collectionTotal, views, viewMode, userState, listReady, view: viewQuery.data, viewMissing, modified, hasUserState, resetToBase };
 }

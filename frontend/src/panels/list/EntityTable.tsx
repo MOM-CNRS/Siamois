@@ -28,27 +28,26 @@ import {FROZEN_COLUMN_CLASS, frozenColumnStyle, useFrozenColumnOffsets,} from ".
 import {rememberListContext} from "./listContext";
 import {PAGE_SIZE_OPTIONS} from "./tableState";
 import {useWriteMode} from "../pane/writeMode";
-import {isFieldPending} from "./usePagedList";
+import {isFieldPending, isPlaceholderRow, placeholderRow} from "./usePagedList";
 import type {RowRecord} from "./useEntityListData";
 import {buildTreeSelectionColumn} from "./treeSelectionColumn";
 import type {EntityTableTree} from "./useTreeRows";
 import {t} from "../../i18n";
 
 // Placeholder rows shown during a list's very first load, one skeleton per cell — the table keeps
-// its header and shape instead of an empty body under a grey loading overlay.
-const SKELETON_ROW = "__skeletonRow";
+// its header and shape instead of an empty body under a grey loading overlay. The flat table's rows
+// not fetched yet (virtual scroll) are the same placeholders.
 const SKELETON_ROW_COUNT = 8;
 const SKELETON_ROWS: RowRecord[] = Array.from(
   { length: SKELETON_ROW_COUNT },
-  (_, i) => ({
-    id: `__skeleton-${i}`,
-    [SKELETON_ROW]: true,
-  }),
+  (_, i) => placeholderRow(i),
 );
 
-function isSkeletonRow(row: RowRecord): boolean {
-  return row[SKELETON_ROW] === true;
-}
+const isSkeletonRow = (row: RowRecord): boolean => isPlaceholderRow(row);
+
+// The height of every row (--entity-list-row-height in main-panel.css): the virtual scroller places
+// the rows from it, so the two must stay equal.
+const ROW_HEIGHT_PX = 38;
 
 export interface EntityTableProps {
   entityType: string;
@@ -66,11 +65,15 @@ export interface EntityTableProps {
   // The result set the rows belong to (search, sort, filters, scope): a fiche opened from a row
   // walks it with its previous/next arrows.
   params: Omit<ListParams, "offset" | "limit" | "fields">;
+  // The tree view's page (it keeps its paginator); the flat table scrolls through the whole result set,
+  // `rows` holding every row of it (placeholders where not fetched yet).
   offset: number;
   limit: number;
   search?: string;
   sort?: string;
   onPage: (offset: number, limit: number) => void;
+  // The flat table's rows on screen (and around), as the virtual scroller reports them: the pages to fetch.
+  onScrollWindow?: (first: number, last: number) => void;
   onSort: (sort: string | undefined) => void;
   // The rules the cells follow (useRowRules): each cell's state, and the labels their messages use.
   rowRules: {
@@ -119,6 +122,7 @@ export function EntityTable({
   search,
   sort,
   onPage,
+  onScrollWindow,
   onSort,
   rowRules,
   renderRowActions,
@@ -142,13 +146,17 @@ export function EntityTable({
   const canPatchAnswers = config.api.patchAnswers != null;
 
   // A new page (or a new result set, which goes back to the first one) starts at the top of the
-  // table's own scroll box: the scroll position belonged to the rows that were there before.
-  const pageKey = `${JSON.stringify(params)}|${offset}|${limit}`;
+  // table's own scroll box: the scroll position belonged to the rows that were there before. The flat
+  // table's scroll box is its virtual scroller.
+  const pageKey = tree
+    ? `${JSON.stringify(params)}|${offset}|${limit}`
+    : JSON.stringify(params);
   useEffect(() => {
-    const wrapper = rootRef.current?.querySelector(
-      ".p-datatable-wrapper, .p-treetable-wrapper",
-    );
-    if (wrapper) wrapper.scrollTop = 0;
+    const root = rootRef.current;
+    const scroller =
+      root?.querySelector(".p-virtualscroller") ??
+      root?.querySelector(".p-datatable-wrapper, .p-treetable-wrapper");
+    if (scroller) scroller.scrollTop = 0;
   }, [pageKey]);
 
   // PrimeReact workaround #1 — column order. It keeps its own column order once a header has been
@@ -266,8 +274,12 @@ export function EntityTable({
     // The fiche's previous/next arrows walk THIS list — its sort, filters, search and scope — from
     // this row's position (panels/list/listContext.ts).
     const at = rows.findIndex((r) => String(r.id) === String(row.id));
+    // The flat table's rows are the whole result set; the tree's, its current page.
     if (at >= 0)
-      rememberListContext(entityType, row.id, { params, index: offset + at });
+      rememberListContext(entityType, row.id, {
+        params,
+        index: (tree ? offset : 0) + at,
+      });
     if (onOpenOverview) {
       // The row already holds the label and status: the overview's header shows them right away.
       const preview = {
@@ -604,16 +616,18 @@ export function EntityTable({
             ref={tableRef}
             lazy
             reorderableColumns
-            // Server-side paging: `value` is just the current page, totalRecords the whole result set.
-            paginator
-            first={offset}
-            rows={limit}
-            rowsPerPageOptions={PAGE_SIZE_OPTIONS}
-            totalRecords={totalCount}
-            onPage={onPageChange}
+            // Virtual scroll over the whole result set: `value` holds every row (placeholders where
+            // its page isn't fetched yet), only those in view are drawn, and the scroller reports the
+            // rows it reaches so their pages are fetched (useEntityListData). Every row is one line
+            // of the same height, which the scroller places them by.
+            virtualScrollerOptions={{
+              lazy: true,
+              itemSize: ROW_HEIGHT_PX,
+              onLazyLoad: (e) => onScrollWindow?.(Number(e.first), Number(e.last)),
+            }}
             // PrimeReact workaround #3 — it memoizes each cell on its row data, so a cell would ignore
             // anything else its body depends on (the action bar layout, write mode, the columns being
-            // fetched). A page is at most 200 rows, so re-rendering them is affordable; the typing
+            // fetched). Only the rows in view are drawn, so re-rendering them is affordable; the typing
             // that used to trigger it now stays inside ListSearchBox.
             cellMemo={false}
             onColReorder={onColReorder}
@@ -633,9 +647,11 @@ export function EntityTable({
             }
             selectionMode="checkbox"
             selection={selectedRows}
+            // A row not fetched yet is nobody's to select ("select all" takes the fetched ones).
+            isDataSelectable={(e) => !isSkeletonRow(e.data as RowRecord)}
             onSelectionChange={(
               e: DataTableSelectionMultipleChangeEvent<RowRecord[]>,
-            ) => onSelectionChange(e.value)}
+            ) => onSelectionChange(e.value.filter((row) => !isSkeletonRow(row)))}
             // Sticky header + frozen columns both require this; it also moves the scrolling from the
             // page onto the table's own body, which is the rule this shell is built on (the app is a
             // fixed 100vh frame — every panel scrolls inside itself, the document never does).

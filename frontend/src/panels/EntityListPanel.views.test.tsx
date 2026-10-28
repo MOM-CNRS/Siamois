@@ -17,6 +17,7 @@ import {getBookmarkStatus} from "../api/resources/bookmarks";
 import {ApiError} from "../api/client";
 import {EntityListPanel} from "./EntityListPanel";
 import {BridgeProvider} from "./pane/bridge";
+import {SCROLL_CHUNK_SIZE} from "./list/tableState";
 
 registerDefaultFieldRenderers();
 
@@ -151,14 +152,14 @@ afterEach(() => {
 });
 
 describe("EntityListPanel on a saved view", () => {
-  it("opens on the view's own state: its sort, page size and filters, in one first request", async () => {
+  it("opens on the view's own state: its sort and filters, in one first request", async () => {
     await renderList({ viewId: 12 });
 
     expect(getView).toHaveBeenCalledWith(7, 12);
     expect(getViewState).toHaveBeenCalledWith(7, "view:12");
     const requests = pages();
     expect(requests).toHaveLength(1);
-    expect(requests[0]).toMatchObject({ sort: "name:desc", limit: 50, filters: { name: { op: "contains", v: "x" } } });
+    expect(requests[0]).toMatchObject({ sort: "name:desc", limit: SCROLL_CHUNK_SIZE, filters: { name: { op: "contains", v: "x" } } });
   });
 
   it("puts what the user changed on the view over it, key by key", async () => {
@@ -166,7 +167,7 @@ describe("EntityListPanel on a saved view", () => {
 
     await renderList({ viewId: 12 });
 
-    expect(pages()[0]).toMatchObject({ sort: "name:asc", limit: 50, filters: { name: { op: "contains", v: "x" } } });
+    expect(pages()[0]).toMatchObject({ sort: "name:asc", limit: SCROLL_CHUNK_SIZE, filters: { name: { op: "contains", v: "x" } } });
   });
 
   it("goes back to the default list when the view no longer exists", async () => {
@@ -301,7 +302,7 @@ describe("the header's view button", () => {
     await click(inBody("Réinitialiser la vue", ".p-menuitem-link"));
 
     expect(deleteViewState).toHaveBeenCalledWith(7, "view:12");
-    expect(pages()[pages().length - 1]).toMatchObject({ sort: "name:desc", limit: 50 });
+    expect(pages()[pages().length - 1]).toMatchObject({ sort: "name:desc", limit: SCROLL_CHUNK_SIZE });
     expect(viewsButton()).toBeNull();
   });
 });
