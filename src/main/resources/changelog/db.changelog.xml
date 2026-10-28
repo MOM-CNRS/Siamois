@@ -3,6 +3,28 @@
                    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
 
+    <!-- The database initialization script. DO NOT MODIFY -->
+    <include file="changelog/init/init.changelog.xml"/>
+
+    <!--
+    PL/pgSQL procedures.
+    Each .sql file must start with a Liquibase "formatted sql" header to be picked up, i.e. these
+    two lines, each prefixed with two dashes (not written here: a double dash is not allowed
+    inside an XML comment; see any file in changelog/pgplsql for the exact form):
+        liquibase formatted sql
+        changeset siamois:<mainFunctionName> runOnChange:true splitStatements:false
+    The files may be modified: a changed file is re-run on startup.
+    The scripts must therefore be re-runnable: CREATE OR REPLACE, DROP ... IF EXISTS.
+    -->
+    <includeAll path="changelog/pgplsql"/>
+
+    <!--
+    All the changes made to the database schema.
+    Changelogs must follow this layout:
+        changelog/versions/YYYY/MM/YYYY-MM-DD-<incrementalNumber>.changelog.xml
+    The changelog's ID should be YYYY-MM-DD-<incrementalNumber> and the author must be filled with the dev's name or username
+    NEVER MODIFY A CHANGELOG THAT HAS BEEN COMMITTED TO ANOTHER BRANCH.
+    -->
     <includeAll path="changelog/versions"/>
 
 </databaseChangeLog>

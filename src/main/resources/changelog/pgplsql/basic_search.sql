@@ -1,3 +1,6 @@
+--liquibase formatted sql
+--changeset siamois:basic_search runOnChange:true splitStatements:false
+
 -- The former flat header search (basic_search and its per-entity helpers) is replaced by
 -- global_search.sql. Dropped here so databases that still have it do not keep dead functions.
 DROP FUNCTION IF EXISTS basic_search;
