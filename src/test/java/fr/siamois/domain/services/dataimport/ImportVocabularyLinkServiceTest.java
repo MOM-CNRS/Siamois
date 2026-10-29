@@ -55,11 +55,15 @@ class ImportVocabularyLinkServiceTest {
         type.setId(77L);
         when(conceptService.resolveConceptByLabel(3L, ConfigurableTable.UE.getFieldCode(), "US")).thenReturn(type);
         when(conceptService.findFieldBranchUri(3L, 5L, NATURE)).thenReturn(Optional.of(BRANCH));
+        when(conceptService.findFieldVocabularyId(3L, 5L, NATURE)).thenReturn(Optional.of("th337"));
 
         var links = service.linksFor(project, vocabularyError(NATURE, "US"), "/siamois");
 
-        assertThat(links.configUrl()).isEqualTo("/siamois/settings/project/5/tables?table=UE&typeId=77");
+        assertThat(links.configUrl()).isEqualTo("/siamois/settings/project/5/tables?table=UE&typeId=77&fieldCode=" + NATURE);
+        assertThat(links.configKind()).isEqualTo(ImportVocabularyLinkService.ConfigKind.FIELD);
+        assertThat(links.configTarget()).isEqualTo("US");
         assertThat(links.thesaurusUrl()).isEqualTo(BRANCH);
+        assertThat(links.thesaurusName()).isEqualTo("th337");
     }
 
     @Test
@@ -116,6 +120,9 @@ class ImportVocabularyLinkServiceTest {
 
         assertThat(links.configUrl()).isEqualTo("/settings/project/5/tables?table=UE");
         assertThat(links.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=4287627&idt=th252");
+        assertThat(links.thesaurusName()).isEqualTo("th252");
+        assertThat(links.configKind()).isEqualTo(ImportVocabularyLinkService.ConfigKind.TABLE);
+        assertThat(links.configTarget()).isEqualTo("UE");
     }
 
     @Test

@@ -328,6 +328,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * a field that is not found leaves the page on the table.
      */
     public void openOn(ConfigurableTable table, Long typeConceptId, Long fieldId) {
+        openOn(table, typeConceptId, fieldId, null);
+    }
+
+    /** As above, the field being designated by the field code it reads its values from when it has no id at hand. */
+    public void openOn(ConfigurableTable table, Long typeConceptId, Long fieldId, String fieldCode) {
         selectTableOnly(table);
         Optional<Concept> concept = conceptService.findById(typeConceptId);
         if (concept.isEmpty()) {
@@ -344,9 +349,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         selectType(typeName.get());
         expandedNodes.add(tableNode(table));
         expandedNodes.add(typeNode(table, typeName.get()));
-        if (fieldId != null && fieldsConfig != null) {
+        if ((fieldId != null || fieldCode != null) && fieldsConfig != null) {
             fieldsConfig.getFields().stream()
-                    .filter(candidate -> fieldId.equals(candidate.getId()))
+                    .filter(candidate -> fieldId != null ? fieldId.equals(candidate.getId()) : fieldCode.equals(candidate.getSourceLabel()))
                     .findFirst()
                     .ifPresent(this::openDrawerForEdit);
         }

@@ -328,7 +328,7 @@ public class ProjectUploadSettingsBean {
      */
     public ImportVocabularyLinkService.VocabularyLinks getVocabularyLinks(ImportError e) {
         if (e == null || !e.isVocabularyError()) {
-            return new ImportVocabularyLinkService.VocabularyLinks(null, null);
+            return ImportVocabularyLinkService.VocabularyLinks.NONE;
         }
         return vocabularyLinksCache.computeIfAbsent(e.sheet() + "|" + e.vocabulary(), key -> {
             FacesContext context = FacesContext.getCurrentInstance();

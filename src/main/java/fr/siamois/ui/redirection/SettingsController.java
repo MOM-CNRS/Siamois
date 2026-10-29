@@ -174,13 +174,14 @@ public class SettingsController {
      * Straight to a project's table configuration (the page behind its "tables" tile), optionally
      * opened on one table: what a creation form links to when a table has no type declared yet. A fiche
      * links here too, on its type ({@code typeId}, a concept id) and, from a field's menu, on that field
-     * ({@code fieldId}, a custom field id).
+     * ({@code fieldId}, a custom field id, or {@code fieldCode}, the field code it reads its values from).
      */
     @GetMapping("/settings/project/{projectId}/tables")
     public String goToProjectTablesSettings(@PathVariable("projectId") Long projectId,
                                             @RequestParam(value = "table", required = false) String table,
                                             @RequestParam(value = "typeId", required = false) Long typeId,
-                                            @RequestParam(value = "fieldId", required = false) Long fieldId) {
+                                            @RequestParam(value = "fieldId", required = false) Long fieldId,
+                                            @RequestParam(value = "fieldCode", required = false) String fieldCode) {
         ActionUnitDTO project = requireProjectSettingsAccess(projectId);
         navBean.setApplicationMode(NavBean.ApplicationMode.SETTINGS);
         projectDetailsBean.setProject(project);
@@ -190,7 +191,7 @@ public class SettingsController {
             try {
                 ConfigurableTable configurable = ConfigurableTable.valueOf(table);
                 if (typeId != null) {
-                    projectTableFieldSettingsBean.openOn(configurable, typeId, fieldId);
+                    projectTableFieldSettingsBean.openOn(configurable, typeId, fieldId, fieldCode);
                 } else {
                     projectTableFieldSettingsBean.selectTable(configurable);
                 }
