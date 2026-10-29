@@ -224,6 +224,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private List<IdentifierSegment> identSegments = new ArrayList<>();
     private Integer identFirst;
     private Integer identLast;
+    private Integer identDigitsErrorIndex;
 
     private static final Pattern IDENT_PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
     private static final int IDENT_DEFAULT_DIGITS = 3;
@@ -397,6 +398,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         identFirst = formConfig.getMinCode();
         identLast = formConfig.getMaxCode();
         identSegments = parseFormat(formConfig.getIdentifierFormat());
+        identDigitsErrorIndex = null;
     }
 
     public void setFieldsConfig(TypeFieldsConfig fieldsConfig) {
@@ -2023,7 +2025,35 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public void addIdentTokenSegment(String code) {
         boolean numeric = resolver(code).map(r -> r.valueKind() == IdentifierValueKind.NUMERICAL).orElse(false);
-        identSegments.add(tokenSegment(code, numeric, IDENT_DEFAULT_DIGITS));
+        IdentifierSegment segment = tokenSegment(code, numeric, IDENT_DEFAULT_DIGITS);
+        if (isOwnNumericalToken(segment)) segment.setDigits(Math.max(IDENT_DEFAULT_DIGITS, requiredIdentDigits()));
+        identSegments.add(segment);
+    }
+
+    /**
+     * The maximum number changed: widen the padding of the table's own number so that it can hold it. A segment
+     * without padding (0 digits) is left alone, and a wider padding is never narrowed.
+     */
+    public void onIdentLastChange() {
+        int required = requiredIdentDigits();
+        for (IdentifierSegment segment : identSegments) {
+            if (isOwnNumericalToken(segment) && segment.getDigits() > 0 && segment.getDigits() < required) {
+                segment.setDigits(required);
+            }
+        }
+        identDigitsErrorIndex = null;
+    }
+
+    /**
+     * @return The number of digits the maximum number takes, 0 when there is none.
+     */
+    private int requiredIdentDigits() {
+        return identLast == null || identLast < 0 ? 0 : String.valueOf(identLast).length();
+    }
+
+    private boolean isOwnNumericalToken(IdentifierSegment segment) {
+        return segment.isToken() && segment.isNumeric() && selectedTable != null
+                && identifierResolverRegistry.ownNumericalToken(selectedTable).equals(segment.getCode());
     }
 
     public void moveIdentSegmentLeft(int index) {
@@ -2070,6 +2100,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     public void saveIdentConfig() {
         if (!isIdentTabAvailable()) return;
 
+        identDigitsErrorIndex = null;
         String format = serializeFormat(identSegments);
         if (identifierFormatIsInvalid(format)) return;
 
@@ -2093,11 +2124,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.invalidIdentifierFormat");
             return true;
         }
-        String ownToken = identifierResolverRegistry.ownNumericalToken(selectedTable);
-        for (IdentifierSegment segment : identSegments) {
-            if (segment.isToken() && ownToken.equals(segment.getCode()) && segment.getDigits() > 0
-                    && String.valueOf(identLast).length() > segment.getDigits()) {
-                MessageUtils.displayErrorMessage(langBean, "actionUnit.settings.error.insufficientDigits", ownToken);
+        int required = requiredIdentDigits();
+        for (int i = 0; i < identSegments.size(); i++) {
+            IdentifierSegment segment = identSegments.get(i);
+            if (isOwnNumericalToken(segment) && segment.getDigits() > 0 && segment.getDigits() < required) {
+                MessageUtils.displayErrorMessage(langBean, "projectTables.ident.insufficientDigits",
+                        segment.getLabel(), segment.getDigits(), identLast, required);
+                // the view highlights this segment's digit count and the save button's oncomplete focuses it
+                identDigitsErrorIndex = i;
                 return true;
             }
         }
