@@ -47,6 +47,7 @@ public class RecordingUnitSeeder {
 
     public record RecordingUnitSpecs(String fullIdentifier, Integer identifier,
                                      ConceptSeeder.ConceptKey type,
+                                     ConceptSeeder.ConceptKey nature,
                                      ConceptSeeder.ConceptKey geomorphologicalCycle,
                                      ConceptSeeder.ConceptKey geomorphologicalAgent,
                                      ConceptSeeder.ConceptKey interpretation,
@@ -197,6 +198,7 @@ public class RecordingUnitSeeder {
         Long institutionId = institution.getId();
 
         Concept type = SeederUtils.field("type", () -> resolveConcept(conceptsByKey, s.type, institutionId));
+        Concept nature = resolveOptionalConcept(conceptsByKey, "nature", s.nature, institutionId);
         Concept geoCycle = resolveOptionalConcept(conceptsByKey, "geomorphologicalCycle", s.geomorphologicalCycle, institutionId);
         Concept geoAgent = resolveOptionalConcept(conceptsByKey, "geomorphologicalAgent", s.geomorphologicalAgent, institutionId);
         Concept interpretation = resolveOptionalConcept(conceptsByKey, "interpretation", s.interpretation, institutionId);
@@ -220,6 +222,7 @@ public class RecordingUnitSeeder {
         toGetOrCreate.setIdentifier(s.identifier);
         toGetOrCreate.setFullIdentifier(s.fullIdentifier);
         toGetOrCreate.setType(type);
+        toGetOrCreate.setNature(nature);
         toGetOrCreate.setGeomorphologicalAgent(geoAgent);
         toGetOrCreate.setGeomorphologicalCycle(geoCycle);
         toGetOrCreate.setNormalizedInterpretation(interpretation);
@@ -328,6 +331,7 @@ public class RecordingUnitSeeder {
         Map<String, Set<String>> lowerIdcsByVocab = new HashMap<>();
         for (RecordingUnitSpecs s : specs) {
             addConceptKey(lowerIdcsByVocab, s.type());
+            addConceptKey(lowerIdcsByVocab, s.nature());
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalCycle());
             addConceptKey(lowerIdcsByVocab, s.geomorphologicalAgent());
             addConceptKey(lowerIdcsByVocab, s.interpretation());
@@ -442,6 +446,7 @@ public class RecordingUnitSeeder {
         existing.setMatrixColor(built.getMatrixColor());
         existing.setIdentifier(built.getIdentifier());
         existing.setType(built.getType());
+        existing.setNature(built.getNature());
         existing.setGeomorphologicalAgent(built.getGeomorphologicalAgent());
         existing.setGeomorphologicalCycle(built.getGeomorphologicalCycle());
         existing.setNormalizedInterpretation(built.getNormalizedInterpretation());

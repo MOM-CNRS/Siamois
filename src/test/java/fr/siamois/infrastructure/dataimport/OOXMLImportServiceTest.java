@@ -498,6 +498,22 @@ class OOXMLImportServiceTest {
     }
 
     @Test
+    void parseRecordingUnits_natureLabel_isResolvedAgainstTheNatureField() {
+        var au = actionUnitWithInstitution(7L);
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.NATURE_FIELD_CODE, "Négative"))
+                .thenReturn(conceptWithKey("th337", "1216"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "nature label");
+        row(s, 1, "UE-001", "desc", "Négative");
+
+        RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
+
+        assertThat(spec.nature()).isEqualTo(new ConceptSeeder.ConceptKey("th337", "1216"));
+        assertThat(spec.geomorphologicalCycle()).isNull();
+    }
+
+    @Test
     void parseActionUnits_fullValidRow() {
         Workbook wb = new XSSFWorkbook();
         Sheet s = wb.createSheet("Unite action");

@@ -527,6 +527,8 @@ us-log | USlog | Log stratigraphic unit
 """, "type_UE")
 adopt(ru_type, "type_UE", ["unité artificielle", "passe mécanique", "nettoyage", "fenêtre de fouille"])
 adopt(ru_type, "type_UE", ["ensemble archéologique"], {"ensemble archéologique": "Ensemble"})  # même notion que « entité archéologique structurée »
+# « EA » du th230 (import Chartres) : le fait est une entité archéologique ; le libellé alternatif permet de la retrouver par son nom.
+child(ru_type, "fait").alt.append("entité archéologique")
 
 # Nature et agent : valeurs du th230, avec leurs définitions.
 adopt(ru_nat, "nature_UE", ref_children("nature_UE"))
@@ -1219,6 +1221,9 @@ COLLECTIONS.append(("Mobilier · Type — par nature du mobilier  [SIAS.CAT @ na
 COLLECTIONS.append(("Mobilier · Type — conditionnement du référentiel  [SIAS.CAT @ referentiel]",
                     "Finds · Type — conditioning required by the national referential  [SIAS.CAT @ referential]",
                     [child(sp_type, s) for s in ("vab", "prelevement")]))
+
+# Types d'UE du référentiel national (type_UE) qui n'étaient pas repris : ils prennent le rapprochement et la définition du référentiel.
+adopt(ru_type, "type_UE", ["entité spatiale", "entité graphique", "unité graphique", "entité taphonomique", "phase"])
 
 # ============================================================================== DÉFINITIONS DU RÉFÉRENTIEL
 # Un concept qui a un équivalent dans le référentiel national en reprend la définition et les notes (éditoriale, d'application),

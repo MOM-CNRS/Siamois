@@ -602,6 +602,8 @@ public class OOXMLImportService {
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
                 RecordingUnit.TYPE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey nature         = conceptKeyFromColumnOrLabel(row, cols, "nature uri", "nature label",
+                RecordingUnit.NATURE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumnOrLabel(row, cols, "cycle uri", "cycle label",
                 RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromColumnOrLabel(row, cols, "agent uri", "agent label",
@@ -648,6 +650,7 @@ public class OOXMLImportService {
                 identStr,
                 identifier,
                 type,
+                nature,
                 geomorphCycle,
                 geomorphAgent,
                 interpretation,

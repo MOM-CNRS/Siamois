@@ -89,13 +89,14 @@ public class RecordingUnitStratiRelSeeder {
             RecordingUnit us2 = resolveRecordingUnit(s.us2, actionUnitIdentifier, recordingUnitsByKey);
             Concept rel = resolveRelConcept(s, conceptsByKey, institutionId);
 
-            if (rel == null || !queuedPairs.add(us1.getId() + "|" + us2.getId())) return Optional.empty();
+            // A relation without a type is kept: the order of the two units and the asynchronous flag say where each stands.
+            if (!queuedPairs.add(us1.getId() + "|" + us2.getId())) return Optional.empty();
 
             StratigraphicRelationship newRelationship = new StratigraphicRelationship();
             newRelationship.setUnit1(us1);
             newRelationship.setUnit2(us2);
             newRelationship.setConcept(rel);
-            newRelationship.setConceptDirection(s.conceptDirection);
+            newRelationship.setConceptDirection(rel == null ? null : s.conceptDirection);
             newRelationship.setIsAsynchronous(s.isAsynchronous);
             newRelationship.setUncertain(s.isUncertain);
             return Optional.of(newRelationship);

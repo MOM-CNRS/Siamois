@@ -81,15 +81,20 @@ class RecordingUnitStratiRelSeederTest {
     }
 
     @Test
-    void seed_relNull_silentlySkipped() {
+    void seed_relNull_importsATypelessRelation() {
         stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
 
         var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", null, false, false, false, null));
+                "US1", "US2", null, true, true, false, null));
 
         seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
 
-        verify(stratigraphicRelationshipRepository, never()).saveAll(any());
+        verify(stratigraphicRelationshipRepository).saveAll(argThat(list -> {
+            var it = list.iterator();
+            var rel = it.next();
+            return !it.hasNext() && rel.getConcept() == null && rel.getConceptDirection() == null
+                    && Boolean.TRUE.equals(rel.getIsAsynchronous());
+        }));
     }
 
     @Test
