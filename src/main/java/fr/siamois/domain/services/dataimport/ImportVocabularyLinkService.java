@@ -34,6 +34,15 @@ public class ImportVocabularyLinkService {
      */
     public record VocabularyLinks(String configUrl, String thesaurusUrl) {
 
+        // Expression Language 5 (Tomcat 10) reads bean getters, not record accessors
+        public String getConfigUrl() {
+            return configUrl;
+        }
+
+        public String getThesaurusUrl() {
+            return thesaurusUrl;
+        }
+
         public boolean hasAny() {
             return configUrl != null || thesaurusUrl != null;
         }
