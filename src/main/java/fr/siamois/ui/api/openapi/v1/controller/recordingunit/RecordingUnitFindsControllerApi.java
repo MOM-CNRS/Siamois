@@ -4,6 +4,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
@@ -75,7 +76,7 @@ public class RecordingUnitFindsControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         ProjectApiService.RecordingUnitFindsPage result = projectApiService.pageFindsOfRecordingUnit(
-                caller, id, offset, limit, sort, search, acceptLanguage,
+                caller, id, new ListWindow(offset, limit, sort, search), acceptLanguage,
                 fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage));
         Page<FindResource> page = result.page();
         RecordingUnitDTO ru = result.recordingUnit();

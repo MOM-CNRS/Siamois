@@ -55,26 +55,47 @@ public final class ExactMatchFirst {
                                       @NonNull Pageable pageable,
                                       @NonNull String attribute,
                                       @Nullable String searched) {
-        if (searched == null || searched.isBlank()) {
-            return repository.findAll(specification, pageable);
-        }
-        return repository.findAll(rank(specification, pageable.getSort(), attribute, searched), withoutSort(pageable));
+        return findAll(repository, specification, pageable, List.of(attribute), searched);
     }
 
     /**
-     * {@code specification}, ordering its rows by exact match on {@code attribute} first, then by the
-     * orders already set on the query, then by {@code sort}.
+     * Same, a row being an exact match when any of {@code attributes} equals {@code searched} — for a
+     * search spanning several attributes (a project's name, identifier and full identifier).
+     *
+     * @param repository    the repository to query
+     * @param specification what the rows must match
+     * @param pageable      the page and the sort that applies after the ranking
+     * @param attributes    the entity attributes compared to the searched text
+     * @param searched      the searched text, null or blank for no ranking
+     * @param <T>           the entity type
+     * @return the page, exact matches first
+     */
+    @NonNull
+    public static <T> Page<T> findAll(@NonNull JpaSpecificationExecutor<T> repository,
+                                      @NonNull Specification<T> specification,
+                                      @NonNull Pageable pageable,
+                                      @NonNull List<String> attributes,
+                                      @Nullable String searched) {
+        if (searched == null || searched.isBlank()) {
+            return repository.findAll(specification, pageable);
+        }
+        return repository.findAll(rank(specification, pageable.getSort(), attributes, searched), withoutSort(pageable));
+    }
+
+    /**
+     * {@code specification}, ordering its rows by exact match on one of {@code attributes} first, then
+     * by the orders already set on the query, then by {@code sort}.
      *
      * @param specification what the rows must match
      * @param sort          the sort that applies after the ranking
-     * @param attribute     the entity attribute compared to the searched text
+     * @param attributes    the entity attributes compared to the searched text (a null one never matches)
      * @param searched      the searched text
      * @param <T>           the entity type
      * @return the ranking specification
      */
     @NonNull
     static <T> Specification<T> rank(@NonNull Specification<T> specification, @NonNull Sort sort,
-                                     @NonNull String attribute, @NonNull String searched) {
+                                     @NonNull List<String> attributes, @NonNull String searched) {
         String lowered = searched.toLowerCase(Locale.ROOT);
         return (root, query, cb) -> {
             Predicate predicate = specification.toPredicate(root, query, cb);
@@ -83,9 +104,10 @@ public final class ExactMatchFirst {
             }
             List<Order> orders = new ArrayList<>();
             if (!query.isDistinct()) {
-                orders.add(cb.asc(cb.selectCase()
-                        .when(cb.equal(cb.lower(root.get(attribute)), lowered), 0)
-                        .otherwise(1)));
+                Predicate exact = cb.or(attributes.stream()
+                        .map(attribute -> cb.equal(cb.lower(root.get(attribute)), lowered))
+                        .toArray(Predicate[]::new));
+                orders.add(cb.asc(cb.selectCase().when(exact, 0).otherwise(1)));
             }
             orders.addAll(query.getOrderList());
             orders.addAll(QueryUtils.toOrders(sort, root, cb));

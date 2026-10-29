@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,15 +83,46 @@ class ExactMatchFirstTest {
         when(query.getOrderList()).thenReturn(List.of(existing));
         when(root.get("identifier")).thenReturn(identifier);
         when(cb.lower(any())).thenReturn(lowered);
+        Predicate exact = mock(Predicate.class);
         when(cb.equal(lowered, "exemple")).thenReturn(equal);
+        when(cb.or(equal)).thenReturn(exact);
         when(cb.<Integer>selectCase()).thenReturn(whenCase);
-        when(whenCase.when(equal, 0)).thenReturn(whenCase);
+        when(whenCase.when(exact, 0)).thenReturn(whenCase);
         when(whenCase.otherwise(1)).thenReturn(rankExpr);
         when(cb.asc(rankExpr)).thenReturn(rankOrder);
 
-        ExactMatchFirst.rank(base, Sort.unsorted(), "identifier", "EXEMPLE").toPredicate(root, query, cb);
+        ExactMatchFirst.rank(base, Sort.unsorted(), List.of("identifier"), "EXEMPLE").toPredicate(root, query, cb);
 
         verify(query).orderBy(List.of(rankOrder, existing));
+    }
+
+    /**
+     * With several attributes, a row is an exact match when any of them equals the searched text.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void rank_severalAttributes_exactWhenAnyEquals() {
+        Path<String> name = mock(Path.class);
+        Path<String> identifier = mock(Path.class);
+        Expression<String> lowerName = mock(Expression.class);
+        Expression<String> lowerIdentifier = mock(Expression.class);
+        Predicate nameEqual = mock(Predicate.class);
+        Predicate identifierEqual = mock(Predicate.class);
+        CriteriaBuilder.Case<Integer> whenCase = mock(CriteriaBuilder.Case.class);
+        when(query.getResultType()).thenReturn(Object.class);
+        when(query.getOrderList()).thenReturn(List.of());
+        when(root.<String>get("name")).thenReturn(name);
+        when(root.<String>get("identifier")).thenReturn(identifier);
+        when(cb.lower(name)).thenReturn(lowerName);
+        when(cb.lower(identifier)).thenReturn(lowerIdentifier);
+        when(cb.equal(lowerName, "fouille")).thenReturn(nameEqual);
+        when(cb.equal(lowerIdentifier, "fouille")).thenReturn(identifierEqual);
+        when(cb.<Integer>selectCase()).thenReturn(whenCase);
+        when(whenCase.when(any(), eq(0))).thenReturn(whenCase);
+
+        ExactMatchFirst.rank(base, Sort.unsorted(), List.of("name", "identifier"), "Fouille").toPredicate(root, query, cb);
+
+        verify(cb).or(new Predicate[]{nameEqual, identifierEqual});
     }
 
     /**
@@ -100,7 +132,7 @@ class ExactMatchFirstTest {
     void rank_countQuery_setsNoOrder() {
         when(query.getResultType()).thenReturn((Class) Long.class);
 
-        ExactMatchFirst.rank(base, Sort.unsorted(), "identifier", "EXEMPLE").toPredicate(root, query, cb);
+        ExactMatchFirst.rank(base, Sort.unsorted(), List.of("identifier"), "EXEMPLE").toPredicate(root, query, cb);
 
         verify(query, never()).orderBy(any(List.class));
         verifyNoInteractions(cb);
@@ -116,7 +148,7 @@ class ExactMatchFirstTest {
         when(query.isDistinct()).thenReturn(true);
         when(query.getOrderList()).thenReturn(List.of(existing));
 
-        ExactMatchFirst.rank(base, Sort.unsorted(), "identifier", "EXEMPLE").toPredicate(root, query, cb);
+        ExactMatchFirst.rank(base, Sort.unsorted(), List.of("identifier"), "EXEMPLE").toPredicate(root, query, cb);
 
         verify(query).orderBy(List.of(existing));
         verifyNoInteractions(cb);

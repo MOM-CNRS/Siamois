@@ -13,6 +13,7 @@ import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.response.document.DocumentListResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,7 +114,7 @@ class DocumentLinksOpenApiServiceTest {
 
         assertStatus(() -> service.page(DocumentLinkKind.PHASE, TARGET_ID, caller, 0, 10, "identifier:asc", null,
                 FieldQuery.NONE, null, "fr"), HttpStatus.NOT_FOUND);
-        verify(projectApiService, never()).pageDocumentsLinkedTo(any(), anyLong(), any(), anyInt(), anyInt(), any(), any(), any());
+        verify(projectApiService, never()).pageDocumentsLinkedTo(any(), anyLong(), any(), any(), any());
     }
 
     @Test
@@ -126,8 +127,7 @@ class DocumentLinksOpenApiServiceTest {
         project.setId(PROJECT_ID);
         doc.setActionUnit(project);
         FieldQuery fieldQuery = FieldQuery.NONE;
-        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PHASE, TARGET_ID, institution, 0, 10,
-                "identifier:asc", "plan", fieldQuery)).thenReturn(new PageImpl<>(List.of(doc), PageRequest.of(0, 10), 1));
+        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PHASE, TARGET_ID, institution, new ListWindow(0, 10, "identifier:asc", "plan"), fieldQuery)).thenReturn(new PageImpl<>(List.of(doc), PageRequest.of(0, 10), 1));
         when(documentListProjectionService.build(List.of(doc), "all", "fr"))
                 .thenReturn(new DocumentListProjectionService.DocumentListProjection(Map.of(), Map.of(5L, Map.of("-708", "Plan"))));
         DocumentResource resource = new DocumentResource();
@@ -154,8 +154,7 @@ class DocumentLinksOpenApiServiceTest {
                 .thenReturn(Optional.of(new DocumentLinkService.Target(INSTITUTION_ID, null)));
         DocumentDTO orphan = new DocumentDTO();
         orphan.setId(1L);
-        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PLACE, TARGET_ID, institution, 0, 10,
-                "creationTime:desc", null, FieldQuery.NONE)).thenReturn(new PageImpl<>(List.of(orphan), PageRequest.of(0, 10), 1));
+        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PLACE, TARGET_ID, institution, new ListWindow(0, 10, "creationTime:desc", null), FieldQuery.NONE)).thenReturn(new PageImpl<>(List.of(orphan), PageRequest.of(0, 10), 1));
         when(documentListProjectionService.build(List.of(orphan), null, "fr"))
                 .thenReturn(DocumentListProjectionService.DocumentListProjection.empty());
         DocumentResource resource = new DocumentResource();
@@ -174,8 +173,7 @@ class DocumentLinksOpenApiServiceTest {
     void page_ofAPlace_hasNoProjectToCheck() {
         when(documentLinkService.findTarget(DocumentLinkKind.PLACE, TARGET_ID))
                 .thenReturn(Optional.of(new DocumentLinkService.Target(INSTITUTION_ID, null)));
-        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PLACE, TARGET_ID, institution, 0, 10,
-                "identifier:asc", null, FieldQuery.NONE)).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+        when(projectApiService.pageDocumentsLinkedTo(DocumentLinkKind.PLACE, TARGET_ID, institution, new ListWindow(0, 10, "identifier:asc", null), FieldQuery.NONE)).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
         when(documentListProjectionService.build(List.of(), null, "fr"))
                 .thenReturn(DocumentListProjectionService.DocumentListProjection.empty());
 
