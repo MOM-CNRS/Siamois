@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 public class ContainerService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     private final ContainerRepository containerRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
@@ -168,6 +169,9 @@ public class ContainerService {
         }
 
         if (dto.getParentId() != null) {
+            if (entity.getId() != null) {
+                hierarchyCycleGuard.requireNoCycle(HierarchyCycleGuard.Kind.CONTAINER, dto.getParentId(), entity.getId());
+            }
             entity.setParent(containerRepository.findById(dto.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("Container parent not found: " + dto.getParentId())));
         }

@@ -20,6 +20,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
@@ -79,6 +80,7 @@ import java.util.stream.Collectors;
 public class RecordingUnitService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
@@ -297,6 +299,8 @@ public class RecordingUnitService implements ArkEntityService {
             if (missing.size() != missingIds.size()) {
                 throw new IllegalArgumentException("Some children not found: " + missingIds);
             }
+            hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                    managedRecordingUnit.getId(), Set.of(), missingIds);
             managedRecordingUnit.getChildren().addAll(missing);
         }
     }
@@ -317,6 +321,11 @@ public class RecordingUnitService implements ArkEntityService {
             throw new IllegalArgumentException("Some parents not found: " + newParentIds);
         }
         Set<RecordingUnit> newParents = new HashSet<>(loadedParents);
+
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                managedRecordingUnit.getId(),
+                newParents.stream().filter(p -> !currentParents.contains(p)).map(RecordingUnit::getId).collect(Collectors.toSet()),
+                Set.of());
 
         List<RecordingUnit> toSave = new ArrayList<>();
 

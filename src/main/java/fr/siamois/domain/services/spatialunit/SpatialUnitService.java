@@ -16,6 +16,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -63,6 +64,7 @@ import java.util.stream.Collectors;
 public class SpatialUnitService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptService conceptService;
@@ -165,6 +167,10 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
 
+    private static Set<Long> idsOf(Set<SpatialUnitSummaryDTO> units) {
+        return units == null ? Set.of() : units.stream().map(SpatialUnitSummaryDTO::getId).collect(Collectors.toSet());
+    }
+
     /**
      * Save a new SpatialUnit
      *
@@ -209,6 +215,8 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         // Gestion des enfants et parents
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPATIAL_UNIT, spatialUnit.getId(),
+                idsOf(su.getParents()), idsOf(su.getChildren()));
         if (su.getChildren() != null && !su.getChildren().isEmpty()) {
             Set<SpatialUnit> children = new HashSet<>();
             for (SpatialUnitSummaryDTO childDTO : su.getChildren()) {

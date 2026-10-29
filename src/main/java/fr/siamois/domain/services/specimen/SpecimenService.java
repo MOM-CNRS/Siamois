@@ -15,6 +15,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
@@ -58,6 +59,7 @@ import java.util.stream.Collectors;
 public class SpecimenService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     private final SpecimenRepository specimenRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
@@ -111,6 +113,12 @@ public class SpecimenService implements ArkEntityService {
 
         managedSpecimen.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
 
+        Set<Long> addedIds = incomingIds.stream()
+                .filter(id -> managedSpecimen.getChildren().stream().noneMatch(c -> c.getId().equals(id)))
+                .collect(Collectors.toSet());
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPECIMEN,
+                managedSpecimen.getId(), Set.of(), addedIds);
+
         for (Long id : incomingIds) {
             boolean alreadyPresent = managedSpecimen.getChildren().stream()
                     .anyMatch(c -> c.getId().equals(id));
@@ -135,6 +143,10 @@ public class SpecimenService implements ArkEntityService {
                     .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
             newParents.add(parent);
         }
+
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPECIMEN, managedSpecimen.getId(),
+                newParents.stream().filter(p -> !currentParents.contains(p)).map(Specimen::getId).collect(Collectors.toSet()),
+                Set.of());
 
         for (Specimen parent : newParents) {
             if (!currentParents.contains(parent)) {

@@ -93,6 +93,9 @@ class SpatialUnitServiceTest {
     @Mock
     private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
 
+    @Mock
+    private fr.siamois.domain.services.HierarchyCycleGuard hierarchyCycleGuard;
+
     @InjectMocks
     private SpatialUnitService spatialUnitService;
 
