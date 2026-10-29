@@ -1856,7 +1856,7 @@ class ActionUnitServiceTest {
     void findSiblingProject_emptyInstitutions_returnsEmptyWithoutDb() {
         Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
                 1L, Set.of(), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
-                "creationTime", Sort.Direction.ASC, NOW, 5L, true);
+                new fr.siamois.dto.api.ProjectCursor("creationTime", Sort.Direction.ASC, NOW, 5L), true);
 
         assertThat(result).isEmpty();
         verifyNoInteractions(actionUnitRepository);
@@ -1876,7 +1876,7 @@ class ActionUnitServiceTest {
 
         Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
                 1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
-                "creationTime", Sort.Direction.ASC, NOW, 1L, true);
+                new fr.siamois.dto.api.ProjectCursor("creationTime", Sort.Direction.ASC, NOW, 1L), true);
 
         assertThat(result).contains(actionUnit2dto);
         verify(actionUnitRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
@@ -1898,7 +1898,7 @@ class ActionUnitServiceTest {
 
         Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
                 1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
-                "creationTime", Sort.Direction.ASC, NOW, 9L, true);
+                new fr.siamois.dto.api.ProjectCursor("creationTime", Sort.Direction.ASC, NOW, 9L), true);
 
         assertThat(result).contains(actionUnit1dto);
         verify(actionUnitRepository, times(2)).findAll(any(Specification.class), any(Pageable.class));
@@ -1918,7 +1918,7 @@ class ActionUnitServiceTest {
 
         Optional<ActionUnitDTO> result = actionUnitService.findSiblingProject(
                 1L, Set.of(10L), null, null, fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.EMPTY,
-                "creationTime", Sort.Direction.ASC, NOW, 1L, true);
+                new fr.siamois.dto.api.ProjectCursor("creationTime", Sort.Direction.ASC, NOW, 1L), true);
 
         assertThat(result).isEmpty();
         verify(actionUnitMapper, never()).convert(any(ActionUnit.class));
@@ -2526,7 +2526,8 @@ class ActionUnitServiceTest {
                 fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.parse(
                         new org.springframework.util.LinkedMultiValueMap<>(java.util.Map.of("f.name", List.of("foss"))));
 
-        actionUnitService.findAccessibleProjects(1L, Set.of(10L), null, null, PageRequest.of(0, 20), null, filter);
+        actionUnitService.findAccessibleProjects(1L, Set.of(10L), null,
+                fr.siamois.dto.api.AccessibleProjectsQuery.of(null, PageRequest.of(0, 20)).withFilter(filter));
 
         org.mockito.ArgumentCaptor<Specification<ActionUnit>> specCaptor = org.mockito.ArgumentCaptor.forClass(Specification.class);
         verify(actionUnitRepository).findAll(specCaptor.capture(), any(Pageable.class));

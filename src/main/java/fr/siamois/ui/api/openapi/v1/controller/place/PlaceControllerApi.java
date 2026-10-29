@@ -227,7 +227,7 @@ public class PlaceControllerApi {
                         ProjectListFilter.parse(queryParams), fieldQuery,
                         TreeRequest.tree(parent).inSpatialContext(place.getId()))
                 : projectApiService.pageAccessibleProjects(
-                        caller, place.getCreatedByInstitution().getId(), search, offset, limit, sort,
+                        caller, place.getCreatedByInstitution().getId(), new ListWindow(offset, limit, sort, search),
                         ProjectListFilter.parse(queryParams).withSpatialContext(place.getId()), fieldQuery);
         ProjectListResponse body = projectListAssembler.assemble(caller, rows, fields, lang, limit, offset);
         return ResponseEntity.ok()

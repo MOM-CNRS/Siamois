@@ -37,6 +37,8 @@ import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.api.AccessibleProjectsQuery;
+import fr.siamois.dto.api.ProjectCursor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.*;
@@ -209,7 +211,8 @@ public class ProjectApiService {
             int offset,
             int limit,
             String sortParam) {
-        return pageAccessibleProjects(caller, organizationId, search, offset, limit, sortParam, ProjectListFilter.EMPTY);
+        return pageAccessibleProjects(caller, organizationId, new ListWindow(offset, limit, sortParam, search),
+                ProjectListFilter.EMPTY, FieldQuery.NONE);
     }
 
     /**
@@ -225,24 +228,28 @@ public class ProjectApiService {
             int limit,
             String sortParam,
             ProjectListFilter filter) {
-        return pageAccessibleProjects(caller, organizationId, search, offset, limit, sortParam, filter, FieldQuery.NONE);
+        return pageAccessibleProjects(caller, organizationId, new ListWindow(offset, limit, sortParam, search),
+                filter, FieldQuery.NONE);
     }
 
-    /** @param fieldQuery the sort/filters on form fields (by field id) — {@link FieldQuery#NONE} for none */
+    /**
+     * @param window     the page, its sort and its search
+     * @param fieldQuery the sort/filters on form fields (by field id) — {@link FieldQuery#NONE} for none
+     */
     public Page<AccessibleProjectForApi> pageAccessibleProjects(
             ProjectApiCaller caller,
             Long organizationId,
-            String search,
-            int offset,
-            int limit,
-            String sortParam,
+            ListWindow window,
             ProjectListFilter filter,
             FieldQuery fieldQuery) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
-        int pageNumber = offset / limit;
+        int limit = window.limit();
+        int pageNumber = window.offset() / limit;
+        String sortParam = window.sort();
         if (fieldQuery.ordered()) {
             return actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(),
-                    organizationId, search, PageRequest.of(pageNumber, limit), null, filter, fieldQuery);
+                    organizationId, AccessibleProjectsQuery.of(window.search(), PageRequest.of(pageNumber, limit))
+                            .withFilter(filter).withFieldQuery(fieldQuery));
         }
 
         // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
@@ -258,11 +265,10 @@ public class ProjectApiService {
                 caller.person().getId(),
                 caller.accessibleInstitutionIds(),
                 organizationId,
-                search,
-                pageable,
-                countDirection,
-                filter,
-                fieldQuery);
+                AccessibleProjectsQuery.of(window.search(), pageable)
+                        .withRecordingUnitCountOrder(countDirection)
+                        .withFilter(filter)
+                        .withFieldQuery(fieldQuery));
     }
 
     /**
@@ -380,12 +386,11 @@ public class ProjectApiService {
         CursorSort sort = parseCursorableProjectSort(sortParam);
         Comparable<?> currentValue = sortFieldValue(currentDto, sort.field());
 
+        ProjectCursor cursor = new ProjectCursor(sort.field(), sort.direction(), currentValue, currentDto.getId());
         Optional<ActionUnitDTO> previous = actionUnitService.findSiblingProject(
-                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter,
-                sort.field(), sort.direction(), currentValue, currentDto.getId(), false);
+                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter, cursor, false);
         Optional<ActionUnitDTO> next = actionUnitService.findSiblingProject(
-                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter,
-                sort.field(), sort.direction(), currentValue, currentDto.getId(), true);
+                caller.person().getId(), caller.accessibleInstitutionIds(), organizationId, search, filter, cursor, true);
 
         return new ProjectSiblingsResource(
                 previous.map(ProjectApiService::toSiblingResource).orElse(null),
@@ -1083,9 +1088,10 @@ public class ProjectApiService {
      * (chargée une seule fois lors de l'appel à {@link #requireCaller()}).
      */
     public Page<InstitutionDTO> pageAccessibleOrganizations(ProjectApiCaller caller, int offset, int limit, List<String> sortParams) {
-        // TODO: implement multi-sort; for now only the first element is used
-        String sortParam = (sortParams != null && !sortParams.isEmpty()) ? sortParams.get(0) : null;
-        Sort sort = parseOrganizationSort(sortParam);
+        // Each "champ:direction" in turn, the next one breaking the ties of the previous ones.
+        Sort sort = sortParams == null || sortParams.isEmpty()
+                ? parseOrganizationSort(null)
+                : sortParams.stream().map(ProjectApiService::parseOrganizationSort).reduce(Sort::and).orElseThrow();
         List<InstitutionDTO> sorted = sortInstitutions(caller.institutions(), sort);
         long total = sorted.size();
         int from = Math.min(offset, (int) total);
@@ -1109,20 +1115,8 @@ public class ProjectApiService {
             String sortParam,
             String search,
             RecordingUnitListFilter filter) {
-        return pageRecordingUnitsForProject(caller, projectIdOrKey, offset, limit, sortParam, search, filter, FieldQuery.NONE);
-    }
-
-    /** @param fieldQuery the sort/filters on form fields (by field id) — {@link FieldQuery#NONE} for none */
-    public Page<RecordingUnitDTO> pageRecordingUnitsForProject(
-            ProjectApiCaller caller,
-            String projectIdOrKey,
-            int offset,
-            int limit,
-            String sortParam,
-            String search,
-            RecordingUnitListFilter filter,
-            FieldQuery fieldQuery) {
-        return pageRecordingUnitsForProject(caller, projectIdOrKey, new ListWindow(offset, limit, sortParam, search), filter, fieldQuery, TreeRequest.OFF);
+        return pageRecordingUnitsForProject(caller, projectIdOrKey, new ListWindow(offset, limit, sortParam, search),
+                filter, FieldQuery.NONE, TreeRequest.OFF);
     }
 
     /**
@@ -1243,15 +1237,14 @@ public class ProjectApiService {
             DocumentLinkKind kind,
             long targetId,
             InstitutionDTO institution,
-            int offset,
-            int limit,
-            String sortParam,
-            String search,
+            ListWindow window,
             FieldQuery fieldQuery) {
-        Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseDocumentSort);
-        Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
+        Sort sort = sortOr(fieldQuery, window.sort(), ProjectApiService::parseDocumentSort);
+        int limit = window.limit();
+        Pageable pageable = PageRequest.of(limit > 0 ? window.offset() / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
+        String search = window.search();
         if (search != null && !search.isBlank()) {
             filterDTO.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
         }
@@ -1687,19 +1680,20 @@ public class ProjectApiService {
             String sortParam,
             String search,
             String acceptLanguage) {
-        return pageFindsOfRecordingUnit(caller, recordingUnitKey, offset, limit, sortParam, search, acceptLanguage, FieldQuery.NONE);
+        return pageFindsOfRecordingUnit(caller, recordingUnitKey, new ListWindow(offset, limit, sortParam, search),
+                acceptLanguage, FieldQuery.NONE);
     }
 
     /** Same, with sort/filters on form fields — which the specification-based search serves. */
     public RecordingUnitFindsPage pageFindsOfRecordingUnit(
             ProjectApiCaller caller,
             String recordingUnitKey,
-            int offset,
-            int limit,
-            String sortParam,
-            String search,
+            ListWindow window,
             String acceptLanguage,
             FieldQuery fieldQuery) {
+        int limit = window.limit();
+        String sortParam = window.sort();
+        String search = window.search();
         RecordingUnitDTO ru = recordingUnitService.findAccessibleRecordingUnitByKey(
                 recordingUnitKey, caller.accessibleInstitutionIds(), null);
         requireRecordingUnitViewPermission(caller, ru);
@@ -1708,7 +1702,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité d'enregistrement sans institution");
         }
         String lang = primaryAcceptLanguage(acceptLanguage);
-        int pageNumber = offset / limit;
+        int pageNumber = window.offset() / limit;
         if (fieldQuery != FieldQuery.NONE) {
             FilterDTO filterDTO = new FilterDTO();
             filterDTO.setFieldQuery(fieldQuery);
@@ -1749,19 +1743,8 @@ public class ProjectApiService {
             String sortParam,
             String search,
             RecordingUnitListFilter filter) {
-        return pageRecordingUnitChildren(caller, recordingUnitKey, offset, limit, sortParam, search, filter, FieldQuery.NONE);
-    }
-
-    public ScopedRecordingUnitPage pageRecordingUnitChildren(
-            ProjectApiCaller caller,
-            String recordingUnitKey,
-            int offset,
-            int limit,
-            String sortParam,
-            String search,
-            RecordingUnitListFilter filter,
-            FieldQuery fieldQuery) {
-        return pageRecordingUnitChildren(caller, recordingUnitKey, new ListWindow(offset, limit, sortParam, search), filter, fieldQuery, TreeRequest.OFF);
+        return pageRecordingUnitChildren(caller, recordingUnitKey, new ListWindow(offset, limit, sortParam, search),
+                filter, FieldQuery.NONE, TreeRequest.OFF);
     }
 
     /**
@@ -1948,7 +1931,17 @@ public class ProjectApiService {
 
     private static List<InstitutionDTO> sortInstitutions(List<InstitutionDTO> institutions, Sort sort) {
         if (institutions.isEmpty()) return List.of();
-        Sort.Order order = sort.stream().findFirst().orElse(new Sort.Order(Sort.Direction.ASC, "name"));
+        Comparator<InstitutionDTO> cmp = sort.stream()
+                .map(ProjectApiService::institutionComparator)
+                .reduce(Comparator::thenComparing)
+                .orElseGet(() -> institutionComparator(new Sort.Order(Sort.Direction.ASC, "name")));
+        return institutions.stream().sorted(cmp).toList();
+    }
+
+    /**
+     * How institutions compare on one sort order — by name for an unknown property.
+     */
+    private static Comparator<InstitutionDTO> institutionComparator(Sort.Order order) {
         Comparator<InstitutionDTO> cmp = switch (order.getProperty()) {
             case "id" -> Comparator.comparing(InstitutionDTO::getId, Comparator.nullsLast(Long::compareTo));
             case IDENTIFIER -> Comparator.comparing(
@@ -1957,7 +1950,6 @@ public class ProjectApiService {
                     InstitutionDTO::getCreationDate, Comparator.nullsLast(Comparator.naturalOrder()));
             default -> Comparator.comparing(InstitutionDTO::getName, Comparator.nullsLast(String::compareToIgnoreCase));
         };
-        if (order.isDescending()) cmp = cmp.reversed();
-        return institutions.stream().sorted(cmp).toList();
+        return order.isDescending() ? cmp.reversed() : cmp;
     }
 }

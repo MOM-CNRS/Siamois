@@ -20,6 +20,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.api.AccessibleProjectsQuery;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -246,14 +247,7 @@ class ProjectControllerApiTest {
         au.setName("Fouille A");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 4L, 2L);
 
-        when(actionUnitService.findAccessibleProjects(
-                anyLong(),
-                eq(Set.of(100L)),
-                isNull(),
-                isNull(),
-                any(Pageable.class),
-                isNull(),
-                any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -272,14 +266,7 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.meta.limit").value(20))
                 .andExpect(jsonPath("$.meta.offset").value(0));
 
-        verify(actionUnitService).findAccessibleProjects(
-                anyLong(),
-                eq(Set.of(100L)),
-                isNull(),
-                isNull(),
-                any(Pageable.class),
-                isNull(),
-                any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
+        verify(actionUnitService).findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch));
     }
 
     @Test
@@ -343,8 +330,7 @@ class ProjectControllerApiTest {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(1L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -372,8 +358,7 @@ class ProjectControllerApiTest {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -382,10 +367,9 @@ class ProjectControllerApiTest {
                         .param("sort", "fullIdentifier:desc"))
                 .andExpect(status().isOk());
 
-        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(actionUnitService).findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), pageable.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
-        assertThat(pageable.getValue().getSort().getOrderFor("fullIdentifier").getDirection())
+        ArgumentCaptor<AccessibleProjectsQuery> asked = ArgumentCaptor.forClass(AccessibleProjectsQuery.class);
+        verify(actionUnitService).findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), asked.capture());
+        assertThat(asked.getValue().pageable().getSort().getOrderFor("fullIdentifier").getDirection())
                 .isEqualTo(Sort.Direction.DESC);
     }
 
@@ -431,8 +415,7 @@ class ProjectControllerApiTest {
         au.setId(1L);
         au.setOaCode("OA-1");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
-        when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -452,8 +435,7 @@ class ProjectControllerApiTest {
         login();
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
-        when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+        when(actionUnitService.findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), argThat(ProjectControllerApiTest::isAPlainSearch)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -463,12 +445,10 @@ class ProjectControllerApiTest {
                         .param("f.status", "12"))
                 .andExpect(status().isOk());
 
-        ArgumentCaptor<fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter> filterCaptor =
-                ArgumentCaptor.forClass(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.class);
-        verify(actionUnitService).findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), filterCaptor.capture(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
-        assertThat(filterCaptor.getValue().containsFilters()).containsEntry("name", "foss");
-        assertThat(filterCaptor.getValue().conceptOneInFilters()).containsEntry("status", List.of(12L));
+        ArgumentCaptor<AccessibleProjectsQuery> asked = ArgumentCaptor.forClass(AccessibleProjectsQuery.class);
+        verify(actionUnitService).findAccessibleProjects(anyLong(), eq(Set.of(100L)), isNull(), asked.capture());
+        assertThat(asked.getValue().filter().containsFilters()).containsEntry("name", "foss");
+        assertThat(asked.getValue().filter().conceptOneInFilters()).containsEntry("status", List.of(12L));
     }
 
     @Test
@@ -1221,5 +1201,12 @@ class ProjectControllerApiTest {
                 .andExpect(status().isNoContent());
 
         verify(actionUnitService).deleteProjectWithContent(9L);
+    }
+
+    /**
+     * A projects query with no search and no sort by recording-unit count — what a plain list request asks.
+     */
+    private static boolean isAPlainSearch(AccessibleProjectsQuery query) {
+        return query.search() == null && query.recordingUnitCountOrder() == null;
     }
 }
