@@ -940,4 +940,21 @@ class ConceptServiceTest {
 
         assertThat(conceptService.findFieldBranchUri(3L, 5L, "SIARU.NATURE")).isEmpty();
     }
+
+    @Test
+    void findFieldVocabularyId_returnsTheExternalIdOfTheThesaurusOfTheField() {
+        vocabulary.setExternalVocabularyId("th337");
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setVocabulary(vocabulary);
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
+
+        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).contains("th337");
+    }
+
+    @Test
+    void findFieldVocabularyId_noThesaurusConfigured_isEmpty() {
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.empty());
+
+        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).isEmpty();
+    }
 }

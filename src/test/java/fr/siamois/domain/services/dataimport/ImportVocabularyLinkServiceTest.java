@@ -156,4 +156,44 @@ class ImportVocabularyLinkServiceTest {
         assertThat(ConfigurableTable.ofFieldCode("SIASU.TYPE")).isNull();
         assertThat(ConfigurableTable.ofFieldCode(null)).isNull();
     }
+
+    @Test
+    void linksFor_theThesaurusOfTheFieldIsUnknown_namesNoThesaurus() {
+        when(conceptService.findFieldBranchUri(3L, 5L, NATURE)).thenReturn(Optional.empty());
+        when(conceptService.findFieldVocabularyId(3L, 5L, NATURE)).thenReturn(Optional.empty());
+
+        var links = service.linksFor(project, vocabularyError(NATURE, null), "");
+
+        assertThat(links.thesaurusName()).isNull();
+        assertThat(links.getThesaurusName()).isNull();
+    }
+
+    @Test
+    void linksFor_theThesaurusLookupFails_namesNoThesaurus() {
+        when(conceptService.findFieldBranchUri(3L, 5L, NATURE)).thenThrow(new IllegalStateException("down"));
+        when(conceptService.findFieldVocabularyId(3L, 5L, NATURE)).thenThrow(new IllegalStateException("down"));
+
+        var links = service.linksFor(project, vocabularyError(NATURE, null), "");
+
+        assertThat(links.thesaurusUrl()).isNull();
+        assertThat(links.thesaurusName()).isNull();
+    }
+
+    @Test
+    void linksFor_aConceptUrlWithoutThesaurus_namesNoThesaurus() {
+        var links = service.linksFor(project, missingConcept("recording_unit", "https://thesaurus.mom.fr/?idc=1"), "");
+
+        assertThat(links.thesaurusName()).isNull();
+        assertThat(links.getThesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1");
+    }
+
+    @Test
+    void links_exposeTheirValuesAsBeanProperties() {
+        var links = new ImportVocabularyLinkService.VocabularyLinks("/c", ImportVocabularyLinkService.ConfigKind.TYPE, "US", "/t", "th337");
+
+        assertThat(links.getConfigUrl()).isEqualTo("/c");
+        assertThat(links.getConfigKind()).isEqualTo("TYPE");
+        assertThat(links.getConfigTarget()).isEqualTo("US");
+        assertThat(ImportVocabularyLinkService.VocabularyLinks.NONE.getConfigKind()).isNull();
+    }
 }

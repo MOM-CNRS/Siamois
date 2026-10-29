@@ -88,27 +88,7 @@ public class ImportVocabularyLinkService {
                 ? ConfigurableTable.ofFieldCode(issue.fieldCode())
                 : TABLE_OF_SHEET.get(error.sheet());
 
-        String configUrl = null;
-        ConfigKind kind = null;
-        String target = null;
-        if (table != null) {
-            StringBuilder url = new StringBuilder(contextPath == null ? "" : contextPath)
-                    .append("/settings/project/").append(project.getId()).append("/tables?table=").append(table.name());
-            Optional<Long> typeId = typeIdOf(institutionId, table, issue);
-            if (typeId.isPresent()) {
-                url.append("&typeId=").append(typeId.get());
-                boolean aField = issue.fieldCode() != null;
-                if (aField) {
-                    url.append("&fieldCode=").append(URLEncoder.encode(issue.fieldCode(), StandardCharsets.UTF_8));
-                }
-                kind = aField ? ConfigKind.FIELD : ConfigKind.TYPE;
-                target = issue.typeLabel();
-            } else {
-                kind = ConfigKind.TABLE;
-                target = table.getLabel();
-            }
-            configUrl = url.toString();
-        }
+        VocabularyLinks config = configLink(project, institutionId, table, issue, contextPath == null ? "" : contextPath);
 
         // a label looked up for a field: the field's branch ; a concept that is not loaded: that concept
         String thesaurusUrl;
@@ -120,7 +100,27 @@ public class ImportVocabularyLinkService {
             thesaurusUrl = issue.conceptUrl();
             thesaurusName = nameInUrl(thesaurusUrl);
         }
-        return new VocabularyLinks(configUrl, kind, target, thesaurusUrl, thesaurusName);
+        return new VocabularyLinks(config.configUrl(), config.configKind(), config.configTarget(), thesaurusUrl, thesaurusName);
+    }
+
+    /** The configuration half of the links: the table, or the row's type and the field when the type resolves. */
+    private VocabularyLinks configLink(ActionUnitDTO project, Long institutionId, ConfigurableTable table,
+                                       ImportError.VocabularyIssue issue, String contextPath) {
+        if (table == null) {
+            return VocabularyLinks.NONE;
+        }
+        StringBuilder url = new StringBuilder(contextPath)
+                .append("/settings/project/").append(project.getId()).append("/tables?table=").append(table.name());
+        Optional<Long> typeId = typeIdOf(institutionId, table, issue);
+        if (typeId.isEmpty()) {
+            return new VocabularyLinks(url.toString(), ConfigKind.TABLE, table.getLabel(), null, null);
+        }
+        url.append("&typeId=").append(typeId.get());
+        boolean aField = issue.fieldCode() != null;
+        if (aField) {
+            url.append("&fieldCode=").append(URLEncoder.encode(issue.fieldCode(), StandardCharsets.UTF_8));
+        }
+        return new VocabularyLinks(url.toString(), aField ? ConfigKind.FIELD : ConfigKind.TYPE, issue.typeLabel(), null, null);
     }
 
     /** The {@code idt} of an OpenTheso link, which is the external id of its thesaurus. */

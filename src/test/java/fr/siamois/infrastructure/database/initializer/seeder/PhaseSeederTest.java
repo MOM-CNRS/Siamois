@@ -200,6 +200,20 @@ class PhaseSeederTest {
         assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }
 
+    @Test
+    void seed_keywordNotFound_throwsMissingConceptWithItsAddress() {
+        stubActionUnitFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+        var keyword = new ConceptSeeder.ConceptKey("th240", "99");
+        var withKeyword = new PhaseSeeder.PhaseSpecs("PH-04", "Titre", null, "Description", 1, 100, 200, null, AU_KEY,
+                null, java.util.Set.of(keyword), null);
+        var specs = List.of(withKeyword);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
+
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
+    }
+
     // ------------------------------------------------------------------
     // Author null → phase saved with null author
     // ------------------------------------------------------------------
