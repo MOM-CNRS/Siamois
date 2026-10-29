@@ -166,13 +166,17 @@
 
             /* ── identifiants tab ────────────────────────── */
             .ptc-ident-numbers { display: flex; gap: 16px; }
-            .ptc-ident-format-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 9px; background: #fff; padding: 10px 12px; min-height: 46px; }
+            /* a fieldset drawn like the other drawer fields; its legend is not a flex item, so it takes the gap as a margin */
+            .ptc-ident-format-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+            .ptc-ident-format-fieldset > legend { padding: 0; margin-bottom: 7px; }
+            .ptc-ident-format-box {display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border: 1px solid #d8d8d2; border-radius: 9px; background: #fff; padding: 10px 12px; min-height: 46px; }
             .ptc-ident-segment-text { display: flex; align-items: center; gap: 2px; background: #fff; border: 1px solid #d8d8d2; border-radius: 20px; padding: 3px 4px 3px 8px; }
             .ptc-ident-segment-text input { width: 90px; font-size: 0.9062rem; border: none; background: transparent; padding: 3px 2px; color: #2b2b2b; outline: none; }
             .ptc-ident-segment-token { display: flex; align-items: center; gap: 4px; font-size: 0.8125rem; font-weight: 600; color: #fff; background: var(--sia-accent, #5e8c61); border-radius: 20px; padding: 5px 6px 5px 10px; white-space: nowrap; }
             .ptc-ident-digits-box { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.22); border-radius: 11px; padding: 1px 6px; }
             .ptc-ident-digits-box span { font-size: 0.6562rem; opacity: 0.85; }
             .ptc-ident-digits-box input { width: 18px; border: none; background: transparent; color: #fff; font-size: 0.75rem; font-weight: 600; outline: none; text-align: center; padding: 0; }
+            .ptc-ident-digits-box input.ptc-ident-digits-invalid { background: #c0392b; outline: 2px solid #fff; border-radius: 3px; }
             .ptc-ident-arrow.ui-button, .ptc-ident-remove.ui-button { background: transparent !important; border: none !important; color: #909088 !important; font-size: 1.0625rem !important; line-height: 1 !important; padding: 0 4px !important; width: auto !important; }
             .ptc-ident-arrow.ui-button { font-weight: 700 !important; }
             .ptc-ident-remove.ui-button { font-size: 0.75rem !important; border-radius: 50% !important; }
@@ -753,15 +757,19 @@
                                             </div>
                                             <div class="ptc-drawer-field" style="flex:1;">
                                                 <label class="ptc-drawer-label" for="projectTablesFormCC:projectTablesForm:fieldsTabs:identLast_input">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
-                                                <p:inputNumber id="identLast" value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true"/>
+                                                <p:inputNumber id="identLast" value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true">
+                                                    <!-- widens the number's padding to fit the maximum; only the format box and the preview are re-rendered so the focus is kept -->
+                                                    <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onIdentLastChange()}" process="@this" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identFormatBox :projectTablesFormCC:projectTablesForm:fieldsTabs:identPreview"/>
+                                                </p:inputNumber>
                                             </div>
                                         </div>
 
-                                        <div class="ptc-drawer-field">
-                                            <!-- the format is edited through a group of controls, not a single one :
-                                                 a group labelled by its caption rather than a <label> without a target -->
-                                            <div class="ptc-drawer-label" id="identFormatLabel">#{langBean.msg('actionUnit.settings.label.format')}</div>
-                                            <div class="ptc-ident-format-box" role="group" aria-labelledby="identFormatLabel">
+                                        <!-- the format is edited through a group of controls, not a single one :
+                                             a fieldset captioned by its legend rather than a <label> without a target -->
+                                        <fieldset class="ptc-drawer-field ptc-ident-format-fieldset">
+                                            <legend class="ptc-drawer-label">#{langBean.msg('actionUnit.settings.label.format')}</legend>
+                                            <h:panelGroup id="identFormatBox" layout="block">
+                                            <div class="ptc-ident-format-box">
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identSegments}" var="seg" varStatus="status">
                                                     <h:panelGroup rendered="#{not seg.token}">
                                                         <div class="ptc-ident-segment-text">
@@ -780,7 +788,8 @@
                                                             <h:panelGroup rendered="#{seg.numeric}">
                                                                 <div class="ptc-ident-digits-box">
                                                                     <span>#{langBean.msg('projectTables.ident.digits')}</span>
-                                                                    <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].digits}">
+                                                                    <p:inputText value="#{projectTableFieldSettingsBean.identSegments[status.index].digits}"
+                                                                                 styleClass="#{projectTableFieldSettingsBean.identDigitsErrorIndex eq status.index ? 'ui-state-error ptc-ident-digits-invalid' : ''}">
                                                                         <p:ajax event="change" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                                     </p:inputText>
                                                                 </div>
@@ -792,22 +801,25 @@
                                                 </ui:repeat>
                                                 <p:commandButton value="+ #{langBean.msg('projectTables.ident.addText')}" styleClass="ptc-ident-add-text" actionListener="#{projectTableFieldSettingsBean.addIdentTextSegment()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                             </div>
+                                            </h:panelGroup>
                                             <div class="ptc-chip-row">
                                                 <ui:repeat value="#{projectTableFieldSettingsBean.identifierResolvers}" var="resolver">
                                                     <p:commandButton value="{ } #{langBean.msg(resolver.titleCode)}" styleClass="ptc-ident-token-option" actionListener="#{projectTableFieldSettingsBean.addIdentTokenSegment(resolver.code)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock" process="@form"/>
                                                 </ui:repeat>
                                             </div>
-                                        </div>
+                                        </fieldset>
 
                                         <div class="ptc-drawer-field">
                                             <!-- read-only preview, not a form control -->
                                             <div class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</div>
-                                            <div class="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</div>
+                                            <h:panelGroup id="identPreview" layout="block" styleClass="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</h:panelGroup>
                                             <div class="ptc-field-hint">#{langBean.msg('projectTables.ident.previewHint')}</div>
                                         </div>
 
                                         <div style="display:flex;justify-content:flex-end;">
-                                            <p:commandButton value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveIdentConfig()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock"/>
+                                            <!-- a refused save marks the too-small digit count: oncomplete runs after identBlock is re-rendered -->
+                                            <p:commandButton id="saveIdentConfig" value="#{langBean.msg('common.action.save')}" actionListener="#{projectTableFieldSettingsBean.saveIdentConfig()}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identBlock"
+                                                             oncomplete="var d = document.querySelector('.ptc-ident-digits-invalid'); if (d) { d.focus(); d.select(); }"/>
                                         </div>
                                     </div>
                                 </h:panelGroup>

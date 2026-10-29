@@ -29,8 +29,7 @@ import static org.mockito.Mockito.*;
 class DefaultProjectIdentifierConfigSeederTest {
 
     private static final Long PROJECT_ID = 42L;
-    private static final String US_URI = "https://opentheso2.mom.fr/?idc=4287627&idt=th1295";
-    private static final String F_URI = "https://opentheso2.mom.fr/?idc=4287628&idt=th1295";
+    private static final String US_URI = "https://thesaurus.mom.fr/?idc=1199&idt=th337";
 
     @Mock private VocabularyService vocabularyService;
     @Mock private ConceptService conceptService;
@@ -42,19 +41,15 @@ class DefaultProjectIdentifierConfigSeederTest {
     private DefaultProjectIdentifierConfigSeeder seeder;
 
     @Test
-    void seed_shouldCreateBothTypesWithTheirPrefixedFormat() throws Exception {
+    void seed_shouldCreateTheUsTypeWithItsPrefixedFormat() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
         Vocabulary vocabulary = new Vocabulary();
         Concept usConcept = new Concept();
         usConcept.setId(1L);
-        Concept fConcept = new Concept();
-        fConcept.setId(2L);
 
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
-        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, F_URI, null)).thenReturn(fConcept);
 
         seeder.seed(INFO, PROJECT_ID);
 
@@ -63,54 +58,35 @@ class DefaultProjectIdentifierConfigSeederTest {
         assertThat(usConfig.getValue().getIdentifierFormat()).isEqualTo("US{NUM_UE:00}");
         assertThat(usConfig.getValue().getMinCode()).isEqualTo(1);
         assertThat(usConfig.getValue().getMaxCode()).isEqualTo(999);
-
-        ArgumentCaptor<TypeFormConfig> fConfig = ArgumentCaptor.forClass(TypeFormConfig.class);
-        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(2L), fConfig.capture());
-        assertThat(fConfig.getValue().getIdentifierFormat()).isEqualTo("F{NUM_UE:00}");
     }
 
     @Test
-    void seed_shouldSkipATypeWhenTheVocabularyCannotBeResolved_andStillProcessTheOther() throws Exception {
+    void seed_shouldSkipTheTypeWhenTheVocabularyCannotBeResolved() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
-        Vocabulary vocabulary = new Vocabulary();
-        Concept fConcept = new Concept();
-        fConcept.setId(2L);
-
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenThrow(new InvalidEndpointException("unreachable"));
-        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenReturn(vocabulary);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, F_URI, null)).thenReturn(fConcept);
 
         seeder.seed(INFO, PROJECT_ID);
 
-        verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.UE), eq(1L), any());
-        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(2L), any());
+        verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.UE), anyLong(), any());
     }
 
     @Test
-    void seed_shouldSkipATypeWhenNoVocabularyIsConfiguredForTheProject() {
+    void seed_shouldNotFailWhenNoVocabularyIsConfiguredForTheProject() throws Exception {
         seeder = new DefaultProjectIdentifierConfigSeeder(vocabularyService, conceptService, tableFieldConfigService, transactionManager);
 
         Vocabulary vocabulary = new Vocabulary();
         Concept usConcept = new Concept();
         usConcept.setId(1L);
-        Concept fConcept = new Concept();
-        fConcept.setId(2L);
 
-        try {
-            when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
-            when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenReturn(vocabulary);
-        } catch (InvalidEndpointException e) {
-            throw new AssertionError(e);
-        }
+        when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
-        when(conceptService.saveOrGetConceptFromUri(vocabulary, F_URI, null)).thenReturn(fConcept);
         doThrow(new IllegalStateException("No vocabulary configured"))
                 .when(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), any());
 
         seeder.seed(INFO, PROJECT_ID);
 
-        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(2L), any());
+        verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), any());
     }
 
     @Test
@@ -269,7 +245,6 @@ class DefaultProjectIdentifierConfigSeederTest {
         Concept usConcept = new Concept();
         usConcept.setId(1L);
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
-        when(vocabularyService.findOrCreateVocabularyOfUri(F_URI)).thenThrow(new InvalidEndpointException("unreachable"));
         when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
 
         seeder.seed(INFO, PROJECT_ID);

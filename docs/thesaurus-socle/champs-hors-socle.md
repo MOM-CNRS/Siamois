@@ -4,47 +4,30 @@ Le thésaurus système est décrit par [siamois-socle-commun-v2.rdf](siamois-soc
 définition (`CustomField`, avec son binding) ; les modèles d'export désignent un champ par ce concept. Ce document liste ce qui n'en profite pas encore.
 Rien ici n'est bloquant : à traiter plus tard.
 
-## 1. Champs système sans concept — à traiter après la première passe
+## 1. Champs ajoutés au thésaurus après la première passe
 
-Ces champs existent dans les formulaires, mais le thésaurus (v2) n'a pas de concept pour eux. Leur définition (`CustomField`) n'a donc
-**pas de concept** : un modèle d'export ne peut pas les désigner, et la colonne correspondante du référentiel reste sans mapping.
+Ces champs n'avaient pas de concept ; ils en ont un depuis l'ajout dans th337 (identifiants attribués par OpenTheso, hors de la
+plage du générateur). Chacun est écrit dans la définition du champ (`CONCEPT_IDS` des formulaires, `GEOM_CONCEPT` des tables).
 
-Pour les rendre exportables, dans l'ordre :
-1. ajouter le champ au thésaurus (notation `SIAMOISFIELD#<table>.<propriété>`, dans `generate_thesaurus_socle.py`) ;
-2. régénérer le `.rdf` et l'importer dans OpenTheso ;
-3. écrire l'identifiant du concept dans la table `CONCEPT_IDS` du formulaire (`StudyForm`, `DocumentForm`) ;
-4. rebrancher la règle dans les modèles livrés `export-templates/*.json` et retirer l'exception des tests
-   `NationalTemplateResourceTest` et `UnderwaterTemplateResourceTest`.
+| Concept (id th337) | Libellé | Notation | Champ |
+|---|---|---|---|
+| 4291327 | Géométrie du projet | `SIAMOISFIELD#SIAAU.geometry` | `ActionUnitForm.GEOM_FIELD` |
+| 4291328 | Géométrie de l'UE | `SIAMOISFIELD#SIARU.geometry` | `RecordingUnitForm.GEOM_FIELD` |
+| 4291329 | Géométrie du mobilier (point) | `SIAMOISFIELD#SIAS.geometry` | `SpecimenForm.geomField` |
+| 4291330 | Identifiant du document | `SIAMOISFIELD#SIAD.identifier` | `DocumentForm` `identifier` (colonne `identifiant_documentation` des modèles livrés) |
+| 4291331 | Autres identifiants | `SIAMOISFIELD#SIAD.otherIdentifiers` | `DocumentForm` `otherIdentifiers` |
+| 4291332 | Système de coordonnées | `SIAMOISFIELD#SIAD.crs` | `DocumentForm` `crs` |
+| 4291333 | Adresse externe | `SIAMOISFIELD#SIAD.externalUrl` | `DocumentForm` `externalUrl` |
+| 4291334 | Chemin d'origine | `SIAMOISFIELD#SIAD.originalPath` | `DocumentForm` `originalPath` |
+| 4291335 | Droits | `SIAMOISFIELD#SIAD.rights` | `DocumentForm` `rights` |
+| 4291336 | Identifiant de l'étude/traitement | `SIAMOISFIELD#SIAST.identifier` | `StudyForm` `identifier` |
+| 4291337 | Date de l'étude | `SIAMOISFIELD#SIAST.studyDate` | `StudyForm` `studyDate` |
 
-### Géométrie (`geom`, tables UE, projet, mobilier)
+Le script `generate_thesaurus_socle.py` déclare ces champs (bloc final) : s'il est relancé, il leur donne les ids qui suivent 1939, pas
+ceux d'OpenTheso. Le `.rdf` livré dans le dépôt ne les contient pas encore ; l'export d'OpenTheso (« Siamois DEMO_th337.rdf ») fait foi.
 
-Le champ système `geom` (lecture seule, affiché en WKT) existe sur les enregistrements, les projets, les lieux et le mobilier. Seul le lieu a un
-concept dans le thésaurus (`SIASU.geometry`). Pour les trois autres, il faut ajouter `geometry` (notation `SIAMOISFIELD#SIARU.geometry`,
-`SIAAU.geometry`, `SIAS.geometry`) dans `generate_thesaurus_socle.py`, importer le RDF, puis écrire l'identifiant du concept dans le champ
-(`RecordingUnitForm.GEOM_FIELD`, `ActionUnitForm.GEOM_FIELD`, `SpecimenForm.geomField`). Un modèle d'export peut ensuite lire le WKT, ou
-`centroid.x` / `centroid.y` en propriété du champ.
-
-### Étude (`StudyForm`, table `SIAST`)
-
-| Binding | Remarque |
-|---|---|
-| `identifier` | identifiant de l'étude |
-| `studyDate` | |
-
-Les champs de traitement (`reportCode`, `treatmentStart`, `treatmentEnd`, `treatmentPlace`, `treatmentManager`, `treatmentIdentifier`,
-`treatmentComments`) et le type (`type` → `SIAST.TYPE`) sont décrits par le thésaurus.
-
-### Document (`DocumentForm`, table `SIAD`)
-
-| Binding | Remarque |
-|---|---|
-| `identifier` | colonne `identifiant_documentation` du référentiel : **seule colonne des modèles livrés sans mapping** |
-| `otherIdentifiers` | |
-| `crs`, `externalUrl`, `originalPath`, `rights` | |
-
-Rapprochements déjà appliqués : `title` → `SIAD.name`, `finds` → `SIAD.specimens`, `description` → `SIAD.caption`,
-`moldComment` → `SIAD.castComment`, `type` → `SIAD.TYPE`, `format` → `SIAD.FORMAT`, `category` → `SIAD.CATEGORY`,
-`supportNatures` → `SIAD.NATURE`.
+Tous les champs système des tables du socle ont maintenant un concept ; la colonne `identifiant_documentation` des modèles livrés
+est mappée.
 
 ### Unité d'enregistrement (`RecordingUnit`)
 
@@ -59,10 +42,6 @@ les relations stratigraphiques → `SIARU.STRATI.ANTERIOR / POSTERIOR / SYNCHRON
 
 ## 2. Autres thésaurus écrits en dur
 
-| Fichier | Référence | Usage |
-|---|---|---|
-| `GeoApiService` | `th252`, concept `4287976` | concept recherché pour les lieux |
-| `InseeCommunesProvider`, `GeoplatformeAddressProvider` | `th252` | suggestions de lieux (INSEE, GéoPlateforme) |
-| `UnitDefinitionInitializer` | `th252` | définitions d'unités |
-| `SiamoisThesaurus.DEFAULT_URL` | `https://thesaurus.mom.fr/?idt=th252` | thésaurus par défaut proposé |
-| `DefaultProjectIdentifierConfigSeeder` | `th1295`, concepts 4287627 et 4287628 | formats d'identifiant `US{NUM_UE:00}` et `F{NUM_UE:00}` |
+Il n'en reste pas : les lieux (`GeoApiService`, `InseeCommunesProvider`, `GeoplatformeAddressProvider`), les unités
+(`UnitDefinitionInitializer`), le thésaurus par défaut (`SiamoisThesaurus.DEFAULT_URL`), les types de départ des tables
+(`siamois.default-types.*`, `DefaultProjectIdentifierConfigSeeder`) et la condition d'érosion de `form-layouts/UE.json` pointent tous vers th337.

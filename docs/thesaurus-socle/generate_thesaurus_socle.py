@@ -542,7 +542,8 @@ applies(child(ru_type, "fait"), [ru_nature, ru_agent])
 applies(child(ru_type, "ensemble"), [ru_nature, ru_agent])
 for sl in ("depot", "alteration", "composite"):
     applies(child(ru_nature, sl), [ru_matrix])
-applies(child(ru_nature, "erosion"), [ru_shape, ru_profile, ru_orient])
+# Les champs d'érosion dépendent de la NATURE « négative » (règle de formulaire de UE.json), plus du cycle (masqué).
+applies(child(ru_nat, "negative"), [ru_shape, ru_profile, ru_orient])
 
 # Interprétation : liste par type (th230).
 INTERP = {
@@ -1224,6 +1225,21 @@ COLLECTIONS.append(("Mobilier · Type — conditionnement du référentiel  [SIA
 
 # Types d'UE du référentiel national (type_UE) qui n'étaient pas repris : ils prennent le rapprochement et la définition du référentiel.
 adopt(ru_type, "type_UE", ["entité spatiale", "entité graphique", "unité graphique", "entité taphonomique", "phase"])
+# ============================================================================== CHAMPS AJOUTÉS APRÈS LA PREMIÈRE PUBLICATION
+# Les identifiants des concepts suivent l'ordre de création : tout nouveau champ se déclare ICI, à la fin, pour que les
+# identifiants déjà publiés (et écrits dans le code et les modèles d'export) ne bougent pas.
+GEOM_NOTE = "Point, ligne ou polygone, en lecture seule. Le modèle d'export peut la lire en WKT, ou en coordonnées x / y."
+field(AU, "geometry", "Géométrie du projet", "Project geometry", "GEOM", note=GEOM_NOTE)
+field(RU, "geometry", "Géométrie de l'UE", "Recording unit geometry", "GEOM", note=GEOM_NOTE)
+field(SP, "geometry", "Géométrie du mobilier (point)", "Find geometry (point)", "GEOM", note=GEOM_NOTE)
+field(SD, "identifier", "Identifiant de l'étude/traitement", "Study / treatment identifier", "TEXT")
+field(SD, "studyDate", "Date de l'étude", "Study date", "DATE")
+field(DC, "identifier", "Identifiant du document", "Document identifier", "TEXT", rn="identifiant_documentation")
+field(DC, "otherIdentifiers", "Autres identifiants", "Other identifiers", "TEXT")
+field(DC, "crs", "Système de coordonnées", "Coordinate reference system", "TEXT")
+field(DC, "externalUrl", "Adresse externe", "External URL", "TEXT")
+field(DC, "originalPath", "Chemin d'origine", "Original path", "TEXT")
+field(DC, "rights", "Droits", "Rights", "TEXT")
 
 # ============================================================================== DÉFINITIONS DU RÉFÉRENTIEL
 # Un concept qui a un équivalent dans le référentiel national en reprend la définition et les notes (éditoriale, d'application),

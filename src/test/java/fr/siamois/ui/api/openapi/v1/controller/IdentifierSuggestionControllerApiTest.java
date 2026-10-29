@@ -3,7 +3,6 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.document.DocumentService;
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
@@ -11,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +44,7 @@ class IdentifierSuggestionControllerApiTest {
     @Mock
     private ProjectTypedCreationService projectTypedCreationService;
     @Mock
-    private RecordingUnitService recordingUnitService;
+    private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
     private PhaseService phaseService;
     @Mock
@@ -65,7 +65,7 @@ class IdentifierSuggestionControllerApiTest {
         person.setId(1L);
         when(projectApiService.requireCaller()).thenReturn(new ProjectApiCaller(person, SCOPE, List.of()));
         mockMvc = MockMvcBuilders.standaloneSetup(new IdentifierSuggestionControllerApi(projectApiService,
-                projectTypedCreationService, recordingUnitService, phaseService, containerService, studyService,
+                projectTypedCreationService, recordingUnitOpenApiService, phaseService, containerService, studyService,
                 documentService, findOpenApiService)).build();
     }
 
@@ -97,7 +97,7 @@ class IdentifierSuggestionControllerApiTest {
         project.setId(5L);
         unit.setActionUnit(project);
         sharedServiceBuilds(Kind.RECORDING_UNIT, "en", unit);
-        when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("INST-PROJ-UE1");
+        when(recordingUnitOpenApiService.suggestFullIdentifier(unit, null, SCOPE)).thenReturn("INST-PROJ-UE1");
 
         mockMvc.perform(get("/api/v1/identifier-suggestions")
                         .param("entityType", "recording-units")
@@ -106,6 +106,21 @@ class IdentifierSuggestionControllerApiTest {
                         .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US,en;q=0.9"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.suggestedIdentifier").value("INST-PROJ-UE1"));
+    }
+
+    @Test
+    void get_forARecordingUnitUnderAParent_passesTheParentToTheSuggestion() throws Exception {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        sharedServiceBuilds(Kind.RECORDING_UNIT, "fr", unit);
+        when(recordingUnitOpenApiService.suggestFullIdentifier(unit, 187L, SCOPE)).thenReturn("UE4-1");
+
+        mockMvc.perform(get("/api/v1/identifier-suggestions")
+                        .param("entityType", "recording-units")
+                        .param("projectId", "5")
+                        .param("typeId", "42")
+                        .param("parentRecordingUnitId", "187"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.suggestedIdentifier").value("UE4-1"));
     }
 
     @Test

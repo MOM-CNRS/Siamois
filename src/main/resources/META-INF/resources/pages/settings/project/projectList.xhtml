@@ -57,7 +57,7 @@
                                                 forceSelection="true"
                                                 appendTo="@(body)"
                                                 dropdown="false">
-                                    <p:ajax event="itemSelect" listener="#{projectListBean.initFilteredByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
+                                    <p:ajax event="itemSelect" listener="#{projectListBean.filterByPerson(projectListBean.filterPerson)}" process="@this" update="@form :projectListDatatable:formCC:projectListForm"/>
                                 </p:autoComplete>
                             </p:overlayPanel>
                         </h:panelGroup>

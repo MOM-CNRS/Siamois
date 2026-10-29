@@ -49,8 +49,8 @@ vi.mock("../../fields/renderers", () => ({
 
 const mockedGetRecordingUnitTypes = vi.mocked(getEffectiveForm);
 const mockedCreateRecordingUnit = vi.mocked(createRecordingUnit);
-// What GET /api/v1/identifier-suggestions answers, called with the request's project and type.
-const mockedSuggestIdentifier = vi.fn<(projectId: string | null, typeId: string | null) => Promise<string>>();
+// What GET /api/v1/identifier-suggestions answers, called with the request's project, type and parent.
+const mockedSuggestIdentifier = vi.fn<(projectId: string | null, typeId: string | null, parentRecordingUnitId?: string | null) => Promise<string>>();
 
 const typeField: FieldResource = {
   id: "-101",
@@ -112,7 +112,11 @@ beforeEach(() => {
     const url = new URL(path, "http://localhost");
     expect(url.pathname).toBe("/api/v1/identifier-suggestions");
     expect(url.searchParams.get("entityType")).toBe("recording-units");
-    return { suggestedIdentifier: await mockedSuggestIdentifier(url.searchParams.get("projectId"), url.searchParams.get("typeId")) };
+    const parentRecordingUnitId = url.searchParams.get("parentRecordingUnitId");
+    const suggested = parentRecordingUnitId == null
+      ? await mockedSuggestIdentifier(url.searchParams.get("projectId"), url.searchParams.get("typeId"))
+      : await mockedSuggestIdentifier(url.searchParams.get("projectId"), url.searchParams.get("typeId"), parentRecordingUnitId);
+    return { suggestedIdentifier: suggested };
   });
   mocks.typePick = { resourceId: "9", resourceType: "concepts", label: "US" };
   vi.mocked(fetchTypesCatalog).mockReset();
@@ -276,6 +280,9 @@ describe("RecordingUnitCreateForm", () => {
     await act(async () => {
       container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
     });
+    await flush();
+    // The suggestion renders the parent's tokens: it is asked for under that parent.
+    expect(mockedSuggestIdentifier).toHaveBeenLastCalledWith("5", "9", "12");
     await act(async () => {
       submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });

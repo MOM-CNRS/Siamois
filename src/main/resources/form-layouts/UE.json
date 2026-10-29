@@ -46,13 +46,7 @@
     }, {
       "fieldId" : -308,
       "binding" : "normalizedInterpretation",
-      "width" : "QUARTER",
-      "rules" : {
-        "options" : {
-          "kind" : "RELATED_CONCEPTS",
-          "fieldId" : -307
-        }
-      }
+      "width" : "QUARTER"
     }, {
       "fieldId" : -325,
       "binding" : "matrixColor",
@@ -63,11 +57,11 @@
       "width" : "QUARTER",
       "rules" : {
         "enabledWhen" : {
-          "fieldId" : -307,
+          "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1216"
           } ]
         }
       }
@@ -77,11 +71,11 @@
       "width" : "QUARTER",
       "rules" : {
         "enabledWhen" : {
-          "fieldId" : -307,
+          "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1216"
           } ]
         }
       }
@@ -91,11 +85,11 @@
       "width" : "QUARTER",
       "rules" : {
         "enabledWhen" : {
-          "fieldId" : -307,
+          "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1216"
           } ]
         }
       }

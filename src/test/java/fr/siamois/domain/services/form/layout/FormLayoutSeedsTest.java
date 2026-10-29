@@ -3,7 +3,6 @@ package fr.siamois.domain.services.form.layout;
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldValueSpec;
-import fr.siamois.domain.models.form.rules.OptionsFilter;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.TestForms;
@@ -38,13 +37,12 @@ class FormLayoutSeedsTest {
                 item(ConfigurableTable.UE, "erosionProfile").rules().enabledWhen());
     }
 
+    /** The interpretation is not tied to any other field for now: it will be connected to the nature later. */
     @Test
-    void theInterpretationIsFilteredByTheRelatedConceptsOfTheNature() {
+    void theInterpretationDependsOnNoOtherField() {
         var rules = item(ConfigurableTable.UE, "normalizedInterpretation").rules();
 
-        assertThat(rules.options()).isInstanceOf(OptionsFilter.RelatedConcepts.class);
-        assertThat(((OptionsFilter.RelatedConcepts) rules.options()).fieldId())
-                .isEqualTo(SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "geomorphologicalCycle").getId());
+        assertThat(rules).isSameAs(FieldRules.NONE);
     }
 
     @Test

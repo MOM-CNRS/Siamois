@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1330" viewBox="0 0 1600 1330">
+<style>
+text{font-family:-apple-system,Helvetica,Arial,sans-serif}
+.t{font-size:15px;font-weight:700;fill:#fff}.r{font-size:13px;fill:#222}.k{font-size:11px;font-weight:700;fill:#888}
+.c{font-size:12px;font-weight:700;fill:#333}.n{font-size:13px;fill:#444}.h{font-size:26px;font-weight:700;fill:#111}.s{font-size:14px;fill:#555}
+.g{font-size:14px;font-weight:700;fill:#333}
+</style>
+<rect width="1600" height="1330" fill="#fafaf7"/>
+<text x="40" y="48" class="h">SIAMOIS · Stockage des fiches (UE…) et des valeurs des champs additionnels</text>
+<text x="40" y="74" class="s">Les colonnes de la fiche ne portent que les champs système. Tout champ additionnel est une ligne de réponse, rattachée à la fiche par un « form_config_answer ».</text>
+<rect x="40" y="190" width="310" height="176" rx="8" fill="#fff" stroke="#2f6fb0" stroke-width="2"/>
+<path d="M40 224 V198 a8 8 0 0 1 8 -8 H342 a8 8 0 0 1 8 8 V224 Z" fill="#2f6fb0"/>
+<text x="52" y="213" class="t">recording_unit  (UE)</text>
+<text x="50" y="240" class="k">PK</text>
+<text x="78" y="240" class="r">recording_unit_id</text>
+<text x="78" y="262" class="r">full_identifier</text>
+<text x="78" y="284" class="r">fk_type → concept</text>
+<text x="78" y="306" class="r">fk_action_unit_id → projet</text>
+<text x="78" y="328" class="r">geom, taq, tpq, comments…</text>
+<text x="78" y="350" class="r">(colonnes système uniquement)</text>
+<rect x="40" y="440" width="310" height="110" rx="8" fill="#fff" stroke="#2f6fb0" stroke-width="2"/>
+<path d="M40 474 V448 a8 8 0 0 1 8 -8 H342 a8 8 0 0 1 8 8 V474 Z" fill="#2f6fb0"/>
+<text x="52" y="463" class="t">autres entités</text>
+<text x="78" y="490" class="r">specimen · phase · container</text>
+<text x="78" y="512" class="r">document · study</text>
+<text x="78" y="534" class="r">même schéma : colonnes système seulement</text>
+<rect x="430" y="100" width="380" height="154" rx="8" fill="#fff" stroke="#3b8a5a" stroke-width="2"/>
+<path d="M430 134 V108 a8 8 0 0 1 8 -8 H802 a8 8 0 0 1 8 8 V134 Z" fill="#3b8a5a"/>
+<text x="442" y="123" class="t">form_config  (le formulaire)</text>
+<text x="440" y="150" class="k">PK</text>
+<text x="468" y="150" class="r">config_id</text>
+<text x="468" y="172" class="r">fk_action_unit_id  → le projet</text>
+<text x="468" y="194" class="r">fk_field_concept_id → champ type (SIARU.TYPE…)</text>
+<text x="468" y="216" class="r">fk_value_concept_id → valeur du type (null = défaut)</text>
+<text x="468" y="238" class="r">identifier_format, min_code, max_code</text>
+<rect x="430" y="300" width="380" height="198" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M430 334 V308 a8 8 0 0 1 8 -8 H802 a8 8 0 0 1 8 8 V334 Z" fill="#c4731c"/>
+<text x="442" y="323" class="t">form_config_answer  (fiche × formulaire)</text>
+<text x="440" y="350" class="k">PK</text>
+<text x="468" y="350" class="r">form_config_answer_id</text>
+<text x="440" y="372" class="k">FK</text>
+<text x="468" y="372" class="r">fk_form_config_id</text>
+<text x="468" y="394" class="r">fk_recording_unit_id</text>
+<text x="468" y="416" class="r">fk_specimen_id · fk_phase_id</text>
+<text x="468" y="438" class="r">fk_container_id · fk_document_id · fk_study_id</text>
+<text x="468" y="460" class="r">→ une seule de ces colonnes est renseignée</text>
+<text x="468" y="482" class="r">UNIQUE (entité, form_config)</text>
+<rect x="900" y="100" width="420" height="154" rx="8" fill="#fff" stroke="#7a4fa3" stroke-width="2"/>
+<path d="M900 134 V108 a8 8 0 0 1 8 -8 H1312 a8 8 0 0 1 8 8 V134 Z" fill="#7a4fa3"/>
+<text x="912" y="123" class="t">custom_field  (la définition du champ)</text>
+<text x="910" y="150" class="k">PK</text>
+<text x="938" y="150" class="r">custom_field_id</text>
+<text x="938" y="172" class="r">answer_type  (TEXT, SELECT_MULTIPLE, MEASUREMENT…)</text>
+<text x="938" y="194" class="r">label, hint, value_binding</text>
+<text x="938" y="216" class="r">field_code, is_system_field</text>
+<text x="938" y="238" class="r">fk_concept, fk_unit, fk_nature, fk_measurement_type</text>
+<rect x="900" y="300" width="420" height="198" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M900 334 V308 a8 8 0 0 1 8 -8 H1312 a8 8 0 0 1 8 8 V334 Z" fill="#c4731c"/>
+<text x="912" y="323" class="t">custom_field_answer  (la valeur)</text>
+<text x="910" y="350" class="k">PK</text>
+<text x="938" y="350" class="r">(fk_custom_field_id, fk_form_config_answer_id)</text>
+<text x="938" y="372" class="r">answer_type  (discriminant, table unique)</text>
+<text x="938" y="394" class="r">value_as_text · value_as_integer</text>
+<text x="938" y="416" class="r">value_as_decimal · value_as_boolean</text>
+<text x="938" y="438" class="r">value_as_datetime</text>
+<text x="938" y="460" class="r">value_as_double + value_comment + fk_unit_id  (mesure)</text>
+<text x="938" y="482" class="r">has_been_modified</text>
+<rect x="1370" y="300" width="200" height="88" rx="8" fill="#fff" stroke="#667" stroke-width="2"/>
+<path d="M1370 334 V308 a8 8 0 0 1 8 -8 H1562 a8 8 0 0 1 8 8 V334 Z" fill="#667"/>
+<text x="1382" y="323" class="t">unit_definition</text>
+<text x="1380" y="350" class="k">PK</text>
+<text x="1408" y="350" class="r">unit_id</text>
+<text x="1408" y="372" class="r">label, symbole, facteur…</text>
+<line x1="350" y1="230" x2="430" y2="350" stroke="#555" stroke-width="1.6"/>
+<text x="356" y="224" class="c">1</text>
+<text x="416" y="344" class="c">N</text>
+<line x1="350" y1="480" x2="430" y2="420" stroke="#555" stroke-width="1.6"/>
+<text x="356" y="474" class="c">1</text>
+<text x="416" y="414" class="c">N</text>
+<line x1="620" y1="254" x2="620" y2="300" stroke="#555" stroke-width="1.6"/>
+<text x="626" y="270" class="c">1</text>
+<text x="626" y="294" class="c">N</text>
+<line x1="810" y1="400" x2="900" y2="400" stroke="#555" stroke-width="1.6"/>
+<text x="816" y="394" class="c">1</text>
+<text x="886" y="394" class="c">N</text>
+<line x1="1110" y1="254" x2="1110" y2="300" stroke="#555" stroke-width="1.6"/>
+<text x="1116" y="270" class="c">1</text>
+<text x="1116" y="294" class="c">N</text>
+<line x1="1320" y1="380" x2="1370" y2="350" stroke="#555" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="1326" y="374" class="c">N</text>
+<text x="1356" y="344" class="c">1</text>
+<text x="40" y="598" class="g">Valeurs multiples ou références : une table de jointure par type de cible</text>
+<text x="40" y="620" class="n">custom_field_answer existe une seule fois (clé = champ + fiche) ; chaque valeur choisie est une ligne de plus ici.</text>
+<path d="M1150 498 V640" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<path d="M215 640 H1355" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="1160" y="620" class="c">clé composite (champ, réponse)</text>
+<path d="M215 640 V670" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="30" y="670" width="370" height="110" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M30 704 V678 a8 8 0 0 1 8 -8 H392 a8 8 0 0 1 8 8 V704 Z" fill="#c4731c"/>
+<text x="42" y="693" class="t">custom_field_answer_concept_answers</text>
+<text x="40" y="720" class="k">FK</text>
+<text x="68" y="720" class="r">fk_custom_field_id</text>
+<text x="40" y="742" class="k">FK</text>
+<text x="68" y="742" class="r">fk_form_config_answer_id</text>
+<text x="40" y="764" class="k">FK</text>
+<text x="68" y="764" class="r">fk_concept_id</text>
+<line x1="215" y1="780" x2="215" y2="830" stroke="#555" stroke-width="1.6"/>
+<text x="221" y="796" class="c">N</text>
+<text x="221" y="824" class="c">1</text>
+<rect x="125" y="830" width="180" height="66" rx="8" fill="#fff" stroke="#667" stroke-width="2"/>
+<path d="M125 864 V838 a8 8 0 0 1 8 -8 H297 a8 8 0 0 1 8 8 V864 Z" fill="#667"/>
+<text x="137" y="853" class="t">concept</text>
+<text x="135" y="880" class="k">PK</text>
+<text x="163" y="880" class="r">concept_id</text>
+<path d="M595 640 V670" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="410" y="670" width="370" height="110" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M410 704 V678 a8 8 0 0 1 8 -8 H772 a8 8 0 0 1 8 8 V704 Z" fill="#c4731c"/>
+<text x="422" y="693" class="t">custom_field_answer_person_answers</text>
+<text x="420" y="720" class="k">FK</text>
+<text x="448" y="720" class="r">fk_custom_field_id</text>
+<text x="420" y="742" class="k">FK</text>
+<text x="448" y="742" class="r">fk_form_config_answer_id</text>
+<text x="420" y="764" class="k">FK</text>
+<text x="448" y="764" class="r">fk_person_id</text>
+<line x1="595" y1="780" x2="595" y2="830" stroke="#555" stroke-width="1.6"/>
+<text x="601" y="796" class="c">N</text>
+<text x="601" y="824" class="c">1</text>
+<rect x="505" y="830" width="180" height="66" rx="8" fill="#fff" stroke="#667" stroke-width="2"/>
+<path d="M505 864 V838 a8 8 0 0 1 8 -8 H677 a8 8 0 0 1 8 8 V864 Z" fill="#667"/>
+<text x="517" y="853" class="t">person</text>
+<text x="515" y="880" class="k">PK</text>
+<text x="543" y="880" class="r">person_id</text>
+<path d="M975 640 V670" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="790" y="670" width="370" height="110" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M790 704 V678 a8 8 0 0 1 8 -8 H1152 a8 8 0 0 1 8 8 V704 Z" fill="#c4731c"/>
+<text x="802" y="693" class="t">custom_field_answer_spatial_unit_answers</text>
+<text x="800" y="720" class="k">FK</text>
+<text x="828" y="720" class="r">fk_custom_field_id</text>
+<text x="800" y="742" class="k">FK</text>
+<text x="828" y="742" class="r">fk_form_config_answer_id</text>
+<text x="800" y="764" class="k">FK</text>
+<text x="828" y="764" class="r">fk_spatial_unit_id</text>
+<line x1="975" y1="780" x2="975" y2="830" stroke="#555" stroke-width="1.6"/>
+<text x="981" y="796" class="c">N</text>
+<text x="981" y="824" class="c">1</text>
+<rect x="885" y="830" width="180" height="66" rx="8" fill="#fff" stroke="#667" stroke-width="2"/>
+<path d="M885 864 V838 a8 8 0 0 1 8 -8 H1057 a8 8 0 0 1 8 8 V864 Z" fill="#667"/>
+<text x="897" y="853" class="t">spatial_unit</text>
+<text x="895" y="880" class="k">PK</text>
+<text x="923" y="880" class="r">spatial_unit_id</text>
+<path d="M1355 640 V670" fill="none" stroke="#c4731c" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="1170" y="670" width="370" height="110" rx="8" fill="#fff" stroke="#c4731c" stroke-width="2"/>
+<path d="M1170 704 V678 a8 8 0 0 1 8 -8 H1532 a8 8 0 0 1 8 8 V704 Z" fill="#c4731c"/>
+<text x="1182" y="693" class="t">custom_field_answer_action_unit_answers</text>
+<text x="1180" y="720" class="k">FK</text>
+<text x="1208" y="720" class="r">fk_custom_field_id</text>
+<text x="1180" y="742" class="k">FK</text>
+<text x="1208" y="742" class="r">fk_form_config_answer_id</text>
+<text x="1180" y="764" class="k">FK</text>
+<text x="1208" y="764" class="r">fk_action_unit_id</text>
+<line x1="1355" y1="780" x2="1355" y2="830" stroke="#555" stroke-width="1.6"/>
+<text x="1361" y="796" class="c">N</text>
+<text x="1361" y="824" class="c">1</text>
+<rect x="1265" y="830" width="180" height="66" rx="8" fill="#fff" stroke="#667" stroke-width="2"/>
+<path d="M1265 864 V838 a8 8 0 0 1 8 -8 H1437 a8 8 0 0 1 8 8 V864 Z" fill="#667"/>
+<text x="1277" y="853" class="t">action_unit</text>
+<text x="1275" y="880" class="k">PK</text>
+<text x="1303" y="880" class="r">action_unit_id</text>
+<rect x="40" y="970" width="1520" height="310" rx="10" fill="#fff" stroke="#bbb"/>
+<text x="60" y="1000" class="g">Exemple : l'US 12 avec trois champs additionnels</text>
+<text x="60" y="1024" class="n">form_config_answer 301  =  (recording_unit 12, form_config « US » du projet 5)</text>
+<text x="60" y="1060" class="g">custom_field_answer</text>
+<text x="60" y="1086" class="k">fk_custom_field_id</text>
+<text x="230" y="1086" class="k">fk_form_config_answer_id</text>
+<text x="410" y="1086" class="k">answer_type</text>
+<text x="560" y="1086" class="k">valeur</text>
+<text x="60" y="1112" class="r">7 « Poids »</text>
+<text x="230" y="1112" class="r">301</text>
+<text x="410" y="1112" class="r">MEASUREMENT</text>
+<text x="560" y="1112" class="r">value_as_double = 109,  fk_unit_id = g</text>
+<text x="60" y="1138" class="r">9 « Inclusions »</text>
+<text x="230" y="1138" class="r">301</text>
+<text x="410" y="1138" class="r">SELECT_MULTIPLE</text>
+<text x="560" y="1138" class="r">aucune colonne de valeur (voir ci-contre)</text>
+<text x="60" y="1164" class="r">11 « Observations »</text>
+<text x="230" y="1164" class="r">301</text>
+<text x="410" y="1164" class="r">TEXT</text>
+<text x="560" y="1164" class="r">value_as_text = « mortier rose »</text>
+<text x="60" y="1210" class="n">Un champ, une fiche : une seule ligne ici. Le type de réponse décide des colonnes utilisées.</text>
+<text x="60" y="1232" class="n">Un champ à valeur multiple n'a donc pas de colonnes : ses valeurs sont dans la jointure.</text>
+<text x="1000" y="1060" class="g">custom_field_answer_concept_answers</text>
+<text x="1000" y="1086" class="k">fk_custom_field_id</text>
+<text x="1170" y="1086" class="k">fk_form_config_answer_id</text>
+<text x="1340" y="1086" class="k">fk_concept_id</text>
+<text x="1000" y="1112" class="r">9</text>
+<text x="1170" y="1112" class="r">301</text>
+<text x="1340" y="1112" class="r">« gravier »</text>
+<text x="1000" y="1138" class="r">9</text>
+<text x="1170" y="1138" class="r">301</text>
+<text x="1340" y="1138" class="r">« charbon »</text>
+<text x="1000" y="1164" class="r">9</text>
+<text x="1170" y="1164" class="r">301</text>
+<text x="1340" y="1164" class="r">« tuile »</text>
+<text x="1000" y="1210" class="n">« Inclusions contient charbon » : filtrer sur (champ, réponse), puis fk_concept_id.</text>
+<text x="1000" y="1232" class="n">Ajouter ou retirer une valeur ne touche pas à la ligne de custom_field_answer.</text>
+</svg>

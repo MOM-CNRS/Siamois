@@ -74,11 +74,9 @@ class NationalTemplateResourceTest {
         definition.sheets().forEach(s -> assertThat(s.sources()).as(s.name()).isNotEmpty());
     }
 
-    /** The document identifier is not described by the thesaurus yet, so no concept can designate it. */
     @Test
-    void everyColumnOfTheNineSheets_isMapped_exceptTheDocumentIdentifier() {
-        definition.sheets().forEach(sheet -> sheet.columns().stream()
-                .filter(c -> !(sheet.name().equals("documentation") && c.header().equals("identifiant_documentation")))
+    void everyColumnOfTheNineSheets_isMapped() {
+        definition.sheets().forEach(sheet -> sheet.columns()
                 .forEach(c -> assertThat(c.rules()).as(sheet.name() + "." + c.header()).isNotEmpty()));
     }
 
