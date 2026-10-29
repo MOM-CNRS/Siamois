@@ -27,7 +27,11 @@ class OrganizationFieldCatalogServiceTest {
     private final FieldQueryService fieldQueryService = mock(FieldQueryService.class);
     private final LangService langService = mock(LangService.class);
     private final OrganizationFieldCatalogService service =
-            new OrganizationFieldCatalogService(customFieldRepository, fieldQueryService, langService);
+            new OrganizationFieldCatalogService(customFieldRepository, fieldQueryService, langService,
+                    new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)));
 
     @BeforeEach
     void setUp() {

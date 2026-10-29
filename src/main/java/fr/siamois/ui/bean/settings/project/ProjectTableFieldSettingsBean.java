@@ -118,6 +118,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient IdentifierResolverRegistry identifierResolverRegistry;
     private final transient FormLayoutService formLayoutService;
+    private final transient FieldTextService fieldTextService;
 
     private ActionUnitDTO project;
     private List<ConfigurableTable> tables = new ArrayList<>();
@@ -238,7 +239,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          LabelService labelService,
                                          LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry,
                                          FormLayoutService formLayoutService,
-                                         FieldConfigurationService fieldConfigurationService) {
+                                         FieldConfigurationService fieldConfigurationService,
+                                         FieldTextService fieldTextService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
         this.fieldConfigurationService = fieldConfigurationService;
@@ -250,6 +252,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.langBean = langBean;
         this.identifierResolverRegistry = identifierResolverRegistry;
         this.formLayoutService = formLayoutService;
+        this.fieldTextService = fieldTextService;
     }
 
     @EventListener(LoginEvent.class)
@@ -277,14 +280,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /**
      * Caption to display for a field. A system field carries a message key rather than a caption,
      * whereas a field added from this screen carries what the user typed — same convention as
-     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}. A system field shows the label of its
+     * concept in the thesaurus, its own message only when it has none.
      * <p>
      * The untranslated name stays the field's identity: it is what the service is called back with
      * to activate, require or delete it.
      */
     public String resolveFieldLabel(TypeFieldFormConfig field) {
         if (field.isSystemField()) {
-            return langBean.msg(field.getName());
+            return fieldTextService.resolveSystemField(field.getId(), langBean.getLanguageCode(),
+                    langBean.msg(field.getName()), null).label();
         }
         return field.getName();
     }

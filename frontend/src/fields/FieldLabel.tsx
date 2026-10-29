@@ -6,6 +6,15 @@ import type {FieldResource} from "./types";
 import {t} from "../i18n";
 import {useFieldConfigActions} from "./fieldConfigContext";
 
+/** The definition shown in the tooltip is cut here (with an ellipsis): the thesaurus' can run to paragraphs. */
+export const TOOLTIP_DEFINITION_MAX_CHARS = 300;
+
+export function truncateDefinition(text: string, max: number = TOOLTIP_DEFINITION_MAX_CHARS): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, max).trimEnd()}…`;
+}
+
 /**
  * panelField.xhtml's header-toggle-container: the flat label button — the field's own icon
  * (CustomField.getIcon(), per type: "bi bi-alphabet" for TEXT, "bi bi-calendar" for DATETIME,
@@ -58,7 +67,7 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
       <Tooltip target={`#${buttonId}`} position="left">
         <div className="field-label-tooltip">
           <strong>{field.label}</strong>
-          {field.hint && <div>{field.hint}</div>}
+          {field.hint && <div className="field-label-tooltip-definition">{truncateDefinition(field.hint)}</div>}
         </div>
       </Tooltip>
       <Button

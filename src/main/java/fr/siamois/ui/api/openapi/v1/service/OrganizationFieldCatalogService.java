@@ -16,6 +16,7 @@ import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.response.organization.OrganizationFieldCatalogResponse;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
+import fr.siamois.domain.services.vocabulary.FieldTextService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class OrganizationFieldCatalogService {
     private final CustomFieldRepository customFieldRepository;
     private final FieldQueryService fieldQueryService;
     private final LangService langService;
+    private final FieldTextService fieldTextService;
 
     @Transactional(readOnly = true)
     public OrganizationFieldCatalogResponse build(long organizationId, ConfigurableTable table, String lang) {
@@ -50,9 +52,7 @@ public class OrganizationFieldCatalogService {
         catalog.addAll(customFieldRepository.findActiveAdditionalByInstitutionAndTable(organizationId, table.getFieldCode()));
         for (CustomField field : catalog) {
             if (field == null || field.getId() == null) continue;
-            FieldResource resource = FieldAnswerWireService.fieldResourceOf(field,
-                    langService.resolveMessage(field.getLabel(), locale),
-                    langService.resolveMessage(field.getHint(), locale));
+            FieldResource resource = toFieldResource(field, locale);
             fields.putIfAbsent(String.valueOf(field.getId()), fieldQueryService.withQuery(resource, entityType, field));
         }
         return new OrganizationFieldCatalogResponse(fields, table == ConfigurableTable.UE ? recordingUnitTableColumns() : null);
@@ -68,12 +68,18 @@ public class OrganizationFieldCatalogService {
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldResource> fields = new LinkedHashMap<>();
         for (CustomField field : PlaceOpenApiService.listableFields()) {
-            FieldResource resource = FieldAnswerWireService.fieldResourceOf(field,
-                    langService.resolveMessage(field.getLabel(), locale),
-                    langService.resolveMessage(field.getHint(), locale));
+            FieldResource resource = toFieldResource(field, locale);
             fields.put(String.valueOf(field.getId()), fieldQueryService.withQuery(resource, SpatialUnit.class, field));
         }
         return new OrganizationFieldCatalogResponse(fields, null);
+    }
+
+    /** The field's label and tooltip are its concept's, the field's own only when it has no concept. */
+    private FieldResource toFieldResource(CustomField field, Locale locale) {
+        FieldTextService.FieldTexts texts = fieldTextService.resolve(field, locale.getLanguage(),
+                langService.resolveMessage(field.getLabel(), locale),
+                langService.resolveMessage(field.getHint(), locale));
+        return FieldAnswerWireService.fieldResourceOf(field, texts.label(), texts.definition());
     }
 
     static Class<?> entityTypeOf(ConfigurableTable table) {

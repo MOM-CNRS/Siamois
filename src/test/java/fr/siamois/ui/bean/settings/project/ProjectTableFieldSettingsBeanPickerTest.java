@@ -58,7 +58,11 @@ class ProjectTableFieldSettingsBeanPickerTest {
         when(langBean.msg(anyString(), any(Object[].class))).thenAnswer(invocation -> invocation.getArgument(0));
         bean = new ProjectTableFieldSettingsBean(tableService, formConfigService, conceptService,
                 mock(ConceptCollectionService.class), vocabularyService, vocabularyMapper, labelService, langBean,
-                new IdentifierResolverRegistry(), mock(FormLayoutService.class), fieldConfigurationService);
+                new IdentifierResolverRegistry(), mock(FormLayoutService.class), fieldConfigurationService,
+                new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)));
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(42L);
         bean.setProject(project);
