@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -27,13 +28,25 @@ public class HierarchyCycleGuard {
 
     private static final String CYCLE_MESSAGE = "Impossible de créer la relation : cycle hiérarchique détecté";
 
-    /** The edges of each hierarchy as a {@code (parent_id, child_id)} native subquery. */
+    /** The edges of each hierarchy as a {@code (parent_id, child_id)} table. */
     private static final Map<Kind, String> EDGES = Map.of(
             Kind.RECORDING_UNIT, "SELECT fk_parent_id AS parent_id, fk_child_id AS child_id FROM recording_unit_hierarchy",
             Kind.SPECIMEN, "SELECT fk_parent_id AS parent_id, fk_child_id AS child_id FROM specimen_hierarchy",
             Kind.SPATIAL_UNIT, "SELECT fk_parent_id AS parent_id, fk_child_id AS child_id FROM spatial_hierarchy",
             Kind.CONTAINER, "SELECT fk_parent_id AS parent_id, container_id AS child_id FROM container "
                     + "WHERE fk_parent_id IS NOT NULL");
+
+    /** Per kind, the ancestors-or-self query; built once from the constants above, never from a request. */
+    private static final Map<Kind, String> ANCESTORS_QUERY = ancestorsQueries();
+
+    private static Map<Kind, String> ancestorsQueries() {
+        Map<Kind, String> queries = new EnumMap<>(Kind.class);
+        EDGES.forEach((kind, edges) -> queries.put(kind,
+                "WITH RECURSIVE ascend(id) AS (SELECT CAST(:entityId AS BIGINT) UNION "
+                        + "SELECT e.parent_id FROM (" + edges + ") e JOIN ascend a ON e.child_id = a.id) "
+                        + "SELECT COUNT(*) FROM ascend WHERE id = :candidateId"));
+        return queries;
+    }
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -44,6 +57,10 @@ public class HierarchyCycleGuard {
      */
     @Transactional(readOnly = true)
     public void requireNoCycle(Kind kind, long parentId, long childId) {
+        check(kind, parentId, childId);
+    }
+
+    private void check(Kind kind, long parentId, long childId) {
         if (parentId == childId || isAncestorOrSelf(kind, childId, parentId)) {
             throw new HierarchyCycleException(CYCLE_MESSAGE);
         }
@@ -59,28 +76,23 @@ public class HierarchyCycleGuard {
                                       Collection<Long> newChildIds) {
         for (Long parentId : newParentIds) {
             if (selfId != null) {
-                requireNoCycle(kind, parentId, selfId);
+                check(kind, parentId, selfId);
             }
             // parent -> self -> child closes a loop when the child is already above the parent
             for (Long childId : newChildIds) {
-                requireNoCycle(kind, parentId, childId);
+                check(kind, parentId, childId);
             }
         }
         if (selfId != null) {
             for (Long childId : newChildIds) {
-                requireNoCycle(kind, selfId, childId);
+                check(kind, selfId, childId);
             }
         }
     }
 
     /** Whether {@code candidateId} is {@code entityId} or one of its ancestors, per the stored links. */
     private boolean isAncestorOrSelf(Kind kind, long candidateId, long entityId) {
-        Number found = (Number) entityManager.createNativeQuery(
-                        "WITH RECURSIVE ascend(id) AS ("
-                                + " SELECT CAST(:entityId AS BIGINT)"
-                                + " UNION"
-                                + " SELECT e.parent_id FROM (" + EDGES.get(kind) + ") e JOIN ascend a ON e.child_id = a.id"
-                                + ") SELECT COUNT(*) FROM ascend WHERE id = :candidateId")
+        Number found = (Number) entityManager.createNativeQuery(ANCESTORS_QUERY.get(kind))
                 .setParameter("entityId", entityId)
                 .setParameter("candidateId", candidateId)
                 .getSingleResult();

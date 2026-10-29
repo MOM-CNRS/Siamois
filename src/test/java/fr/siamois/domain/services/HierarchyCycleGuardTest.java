@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,19 +62,25 @@ class HierarchyCycleGuardTest {
     void requireNoCycleThrough_checksEachNewLink() {
         childFoundAmongAncestors(0L);
 
+        Set<Long> parents = Set.of(1L);
+        Set<Long> children = Set.of(2L);
+
         assertDoesNotThrow(() -> guard.requireNoCycleThrough(
-                HierarchyCycleGuard.Kind.CONTAINER, 5L, Set.of(1L), Set.of(2L)));
+                HierarchyCycleGuard.Kind.CONTAINER, 5L, parents, children));
 
         // parent->self, parent->child, self->child
-        verify(entityManager, org.mockito.Mockito.times(3)).createNativeQuery(anyString());
+        verify(entityManager, times(3)).createNativeQuery(anyString());
     }
 
     @Test
     void requireNoCycleThrough_newEntity_checksParentAgainstChildOnly() {
         childFoundAmongAncestors(1L);
 
+        Set<Long> parents = Set.of(1L);
+        Set<Long> children = Set.of(2L);
+
         assertThrows(IllegalStateException.class, () -> guard.requireNoCycleThrough(
-                HierarchyCycleGuard.Kind.SPATIAL_UNIT, null, Set.of(1L), Set.of(2L)));
-        verify(entityManager, org.mockito.Mockito.times(1)).createNativeQuery(anyString());
+                HierarchyCycleGuard.Kind.SPATIAL_UNIT, null, parents, children));
+        verify(entityManager, times(1)).createNativeQuery(anyString());
     }
 }
