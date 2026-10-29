@@ -40,6 +40,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
@@ -931,7 +932,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, pageable, false);
+        return pageAndEnrich(specs, pageable, false, searchedIdentifier(filters));
     }
 
     /**
@@ -943,7 +944,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.hasParent(parentId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false, searchedIdentifier(filters));
     }
 
     /** Recording units of a phase, same contract as {@link #findChildrenOf} (the phase fiche's "UE" tab). */
@@ -952,7 +953,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.inPhase(phaseId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false, searchedIdentifier(filters));
     }
 
 
@@ -1199,7 +1200,8 @@ public class RecordingUnitService implements ArkEntityService {
      * rather than one action unit.
      *
      * @param institution the institution to search in
-     * @param query       the text the full identifier must start with, null or blank matching everything
+     * @param query       the text the full identifier must contain (the exact match first), null or blank
+     *                    matching everything
      * @param limit       how many units to return at most
      */
     @Transactional(readOnly = true)
@@ -1207,7 +1209,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
                 .and(TextSearchSpec.matching(RecordingUnitSpec.FULL_IDENTIFIER, query, FilterDTO.FilterType.START_WITH));
 
-        return recordingUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(recordingUnitRepository, specs, PageRequest.ofSize(limit), RecordingUnitSpec.FULL_IDENTIFIER, query)
                 .stream()
                 .map(recordingUnitSummaryMapper::convert)
                 .toList();
@@ -1307,7 +1309,9 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
         Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
-        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations);
+        // The tree lists roots leading to a match, not the matches: no exact match to rank there.
+        String searched = filters.isRootOnly() ? null : searchedIdentifier(filters);
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations, searched);
         if (filters.isRootOnly()) {
             applyTreeFlags(page, filters);
             return TreePage.of(page, countTreeMatches(institution, filters));
@@ -1489,8 +1493,18 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
                                                  boolean includeFullRelations) {
+        return pageAndEnrich(specs, pageable, includeFullRelations, null);
+    }
+
+    /**
+     * Same, with the units whose full identifier is exactly {@code searchedIdentifier} first
+     * ({@link ExactMatchFirst}); null ranks nothing.
+     */
+    private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
+                                                 boolean includeFullRelations, @Nullable String searchedIdentifier) {
         specs = recordingUnitSortFilterService.applySyntheticSort(specs, pageable.getSort());
-        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, recordingUnitSortFilterService.stripSyntheticSort(pageable))
+        Page<RecordingUnitDTO> page = ExactMatchFirst.findAll(recordingUnitRepository, specs,
+                        recordingUnitSortFilterService.stripSyntheticSort(pageable), RecordingUnitSpec.FULL_IDENTIFIER, searchedIdentifier)
                 .map(recordingUnitMapper::toLightDto);
 
         List<Long> ids = page.getContent().stream()
@@ -1512,6 +1526,14 @@ public class RecordingUnitService implements ArkEntityService {
         return page;
     }
 
+
+    /**
+     * The full identifier the list searches for, or null when it searches none.
+     */
+    @Nullable
+    private static String searchedIdentifier(FilterDTO filters) {
+        return filters.searchTextOf(RecordingUnitSpec.FULL_IDENTIFIER);
+    }
 
     private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
         Map<Long, Set<RecordingUnitSummaryDTO>> parentsByOwner = groupRecordingUnitsByOwner(

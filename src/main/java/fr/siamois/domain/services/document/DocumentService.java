@@ -22,6 +22,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
 import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.mapper.DocumentMapper;
 import fr.siamois.mapper.InstitutionMapper;
@@ -137,7 +138,8 @@ public class DocumentService implements ArkEntityService {
 
     @Transactional(readOnly = true)
     public Page<DocumentDTO> searchDocuments(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
-        return documentRepository.findAll(prepareSpecs(institutionDTO, filters), pageable)
+        return ExactMatchFirst.findAll(documentRepository, prepareSpecs(institutionDTO, filters), pageable,
+                        DocumentSpec.IDENTIFIER_FILTER, filters.searchTextOf(DocumentSpec.IDENTIFIER_FILTER))
                 .map(documentMapper::convert);
     }
 

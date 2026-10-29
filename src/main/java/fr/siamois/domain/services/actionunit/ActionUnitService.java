@@ -36,6 +36,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
@@ -768,7 +769,7 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
         specs = specs.and(TextSearchSpec.matching("name", query, FilterDTO.FilterType.START_WITH));
 
-        return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(actionUnitRepository, specs, PageRequest.ofSize(limit), "name", query)
                 .stream()
                 .map(actionUnitMapper::convert)
                 .toList();
@@ -892,7 +893,8 @@ public class ActionUnitService implements ArkEntityService {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
         }
 
-        return toAccessibleProjects(actionUnitRepository.findAll(spec, pageable), pageable);
+        return toAccessibleProjects(ExactMatchFirst.findAll(actionUnitRepository, spec, pageable,
+                ActionUnitSpec.PROJECT_SEARCH_ATTRIBUTES, search), pageable);
     }
 
     /** A page of projects with what the API lists of each: its recording-unit and child counts, its forms warmed. */

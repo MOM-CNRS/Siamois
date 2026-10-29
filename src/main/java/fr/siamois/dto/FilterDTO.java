@@ -214,6 +214,19 @@ public class FilterDTO {
         return (String) filter.get(column).filter;
     }
 
+    /**
+     * The text a search filter on {@code column} ({@link FilterType#CONTAINS} or
+     * {@link FilterType#START_WITH}) searches for, or null when the column has no such filter.
+     */
+    @Nullable
+    public String searchTextOf(@NonNull String column) {
+        FilterInfo info = filter.get(column);
+        if (info == null || (info.type != FilterType.CONTAINS && info.type != FilterType.START_WITH)) {
+            return null;
+        }
+        return info.filter instanceof String text ? text : null;
+    }
+
     public void add(String name, Object value, FilterType type) {
         filter.put(name, new FilterInfo(value, type));
     }
