@@ -116,7 +116,7 @@ public class RecordingUnitsControllerApi {
             ) String id,
             @Parameter(
                     description = "Compteurs optionnels à inclure (ex. specimen).",
-                    schema = @Schema(type = "array", allowableValues = {"specimen, children, parents, documents"}),
+                    schema = @Schema(type = "array", allowableValues = {"specimen, children, parents, relationships, documents"}),
                     in = ParameterIn.QUERY
             )
             @RequestParam(required = false) List<String> counts,
