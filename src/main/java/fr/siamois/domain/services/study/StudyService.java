@@ -19,6 +19,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.StudyMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -81,7 +82,9 @@ public class StudyService {
 
     @Transactional(readOnly = true)
     public Page<StudyDTO> searchStudies(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
-        return studyRepository.findAll(prepareSpecs(institutionDTO, filters), pageable).map(studyMapper::convert);
+        return ExactMatchFirst.findAll(studyRepository, prepareSpecs(institutionDTO, filters), pageable,
+                        StudySpec.IDENTIFIER_FILTER, filters.searchTextOf(StudySpec.IDENTIFIER_FILTER))
+                .map(studyMapper::convert);
     }
 
     @Transactional(readOnly = true)
