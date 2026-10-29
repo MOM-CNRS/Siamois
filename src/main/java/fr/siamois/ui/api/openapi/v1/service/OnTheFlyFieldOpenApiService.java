@@ -97,11 +97,10 @@ public class OnTheFlyFieldOpenApiService {
         if (body == null || (body.typeConceptId() == null && isBlank(body.newTypeLabel()))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le type de la mesure est obligatoire");
         }
-        Concept type = body.typeConceptId() != null ? requireConcept(body.typeConceptId())
-                : localConcept(target, CustomFieldMeasurement.MEASUREMENT_TYPE_FIELD_CODE, body.newTypeLabel(), lang);
-        Concept nature = body.natureConceptId() != null ? requireConcept(body.natureConceptId())
-                : isBlank(body.newNatureLabel()) ? null
-                : localConcept(target, CustomFieldMeasurement.MEASUREMENT_NATURE_FIELD_CODE, body.newNatureLabel(), lang);
+        Concept type = conceptOrNew(target, CustomFieldMeasurement.MEASUREMENT_TYPE_FIELD_CODE,
+                body.typeConceptId(), body.newTypeLabel(), lang);
+        Concept nature = conceptOrNew(target, CustomFieldMeasurement.MEASUREMENT_NATURE_FIELD_CODE,
+                body.natureConceptId(), body.newNatureLabel(), lang);
         List<UnitDefinition> units = requireUnits(body);
 
         String label = labelOf(type, lang) + (nature != null ? " " + labelOf(nature, lang) : "");
@@ -270,6 +269,14 @@ public class OnTheFlyFieldOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enregistrement sans organisation");
         }
         return new UserInfo(institution, person, lang);
+    }
+
+    /** The concept picked, else a new local one named {@code newLabel}, else none. */
+    private Concept conceptOrNew(Target target, String fieldCode, Long conceptId, String newLabel, String lang) {
+        if (conceptId != null) {
+            return requireConcept(conceptId);
+        }
+        return isBlank(newLabel) ? null : localConcept(target, fieldCode, newLabel, lang);
     }
 
     private static boolean isBlank(String text) {

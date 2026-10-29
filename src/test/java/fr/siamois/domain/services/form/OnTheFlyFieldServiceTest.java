@@ -16,7 +16,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,5 +107,72 @@ class OnTheFlyFieldServiceTest {
         assertNull(copy.getPanelName());
         assertEquals("Hauteur", copy.getLabel());
         assertFalse(copy.getIsSystemField());
+    }
+
+    @Test
+    void fieldsOf_readsTheLinkSetOfEveryKindOfRecord() {
+        var specimen = new fr.siamois.domain.models.specimen.Specimen();
+        var phase = new fr.siamois.domain.models.phase.Phase();
+        var container = new fr.siamois.domain.models.container.Container();
+        var document = new fr.siamois.domain.models.document.Document();
+        var study = new fr.siamois.domain.models.study.Study();
+        specimen.getOnTheFlyFields().add(measurement(2L, null));
+        phase.getOnTheFlyFields().add(measurement(1L, null));
+        phase.getOnTheFlyFields().add(measurement(0L, null));
+        container.getOnTheFlyFields().add(measurement(3L, null));
+        document.getOnTheFlyFields().add(measurement(4L, null));
+        study.getOnTheFlyFields().add(measurement(5L, null));
+        lenient().when(entityManager.find(fr.siamois.domain.models.specimen.Specimen.class, 5L)).thenReturn(specimen);
+        lenient().when(entityManager.find(fr.siamois.domain.models.phase.Phase.class, 5L)).thenReturn(phase);
+        lenient().when(entityManager.find(fr.siamois.domain.models.container.Container.class, 5L)).thenReturn(container);
+        lenient().when(entityManager.find(fr.siamois.domain.models.document.Document.class, 5L)).thenReturn(document);
+        lenient().when(entityManager.find(fr.siamois.domain.models.study.Study.class, 5L)).thenReturn(study);
+
+        assertEquals(List.of(2L), ids(service.fieldsOf(ConfigurableTable.MOBILIER, 5L)));
+        assertEquals(List.of(0L, 1L), ids(service.fieldsOf(ConfigurableTable.PHASE, 5L)));
+        assertEquals(List.of(3L), ids(service.fieldsOf(ConfigurableTable.CONTENANT, 5L)));
+        assertEquals(List.of(4L), ids(service.fieldsOf(ConfigurableTable.DOCUMENT, 5L)));
+        assertEquals(List.of(5L), ids(service.fieldsOf(ConfigurableTable.STUDY, 5L)));
+        assertTrue(service.fieldsOf(ConfigurableTable.PROJECT, 5L).isEmpty());
+        assertTrue(service.fieldsOf(ConfigurableTable.UE, null).isEmpty());
+        assertTrue(service.fieldsOf(ConfigurableTable.UE, 404L).isEmpty());
+    }
+
+    @Test
+    void add_andRemove_needTheRecordToExist() {
+        CustomFieldMeasurement field = measurement(1L, null);
+
+        assertThrows(IllegalArgumentException.class, () -> service.add(ConfigurableTable.UE, 404L, "p", field));
+        assertThrows(IllegalArgumentException.class, () -> service.remove(ConfigurableTable.UE, 404L, 1L));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void findReusableMeasurements_keepsOneMeasurePerNameAndUnit() {
+        var query = org.mockito.Mockito.mock(jakarta.persistence.TypedQuery.class);
+        when(entityManager.createQuery(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(
+                fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly.class))).thenReturn(query);
+        when(query.setParameter(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(query);
+        var unit = fr.siamois.domain.models.form.measurement.UnitDefinition.builder().symbol("m").build();
+        CustomFieldMeasurement first = measurement(1L, null);
+        first.setLabel("Hauteur");
+        first.setUnit(unit);
+        CustomFieldMeasurement again = measurement(2L, null);
+        again.setLabel("Hauteur");
+        again.setUnit(unit);
+        CustomFieldMeasurement other = measurement(3L, null);
+        other.setLabel("Largeur");
+        when(query.getResultList()).thenReturn(List.of(first, again, other));
+
+        var found = service.findReusableMeasurements(ConfigurableTable.UE, 9L, " Haut ", 10);
+
+        assertEquals(List.of(1L, 3L), ids(found));
+        assertEquals(1, service.findReusableMeasurements(ConfigurableTable.UE, 9L, null, 1).size());
+        assertTrue(service.findReusableMeasurements(ConfigurableTable.UE, null, "h", 10).isEmpty());
+        assertTrue(service.findReusableMeasurements(ConfigurableTable.PROJECT, 9L, "h", 10).isEmpty());
+    }
+
+    private static List<Long> ids(List<? extends fr.siamois.domain.models.form.customfield.CustomField> fields) {
+        return fields.stream().map(f -> f.getId()).toList();
     }
 }

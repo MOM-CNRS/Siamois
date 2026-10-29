@@ -55,9 +55,7 @@ public class Study extends TraceableEntity {
     /** Measurement (and other) fields added on the fly to this record's fiche. */
     @NotAudited
     @JsonIgnore
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(fetch = FetchType.LAZY)
+    @OneToMany
     @JoinTable(
             name = "study_on_the_fly_fields",
             joinColumns = { @JoinColumn(name = "fk_study_id") },

@@ -22,4 +22,14 @@ public abstract class CustomFieldOnTheFly extends CustomField {
     /** The panel of the fiche the field was added to; null shows it in the fiche's last panel. */
     @Column(name = "panel_name")
     private String panelName;
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

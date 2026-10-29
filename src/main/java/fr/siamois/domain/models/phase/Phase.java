@@ -48,9 +48,7 @@ public class Phase extends TraceableEntity {
     /** Measurement (and other) fields added on the fly to this record's fiche. */
     @NotAudited
     @JsonIgnore
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(fetch = FetchType.LAZY)
+    @OneToMany
     @JoinTable(
             name = "phase_on_the_fly_fields",
             joinColumns = { @JoinColumn(name = "fk_phase_id") },

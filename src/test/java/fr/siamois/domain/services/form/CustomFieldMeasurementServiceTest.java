@@ -74,10 +74,4 @@ class CustomFieldMeasurementServiceTest {
         assertEquals(1, result.getContent().size());
         verify(repository, times(1)).findAll(expectedPageable);
     }
-
-    private CustomFieldMeasurement measurement(Long id) {
-        CustomFieldMeasurement measurement = new CustomFieldMeasurement();
-        measurement.setId(id);
-        return measurement;
-    }
 }

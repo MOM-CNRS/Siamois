@@ -42,6 +42,10 @@ public class OnTheFlyFieldService {
     /** The record's on-the-fly fields, oldest first. */
     @Transactional(readOnly = true)
     public List<CustomFieldOnTheFly> fieldsOf(ConfigurableTable table, Long entityId) {
+        return loadFields(table, entityId);
+    }
+
+    private List<CustomFieldOnTheFly> loadFields(ConfigurableTable table, Long entityId) {
         if (table == null || entityId == null) return List.of();
         Set<CustomFieldOnTheFly> fields = fieldSet(table, entityId);
         return fields == null ? List.of()
@@ -130,7 +134,7 @@ public class OnTheFlyFieldService {
      */
     @Transactional(readOnly = true)
     public FormUiDto withOnTheFlyFields(FormUiDto baseForm, ConfigurableTable table, Long entityId) {
-        List<CustomFieldOnTheFly> fields = fieldsOf(table, entityId);
+        List<CustomFieldOnTheFly> fields = loadFields(table, entityId);
         if (fields.isEmpty() || baseForm == null || baseForm.getLayout() == null || baseForm.getLayout().isEmpty()) {
             return baseForm;
         }
