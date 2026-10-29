@@ -38,7 +38,16 @@ import {useFieldConfigActions} from "./fieldConfigContext";
  * without any would open onto nothing: the button then presents itself as non-interactive (no aria-haspopup,
  * default cursor) rather than inviting a click that does nothing.</p>
  */
-export function FieldLabel({ field, required }: { field: FieldResource; required: boolean }) {
+export function FieldLabel({
+  field,
+  required,
+  onRemove,
+}: {
+  field: FieldResource;
+  required: boolean;
+  /** For a measure added to this record alone: takes it off the fiche (« Retirer cette mesure »). */
+  onRemove?: () => void;
+}) {
   const menuRef = useRef<Menu>(null);
   const buttonId = `sia-field-label-${field.id}`;
   const hasThesaurusEntry = Boolean(field.conceptUri);
@@ -47,6 +56,7 @@ export function FieldLabel({ field, required }: { field: FieldResource; required
     ...(configActions
       ? [{ label: t("field.configure"), icon: "bi bi-gear", command: () => configActions.configure(field) }]
       : []),
+    ...(onRemove ? [{ label: t("onTheFly.remove"), icon: "bi bi-trash", command: onRemove }] : []),
     ...(hasThesaurusEntry
       ? [{ label: t("field.thesaurus"), icon: "bi bi-info-circle", url: field.conceptUri as string, target: "_blank" }]
       : []),

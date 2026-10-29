@@ -81,4 +81,16 @@ describe("FieldLabel menu", () => {
 
     expect(menuLabels()).toHaveLength(1);
   });
+
+  it("offers to remove a measure added to this record alone", async () => {
+    const onRemove = vi.fn();
+    act(() => root.render(<FieldLabel field={field()} required={false} onRemove={onRemove} />));
+    await openMenu();
+
+    expect(menuLabels()).toEqual(["Retirer cette mesure"]);
+    await act(async () => {
+      (document.body.querySelector(".p-menuitem-link") as HTMLElement).click();
+    });
+    expect(onRemove).toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,6 @@
 import {useMemo} from "react";
 import {usePersistedPaneState} from "../panels/pane/persistedPaneState";
+import {Button} from "primereact/button";
 import {Panel} from "primereact/panel";
 import {evaluateForm, type FieldState} from "../rules";
 import {type FormLayoutCol, type FormLayoutPanel, panelLabel, toGridClass} from "./layout";
@@ -31,6 +32,11 @@ export interface FormLayoutViewProps<TEntity extends { id?: string | number }> {
   onSaved: () => void;
   /** Extra per-entity filter on top of `hidden` columns; `stored` is the answer as served. */
   isFieldShown?: (field: FieldResource, stored: unknown) => boolean;
+  /** « Ajouter une mesure » in every section (the record can hold fields of its own); `panelName` is the section's. */
+  onAddMeasure?: (panelName: string, anchor: HTMLElement) => void;
+  /** The fields added to this record alone, which can be taken off again with `onRemoveField`. */
+  onTheFlyIds?: ReadonlySet<string>;
+  onRemoveField?: (fieldId: string) => void;
 }
 
 // A section is told apart by its name (the form bundle's own code); position only when it has none.
@@ -52,6 +58,9 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
   onSave,
   onSaved,
   isFieldShown,
+  onAddMeasure,
+  onTheFlyIds,
+  onRemoveField,
 }: FormLayoutViewProps<TEntity>) {
   const states = useMemo(() => {
     const columns = panels.flatMap((p) => p.rows.flatMap((r) => r.columns));
@@ -92,11 +101,28 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
                   isFieldShown={isFieldShown}
                   onSave={onSave}
                   onSaved={onSaved}
+                  onRemove={
+                    canEdit && onRemoveField && col.fieldId != null && onTheFlyIds?.has(String(col.fieldId))
+                      ? () => onRemoveField(String(col.fieldId))
+                      : undefined
+                  }
                 />
               ))}
             </div>
           ))}
           {panel.rows.length === 0 && <i>{t("field.noField")}</i>}
+          {canEdit && onAddMeasure && panel.canUserAddFields !== false && (
+            <div className="sia-form-panel-actions">
+              <Button
+                type="button"
+                text
+                size="small"
+                icon="pi pi-plus"
+                label={t("onTheFly.add")}
+                onClick={(e) => onAddMeasure(panel.name, e.currentTarget)}
+              />
+            </div>
+          )}
         </Panel>
       ))}
     </>
@@ -114,6 +140,7 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
   isFieldShown,
   onSave,
   onSaved,
+  onRemove,
 }: {
   col: FormLayoutCol;
   fields: Record<string, FieldResource>;
@@ -125,6 +152,7 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
   isFieldShown?: (field: FieldResource, stored: unknown) => boolean;
   onSave: (id: string | number, answers: Record<string, AnswerInputBody>, value?: unknown) => Promise<unknown>;
   onSaved: () => void;
+  onRemove?: () => void;
 }) {
   // Hidden columns (the RU's project and identifier) are edited — or merely shown — outside this
   // grid, in the panel header.
@@ -147,7 +175,7 @@ function FormLayoutField<TEntity extends { id?: string | number }>({
       data-field-id={fieldId}
     >
       <div className="field-value-group">
-        <FieldLabel field={field} required={required} />
+        <FieldLabel field={field} required={required} onRemove={onRemove} />
         <FieldEditCell
           entityType={entityType}
           key={JSON.stringify(stored ?? null)}
