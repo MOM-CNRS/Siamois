@@ -943,15 +943,17 @@ public class RecordingUnitOpenApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
         ConceptDTO typeDto = conceptMapper.convert(typeConcept);
         // Checked up front so an out-of-scope link is a 404 before anything is written.
-        if (request.getParentRecordingUnitId() != null) {
-            recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(request.getParentRecordingUnitId(), accessibleInstitutionIds);
-        }
+        RecordingUnitSummaryDTO parent = request.getParentRecordingUnitId() == null ? null
+                : requireParentInProject(request.getParentRecordingUnitId(), au.getId(), accessibleInstitutionIds);
         if (request.getChildRecordingUnitId() != null) {
             recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(request.getChildRecordingUnitId(), accessibleInstitutionIds);
         }
 
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
         shell.setGeom(request.getGeom());
+        // The parent is linked by the first save, before the identifier is generated: NUM_PARENT /
+        // ID_PARENT and the PARENT_RU counter read it, as for the suggestion.
+        attachParent(shell, parent);
         if (request.getPhaseId() != null) {
             shell.setPhases(new HashSet<>(Set.of(requirePhaseInProject(request.getPhaseId(), au.getId()))));
         }
@@ -966,12 +968,8 @@ public class RecordingUnitOpenApiService {
             return saved;
         });
 
-        // JSF's "nouvel enfant / nouveau parent" row actions: linked in the same transaction, so a
-        // rejected link (other project, cycle) rolls the creation back too.
-        if (request.getParentRecordingUnitId() != null) {
-            long parentId = request.getParentRecordingUnitId();
-            mutateHierarchy(() -> recordingUnitService.addHierarchyChild(parentId, created.getId()));
-        }
+        // JSF's "nouveau parent" row action: linked in the same transaction, so a rejected link (other
+        // project, cycle) rolls the creation back too. Its parent, if any, is already linked by the save.
         if (request.getChildRecordingUnitId() != null) {
             long childId = request.getChildRecordingUnitId();
             mutateHierarchy(() -> recordingUnitService.addHierarchyChild(created.getId(), childId));
@@ -1037,15 +1035,57 @@ public class RecordingUnitOpenApiService {
         shell.setValidationStatus(ValidationStatus.INCOMPLETE);
         shell.setParents(new HashSet<>());
         shell.setChildren(new HashSet<>());
-        List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(shell);
-        if (!suOptions.isEmpty()) {
-            shell.setSpatialUnit(suOptions.get(0));
-        }
+        applyDefaultSpatialUnit(shell);
         // Left empty: the first save gives it a random temporary code, unique in the project, until the real
         // identifier is set — the project's own identifier would collide between concurrent creations.
         shell.setFullIdentifier(null);
         shell.setIdentifier("0");
         return shell;
+    }
+
+    /** 404 when the parent is out of the caller's scope, 400 when it is in another project. */
+    private RecordingUnitSummaryDTO requireParentInProject(long parentId, Long projectId,
+                                                           Set<Long> accessibleInstitutionIds) {
+        RecordingUnitDTO parent = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                parentId, accessibleInstitutionIds);
+        if (parent.getActionUnit() == null || !Objects.equals(parent.getActionUnit().getId(), projectId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UE parente hors projet : " + parentId);
+        }
+        return new RecordingUnitSummaryDTO(parent);
+    }
+
+    private static void attachParent(RecordingUnitDTO unit, RecordingUnitSummaryDTO parent) {
+        if (parent != null) {
+            unit.setParents(new HashSet<>(Set.of(parent)));
+        }
+    }
+
+    /** A new unit is placed in the first spatial unit its project offers, which {@code NUM_USPATIAL} reads. */
+    private void applyDefaultSpatialUnit(RecordingUnitDTO unit) {
+        List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(unit);
+        if (!suOptions.isEmpty()) {
+            unit.setSpatialUnit(suOptions.get(0));
+        }
+    }
+
+    /**
+     * The identifier {@link #createRecordingUnit} would generate for {@code unit} (the creation form's
+     * suggestion, {@code GET /api/v1/identifier-suggestions}): the unit first gets the same default
+     * spatial unit and the same parent as at creation, so that every token of the format — not only
+     * the counter — renders as it will. The parent is only set on the unsaved {@code unit}: nothing is
+     * linked nor written, the creation form may still be cancelled.
+     *
+     * @param parentRecordingUnitId the unit the new one will be created under (its "nouvel enfant" row action), or null
+     */
+    @Transactional(readOnly = true)
+    public String suggestFullIdentifier(RecordingUnitDTO unit, Long parentRecordingUnitId,
+                                        Set<Long> accessibleInstitutionIds) {
+        applyDefaultSpatialUnit(unit);
+        if (parentRecordingUnitId != null) {
+            attachParent(unit, requireParentInProject(parentRecordingUnitId, unit.getActionUnit().getId(),
+                    accessibleInstitutionIds));
+        }
+        return recordingUnitService.suggestFullIdentifier(unit.getActionUnit(), unit);
     }
 
     private RecordingUnitDTO saveWithGeneratedIdentifier(RecordingUnitDTO dto) {

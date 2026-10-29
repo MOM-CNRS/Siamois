@@ -81,8 +81,12 @@ export const queryKeys = {
   recordingUnitTypes: (projectId: string | number | null | undefined) => ["recording-unit-types", projectId] as const,
   // The identifier the server would generate for a new entity of a type in a project (a peek, not a
   // consumption): shown pre-filled in the creation form. Not cached — every form opening asks again.
-  identifierSuggestion: (entityType: string, projectId: string | number | null | undefined, typeId: string | number | null | undefined) =>
-    ["identifier-suggestion", entityType, projectId ?? null, typeId ?? null] as const,
+  identifierSuggestion: (
+    entityType: string,
+    projectId: string | number | null | undefined,
+    typeId: string | number | null | undefined,
+    parentRecordingUnitId?: string | number | null,
+  ) => ["identifier-suggestion", entityType, projectId ?? null, typeId ?? null, parentRecordingUnitId ?? null] as const,
   projectTemplates: (organizationId: string | number | null | undefined) => ["project-templates", organizationId] as const,
   nextProjectIdentifier: (organizationId: string | number | null | undefined) => ["next-project-identifier", organizationId] as const,
   projectTypes: (organizationId: string | number | null | undefined) => ["project-types", organizationId] as const,

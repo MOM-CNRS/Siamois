@@ -30,6 +30,8 @@ export interface TypeOnlyCreateFormProps extends CreateFormContext {
   create: (body: { projectId: string; typeId: string; identifier?: string }) => Promise<{ id: string | number }>;
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
+  // The recording unit the new one is created under: the suggested identifier renders its tokens.
+  parentRecordingUnitId?: string | number | null;
 }
 
 /**
@@ -44,6 +46,7 @@ export function TypeOnlyCreateForm({
   typesSegment,
   create,
   children,
+  parentRecordingUnitId,
   organizationId,
   scope,
   prefill,
@@ -57,7 +60,7 @@ export function TypeOnlyCreateForm({
     setType(null);
   }, [projectId]);
   const [error, setError] = useState<string | null>(null);
-  const identifier = useSuggestedIdentifier(entityType, projectId, type?.resourceId);
+  const identifier = useSuggestedIdentifier(entityType, projectId, type?.resourceId, parentRecordingUnitId);
 
   const formQuery = useQuery({
     queryKey: queryKeys.effectiveForm(typesSegment, projectId, null),
