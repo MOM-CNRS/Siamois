@@ -59,10 +59,6 @@ les relations stratigraphiques → `SIARU.STRATI.ANTERIOR / POSTERIOR / SYNCHRON
 
 ## 2. Autres thésaurus écrits en dur
 
-| Fichier | Référence | Usage |
-|---|---|---|
-| `GeoApiService` | `th252`, concept `4287976` | concept recherché pour les lieux |
-| `InseeCommunesProvider`, `GeoplatformeAddressProvider` | `th252` | suggestions de lieux (INSEE, GéoPlateforme) |
-| `UnitDefinitionInitializer` | `th252` | définitions d'unités |
-| `SiamoisThesaurus.DEFAULT_URL` | `https://thesaurus.mom.fr/?idt=th252` | thésaurus par défaut proposé |
-| `DefaultProjectIdentifierConfigSeeder` | `th1295`, concepts 4287627 et 4287628 | formats d'identifiant `US{NUM_UE:00}` et `F{NUM_UE:00}` |
+Il n'en reste pas : les lieux (`GeoApiService`, `InseeCommunesProvider`, `GeoplatformeAddressProvider`), les unités
+(`UnitDefinitionInitializer`), le thésaurus par défaut (`SiamoisThesaurus.DEFAULT_URL`), les types de départ des tables
+(`siamois.default-types.*`, `DefaultProjectIdentifierConfigSeeder`) et la condition d'érosion de `form-layouts/UE.json` pointent tous vers th337.

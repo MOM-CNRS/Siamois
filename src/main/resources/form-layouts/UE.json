@@ -66,8 +66,8 @@
           "fieldId" : -307,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1225"
           } ]
         }
       }
@@ -80,8 +80,8 @@
           "fieldId" : -307,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1225"
           } ]
         }
       }
@@ -94,8 +94,8 @@
           "fieldId" : -307,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th252",
-            "conceptExtId" : "4287639"
+            "vocabularyExtId" : "th337",
+            "conceptExtId" : "1225"
           } ]
         }
       }
