@@ -8,6 +8,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
@@ -43,6 +44,7 @@ public class ProjectRecordingUnitsControllerApi {
 
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des unités d'enregistrement d'un projet",
             description = "Projet : son identifiant (action_unit_id), comme GET /api/v1/projects/{id}. "

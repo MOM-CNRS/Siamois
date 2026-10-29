@@ -250,7 +250,7 @@ class ProjectControllerApiTest {
                 anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
-                isNull(),
+                isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS),
                 any(Pageable.class),
                 isNull(),
                 any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
@@ -276,7 +276,7 @@ class ProjectControllerApiTest {
                 anyLong(),
                 eq(Set.of(100L)),
                 isNull(),
-                isNull(),
+                isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS),
                 any(Pageable.class),
                 isNull(),
                 any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
@@ -344,7 +344,7 @@ class ProjectControllerApiTest {
         au.setId(1L);
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -373,7 +373,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -384,7 +384,7 @@ class ProjectControllerApiTest {
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
         verify(actionUnitService).findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), pageable.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), pageable.capture(), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         assertThat(pageable.getValue().getSort().getOrderFor("fullIdentifier").getDirection())
                 .isEqualTo(Sort.Direction.DESC);
     }
@@ -432,7 +432,7 @@ class ProjectControllerApiTest {
         au.setOaCode("OA-1");
         AccessibleProjectForApi row = new AccessibleProjectForApi(au, 0L, 0L);
         when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
 
         ProjectResource resource = new ProjectResource();
@@ -453,7 +453,7 @@ class ProjectControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         when(actionUnitService.findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), any(Pageable.class), isNull(), any(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -466,7 +466,7 @@ class ProjectControllerApiTest {
         ArgumentCaptor<fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter> filterCaptor =
                 ArgumentCaptor.forClass(fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter.class);
         verify(actionUnitService).findAccessibleProjects(
-                anyLong(), eq(Set.of(100L)), isNull(), isNull(), any(Pageable.class), isNull(), filterCaptor.capture(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
+                anyLong(), eq(Set.of(100L)), isNull(), isNull(), eq(fr.siamois.dto.FilterDTO.FilterType.CONTAINS), any(Pageable.class), isNull(), filterCaptor.capture(), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class));
         assertThat(filterCaptor.getValue().containsFilters()).containsEntry("name", "foss");
         assertThat(filterCaptor.getValue().conceptOneInFilters()).containsEntry("status", List.of(12L));
     }

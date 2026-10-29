@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
@@ -240,9 +241,10 @@ public class ProjectApiService {
             FieldQuery fieldQuery) {
         assertOrganizationInCallerScope(organizationId, caller.accessibleInstitutionIds());
         int pageNumber = offset / limit;
+        FilterDTO.FilterType searchType = SearchMode.fromRequest().filterType();
         if (fieldQuery.ordered()) {
             return actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(),
-                    organizationId, search, PageRequest.of(pageNumber, limit), null, filter, fieldQuery);
+                    organizationId, search, searchType, PageRequest.of(pageNumber, limit), null, filter, fieldQuery);
         }
 
         // recordingUnitCount n'est pas un chemin JPA : il est porté par une Specification et doit être
@@ -259,6 +261,7 @@ public class ProjectApiService {
                 caller.accessibleInstitutionIds(),
                 organizationId,
                 search,
+                searchType,
                 pageable,
                 countDirection,
                 filter,
@@ -1227,9 +1230,7 @@ public class ProjectApiService {
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(DocumentSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, DocumentSpec.IDENTIFIER_FILTER, search);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return documentService.searchDocuments(institution, filterDTO, pageable);
     }
@@ -1252,9 +1253,7 @@ public class ProjectApiService {
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, DocumentSpec.IDENTIFIER_FILTER, search);
         return documentService.searchDocumentsLinkedTo(institution, kind, targetId, filterDTO, pageable);
     }
 
@@ -1317,9 +1316,7 @@ public class ProjectApiService {
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(ContainerSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(ContainerSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, ContainerSpec.IDENTIFIER_FILTER, search);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return containerService.searchContainers(institution, filterDTO, pageable);
     }
@@ -1375,9 +1372,7 @@ public class ProjectApiService {
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(StudySpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(StudySpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, StudySpec.IDENTIFIER_FILTER, search);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return studyService.searchStudies(institution, filterDTO, pageable);
     }
@@ -1443,9 +1438,7 @@ public class ProjectApiService {
         Pageable pageable = PageRequest.of(limit > 0 ? offset / limit : 0, limit, sort);
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, SpecimenSpec.FULL_IDENTIFIER_FILTER, search);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return specimenService.searchSpecimenInActionUnit(institution, row.actionUnit(), filterDTO, pageable);
     }
@@ -1575,9 +1568,7 @@ public class ProjectApiService {
         FilterDTO filterDTO = new FilterDTO();
         filterDTO.setFieldQuery(fieldQuery);
         filterDTO.add(PhaseSpec.ACTION_UNIT_FILTER, List.of(row.actionUnit().getId()), FilterDTO.FilterType.CONTAINS);
-        if (search != null && !search.isBlank()) {
-            filterDTO.add(PhaseSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filterDTO, PhaseSpec.IDENTIFIER_FILTER, search);
         InstitutionDTO institution = row.actionUnit().getCreatedByInstitution();
         return phaseService.searchPhases(institution, filterDTO, pageable);
     }
@@ -1712,9 +1703,7 @@ public class ProjectApiService {
         if (fieldQuery != FieldQuery.NONE) {
             FilterDTO filterDTO = new FilterDTO();
             filterDTO.setFieldQuery(fieldQuery);
-            if (search != null && !search.isBlank()) {
-                filterDTO.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-            }
+            SearchMode.addSearch(filterDTO, SpecimenSpec.FULL_IDENTIFIER_FILTER, search);
             Sort sort = sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort);
             Page<SpecimenDTO> page = specimenService.searchSpecimenInRecordingUnit(
                     institution, ru, filterDTO, PageRequest.of(pageNumber, limit, sort));

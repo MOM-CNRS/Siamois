@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
+import fr.siamois.dto.FilterDTO;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.*;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
@@ -144,16 +145,25 @@ public class ActionUnitSpec {
      */
     @NonNull
     public static Specification<ActionUnit> projectSearch(@Nullable String search) {
+        return projectSearch(search, FilterDTO.FilterType.CONTAINS);
+    }
+
+    /**
+     * The projects whose name, identifier or full identifier ({@link #PROJECT_SEARCH_ATTRIBUTES})
+     * matches {@code search}: starting with it for {@link FilterDTO.FilterType#START_WITH} (a
+     * project picker), containing it otherwise (the list's search box); everything when blank.
+     */
+    @NonNull
+    public static Specification<ActionUnit> projectSearch(@Nullable String search, @Nullable FilterDTO.FilterType type) {
         return (root, query, cb) -> {
             if (search == null || search.isBlank()) {
                 return cb.conjunction();
             }
-            String pattern = "%" + search.toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(cb.coalesce(root.get("identifier"), "")), pattern),
-                    cb.like(cb.lower(cb.coalesce(root.get(FULL_IDENTIFIER_FILTER), "")), pattern)
-            );
+            String lowered = search.toLowerCase();
+            String pattern = type == FilterDTO.FilterType.START_WITH ? lowered + "%" : "%" + lowered + "%";
+            return cb.or(PROJECT_SEARCH_ATTRIBUTES.stream()
+                    .map(attribute -> cb.like(cb.lower(cb.coalesce(root.get(attribute), "")), pattern))
+                    .toArray(Predicate[]::new));
         };
     }
 

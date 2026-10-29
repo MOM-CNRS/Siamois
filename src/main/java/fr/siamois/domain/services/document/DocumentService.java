@@ -21,6 +21,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.specs.DocumentSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.files.DocumentStorage;
 import fr.siamois.mapper.DocumentMapper;
@@ -119,8 +120,8 @@ public class DocumentService implements ArkEntityService {
         FilterDTO.FilterInfo globalFilter = filters.filterOf(DocumentSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo identifierFilter = filters.filterOf(DocumentSpec.IDENTIFIER_FILTER);
 
-        if (identifierFilter != null && identifierFilter.getType() == FilterDTO.FilterType.CONTAINS) {
-            specs = specs.and(DocumentSpec.identifierContaining(identifierFilter.valueAsString()));
+        if (identifierFilter != null && identifierFilter.getType().isTextSearch()) {
+            specs = specs.and(TextSearchSpec.matching(DocumentSpec.IDENTIFIER_FILTER, identifierFilter));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(DocumentSpec.identifierContaining(globalFilter.valueAsString()));
         }

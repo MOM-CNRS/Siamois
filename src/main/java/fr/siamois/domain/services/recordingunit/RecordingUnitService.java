@@ -39,6 +39,7 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -1206,7 +1207,7 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional(readOnly = true)
     public List<RecordingUnitSummaryDTO> findMatchingInInstitutionByFullIdentifier(InstitutionDTO institution, String query, int limit) {
         Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
-                .and(RecordingUnitSpec.fullIdentifierContains(query));
+                .and(TextSearchSpec.matching(RecordingUnitSpec.FULL_IDENTIFIER, query, FilterDTO.FilterType.START_WITH));
 
         return ExactMatchFirst.findAll(recordingUnitRepository, specs, PageRequest.ofSize(limit), RecordingUnitSpec.FULL_IDENTIFIER, query)
                 .stream()

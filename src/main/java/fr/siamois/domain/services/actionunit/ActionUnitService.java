@@ -35,6 +35,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -766,7 +767,7 @@ public class ActionUnitService implements ArkEntityService {
 
     public List<ActionUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institution, String query, int limit) {
         Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
-        specs = specs.and(ActionUnitSpec.nameContaining(query));
+        specs = specs.and(TextSearchSpec.matching("name", query, FilterDTO.FilterType.START_WITH));
 
         return ExactMatchFirst.findAll(actionUnitRepository, specs, PageRequest.ofSize(limit), "name", query)
                 .stream()
@@ -790,7 +791,8 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             Pageable pageable) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable, null,
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
+                FilterDTO.FilterType.CONTAINS, pageable, null,
                 ProjectListFilter.EMPTY, FieldQuery.NONE);
     }
 
@@ -809,7 +811,8 @@ public class ActionUnitService implements ArkEntityService {
             String search,
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
+                FilterDTO.FilterType.CONTAINS, pageable,
                 recordingUnitCountOrder, ProjectListFilter.EMPTY, FieldQuery.NONE);
     }
 
@@ -825,7 +828,8 @@ public class ActionUnitService implements ArkEntityService {
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder,
             ProjectListFilter filter) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
+                FilterDTO.FilterType.CONTAINS, pageable,
                 recordingUnitCountOrder, filter, FieldQuery.NONE);
     }
 
@@ -843,15 +847,38 @@ public class ActionUnitService implements ArkEntityService {
             Sort.Direction recordingUnitCountOrder,
             ProjectListFilter filter,
             FieldQuery fieldQuery) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, pageable,
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
+                FilterDTO.FilterType.CONTAINS, pageable,
                 recordingUnitCountOrder, filter, fieldQuery);
     }
 
+    /**
+     * Same, {@code searchType} saying how {@code search} matches: {@link FilterDTO.FilterType#START_WITH}
+     * (a project picker) or {@link FilterDTO.FilterType#CONTAINS} (the list's search box).
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("java:S107") // the list's whole query, as the overloads above take it
+    public Page<AccessibleProjectForApi> findAccessibleProjects(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            String search,
+            FilterDTO.FilterType searchType,
+            Pageable pageable,
+            Sort.Direction recordingUnitCountOrder,
+            ProjectListFilter filter,
+            FieldQuery fieldQuery) {
+        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, searchType,
+                pageable, recordingUnitCountOrder, filter, fieldQuery);
+    }
+
+    @SuppressWarnings("java:S107")
     private Page<AccessibleProjectForApi> findAccessibleProjectsInternal(
             Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
             String search,
+            FilterDTO.FilterType searchType,
             Pageable pageable,
             Sort.Direction recordingUnitCountOrder,
             ProjectListFilter filter,
@@ -859,7 +886,8 @@ public class ActionUnitService implements ArkEntityService {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
-        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter)
+        Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId,
+                ActionUnitSpec.projectSearch(search, searchType), filter)
                 .and(fieldQuery.specificationFor());
         if (recordingUnitCountOrder != null) {
             spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
@@ -1010,13 +1038,26 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             ProjectListFilter filter) {
+        return accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId,
+                ActionUnitSpec.projectSearch(search), filter);
+    }
+
+    /**
+     * The projects the person can see in the scope, matching {@code search} and {@code filter}.
+     */
+    private Specification<ActionUnit> accessibleProjectsSpec(
+            Long personId,
+            Set<Long> accessibleInstitutionIds,
+            Long organizationId,
+            Specification<ActionUnit> search,
+            ProjectListFilter filter) {
         Collection<Long> institutionScope = organizationId != null
                 ? List.of(organizationId)
                 : accessibleInstitutionIds;
 
         Specification<ActionUnit> spec = Specification.where(ActionUnitSpec.institutionIdIn(institutionScope))
                 .and(ActionUnitSpec.visibleToPerson(personId))
-                .and(ActionUnitSpec.projectSearch(search));
+                .and(search);
         if (filter != null && !filter.isEmpty()) {
             spec = spec.and(ActionUnitFilterSpec.fromFilter(filter));
         }

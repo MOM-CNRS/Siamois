@@ -5,6 +5,7 @@ import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
@@ -76,6 +77,7 @@ public class ProjectDocumentsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping()
     @Operation(
             summary = "Documents d'un projet",

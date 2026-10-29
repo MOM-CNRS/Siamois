@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.ContainerService;
@@ -160,9 +161,7 @@ public class OrganizationListService {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseFindSort));
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filter.add(SpecimenSpec.FULL_IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filter, SpecimenSpec.FULL_IDENTIFIER_FILTER, search);
         if (!restrictToVisibleProjects(caller, institution, filter, SpecimenSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
@@ -176,9 +175,7 @@ public class OrganizationListService {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseStudySort));
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filter.add(StudySpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filter, StudySpec.IDENTIFIER_FILTER, search);
         if (!restrictToVisibleProjects(caller, institution, filter, StudySpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
@@ -191,9 +188,7 @@ public class OrganizationListService {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseDocumentSort));
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filter.add(DocumentSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filter, DocumentSpec.IDENTIFIER_FILTER, search);
         if (!restrictToVisibleProjects(caller, institution, filter, DocumentSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
@@ -217,9 +212,7 @@ public class OrganizationListService {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parsePhaseSort));
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filter.add(PhaseSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filter, PhaseSpec.IDENTIFIER_FILTER, search);
         if (!restrictToVisibleProjects(caller, institution, filter, PhaseSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }
@@ -244,9 +237,7 @@ public class OrganizationListService {
         Pageable pageable = pageable(offset, limit, ProjectApiService.sortOr(fieldQuery, sortParam, ProjectApiService::parseContainerSort));
         FilterDTO filter = new FilterDTO();
         filter.setFieldQuery(fieldQuery);
-        if (search != null && !search.isBlank()) {
-            filter.add(ContainerSpec.IDENTIFIER_FILTER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(filter, ContainerSpec.IDENTIFIER_FILTER, search);
         if (!restrictToVisibleProjects(caller, institution, filter, ContainerSpec.ACTION_UNIT_FILTER)) {
             return Page.empty(pageable);
         }

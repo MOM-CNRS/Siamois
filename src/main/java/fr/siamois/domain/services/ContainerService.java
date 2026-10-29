@@ -20,6 +20,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.ContainerMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
@@ -62,8 +63,8 @@ public class ContainerService {
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(ContainerSpec.IDENTIFIER_FILTER);
 
-        if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
-            specs = specs.and(ContainerSpec.nameContaining(nameFilter.valueAsString()));
+        if (nameFilter != null && nameFilter.getType().isTextSearch()) {
+            specs = specs.and(TextSearchSpec.matching(ContainerSpec.IDENTIFIER_FILTER, nameFilter));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ContainerSpec.nameContaining(globalFilter.valueAsString()));
         }

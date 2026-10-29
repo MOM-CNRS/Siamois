@@ -6,6 +6,7 @@ import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +28,7 @@ public class RecordingUnitSortFilterService {
     private record FilterBinding(String column, Function<FilterDTO, Specification<RecordingUnit>> toSpec) {}
 
     private static final List<FilterBinding> USER_FILTERS = List.of(
-            text(RecordingUnitSpec.FULL_IDENTIFIER, RecordingUnitSpec::fullIdentifierContains),
+            search(RecordingUnitSpec.FULL_IDENTIFIER),
             ids(RecordingUnitSpec.AUTHOR_FILTER, RecordingUnitSpec::authorIsIn),
             text(RecordingUnitSpec.MATRIX_FILTER, RecordingUnitSpec::matrixContains),
             ids(RecordingUnitSpec.SPATIAL_UNIT_FILTER, RecordingUnitSpec::isInSpatialUnit),
@@ -47,6 +48,13 @@ public class RecordingUnitSortFilterService {
 
     private static FilterBinding text(String column, Function<String, Specification<RecordingUnit>> toSpec) {
         return new FilterBinding(column, filters -> toSpec.apply(filters.valueOfAsString(column)));
+    }
+
+    /**
+     * A search on {@code column}: containing the text, or starting with it for a START_WITH filter.
+     */
+    private static FilterBinding search(String column) {
+        return new FilterBinding(column, filters -> TextSearchSpec.matching(column, filters.filterOf(column)));
     }
 
     private static FilterBinding ids(String column, Function<List<Long>, Specification<RecordingUnit>> toSpec) {

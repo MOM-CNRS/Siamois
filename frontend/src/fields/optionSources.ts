@@ -279,7 +279,12 @@ async function fetchEntityOptions(
   context?: OptionsContext,
 ): Promise<FilterOption[]> {
   const query = new URLSearchParams({ offset: "0", limit: String(PICKER_PAGE) });
-  if (q) query.set("search", q);
+  if (q) {
+    query.set("search", q);
+    // A picker matches the start of the identifier (the list's own search box matches anywhere in
+    // it); the exact match comes first either way (SearchMode, ExactMatchFirst server side).
+    query.set("searchMode", "prefix");
+  }
   // Rule options REF_MATCH: only the candidates whose own field holds the parent's value — the
   // list's own reference filter (f.<fieldId>=<id>, FieldQueryService). An empty parent restricts
   // nothing (the server checks the same way).
