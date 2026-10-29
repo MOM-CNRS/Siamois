@@ -89,6 +89,30 @@ public class ConceptService {
     }
 
     /**
+     * The address, in the thesaurus, of the branch holding a field's values for an institution (and project):
+     * the concept that carries the field code, whose subtree is the list of values.
+     *
+     * @return the concept's URI, or the thesaurus's own address when the concept has none; empty when no thesaurus
+     *         is configured for the field
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> findFieldBranchUri(@NonNull Long institutionId, @Nullable Long actionUnitId, @NonNull String fieldCode) {
+        return fieldCodeResolver.find(institutionId, actionUnitId, fieldCode).map(config -> {
+            Concept concept = config.getConcept();
+            if (concept.getUri() != null && !concept.getUri().isBlank()) {
+                return concept.getUri();
+            }
+            return config.getVocabulary().getUri();
+        });
+    }
+
+    /** The external id of the thesaurus a field's values are read in (th337…), resolved as {@link #findFieldBranchUri} does. */
+    public Optional<String> findFieldVocabularyId(@NonNull Long institutionId, @Nullable Long actionUnitId, @NonNull String fieldCode) {
+        return fieldCodeResolver.find(institutionId, actionUnitId, fieldCode)
+                .map(config -> config.getVocabulary().getExternalVocabularyId());
+    }
+
+    /**
      * Saves a concept if it does not already exist in the repository.
      *
      * @param conceptDTO the concept to save or retrieve

@@ -578,7 +578,7 @@ public class OOXMLImportService {
             try {
                 if (sheet.getRow(0) == null) continue;
                 Map<String, Integer> cols = indexColumns(sheet.getRow(0), meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, progress, row ->
+                forEachDataRow(sheet, errors, progress, typeLabelReader(cols, TYPE_LABEL1), row ->
                         parseRowToRecordingUnit(row, cols, scope == ImportScope.PROJECT ? actionUnit : null).ifPresent(result::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
@@ -602,6 +602,8 @@ public class OOXMLImportService {
         Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
         ConceptSeeder.ConceptKey type           = conceptKeyFromColumnOrLabel(row, cols, TYPE_URI, TYPE_LABEL1,
                 RecordingUnit.TYPE_FIELD_CODE, institutionDbId);
+        ConceptSeeder.ConceptKey nature         = conceptKeyFromColumnOrLabel(row, cols, "nature uri", "nature label",
+                RecordingUnit.NATURE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphCycle  = conceptKeyFromColumnOrLabel(row, cols, "cycle uri", "cycle label",
                 RecordingUnit.GEOMORPHO_CYCLE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey geomorphAgent  = conceptKeyFromColumnOrLabel(row, cols, "agent uri", "agent label",
@@ -648,6 +650,7 @@ public class OOXMLImportService {
                 identStr,
                 identifier,
                 type,
+                nature,
                 geomorphCycle,
                 geomorphAgent,
                 interpretation,
@@ -715,7 +718,8 @@ public class OOXMLImportService {
                 Row header = sheet.getRow(0);
                 if (header == null) continue;
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
-                forEachDataRow(sheet, errors, progress, row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
+                forEachDataRow(sheet, errors, progress, typeLabelReader(cols, "categorie label"),
+                        row -> parseRowToSpecimen(row, cols, actionUnit).ifPresent(result::add));
             } catch (Exception e) {
                 errors.add(new ImportError(sheet.getSheetName(), 0, "", HEADER_READ_ERROR_PREFIX + e.getMessage()));
             }
@@ -796,7 +800,7 @@ public class OOXMLImportService {
                 Map<String, Integer> cols = indexColumns(header, meta.columnAliases().getOrDefault(sheet.getSheetName(), Map.of()));
 
                 Long institutionDbId = actionUnit != null ? actionUnit.getCreatedByInstitution().getId() : null;
-                forEachDataRow(sheet, errors, progress, row -> {
+                forEachDataRow(sheet, errors, progress, typeLabelReader(cols, TYPE_LABEL1), row -> {
                     String identifier = getStringCellOrNull(row, cols, IDENTIFIANT);
                     if (identifier == null || identifier.isBlank()) return;
 
@@ -879,6 +883,18 @@ public class OOXMLImportService {
         return new ConceptSeeder.ConceptKey(vocabId, conceptId);
     }
 
+    /** Reads the type label of a row, for the vocabulary errors of that row; {@code null} when it has none or cannot be read. */
+    private static java.util.function.Function<Row, String> typeLabelReader(Map<String, Integer> cols, String labelKey) {
+        return row -> {
+            try {
+                String label = getStringCellOrNull(row, cols, labelKey);
+                return label == null || label.isBlank() ? null : label.trim();
+            } catch (RuntimeException e) {
+                return null;
+            }
+        };
+    }
+
     /**
      * Reads a column's cell and parses it as a concept URI, tagging any failure — cell read
      * or URI parsing — with the column name so it surfaces correctly in the validation UI.
@@ -917,7 +933,7 @@ public class OOXMLImportService {
             Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
             return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label);
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
+            throw new VocabularyResolutionException(fieldCode, "[colonne '" + labelKey + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -964,7 +980,7 @@ public class OOXMLImportService {
                 Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
                 result.add(new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label));
             } catch (Exception e) {
-                throw new IllegalStateException("[colonne '" + labelKey + "'] : " + e.getMessage(), e);
+                throw new VocabularyResolutionException(fieldCode, "[colonne '" + labelKey + "'] : " + e.getMessage(), e);
             }
         }
 

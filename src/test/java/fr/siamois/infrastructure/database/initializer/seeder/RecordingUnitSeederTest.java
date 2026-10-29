@@ -106,6 +106,7 @@ class RecordingUnitSeederTest {
                         "chartres-C309_01-1100",
                         1100,
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "123456"),
+                        null,
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287539"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
                         new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"),
@@ -144,7 +145,7 @@ class RecordingUnitSeederTest {
         List<RecordingUnitSeeder.RecordingUnitSpecs> oneSpecList = oneSpec();
         RecordingUnitSeeder.RecordingUnitSpecs original = oneSpecList.get(0);
         RecordingUnitSeeder.RecordingUnitSpecs withRealRow = new RecordingUnitSeeder.RecordingUnitSpecs(
-                original.fullIdentifier(), original.identifier(), original.type(), original.geomorphologicalCycle(),
+                original.fullIdentifier(), original.identifier(), original.type(), original.nature(), original.geomorphologicalCycle(),
                 original.geomorphologicalAgent(), original.interpretation(), original.authorEmail(),
                 original.institutionIdentifier(), original.author(), original.createdBy(), original.excavators(),
                 original.creationTime(), original.beginDate(), original.endDate(), original.spatialUnitName(),
@@ -174,6 +175,23 @@ class RecordingUnitSeederTest {
         );
 
         assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
+    }
+
+    @Test
+    void seed_ConceptDoesNotExist_carriesTheLinkToTheConceptInTheThesaurus() {
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+        when(conceptSeeder.conceptLink(any(), any())).thenReturn("https://thesaurus.mom.fr/?idc=123456&idt=th1");
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
+
+        MissingConceptException missing = null;
+        for (Throwable t = ex; t != null && missing == null; t = t.getCause()) {
+            if (t instanceof MissingConceptException m) missing = m;
+        }
+        assertThat(missing).isNotNull();
+        assertThat(missing.getConceptUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=123456&idt=th1");
     }
 
     @Test

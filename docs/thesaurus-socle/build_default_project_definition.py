@@ -70,7 +70,9 @@ COUNTERS = {"UE": "{NUM_UE:000}", "MOBILIER": "{NUM_MOBILIER:000}", "PHASE": "{N
 PREFIXES = {
     "UE": {"US": "US", "Fait": "F", "Ensemble": "ENS", "UF": "UF", "Sépulture": "SEP", "Sondage": "SD", "Tranchée": "TR",
            "Zone": "Z", "Secteur": "SECT", "Carré": "CAR", "Log": "LOG", "USlog": "USLOG", "Unité artificielle": "UA",
-           "Passe mécanique": "PM", "Nettoyage": "NET", "Fenêtre de fouille": "FEN"},
+           "Passe mécanique": "PM", "Nettoyage": "NET", "Fenêtre de fouille": "FEN",
+           "Entité archéologique": "EA", "ensemble archéologique": "ENSA", "Entité spatiale": "ESP", "Entité graphique": "EG",
+           "Unité graphique": "UG", "Entité taphonomique": "ET", "Phase": "PH"},
     "MOBILIER": {"Céramique": "CER", "Métal": "MET", "Industrie lithique": "LIT", "Verre": "VER", "Faune": "FAU",
                  "Terre cuite architecturale": "TCA", "Vestige anthropobiologique (VAB)": "VAB", "Prélèvement": "PRE"},
     "PHASE": {"Phase d'occupation": "OCC", "Phase de construction": "CON", "Phase d'aménagement ou de transformation": "AME",

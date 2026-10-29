@@ -527,6 +527,8 @@ us-log | USlog | Log stratigraphic unit
 """, "type_UE")
 adopt(ru_type, "type_UE", ["unité artificielle", "passe mécanique", "nettoyage", "fenêtre de fouille"])
 adopt(ru_type, "type_UE", ["ensemble archéologique"], {"ensemble archéologique": "Ensemble"})  # même notion que « entité archéologique structurée »
+# « EA » du th230 (import Chartres) : le fait est une entité archéologique ; le libellé alternatif permet de la retrouver par son nom.
+child(ru_type, "fait").alt.append("entité archéologique")
 
 # Nature et agent : valeurs du th230, avec leurs définitions.
 adopt(ru_nat, "nature_UE", ref_children("nature_UE"))
@@ -1221,6 +1223,8 @@ COLLECTIONS.append(("Mobilier · Type — conditionnement du référentiel  [SIA
                     "Finds · Type — conditioning required by the national referential  [SIAS.CAT @ referential]",
                     [child(sp_type, s) for s in ("vab", "prelevement")]))
 
+# Types d'UE du référentiel national (type_UE) qui n'étaient pas repris : ils prennent le rapprochement et la définition du référentiel.
+adopt(ru_type, "type_UE", ["entité spatiale", "entité graphique", "unité graphique", "entité taphonomique", "phase"])
 # ============================================================================== CHAMPS AJOUTÉS APRÈS LA PREMIÈRE PUBLICATION
 # Les identifiants des concepts suivent l'ordre de création : tout nouveau champ se déclare ICI, à la fin, pour que les
 # identifiants déjà publiés (et écrits dans le code et les modèles d'export) ne bougent pas.

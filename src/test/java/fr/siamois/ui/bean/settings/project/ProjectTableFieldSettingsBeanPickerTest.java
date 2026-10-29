@@ -364,6 +364,34 @@ class ProjectTableFieldSettingsBeanPickerTest {
     }
 
     @Test
+    void openOn_shouldOpenTheFieldReadingItsValuesFromTheFieldCodeAsked() {
+        typesOfUe(TYPE_NAME);
+        conceptLabelled(12L, TYPE_NAME);
+        TypeFieldFormConfig other = TypeFieldFormConfig.builder().id(1L).name("autre").sourceLabel("SIARU.NATURE").build();
+        TypeFieldFormConfig wanted = TypeFieldFormConfig.builder().id(34L).name("voulu").sourceLabel("SIARU.INTERPRETATION")
+                .type(fr.siamois.domain.models.settings.tableconfig.FieldType.TEXT).build();
+        when(tableService.getFieldsConfig(42L, ConfigurableTable.UE, TYPE_NAME))
+                .thenReturn(new TypeFieldsConfig(List.of(other, wanted)));
+
+        bean.openOn(ConfigurableTable.UE, 12L, null, "SIARU.INTERPRETATION");
+
+        assertThat(bean.isDrawerOpen()).isTrue();
+        assertThat(bean.getDraftOriginalName()).isEqualTo("voulu");
+    }
+
+    @Test
+    void openOn_shouldLeaveTheDrawerClosed_whenNoFieldReadsTheFieldCodeAsked() {
+        typesOfUe(TYPE_NAME);
+        conceptLabelled(12L, TYPE_NAME);
+        when(tableService.getFieldsConfig(42L, ConfigurableTable.UE, TYPE_NAME))
+                .thenReturn(new TypeFieldsConfig(List.of(TypeFieldFormConfig.builder().id(1L).name("autre").sourceLabel("SIARU.NATURE").build())));
+
+        bean.openOn(ConfigurableTable.UE, 12L, null, "SIARU.INTERPRETATION");
+
+        assertThat(bean.isDrawerOpen()).isFalse();
+    }
+
+    @Test
     void openOn_shouldLeaveTheDrawerClosed_whenTheFieldIsNotOfTheType() {
         typesOfUe(TYPE_NAME);
         conceptLabelled(12L, TYPE_NAME);

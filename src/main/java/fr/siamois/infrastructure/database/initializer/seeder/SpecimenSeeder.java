@@ -176,7 +176,7 @@ public class SpecimenSeeder {
             Concept cat = SeederUtils.field("type", () -> {
                 if (s.type() == null) throw new IllegalStateException("Type obligatoire manquant");
                 Concept c = conceptsByKey.get(s.type());
-                if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.type(), institutionId));
+                if (c == null) throw MissingConceptException.of(conceptSeeder, s.type(), institutionId);
                 return c;
             });
             Concept material = resolveOptionalConcept(conceptsByKey, "material", s.material(), institutionId);
@@ -232,7 +232,7 @@ public class SpecimenSeeder {
         if (key == null) return null;
         return SeederUtils.field(fieldName, () -> {
             Concept c = conceptsByKey.get(key);
-            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
+            if (c == null) throw MissingConceptException.of(conceptSeeder, key, institutionId);
             return c;
         });
     }

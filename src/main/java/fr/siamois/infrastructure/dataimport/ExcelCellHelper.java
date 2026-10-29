@@ -11,6 +11,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class ExcelCellHelper {
@@ -129,6 +130,15 @@ public final class ExcelCellHelper {
     }
 
     public static void forEachDataRow(Sheet sheet, List<ImportError> errors, ImportProgress progress, Consumer<Row> consumer) {
+        forEachDataRow(sheet, errors, progress, row -> null, consumer);
+    }
+
+    /**
+     * Same as above; {@code typeLabelOf} reads the row's type label, kept on a vocabulary error so the screen can
+     * link to the configuration of that type.
+     */
+    public static void forEachDataRow(Sheet sheet, List<ImportError> errors, ImportProgress progress,
+                                      Function<Row, String> typeLabelOf, Consumer<Row> consumer) {
         for (int r = 1; r <= sheet.getLastRowNum(); r++) {
             Row row = sheet.getRow(r);
             if (row != null) {
@@ -136,7 +146,7 @@ public final class ExcelCellHelper {
                     consumer.accept(row);
                 } catch (Exception e) {
                     if (errors.size() < MAX_ERRORS) {
-                        errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e.getMessage()));
+                        errors.add(ImportError.forRow(sheet.getSheetName(), r + 1, e, typeLabelOf.apply(row)));
                     }
                 }
                 progress.increment();

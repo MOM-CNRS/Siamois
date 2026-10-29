@@ -1,0 +1,19 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             rendered="#{err.vocabularyError and projectUploadSettingsBean.getVocabularyLinks(err).hasAny()}">
+    <!-- Under a vocabulary error: the configuration of what failed (table, type or field) and the thesaurus it is looked up in,
+         each in a new tab. Param: err (an ImportError). -->
+    <span style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;font-size:0.78rem;">
+        <h:outputLink value="#{projectUploadSettingsBean.getVocabularyLinks(err).configUrl}" target="_blank"
+                      rel="noopener noreferrer"
+                      rendered="#{projectUploadSettingsBean.getVocabularyLinks(err).configUrl != null}">
+            <i class="bi bi-gear" aria-hidden="true"/> #{langBean.msg('import.vocabularyLink.config.'.concat(projectUploadSettingsBean.getVocabularyLinks(err).configKind), projectUploadSettingsBean.getVocabularyLinks(err).configTarget)}
+        </h:outputLink>
+        <h:outputLink value="#{projectUploadSettingsBean.getVocabularyLinks(err).thesaurusUrl}" target="_blank"
+                      rel="noopener noreferrer"
+                      rendered="#{projectUploadSettingsBean.getVocabularyLinks(err).thesaurusUrl != null}">
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"/> #{projectUploadSettingsBean.getVocabularyLinks(err).thesaurusName != null ? langBean.msg('import.vocabularyLink.thesaurus', projectUploadSettingsBean.getVocabularyLinks(err).thesaurusName) : langBean.msg('import.vocabularyLink.thesaurus.unnamed')}
+        </h:outputLink>
+    </span>
+</ui:fragment>

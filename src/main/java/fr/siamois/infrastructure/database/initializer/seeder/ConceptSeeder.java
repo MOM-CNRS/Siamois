@@ -84,7 +84,7 @@ public class ConceptSeeder {
      */
     public String describeMissingConcept(ConceptKey key, Long institutionId) {
         if (key == null) return "Concept manquant (aucune valeur fournie)";
-        String link = buildConceptLink(key, institutionId);
+        String link = conceptLink(key, institutionId);
         StringBuilder base = new StringBuilder("Concept non chargé dans Siamois (vocabulaire ")
                 .append(key.vocabularyExtId()).append(", concept ").append(key.conceptExtId());
         if (key.label() != null && !key.label().isBlank()) {
@@ -94,7 +94,8 @@ public class ConceptSeeder {
         return link != null ? base + " : " + link : base.toString();
     }
 
-    private String buildConceptLink(ConceptKey key, Long institutionId) {
+    /** The address of the concept in the institution's thesaurus; {@code null} when that thesaurus is not known. */
+    public String conceptLink(ConceptKey key, Long institutionId) {
         if (institutionId == null || key.vocabularyExtId() == null) return null;
         return vocabularyRepository.findDistinctByInstitutionId(institutionId).stream()
                 .filter(v -> key.vocabularyExtId().equalsIgnoreCase(v.getExternalVocabularyId()))

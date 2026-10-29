@@ -55,7 +55,7 @@ class SettingsControllerProjectTablesTest {
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
 
         // ForbiddenException cannot be built without a JAX-RS runtime, hence the generic type here
-        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null));
+        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null, null));
 
         verify(projectDetailsBean, never()).setProject(any());
         verify(projectTableFieldSettingsBean, never()).init(any());
@@ -65,7 +65,7 @@ class SettingsControllerProjectTablesTest {
     void goToProjectTablesSettings_answersLikeAForbiddenOneForAnUnknownProject() {
         when(actionUnitService.findById(7L)).thenThrow(new IllegalStateException("not found"));
 
-        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null));
+        assertThrows(RuntimeException.class, () -> controller.goToProjectTablesSettings(7L, null, null, null, null));
 
         verify(projectDetailsBean, never()).setProject(any());
     }
@@ -78,7 +78,7 @@ class SettingsControllerProjectTablesTest {
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
         when(actionUnitService.findById(7L)).thenReturn(project);
 
-        String view = controller.goToProjectTablesSettings(7L, null, null, null);
+        String view = controller.goToProjectTablesSettings(7L, null, null, null, null);
 
         assertEquals("forward:/pages/settings/project/projectTablesSettings.xhtml", view);
         verify(projectDetailsBean).setProject(project);
@@ -93,9 +93,9 @@ class SettingsControllerProjectTablesTest {
         when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(true);
         when(actionUnitService.findById(7L)).thenReturn(project);
 
-        controller.goToProjectTablesSettings(7L, "UE", 12L, 34L);
+        controller.goToProjectTablesSettings(7L, "UE", 12L, 34L, null);
 
-        verify(projectTableFieldSettingsBean).openOn(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, 12L, 34L);
+        verify(projectTableFieldSettingsBean).openOn(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.UE, 12L, 34L, null);
     }
 
     @Test

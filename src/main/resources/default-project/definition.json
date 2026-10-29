@@ -114,6 +114,41 @@
           "label": "Fenêtre de fouille",
           "concept": "1214",
           "identifierFormat": "FEN{NUM_UE:000}"
+        },
+        {
+          "label": "Entité archéologique",
+          "concept": "4291339",
+          "identifierFormat": "EA{NUM_UE:000}"
+        },
+        {
+          "label": "ensemble archéologique",
+          "concept": "4291340",
+          "identifierFormat": "ENSA{NUM_UE:000}"
+        },
+        {
+          "label": "Entité spatiale",
+          "concept": "4291341",
+          "identifierFormat": "ESP{NUM_UE:000}"
+        },
+        {
+          "label": "Entité graphique",
+          "concept": "4291342",
+          "identifierFormat": "EG{NUM_UE:000}"
+        },
+        {
+          "label": "Unité graphique",
+          "concept": "4291343",
+          "identifierFormat": "UG{NUM_UE:000}"
+        },
+        {
+          "label": "Entité taphonomique",
+          "concept": "4291344",
+          "identifierFormat": "ET{NUM_UE:000}"
+        },
+        {
+          "label": "Phase",
+          "concept": "4291345",
+          "identifierFormat": "PH{NUM_UE:000}"
         }
       ]
     },

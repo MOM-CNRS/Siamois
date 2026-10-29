@@ -120,6 +120,23 @@ class SpecimenSeederTest {
     }
 
     @Test
+    void seed_MaterialDoesNotExist() {
+        stubTypeFound();
+        stubInstitutionFound();
+        stubRecordingUnitFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+        SpecimenSeeder.SpecimenSpecs base = toInsert.get(0);
+        var withMaterial = List.of(new SpecimenSeeder.SpecimenSpecs(base.fullIdentifier(), base.identifier(),
+                new ConceptSeeder.ConceptKey(VOCABULARY_ID, "unknown"), base.type(), null, base.authorEmail(),
+                base.institutionIdentifier(), base.authors(), base.collectors(), base.creationTime(), base.recordingUnitKey(),
+                null, null, null, null, null, null, null, null, null, null, null, null));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(withMaterial, 1L));
+
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
+    }
+
+    @Test
     void seed_AuthorDoesNotExist() {
         stubTypeFound();
         stubInstitutionFound();

@@ -6,6 +6,7 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ProgressWrapper;
+import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.vocabulary.*;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -68,6 +69,9 @@ class ConceptServiceTest {
 
     @Mock
     private ApplicationContext applicationContext;
+
+    @Mock
+    private FieldCodeResolver fieldCodeResolver;
 
     @InjectMocks
     private ConceptService conceptService;
@@ -906,4 +910,51 @@ class ConceptServiceTest {
         verifyNoInteractions(conceptApi);
     }
 
+
+    @Test
+    void findFieldBranchUri_returnsTheUriOfTheConceptCarryingTheFieldCode() {
+        Concept root = new Concept();
+        root.setUri("https://thesaurus.mom.fr/?idc=1180&idt=th337");
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setConcept(root);
+        config.setVocabulary(vocabulary);
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
+
+        assertThat(conceptService.findFieldBranchUri(3L, 5L, "SIARU.NATURE"))
+                .contains("https://thesaurus.mom.fr/?idc=1180&idt=th337");
+    }
+
+    @Test
+    void findFieldBranchUri_withoutConceptUri_fallsBackToTheThesaurusAddress() {
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setConcept(new Concept());
+        config.setVocabulary(vocabulary);
+        when(fieldCodeResolver.find(3L, null, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
+
+        assertThat(conceptService.findFieldBranchUri(3L, null, "SIARU.NATURE")).contains(vocabulary.getUri());
+    }
+
+    @Test
+    void findFieldBranchUri_noThesaurusConfigured_isEmpty() {
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.empty());
+
+        assertThat(conceptService.findFieldBranchUri(3L, 5L, "SIARU.NATURE")).isEmpty();
+    }
+
+    @Test
+    void findFieldVocabularyId_returnsTheExternalIdOfTheThesaurusOfTheField() {
+        vocabulary.setExternalVocabularyId("th337");
+        ConceptFieldConfig config = new ConceptFieldConfig();
+        config.setVocabulary(vocabulary);
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
+
+        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).contains("th337");
+    }
+
+    @Test
+    void findFieldVocabularyId_noThesaurusConfigured_isEmpty() {
+        when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.empty());
+
+        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).isEmpty();
+    }
 }

@@ -5,6 +5,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.services.dataimport.ImportAsyncRunner;
+import fr.siamois.domain.services.dataimport.ImportVocabularyLinkService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.ProjectDataSeeder;
 import fr.siamois.infrastructure.database.initializer.seeder.SeedException;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +120,8 @@ public class ProjectUploadSettingsBean {
     private final OOXMLImportService importService;
     private final ProjectDataSeeder seeder;
     private final ImportAsyncRunner asyncRunner;
+    private final ImportVocabularyLinkService vocabularyLinkService;
+    private final Map<String, ImportVocabularyLinkService.VocabularyLinks> vocabularyLinksCache = new HashMap<>();
 
     ActionUnitDTO project;
     UploadedFile originalFile;
@@ -182,6 +186,7 @@ public class ProjectUploadSettingsBean {
         importResult = null;
         originalFile = null;
         persistenceErrors = new ArrayList<>();
+        vocabularyLinksCache.clear();
         uploadedFileName = "";
         uploadedFileSize = 0;
         importDone = false;
@@ -315,6 +320,21 @@ public class ProjectUploadSettingsBean {
     /** Display label for an error's "sheet" — real sheet names pass through, table IDs (from persistence errors) get their French label. */
     public String getErrorSheetLabel(ImportError e) {
         return ImportSchema.TABLE_LABELS.getOrDefault(e.sheet(), e.sheet());
+    }
+
+    /**
+     * The links shown under a vocabulary error: the field's configuration in the project and its thesaurus branch.
+     * Cached per field and type, since the screen asks for every row of every tab, again at each refresh.
+     */
+    public ImportVocabularyLinkService.VocabularyLinks getVocabularyLinks(ImportError e) {
+        if (e == null || !e.isVocabularyError()) {
+            return ImportVocabularyLinkService.VocabularyLinks.NONE;
+        }
+        return vocabularyLinksCache.computeIfAbsent(e.sheet() + "|" + e.vocabulary(), key -> {
+            FacesContext context = FacesContext.getCurrentInstance();
+            String contextPath = context == null ? "" : context.getExternalContext().getRequestContextPath();
+            return vocabularyLinkService.linksFor(project, e, contextPath);
+        });
     }
 
     public boolean isImportBlocked() {
@@ -562,9 +582,9 @@ public class ProjectUploadSettingsBean {
 
     private void onPersistError(Exception e) {
         if (e instanceof SeedException se) {
-            persistenceErrors.add(new ImportError(se.getTableId(), 0, "—", MessageUtils.describe(se)));
+            persistenceErrors.add(ImportError.forTable(se.getTableId(), se, MessageUtils.describe(se)));
         } else {
-            persistenceErrors.add(new ImportError("Import", 0, "—", MessageUtils.describe(e)));
+            persistenceErrors.add(ImportError.forTable("Import", e, MessageUtils.describe(e)));
         }
         readyToUpload = false;
         // panels re-render via the poll's update attribute

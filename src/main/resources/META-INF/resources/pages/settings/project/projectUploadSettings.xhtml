@@ -429,7 +429,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.lieuTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -464,7 +466,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.lieuRelTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -499,7 +503,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.ueTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -534,7 +540,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.ueRelTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -570,7 +578,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.stratiTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -606,7 +616,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.mobTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
@@ -641,7 +653,9 @@
                                                     <div class="err-row"><b>#{projectUploadSettingsBean.getErrorSheetLabel(e)}</b><span
                                                             style="color:#666;">#{e.row()}</span><span
                                                             style="color:#666;">#{e.column()}</span><span
-                                                            style="color:#555;">#{e.message()}</span></div>
+                                                            style="color:#555;">#{e.message()}<ui:include
+                                                            src="vocabularyErrorLinks.xhtml"><ui:param name="err"
+                                                            value="#{e}"/></ui:include></span></div>
                                                 </ui:repeat>
                                                 <h:panelGroup rendered="#{projectUploadSettingsBean.phaseTab.errorsCapped}">
                                                     <div class="err-row" style="color:#b5403a;font-style:italic;">Affichage limité aux 200 premières erreurs — corrigez-les puis relancez l'import pour voir la suite.</div>
