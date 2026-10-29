@@ -11,7 +11,7 @@ chapitre V (inventaires simplifiés) reprend un sous-ensemble des mêmes champs,
 Un champ du référentiel qui revient dans plusieurs feuilles (`code_OA_NAT`, `matiere`, `lieu_de_conservation`…) est une ligne.
 `identifiant_parcelle` figure deux fois : ce sont deux champs distincts du référentiel (feuilles 2 et 5).
 
-**Bilan : 68 ✅, 25 ≈, 12 ❌ sur 105.**
+**Bilan : 76 ✅, 27 ≈, 2 ❌ sur 105.**
 
 | Champ du référentiel | Feuille(s) | Type | Champ(s) du socle (table · libellé, code) | | Remarque |
 |---|---|---|---|---|---|
@@ -35,8 +35,8 @@ Un champ du référentiel qui revient dans plusieurs feuilles (`code_OA_NAT`, `m
 | `informations_complementaires_parcelle` | 2 Géographie (terrestre) | libre | Lieu · Commentaires (`SIASU.comments`) | ✅ |  |
 | `carte_SHOM_numero` | 2 Géographie (sous-marin) | libre | Lieu · Numéro de carte Shom (`SIASU.shomMapNumber`) | ✅ |  |
 | `intitule_lieu_OA` | 2 Géographie (sous-marin) | libre | Lieu · Nom (`SIASU.name`) | ≈ | Intitulé du lieu de l'opération en mer |
-| `latitude_OA` | 2 Géographie (sous-marin) | libre | – (géométrie du lieu, non décrite dans le thésaurus) | ❌ | Coordonnées : la géométrie existe côté application, pas de concept de champ |
-| `longitude_OA` | 2 Géographie (sous-marin) | libre | – (géométrie du lieu, non décrite dans le thésaurus) | ❌ | Idem latitude |
+| `latitude_OA` | 2 Géographie (sous-marin) | libre | Lieu · Géométrie (`SIASU.geometry`), lue en coordonnée y | ≈ | Le modèle d'export convertit la géométrie du lieu en latitude |
+| `longitude_OA` | 2 Géographie (sous-marin) | libre | Lieu · Géométrie (`SIASU.geometry`), lue en coordonnée x | ≈ | Idem latitude |
 | `profondeur_OA` | 2 Géographie (sous-marin) | libre | Projet · Zmin (`SIAAU.zmin`) | ≈ | « profondeur maximale en milieu sous-marin » (définition de zmin) |
 | `type_UE` | 3 UE | liste | Enregistrement · Type (`SIARU.TYPE`) | ✅ |  |
 | `identifiant_UE` | 3 UE | libre | Enregistrement · Identifiant (`SIARU.fullIdentifier`) | ✅ |  |
@@ -99,13 +99,13 @@ Un champ du référentiel qui revient dans plusieurs feuilles (`code_OA_NAT`, `m
 | `informations_complementaires_prelevement` | 7 Prélèvements | libre | Mobilier · Commentaires (`SIAS.comments`) (type prélèvement) | ≈ |  |
 | `code_element_traite` | 8 Traitements | libre | Étude · Mobilier (`SIAST.specimens`) | ✅ |  |
 | `type_traitement` | 8 Traitements | liste | Étude · Type de traitement (`SIAST.TYPETRAIT`) | ✅ |  |
-| `code_rapport` | 8 Traitements | libre | – (dans l'application : SIAST reportCode) | ❌ | Pas de concept de champ dans le thésaurus (cf. champs-hors-socle.md) |
-| `periode_traitement` | 8 Traitements | libre | – (dans l'application : treatmentStart / treatmentEnd) | ❌ | Idem |
-| `lieu_traitement` | 8 Traitements | libre | – (dans l'application : treatmentPlace) | ❌ | Idem |
-| `nom_responsable_traitement` | 8 Traitements | libre | – (dans l'application : treatmentManager) | ❌ | Idem |
-| `identifiant_lie_au_traitement` | 8 Traitements | libre | – (dans l'application : treatmentIdentifier) | ❌ | Idem |
-| `informations_complementaires_traitement` | 8 Traitements | libre | – (dans l'application : treatmentComments) | ❌ | Idem |
-| `identifiant_documentation` | 9 Documentation | libre | – (dans l'application : SIAD identifier) | ❌ | Champ présent dans le formulaire, absent du thésaurus |
+| `code_rapport` | 8 Traitements | libre | Étude · Code du rapport (`SIAST.reportCode`) | ✅ |  |
+| `periode_traitement` | 8 Traitements | libre | Étude · Début du traitement (`SIAST.treatmentStart`) et Fin du traitement (`SIAST.treatmentEnd`) | ✅ | Les deux dates portent la période |
+| `lieu_traitement` | 8 Traitements | libre | Étude · Lieu du traitement (`SIAST.treatmentPlace`) | ✅ |  |
+| `nom_responsable_traitement` | 8 Traitements | libre | Étude · Responsable du traitement (`SIAST.treatmentManager`) | ✅ |  |
+| `identifiant_lie_au_traitement` | 8 Traitements | libre | Étude · Identifiant lié au traitement (`SIAST.treatmentIdentifier`) | ✅ |  |
+| `informations_complementaires_traitement` | 8 Traitements | libre | Étude · Informations complémentaires (`SIAST.treatmentComments`) | ✅ |  |
+| `identifiant_documentation` | 9 Documentation | libre | Document · Identifiant du document (`SIAD.identifier`) | ✅ |  |
 | `titre_documentation` | 9 Documentation | libre | Document · Nom du document (`SIAD.name`) | ✅ |  |
 | `categorie_documentation` | 9 Documentation | liste | Document · Catégorie (`SIAD.CATEGORY`) | ✅ |  |
 | `type_documentation` | 9 Documentation | liste | Document · Type de document (`SIAD.TYPE`) | ✅ |  |
@@ -119,7 +119,7 @@ Un champ du référentiel qui revient dans plusieurs feuilles (`code_OA_NAT`, `m
 | `nombre_element_documentation` | 9 Documentation | libre | Document · Nombre d'éléments (`SIAD.itemCount`) | ✅ |  |
 | `code_element_associe` | 9 Documentation | libre | Document · Unités d'enregistrement (`SIAD.recordingUnits`) | ✅ |  |
 | `commentaire_moulage` | 9 Documentation | libre | Document · Commentaire de moulage (`SIAD.castComment`) | ✅ |  |
-| `informations_complementaires_documentation` | 9 Documentation | libre | – (dans l'application : SIAD comments) | ❌ | Idem |
+| `informations_complementaires_documentation` | 9 Documentation | libre | Document · Informations complémentaires (`SIAD.comments`) | ✅ |  |
 
 ## Champs du socle sans équivalent dans le référentiel (chapitre IV)
 

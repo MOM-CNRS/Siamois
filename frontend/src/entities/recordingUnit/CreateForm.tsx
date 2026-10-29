@@ -8,6 +8,7 @@ import {t} from "../../i18n";
 // counter, not a consumption), shown pre-filled and modifiable — an edited one is sent, an
 // untouched suggestion lets the server generate it, as in JSF. Created from another UE's row
 // action, it is linked to it in the same transaction: as its child (`parent`) or its parent (`child`).
+// Its parent is part of its identifier (NUM_PARENT…), so the suggestion is asked for under it.
 export function RecordingUnitCreateForm(ctx: CreateFormContext) {
   const { prefill } = ctx;
   return (
@@ -16,6 +17,7 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
       entityType="recordingUnit"
       title={t("create.newRecordingUnit")}
       typesSegment="recording-unit-types"
+      parentRecordingUnitId={prefill?.parent?.id}
       create={(body) =>
         createRecordingUnit({
           ...body,

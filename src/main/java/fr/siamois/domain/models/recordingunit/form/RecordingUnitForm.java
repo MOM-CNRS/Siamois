@@ -353,6 +353,13 @@ public abstract class RecordingUnitForm {
             .concept(INTERPRETATION_CONCEPT)
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static final Concept GEOM_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291328")
+            .build();
+
     /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
@@ -362,6 +369,7 @@ public abstract class RecordingUnitForm {
             .isTextArea(true)
             .id(-332L)
             .valueBinding("geom")
+            .concept(GEOM_CONCEPT)
             .build();
 
     @Transient

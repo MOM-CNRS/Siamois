@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Getter
@@ -88,12 +89,17 @@ public class ProjectListBean implements SettingsDatatableBean {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    /** Sorts the list on a column (a header's click), keeping the filters. */
+    /**
+     * Sorts the list on a column (a header's click), keeping the filters.
+     */
     public void sortBy(String column) {
         sort.toggle(column);
         filter();
     }
 
+    /**
+     * The comparator of the current sort column and direction.
+     */
     private Comparator<ActionUnitDTO> comparator() {
         Comparator<String> text = Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
         Comparator<ActionUnitDTO> byKey = switch (sort.getKey()) {
@@ -109,7 +115,9 @@ public class ProjectListBean implements SettingsDatatableBean {
         return sort.isAscending() ? byKey : byKey.reversed();
     }
 
-    /** The name of the organisation the list is narrowed to — the label of its filter chip. */
+    /**
+     * The name of the organisation the list is narrowed to — the label of its filter chip.
+     */
     public String getFilterInstitutionName() {
         return getInstitutionOptions().stream()
                 .filter(institution -> institution.getId().equals(filterInstitutionId))
@@ -118,14 +126,18 @@ public class ProjectListBean implements SettingsDatatableBean {
                 .orElse("");
     }
 
-    /** Drops the organisation filter (the ✕ of its chip). */
+    /**
+     * Drops the organisation filter (the ✕ of its chip).
+     */
     public void clearInstitutionFilter() {
         filterInstitutionId = null;
         pendingInstitution = false;
         filter();
     }
 
-    /** Drops the member filter (the ✕ of its chip), whether it has a value yet or not. */
+    /**
+     * Drops the member filter (the ✕ of its chip), whether it has a value yet or not.
+     */
     public void clearMemberFilter() {
         pendingMember = false;
         if (filterPerson != null) {
@@ -133,7 +145,9 @@ public class ProjectListBean implements SettingsDatatableBean {
         }
     }
 
-    /** "Ajouter un filtre": puts the chip of that filter on screen, to be given a value. */
+    /**
+     * "Ajouter un filtre": puts the chip of that filter on screen, to be given a value.
+     */
     public void addFilter(String key) {
         if ("organisation".equals(key)) {
             pendingInstitution = true;
@@ -150,18 +164,24 @@ public class ProjectListBean implements SettingsDatatableBean {
         return filterPerson != null || pendingMember;
     }
 
-    /** Whether "Ajouter un filtre" still has something to offer. */
+    /**
+     * Whether "Ajouter un filtre" still has something to offer.
+     */
     public boolean isCanAddFilter() {
         return !isInstitutionFilterActive() || !isMemberFilterActive();
     }
 
-    /** The organisations of the loaded projects, for the organisation filter. */
+    /**
+     * The organisations of the loaded projects, for the organisation filter — plus the active organisation,
+     * which is the default filter even when none of the loaded projects belongs to it.
+     */
     public List<InstitutionDTO> getInstitutionOptions() {
         if (actionUnits == null) {
             return List.of();
         }
-        return actionUnits.stream()
-                .map(ActionUnitDTO::getCreatedByInstitution)
+        return Stream.concat(
+                        actionUnits.stream().map(ActionUnitDTO::getCreatedByInstitution),
+                        Stream.of(sessionSettingsBean.getSelectedInstitution()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(InstitutionDTO::getId, i -> i, (a, b) -> a))
                 .values().stream()
@@ -173,7 +193,9 @@ public class ProjectListBean implements SettingsDatatableBean {
         return memberCountsByActionUnitId.getOrDefault(actionUnit.getId(), 0);
     }
 
-    /** Whether the current user may reach this project's settings — backs the row's burger button. */
+    /**
+     * Whether the current user may reach this project's settings — backs the row's burger button.
+     */
     public boolean canManageSettings(ActionUnitDTO actionUnit) {
         return actionUnitIdsWithManageSettingsPermission.contains(actionUnit.getId());
     }
@@ -190,14 +212,17 @@ public class ProjectListBean implements SettingsDatatableBean {
         this.actionUnitIdsWithManageSettingsPermission = Collections.emptySet();
     }
 
-    /** Opens the list on "my projects": the projects the current user is a member of. */
+    /**
+     * Opens the list on "my projects" of the active organisation.
+     */
     public void init() {
         initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
     }
 
-    /** The list of every project the current user can edit, no member filter. */
-    public void showAll() {
-        reset();
+    /**
+     * Loads every project the current user can edit, no member filter.
+     */
+    private void loadAllEditable() {
         UserInfo info = ExecutionContextHolder.getNonNull();
         this.actionUnits = actionUnitService.findAllEditableByPerson(info.getUser());
         filter();
@@ -207,18 +232,31 @@ public class ProjectListBean implements SettingsDatatableBean {
     /**
      * Loads the projects of an arbitrary member instead of the current admin's own editable ones, so the
      * list can be reached pre-filtered to "projects this person belongs to" (e.g. from the instance user list).
+     * <p>
+     * The list opens narrowed to the active organization.
      *
      * @param person the member whose projects to show
      */
     public void initFilteredByPerson(PersonDTO person) {
         reset();
+        InstitutionDTO activeInstitution = sessionSettingsBean.getSelectedInstitution();
+        this.filterInstitutionId = activeInstitution == null ? null : activeInstitution.getId();
+        loadByPerson(person);
+    }
+
+    /**
+     * Loads the projects the given person is a team member of, then applies the filters.
+     */
+    private void loadByPerson(PersonDTO person) {
         this.filterPerson = person;
         this.actionUnits = new HashSet<>(actionUnitService.findAllByTeamMember(person));
         filter();
         loadDerivedData();
     }
 
-    /** Member counts and the row-level manage-settings permission, both computed in bulk to avoid an N+1. */
+    /**
+     * Member counts and the row-level manage-settings permission, both computed in bulk to avoid an N+1.
+     */
     private void loadDerivedData() {
         this.memberCountsByActionUnitId = institutionService.countMembersOf(actionUnits);
         List<Long> actionUnitIds = actionUnits.stream().map(ActionUnitDTO::getId).toList();
@@ -226,33 +264,62 @@ public class ProjectListBean implements SettingsDatatableBean {
                 sessionSettingsBean.getUserInfo(), actionUnitIds);
     }
 
-    /** Drops the person filter and reloads the current admin's own full editable project list. */
+    /**
+     * Drops the person filter and reloads the current admin's own full editable project list, keeping the organisation filter.
+     */
     public void clearPersonFilter() {
-        showAll();
+        keepingInstitutionFilter(this::loadAllEditable);
     }
 
-    /** Backs the "my projects" chip: toggles the member filter between the current user and cleared. */
+    /**
+     * Changes the member filter (the member chip's autocomplete), keeping the organisation filter.
+     */
+    public void filterByPerson(PersonDTO person) {
+        keepingInstitutionFilter(() -> loadByPerson(person));
+    }
+
+    /**
+     * Resets the list and reloads it with {@code load}, carrying the organisation filter over.
+     */
+    private void keepingInstitutionFilter(Runnable load) {
+        Long institutionId = filterInstitutionId;
+        boolean pending = pendingInstitution;
+        reset();
+        this.filterInstitutionId = institutionId;
+        this.pendingInstitution = pending;
+        load.run();
+    }
+
+    /**
+     * Backs the "my projects" chip: toggles the member filter between the current user and cleared.
+     */
     public void toggleFilterByMe() {
         if (isFilteredByMe()) {
             clearPersonFilter();
         } else {
-            initFilteredByPerson(sessionSettingsBean.getAuthenticatedUser());
+            filterByPerson(sessionSettingsBean.getAuthenticatedUser());
         }
     }
 
-    /** Whether the member filter is currently set to the current user — highlights the "my projects" chip. */
+    /**
+     * Whether the member filter is currently set to the current user — highlights the "my projects" chip.
+     */
     public boolean isFilteredByMe() {
         PersonDTO me = sessionSettingsBean.getAuthenticatedUser();
         return filterPerson != null && me != null && filterPerson.getId().equals(me.getId());
     }
 
-    /** Autocomplete source for the person filter: matches by username or e-mail. */
+    /**
+     * Autocomplete source for the person filter: matches by username or e-mail.
+     */
     public List<PersonDTO> completePerson(String query) {
         return personService.findClosestByUsernameOrEmail(query);
     }
 
 
-    /** A click on a row (only rows the user may open are selectable): opens the project's settings. */
+    /**
+     * A click on a row (only rows the user may open are selectable): opens the project's settings.
+     */
     public void onRowSelect(SelectEvent<ActionUnitDTO> event) throws IOException {
         selectedActionUnit = null;
         String path = redirectToProject(event.getObject());
@@ -276,7 +343,9 @@ public class ProjectListBean implements SettingsDatatableBean {
          return "/pages/settings/project/projectSettings.xhtml?faces-redirect=true";
     }
 
-    /** Navigates straight to the project's member page — backs the row's "members" chip. */
+    /**
+     * Navigates straight to the project's member page — backs the row's "members" chip.
+     */
     public String redirectToProjectMembers(ActionUnitDTO actionUnit) {
         if (!profilePermissionService.hasProjectSettingsPermission(
                 sessionSettingsBean.getAuthenticatedUser(), actionUnit)) {

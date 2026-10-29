@@ -28,6 +28,16 @@ describe("suggestIdentifier", () => {
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/identifier-suggestions?entityType=finds&recordingUnitId=187&typeId=3");
   });
 
+  it("asks for a recording unit under its parent", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ suggestedIdentifier: "UE4-1" });
+
+    await suggestIdentifier("recordingUnit", "5", "42", 187);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith(
+      "/api/v1/identifier-suggestions?entityType=recording-units&projectId=5&typeId=42&parentRecordingUnitId=187",
+    );
+  });
+
   it("gives null when the project configures no format", async () => {
     mockedApiFetch.mockResolvedValueOnce({ suggestedIdentifier: null });
 

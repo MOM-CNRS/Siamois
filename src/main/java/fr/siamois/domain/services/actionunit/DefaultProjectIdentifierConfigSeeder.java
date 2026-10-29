@@ -25,11 +25,11 @@ import java.util.List;
  * Gives every newly created project a first type for each of its tables, so a table is never without
  * one (there is no configuration standing for "any type"):
  * <ul>
- *   <li>recording units: "US" (Unité d'enregistrement) and "F" (Unité incluante), whose concepts are
- *       downloaded from the thesaurus and persisted locally if not already there;</li>
- *   <li>every table: the standard type of the system thesaurus (e.g. "UE standard", "Mobilier standard"),
- *       whose concept URI is set in {@code siamois.default-types.*}. A table whose URI is not set gets no
- *       standard type, and its types are added from the settings.</li>
+ *   <li>recording units: "US", whose concept is downloaded from the system thesaurus (th337) and
+ *       persisted locally if not already there;</li>
+ *   <li>the other tables: one type of the system thesaurus (e.g. "Céramique" for the finds), whose concept
+ *       URI is set in {@code siamois.default-types.*}. A table whose URI is not set gets no type, and its
+ *       types are added from the settings.</li>
  * </ul>
  * A step whose thesaurus is unreachable, or whose project has no vocabulary configured yet for the
  * relevant field, is skipped rather than failing project creation.
@@ -52,8 +52,7 @@ public class DefaultProjectIdentifierConfigSeeder {
     }
 
     private static final List<DefaultType> DEFAULT_RECORDING_UNIT_TYPES = List.of(
-            new DefaultType("https://opentheso2.mom.fr/?idc=4287627&idt=th1295", "US{NUM_UE:00}"),
-            new DefaultType("https://opentheso2.mom.fr/?idc=4287628&idt=th1295", "F{NUM_UE:00}")
+            new DefaultType("https://thesaurus.mom.fr/?idc=1199&idt=th337", "US{NUM_UE:00}")
     );
 
     private final VocabularyService vocabularyService;
@@ -61,9 +60,7 @@ public class DefaultProjectIdentifierConfigSeeder {
     private final TableFieldConfigService tableFieldConfigService;
     private final PlatformTransactionManager transactionManager;
 
-    /** The concept of each table's standard type in the system thesaurus: "Mobilier standard"… */
-    @Value("${siamois.default-types.ue:}")
-    private String ueTypeUri;
+    /** The concept of each table's first type in the system thesaurus: "Céramique"… */
     @Value("${siamois.default-types.mobilier:}")
     private String mobilierTypeUri;
     @Value("${siamois.default-types.phase:}")
@@ -114,7 +111,6 @@ public class DefaultProjectIdentifierConfigSeeder {
 
     private void seedAll(Long projectId) {
         seedTypes(projectId, ConfigurableTable.UE, DEFAULT_RECORDING_UNIT_TYPES);
-        seedStandardType(projectId, ConfigurableTable.UE, ueTypeUri);
         seedStandardType(projectId, ConfigurableTable.MOBILIER, mobilierTypeUri);
         seedStandardType(projectId, ConfigurableTable.PHASE, phaseTypeUri);
         seedStandardType(projectId, ConfigurableTable.CONTENANT, contenantTypeUri);
