@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Fields added to line up with the national report: the nature of a recording unit, the fieldwork dates of a
+    project, and for finds the object / lot flag, the nature of a sample and a geometry. One changeSet per
+    column, applied to the table and to its Envers audit table (with the modified flag).
+    -->
+
+    <changeSet id="2026-10-28-1-recording-unit-nature" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="recording_unit">
+            <column name="fk_nature" type="bigint"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="recording_unit_aud">
+            <column name="fk_nature" type="bigint"/>
+            <column name="fk_nature_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-28-1-action-unit-field-begin-date" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="action_unit">
+            <column name="field_begin_date" type="timestamp with time zone"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="action_unit_aud">
+            <column name="field_begin_date" type="timestamp with time zone"/>
+            <column name="field_begin_date_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-28-1-action-unit-field-end-date" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="action_unit">
+            <column name="field_end_date" type="timestamp with time zone"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="action_unit_aud">
+            <column name="field_end_date" type="timestamp with time zone"/>
+            <column name="field_end_date_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-28-1-specimen-object-or-lot" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="specimen">
+            <column name="object_or_lot" type="boolean"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="specimen_aud">
+            <column name="object_or_lot" type="boolean"/>
+            <column name="object_or_lot_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-28-1-specimen-sampling-nature" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="specimen">
+            <column name="fk_sampling_nature" type="bigint"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="specimen_aud">
+            <column name="fk_sampling_nature" type="bigint"/>
+            <column name="fk_sampling_nature_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-28-1-specimen-geom" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="specimen">
+            <column name="geom" type="geometry"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="specimen_aud">
+            <column name="geom" type="geometry"/>
+            <column name="geom_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>
