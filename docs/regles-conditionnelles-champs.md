@@ -263,9 +263,9 @@ est le champ du référentiel (`nature_UE`).
 
 | Concept (id th337) | Relié à (champ) | Id du champ |
 |---|---|---|
-| Nature · **Négative** (1216) | Forme de l'érosion (`SIARU.EROSIONSHAPE`) | à relever dans le RDF |
-| Nature · **Négative** (1216) | Profil de l'érosion (`SIARU.EROSIONPROFILE`) | idem |
-| Nature · **Négative** (1216) | Orientation de l'érosion (`SIARU.EROSIONORIENTATION`) | idem |
+| Nature · **Négative** (1216) | Forme de l'érosion (`SIARU.EROSIONSHAPE`) | 1184 |
+| Nature · **Négative** (1216) | Profil de l'érosion (`SIARU.EROSIONPROFILE`) | 1185 |
+| Nature · **Négative** (1216) | Orientation de l'érosion (`SIARU.EROSIONORIENTATION`) | 1186 |
 
 Aujourd'hui ces trois champs sont reliés à la valeur **Erosion** du cycle (1225). Ces liens ne servent plus la règle de formulaire ;
 à retirer, ou à garder si le cycle réapparaît (champ masqué pour l'instant).
