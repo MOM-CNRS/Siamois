@@ -117,7 +117,7 @@ class FindOpenApiServiceTest {
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
-                mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
+                mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), org.mockito.Mockito.mock(FieldDefaultResolver.class));
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,
@@ -237,7 +237,7 @@ class FindOpenApiServiceTest {
 
         SpecimenDTO saved = new SpecimenDTO();
         saved.setId(99L);
-        when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenReturn(saved);
 
         FindResource result = service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG);
 
@@ -245,7 +245,7 @@ class FindOpenApiServiceTest {
         verify(effectiveFormResolver).resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong());
         // No answers: nothing to apply, the form response is not even built.
         verify(formService, never()).updateJpaEntityFromResponse(any(), any());
-        verify(specimenService).save(any(SpecimenDTO.class));
+        verify(specimenService).save(any(SpecimenDTO.class), anyMap());
     }
 
     @Test
@@ -267,7 +267,7 @@ class FindOpenApiServiceTest {
 
         SpecimenDTO saved = new SpecimenDTO();
         saved.setId(99L);
-        when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenReturn(saved);
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of(
@@ -282,7 +282,7 @@ class FindOpenApiServiceTest {
         verify(formService).applyTypedValueToAnswer(any(), eq(7));
         verify(formService).applyTypedValueToAnswer(any(), eq("note"));
         verify(formService).updateJpaEntityFromResponse(same(responseVm), any(SpecimenDTO.class));
-        verify(specimenService).save(any(SpecimenDTO.class));
+        verify(specimenService).save(any(SpecimenDTO.class), anyMap());
     }
 
     @Test
@@ -297,7 +297,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         lenient().when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(null);
@@ -323,7 +323,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("5", new AnswerInput(42, null)));
@@ -364,7 +364,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         Concept conceptEntity = new Concept();
         conceptEntity.setId(100L);
@@ -438,7 +438,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("1", new AnswerInput("not-a-number", null)));
@@ -460,7 +460,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("1", new AnswerInput(1, null), "2", new AnswerInput(2, null)));
@@ -486,7 +486,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         Map<String, Object> fieldAnswers = new HashMap<>();
@@ -512,7 +512,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("10", new AnswerInput("not-a-date", null)));
@@ -647,7 +647,7 @@ class FindOpenApiServiceTest {
 
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         when(formService.initOrReuseResponse(isNull(), any(SpecimenDTO.class), any(), eq(true))).thenReturn(responseVm);
-        when(specimenService.save(any(SpecimenDTO.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenAnswer(inv -> inv.getArgument(0));
 
         FindCreateRequest request = createRequest("UE-1", "3");
         request.setFieldAnswers(Map.of("1", new AnswerInput(1, null)));
@@ -1065,7 +1065,7 @@ class FindOpenApiServiceTest {
         when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), anyLong())).thenReturn(formUi);
         SpecimenDTO saved = new SpecimenDTO();
         saved.setId(99L);
-        when(specimenService.save(any(SpecimenDTO.class))).thenReturn(saved);
+        when(specimenService.save(any(SpecimenDTO.class), anyMap())).thenReturn(saved);
     }
 
     @Test
@@ -1082,7 +1082,7 @@ class FindOpenApiServiceTest {
         service.createFind(request, personDto, SCOPE, LANG);
 
         ArgumentCaptor<SpecimenDTO> captor = ArgumentCaptor.forClass(SpecimenDTO.class);
-        verify(specimenService).save(captor.capture());
+        verify(specimenService).save(captor.capture(), anyMap());
         // Set before the save, so the service skips its generation — which otherwise sets the project.
         assertThat(captor.getValue().getFullIdentifier()).isEqualTo("UE1-M7");
         assertThat(captor.getValue().getActionUnit()).isSameAs(project);
@@ -1099,7 +1099,7 @@ class FindOpenApiServiceTest {
 
         assertThatThrownBy(() -> service.createFind(request, personDto, SCOPE, LANG))
                 .isInstanceOf(IdentifierConflictException.class);
-        verify(specimenService, never()).save(any(SpecimenDTO.class));
+        verify(specimenService, never()).save(any(SpecimenDTO.class), anyMap());
     }
 
     @Test
@@ -1111,7 +1111,7 @@ class FindOpenApiServiceTest {
         service.createFind(createRequest("UE-1", "3"), personDto, SCOPE, LANG);
 
         ArgumentCaptor<SpecimenDTO> captor = ArgumentCaptor.forClass(SpecimenDTO.class);
-        verify(specimenService).save(captor.capture());
+        verify(specimenService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getFullIdentifier()).isNull();
         verify(specimenService, never()).fullIdentifierAlreadyExistInAction(any(SpecimenDTO.class));
     }

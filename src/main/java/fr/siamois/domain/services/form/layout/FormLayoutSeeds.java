@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.layout.FormLayout;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
  * identifiers ({@code vocabularyExtId}/{@code conceptExtId}), which are portable between instances;
  * they are turned into internal concept ids here. A field whose rules cite a concept this instance
  * does not have keeps no rules (and a warning is logged) rather than a rule that could never match.
+ * A field may also carry a {@code "default"}: the concepts a new entity starts with.
  */
 @Slf4j
 @Service
@@ -68,7 +70,9 @@ public class FormLayoutSeeds {
                         field.path("active").asBoolean(true),
                         field.path("required").asBoolean(false),
                         false,
-                        rulesOf(table, fieldId, field.get("rules"))));
+                        rulesOf(table, fieldId, field.get("rules")),
+                        null,
+                        defaultOf(table, fieldId, field.get("default"))));
             }
             groups.add(new FormLayout.Group(null, group.get("label").asText(), items));
         }
@@ -105,6 +109,25 @@ public class FormLayoutSeeds {
             return FieldRules.NONE;
         }
         return FieldRulesJson.fromJson(resolved);
+    }
+
+    /**
+     * The default the initial layout gives a field, null when it has none. Its concepts are cited like the
+     * rules' ({@code {"concepts":[{"vocabularyExtId":…,"conceptExtId":…}]}}); one this instance does not
+     * have drops the whole default (a warning is logged) rather than a half of it.
+     */
+    private FieldDefault defaultOf(ConfigurableTable table, long fieldId, JsonNode value) {
+        if (value == null || value.isNull()) return null;
+        JsonNode resolved = withInternalConceptIds(value.deepCopy());
+        if (resolved == null) {
+            log.warn("Default of field {} in form-layouts/{}.json cites a concept missing from this instance; ignored",
+                    fieldId, table);
+            return null;
+        }
+        List<String> ids = new ArrayList<>();
+        resolved.path("concepts").forEach(c -> ids.add(c.path("conceptId").asText()));
+        FieldDefault out = FieldDefault.ofConceptIds(ids);
+        return out.isEmpty() ? null : out;
     }
 
     /** Replaces every thesaurus-identified concept by its internal id; null if one is unknown. */

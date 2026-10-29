@@ -80,7 +80,7 @@ class ContainerOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ContainerOpenApiService(containerService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
+        service = new ContainerOpenApiService(containerService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)),
                 profilePermissionService, containerOpenApiMapper,
                 containerListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
@@ -240,7 +240,7 @@ class ContainerOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
         ContainerDTO saved = containerOn(au);
-        when(containerService.save(any(ContainerDTO.class))).thenReturn(saved);
+        when(containerService.save(any(ContainerDTO.class), anyMap())).thenReturn(saved);
 
         ContainerCreateRequest req = new ContainerCreateRequest();
         req.setProjectId("7");
@@ -249,7 +249,7 @@ class ContainerOpenApiServiceTest {
         ContainerResource result = service.createContainer(req, personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<ContainerDTO> captor = ArgumentCaptor.forClass(ContainerDTO.class);
-        verify(containerService).save(captor.capture());
+        verify(containerService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
         assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(result.getId()).isEqualTo("5");
@@ -424,12 +424,12 @@ class ContainerOpenApiServiceTest {
         ContainerDTO saved = new ContainerDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(containerService.save(any(ContainerDTO.class))).thenReturn(saved);
+        when(containerService.save(any(ContainerDTO.class), anyMap())).thenReturn(saved);
 
         service.createContainer(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<ContainerDTO> captor = ArgumentCaptor.forClass(ContainerDTO.class);
-        verify(containerService).save(captor.capture());
+        verify(containerService).save(captor.capture(), anyMap());
         // Set before the save: the service then skips its own generation.
         assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
         verify(containerService).identifierAlreadyExistInAction(captor.getValue());
@@ -453,12 +453,12 @@ class ContainerOpenApiServiceTest {
         ContainerDTO saved = new ContainerDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(containerService.save(any(ContainerDTO.class))).thenReturn(saved);
+        when(containerService.save(any(ContainerDTO.class), anyMap())).thenReturn(saved);
 
         service.createContainer(creationRequest("   "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<ContainerDTO> captor = ArgumentCaptor.forClass(ContainerDTO.class);
-        verify(containerService).save(captor.capture());
+        verify(containerService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getIdentifier()).isNull();
         verify(containerService, never()).identifierAlreadyExistInAction(any(ContainerDTO.class));
     }

@@ -32,6 +32,9 @@ export interface FormLayoutCol {
   // Measurement: the units this form configuration offers (the default one first-class), which
   // replace the field's own — see withColumnUnits in FormLayoutView.
   units?: { default: string; symbols: string[] } | null;
+  // What a new entity starts with for this field. Applied by the server at creation, so the clients
+  // only read it (the offline app needs it to create an entity without a round trip).
+  defaultValue?: { concepts: { conceptId: string }[] } | null;
 }
 
 /**

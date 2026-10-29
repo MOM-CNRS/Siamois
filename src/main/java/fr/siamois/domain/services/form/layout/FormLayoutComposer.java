@@ -44,6 +44,7 @@ public final class FormLayoutComposer {
                         .isRequired(item.mandatory())
                         .rules(item.rules())
                         .units(item.units())
+                        .defaultValue(item.defaultValue())
                         .build());
             }
         }

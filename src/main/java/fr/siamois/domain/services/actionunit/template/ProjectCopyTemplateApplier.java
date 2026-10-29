@@ -155,6 +155,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
         copy.setWidth(original.getWidth());
         copy.setRules(original.getRules());
         copy.setUnits(original.getUnits());
+        copy.setDefaultValue(original.getDefaultValue());
         return copy;
     }
 }

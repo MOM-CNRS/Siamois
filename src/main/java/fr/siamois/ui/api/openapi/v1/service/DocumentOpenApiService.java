@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -81,15 +82,15 @@ public class DocumentOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
                 PermissionConstants.PROJECT_EDIT_DOCUMENTS);
-        DocumentDTO shell = projectTypedCreationService.newEntity(Kind.DOCUMENT, project,
-                projectTypedCreationService.resolveType(request.getTypeId(), Kind.DOCUMENT));
+        ConceptDTO type = projectTypedCreationService.resolveType(request.getTypeId(), Kind.DOCUMENT);
+        DocumentDTO shell = projectTypedCreationService.newEntity(Kind.DOCUMENT, project, type);
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> documentService.identifierAlreadyExistInProject(shell));
 
-        DocumentDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> documentService.save(shell));
+        DocumentDTO saved = projectTypedCreationService.saveWithDefaults(shell, project, ConfigurableTable.DOCUMENT, type, documentService::save);
         linkPrefilledTargets(saved.getId(), request, project.project().getId(), project.institution().getId());
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }

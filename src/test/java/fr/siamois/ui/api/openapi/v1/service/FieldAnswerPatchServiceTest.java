@@ -72,6 +72,9 @@ class FieldAnswerPatchServiceTest {
     @Mock
     private fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository unitDefinitionRepository;
 
+    @Mock
+    private FieldDefaultResolver defaultResolver;
+
     private FieldAnswerPatchService service;
     private final PhaseDTO entity = new PhaseDTO();
 
@@ -82,7 +85,7 @@ class FieldAnswerPatchServiceTest {
                 mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, unitDefinitionRepository);
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, unitDefinitionRepository, defaultResolver);
     }
 
     @Test
@@ -560,6 +563,77 @@ class FieldAnswerPatchServiceTest {
         service.applyLenient(entity, formOf(required), clear, PROJECT_ID);
 
         verify(formService).applyTypedValueToAnswer(any(), isNull());
+    }
+
+    // ========== Defaults applied at creation ==========
+
+    @Test
+    void applyOnCreate_writesTheDefaultsOfTheFieldsTheRequestDoesNotAnswer_evenWithNoAnswerAtAll() {
+        CustomFieldText note = text(2L, false);
+        CustomFieldAnswerTextViewModel noteVm = new CustomFieldAnswerTextViewModel();
+        givenResponse(Map.of(note, noteVm));
+        FormUiDto form = formOf(col(note));
+        when(defaultResolver.defaultsOf(same(form), eq(PROJECT_ID), eq(9L), eq(Set.of()))).thenReturn(Map.of("2", "par défaut"));
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.applyOnCreate(entity, form, null, PROJECT_ID, 9L);
+
+        assertThat(result).containsOnlyKeys(note);
+        verify(formService).applyTypedValueToAnswer(noteVm, "par défaut");
+    }
+
+    @Test
+    void applyOnCreate_asksForTheDefaultsOfTheFieldsTheRequestLeavesOut() {
+        CustomFieldText title = text(1L, true);
+        CustomFieldText note = text(2L, false);
+        givenResponse(Map.of(title, new CustomFieldAnswerTextViewModel(), note, new CustomFieldAnswerTextViewModel()));
+        FormUiDto form = formOf(col(title), col(note));
+        when(defaultResolver.defaultsOf(any(), any(), any(), eq(Set.of("1")))).thenReturn(Map.of());
+
+        service.applyOnCreate(entity, form, Map.of("1", new AnswerInput("titre", null)), PROJECT_ID, 9L);
+
+        verify(defaultResolver).defaultsOf(same(form), eq(PROJECT_ID), eq(9L), eq(Set.of("1")));
+        verify(formService, times(1)).applyTypedValueToAnswer(any(), eq("titre"));
+    }
+
+    @Test
+    void applyOnCreate_leavesEmptyTheDefaultOfAFieldTheRulesDisable() {
+        CustomFieldText nature = text(1L, false);
+        CustomFieldText erosion = text(2L, false);
+        givenResponse(Map.of(nature, new CustomFieldAnswerTextViewModel(), erosion, new CustomFieldAnswerTextViewModel()));
+        FormUiDto form = formOf(col(nature), col(erosion, FieldRules.NONE.withEnabledWhen(
+                Condition.eq(1L, FieldValueSpec.literal("érosion")))));
+        when(defaultResolver.defaultsOf(any(), any(), any(), any())).thenReturn(Map.of("2", "en V"));
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.applyOnCreate(entity, form, Map.of(), PROJECT_ID, 9L);
+
+        assertThat(result).isEmpty();
+        verify(formService, never()).applyTypedValueToAnswer(any(), eq("en V"));
+    }
+
+    @Test
+    void applyOnCreate_appliesAChainOfDefaults_aDefaultEnablingAnotherFieldThatHasItsOwn() {
+        CustomFieldText nature = text(1L, false);
+        CustomFieldText erosion = text(2L, false);
+        CustomFieldAnswerTextViewModel natureVm = new CustomFieldAnswerTextViewModel();
+        CustomFieldAnswerTextViewModel erosionVm = new CustomFieldAnswerTextViewModel();
+        givenResponse(Map.of(nature, natureVm, erosion, erosionVm));
+        // The rules read the value the first default wrote.
+        lenient().when(formService.readAnswerValueForApi(natureVm)).thenReturn(null);
+        doAnswer(inv -> {
+            lenient().when(formService.readAnswerValueForApi(natureVm)).thenReturn("érosion");
+            return null;
+        }).when(formService).applyTypedValueToAnswer(natureVm, "érosion");
+        FormUiDto form = formOf(col(nature), col(erosion, FieldRules.NONE.withEnabledWhen(
+                Condition.eq(1L, FieldValueSpec.literal("érosion")))));
+        Map<String, Object> defaults = new LinkedHashMap<>();
+        defaults.put("2", "en V");
+        defaults.put("1", "érosion");
+        when(defaultResolver.defaultsOf(any(), any(), any(), any())).thenReturn(defaults);
+
+        Map<CustomField, CustomFieldAnswerViewModel> result = service.applyOnCreate(entity, form, Map.of(), PROJECT_ID, 9L);
+
+        assertThat(result).containsOnlyKeys(nature, erosion);
+        verify(formService).applyTypedValueToAnswer(erosionVm, "en V");
     }
 
     private static CustomColUiDto col(CustomField field) {

@@ -561,6 +561,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         to.setPosition(from.getPosition());
         to.setRules(from.getRules());
         to.setUnits(from.getUnits());
+        to.setDefaultValue(from.getDefaultValue());
         fieldFormConfigRepository.save(to);
     }
 

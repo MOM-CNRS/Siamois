@@ -81,7 +81,7 @@ class StudyOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
+        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)),
                 profilePermissionService, studyOpenApiMapper,
                 studyListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), entitySiblingsService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
@@ -300,7 +300,7 @@ class StudyOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
         StudyDTO saved = studyOn(au);
-        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+        when(studyService.save(any(StudyDTO.class), anyMap())).thenReturn(saved);
 
         StudyCreateRequest req = new StudyCreateRequest();
         req.setProjectId("7");
@@ -309,7 +309,7 @@ class StudyOpenApiServiceTest {
         StudyResource result = service.createStudy(req, personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
-        verify(studyService).save(captor.capture());
+        verify(studyService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
         assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(result.getId()).isEqualTo("5");
@@ -484,12 +484,12 @@ class StudyOpenApiServiceTest {
         StudyDTO saved = new StudyDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+        when(studyService.save(any(StudyDTO.class), anyMap())).thenReturn(saved);
 
         service.createStudy(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
-        verify(studyService).save(captor.capture());
+        verify(studyService).save(captor.capture(), anyMap());
         // Set before the save: the service then skips its own generation.
         assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
         verify(studyService).identifierAlreadyExistInAction(captor.getValue());
@@ -513,12 +513,12 @@ class StudyOpenApiServiceTest {
         StudyDTO saved = new StudyDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(studyService.save(any(StudyDTO.class))).thenReturn(saved);
+        when(studyService.save(any(StudyDTO.class), anyMap())).thenReturn(saved);
 
         service.createStudy(creationRequest("   "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<StudyDTO> captor = ArgumentCaptor.forClass(StudyDTO.class);
-        verify(studyService).save(captor.capture());
+        verify(studyService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getIdentifier()).isNull();
         verify(studyService, never()).identifierAlreadyExistInAction(any(StudyDTO.class));
     }

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -85,12 +86,12 @@ public class ContainerOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_CONTAINERS,
                 PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
                 PermissionConstants.PROJECT_EDIT_CONTAINERS);
-        ContainerDTO shell = projectTypedCreationService.newEntity(Kind.CONTAINER, project,
-                projectTypedCreationService.resolveType(request.getTypeId(), Kind.CONTAINER));
+        ConceptDTO type = projectTypedCreationService.resolveType(request.getTypeId(), Kind.CONTAINER);
+        ContainerDTO shell = projectTypedCreationService.newEntity(Kind.CONTAINER, project, type);
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> containerService.identifierAlreadyExistInAction(shell));
 
-        ContainerDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> containerService.save(shell));
+        ContainerDTO saved = projectTypedCreationService.saveWithDefaults(shell, project, ConfigurableTable.CONTENANT, type, containerService::save);
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }
 

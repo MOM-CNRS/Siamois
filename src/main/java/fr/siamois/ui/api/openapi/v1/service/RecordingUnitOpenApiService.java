@@ -961,7 +961,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
-                    fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
+                    fieldAnswerPatchService.applyOnCreate(shell, formUiDto, request.getFieldAnswers(), au.getId(), typeDto.getId());
             RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell, request.getIdentifier());
             // Additional answers hang off the unit's id, so only once it exists.
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);

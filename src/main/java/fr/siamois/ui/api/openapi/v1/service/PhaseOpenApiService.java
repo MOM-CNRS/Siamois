@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -84,15 +85,15 @@ public class PhaseOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_PHASES,
                 PermissionConstants.ORGANIZATION_EDIT_PHASES,
                 PermissionConstants.PROJECT_EDIT_PHASES);
-        PhaseDTO shell = projectTypedCreationService.newEntity(Kind.PHASE, project,
-                projectTypedCreationService.resolveType(request.getTypeId(), Kind.PHASE));
+        ConceptDTO type = projectTypedCreationService.resolveType(request.getTypeId(), Kind.PHASE);
+        PhaseDTO shell = projectTypedCreationService.newEntity(Kind.PHASE, project, type);
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             shell.setTitle(request.getTitle().trim());
         }
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> phaseService.identifierAlreadyExistInAction(shell));
 
-        PhaseDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> phaseService.save(shell));
+        PhaseDTO saved = projectTypedCreationService.saveWithDefaults(shell, project, ConfigurableTable.PHASE, type, phaseService::save);
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }
 
