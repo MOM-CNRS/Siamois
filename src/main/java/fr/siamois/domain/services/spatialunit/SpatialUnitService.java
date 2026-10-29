@@ -192,6 +192,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
         spatialUnit.setCode(su.getCode());
+        spatialUnit.setPlaceNumber(su.getPlaceNumber());
         spatialUnit.setInseeCode(su.getInseeCode());
         spatialUnit.setLocalityName(su.getLocalityName());
         spatialUnit.setComments(su.getComments());
@@ -293,6 +294,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
+            managedSpatialUnit.setPlaceNumber(spatialUnit.getPlaceNumber());
             managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
             managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
             managedSpatialUnit.setComments(spatialUnit.getComments());
@@ -851,6 +853,22 @@ public class SpatialUnitService implements ArkEntityService {
                                       boolean updatePlaceNumber,
                                       GeometryDTO newGeom,
                                       boolean updateGeom) throws SpatialUnitAlreadyExistsException {
+        return updatePlace(info, placeId, newName, newType, newAddress, newPlaceNumber, updatePlaceNumber,
+                newGeom, updateGeom, dto -> { });
+    }
+
+    /** As above; {@code otherEdits} then edits the loaded DTO for the details this signature has no parameter for. */
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlace(UserInfo info,
+                                      long placeId,
+                                      String newName,
+                                      ConceptDTO newType,
+                                      FullAddress newAddress,
+                                      Integer newPlaceNumber,
+                                      boolean updatePlaceNumber,
+                                      GeometryDTO newGeom,
+                                      boolean updateGeom,
+                                      java.util.function.Consumer<SpatialUnitDTO> otherEdits) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -877,6 +895,7 @@ public class SpatialUnitService implements ArkEntityService {
         if (updateGeom) {
             dto.setGeom(newGeom);
         }
+        otherEdits.accept(dto);
         return persistSpatialUnitDto(dto);
     }
 
