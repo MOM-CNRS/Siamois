@@ -106,6 +106,55 @@ class FieldDefaultResolverTest {
         assertThat(resolver().defaultsOf(null, PROJECT, TYPE, Set.of())).isEmpty();
     }
 
+    @Test
+    void anIdThatIsNotANumberIsDropped() {
+        FormUiDto form = formOf(col(one(1L), "abc"));
+
+        assertThat(resolver().defaultsOf(form, PROJECT, TYPE, Set.of())).isEmpty();
+    }
+
+    @Test
+    void aFieldWithoutAVocabularyKeepsItsDefaultAsIs() {
+        CustomFieldText text = new CustomFieldText();
+        text.setId(3L);
+        when(conceptRepository.existsById(any())).thenReturn(true);
+
+        assertThat(resolver().defaultsOf(formOf(col(text, "10")), PROJECT, TYPE, Set.of())).containsEntry("3", "10");
+    }
+
+    @Test
+    void aReadOnlyColumnAndAColumnWithoutFieldAreSkipped() {
+        CustomColUiDto readOnly = col(one(1L), "10");
+        readOnly.setReadOnly(true);
+        CustomColUiDto noField = new CustomColUiDto();
+        CustomColUiDto noId = col(new CustomFieldSelectOneFromFieldCode(), "10");
+
+        assertThat(resolver().defaultsOf(formOf(readOnly, noField, noId), PROJECT, TYPE, Set.of())).isEmpty();
+    }
+
+    @Test
+    void theFirstColumnOfAFieldWins() {
+        when(conceptRepository.existsById(any())).thenReturn(true);
+        CustomFieldSelectOneFromFieldCode field = one(1L);
+
+        assertThat(resolver().defaultsOf(formOf(col(field, "10"), col(field, "11")), PROJECT, TYPE, Set.of()))
+                .containsEntry("1", "10");
+    }
+
+    @Test
+    void aFormWithoutPanelsRowsOrColumnsGivesNothing() {
+        FormUiDto noLayout = new FormUiDto();
+        CustomFormPanelUiDto noRows = new CustomFormPanelUiDto();
+        CustomRowUiDto noColumns = new CustomRowUiDto();
+        CustomFormPanelUiDto withRowWithoutColumns = new CustomFormPanelUiDto();
+        withRowWithoutColumns.setRows(List.of(noColumns));
+        FormUiDto form = new FormUiDto();
+        form.setLayout(java.util.Arrays.asList(null, noRows, withRowWithoutColumns));
+
+        assertThat(resolver().defaultsOf(noLayout, PROJECT, TYPE, Set.of())).isEmpty();
+        assertThat(resolver().defaultsOf(form, PROJECT, TYPE, Set.of())).isEmpty();
+    }
+
     private static FieldVocabularyConfig config(VocabularyMode mode, Map<Long, ConceptState> states) {
         return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, "CODE", null, null, mode, states);
     }

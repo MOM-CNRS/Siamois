@@ -83,7 +83,7 @@ class PhaseOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PhaseOpenApiService(phaseService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)),
+        service = new PhaseOpenApiService(phaseService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)),
                 profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
 

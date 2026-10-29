@@ -136,7 +136,7 @@ public class FormLayoutService {
         FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         List<FieldFormConfig> rows = fieldFormConfigRepository.findAllByFormConfigId(config.getId());
         FieldFormConfig target = rows.stream().filter(r -> r.getField().getId() == fieldId).findFirst()
-                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
         if (target.isInstitutionLocked()) {
             log.debug("Field {} is locked by the institution, its rules cannot be changed", fieldId);
             return;
@@ -161,7 +161,7 @@ public class FormLayoutService {
         FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
                 .filter(r -> r.getField().getId() == fieldId).findFirst()
-                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
         if (target.isInstitutionLocked()) {
             log.debug("Field {} is locked by the institution, its units cannot be changed", fieldId);
             return;
@@ -190,7 +190,7 @@ public class FormLayoutService {
         FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
                 .filter(r -> r.getField().getId() == fieldId).findFirst()
-                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
         if (target.isInstitutionLocked()) {
             log.debug("Field {} is locked by the institution, its default cannot be changed", fieldId);
             return;
@@ -373,5 +373,9 @@ public class FormLayoutService {
                     ffc.getFormConfig().getId(), e.getMessage());
             return FieldRules.NONE;
         }
+    }
+
+    private static java.util.NoSuchElementException noSuchField(long fieldId, String typeName) {
+        return new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName);
     }
 }

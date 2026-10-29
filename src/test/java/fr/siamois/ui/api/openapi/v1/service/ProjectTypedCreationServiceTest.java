@@ -52,7 +52,7 @@ class ProjectTypedCreationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class));
+        service = new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class));
         person = new PersonDTO();
         person.setId(1L);
         institution = new InstitutionDTO();

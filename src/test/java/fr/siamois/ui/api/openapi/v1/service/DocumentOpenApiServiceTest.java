@@ -83,7 +83,7 @@ class DocumentOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)),
+        service = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)),
                 profilePermissionService, documentOpenApiMapper, documentListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentLinkService);
 
@@ -457,7 +457,7 @@ class DocumentOpenApiServiceTest {
                 new fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource(null, null);
         EntitySiblingsService siblingsService = mock(EntitySiblingsService.class);
         when(siblingsService.findSiblings(EntitySiblingsService.Kind.DOCUMENT, 7L, 5L)).thenReturn(siblings);
-        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)), profilePermissionService, documentOpenApiMapper, documentListProjectionService,
+        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)), profilePermissionService, documentOpenApiMapper, documentListProjectionService,
                 ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), siblingsService,
                 new ValidationOpenApiService(validationStatusService), fieldAnswerPatchService, fieldAnswerWireService,
                 customFieldAnswerService, effectiveFormResolver, documentLinkService);

@@ -117,7 +117,7 @@ class FindOpenApiServiceTest {
                 mock(PhaseRepository.class), mock(PhaseMapper.class),
                 mock(ContainerRepository.class), mock(ContainerMapper.class),
                 mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class),
-                mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), org.mockito.Mockito.mock(FieldDefaultResolver.class));
+                mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class));
         service = new FindOpenApiService(
                 specimenService,
                 recordingUnitService,

@@ -81,7 +81,7 @@ class StudyOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, org.mockito.Mockito.mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), org.mockito.Mockito.mock(FieldAnswerPatchService.class)),
+        service = new StudyOpenApiService(studyService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)),
                 profilePermissionService, studyOpenApiMapper,
                 studyListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), entitySiblingsService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver);
