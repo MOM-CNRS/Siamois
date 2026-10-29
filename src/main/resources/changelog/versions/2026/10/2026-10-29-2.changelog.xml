@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    A section of a form can allow the additional measures a user adds on the fly to a record's fiche
+    ("Ajouter une mesure"). Sections that already exist allow them, as every section did until now.
+    -->
+
+    <changeSet id="2026-10-29-2-form-config-group-allow-measures" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="form_config_group">
+            <column name="allow_measures" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addColumn schemaName="public" tableName="form_config_group_aud">
+            <column name="allow_measures" type="boolean"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>
