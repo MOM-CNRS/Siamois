@@ -178,6 +178,23 @@ class RecordingUnitSeederTest {
     }
 
     @Test
+    void seed_ConceptDoesNotExist_carriesTheLinkToTheConceptInTheThesaurus() {
+        stubInstitutionFound();
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+        when(conceptSeeder.conceptLink(any(), any())).thenReturn("https://thesaurus.mom.fr/?idc=123456&idt=th1");
+        List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(specs));
+
+        MissingConceptException missing = null;
+        for (Throwable t = ex; t != null && missing == null; t = t.getCause()) {
+            if (t instanceof MissingConceptException m) missing = m;
+        }
+        assertThat(missing).isNotNull();
+        assertThat(missing.getConceptUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=123456&idt=th1");
+    }
+
+    @Test
     void seed_InstitutionDoesNotExist() {
         stubConceptsFound();
         // institutionRepository left unstubbed -> returns empty list by default -> institution not found
