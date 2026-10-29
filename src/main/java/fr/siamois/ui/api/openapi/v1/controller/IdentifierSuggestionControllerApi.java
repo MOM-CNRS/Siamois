@@ -3,7 +3,6 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.domain.services.ContainerService;
 import fr.siamois.domain.services.PhaseService;
 import fr.siamois.domain.services.document.DocumentService;
-import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.study.StudyService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
@@ -13,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,7 +41,7 @@ public class IdentifierSuggestionControllerApi {
 
     private final ProjectApiService projectApiService;
     private final ProjectTypedCreationService projectTypedCreationService;
-    private final RecordingUnitService recordingUnitService;
+    private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final PhaseService phaseService;
     private final ContainerService containerService;
     private final StudyService studyService;
@@ -73,6 +73,10 @@ public class IdentifierSuggestionControllerApi {
             @RequestParam(required = false) String projectId,
             @Parameter(description = "Identifiant de l'UE (recording_unit_id) — finds uniquement.", example = "187")
             @RequestParam(required = false) String recordingUnitId,
+            @Parameter(description = "UE (recording_unit_id) sous laquelle la nouvelle UE sera créée — recording-units "
+                    + "uniquement : les jetons du parent (NUM_PARENT, ID_PARENT) sont alors évalués. Rien n'est lié.",
+                    example = "187")
+            @RequestParam(required = false) Long parentRecordingUnitId,
             @Parameter(description = "Identifiant du concept définissant le type de l'entité (concept_id).",
                     example = "42")
             @RequestParam String typeId,
@@ -85,7 +89,7 @@ public class IdentifierSuggestionControllerApi {
         String suggested = switch (entityType) {
             case "recording-units" -> projectTypedCreationService.suggestIdentifier(Kind.RECORDING_UNIT,
                     projectId, typeId, person, scope, lang,
-                    unit -> recordingUnitService.suggestFullIdentifier(unit.getActionUnit(), unit));
+                    unit -> recordingUnitOpenApiService.suggestFullIdentifier(unit, parentRecordingUnitId, scope));
             case "phases" -> projectTypedCreationService.suggestIdentifier(Kind.PHASE,
                     projectId, typeId, person, scope, lang, phaseService::suggestIdentifier);
             case "containers" -> projectTypedCreationService.suggestIdentifier(Kind.CONTAINER,

@@ -97,6 +97,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+import org.mockito.InOrder;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
@@ -948,7 +950,9 @@ class RecordingUnitOpenApiServiceTest {
 
         SpatialUnitSummaryDTO su = new SpatialUnitSummaryDTO();
         su.setId(77L);
-        when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
+        // Lenient, like what follows: not reached by a creation rejected before its shell is built (a parent
+        // of another project…).
+        lenient().when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
 
         // Lenient: what happens once the UE is saved is not reached by a creation rejected before (a phase
         // of another project…).
@@ -986,6 +990,56 @@ class RecordingUnitOpenApiServiceTest {
         return answerVm;
     }
 
+    @Test
+    void suggestFullIdentifier_placesTheUnitInItsDefaultSpatialUnit_asTheCreationDoes() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(5L);
+        unit.setActionUnit(project);
+        SpatialUnitSummaryDTO su = new SpatialUnitSummaryDTO();
+        su.setId(77L);
+        su.setPlaceNumber(12);
+        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of(su));
+        when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("PROJ-12-UE1");
+
+        assertThat(service.suggestFullIdentifier(unit, null, SCOPE)).isEqualTo("PROJ-12-UE1");
+        assertThat(unit.getSpatialUnit()).isSameAs(su);
+    }
+
+    @Test
+    void suggestFullIdentifier_withParent_setsItOnTheUnsavedUnit_withoutLinkingAnything() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(5L);
+        unit.setActionUnit(project);
+        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of());
+        accessibleUnitInProject(12L, 5L);
+        when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("PROJ-UE4-1");
+
+        assertThat(service.suggestFullIdentifier(unit, 12L, SCOPE)).isEqualTo("PROJ-UE4-1");
+        assertThat(unit.getParents()).singleElement().satisfies(parent -> {
+            assertThat(parent.getId()).isEqualTo(12L);
+            assertThat(parent.getIdentifier()).isEqualTo("4");
+            assertThat(parent.getFullIdentifier()).isEqualTo("PROJ-UE4");
+        });
+        verify(recordingUnitService, never()).addHierarchyChild(anyLong(), anyLong());
+        verify(recordingUnitService, never()).save(any(RecordingUnitDTO.class));
+    }
+
+    @Test
+    void suggestFullIdentifier_withAParentOfAnotherProject_throws400() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(5L);
+        unit.setActionUnit(project);
+        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of());
+        accessibleUnitInProject(12L, 6L);
+
+        assertThatThrownBy(() -> service.suggestFullIdentifier(unit, 12L, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
     private RecordingUnitCreateRequest creationRequest() {
         RecordingUnitCreateRequest request = new RecordingUnitCreateRequest();
         request.setProjectId("5");
@@ -1006,16 +1060,48 @@ class RecordingUnitOpenApiServiceTest {
         verify(recordingUnitService, times(2)).save(any(RecordingUnitDTO.class));
     }
 
+    /** An accessible recording unit {@code id} of project {@code projectId}, as the parent lookup returns it. */
+    private RecordingUnitDTO accessibleUnitInProject(long id, Long projectId) {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        unit.setId(id);
+        unit.setIdentifier("4");
+        unit.setFullIdentifier("PROJ-UE4");
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(projectId);
+        unit.setActionUnit(project);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(id, SCOPE)).thenReturn(unit);
+        return unit;
+    }
+
     @Test
-    void createRecordingUnit_withParent_linksTheNewUnitAsItsChild() {
+    void createRecordingUnit_withParent_savesItWithTheParent_beforeGeneratingItsIdentifier() {
         stubSuccessfulCreation();
+        accessibleUnitInProject(12L, 5L);
         RecordingUnitCreateRequest request = creationRequest();
         request.setParentRecordingUnitId(12L);
+        ArgumentCaptor<RecordingUnitDTO> firstSave = ArgumentCaptor.forClass(RecordingUnitDTO.class);
 
         service.createRecordingUnit(request, personDto, SCOPE, "fr");
 
-        verify(recordingUnitService).requireAccessibleRecordingUnitByPrimaryKey(12L, SCOPE);
-        verify(recordingUnitService).addHierarchyChild(12L, 3000L);
+        InOrder order = inOrder(recordingUnitService);
+        order.verify(recordingUnitService).save(firstSave.capture());
+        order.verify(recordingUnitService).generateFullIdentifier(any(ActionUnitSummaryDTO.class), any());
+        assertThat(firstSave.getAllValues().get(0).getParents())
+                .extracting(RecordingUnitSummaryDTO::getId).containsExactly(12L);
+        verify(recordingUnitService, never()).addHierarchyChild(anyLong(), anyLong());
+    }
+
+    @Test
+    void createRecordingUnit_withAParentOfAnotherProject_throws400_beforeAnythingIsWritten() {
+        stubSuccessfulCreation();
+        accessibleUnitInProject(12L, 6L);
+        RecordingUnitCreateRequest request = creationRequest();
+        request.setParentRecordingUnitId(12L);
+
+        assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(recordingUnitService, never()).save(any(RecordingUnitDTO.class));
     }
 
     @Test
@@ -1109,8 +1195,8 @@ class RecordingUnitOpenApiServiceTest {
     void createRecordingUnit_rejectedLink_isAConflict_soTheCreationRollsBack() {
         stubSuccessfulCreation();
         RecordingUnitCreateRequest request = creationRequest();
-        request.setParentRecordingUnitId(12L);
-        doThrow(new IllegalStateException("cycle")).when(recordingUnitService).addHierarchyChild(12L, 3000L);
+        request.setChildRecordingUnitId(13L);
+        doThrow(new IllegalStateException("cycle")).when(recordingUnitService).addHierarchyChild(3000L, 13L);
 
         assertThatThrownBy(() -> service.createRecordingUnit(request, personDto, SCOPE, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
