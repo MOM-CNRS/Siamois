@@ -103,6 +103,8 @@ public final class ExactMatchFirst {
                 return predicate;
             }
             List<Order> orders = new ArrayList<>();
+            // PostgreSQL rejects a SELECT DISTINCT whose ORDER BY holds an expression missing from the
+            // select list, which the CASE below always is: such a query keeps only the other orders.
             if (!query.isDistinct()) {
                 Predicate exact = cb.or(attributes.stream()
                         .map(attribute -> cb.equal(cb.lower(root.get(attribute)), lowered))
