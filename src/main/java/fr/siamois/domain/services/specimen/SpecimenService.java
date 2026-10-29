@@ -195,6 +195,8 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setParticularInterest(specimen.getParticularInterest());
         managedSpecimen.setStudyPotential(specimen.getStudyPotential());
         managedSpecimen.setStudyPotentialComment(specimen.getStudyPotentialComment());
+        managedSpecimen.setObjectOrLot(specimen.getObjectOrLot());
+        managedSpecimen.setSamplingNature(specimen.getSamplingNature());
         managedSpecimen.setSamplingPurpose(specimen.getSamplingPurpose());
         managedSpecimen.setPreservationCondition(specimen.getPreservationCondition());
         managedSpecimen.setValidityDate(specimen.getValidityDate());
