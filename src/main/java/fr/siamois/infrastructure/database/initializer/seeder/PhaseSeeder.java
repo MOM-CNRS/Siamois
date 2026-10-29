@@ -172,7 +172,7 @@ public class PhaseSeeder {
         if (s.type() == null) return null;
         return SeederUtils.field("type", () -> {
             Concept c = conceptsByKey.get(s.type());
-            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.type(), institutionId));
+            if (c == null) throw MissingConceptException.of(conceptSeeder, s.type(), institutionId);
             return c;
         });
     }
@@ -182,7 +182,7 @@ public class PhaseSeeder {
         Set<Concept> result = new HashSet<>();
         for (ConceptSeeder.ConceptKey key : keys) {
             Concept c = conceptsByKey.get(key);
-            if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
+            if (c == null) throw MissingConceptException.of(conceptSeeder, key, institutionId);
             result.add(c);
         }
         return result;

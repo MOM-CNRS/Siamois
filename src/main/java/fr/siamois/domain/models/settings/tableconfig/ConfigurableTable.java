@@ -39,6 +39,20 @@ public enum ConfigurableTable {
         return java.util.Arrays.stream(values()).filter(table -> table != PROJECT).toList();
     }
 
+    /**
+     * The project-scoped table a field code belongs to ({@code SIARU.NATURE} is a recording unit field), or
+     * {@code null} when it is not one of a configurable table (places, projects, measurements…).
+     */
+    public static ConfigurableTable ofFieldCode(String fieldCode) {
+        if (fieldCode == null) {
+            return null;
+        }
+        String prefix = fieldCode.split("\\.", 2)[0];
+        return projectScopedTables().stream()
+                .filter(table -> table.fieldCode.split("\\.", 2)[0].equals(prefix))
+                .findFirst().orElse(null);
+    }
+
     ConfigurableTable(String label, String fieldCode, String defaultIdentifierFormat) {
         this.label = label;
         this.fieldCode = fieldCode;

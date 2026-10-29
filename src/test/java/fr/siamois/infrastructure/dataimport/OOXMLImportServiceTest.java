@@ -514,6 +514,48 @@ class OOXMLImportServiceTest {
     }
 
     @Test
+    void parseRecordingUnits_unresolvedLabel_errorCarriesTheFieldCodeAndTheTypeOfTheRow() {
+        var au = actionUnitWithInstitution(7L);
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "US"))
+                .thenReturn(conceptWithKey("th337", "1199"));
+        when(conceptService.resolveConceptByLabel(7L, RecordingUnit.NATURE_FIELD_CODE, "Inconnue"))
+                .thenThrow(new IllegalStateException("Concept 'Inconnue' introuvable dans le thésaurus configuré"));
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type label", "nature label");
+        row(s, 1, "UE-001", "desc", "US", "Inconnue");
+
+        List<ImportError> errors = new ArrayList<>();
+        service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.PROJECT, au, SheetMetadata.empty(),
+                errors, new ImportProgress());
+
+        assertThat(errors).singleElement().satisfies(error -> {
+            assertThat(error.column()).isEqualTo("nature label");
+            assertThat(error.isVocabularyError()).isTrue();
+            assertThat(error.vocabulary().fieldCode()).isEqualTo(RecordingUnit.NATURE_FIELD_CODE);
+            assertThat(error.vocabulary().typeLabel()).isEqualTo("US");
+        });
+    }
+
+    @Test
+    void parseRecordingUnits_otherError_isNotAVocabularyError() {
+        var au = actionUnitWithInstitution(7L);
+
+        Workbook wb = workbook();
+        Sheet s = sheet(wb, "UE", "Identifiant", "Description", "type uri");
+        row(s, 1, "UE-001", "desc", BAD_URI);
+
+        List<ImportError> errors = new ArrayList<>();
+        service.parseRecordingUnits(List.of(s), OOXMLImportService.ImportScope.PROJECT, au, SheetMetadata.empty(),
+                errors, new ImportProgress());
+
+        assertThat(errors).singleElement().satisfies(error -> {
+            assertThat(error.isVocabularyError()).isFalse();
+            assertThat(error.vocabulary()).isNull();
+        });
+    }
+
+    @Test
     void parseActionUnits_fullValidRow() {
         Workbook wb = new XSSFWorkbook();
         Sheet s = wb.createSheet("Unite action");

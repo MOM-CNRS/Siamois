@@ -251,7 +251,7 @@ public class RecordingUnitSeeder {
 
     private Concept resolveConcept(Map<ConceptSeeder.ConceptKey, Concept> cache, ConceptSeeder.ConceptKey key, Long institutionId) {
         Concept c = cache.get(key);
-        if (c == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(key, institutionId));
+        if (c == null) throw MissingConceptException.of(conceptSeeder, key, institutionId);
         return c;
     }
 

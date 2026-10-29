@@ -116,7 +116,7 @@ public class RecordingUnitStratiRelSeeder {
     private Concept resolveRelConcept(RecordingUnitStratiRelDTO s, Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey, Long institutionId) {
         if (s.rel == null) return null;
         Concept rel = conceptsByKey.get(s.rel);
-        if (rel == null) throw new IllegalStateException(conceptSeeder.describeMissingConcept(s.rel, institutionId));
+        if (rel == null) throw MissingConceptException.of(conceptSeeder, s.rel, institutionId);
         return rel;
     }
 
