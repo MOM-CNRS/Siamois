@@ -43,6 +43,9 @@ Le lien « type → valeur » est un `skos:related` entre le type et la valeur, 
 
 ## 5. Déjà fait, pour mémoire (ne pas refaire)
 
+- Projet par défaut (`default-project/definition.json`) : les 7 nouveaux types d'UE sont ajoutés avec les ids de l'export OpenTheso du 2026-10-29
+  (4291339 à 4291345) et les préfixes EA, ENSA, ESP, EG, UG, ET, PH. Ils n'ont pas de liste dédiée (pas de collection par type).
+
 - Les 11 champs ajoutés dans th337 (géométries, identifiants du document et de l'étude…) : ids 4291327 à 4291337, voir `champs-hors-socle.md`.
 - Le libellé « Entité archéologique structurée » est déjà un libellé alternatif d'Ensemble (1201).
 - Nature, mobilier et phase du classeur Chartres : remplacés par des valeurs qui existent déjà dans th337 (voir `import-chartres.md`).
