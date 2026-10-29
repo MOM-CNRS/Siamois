@@ -77,7 +77,7 @@ class FieldAnswerPatchServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
+        service = new FieldAnswerPatchService(formService, mock(fr.siamois.domain.services.form.OnTheFlyFieldService.class, inv -> inv.getArgument(0)), conceptRepository, conceptMapper,
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class),
                 mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),

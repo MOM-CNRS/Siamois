@@ -26,6 +26,7 @@ import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.form.OnTheFlyFieldService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -95,6 +96,7 @@ public class RecordingUnitOpenApiService {
     public static final String CONCEPTS = "concepts";
     private final RecordingUnitService recordingUnitService;
     private final FormService formService;
+    private final OnTheFlyFieldService onTheFlyFieldService;
     private final FieldConfigurationService fieldConfigurationService;
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final ConversionService conversionService;
@@ -167,8 +169,10 @@ public class RecordingUnitOpenApiService {
         resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
-                    dto.getType() != null ? dto.getType().getId() : null);
+            FormUiDto formUiDto = onTheFlyFieldService.withOnTheFlyFields(
+                    effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
+                            dto.getType() != null ? dto.getType().getId() : null),
+                    ConfigurableTable.UE, dto.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             return buildFieldsWithFallback(dto, fieldSource, locale);
         });
@@ -691,8 +695,10 @@ public class RecordingUnitOpenApiService {
             // The effective form, as the find-types catalog lays it out and the PATCH writes it:
             // without the type's additional fields their answers would never be read back.
             Long projectId = specimenProjectId(specimen);
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
-                    specimen.getType() != null ? specimen.getType().getId() : null);
+            FormUiDto formUiDto = onTheFlyFieldService.withOnTheFlyFields(
+                    effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
+                            specimen.getType() != null ? specimen.getType().getId() : null),
+                    ConfigurableTable.MOBILIER, specimen.getId());
             return buildSpecimenFieldsWithFallback(specimen, new PanelFieldSource(formUiDto), locale);
         });
 
