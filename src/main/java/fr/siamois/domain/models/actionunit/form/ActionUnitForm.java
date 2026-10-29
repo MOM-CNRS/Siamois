@@ -186,6 +186,13 @@ public abstract class ActionUnitForm {
             .concept(FIELD_END_DATE_CONCEPT)
             .build();
 
+    @Transient
+    @JsonIgnore
+    public static final Concept GEOM_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291327")
+            .build();
+
     /** The project's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
@@ -194,6 +201,7 @@ public abstract class ActionUnitForm {
             .isSystemField(true)
             .isTextArea(true)
             .valueBinding("geom")
+            .concept(GEOM_CONCEPT)
             .id(-140L)
             .build();
 
