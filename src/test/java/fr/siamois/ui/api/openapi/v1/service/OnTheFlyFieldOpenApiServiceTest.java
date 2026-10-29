@@ -245,7 +245,7 @@ class OnTheFlyFieldOpenApiServiceTest {
         recordingUnitWithRight(true);
         Concept existing = concept(21L);
         ConceptAutocompleteDTO found = autocomplete(21L, "Poids");
-        when(tableFieldConfigService.measureConcepts(eq(PROJECT_ID), eq(CustomFieldMeasurement.MEASUREMENT_TYPE_FIELD_CODE), eq("poids")))
+        when(tableFieldConfigService.measureConcepts(PROJECT_ID, CustomFieldMeasurement.MEASUREMENT_TYPE_FIELD_CODE, "poids"))
                 .thenReturn(List.of(found));
         when(conceptRepository.findById(21L)).thenReturn(Optional.of(existing));
         when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(label("Poids"));

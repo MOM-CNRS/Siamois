@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -149,17 +150,17 @@ class OnTheFlyFieldServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void findReusableMeasurements_keepsOneMeasurePerNameAndUnit() {
-        var query = org.mockito.Mockito.mock(jakarta.persistence.TypedQuery.class);
+        var query = mock(jakarta.persistence.TypedQuery.class);
         when(entityManager.createQuery(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq(
                 fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly.class))).thenReturn(query);
         when(query.setParameter(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any())).thenReturn(query);
-        var unit = fr.siamois.domain.models.form.measurement.UnitDefinition.builder().symbol("m").build();
+        var metre = fr.siamois.domain.models.form.measurement.UnitDefinition.builder().symbol("m").build();
         CustomFieldMeasurement first = measurement(1L, null);
         first.setLabel("Hauteur");
-        first.setUnit(unit);
+        first.setUnit(metre);
         CustomFieldMeasurement again = measurement(2L, null);
         again.setLabel("Hauteur");
-        again.setUnit(unit);
+        again.setUnit(metre);
         CustomFieldMeasurement other = measurement(3L, null);
         other.setLabel("Largeur");
         when(query.getResultList()).thenReturn(List.of(first, again, other));
