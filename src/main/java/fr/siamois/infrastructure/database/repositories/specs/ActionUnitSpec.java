@@ -19,6 +19,8 @@ public class ActionUnitSpec {
     public static final String GLOBAL_FILTER = "global";
     public static final String NAME_FILTER = "name";
     public static final String FULL_IDENTIFIER_FILTER = "fullIdentifier";
+    /** What a project search looks in — and what an exact match of it is compared to. */
+    public static final List<String> PROJECT_SEARCH_ATTRIBUTES = List.of("name", "identifier", FULL_IDENTIFIER_FILTER);
     public static final String ID_FILTER = "id";
     public static final String SPATIAL_UNIT_FILTER = "mainLocation";
     public static final String SPATIAL_CONTEXT = "spatialContext";

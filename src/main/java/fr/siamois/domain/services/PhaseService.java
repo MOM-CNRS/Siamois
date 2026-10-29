@@ -19,6 +19,7 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.PhaseMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -75,7 +76,8 @@ public class PhaseService {
     }
 
     public Page<PhaseDTO> searchPhases(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
-        return phaseRepository.findAll(prepareSpecs(institutionDTO, filters), pageable)
+        return ExactMatchFirst.findAll(phaseRepository, prepareSpecs(institutionDTO, filters), pageable,
+                        PhaseSpec.IDENTIFIER_FILTER, filters.searchTextOf(PhaseSpec.IDENTIFIER_FILTER))
                 .map(phaseMapper::convert);
     }
 
