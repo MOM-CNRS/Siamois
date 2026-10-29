@@ -32,6 +32,9 @@ import java.util.Optional;
  * {@code SystemFieldInitializer}), so it is looked up by its vocabulary and external id, the same way
  * for system and additional fields. The lookups are cached for a few minutes: the same few dozen
  * concepts serve every request, and a thesaurus sync is the only thing that changes them.
+ * <p>
+ * The concepts of the system fields are loaded at startup ({@code SystemFieldConceptInitializer}); a
+ * field whose concept could not be loaded keeps its own texts.
  */
 @Service
 @RequiredArgsConstructor
