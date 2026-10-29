@@ -1708,6 +1708,16 @@
       }
     },
     {
+      "target": "documentation.identifiant_documentation",
+      "source": "documentation_1",
+      "field": {
+        "concept": {
+          "thesaurus": "th337",
+          "id": "4291330"
+        }
+      }
+    },
+    {
       "target": "documentation.titre_documentation",
       "source": "documentation_1",
       "field": {

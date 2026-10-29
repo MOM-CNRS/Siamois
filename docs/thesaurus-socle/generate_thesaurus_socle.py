@@ -1220,6 +1220,22 @@ COLLECTIONS.append(("Mobilier · Type — conditionnement du référentiel  [SIA
                     "Finds · Type — conditioning required by the national referential  [SIAS.CAT @ referential]",
                     [child(sp_type, s) for s in ("vab", "prelevement")]))
 
+# ============================================================================== CHAMPS AJOUTÉS APRÈS LA PREMIÈRE PUBLICATION
+# Les identifiants des concepts suivent l'ordre de création : tout nouveau champ se déclare ICI, à la fin, pour que les
+# identifiants déjà publiés (et écrits dans le code et les modèles d'export) ne bougent pas.
+GEOM_NOTE = "Point, ligne ou polygone, en lecture seule. Le modèle d'export peut la lire en WKT, ou en coordonnées x / y."
+field(AU, "geometry", "Géométrie du projet", "Project geometry", "GEOM", note=GEOM_NOTE)
+field(RU, "geometry", "Géométrie de l'UE", "Recording unit geometry", "GEOM", note=GEOM_NOTE)
+field(SP, "geometry", "Géométrie du mobilier (point)", "Find geometry (point)", "GEOM", note=GEOM_NOTE)
+field(SD, "identifier", "Identifiant de l'étude/traitement", "Study / treatment identifier", "TEXT")
+field(SD, "studyDate", "Date de l'étude", "Study date", "DATE")
+field(DC, "identifier", "Identifiant du document", "Document identifier", "TEXT", rn="identifiant_documentation")
+field(DC, "otherIdentifiers", "Autres identifiants", "Other identifiers", "TEXT")
+field(DC, "crs", "Système de coordonnées", "Coordinate reference system", "TEXT")
+field(DC, "externalUrl", "Adresse externe", "External URL", "TEXT")
+field(DC, "originalPath", "Chemin d'origine", "Original path", "TEXT")
+field(DC, "rights", "Droits", "Rights", "TEXT")
+
 # ============================================================================== DÉFINITIONS DU RÉFÉRENTIEL
 # Un concept qui a un équivalent dans le référentiel national en reprend la définition et les notes (éditoriale, d'application),
 # telles quelles ; sans équivalent, il garde sa définition.

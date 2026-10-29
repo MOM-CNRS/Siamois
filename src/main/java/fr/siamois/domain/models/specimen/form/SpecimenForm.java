@@ -570,6 +570,13 @@ public abstract class SpecimenForm {
             .concept(symbolicConcept(B_STORAGE_LOCATION))
             .build();
 
+    @Transient
+    @JsonIgnore
+    protected static final Concept GEOM_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291329")
+            .build();
+
     /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
@@ -579,6 +586,7 @@ public abstract class SpecimenForm {
             .isTextArea(true)
             .id(-438L)
             .valueBinding("geom")
+            .concept(GEOM_CONCEPT)
             .build();
 
     @Transient

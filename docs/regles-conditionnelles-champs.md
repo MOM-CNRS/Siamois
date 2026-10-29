@@ -46,12 +46,12 @@ stocké et envoyé par son id interne, `{conceptId}` (chaîne), que le client co
 - **Listes filtrées** : `GET /organizations/{id}/concepts?relatedToConceptId=…` ; le type de l'entité
   part en `valueConceptId` ; `REF_MATCH` passe par le filtre de liste `f.<idChamp>=<id>`.
 
-### Règles actuellement définies (en code)
+### Règles actuellement définies (mise en page initiale `form-layouts/UE.json`)
 
-Dans `RecordingUnitDetailsForm` : forme, profil et orientation d'érosion actifs si nature = « Erosion »
-(thésaurus **th252** sur la base de dev) ; interprétation = concepts liés à la
-nature ; fermeture ≥ ouverture, TAQ ≥ TPQ, Z sup ≥ Z inf. Dans `ActionUnitDetailsForm` : fin ≥ début,
-ZMAX ≥ ZMIN.
+Forme, profil et orientation d'érosion actifs si la **nature** = « Négative » (thésaurus **th337**, concept 1216) ;
+fermeture ≥ ouverture, TAQ ≥ TPQ, Z sup ≥ Z inf. Dans `ActionUnitDetailsForm` : fin ≥ début, ZMAX ≥ ZMIN.
+**L'interprétation normalisée n'a plus aucune règle** (voir § 4) : elle proposait les concepts liés au cycle, ce qui ne fonctionne
+plus puisque le cycle est masqué et que ses valeurs n'ont pas de lien avec les interprétations.
 
 ### Reste de la phase 1
 
@@ -218,3 +218,155 @@ la configuration des champs existe déjà à cette granularité.
   données de test. Pendant les vérifications, l'unité 037 (id 144) a vu sa nature passer à 120 par une
   modification faite dans l'application (valeur d'origine : 118) ; l'unité 038 (id 145) est revenue à vide.
 - `application-dev.yaml` contient un jeton GitHub en clair : à révoquer et sortir du dépôt.
+
+## 4. Nature, cycle, agent et interprétation d'une unité d'enregistrement (cadrage du 2026-10-29)
+
+### Quatre champs distincts
+
+| Champ | Code | Concept th337 | Valeurs | Liens `skos:related` dans th337 | Dans la mise en page |
+|---|---|---|---|---|---|
+| Nature | `SIARU.NATURE` | 1180 | Positive, Négative, Englobante, US construite, Dépôt naturel, Altération, Unité artificielle, Interface, Anomalie | aucun | affiché |
+| Cycle géomorphologique | `SIARU.GEOMORPHO` | 1181 | Dépôt, Erosion, Altération, Composite | vers les types US / Fait / Ensemble ; chaque valeur vers les champs qu'elle active (érosion) | **masqué** (`active: false`) |
+| Agent géomorphologique | `SIARU.GEOMORPHOAGENT` | 1182 | 4 valeurs | vers les types | **masqué** |
+| Interprétation normalisée | `SIARU.INTERPRETATION` | 1183 | 76 valeurs | vers le **type** seulement (US 32, Fait 34, Ensemble 7, Sépulture…) | affiché |
+
+Le cycle et l'agent sont des champs propres à Siamois, sans équivalent dans le référentiel national, et masqués par défaut. La nature
+est le champ du référentiel (`nature_UE`).
+
+### Fait pour l'instant
+
+- L'interprétation est **découplée de tout autre champ** : la règle `options` (`RELATED_CONCEPTS` sur le cycle) est retirée de
+  `form-layouts/UE.json`. La liste proposée est celle du champ, éventuellement restreinte par type via les collections
+  « Enregistrement · Interprétation normalisée — Type » du projet par défaut.
+- Forme, profil et orientation d'érosion dépendent de la **nature** (champ -331) = « Négative » (1216), et plus du cycle masqué.
+  Le choix de « Négative » est à confirmer : aucune nature ne s'appelle « Erosion » ; c'est celle qui désigne un creusement ou une
+  perte de matière.
+
+### À faire : deux dépendances
+
+1. **L'interprétation dépend de la nature.**
+   - Mise en page : remettre `rules.options = {kind: RELATED_CONCEPTS, fieldId: -331}` sur l'interprétation (-308). Une ligne.
+   - Thésaurus : relier chaque interprétation à ses natures par `skos:related` (symétrique). Ces liens n'existent pas ; ils sont à
+     définir (une première proposition par le nom de l'interprétation, à faire relire).
+2. **La nature dépend du type de l'unité.** Le moteur ne sait filtrer que par la **valeur d'un autre champ**. Il faut une nouvelle
+   option, par exemple `options.kind = "RELATED_TO_TYPE"` : la liste proposée est celle des concepts reliés au **type de la fiche**
+   (US, Fait, Ensemble…), sans champ source. À faire :
+   - ajouter la règle dans `FieldRulesJson`, `FieldRulesEvaluator`, `FieldAnswerPatchService` (rejet d'un concept hors liste), l'endpoint
+     `concepts?relatedToConceptId=` (le type de l'entité part déjà en `valueConceptId`) et l'éditeur de règles ;
+   - côté TypeScript : `frontend/src/rules/` ;
+   - un cas dans `src/test/resources/form-rules/cases.json` **d'abord** (les deux évaluateurs le partagent) ;
+   - thésaurus : relier chaque nature à ses types. Ces liens n'existent pas non plus.
+
+### Liens à faire dans le thésaurus pour la règle d'érosion
+
+À ajouter dans OpenTheso (`skos:related`, symétrique), à la main ou dans `generate_thesaurus_socle.py` (`applies(<concept>, [champs])`) :
+
+| Concept (id th337) | Relié à (champ) | Id du champ |
+|---|---|---|
+| Nature · **Négative** (1216) | Forme de l'érosion (`SIARU.EROSIONSHAPE`) | à relever dans le RDF |
+| Nature · **Négative** (1216) | Profil de l'érosion (`SIARU.EROSIONPROFILE`) | idem |
+| Nature · **Négative** (1216) | Orientation de l'érosion (`SIARU.EROSIONORIENTATION`) | idem |
+
+Aujourd'hui ces trois champs sont reliés à la valeur **Erosion** du cycle (1225). Ces liens ne servent plus la règle de formulaire ;
+à retirer, ou à garder si le cycle réapparaît (champ masqué pour l'instant).
+
+## 5. Inventaire des champs conditionnés par un autre (toutes les tables, état au 2026-10-29)
+
+Il y a deux sortes de dépendances, qui ne vivent pas au même endroit :
+
+- **Règles de formulaire** : portées par la mise en page (`form-layouts/*.json`, ou le formulaire codé de Projet), évaluées par le
+  moteur (§ 1). Elles activent un champ, bornent une valeur ou filtrent une liste selon la valeur d'**un autre champ**.
+- **Dépendances du thésaurus** : liens `skos:related` du socle commun (th337, généré par `docs/thesaurus-socle/generate_thesaurus_socle.py`).
+  Elles disent qu'un champ ne s'applique qu'à un type (ou une valeur), ou qu'une liste de valeurs dépend du type (ou d'un autre champ).
+  Elles ne sont lues que si une règle ou une collection les exploite (§ « Une liste qui dépend du type » du README du thésaurus).
+
+### A. Règles de formulaire en place
+
+| Table | Champ conditionné | Condition | Source |
+|---|---|---|---|
+| Enregistrement | Forme de l'érosion, Profil de l'érosion, Orientation de l'érosion | actifs seulement si **Nature = Négative** (th337 · 1216, champ -331) | `UE.json` (`enabledWhen`) |
+| Enregistrement | TAQ | ≥ TPQ | `UE.json` (`constraints`) |
+| Enregistrement | Altitude supérieure (Z sup) | ≥ Z inf | `UE.json` (`constraints`) |
+| Enregistrement | Date de fermeture | ≥ date d'ouverture | `UE.json` (`constraints`) |
+| Enregistrement | Interprétation normalisée | **aucune règle** (découplée le 2026-10-29, à relier à la nature, § 4) | `UE.json` |
+| Projet | Date de fin | ≥ date de début | `ActionUnitDetailsForm` (codé) |
+| Projet | Date de fin de terrain | ≥ date de début de terrain | `ActionUnitDetailsForm` (codé) |
+| Projet | ZMAX | ≥ ZMIN | `ActionUnitDetailsForm` (codé) |
+| Projet | Lieu principal (commune) | suggestions INSEE (source de lieux, `placeSources`) | `ActionUnitDetailsForm` (codé) |
+| Projet | Contexte spatial (lieux précis) | adresses GéoPlateforme **filtrées par la commune choisie** dans « Lieu principal » (toutes tant qu'elle n'est pas choisie) | `ActionUnitDetailsForm` (codé) |
+| Mobilier, Phase, Contenant, Document, Étude, Lieu | aucune | aucune règle de champ dans les mises en page livrées | `MOBILIER.json`, `PHASE.json`, `CONTENANT.json`, `DOCUMENT.json`, `STUDY.json` |
+
+Un projet peut en ajouter dans l'écran de configuration des tables (« Règles du champ », § 2, lot 3) : elles sont stockées avec la mise
+en page du type et ne figurent pas ici.
+
+### B. Dépendances décrites dans le thésaurus
+
+Légende : « s'applique à » = le champ n'a de sens que pour ce type ou cette valeur (lien type/valeur → champ) ; « liste selon » = les valeurs
+proposées dépendent du pilote (lien pilote → valeur, et collections « Table · Champ — Pilote »).
+
+**Projet** (`SIAAU`)
+
+| Champ | Dépendance |
+|---|---|
+| Nature de l'aménagement, N° d'arrêté de prescription, Date de l'arrêté, Surface prescrite, Aménageur | s'applique aux types **préventive** et **diagnostic** |
+| Sujets | liste selon le **type** de projet (préventive, diagnostic, programmée) |
+
+**Lieu** (`SIASU`)
+
+| Champ | Dépendance |
+|---|---|
+| Numéro de carte Shom | s'applique au type **zone maritime** |
+| Code INSEE | s'applique au type **commune** |
+| Lieu-dit | s'applique au type **parcelle** |
+
+**Enregistrement** (`SIARU`)
+
+| Champ | Dépendance |
+|---|---|
+| Cycle géomorphologique, Agent géomorphologique | s'appliquent aux types **US, Fait, Ensemble** (ces deux champs sont masqués par défaut, § 4) |
+| Couleur de la matrice | s'applique au type **US** et aux valeurs de cycle **Dépôt, Altération, Composite** |
+| Cycle géomorphologique | liste selon le type : US = dépôt, érosion, altération, composite ; Fait = dépôt, érosion ; Ensemble = dépôt, composite |
+| Forme, Profil, Orientation de l'érosion | liés dans th337 à la valeur de cycle **Erosion** ; la règle de formulaire (A) les active selon la **nature = Négative**, **lien à créer** dans le thésaurus (voir § 4) |
+| Interprétation normalisée | liste selon le **type** (US 32, Fait 34, Ensemble 7, Sépulture) |
+| Attribution chronologique | copie de la liste sous chaque champ concerné, sans dépendance |
+
+**Mobilier** (`SIAS`)
+
+| Champ | Dépendance |
+|---|---|
+| Matière | liste selon le **type** (céramique, TCA → terre cuite ; métal ; lithique → minéral ; verre → verrerie ; faune, VAB → organique ; prélèvement) |
+| Classe | liste selon le **type**, et aussi selon la **matière** (la matière pilote la classe, lecture du référentiel) |
+| Interprétation | liste selon le **type** |
+| Alerte sanitaire | liste selon le **type** (liste « objet » pour céramique, métal, lithique, verre, faune, TCA ; liste VAB pour le VAB) |
+| Nature du prélèvement, Objectif, Condition de conservation, Validité | s'appliquent au type **prélèvement** |
+| Potentiel d'étude, Commentaire du potentiel | s'appliquent au type **VAB** |
+| État sanitaire | s'applique aux types **métal, faune, VAB** |
+
+**Document** (`SIAD`)
+
+| Champ | Dépendance |
+|---|---|
+| Catégorie | liste selon le **type** de document (un type reprend les valeurs de sa catégorie) |
+| Nature du support | liste selon le **type** |
+| Format du fichier | liste selon le **type** |
+| Échelle | liste selon le type, **document graphique** seulement |
+
+**Définition de mesure** (`SIAMD`)
+
+| Champ | Dépendance |
+|---|---|
+| Nature de la mesure (facultative) | liste selon le **type de mesure** |
+
+**Phase, Contenant, Étude, Personne** : aucune dépendance entre champs dans le thésaurus.
+
+### C. Écarts à connaître
+
+- Les dépendances du thésaurus (B) ne produisent un comportement que si une règle de formulaire ou une collection de type les lit.
+  Aujourd'hui seules les listes **par type** du projet par défaut (`default-project/definition.json`, collections par type) en profitent ;
+  « s'applique à » (champ réservé à un type) n'est pas lu par le moteur de règles ; je n'ai pas vérifié si la configuration du projet par
+  défaut le reprend champ par champ.
+- Le filtre d'une liste par la valeur d'un autre champ (`RELATED_CONCEPTS`) n'est plus utilisé dans les mises en page livrées depuis le
+  retrait de l'interprétation (§ 4). Il reste disponible dans l'éditeur de règles.
+- Le filtre d'une liste par le **type de la fiche** (nature → type, matière → type…) n'existe pas dans le moteur : c'est le nouveau type de
+  règle à créer (§ 4, point 2).
+
