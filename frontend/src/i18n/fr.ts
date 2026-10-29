@@ -217,6 +217,8 @@ export const fr = {
   "recordingUnit.graph.synchronous": "Synchrone",
   "recordingUnit.graph.posterior": "Postérieur",
   "recordingUnit.graph.others": "Autres relations",
+  "recordingUnit.graph.section.hierarchy": "Hiérarchie",
+  "recordingUnit.graph.section.stratigraphy": "Stratigraphie",
   "recordingUnit.graph.notApplicable": "Non applicable",
   "recordingUnit.graph.more": "+{count} autres",
   "recordingUnit.graph.loading": "Chargement du graphe…",

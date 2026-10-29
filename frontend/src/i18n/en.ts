@@ -217,6 +217,8 @@ export const en: Record<MessageKey, string> = {
   "recordingUnit.graph.synchronous": "Synchronous",
   "recordingUnit.graph.posterior": "Posterior",
   "recordingUnit.graph.others": "Other relations",
+  "recordingUnit.graph.section.hierarchy": "Hierarchy",
+  "recordingUnit.graph.section.stratigraphy": "Stratigraphy",
   "recordingUnit.graph.notApplicable": "Not applicable",
   "recordingUnit.graph.more": "+{count} more",
   "recordingUnit.graph.loading": "Loading the graph…",

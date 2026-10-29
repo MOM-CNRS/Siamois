@@ -17,7 +17,7 @@ import {entityChipStyle} from "../../../fields/display";
 import {editContextOf} from "../../../fields/editContext";
 import {t} from "../../../i18n";
 import type {EntityPreview} from "../../shared/types";
-import {layoutGraph, type LayoutLabels, type LayoutNode} from "./layout";
+import {layoutGraph, type LayoutLabels, type LayoutNode, type SectionKey} from "./layout";
 import {zoneTitle} from "./labels";
 import {RelationsList, RelationsListControls, RelationsListEnd} from "./RelationsList";
 import {type RelationsMode, RelationsToolbar} from "./RelationsToolbar";
@@ -40,6 +40,7 @@ interface GraphNodeData extends Record<string, unknown> {
   kind: LayoutNode["kind"];
   muted?: boolean;
   zone?: ZoneKey;
+  section?: SectionKey;
   unitId?: string;
   addable?: boolean;
   ref?: GraphUnitRef;
@@ -120,6 +121,9 @@ function GraphNode({ data }: NodeProps<Node<GraphNodeData>>) {
 
 // The frame around a zone: pure background, nothing in it reacts.
 function FrameNode({ data }: NodeProps<Node<GraphNodeData>>) {
+  if (data.section) {
+    return <div className={`sia-graph-section sia-graph-section-${data.section}`}><span className="sia-graph-section-title">{data.label}</span></div>;
+  }
   return <div className={`sia-graph-frame sia-graph-frame-${data.zone ?? "none"}${data.muted ? " sia-graph-frame-muted" : ""}`} />;
 }
 
@@ -129,6 +133,7 @@ function labelsFor(): LayoutLabels {
   const zones: ZoneKey[] = ["parents", "children", "anterior", "synchronous", "posterior", "others"];
   return {
     zone: Object.fromEntries(zones.map((zone) => [zone, zoneTitle(zone)])) as LayoutLabels["zone"],
+    section: { hierarchy: t("recordingUnit.graph.section.hierarchy"), stratigraphy: t("recordingUnit.graph.section.stratigraphy") },
     notApplicable: t("recordingUnit.graph.notApplicable"),
     more: (count) => t("recordingUnit.graph.more", { count }),
   };
@@ -138,17 +143,17 @@ export function toFlow(graph: RelationGraph, actions: NodeActions, editable: boo
   const layout = layoutGraph(graph, labelsFor(), { editable, showLinks });
   const nodes = layout.nodes.map<Node<GraphNodeData>>((n) => ({
     id: n.id,
-    type: n.kind === "frame" ? "frame" : "graph",
+    type: n.kind === "frame" || n.kind === "section" ? "frame" : "graph",
     position: { x: n.x, y: n.y },
     width: n.width,
     height: n.height,
-    data: { label: n.label, kind: n.kind, muted: n.muted, zone: n.zone, unitId: n.unitId, addable: n.addable, ref: n.ref, actions },
+    data: { label: n.label, kind: n.kind, muted: n.muted, zone: n.zone, section: n.section, unitId: n.unitId, addable: n.addable, ref: n.ref, actions },
     draggable: false,
     // React Flow switches pointer events off on a node that can't be dragged or selected, and ours hold buttons.
-    selectable: n.kind !== "frame",
+    selectable: n.kind !== "frame" && n.kind !== "section",
     connectable: false,
     // Behind the tiles and the arrows.
-    zIndex: n.kind === "frame" ? -1 : undefined,
+    zIndex: n.kind === "section" ? -2 : n.kind === "frame" ? -1 : undefined,
   }));
   const edges = layout.edges.map<Edge>((e) => ({
     id: e.id,
@@ -177,7 +182,7 @@ interface Props {
 // The relations of a recording unit, as a graph or as a list. The graph has the unit in the middle,
 // its parents above, its children below, its stratigraphic relations on the right (the more recent
 // above its level, the synchronous ones on it, the older below), and the rest (not applicable yet)
-// on the left; the list has them all in one table, each saying what kind of relation it is. Both
+// on the left once it has any; the list has them all in one table, each saying what kind of relation it is. Both
 // read zone-grouped resources, so they don't know how a relation is stored; every unit can be
 // opened, edited or unlinked, and added to, from either.
 export function RelationGraphTab({ entity, organizationId, onNavigate, onOpenOverview, onChanged }: Props) {

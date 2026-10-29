@@ -10,7 +10,7 @@ export const NODE_HEIGHT = 44;
 const GAP_X = 20;
 const GAP_Y = 14;
 const ROW_Y = 190;
-const RIGHT_X = 330;
+const RIGHT_X = 370;
 const LEFT_X = -330;
 const LABEL_HEIGHT = 26;
 const TITLE_GAP = 6;
@@ -20,9 +20,15 @@ const PER_ROW = 3;
 const MAX_GRID_COLUMNS = 4;
 // The frame drawn around each zone: this much room between it and the zone's outermost tiles.
 const FRAME_PADDING = 12;
+// The section around the hierarchy and around the stratigraphy: further out than the zone frames, with room on top for its title.
+const SECTION_PADDING = 28;
+const SECTION_TITLE_HEIGHT = 28;
+
+export type SectionKey = "hierarchy" | "stratigraphy";
 
 export interface LayoutLabels {
   zone: Record<ZoneKey, string>;
+  section: Record<SectionKey, string>;
   notApplicable: string;
   // "+12 autres" for the units a zone's preview doesn't carry.
   more: (count: number) => string;
@@ -30,7 +36,7 @@ export interface LayoutLabels {
 
 export interface LayoutNode {
   id: string;
-  kind: "unit" | "center" | "zone" | "more" | "frame";
+  kind: "unit" | "center" | "zone" | "more" | "frame" | "section";
   x: number;
   y: number;
   width: number;
@@ -39,6 +45,8 @@ export interface LayoutNode {
   // unit / center only — the unit it opens.
   unitId?: string;
   zone?: ZoneKey;
+  // section only: which one.
+  section?: SectionKey;
   muted?: boolean;
   // unit only: the relation it stands for, for the edit dialog.
   ref?: GraphUnitRef;
@@ -167,18 +175,38 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
   if (graph.posterior.total > 0 || editable) block("posterior", graph.posterior, syncBlockTop - BAND_GAP - blockHeight(graph.posterior));
   if (graph.anterior.total > 0 || editable) block("anterior", graph.anterior, syncBlockBottom + BAND_GAP);
 
-  // The left column: what is neither hierarchy nor stratigraphy. Nothing applies yet.
-  addTitle("others", LEFT_X, -LABEL_HEIGHT - TITLE_GAP, true, false);
-  if (graph.others.total === 0) {
-    nodes.push({ id: "others:empty", kind: "more", x: LEFT_X, y: 0, width: NODE_WIDTH, height: NODE_HEIGHT, label: labels.notApplicable, zone: "others", muted: true });
-  } else {
+  // The left column: what is neither hierarchy nor stratigraphy. Nothing applies yet, so it only
+  // shows once a relation lands in it.
+  if (graph.others.total > 0) {
+    addTitle("others", LEFT_X, -LABEL_HEIGHT - TITLE_GAP, true, false);
     addUnits("others", graph.others, (index) => ({ x: LEFT_X, y: index * STEP }));
   }
 
-  // The frames go first: they are the background the zones' tiles sit on.
-  const all = [...zoneFrames(nodes), ...nodes];
+  // The sections, then the frames: the backgrounds the zones' tiles sit on, the outermost first.
+  const all = [...sectionFrames(nodes, labels), ...zoneFrames(nodes), ...nodes];
   if (!showLinks) return { nodes: all, edges: zoneEdges(nodes, centerId) };
   return { nodes: all, edges };
+}
+
+const HIERARCHY_ZONES: ZoneKey[] = ["parents", "children"];
+const STRATIGRAPHY_ZONES: ZoneKey[] = ["anterior", "synchronous", "posterior"];
+
+// A section around the hierarchy (the center and its parents and children) and one around the
+// stratigraphy (the zones on the right), titled, so the two kinds of relation read apart.
+function sectionFrames(nodes: LayoutNode[], labels: LayoutLabels): LayoutNode[] {
+  const make = (section: SectionKey, members: LayoutNode[]): LayoutNode[] => {
+    if (members.length === 0) return [];
+    const left = Math.min(...members.map((n) => n.x)) - FRAME_PADDING - SECTION_PADDING;
+    const top = Math.min(...members.map((n) => n.y)) - FRAME_PADDING - SECTION_PADDING - SECTION_TITLE_HEIGHT;
+    const right = Math.max(...members.map((n) => n.x + n.width)) + FRAME_PADDING + SECTION_PADDING;
+    const bottom = Math.max(...members.map((n) => n.y + n.height)) + FRAME_PADDING + SECTION_PADDING;
+    return [{ id: `section:${section}`, kind: "section", section, label: labels.section[section], x: left, y: top, width: right - left, height: bottom - top }];
+  };
+  const inZones = (zones: ZoneKey[]) => nodes.filter((n) => n.zone && zones.includes(n.zone));
+  return [
+    ...make("hierarchy", [...nodes.filter((n) => n.kind === "center"), ...inZones(HIERARCHY_ZONES)]),
+    ...make("stratigraphy", inZones(STRATIGRAPHY_ZONES)),
+  ];
 }
 
 // A frame around each zone — its title, its units and its "+N" tile — so that where one relation kind ends and

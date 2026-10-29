@@ -4,6 +4,7 @@ import type {GraphUnitRef, GraphZone, RelationGraph} from "./types";
 
 const labels: LayoutLabels = {
   zone: { parents: "P", children: "C", anterior: "A", synchronous: "S", posterior: "N", others: "O" },
+  section: { hierarchy: "H", stratigraphy: "S" },
   notApplicable: "n/a",
   more: (count) => `+${count}`,
 };
@@ -51,9 +52,12 @@ describe("layoutGraph", () => {
     expect(find("posterior:5").y + NODE_HEIGHT).toBeLessThan(sync.y);
     expect(find("anterior:3").y).toBeGreaterThan(sync.y + NODE_HEIGHT);
     expect(find("anterior:3").x).toBeGreaterThan(0);
-    const others = find("others:empty");
-    expect(others.x).toBeLessThan(0);
-    expect(others.label).toBe("n/a");
+  });
+
+  it("shows the left column only once a relation is in it", () => {
+    expect(layoutGraph(graph({}), labels).nodes.some((n) => n.zone === "others")).toBe(false);
+    const { nodes } = layoutGraph(graph({ others: zone([ref("9")]) }), labels);
+    expect(nodes.find((n) => n.id === "others:9")!.x).toBeLessThan(0);
   });
 
   it("centers several synchronous units on the center's level", () => {
@@ -65,11 +69,10 @@ describe("layoutGraph", () => {
 
   it("keeps the title of an empty zone, with its add button, only when the caller can write", () => {
     const readOnly = layoutGraph(graph({}), labels).nodes.filter((n) => n.kind === "zone");
-    expect(readOnly.map((n) => n.zone)).toEqual(["others"]);
+    expect(readOnly).toEqual([]);
     const writable = layoutGraph(graph({}), labels, { editable: true }).nodes.filter((n) => n.kind === "zone");
-    expect(writable.map((n) => n.zone).sort()).toEqual(["anterior", "children", "others", "parents", "posterior", "synchronous"]);
+    expect(writable.map((n) => n.zone).sort()).toEqual(["anterior", "children", "parents", "posterior", "synchronous"]);
     expect(writable.find((n) => n.zone === "parents")!.addable).toBe(true);
-    expect(writable.find((n) => n.zone === "others")!.addable).toBe(false);
   });
 
   it("adds a +N tile for the units a zone's preview doesn't carry", () => {
@@ -117,13 +120,42 @@ describe("layoutGraph", () => {
     expect(Math.min(...ys) + Math.max(...ys)).toBeCloseTo(0);
   });
 
+  describe("sections", () => {
+    const sections = (g: RelationGraph, opts = {}) => layoutGraph(g, labels, opts).nodes.filter((n) => n.kind === "section");
+
+    it("groups the center, parents and children under Hierarchy and the right column under Stratigraphy", () => {
+      const { nodes } = layoutGraph(graph({ parents: zone([ref("1")]), anterior: zone([ref("3")]) }), labels);
+      const hierarchy = nodes.find((n) => n.id === "section:hierarchy")!;
+      const strat = nodes.find((n) => n.id === "section:stratigraphy")!;
+      expect(hierarchy.label).toBe("H");
+      expect(strat.label).toBe("S");
+      const center = nodes.find((n) => n.kind === "center")!;
+      expect(center.x).toBeGreaterThan(hierarchy.x);
+      expect(center.x + center.width).toBeLessThan(hierarchy.x + hierarchy.width);
+      const anterior = nodes.find((n) => n.id === "anterior:3")!;
+      expect(anterior.x).toBeGreaterThan(strat.x);
+      expect(hierarchy.x + hierarchy.width).toBeLessThan(strat.x);
+    });
+
+    it("keeps the hierarchy section clear of the stratigraphy one when a hierarchy row is full", () => {
+      const parents = Array.from({ length: 3 }, (_, i) => ref(`p${i}`));
+      const [h, s] = sections(graph({ parents: zone(parents), posterior: zone([ref("5")]) }));
+      expect(h.x + h.width).toBeLessThan(s.x);
+    });
+
+    it("draws no stratigraphy section for a reader when nothing is stratified", () => {
+      expect(sections(graph({})).map((n) => n.section)).toEqual(["hierarchy"]);
+      expect(sections(graph({}), { editable: true }).map((n) => n.section)).toEqual(["hierarchy", "stratigraphy"]);
+    });
+  });
+
   describe("zone frames", () => {
     it("draws one frame per filled zone, behind the tiles, never around the center", () => {
       const { nodes } = layoutGraph(graph({ parents: zone([ref("1")]), posterior: zone([ref("2")]) }), labels);
       const frames = nodes.filter((n) => n.kind === "frame");
-      expect(frames.map((f) => f.zone).sort()).toEqual(["others", "parents", "posterior"]);
+      expect(frames.map((f) => f.zone).sort()).toEqual(["parents", "posterior"]);
       // the frames come first, so they sit under everything else
-      expect(nodes.slice(0, frames.length).every((n) => n.kind === "frame")).toBe(true);
+      expect(nodes.slice(0, frames.length + 2).every((n) => n.kind === "frame" || n.kind === "section")).toBe(true);
     });
 
     it("contains the title, the units and the +N tile of its zone", () => {
@@ -141,9 +173,9 @@ describe("layoutGraph", () => {
 
     it("frames an empty zone only for an editor, and fainter", () => {
       const readOnly = layoutGraph(graph({}), labels).nodes.filter((n) => n.kind === "frame");
-      expect(readOnly.map((f) => f.zone)).toEqual(["others"]);
+      expect(readOnly).toEqual([]);
       const editable = layoutGraph(graph({}), labels, { editable: true }).nodes.filter((n) => n.kind === "frame");
-      expect(editable.length).toBe(6);
+      expect(editable.length).toBe(5);
       expect(editable.every((f) => f.muted)).toBe(true);
     });
 
