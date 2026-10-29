@@ -92,6 +92,25 @@ public class RelationFieldService {
                 .toList(), total);
     }
 
+    /** A relation between two units of a set: see {@link RelationFieldRepository.LinkRow}; its type is labelled. */
+    public record Link(String kind, long fromId, long toId, @Nullable ResourceRef type, @Nullable Boolean uncertain) {
+    }
+
+    /** The relations that join two of {@code unitIds}, each with its type labelled in {@code lang}. */
+    @Transactional(readOnly = true)
+    public List<Link> linksAmong(Collection<Long> unitIds, String lang) {
+        List<RelationFieldRepository.LinkRow> rows = relationFieldRepository.linksAmong(unitIds);
+        List<ConceptDTO> concepts = rows.stream()
+                .filter(row -> row.conceptId() != null)
+                .map(row -> ConceptDTO.builder().id(row.conceptId()).externalId(row.conceptExternalId()).build())
+                .toList();
+        Map<Long, String> labels = concepts.isEmpty() ? Map.of() : conceptLabelBatchResolver.resolveLabels(concepts, lang);
+        return rows.stream().map(row -> new Link(row.kind(), row.fromId(), row.toId(),
+                row.conceptId() == null ? null : new ResourceRef(String.valueOf(row.conceptId()), FieldAnswerWireService.CONCEPTS,
+                        Objects.requireNonNullElseGet(labels.get(row.conceptId()), () -> "[" + row.conceptExternalId() + "]")),
+                row.uncertain())).toList();
+    }
+
     private Map<Long, String> conceptLabels(List<Row> rows, String lang) {
         List<ConceptDTO> concepts = rows.stream()
                 .filter(row -> row.conceptId() != null)

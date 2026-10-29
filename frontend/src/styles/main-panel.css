@@ -2486,6 +2486,63 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   color: var(--text-color, #212529);
 }
 
+/* The relations of the unit under the pointer: drawn over everything, from a layer of their own. */
+.sia-graph-focus {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* A unit that has other relations than the one with the center says so on its corner. */
+.sia-graph-node-links {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--surface-border, #ced4da);
+  border-radius: 10px;
+  background: var(--surface-card, #fff);
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 0.7rem;
+  cursor: default;
+}
+
+.sia-graph-focus-label {
+  position: absolute;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  padding: 1px 6px;
+  border: 1px solid;
+  border-radius: 4px;
+  background: var(--surface-card, #fff);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The unit under the pointer and the ones it is related to: the hierarchy in the hierarchy's color, the rest in the stratigraphy's. */
+.sia-graph-node-focus-self {
+  box-shadow: 0 0 0 2px var(--text-color, #212529);
+}
+
+.sia-graph-node-focus-hierarchy {
+  border-color: var(--primary-color, #3b82f6);
+  background: color-mix(in srgb, var(--primary-color, #3b82f6) 18%, var(--surface-card, #fff));
+}
+
+.sia-graph-node-focus-stratigraphy,
+.sia-graph-node-focus-synchronous {
+  border-color: var(--orange-500, #f97316);
+  background: color-mix(in srgb, var(--orange-500, #f97316) 18%, var(--surface-card, #fff));
+}
+
 .sia-graph-icon-button {
   padding: 2px 5px;
   border: none;
@@ -2503,17 +2560,6 @@ body .p-overlaypanel.panel-bc-paths-overlay .panel-bc-paths-truncated {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-}
-
-/* The display settings stack: the view (graph or list), then the graph's own options. */
-.sia-graph-setting-title {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.sia-graph-setting + .sia-graph-setting,
-.sia-graph-setting-group + .sia-graph-setting {
-  margin-top: 8px;
 }
 
 .sia-relation-uncertain {

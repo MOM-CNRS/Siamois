@@ -85,15 +85,26 @@ function relationList(unitId: number, url: URL) {
 function relationGraph(unitId: number) {
   const zone = (values: unknown[], total = values.length) => ({ values, total, complete: values.length >= total });
   const at = (fieldId: string) => zone(relationValues(unitId, fieldId));
+  const parents = zone(relationValues(unitId, "-319"));
+  const children = unitId === 107 ? zone(Array.from({ length: 30 }, (_, j) => usRef(j)), 45) : zone(relationValues(unitId, "-320"));
+  const anterior = at("-328");
+  const synchronous = at("-330");
+  const posterior = at("-329");
+  const ids = (z: { values: unknown[] }) => (z.values as Array<{ resourceId: string }>).map((v) => v.resourceId);
+  // Links between the units shown: the older ones in a chain, the more recent above them, the parents above the children.
+  const chain = (list: string[], kind: string) => list.slice(1).map((to, k) => ({ from: list[k], to, kind, type: { label: "recoupe" }, uncertain: k % 3 === 2 }));
+  const links = [
+    ...chain(ids(anterior), "stratigraphy"),
+    ...ids(posterior).slice(0, 2).flatMap((from) => ids(anterior).slice(0, 1).map((to) => ({ from, to, kind: "stratigraphy", type: { label: "couvre" }, uncertain: false }))),
+    ...ids(synchronous).slice(0, 2).flatMap((from) => ids(anterior).slice(0, 1).map((to) => ({ from, to, kind: "synchronous", uncertain: false }))),
+    ...ids(parents).slice(0, 1).flatMap((from) => ids(children).slice(0, 1).map((to) => ({ from, to, kind: "hierarchy" }))),
+  ].filter((l) => l.from !== l.to);
   return {
     center: usRef(unitId - 100),
-    parents: zone(relationValues(unitId, "-319")),
-    children: unitId === 107 ? zone(Array.from({ length: 30 }, (_, j) => usRef(j)), 45) : zone(relationValues(unitId, "-320")),
-    anterior: at("-328"),
-    synchronous: at("-330"),
-    posterior: at("-329"),
+    parents, children, anterior, synchronous, posterior,
     others: zone([]),
     fields: { anterior: "-328", posterior: "-329", synchronous: "-330" },
+    links,
   };
 }
 

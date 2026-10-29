@@ -45,7 +45,7 @@ d'une recherche d'hier surprend, revenir à ses filtres et à son tri est le but
 
 ```json
 { "v": 1, "tab": "graph", "tabs": { "fiche": { "foldedSections": { "…": true } },
-                                    "graph": { "relationsMode": "list", "showLinks": false,
+                                    "graph": { "relationsMode": "list",
                                                "relationList": { "filters": {}, "sort": "kind:asc", "limit": 50 } } } }
 ```
 

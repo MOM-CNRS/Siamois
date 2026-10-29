@@ -53,10 +53,12 @@ public class RecordingUnitRelationGraphControllerApi {
                     schema = @Schema(type = "string", example = "2")
             )
             @PathVariable("id") String id,
+            @Parameter(description = "Graphe complet : jusqu'à 300 UE par zone au lieu de 30, et les relations entre les UE affichées (links)")
+            @RequestParam(defaultValue = "false") boolean full,
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         RecordingUnitDTO unit = projectApiService.requireViewableRecordingUnit(caller, id);
-        return ResponseEntity.ok(relationGraphService.graphOf(unit, ProjectApiService.primaryAcceptLanguage(acceptLanguage)));
+        return ResponseEntity.ok(relationGraphService.graphOf(unit, ProjectApiService.primaryAcceptLanguage(acceptLanguage), full));
     }
 
     @GetMapping("/{id}/relations")

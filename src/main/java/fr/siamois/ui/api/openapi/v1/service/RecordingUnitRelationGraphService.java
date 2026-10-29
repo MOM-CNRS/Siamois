@@ -14,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reads the relations of a recording unit as the zones of its graph. Everything goes through
@@ -28,26 +30,53 @@ public class RecordingUnitRelationGraphService {
 
     /** The most units each zone carries; the zone's total says how many there are in all. */
     public static final int ZONE_LIMIT = 30;
+    /** The most units each zone carries when the graph is read whole, with the links between its units. */
+    public static final int FULL_ZONE_LIMIT = 300;
 
     private final RelationFieldService relationFieldService;
 
     @Transactional(readOnly = true)
     public RecordingUnitRelationGraphResource graphOf(RecordingUnitDTO unit, String lang) {
+        return graphOf(unit, lang, false);
+    }
+
+    /**
+     * @param full each zone carries up to {@link #FULL_ZONE_LIMIT} units rather than {@link #ZONE_LIMIT}, and the graph
+     *             lists the relations between its units
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitRelationGraphResource graphOf(RecordingUnitDTO unit, String lang, boolean full) {
         long id = unit.getId();
+        int limit = full ? FULL_ZONE_LIMIT : ZONE_LIMIT;
+        MultiValue parents = zone(RelationField.RECORDING_UNIT_PARENTS, id, limit, lang);
+        MultiValue children = zone(RelationField.RECORDING_UNIT_CHILDREN, id, limit, lang);
+        MultiValue anterior = zone(RelationField.RECORDING_UNIT_ANTERIOR, id, limit, lang);
+        MultiValue synchronous = zone(RelationField.RECORDING_UNIT_SYNCHRONOUS, id, limit, lang);
+        MultiValue posterior = zone(RelationField.RECORDING_UNIT_POSTERIOR, id, limit, lang);
         ResourceRef center = new ResourceRef(String.valueOf(id), "recording-units", unit.getFullIdentifier());
 
         return new RecordingUnitRelationGraphResource(
                 center,
-                zone(RelationField.RECORDING_UNIT_PARENTS, id, lang),
-                zone(RelationField.RECORDING_UNIT_CHILDREN, id, lang),
-                zone(RelationField.RECORDING_UNIT_ANTERIOR, id, lang),
-                zone(RelationField.RECORDING_UNIT_SYNCHRONOUS, id, lang),
-                zone(RelationField.RECORDING_UNIT_POSTERIOR, id, lang),
+                parents, children, anterior, synchronous, posterior,
                 MultiValue.complete(List.of()),
                 new RecordingUnitRelationGraphResource.Fields(
                         fieldIdOf(RelationField.RECORDING_UNIT_ANTERIOR),
                         fieldIdOf(RelationField.RECORDING_UNIT_SYNCHRONOUS),
-                        fieldIdOf(RelationField.RECORDING_UNIT_POSTERIOR)));
+                        fieldIdOf(RelationField.RECORDING_UNIT_POSTERIOR)),
+                full ? linksBetweenNeighbours(id, List.of(parents, children, anterior, synchronous, posterior), lang) : List.of());
+    }
+
+    /** The relations that join two of the units a graph shows, not counting the center's own: the graph draws those. */
+    private List<RecordingUnitRelationGraphResource.Link> linksBetweenNeighbours(long centerId, List<MultiValue> zones, String lang) {
+        Set<Long> shown = new LinkedHashSet<>();
+        zones.forEach(zone -> zone.values().forEach(ref -> shown.add(Long.parseLong(ref.resourceId()))));
+        shown.add(centerId);
+        return relationFieldService.linksAmong(shown, lang).stream()
+                .filter(link -> link.fromId() != centerId && link.toId() != centerId)
+                .map(link -> new RecordingUnitRelationGraphResource.Link(
+                        String.valueOf(link.fromId()), String.valueOf(link.toId()), link.kind(), link.type(), link.uncertain()))
+                .distinct()
+                .toList();
     }
 
     private static String fieldIdOf(RelationField relation) {
@@ -73,8 +102,8 @@ public class RecordingUnitRelationGraphService {
         return relationFieldService.pageAcross(fields, unit.getId(), offset, limit, search, byLabel, ascending, lang);
     }
 
-    private MultiValue zone(RelationField relation, long id, String lang) {
-        RelationFieldService.ValuesPage page = relationFieldService.page(relation, id, 0, ZONE_LIMIT, null, true, lang);
-        return MultiValue.of(page.values(), page.total(), ZONE_LIMIT, null);
+    private MultiValue zone(RelationField relation, long id, int limit, String lang) {
+        RelationFieldService.ValuesPage page = relationFieldService.page(relation, id, 0, limit, null, true, lang);
+        return MultiValue.of(page.values(), page.total(), limit, null);
     }
 }

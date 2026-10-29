@@ -2,8 +2,9 @@ import {apiFetch} from "../../../api/client";
 import type {RelationGraph, RelationKind, RelationList} from "./types";
 
 // GET /api/v1/recording-units/{id}/relation-graph — the unit's relations grouped by graph zone.
-export async function getRelationGraph(id: string | number): Promise<RelationGraph> {
-  const body = await apiFetch<RelationGraph | { data: RelationGraph }>(`/api/v1/recording-units/${id}/relation-graph`);
+// `full` asks for up to 300 units per zone instead of 30, and the links between the units shown.
+export async function getRelationGraph(id: string | number, full = false): Promise<RelationGraph> {
+  const body = await apiFetch<RelationGraph | { data: RelationGraph }>(`/api/v1/recording-units/${id}/relation-graph${full ? "?full=true" : ""}`);
   return "data" in body ? body.data : body;
 }
 

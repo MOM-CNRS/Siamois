@@ -1,4 +1,4 @@
-import type {GraphUnitRef, GraphZone, RelationGraph, ZoneKey} from "./types";
+import type {GraphLink, GraphUnitRef, GraphZone, RelationGraph, ZoneKey} from "./types";
 
 // Where each zone sits around the center unit: parents above, children below, the stratigraphic
 // relations in a column on the right — the more recent units above the center's level, the
@@ -52,6 +52,8 @@ export interface LayoutNode {
   ref?: GraphUnitRef;
   // zone only: whether a unit can be added to it.
   addable?: boolean;
+  // unit only: how many relations it has with units other than the center — the ones the pointer shows.
+  linkCount?: number;
 }
 
 export interface LayoutEdge {
@@ -63,17 +65,35 @@ export interface LayoutEdge {
   zone: ZoneKey;
 }
 
+export type LinkKind = GraphLink["kind"];
+
+// A relation between two units, one of which may be the center: not drawn until the pointer is on one of them.
+export interface LayoutLink {
+  id: string;
+  // The node ids: from the parent (or the more recent unit) to the child (or the older one); from the center, for its own.
+  source: string;
+  target: string;
+  kind: LinkKind;
+  // The relation's own type, if it has one; what its kind is called otherwise (`phrase`).
+  label?: string;
+  phrase: string;
+  uncertain: boolean;
+}
+
 export interface GraphLayout {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
+  // Every relation between two units shown: the center's with each, and the units' with one another when the graph carries them.
+  links: LayoutLink[];
 }
 
 export interface LayoutOptions {
   // Whether the caller can write: the zones then show their "add" button, and an empty zone keeps its title.
   editable?: boolean;
-  // Whether each unit is linked to the center by its own line (the default). Off, a hierarchy zone's
-  // title moves between the center and its first row, and the graph draws one arrow per zone instead.
-  showLinks?: boolean;
+  // Whether the graph draws the detail of the relations with the center: each unit linked to it by its own line, naming
+  // the relation, the zones in a column. Off (the default), a zone is a grid, its title between the center and its
+  // first row, and the graph draws one arrow per zone instead.
+  detailed?: boolean;
 }
 
 function edgeLabel(ref: GraphUnitRef): string | undefined {
@@ -99,7 +119,7 @@ const STEP = NODE_HEIGHT + GAP_Y;
 
 export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options: LayoutOptions = {}): GraphLayout {
   const editable = options.editable ?? false;
-  const showLinks = options.showLinks ?? true;
+  const detailed = options.detailed ?? false;
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
   const centerId = `unit:${graph.center.resourceId}`;
@@ -122,7 +142,7 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
       nodes.push({ id, kind: "unit", unitId: item.resourceId, ref: item, x, y, width: NODE_WIDTH, height: NODE_HEIGHT, label: item.label ?? item.resourceId, zone: zoneKey });
       // A wrapped hierarchy zone links only its first row: an edge to a unit behind another would cross it.
       const behindARow = (zoneKey === "parents" || zoneKey === "children") && index >= PER_ROW;
-      if (!behindARow) edges.push({ id: `edge:${id}`, source: centerId, target: id, label: edgeLabel(item), dashed: !!item.qualifier?.uncertain, zone: zoneKey });
+      if (!behindARow) edges.push({ id: `edge:${id}`, source: centerId, target: id, label: edgeLabel(item) ?? labels.zone[zoneKey], dashed: !!item.qualifier?.uncertain, zone: zoneKey });
     });
   };
 
@@ -138,10 +158,10 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
     const rows = Math.max(1, Math.ceil(count / PER_ROW));
     const rowY = (r: number) => sign * (ROW_Y + r * STEP) - NODE_HEIGHT / 2;
     const lastY = rowY(rows - 1);
-    // With its lines, the title closes the zone's far end; without them, it sits where the arrow lands.
+    // Detailed, the title closes the zone's far end; simplified, it sits where the arrow lands.
     const nearTitle = sign === -1 ? rowY(0) + NODE_HEIGHT + TITLE_GAP : rowY(0) - LABEL_HEIGHT - TITLE_GAP;
     const farTitle = sign === -1 ? lastY - LABEL_HEIGHT - TITLE_GAP : lastY + NODE_HEIGHT + TITLE_GAP;
-    addTitle(zoneKey, -NODE_WIDTH / 2, showLinks ? farTitle : nearTitle, zone.total === 0, editable);
+    addTitle(zoneKey, -NODE_WIDTH / 2, detailed ? farTitle : nearTitle, zone.total === 0, editable);
     addUnits(zoneKey, zone, (index) => {
       const r = Math.floor(index / PER_ROW);
       const inRow = Math.min(PER_ROW, count - r * PER_ROW);
@@ -154,7 +174,7 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
   // The right column. The synchronous units are centered on the center's own level; the more recent
   // ones (posterior) are stacked above that block, the older ones (anterior) below it. Each block is
   // a title followed by its units.
-  const columns = (zone: GraphZone) => (showLinks ? 1 : Math.min(MAX_GRID_COLUMNS, Math.ceil(Math.sqrt(zoneItems(zone).length))));
+  const columns = (zone: GraphZone) => (detailed ? 1 : Math.min(MAX_GRID_COLUMNS, Math.ceil(Math.sqrt(zoneItems(zone).length))));
   const rowsOf = (zone: GraphZone) => Math.max(1, Math.ceil(zoneItems(zone).length / Math.max(1, columns(zone))));
   const blockHeight = (zone: GraphZone) => LABEL_HEIGHT + TITLE_GAP + rowsOf(zone) * STEP - GAP_Y;
   const syncUnitsHeight = rowsOf(graph.synchronous) * STEP - GAP_Y;
@@ -164,8 +184,8 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
 
   const block = (zoneKey: ZoneKey, zone: GraphZone, top: number) => {
     if (zone.total === 0 && !editable) return;
-    const cols = Math.max(1, columns(zone));
     addTitle(zoneKey, RIGHT_X, top, zone.total === 0, editable);
+    const cols = Math.max(1, columns(zone));
     addUnits(zoneKey, zone, (index) => ({
       x: RIGHT_X + (index % cols) * (NODE_WIDTH + GAP_X),
       y: top + LABEL_HEIGHT + TITLE_GAP + Math.floor(index / cols) * STEP,
@@ -184,8 +204,45 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
 
   // The sections, then the frames: the backgrounds the zones' tiles sit on, the outermost first.
   const all = [...sectionFrames(nodes, labels), ...zoneFrames(nodes), ...nodes];
-  if (!showLinks) return { nodes: all, edges: zoneEdges(nodes, centerId) };
-  return { nodes: all, edges };
+  const links = resolveLinks(graph, nodes, labels);
+  const linkCounts = new Map<string, number>();
+  for (const link of links) {
+    if (link.source === centerId) continue;
+    for (const id of [link.source, link.target]) linkCounts.set(id, (linkCounts.get(id) ?? 0) + 1);
+  }
+  for (const node of nodes) if (node.kind === "unit") node.linkCount = linkCounts.get(node.id) ?? 0;
+  return { nodes: all, edges: detailed ? edges : zoneEdges(nodes, centerId), links };
+}
+
+// What a relation between units is called, read from the unit it starts at to the one it ends at.
+function phraseOf(kind: LinkKind, labels: LayoutLabels): string {
+  return kind === "hierarchy" ? labels.zone.children : kind === "stratigraphy" ? labels.zone.anterior : labels.zone.synchronous;
+}
+
+// The relations of the units shown, between the nodes that show them: the center's with each unit (from the center,
+// so the zone's title says what it is) and the units' with one another.
+function resolveLinks(graph: RelationGraph, nodes: LayoutNode[], labels: LayoutLabels): LayoutLink[] {
+  const center = nodes.find((n) => n.kind === "center");
+  const units = nodes.filter((n) => n.kind === "unit" && n.unitId && n.zone && n.ref);
+  const links: LayoutLink[] = center ? units.map((node) => {
+    const kind: LinkKind = node.zone === "parents" || node.zone === "children" ? "hierarchy" : node.zone === "synchronous" ? "synchronous" : "stratigraphy";
+    return {
+      id: `link:${center.id}>${node.id}`, source: center.id, target: node.id, kind,
+      label: edgeLabel(node.ref!), phrase: labels.zone[node.zone!], uncertain: !!node.ref!.qualifier?.uncertain,
+    };
+  }) : [];
+  const nodeOfUnit = new Map<string, string>();
+  for (const node of units) if (!nodeOfUnit.has(node.unitId!)) nodeOfUnit.set(node.unitId!, node.id);
+  for (const link of graph.links ?? []) {
+    const source = nodeOfUnit.get(link.from);
+    const target = nodeOfUnit.get(link.to);
+    if (!source || !target || source === target) continue;
+    links.push({
+      id: `link:${source}>${target}:${link.kind}`, source, target, kind: link.kind,
+      label: link.type?.label ?? undefined, phrase: phraseOf(link.kind, labels), uncertain: !!link.uncertain,
+    });
+  }
+  return links;
 }
 
 const HIERARCHY_ZONES: ZoneKey[] = ["parents", "children"];

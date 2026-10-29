@@ -21,6 +21,15 @@ export interface GraphZone {
   complete: boolean;
 }
 
+// A relation between two units of the graph, neither the center: from the more recent unit (or the parent) to the older one.
+export interface GraphLink {
+  from: string;
+  to: string;
+  kind: "hierarchy" | "stratigraphy" | "synchronous";
+  type?: { resourceId?: string; label?: string | null } | null;
+  uncertain?: boolean | null;
+}
+
 export interface RelationGraph {
   center: GraphUnitRef;
   parents: GraphZone;
@@ -34,6 +43,8 @@ export interface RelationGraph {
   others: GraphZone;
   // The field of the fiche that holds each stratigraphic zone: its list gives the relation types.
   fields: Record<"anterior" | "synchronous" | "posterior", string>;
+  // Only in the full graph: the relations between the units shown.
+  links?: GraphLink[];
 }
 
 // The kinds of relation a unit has with another, as the list names them: the graph's zones but "others".

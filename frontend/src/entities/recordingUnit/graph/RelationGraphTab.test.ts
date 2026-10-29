@@ -26,8 +26,8 @@ describe("toFlow", () => {
     expect(nodes.find((n) => n.id === "zone:anterior")!.data.kind).toBe("zone");
   });
 
-  it("draws hierarchy edges vertically, with an arrow, and stratigraphy edges out to the right", () => {
-    const { edges } = toFlow(graph, actions, false);
+  it("detailed, draws hierarchy edges vertically, with an arrow, and stratigraphy edges out to the right", () => {
+    const { edges } = toFlow(graph, actions, false, true);
 
     const parent = edges.find((e) => e.target === "parents:1")!;
     expect([parent.sourceHandle, parent.targetHandle]).toEqual(["src-top", "tgt-bottom"]);
@@ -37,8 +37,8 @@ describe("toFlow", () => {
     expect(posterior.markerEnd).toBeUndefined();
   });
 
-  it("without links, draws one arrow per zone that has units, each ending on its title", () => {
-    const { edges } = toFlow(graph, actions, false, false);
+  it("simplified, draws one arrow per zone that has units, each ending on its title", () => {
+    const { edges } = toFlow(graph, actions, false);
 
     expect(edges.map((e) => e.target).sort()).toEqual(["zone:anterior", "zone:children", "zone:parents", "zone:posterior"]);
     expect(edges.every((e) => e.markerEnd !== undefined)).toBe(true);

@@ -112,4 +112,35 @@ class RecordingUnitRelationGraphServiceTest {
         assertThat(graph.anterior().complete()).isFalse();
         assertThat(graph.posterior().total()).isZero();
     }
+
+    @Test
+    void fullGraph_carriesUpTo300UnitsPerZone_andTheLinksBetweenNeighboursButNotTheCenters() {
+        List<ResourceRef> many = new ArrayList<>(IntStream.range(0, 400).mapToObj(i -> strati(String.valueOf(1000 + i), "anterior")).toList());
+        stub(RelationField.RECORDING_UNIT_PARENTS, List.of(plain("1")), 1);
+        stub(RelationField.RECORDING_UNIT_CHILDREN, List.of(plain("2")), 1);
+        stub(RelationField.RECORDING_UNIT_ANTERIOR, many, 400);
+        stub(RelationField.RECORDING_UNIT_SYNCHRONOUS, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_POSTERIOR, List.of(), 0);
+        when(relations.linksAmong(any(), eq("fr"))).thenReturn(List.of(
+                new RelationFieldService.Link("hierarchy", 1, 2, null, null),
+                new RelationFieldService.Link("hierarchy", 1, 42, null, null),
+                new RelationFieldService.Link("stratigraphy", 2, 42, null, false)));
+
+        RecordingUnitRelationGraphResource graph = service.graphOf(unit(), "fr", true);
+
+        assertThat(graph.anterior().values()).hasSize(RecordingUnitRelationGraphService.FULL_ZONE_LIMIT);
+        assertThat(graph.links()).extracting(RecordingUnitRelationGraphResource.Link::from, RecordingUnitRelationGraphResource.Link::to)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("1", "2"));
+    }
+
+    @Test
+    void graphWithoutFull_hasNoLinks() {
+        stub(RelationField.RECORDING_UNIT_PARENTS, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_CHILDREN, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_ANTERIOR, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_SYNCHRONOUS, List.of(), 0);
+        stub(RelationField.RECORDING_UNIT_POSTERIOR, List.of(), 0);
+
+        assertThat(service.graphOf(unit(), "fr").links()).isEmpty();
+    }
 }
