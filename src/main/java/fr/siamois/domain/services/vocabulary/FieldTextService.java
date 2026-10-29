@@ -64,8 +64,6 @@ public class FieldTextService {
             .maximumSize(CACHE_SIZE)
             .build();
 
-    private volatile Map<Long, CustomField> systemFieldsById;
-
     /**
      * @param field         the field to describe
      * @param lang          ISO language code of the reader
@@ -87,14 +85,16 @@ public class FieldTextService {
      */
     public FieldTexts resolveSystemField(@Nullable Long fieldId, @Nullable String lang, @Nullable String fallbackLabel,
                                          @Nullable String fallbackHint) {
-        CustomField field = fieldId == null ? null : systemFields().get(fieldId);
+        CustomField field = fieldId == null ? null : SystemFields.BY_ID.get(fieldId);
         return resolve(field, lang, fallbackLabel, fallbackHint);
     }
 
-    private Map<Long, CustomField> systemFields() {
-        Map<Long, CustomField> map = systemFieldsById;
-        if (map == null) {
-            map = new HashMap<>();
+    /** The system fields of every table by id, built once on first use (class initialization is thread-safe). */
+    private static final class SystemFields {
+        static final Map<Long, CustomField> BY_ID = byId();
+
+        private static Map<Long, CustomField> byId() {
+            Map<Long, CustomField> map = new HashMap<>();
             for (ConfigurableTable table : ConfigurableTable.values()) {
                 for (CustomField field : SystemFieldCatalog.sharedFieldsOf(table)) {
                     if (field.getId() != null) {
@@ -102,9 +102,8 @@ public class FieldTextService {
                     }
                 }
             }
-            systemFieldsById = map;
+            return Map.copyOf(map);
         }
-        return map;
     }
 
     private ConceptTexts textsOf(@Nullable Concept concept, @Nullable String lang) {

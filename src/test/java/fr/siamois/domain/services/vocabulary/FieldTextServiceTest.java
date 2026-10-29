@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -106,5 +107,66 @@ class FieldTextServiceTest {
 
         verify(conceptRepository, times(1)).findConceptByExternalIdIgnoreCase("th337", "1175");
         verify(dataRepository, times(1)).findByConceptAndLangCode(anyLong(), eq("fr"));
+    }
+
+    @Test
+    void aSystemFieldKnownByItsIdTakesItsConceptsTexts() {
+        // -302: the recording unit's type, bound to concept 1172 of the system thesaurus.
+        storeConcept("1172", "Type d'UE", "Nature de l'unité.");
+
+        var texts = service.resolveSystemField(-302L, "fr", "Type", null);
+
+        assertThat(texts.label()).isEqualTo("Type d'UE");
+        assertThat(texts.definition()).isEqualTo("Nature de l'unité.");
+    }
+
+    @Test
+    void anIdThatIsNotASystemFieldGetsTheFallbacks() {
+        assertThat(service.resolveSystemField(999_999L, "fr", "Libellé", "Aide"))
+                .isEqualTo(new FieldTextService.FieldTexts("Libellé", "Aide"));
+        assertThat(service.resolveSystemField(null, "fr", "Libellé", null))
+                .isEqualTo(new FieldTextService.FieldTexts("Libellé", null));
+    }
+
+    @Test
+    void aConceptCarryingItsIdIsReadWithoutLookingItUp() {
+        Concept persisted = new Concept();
+        persisted.setId(7L);
+        persisted.setExternalId("1176");
+        persisted.setVocabulary(fieldWithConcept("1176").getConcept().getVocabulary());
+        CustomField field = new CustomFieldText();
+        field.setConcept(persisted);
+        ConceptPrefLabel pref = new ConceptPrefLabel();
+        pref.setLabel("Date d'ouverture");
+        when(labelRepository.findPrefLabelByLangCodeAndConcept(eq("fr"), any())).thenReturn(Optional.of(pref));
+
+        var texts = service.resolve(field, null, "x", null);
+
+        assertThat(texts.label()).isEqualTo("Date d'ouverture");
+        verify(conceptRepository, never()).findConceptByExternalIdIgnoreCase(any(), any());
+    }
+
+    @Test
+    void aBlankLabelOrDefinitionFallsBack() {
+        storeConcept("1177", "  ", "<p> </p>");
+
+        var texts = service.resolve(fieldWithConcept("1177"), "fr", "Date", "   ");
+
+        assertThat(texts.label()).isEqualTo("Date");
+        assertThat(texts.definition()).isNull();
+    }
+
+    @Test
+    void aFieldWhoseConceptHasNoVocabularyKeepsItsOwnTexts() {
+        CustomField field = new CustomFieldText();
+        field.setConcept(new Concept());
+
+        assertThat(service.resolve(field, "fr", "Libellé", null).label()).isEqualTo("Libellé");
+    }
+
+    @Test
+    void plainTextOfNothingIsNothing() {
+        assertThat(FieldTextService.plainText(null)).isNull();
+        assertThat(FieldTextService.plainText("<br/>")).isNull();
     }
 }

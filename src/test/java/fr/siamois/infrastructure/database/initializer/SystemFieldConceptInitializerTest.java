@@ -81,4 +81,30 @@ class SystemFieldConceptInitializerTest {
 
         verify(conceptApi, times(1)).fetchConceptInfo(any(), any());
     }
+
+    @Test
+    void aConceptTheThesaurusDoesNotKnowIsNotSaved() throws Exception {
+        storedVocabulary();
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(any(), any())).thenReturn(Optional.empty());
+        when(conceptApi.fetchConceptInfo(any(), any())).thenReturn(null);
+
+        initializer.initialize();
+
+        verify(conceptService, never()).saveOrGetConceptFromFullDTO(any(), any(), any());
+    }
+
+    @Test
+    void onlyAConceptWithAVocabularyAndANumericIdCanBeFetched() {
+        Vocabulary vocabulary = new Vocabulary();
+        Concept numeric = new Concept.Builder().vocabulary(vocabulary).externalId("1172").build();
+        Concept symbolic = new Concept.Builder().vocabulary(vocabulary).externalId("specimen.lot").build();
+        Concept noId = new Concept.Builder().vocabulary(vocabulary).build();
+        Concept noVocabulary = new Concept.Builder().externalId("1172").build();
+
+        org.junit.jupiter.api.Assertions.assertTrue(SystemFieldConceptInitializer.hasThesaurusId(numeric));
+        org.junit.jupiter.api.Assertions.assertFalse(SystemFieldConceptInitializer.hasThesaurusId(symbolic));
+        org.junit.jupiter.api.Assertions.assertFalse(SystemFieldConceptInitializer.hasThesaurusId(noId));
+        org.junit.jupiter.api.Assertions.assertFalse(SystemFieldConceptInitializer.hasThesaurusId(noVocabulary));
+        org.junit.jupiter.api.Assertions.assertFalse(SystemFieldConceptInitializer.hasThesaurusId(null));
+    }
 }

@@ -84,4 +84,14 @@ class OrganizationFieldCatalogServiceTest {
         assertThat(OrganizationFieldCatalogService.entityTypeOf(ConfigurableTable.STUDY))
                 .isEqualTo(fr.siamois.domain.models.study.Study.class);
     }
+
+    @Test
+    void thePlaceCatalogListsTheDetailsFormFieldsWithoutTableColumns() {
+        OrganizationFieldCatalogResponse response = service.buildPlaces("fr");
+
+        assertThat(response.getFields()).isNotEmpty();
+        assertThat(response.getTableColumns()).isNull();
+        verify(fieldQueryService, org.mockito.Mockito.atLeastOnce())
+                .withQuery(any(FieldResource.class), eq(fr.siamois.domain.models.spatialunit.SpatialUnit.class), any());
+    }
 }

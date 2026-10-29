@@ -100,12 +100,16 @@ public class SystemFieldConceptInitializer implements DatabaseInitializer {
         Map<Vocabulary, Set<String>> byVocabulary = new LinkedHashMap<>();
         for (CustomField field : fields) {
             Concept concept = field == null ? null : field.getConcept();
-            if (concept == null || concept.getVocabulary() == null || concept.getExternalId() == null
-                    || !concept.getExternalId().matches("\\d+")) {
-                continue;
+            if (hasThesaurusId(concept)) {
+                byVocabulary.computeIfAbsent(concept.getVocabulary(), v -> new LinkedHashSet<>()).add(concept.getExternalId());
             }
-            byVocabulary.computeIfAbsent(concept.getVocabulary(), v -> new LinkedHashSet<>()).add(concept.getExternalId());
         }
         return byVocabulary;
+    }
+
+    /** Whether the concept can be fetched: a vocabulary and a numeric id (the symbolic ids of unmapped fields cannot). */
+    static boolean hasThesaurusId(Concept concept) {
+        return concept != null && concept.getVocabulary() != null && concept.getExternalId() != null
+                && concept.getExternalId().matches("\\d+");
     }
 }
