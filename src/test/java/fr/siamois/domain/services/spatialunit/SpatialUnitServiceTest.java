@@ -1430,6 +1430,34 @@ class SpatialUnitServiceTest {
     }
 
     @Test
+    void updatePlaceDetails_appliesTheEditsAndSaves() {
+        SpatialUnit existing = new SpatialUnit();
+        existing.setId(5L);
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(5L);
+        dto.setType(new ConceptDTO());
+        dto.setComments("avant");
+
+        when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(existing));
+        when(spatialUnitMapper.convert(any(SpatialUnit.class))).thenReturn(dto);
+        when(spatialUnitMapper.invertConvert(any(SpatialUnitDTO.class))).thenAnswer(invocation -> {
+            SpatialUnitDTO input = invocation.getArgument(0);
+            SpatialUnit unit = new SpatialUnit();
+            unit.setId(input.getId());
+            unit.setComments(input.getComments());
+            return unit;
+        });
+        when(conceptService.saveOrGetConcept(any(ConceptDTO.class))).thenReturn(new Concept());
+        when(spatialUnitRepository.save(any(SpatialUnit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        spatialUnitService.updatePlaceDetails(5L, edited -> edited.setComments("après"));
+
+        org.mockito.ArgumentCaptor<SpatialUnit> saved = org.mockito.ArgumentCaptor.forClass(SpatialUnit.class);
+        verify(spatialUnitRepository).save(saved.capture());
+        assertThat(saved.getValue().getComments()).isEqualTo("après");
+    }
+
+    @Test
     void updatePlace_duplicateName_throws() {
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(10L);

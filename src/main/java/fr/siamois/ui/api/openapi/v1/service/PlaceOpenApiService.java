@@ -419,12 +419,14 @@ public class PlaceOpenApiService {
         }
 
         try {
-            SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || patch.isGeomPresent() || patch.isTextDetailsPresent())
+            SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || patch.isGeomPresent())
                     ? spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress(),
                             patch.getPlaceNumber(), patch.isPlaceNumberPresent(),
-                            patch.getGeom(), patch.isGeomPresent(),
-                            details -> applyTextDetails(details, patch))
+                            patch.getGeom(), patch.isGeomPresent())
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
+            if (patch.isTextDetailsPresent()) {
+                saved = spatialUnitService.updatePlaceDetails(placeId, details -> applyTextDetails(details, patch));
+            }
             // After the save: it writes the entity's previous status back.
             validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(

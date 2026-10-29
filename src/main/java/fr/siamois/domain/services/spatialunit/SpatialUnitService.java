@@ -853,22 +853,6 @@ public class SpatialUnitService implements ArkEntityService {
                                       boolean updatePlaceNumber,
                                       GeometryDTO newGeom,
                                       boolean updateGeom) throws SpatialUnitAlreadyExistsException {
-        return updatePlace(info, placeId, newName, newType, newAddress, newPlaceNumber, updatePlaceNumber,
-                newGeom, updateGeom, dto -> { });
-    }
-
-    /** As above; {@code otherEdits} then edits the loaded DTO for the details this signature has no parameter for. */
-    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
-    public SpatialUnitDTO updatePlace(UserInfo info,
-                                      long placeId,
-                                      String newName,
-                                      ConceptDTO newType,
-                                      FullAddress newAddress,
-                                      Integer newPlaceNumber,
-                                      boolean updatePlaceNumber,
-                                      GeometryDTO newGeom,
-                                      boolean updateGeom,
-                                      java.util.function.Consumer<SpatialUnitDTO> otherEdits) throws SpatialUnitAlreadyExistsException {
         SpatialUnitDTO dto = loadDtoById(placeId);
         Long institutionId = info.getInstitution().getId();
 
@@ -895,7 +879,14 @@ public class SpatialUnitService implements ArkEntityService {
         if (updateGeom) {
             dto.setGeom(newGeom);
         }
-        otherEdits.accept(dto);
+        return persistSpatialUnitDto(dto);
+    }
+
+    /** Edits the plain details of a place that {@code updatePlace} has no parameter for (INSEE code, locality, SHOM map, comments). */
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlaceDetails(long placeId, java.util.function.Consumer<SpatialUnitDTO> edits) {
+        SpatialUnitDTO dto = loadDtoById(placeId);
+        edits.accept(dto);
         return persistSpatialUnitDto(dto);
     }
 
