@@ -20,7 +20,7 @@ import {OverviewOpenProvider} from "./panels/pane/overviewOpen";
 import {PaneStateProvider, PaneStateScope, usePaneStateStore} from "./panels/pane/paneState";
 import {type NavigationView, type OverviewState, sameEntity} from "./navigation/reducer";
 import {useNavigation} from "./navigation/useNavigation";
-import {registerNavigation} from "./navigation/externalBus";
+import {type ListSeed, registerNavigation} from "./navigation/externalBus";
 import {onEntityDeleted} from "./panels/detail/entityDeleted";
 import {ContextPublisher} from "./navigation/ContextPublisher";
 import {PROJECT_KEY} from "./entities/keys";
@@ -94,6 +94,8 @@ function PanelContent({
           onCreate={onCreate}
           toolbar={toolbar}
           viewId={view.viewId}
+          scope={seedScope(view.entityType, view.seed)}
+          seed={view.seed}
           onViewChange={onOpenView && ((viewId) => onOpenView(view.entityType, viewId))}
         />
       );
@@ -283,17 +285,7 @@ export function App({ options }: { options: MountOptions }) {
   const overviewPane = overview && (
     <PaneErrorBoundary label={t("pane.overview")} resetKey={`${overview.entityType}:${overview.entityId ?? ""}`}>
     <PaneStateScope name={overviewPaneStyleName ?? ""}>
-    {overview.entityId == null ? (
-      <EntityListPanel
-        entityType={overview.entityType}
-        organizationId={options.overviewOrganizationId ?? options.organizationId}
-        scope={seedScope(overview)}
-        seed={overview.seed}
-        onNavigate={(entityType, id) => openOverview(entityType, id)}
-        onOpenOverview={openOverview}
-        toolbar={overviewToolbar}
-      />
-    ) : (
+    {overview.entityId == null ? null : (
     <EntityDetailPanel
       entityType={overview.entityType}
       entityId={overview.entityId}
@@ -354,8 +346,8 @@ export function App({ options }: { options: MountOptions }) {
 // the API serves under /projects/{id}/… (the others are searched organization-wide).
 const PROJECT_SCOPED_LISTS = new Set(["recordingUnit", "find"]);
 
-function seedScope(overview: OverviewState): ListScope | undefined {
-  const projectId = overview.seed?.projectId;
-  if (projectId == null || !PROJECT_SCOPED_LISTS.has(overview.entityType)) return undefined;
+function seedScope(entityType: string, seed?: ListSeed): ListScope | undefined {
+  const projectId = seed?.projectId;
+  if (projectId == null || !PROJECT_SCOPED_LISTS.has(entityType)) return undefined;
   return { entityType: PROJECT_KEY, id: projectId };
 }
