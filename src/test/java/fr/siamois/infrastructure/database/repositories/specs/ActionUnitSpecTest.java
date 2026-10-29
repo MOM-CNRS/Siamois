@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.dto.FilterDTO;
 import jakarta.persistence.criteria.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -216,5 +218,34 @@ class ActionUnitSpecTest {
         assertSame(orPredicate, result);
         verify(cb).lessThan(fieldPath, "T");
         verify(cb).greaterThan(idPath, 10L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void projectSearch_startWith_matchesTheStartOfNameIdentifierAndFullIdentifier() {
+        Expression<String> coalesced = mock(Expression.class);
+        Expression<String> lowered = mock(Expression.class);
+        when(cb.<String>coalesce(any(), eq(""))).thenReturn(coalesced);
+        when(cb.lower(any())).thenReturn(lowered);
+
+        ActionUnitSpec.projectSearch("FOU", FilterDTO.FilterType.START_WITH).toPredicate(root, query, cb);
+
+        verify(cb, times(3)).like(lowered, "fou%");
+        verify(root).get("name");
+        verify(root).get("identifier");
+        verify(root).get("fullIdentifier");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void projectSearch_default_matchesAnywhere() {
+        Expression<String> coalesced = mock(Expression.class);
+        Expression<String> lowered = mock(Expression.class);
+        when(cb.<String>coalesce(any(), eq(""))).thenReturn(coalesced);
+        when(cb.lower(any())).thenReturn(lowered);
+
+        ActionUnitSpec.projectSearch("FOU").toPredicate(root, query, cb);
+
+        verify(cb, times(3)).like(lowered, "%fou%");
     }
 }

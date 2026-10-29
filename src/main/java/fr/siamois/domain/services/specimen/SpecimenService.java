@@ -31,6 +31,7 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
@@ -712,7 +713,7 @@ public class SpecimenService implements ArkEntityService {
     public List<SpecimenSummaryDTO> findMatchingInInstitutionByFullIdentifier(
             InstitutionDTO institution, String query, int limit) {
         var specs = SpecimenSpec.specimenInInstitution(institution.getId())
-                .and(SpecimenSpec.fullIdentifierContaining(query));
+                .and(TextSearchSpec.matching(SpecimenSpec.FULL_IDENTIFIER_FILTER, query, FilterDTO.FilterType.START_WITH));
         return specimenRepository.findAll(specs, PageRequest.ofSize(limit))
                 .stream()
                 .map(specimenSummaryMapper::convert)
@@ -838,7 +839,8 @@ public class SpecimenService implements ArkEntityService {
         }
 
         if (filters.containsColumn(SpecimenSpec.FULL_IDENTIFIER_FILTER)) {
-            specification = specification.and(SpecimenSpec.fullIdentifierContaining(filters.valueOfAsString(SpecimenSpec.FULL_IDENTIFIER_FILTER)));
+            specification = specification.and(TextSearchSpec.matching(SpecimenSpec.FULL_IDENTIFIER_FILTER,
+                    filters.filterOf(SpecimenSpec.FULL_IDENTIFIER_FILTER)));
         }
 
         return specification;

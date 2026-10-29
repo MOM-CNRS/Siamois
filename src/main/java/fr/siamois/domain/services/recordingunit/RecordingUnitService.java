@@ -39,6 +39,7 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
@@ -1198,13 +1199,13 @@ public class RecordingUnitService implements ArkEntityService {
      * rather than one action unit.
      *
      * @param institution the institution to search in
-     * @param query       the text the full identifier must contain, null or blank matching everything
+     * @param query       the text the full identifier must start with, null or blank matching everything
      * @param limit       how many units to return at most
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitSummaryDTO> findMatchingInInstitutionByFullIdentifier(InstitutionDTO institution, String query, int limit) {
         Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
-                .and(RecordingUnitSpec.fullIdentifierContains(query));
+                .and(TextSearchSpec.matching(RecordingUnitSpec.FULL_IDENTIFIER, query, FilterDTO.FilterType.START_WITH));
 
         return recordingUnitRepository.findAll(specs, PageRequest.ofSize(limit))
                 .stream()

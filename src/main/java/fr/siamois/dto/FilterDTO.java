@@ -61,7 +61,14 @@ public class FilterDTO {
         EQUAL,
         NOT_STARTS_WITH,
         NOT_CONTAINS,
-        NOT_EQUAL
+        NOT_EQUAL;
+
+        /**
+         * Whether a text filter of this type is a search: containing the text, or starting with it.
+         */
+        public boolean isTextSearch() {
+            return this == CONTAINS || this == START_WITH;
+        }
     }
 
     @Data
