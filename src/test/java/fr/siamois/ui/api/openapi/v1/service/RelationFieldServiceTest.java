@@ -115,4 +115,43 @@ class RelationFieldServiceTest {
         return new Row(owner, target, label, role, conceptId, conceptId == null ? null : "ext" + conceptId,
                 asynchronous, conceptDirection, false);
     }
+
+    @Test
+    void linksAmong_labelsTheTypeOfAStratigraphicLink_andLeavesTheOthersWithoutOne() {
+        when(repository.linksAmong(List.of(1L, 2L, 3L))).thenReturn(List.of(
+                new RelationFieldRepository.LinkRow("hierarchy", 1, 2, null, null, null),
+                new RelationFieldRepository.LinkRow("stratigraphy", 3, 2, 77L, "recoupe", true)));
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "recoupe"));
+
+        List<RelationFieldService.Link> links = service.linksAmong(List.of(1L, 2L, 3L), "fr");
+
+        assertThat(links).hasSize(2);
+        assertThat(links.get(0)).isEqualTo(new RelationFieldService.Link("hierarchy", 1, 2, null, null));
+        assertThat(links.get(1).type().label()).isEqualTo("recoupe");
+        assertThat(links.get(1).type().resourceId()).isEqualTo("77");
+        assertThat(links.get(1).uncertain()).isTrue();
+        assertThat(links.get(1).fromId()).isEqualTo(3);
+    }
+
+    @Test
+    void linksAmong_fallsBackOnTheExternalIdOfATypeWithNoLabel() {
+        when(repository.linksAmong(List.of(1L, 2L))).thenReturn(List.of(new RelationFieldRepository.LinkRow("stratigraphy", 2, 1, 9L, "ext-9", false)));
+        when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of());
+
+        assertThat(service.linksAmong(List.of(1L, 2L), "fr").get(0).type().label()).isEqualTo("[ext-9]");
+    }
+
+    @Test
+    void linksAmong_doesNotAskForLabelsWhenNoLinkHasAType() {
+        when(repository.linksAmong(List.of(1L, 2L))).thenReturn(List.of(new RelationFieldRepository.LinkRow("hierarchy", 1, 2, null, null, null)));
+
+        service.linksAmong(List.of(1L, 2L), "fr");
+
+        org.mockito.Mockito.verifyNoInteractions(labels);
+    }
+
+    @Test
+    void linksAmong_hasNoLinkWhenTheRepositoryFindsNone() {
+        assertThat(service.linksAmong(List.of(1L), "fr")).isEmpty();
+    }
 }

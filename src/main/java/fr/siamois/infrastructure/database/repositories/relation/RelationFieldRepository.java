@@ -19,6 +19,18 @@ public class RelationFieldRepository {
 
     private static final String OWNER_PARAM = "owner";
 
+    /** The hierarchy and stratigraphic relations that join two of the units bound to {@code :ids}, from the more recent (or parent) to the older. */
+    private static final String LINKS_AMONG_SQL = "SELECT 'hierarchy' AS kind, h.fk_parent_id AS from_id, h.fk_child_id AS to_id, "
+            + "CAST(NULL AS BIGINT) AS concept_id, CAST(NULL AS VARCHAR) AS concept_external_id, CAST(NULL AS BOOLEAN) AS uncertain "
+            + "FROM recording_unit_hierarchy h WHERE h.fk_parent_id IN (:ids) AND h.fk_child_id IN (:ids) "
+            + "UNION ALL "
+            + "SELECT CASE WHEN r.asynchronous = FALSE THEN 'synchronous' ELSE 'stratigraphy' END, "
+            + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_1_id ELSE r.fk_recording_unit_2_id END, "
+            + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_2_id ELSE r.fk_recording_unit_1_id END, "
+            + "r.fk_relationship_concept_id, c.external_id, r.uncertain "
+            + "FROM stratigraphic_relationship r LEFT JOIN concept c ON c.concept_id = r.fk_relationship_concept_id "
+            + "WHERE r.fk_recording_unit_1_id IN (:ids) AND r.fk_recording_unit_2_id IN (:ids)";
+
 
     /** One value of a relation, and — for a stratigraphic one — what the relation says of it. */
     public record Row(long ownerId, long targetId, @Nullable String label,
@@ -83,17 +95,7 @@ public class RelationFieldRepository {
     @Transactional(readOnly = true)
     public List<LinkRow> linksAmong(Collection<Long> unitIds) {
         if (unitIds == null || unitIds.size() < 2) return List.of();
-        String sql = "SELECT 'hierarchy' AS kind, h.fk_parent_id AS from_id, h.fk_child_id AS to_id, "
-                + "CAST(NULL AS BIGINT) AS concept_id, CAST(NULL AS VARCHAR) AS concept_external_id, CAST(NULL AS BOOLEAN) AS uncertain "
-                + "FROM recording_unit_hierarchy h WHERE h.fk_parent_id IN (:ids) AND h.fk_child_id IN (:ids) "
-                + "UNION ALL "
-                + "SELECT CASE WHEN r.asynchronous = FALSE THEN 'synchronous' ELSE 'stratigraphy' END, "
-                + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_1_id ELSE r.fk_recording_unit_2_id END, "
-                + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_2_id ELSE r.fk_recording_unit_1_id END, "
-                + "r.fk_relationship_concept_id, c.external_id, r.uncertain "
-                + "FROM stratigraphic_relationship r LEFT JOIN concept c ON c.concept_id = r.fk_relationship_concept_id "
-                + "WHERE r.fk_recording_unit_1_id IN (:ids) AND r.fk_recording_unit_2_id IN (:ids)";
-        Query query = entityManager.createNativeQuery(sql).setParameter("ids", unitIds);
+        Query query = entityManager.createNativeQuery(LINKS_AMONG_SQL).setParameter("ids", unitIds);
         return ((List<?>) query.getResultList()).stream().map(result -> {
             Object[] cols = (Object[]) result;
             return new LinkRow((String) cols[0], ((Number) cols[1]).longValue(), ((Number) cols[2]).longValue(),

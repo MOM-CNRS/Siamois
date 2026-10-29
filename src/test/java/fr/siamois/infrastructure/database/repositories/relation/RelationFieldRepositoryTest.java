@@ -189,4 +189,28 @@ class RelationFieldRepositoryTest {
         assertThat(RelationField.stratigraphic("parents")).isEmpty();
         assertThat(RelationField.RECORDING_UNIT_PARENTS.resourceType()).isEqualTo("recording-units");
     }
+
+    @Test
+    void linksAmong_readsEachRelationBetweenTwoOfTheUnits() {
+        when(query.getResultList()).thenReturn(List.of(
+                new Object[]{"hierarchy", 1L, 2L, null, null, null},
+                new Object[]{"stratigraphy", 5L, 3L, 77L, "recoupe", true},
+                new Object[]{"synchronous", 3L, 4L, null, null, false}));
+
+        List<RelationFieldRepository.LinkRow> links = repository.linksAmong(List.of(1L, 2L, 3L, 4L, 5L));
+
+        assertThat(links).containsExactly(
+                new RelationFieldRepository.LinkRow("hierarchy", 1, 2, null, null, null),
+                new RelationFieldRepository.LinkRow("stratigraphy", 5, 3, 77L, "recoupe", true),
+                new RelationFieldRepository.LinkRow("synchronous", 3, 4, null, null, false));
+        verify(query).setParameter("ids", List.of(1L, 2L, 3L, 4L, 5L));
+    }
+
+    @Test
+    void linksAmong_needsTwoUnitsToHaveALinkBetweenThem() {
+        assertThat(repository.linksAmong(List.of(1L))).isEmpty();
+        assertThat(repository.linksAmong(List.of())).isEmpty();
+        assertThat(repository.linksAmong(null)).isEmpty();
+        verify(entityManager, never()).createNativeQuery(anyString());
+    }
 }

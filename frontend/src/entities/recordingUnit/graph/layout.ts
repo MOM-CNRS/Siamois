@@ -216,7 +216,17 @@ export function layoutGraph(graph: RelationGraph, labels: LayoutLabels, options:
 
 // What a relation between units is called, read from the unit it starts at to the one it ends at.
 function phraseOf(kind: LinkKind, labels: LayoutLabels): string {
-  return kind === "hierarchy" ? labels.zone.children : kind === "stratigraphy" ? labels.zone.anterior : labels.zone.synchronous;
+  switch (kind) {
+    case "hierarchy": return labels.zone.children;
+    case "stratigraphy": return labels.zone.anterior;
+    default: return labels.zone.synchronous;
+  }
+}
+
+// The kind of relation a unit has with the center, by the zone it is in.
+function kindOfZone(zone: ZoneKey): LinkKind {
+  if (zone === "parents" || zone === "children") return "hierarchy";
+  return zone === "synchronous" ? "synchronous" : "stratigraphy";
 }
 
 // The relations of the units shown, between the nodes that show them: the center's with each unit (from the center,
@@ -225,9 +235,8 @@ function resolveLinks(graph: RelationGraph, nodes: LayoutNode[], labels: LayoutL
   const center = nodes.find((n) => n.kind === "center");
   const units = nodes.filter((n) => n.kind === "unit" && n.unitId && n.zone && n.ref);
   const links: LayoutLink[] = center ? units.map((node) => {
-    const kind: LinkKind = node.zone === "parents" || node.zone === "children" ? "hierarchy" : node.zone === "synchronous" ? "synchronous" : "stratigraphy";
     return {
-      id: `link:${center.id}>${node.id}`, source: center.id, target: node.id, kind,
+      id: `link:${center.id}>${node.id}`, source: center.id, target: node.id, kind: kindOfZone(node.zone!),
       label: edgeLabel(node.ref!), phrase: labels.zone[node.zone!], uncertain: !!node.ref!.qualifier?.uncertain,
     };
   }) : [];
