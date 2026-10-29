@@ -758,8 +758,8 @@
                                             <div class="ptc-drawer-field" style="flex:1;">
                                                 <label class="ptc-drawer-label" for="projectTablesFormCC:projectTablesForm:fieldsTabs:identLast_input">#{langBean.msg('actionUnit.settings.label.lastNumber')}</label>
                                                 <p:inputNumber id="identLast" value="#{projectTableFieldSettingsBean.identLast}" inputStyle="width:100%" minValue="0" maxValue="99999" required="true">
-                                                    <!-- widens the number's padding to fit the maximum; only the format box is re-rendered so the focus is kept -->
-                                                    <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onIdentLastChange()}" process="@this" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identFormatBox"/>
+                                                    <!-- widens the number's padding to fit the maximum; only the format box and the preview are re-rendered so the focus is kept -->
+                                                    <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onIdentLastChange()}" process="@this" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:identFormatBox :projectTablesFormCC:projectTablesForm:fieldsTabs:identPreview"/>
                                                 </p:inputNumber>
                                             </div>
                                         </div>
@@ -812,7 +812,7 @@
                                         <div class="ptc-drawer-field">
                                             <!-- read-only preview, not a form control -->
                                             <div class="ptc-drawer-label">#{langBean.msg('projectTables.ident.preview')}</div>
-                                            <div class="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</div>
+                                            <h:panelGroup id="identPreview" layout="block" styleClass="ptc-ident-preview">#{projectTableFieldSettingsBean.identExample}</h:panelGroup>
                                             <div class="ptc-field-hint">#{langBean.msg('projectTables.ident.previewHint')}</div>
                                         </div>
 

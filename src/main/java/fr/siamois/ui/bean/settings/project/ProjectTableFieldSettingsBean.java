@@ -224,7 +224,6 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private List<IdentifierSegment> identSegments = new ArrayList<>();
     private Integer identFirst;
     private Integer identLast;
-    /** Index of the segment whose digit count is too small for {@link #identLast}, highlighted after a refused save. */
     private Integer identDigitsErrorIndex;
 
     private static final Pattern IDENT_PLACEHOLDER_PATTERN = Pattern.compile("\\{([^}]+)\\}");
@@ -2045,7 +2044,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         identDigitsErrorIndex = null;
     }
 
-    /** The number of digits the maximum number takes, 0 when there is none. */
+    /**
+     * @return The number of digits the maximum number takes, 0 when there is none.
+     */
     private int requiredIdentDigits() {
         return identLast == null || identLast < 0 ? 0 : String.valueOf(identLast).length();
     }
