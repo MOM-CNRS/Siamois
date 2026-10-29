@@ -20,8 +20,14 @@ public record FormLayout(List<Group> groups) {
     /**
      * @param id    the stored group's id, or null for a group that only exists in memory
      * @param label a message key or free text
+     * @param allowMeasures whether users may add measures of their own to the section of a record's fiche
      */
-    public record Group(Long id, String label, List<Item> items) {
+    public record Group(Long id, String label, List<Item> items, boolean allowMeasures) {
+
+        /** A group that allows the measures users add on the fly, as every group did before it could be turned off. */
+        public Group(Long id, String label, List<Item> items) {
+            this(id, label, items, true);
+        }
     }
 
     /** @param units for a measurement, the units this configuration offers; null keeps the field's own */

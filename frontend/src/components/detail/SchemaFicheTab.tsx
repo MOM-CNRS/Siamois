@@ -1,14 +1,17 @@
-import {useMemo} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {useMemo, useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {queryKeys} from "../../api/queryKeys";
 import {getEffectiveForm} from "../../entities/shared/typeCatalog";
 import {FormLayoutView} from "../../fields/FormLayoutView";
+import {AddMeasureOverlay} from "../../fields/AddMeasureOverlay";
 import {parseLayout} from "../../fields/layout";
+import {removeOnTheFlyField, useOnTheFlyFields, withOnTheFlyFields} from "../../fields/onTheFly";
 import type {AnswerInputBody, FieldResource} from "../../fields/types";
 import {useCanEdit} from "../../panels/pane/writeMode";
 import {FormSkeleton} from "../layout/DetailSkeleton";
 import {t} from "../../i18n";
-import {useToastOnChange} from "../../notify/NotifyProvider";
+import {useNotify, useToastOnChange} from "../../notify/NotifyProvider";
+import {messageForError} from "../../api/errors";
 
 /** What the fiche reads off an entity: its project and type, or the form served with it. */
 export interface SchemaFicheEntity {
@@ -67,6 +70,27 @@ export function SchemaFicheTab<TEntity extends SchemaFicheEntity>({
   const layoutJson = form?.layoutJson;
   const panels = useMemo(() => (layoutJson != null ? parseLayout(layoutJson) : []), [layoutJson]);
 
+  // The measures added to this record alone ("Ajouter une mesure"), merged into the shared form.
+  const queryClient = useQueryClient();
+  const notify = useNotify();
+  const onTheFly = useOnTheFlyFields(entityType, entity.id);
+  const merged = useMemo(
+    () => withOnTheFlyFields(panels, form?.fields ?? {}, onTheFly.data),
+    [panels, form?.fields, onTheFly.data],
+  );
+  const [addingTo, setAddingTo] = useState<{ panel: string; anchor: HTMLElement } | null>(null);
+  const segment = onTheFly.segment;
+  const refresh = (data: Parameters<typeof queryClient.setQueryData>[1]) => {
+    queryClient.setQueryData(queryKeys.onTheFlyFields(segment, entity.id), data);
+    onSaved();
+  };
+  const remove = useMutation({
+    mutationFn: (fieldId: string) => removeOnTheFlyField(segment!, entity.id!, fieldId),
+    onSuccess: refresh,
+    onError: (err) => notify.error(messageForError(err, t("onTheFly.removeFailed"))),
+  });
+  const canAddMeasure = segment != null && entity.id != null;
+
   const missingProject = perType && entity.projectId == null;
   const formError = perType ? formQuery.error : !entity.formBundle;
 
@@ -79,13 +103,26 @@ export function SchemaFicheTab<TEntity extends SchemaFicheEntity>({
         <FormLayoutView
           entity={entity}
           entityType={entityType}
-          fields={form.fields}
-          panels={panels}
+          fields={merged.fields}
+          panels={merged.panels}
           canEdit={canEdit}
           organizationId={organizationId}
           onSave={save}
           onSaved={onSaved}
           isFieldShown={isFieldShown}
+          onAddMeasure={canAddMeasure ? (panel, anchor) => setAddingTo({ panel, anchor }) : undefined}
+          onTheFlyIds={merged.onTheFlyIds}
+          onRemoveField={(fieldId) => remove.mutate(fieldId)}
+        />
+      )}
+      {canAddMeasure && (
+        <AddMeasureOverlay
+          segment={segment!}
+          entityId={entity.id!}
+          panel={addingTo?.panel ?? ""}
+          anchor={addingTo?.anchor ?? null}
+          onHide={() => setAddingTo(null)}
+          onAdded={refresh}
         />
       )}
     </div>

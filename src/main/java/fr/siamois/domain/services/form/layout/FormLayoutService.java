@@ -78,7 +78,7 @@ public class FormLayoutService {
                     FieldUnits.fromJson(ffc.getUnits())));
         }
         List<FormLayout.Group> out = groups.stream()
-                .map(g -> new FormLayout.Group(g.getId(), g.getLabel(), itemsByGroup.get(g.getId())))
+                .map(g -> new FormLayout.Group(g.getId(), g.getLabel(), itemsByGroup.get(g.getId()), g.isAllowMeasures()))
                 .toList();
         return Optional.of(new FormLayout(out));
     }
@@ -86,7 +86,11 @@ public class FormLayoutService {
     // ---- Editing ----------------------------------------------------------------------------
 
     /** What a group looks like once edited: its stored id (null when new), label and field names. */
-    public record GroupSpec(Long id, String label, List<String> fieldNames) {
+    public record GroupSpec(Long id, String label, List<String> fieldNames, boolean allowMeasures) {
+
+        public GroupSpec(Long id, String label, List<String> fieldNames) {
+            this(id, label, fieldNames, true);
+        }
     }
 
     /**
@@ -97,7 +101,7 @@ public class FormLayoutService {
     public List<LayoutRow> rowsOf(Long projectId, ConfigurableTable table, String typeName) {
         List<LayoutRow> rows = new ArrayList<>();
         for (FormLayout.Group group : effectiveLayout(projectId, table, typeName).groups()) {
-            rows.add(LayoutRow.header(group.id(), group.label()));
+            rows.add(LayoutRow.header(group.id(), group.label(), group.allowMeasures()));
             for (FormLayout.Item item : group.items()) {
                 rows.add(LayoutRow.of(tableFieldConfigService.describe(item.field(), item.active(), item.mandatory(),
                         item.institutionLocked(), item.units()), item.width(), item.rules() != null && !item.rules().isEmpty()));
@@ -244,6 +248,7 @@ public class FormLayoutService {
                 group = new FormConfigGroup(config, spec.label(), groupPosition);
             }
             group.setLabel(spec.label());
+            group.setAllowMeasures(spec.allowMeasures());
             group.setPosition(groupPosition++);
             group = groupRepository.save(group);
             kept.add(group.getId());
@@ -300,7 +305,9 @@ public class FormLayoutService {
                 .forEach(row -> existing.put(row.getField().getId(), row));
         int groupPosition = 0;
         for (FormLayout.Group group : layout.groups()) {
-            FormConfigGroup stored = groupRepository.save(new FormConfigGroup(config, group.label(), groupPosition++));
+            FormConfigGroup newGroup = new FormConfigGroup(config, group.label(), groupPosition++);
+            newGroup.setAllowMeasures(group.allowMeasures());
+            FormConfigGroup stored = groupRepository.save(newGroup);
             int position = 0;
             for (FormLayout.Item item : group.items()) {
                 FieldFormConfig row = existing.remove(item.field().getId());

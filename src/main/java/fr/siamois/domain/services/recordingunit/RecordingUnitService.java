@@ -10,7 +10,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -185,22 +184,6 @@ public class RecordingUnitService implements ArkEntityService {
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
         }
         return saved;
-    }
-
-    /**
-     * Record that a measurement field was created from this recording unit's form, so the unit stays
-     * the field's origin and keeps offering it among its existing measurement fields.
-     *
-     * @param recordingUnitId The recording unit the field was created from.
-     * @param field           The freshly created measurement field.
-     */
-    @Transactional
-    public void addMeasurementField(Long recordingUnitId, CustomFieldMeasurement field) {
-        RecordingUnit recordingUnit = recordingUnitRepository.findById(recordingUnitId)
-                .orElseThrow(() -> new RecordingUnitNotFoundException(
-                        RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
-        recordingUnit.getOnTheFlyFields().add(field);
-        recordingUnitRepository.save(recordingUnit);
     }
 
     @Transactional

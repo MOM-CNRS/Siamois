@@ -90,7 +90,7 @@ class CustomFieldAnswerServiceTest {
     @Mock
     private FormConfigAnswerService formConfigAnswerService;
     @Mock
-    private CustomFieldMeasurementService customFieldMeasurementService;
+    private OnTheFlyFieldService onTheFlyFieldService;
     @Mock
     private UnitDefinitionService unitDefinitionService;
     @Mock
@@ -645,7 +645,7 @@ class CustomFieldAnswerServiceTest {
         FormConfig formConfig = new FormConfig();
         formConfig.setId(9L);
         // Not part of the project-level configuration, only of the unit's own fields
-        when(customFieldMeasurementService.findByRecordingUnit(100L)).thenReturn(List.of(field));
+        when(onTheFlyFieldService.fieldsOf(ConfigurableTable.UE, 100L)).thenReturn(List.of(field));
         when(tableFieldConfigService.createOrGetFormConfig(7L, ConfigurableTable.UE, (Long) null))
                 .thenReturn(Optional.of(formConfig));
         when(formConfigAnswerService.createOrGetFormConfigAnswer(formConfig, unit)).thenReturn(formConfigAnswer);

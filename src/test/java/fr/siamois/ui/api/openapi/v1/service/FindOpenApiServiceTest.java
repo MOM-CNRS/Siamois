@@ -110,7 +110,7 @@ class FindOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        fieldAnswerPatchService = new FieldAnswerPatchService(formService, conceptRepository, conceptMapper,
+        fieldAnswerPatchService = new FieldAnswerPatchService(formService, mock(fr.siamois.domain.services.form.OnTheFlyFieldService.class, inv -> inv.getArgument(0)), conceptRepository, conceptMapper,
                 personRepository, personMapper, actionUnitRepository, actionUnitSummaryMapper,
                                 spatialUnitRepository, spatialUnitSummaryMapper,
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),

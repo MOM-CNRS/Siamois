@@ -43,6 +43,10 @@ public class FormConfigGroup {
     @Column(name = "position", nullable = false)
     private int position;
 
+    /** Whether a user may add measures of their own to this section of a record's fiche. */
+    @Column(name = "allow_measures", nullable = false)
+    private boolean allowMeasures = true;
+
     public FormConfigGroup(@NonNull FormConfig formConfig, String label, int position) {
         this.formConfig = formConfig;
         this.label = label;

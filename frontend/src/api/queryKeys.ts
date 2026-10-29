@@ -72,6 +72,8 @@ export const queryKeys = {
   organizationPermissions: (organizationId: number | undefined) => ["organization-permissions", organizationId] as const,
   duplicationStructure: (entityType: string, id: string | number) => ["duplication-structure", entityType, id] as const,
 
+  onTheFlyFields: (segment: string | undefined, id: string | number | undefined) => ["on-the-fly-fields", segment, id] as const,
+
   // The raw types catalog at `path` (GET …/<x>-types): fetched once per path, whoever reads it.
   typesCatalog: (path: string) => ["types-catalog", path] as const,
   // What a consumer derives from a catalog — cached apart only so each keeps its own `select`.
