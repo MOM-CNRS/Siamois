@@ -18,7 +18,9 @@ import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.database.repositories.specs.StudySpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.mapper.StudyMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -63,8 +65,8 @@ public class StudyService {
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo identifierFilter = filters.filterOf(StudySpec.IDENTIFIER_FILTER);
 
-        if (identifierFilter != null && identifierFilter.getType() == FilterDTO.FilterType.CONTAINS) {
-            specs = specs.and(StudySpec.identifierContaining(identifierFilter.valueAsString()));
+        if (identifierFilter != null && identifierFilter.getType().isTextSearch()) {
+            specs = specs.and(TextSearchSpec.matching(StudySpec.IDENTIFIER_FILTER, identifierFilter));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(StudySpec.identifierContaining(globalFilter.valueAsString()));
         }
@@ -81,7 +83,9 @@ public class StudyService {
 
     @Transactional(readOnly = true)
     public Page<StudyDTO> searchStudies(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
-        return studyRepository.findAll(prepareSpecs(institutionDTO, filters), pageable).map(studyMapper::convert);
+        return ExactMatchFirst.findAll(studyRepository, prepareSpecs(institutionDTO, filters), pageable,
+                        StudySpec.IDENTIFIER_FILTER, filters.searchTextOf(StudySpec.IDENTIFIER_FILTER))
+                .map(studyMapper::convert);
     }
 
     @Transactional(readOnly = true)

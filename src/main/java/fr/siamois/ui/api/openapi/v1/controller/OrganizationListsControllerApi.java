@@ -13,6 +13,7 @@ import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.*;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitListFilter;
 import fr.siamois.ui.api.openapi.v1.resource.container.ContainerResource;
@@ -86,6 +87,7 @@ public class OrganizationListsControllerApi {
     private final FieldQueryService fieldQueryService;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/recording-units")
     @Tag(name = "Unité d'enregistrement")
     @Operation(summary = "Unités d'enregistrement d'une organisation",
@@ -143,6 +145,7 @@ public class OrganizationListsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/finds")
     @Tag(name = "Mobilier")
     @Operation(summary = "Mobiliers d'une organisation",
@@ -194,6 +197,7 @@ public class OrganizationListsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/phases")
     @Tag(name = "Phase")
     @Operation(summary = "Phases d'une organisation",
@@ -241,6 +245,7 @@ public class OrganizationListsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/documents")
     @Tag(name = "Document")
     @Operation(summary = "Documents d'une organisation",
@@ -288,6 +293,7 @@ public class OrganizationListsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/studies")
     @Tag(name = "Etude")
     @Operation(summary = "Etudes d'une organisation",
@@ -335,6 +341,7 @@ public class OrganizationListsControllerApi {
     }
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping("/api/v1/containers")
     @Tag(name = "Contenant")
     @Operation(summary = "Contenants d'une organisation",

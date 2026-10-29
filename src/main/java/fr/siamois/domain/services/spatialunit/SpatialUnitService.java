@@ -30,6 +30,7 @@ import fr.siamois.infrastructure.database.repositories.DocumentRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
@@ -811,7 +812,7 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institutionDTO, String query, int limit) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
         specs = specs.and(SpatialUnitSpec.nameContaining(query));
-        return spatialUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(spatialUnitRepository, specs, PageRequest.ofSize(limit), "name", query)
                 .map(spatialUnitMapper::convert)
                 .stream()
                 .toList();

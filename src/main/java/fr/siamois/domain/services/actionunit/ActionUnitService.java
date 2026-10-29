@@ -34,6 +34,7 @@ import fr.siamois.infrastructure.database.repositories.permissions.ProfileReposi
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitIdLabelRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitFilterSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.mapper.ActionUnitMapper;
 import fr.siamois.mapper.ConceptMapper;
@@ -767,7 +768,7 @@ public class ActionUnitService implements ArkEntityService {
         Specification<ActionUnit> specs = ActionUnitSpec.belongsToInstitution(institution.getId());
         specs = specs.and(ActionUnitSpec.nameContaining(query));
 
-        return actionUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(actionUnitRepository, specs, PageRequest.ofSize(limit), "name", query)
                 .stream()
                 .map(actionUnitMapper::convert)
                 .toList();
