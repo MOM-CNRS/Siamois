@@ -57,6 +57,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
         setCreatedBy(recordingUnit.getCreatedBy());
         setAuthor(recordingUnit.getAuthor());
         setNormalizedInterpretation(recordingUnit.getNormalizedInterpretation());
+        setNature(recordingUnit.getNature());
         setGeomorphologicalCycle(recordingUnit.getGeomorphologicalCycle());
         setSpatialUnit(recordingUnit.getSpatialUnit());
         setGeom(recordingUnit.getGeom());

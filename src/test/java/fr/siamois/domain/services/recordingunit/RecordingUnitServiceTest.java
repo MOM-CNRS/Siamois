@@ -313,6 +313,24 @@ class RecordingUnitServiceTest {
     }
 
     @Test
+    void save_persistsTheNatureOfTheUnit() {
+        Concept nature = new Concept();
+        nature.setId(1216L);
+        RecordingUnit incoming = new RecordingUnit();
+        incoming.setNature(nature);
+
+        when(recordingUnitMapper.invertConvert(any(RecordingUnitDTO.class))).thenReturn(incoming);
+        when(recordingUnitRepository.save(any(RecordingUnit.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(recordingUnitMapper.convert(any(RecordingUnit.class))).thenReturn(new RecordingUnitDTO());
+
+        recordingUnitService.save(new RecordingUnitDTO());
+
+        ArgumentCaptor<RecordingUnit> saved = forClass(RecordingUnit.class);
+        verify(recordingUnitRepository).save(saved.capture());
+        assertEquals(nature, saved.getValue().getNature());
+    }
+
+    @Test
     void save_throwsForbidden_whenNoExecutionContext() {
         ExecutionContextHolder.clear();
 

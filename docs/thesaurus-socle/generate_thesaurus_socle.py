@@ -540,7 +540,8 @@ applies(child(ru_type, "fait"), [ru_nature, ru_agent])
 applies(child(ru_type, "ensemble"), [ru_nature, ru_agent])
 for sl in ("depot", "alteration", "composite"):
     applies(child(ru_nature, sl), [ru_matrix])
-applies(child(ru_nature, "erosion"), [ru_shape, ru_profile, ru_orient])
+# Les champs d'érosion dépendent de la NATURE « négative » (règle de formulaire de UE.json), plus du cycle (masqué).
+applies(child(ru_nat, "negative"), [ru_shape, ru_profile, ru_orient])
 
 # Interprétation : liste par type (th230).
 INTERP = {

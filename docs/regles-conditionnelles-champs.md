@@ -267,8 +267,9 @@ est le champ du référentiel (`nature_UE`).
 | Nature · **Négative** (1216) | Profil de l'érosion (`SIARU.EROSIONPROFILE`) | 1185 |
 | Nature · **Négative** (1216) | Orientation de l'érosion (`SIARU.EROSIONORIENTATION`) | 1186 |
 
-Aujourd'hui ces trois champs sont reliés à la valeur **Erosion** du cycle (1225). Ces liens ne servent plus la règle de formulaire ;
-à retirer, ou à garder si le cycle réapparaît (champ masqué pour l'instant).
+Dans le RDF livré, ces trois champs sont encore reliés à la valeur **Erosion** du cycle (1225) : ces liens sont à retirer dans OpenTheso.
+`generate_thesaurus_socle.py` est à jour : il relie ces champs à la nature « Négative » (`applies(child(ru_nat, "negative"), …)`) et ne les
+relie plus au cycle.
 
 ## 5. Inventaire des champs conditionnés par un autre (toutes les tables, état au 2026-10-29)
 
