@@ -1,5 +1,6 @@
 package fr.siamois.domain.services;
 
+import fr.siamois.domain.models.exceptions.HierarchyCycleException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
@@ -38,13 +39,13 @@ public class HierarchyCycleGuard {
     private EntityManager entityManager;
 
     /**
-     * @throws IllegalStateException (mapped to HTTP 409) when linking {@code childId} under
+     * @throws HierarchyCycleException (mapped to HTTP 409) when linking {@code childId} under
      *                               {@code parentId} would make an entity its own ancestor
      */
     @Transactional(readOnly = true)
     public void requireNoCycle(Kind kind, long parentId, long childId) {
         if (parentId == childId || isAncestorOrSelf(kind, childId, parentId)) {
-            throw new IllegalStateException(CYCLE_MESSAGE);
+            throw new HierarchyCycleException(CYCLE_MESSAGE);
         }
     }
 

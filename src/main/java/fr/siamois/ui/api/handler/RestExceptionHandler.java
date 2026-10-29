@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.handler;
 
+import fr.siamois.domain.models.exceptions.HierarchyCycleException;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
@@ -191,6 +192,12 @@ public class RestExceptionHandler {
     private Locale requestLocale(HttpServletRequest request) {
         return langService.localeForApiLang(
                 ProjectApiService.primaryAcceptLanguage(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)));
+    }
+
+    /** A hierarchy link that would close a loop: the message says so. */
+    @ExceptionHandler(HierarchyCycleException.class)
+    public ResponseEntity<ApiError> hierarchyCycle(HierarchyCycleException ex) {
+        return answer(HttpStatus.CONFLICT, ApiError.of(CONFLICT, ex.getMessage()));
     }
 
     @ExceptionHandler(ApiValidationException.class)

@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.exceptions.HierarchyCycleException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
@@ -160,6 +161,8 @@ public class RecordingUnitService implements ArkEntityService {
                     recordingUnitMapper.invertConvert(recordingUnitDTO);
 
             return recordingUnitMapper.convert(save(recordingUnit));
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -182,6 +185,8 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnitDTO saved = save(recordingUnitDTO);
         try {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -246,6 +251,8 @@ public class RecordingUnitService implements ArkEntityService {
             setupChilds(recordingUnit, savedRecordingUnit);
             return savedRecordingUnit;
 
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);

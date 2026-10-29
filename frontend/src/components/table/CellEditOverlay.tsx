@@ -44,7 +44,8 @@ import {useRestoreFocus} from "../../panels/pane/useRestoreFocus";
  *
  * <p>Escape cancels without saving. A save that fails keeps the overlay open with the server's own
  * message (in particular the 409 on a duplicate identifier), rather than silently discarding the
- * edit.</p>
+ * edit. A click elsewhere on the value the server just refused closes the editor and drops the edit
+ * (rather than sending the same refusal again); changing the value first saves it as usual.</p>
  *
  * <p>Positioned by the anchor cell's own client rect rather than by PrimeReact's OverlayPanel:
  * OverlayPanel always drops BELOW its target (with an arrow), which is a popover, not an in-place
@@ -135,6 +136,9 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // Guards against two saves overlapping (e.g. a value change and an outside click landing on the
   // same tick). Deliberately a ref, not the `saving` state: it has to be readable synchronously.
   const savingRef = useRef(false);
+  // The value the last save was refused with. Leaving the editor on that very value (a click
+  // elsewhere) discards the edit instead of sending the same refusal again; any other value saves.
+  const failedRef = useRef<{ value: unknown } | null>(null);
 
   // Seeded during render rather than in an effect (React's "adjust state when a prop changes"
   // pattern): an effect would seed the draft only after the first commit, so the focus effect
@@ -145,6 +149,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
     const current = target ? resolveValueBinding(target.field).read(target.row) : undefined;
     initialRef.current = current;
     cancelledRef.current = false;
+    failedRef.current = null;
     setSeededTarget(target);
     setDraft(current);
     setError(null);
@@ -206,9 +211,11 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           await onSave(target.row.id, { [target.field.id]: toAnswerInput(target.field, value) });
         }
         initialRef.current = value;
+        failedRef.current = null;
         onSaved();
         return true;
       } catch (e) {
+        failedRef.current = { value };
         // Surfaces ProjectApiService's own message inline — in particular the 409 from a duplicate
         // identifier (ActionUnitAlreadyExistsException), matching JSF's handleLinkEdit validation.
         setError(messageForError(e, t("cell.saveFailed")));
@@ -227,6 +234,20 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       if (await save(value)) onClose();
     },
     [save, onClose],
+  );
+
+  // Leaving the editor by a click elsewhere: the value is saved, unless it is the one the server just
+  // refused — then the edit is dropped, so the user is never stuck resubmitting it.
+  const leave = useCallback(
+    (value: unknown) => {
+      if (failedRef.current && sameValue(value, failedRef.current.value)) {
+        cancelledRef.current = true;
+        onClose();
+        return;
+      }
+      void saveAndClose(value);
+    },
+    [saveAndClose, onClose],
   );
 
   // « Vider »: the one edit an incoherent value always allows — even on a field the rules disabled.
@@ -329,11 +350,11 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       // PrimeReact popup shares the p-connected-overlay transition classes, so one check covers
       // them all — including widgets from renderers added to the registry later.
       if (clicked.closest(PRIMEREACT_POPUP_SELECTOR)) return;
-      void saveAndClose(draftRef.current);
+      leave(draftRef.current);
     }
     document.addEventListener("mousedown", onPointerDown, true);
     return () => document.removeEventListener("mousedown", onPointerDown, true);
-  }, [target, saveAndClose]);
+  }, [target, leave]);
 
   if (!target) return null;
 
@@ -451,7 +472,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
 
   // Dismissing the drawer (a tap outside, a drag down) ends the edit like a click elsewhere does: it saves.
   return mobile ? (
-    <BottomSheet visible onHide={() => void saveAndClose(draftRef.current)} ariaLabel={field.label ?? ""} className="cell-edit-sheet">
+    <BottomSheet visible onHide={() => leave(draftRef.current)} ariaLabel={field.label ?? ""} className="cell-edit-sheet">
       {box}
     </BottomSheet>
   ) : (
