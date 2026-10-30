@@ -7,6 +7,7 @@ import fr.siamois.domain.models.auth.invitation.InvitationLink;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.envers.NotAudited;
 import org.springframework.security.core.GrantedAuthority;
@@ -107,6 +108,7 @@ public class Person implements UserDetails {
 
     /** The invitation link this account was created through, if any. */
     @JsonIgnore
+    @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_invitation_link_id")
     private InvitationLink invitationLink;
