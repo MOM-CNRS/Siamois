@@ -14,13 +14,15 @@ export interface NavigationView {
   entityId?: string | number;
   // The saved view a "list" view shows (its path carries `?viewId=`): the main pane's list state.
   viewId?: number;
+  // The search a "list" view opens with (from the search bar's « Voir tout »).
+  seed?: ListSeed;
   // What the opener already knew about the entity (a list row, a sibling's label): shown in the
   // fiche's header while the entity itself loads.
   preview?: EntityPreview;
 }
 
-// What's open in the right-hand overview pane right now: an entity's fiche, or (no entityId) an
-// entity type's list, opened from the search bar with the search that found it.
+// What's open in the right-hand overview pane right now: an entity's fiche (a list is opened in the
+// main pane, not here).
 export interface OverviewState {
   entityType: string;
   entityId?: string | number;

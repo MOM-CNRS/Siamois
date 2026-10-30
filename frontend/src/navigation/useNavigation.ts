@@ -85,7 +85,15 @@ export function useNavigation(options: MountOptions): Navigation {
   );
   const seedNonce = useRef(0);
   const openList = useCallback<Navigation["openList"]>(
-    (entityType, seed) => send({ type: "openOverview", overview: { entityType, seed: { ...seed, nonce: ++seedNonce.current } } }),
+    (entityType, seed) => {
+      const config = getEntityType(entityType);
+      if (!config) return;
+      send({
+        type: "navigate",
+        path: config.routes.list,
+        view: { panelKind: "list", entityType, seed: { ...seed, nonce: ++seedNonce.current } },
+      });
+    },
     [send],
   );
   const closeOverview = useCallback(() => send({ type: "closeOverview" }), [send]);
