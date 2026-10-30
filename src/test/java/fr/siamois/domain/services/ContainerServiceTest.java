@@ -67,6 +67,9 @@ class ContainerServiceTest {
     private fr.siamois.domain.services.EntityLinkGuard entityLinkGuard;
 
     @Mock
+    private fr.siamois.domain.services.HierarchyCycleGuard hierarchyCycleGuard;
+
+    @Mock
     private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
 
     @InjectMocks

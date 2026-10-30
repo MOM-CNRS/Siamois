@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.exceptions.HierarchyCycleException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
@@ -20,6 +21,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
@@ -81,6 +83,7 @@ import java.util.stream.Collectors;
 public class RecordingUnitService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
@@ -160,6 +163,8 @@ public class RecordingUnitService implements ArkEntityService {
                     recordingUnitMapper.invertConvert(recordingUnitDTO);
 
             return recordingUnitMapper.convert(save(recordingUnit));
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -182,6 +187,8 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnitDTO saved = save(recordingUnitDTO);
         try {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -246,6 +253,8 @@ public class RecordingUnitService implements ArkEntityService {
             setupChilds(recordingUnit, savedRecordingUnit);
             return savedRecordingUnit;
 
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -299,6 +308,8 @@ public class RecordingUnitService implements ArkEntityService {
             if (missing.size() != missingIds.size()) {
                 throw new IllegalArgumentException("Some children not found: " + missingIds);
             }
+            hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                    managedRecordingUnit.getId(), Set.of(), missingIds);
             managedRecordingUnit.getChildren().addAll(missing);
         }
     }
@@ -319,6 +330,11 @@ public class RecordingUnitService implements ArkEntityService {
             throw new IllegalArgumentException("Some parents not found: " + newParentIds);
         }
         Set<RecordingUnit> newParents = new HashSet<>(loadedParents);
+
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                managedRecordingUnit.getId(),
+                newParents.stream().filter(p -> !currentParents.contains(p)).map(RecordingUnit::getId).collect(Collectors.toSet()),
+                Set.of());
 
         List<RecordingUnit> toSave = new ArrayList<>();
 

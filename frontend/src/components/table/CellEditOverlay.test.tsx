@@ -416,6 +416,61 @@ describe("CellEditOverlay", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("closes without resubmitting when the user clicks outside on a value the server refused", async () => {
+    const onSave = vi.fn().mockRejectedValue(new ApiError(409, "Identifiant déjà utilisé"));
+    const { onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
+      onSave,
+    });
+    await flush();
+
+    const input = overlayInput();
+    await act(async () => {
+      type(input, "OA-2025");
+    });
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flush();
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves again on a click outside when the value was changed after a refusal", async () => {
+    const onSave = vi.fn().mockRejectedValueOnce(new ApiError(409, "Identifiant déjà utilisé")).mockResolvedValue(undefined);
+    const { onClose } = renderOverlay({
+      target: { row: { id: "1", oaCode: "OA-2024" }, field: textField, anchor: ANCHOR },
+      onSave,
+    });
+    await flush();
+
+    const input = overlayInput();
+    await act(async () => {
+      type(input, "OA-2025");
+    });
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await flush();
+    await act(async () => {
+      type(overlayInput(), "OA-2026");
+    });
+    await act(async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    });
+    await flush();
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("re-seeds the draft when the target changes without unmounting (single shared overlay instance)", async () => {
     renderOverlay({ target: { row: { id: "1", oaCode: "A" }, field: textField, anchor: ANCHOR } });
     await flush();
