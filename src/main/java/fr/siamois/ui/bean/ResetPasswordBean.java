@@ -59,6 +59,8 @@ public class ResetPasswordBean {
         }
         try {
             personService.updatePassword(opt.get().getPerson().getId(), password);
+            // The reset link only reached the person through their mailbox: the address is proven to be theirs.
+            personService.markEmailVerified(opt.get().getPerson().getId());
         } catch (InvalidPasswordException e) {
             addError("register.error.password");
             return;

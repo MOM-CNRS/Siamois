@@ -134,7 +134,7 @@ public class WebSecurityConfig {
                                                       UserInfoContextFilter userInfoContextFilter) throws Exception {
         http.authorizeHttpRequests(requests -> requests
                 .requestMatchers("/", "/index.xhtml").permitAll()
-                .requestMatchers(LOGIN, "/pages/login/login.xhtml", "/pages/login/register.xhtml", "/pages/login/resetPassword.xhtml", "/pages/login/confirmEmail.xhtml", "/pages/login/forgotPassword.xhtml").permitAll()
+                .requestMatchers(LOGIN, "/pages/login/login.xhtml", "/pages/login/register.xhtml", "/pages/login/join.xhtml", "/pages/login/resetPassword.xhtml", "/pages/login/confirmEmail.xhtml", "/pages/login/forgotPassword.xhtml").permitAll()
                 .requestMatchers("/static/**").permitAll()
                 .requestMatchers("/robots.txt").permitAll()
                 .requestMatchers("/jakarta.faces.resource/**").permitAll()
@@ -143,7 +143,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/context/**").permitAll()
                 .requestMatchers("/api/ark:/**").permitAll()
                 .requestMatchers("/api/recording-units/**").permitAll()
-                .requestMatchers("/register/**", "/reset-password/**", "/confirm-email/**", "/forgot-password").permitAll()
+                .requestMatchers("/register/**", "/join/**", "/reset-password/**", "/confirm-email/**", "/forgot-password").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
 
                 .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Invitation links: a super admin shares a link that lets several people create their own account, up to a
+    maximum number of accounts and until an expiration date. Each account created through the link is flagged
+    "e-mail not verified", knows the link it comes from, and owns a personal organization.
+    -->
+
+    <changeSet id="2026-10-30-1-invitation-link" author="Gregory Bliault">
+        <createTable schemaName="public" tableName="invitation_link">
+            <column name="invitation_link_id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="token_hash" type="varchar(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_invitation_link_token_hash"/>
+            </column>
+            <column name="max_accounts" type="integer" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="creation_date" type="timestamptz" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiration_date" type="timestamptz">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fk_created_by" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_invitation_link_created_by"
+                             references="public.person(person_id)"/>
+            </column>
+        </createTable>
+        <sql>
+            ALTER TABLE public.invitation_link
+                ADD CONSTRAINT ck_invitation_link_max_accounts CHECK (max_accounts BETWEEN 1 AND 100),
+                ADD CONSTRAINT ck_invitation_link_validity CHECK (
+                    expiration_date > creation_date AND expiration_date &lt;= creation_date + INTERVAL '1 month');
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-10-30-1-person-invitation" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="person">
+            <column name="mail_verified" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fk_invitation_link_id" type="bigint">
+                <constraints foreignKeyName="fk_person_invitation_link"
+                             references="public.invitation_link(invitation_link_id)"/>
+            </column>
+        </addColumn>
+        <createIndex schemaName="public" tableName="person" indexName="idx_person_invitation_link">
+            <column name="fk_invitation_link_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2026-10-30-1-institution-personal-owner" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="institution">
+            <column name="fk_personal_owner_id" type="bigint">
+                <constraints foreignKeyName="fk_institution_personal_owner" unique="true"
+                             uniqueConstraintName="uk_institution_personal_owner"
+                             references="public.person(person_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

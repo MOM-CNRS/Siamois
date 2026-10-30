@@ -308,6 +308,16 @@ public class PersonService {
     }
 
     /**
+     * Flags the e-mail address of a person as verified, e.g. once they used a link sent to it.
+     *
+     * @param id the person id
+     */
+    @Transactional
+    public void markEmailVerified(Long id) {
+        personRepository.markMailVerifiedById(id);
+    }
+
+    /**
      * Create or get the settings of a Person.
      *
      * @param personDTO The Person for whom to create or get the settings.

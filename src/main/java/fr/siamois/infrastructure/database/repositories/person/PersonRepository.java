@@ -139,7 +139,18 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
                            @Param("password") String password);
 
     @Modifying
-    @Query("UPDATE Person p SET p.email = :email WHERE p.id = :id")
+    @Query("UPDATE Person p SET p.email = :email, p.mailVerified = true WHERE p.id = :id")
     int updateEmailById(@Param("id") Long id,
                         @Param("email") String email);
+
+    @Modifying
+    @Query("UPDATE Person p SET p.mailVerified = true WHERE p.id = :id")
+    int markMailVerifiedById(@Param("id") Long id);
+
+    /** How many accounts were created through the given invitation link. */
+    long countByInvitationLinkId(Long invitationLinkId);
+
+    /** Same count for several links at once, as (link id, count) rows; links without account are absent. */
+    @Query("SELECT p.invitationLink.id, COUNT(p) FROM Person p WHERE p.invitationLink.id IN :linkIds GROUP BY p.invitationLink.id")
+    List<Object[]> countByInvitationLinkIds(@Param("linkIds") Collection<Long> linkIds);
 }

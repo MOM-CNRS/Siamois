@@ -2,6 +2,7 @@ package fr.siamois.domain.models.institution;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.domain.models.auth.Person;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.DefaultValue;
@@ -33,6 +34,12 @@ public class Institution implements Serializable {
     @NotNull
     @Column(name = "identifier", nullable = false, length = Integer.MAX_VALUE)
     private String identifier;
+
+    /** The owner when this is a personal organization, created along with an account; null for any other organization. */
+    @JsonIgnore
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_personal_owner_id", unique = true)
+    private Person personalOwner;
 
     @DefaultValue("NOW()")
     @Column(name = "creation_date", nullable = false)

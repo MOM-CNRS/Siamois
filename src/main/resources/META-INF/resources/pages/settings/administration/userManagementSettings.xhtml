@@ -10,6 +10,7 @@
     <ui:define name="metadata">
         <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
         <f:event type="preRenderView" listener="#{applicationMembersListBean.checkAccessOrRedirect}"/>
+        <f:event type="preRenderView" listener="#{invitationLinksBean.onPreRenderView}"/>
     </ui:define>
 
     <ui:define name="head">
@@ -120,6 +121,89 @@
                 <ui:include src="/pages/settings/components/profileDetailDrawer.xhtml">
                     <ui:param name="bean" value="#{applicationMembersListBean}"/>
                 </ui:include>
+                </div>
+            </p:tab>
+            <p:tab title="#{langBean.msg('administrationSettings.invitationLinks.tab')}">
+                <div class="invitation-links">
+                    <form:csrfform formId="invitationLinksForm">
+                        <p:messages id="invitationLinksMessages" globalOnly="true" closable="true" showDetail="true">
+                            <p:autoUpdate/>
+                        </p:messages>
+                        <p class="members-empty-state">#{langBean.msg('administrationSettings.invitationLinks.description')}</p>
+                        <p:commandButton id="createLinkButton" type="button" icon="pi pi-link"
+                                         value="#{langBean.msg('administrationSettings.invitationLinks.create')}"
+                                         styleClass="mb-3"/>
+                        <p:overlayPanel id="createLinkOverlay" widgetVar="createLinkOverlayWidget" for="createLinkButton"
+                                        showEvent="click" hideEvent="none" dismissable="true" my="left top" at="left bottom">
+                            <div class="d-flex flex-column gap-3" style="min-width: 18rem">
+                                <div class="d-flex flex-column">
+                                    <p:outputLabel for="invitationValidity" value="#{langBean.msg('administrationSettings.invitationLinks.validity')}"/>
+                                    <p:selectOneMenu id="invitationValidity" value="#{invitationLinksBean.validityDays}">
+                                        <f:selectItem itemValue="1" itemLabel="#{langBean.msg('administrationSettings.invitationLinks.validity.1')}"/>
+                                        <f:selectItem itemValue="3" itemLabel="#{langBean.msg('administrationSettings.invitationLinks.validity.3')}"/>
+                                        <f:selectItem itemValue="7" itemLabel="#{langBean.msg('administrationSettings.invitationLinks.validity.7')}"/>
+                                        <f:selectItem itemValue="30" itemLabel="#{langBean.msg('administrationSettings.invitationLinks.validity.30')}"/>
+                                    </p:selectOneMenu>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <p:outputLabel for="invitationMaxAccounts" value="#{langBean.msg('administrationSettings.invitationLinks.maxAccounts')}"/>
+                                    <p:spinner id="invitationMaxAccounts" value="#{invitationLinksBean.maxAccounts}"
+                                               min="1" max="100"/>
+                                </div>
+                                <p:commandButton value="#{langBean.msg('administrationSettings.invitationLinks.create')}"
+                                                 icon="pi pi-check"
+                                                 actionListener="#{invitationLinksBean.create}"
+                                                 process="createLinkOverlay" update="createdLinkGroup invitationLinksTable"
+                                                 oncomplete="PF('createLinkOverlayWidget').hide()"/>
+                            </div>
+                        </p:overlayPanel>
+
+                        <h:panelGroup id="createdLinkGroup" layout="block">
+                            <p:panel rendered="#{invitationLinksBean.createdLink != null}" styleClass="mb-3">
+                                <p><strong>#{langBean.msg('administrationSettings.invitationLinks.created.title')}</strong></p>
+                                <p>#{langBean.msg('administrationSettings.invitationLinks.created.warning')}</p>
+                                <p:inputText id="createdLinkInput" widgetVar="createdLinkWidget" readonly="true"
+                                             value="#{invitationLinksBean.createdLink}" style="width: 100%"/>
+                                <p:commandButton type="button" icon="pi pi-copy"
+                                                 value="#{langBean.msg('administrationSettings.invitationLinks.copy')}"
+                                                 onclick="navigator.clipboard.writeText(PF('createdLinkWidget').jq.val())"/>
+                                <p:commandButton value="#{langBean.msg('administrationSettings.invitationLinks.close')}"
+                                                 styleClass="ui-button-flat"
+                                                 actionListener="#{invitationLinksBean.closeCreatedLink}"
+                                                 process="@this" update="createdLinkGroup"/>
+                            </p:panel>
+                        </h:panelGroup>
+
+                        <p:dataTable id="invitationLinksTable" value="#{invitationLinksBean.links}" var="row"
+                                     rowKey="#{row.link().id}">
+                            <f:facet name="emptyMessage">#{langBean.msg('administrationSettings.invitationLinks.empty')}</f:facet>
+                            <p:column headerText="#{langBean.msg('administrationSettings.invitationLinks.column.creation')}">
+                                #{row.link().creationDate}
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('administrationSettings.invitationLinks.column.expiration')}">
+                                #{row.link().expirationDate}
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('administrationSettings.invitationLinks.column.accounts')}">
+                                #{row.createdAccounts()} / #{row.link().maxAccounts}
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('administrationSettings.invitationLinks.column.status')}">
+                                <span class="chip #{invitationLinksBean.statusChipClass(row.status())}">
+                                    #{invitationLinksBean.statusLabel(row.status())}
+                                </span>
+                            </p:column>
+                            <p:column headerText="#{langBean.msg('administrationSettings.invitationLinks.column.createdBy')}">
+                                #{row.createdByName()}
+                            </p:column>
+                            <p:column>
+                                <p:commandButton value="#{langBean.msg('administrationSettings.invitationLinks.revoke')}"
+                                                 icon="pi pi-ban"
+                                                 rendered="#{invitationLinksBean.canRevoke(row)}"
+                                                 actionListener="#{invitationLinksBean.revoke(row)}"
+                                                 process="@this" update="invitationLinksTable"
+                                                 styleClass="ui-button-flat ui-button-sm"/>
+                            </p:column>
+                        </p:dataTable>
+                    </form:csrfform>
                 </div>
             </p:tab>
             </p:tabView>
