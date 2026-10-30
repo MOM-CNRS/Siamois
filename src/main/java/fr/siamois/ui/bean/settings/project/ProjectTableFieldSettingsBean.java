@@ -603,18 +603,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         List<FormLayoutService.GroupSpec> specs = new ArrayList<>();
         Long id = null;
         String label = null;
+        boolean allowMeasures = true;
         List<String> names = null;
         for (LayoutRow row : layoutRows) {
             if (row.isGroup()) {
-                if (names != null) specs.add(new FormLayoutService.GroupSpec(id, label, names));
+                if (names != null) specs.add(new FormLayoutService.GroupSpec(id, label, names, allowMeasures));
                 id = row.getGroupId();
                 label = storedLabelOf(row);
+                allowMeasures = row.isAllowMeasures();
                 names = new ArrayList<>();
             } else {
                 names.add(row.getField().getName());
             }
         }
-        specs.add(new FormLayoutService.GroupSpec(id, label, names));
+        specs.add(new FormLayoutService.GroupSpec(id, label, names, allowMeasures));
         formLayoutService.saveArrangement(project.getId(), selectedTable, selectedTypeName, specs);
         reloadLayoutRows();
     }
@@ -629,6 +631,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void onGroupRenamed() {
+        saveRows();
+    }
+
+    /** A section's « mesures additionnelles » box was ticked or cleared. */
+    public void onGroupMeasuresChanged() {
         saveRows();
     }
 

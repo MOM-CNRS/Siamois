@@ -69,6 +69,7 @@ public final class FormLayoutComposer {
             form.addPanel(new CustomFormPanelUiDto.Builder()
                     .name(group.label())
                     .isSystemPanel(system)
+                    .canUserAddField(group.allowMeasures())
                     .addRow(row.build())
                     .build());
         }
