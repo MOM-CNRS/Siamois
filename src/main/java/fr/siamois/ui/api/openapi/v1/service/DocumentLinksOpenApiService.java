@@ -9,6 +9,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.entity.DocumentDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.DocumentOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.document.DocumentResource;
@@ -79,7 +80,7 @@ public class DocumentLinksOpenApiService {
         DocumentLinkService.Target target = requireViewableTarget(kind, targetId, caller);
         InstitutionDTO institution = institutionOf(target, caller);
         Page<DocumentDTO> page = projectApiService.pageDocumentsLinkedTo(
-                kind, targetId, institution, offset, limit, sort, search, fieldQuery);
+                kind, targetId, institution, new ListWindow(offset, limit, sort, search), fieldQuery);
 
         DocumentListProjectionService.DocumentListProjection projection =
                 documentListProjectionService.build(page.getContent(), fields, lang);

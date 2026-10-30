@@ -24,6 +24,8 @@ import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
+import fr.siamois.dto.api.AccessibleProjectsQuery;
+import fr.siamois.dto.api.ProjectCursor;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.DocumentRepository;
@@ -791,110 +793,45 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             Pageable pageable) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
-                FilterDTO.FilterType.CONTAINS, pageable, null,
-                ProjectListFilter.EMPTY, FieldQuery.NONE);
+        return pageAccessibleProjects(personId, accessibleInstitutionIds, organizationId,
+                AccessibleProjectsQuery.of(search, pageable));
     }
 
     /**
-     * @param recordingUnitCountOrder when non-null, order by the number of attached recording units
-     *                                instead of by {@code pageable}'s own sort — {@code recordingUnitCount}
-     *                                is not a JPA-mapped path, so it is carried by a Specification
-     *                                ({@link ActionUnitSpec#orderByRecordingUnitCount(Sort.Direction)})
-     *                                and the caller must have stripped it from {@code pageable}.
+     * Same, with what the list asks beyond the search and the page ({@link AccessibleProjectsQuery}): the
+     * sort by recording-unit count, the per-column filters and the form-field query.
      */
     @Transactional(readOnly = true)
     public Page<AccessibleProjectForApi> findAccessibleProjects(
             Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
-            String search,
-            Pageable pageable,
-            Sort.Direction recordingUnitCountOrder) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
-                FilterDTO.FilterType.CONTAINS, pageable,
-                recordingUnitCountOrder, ProjectListFilter.EMPTY, FieldQuery.NONE);
+            AccessibleProjectsQuery query) {
+        return pageAccessibleProjects(personId, accessibleInstitutionIds, organizationId, query);
     }
 
     /**
-     * @param filter per-column filters (plan §3 phase 3) — {@link ProjectListFilter#EMPTY} for none.
+     * The page {@link #findAccessibleProjects} returns — not itself transactional, so the public
+     * overloads share it without calling one another through {@code this}.
      */
-    @Transactional(readOnly = true)
-    public Page<AccessibleProjectForApi> findAccessibleProjects(
+    private Page<AccessibleProjectForApi> pageAccessibleProjects(
             Long personId,
             Set<Long> accessibleInstitutionIds,
             Long organizationId,
-            String search,
-            Pageable pageable,
-            Sort.Direction recordingUnitCountOrder,
-            ProjectListFilter filter) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
-                FilterDTO.FilterType.CONTAINS, pageable,
-                recordingUnitCountOrder, filter, FieldQuery.NONE);
-    }
-
-    /**
-     * @param fieldQuery sort/filters on form fields (by field id), ANDed onto the rest; when it
-     *                   orders, {@code pageable} must be unsorted
-     */
-    @Transactional(readOnly = true)
-    public Page<AccessibleProjectForApi> findAccessibleProjects(
-            Long personId,
-            Set<Long> accessibleInstitutionIds,
-            Long organizationId,
-            String search,
-            Pageable pageable,
-            Sort.Direction recordingUnitCountOrder,
-            ProjectListFilter filter,
-            FieldQuery fieldQuery) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search,
-                FilterDTO.FilterType.CONTAINS, pageable,
-                recordingUnitCountOrder, filter, fieldQuery);
-    }
-
-    /**
-     * Same, {@code searchType} saying how {@code search} matches: {@link FilterDTO.FilterType#START_WITH}
-     * (a project picker) or {@link FilterDTO.FilterType#CONTAINS} (the list's search box).
-     */
-    @Transactional(readOnly = true)
-    @SuppressWarnings("java:S107") // the list's whole query, as the overloads above take it
-    public Page<AccessibleProjectForApi> findAccessibleProjects(
-            Long personId,
-            Set<Long> accessibleInstitutionIds,
-            Long organizationId,
-            String search,
-            FilterDTO.FilterType searchType,
-            Pageable pageable,
-            Sort.Direction recordingUnitCountOrder,
-            ProjectListFilter filter,
-            FieldQuery fieldQuery) {
-        return findAccessibleProjectsInternal(personId, accessibleInstitutionIds, organizationId, search, searchType,
-                pageable, recordingUnitCountOrder, filter, fieldQuery);
-    }
-
-    @SuppressWarnings("java:S107")
-    private Page<AccessibleProjectForApi> findAccessibleProjectsInternal(
-            Long personId,
-            Set<Long> accessibleInstitutionIds,
-            Long organizationId,
-            String search,
-            FilterDTO.FilterType searchType,
-            Pageable pageable,
-            Sort.Direction recordingUnitCountOrder,
-            ProjectListFilter filter,
-            FieldQuery fieldQuery) {
+            AccessibleProjectsQuery query) {
+        Pageable pageable = query.pageable();
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
         Specification<ActionUnit> spec = accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId,
-                ActionUnitSpec.projectSearch(search, searchType), filter)
-                .and(fieldQuery.specificationFor());
-        if (recordingUnitCountOrder != null) {
-            spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(recordingUnitCountOrder));
+                ActionUnitSpec.projectSearch(query.search(), query.searchType()), query.filter())
+                .and(query.fieldQuery().specificationFor());
+        if (query.recordingUnitCountOrder() != null) {
+            spec = spec.and(ActionUnitSpec.orderByRecordingUnitCount(query.recordingUnitCountOrder()));
         }
 
         return toAccessibleProjects(ExactMatchFirst.findAll(actionUnitRepository, spec, pageable,
-                ActionUnitSpec.PROJECT_SEARCH_ATTRIBUTES, search), pageable);
+                ActionUnitSpec.PROJECT_SEARCH_ATTRIBUTES, query.search()), pageable);
     }
 
     /** A page of projects with what the API lists of each: its recording-unit and child counts, its forms warmed. */
@@ -1074,12 +1011,11 @@ public class ActionUnitService implements ArkEntityService {
      * (the wrapped-around candidate would just be {@code currentId} itself) — deliberately not
      * JSF's own "loops back to itself" behaviour, since a self-link is not a useful sibling.
      *
-     * @param sortField    a real, non-null JPA path — {@code recordingUnitCount} and other
-     *                     Specification-only synthetic sorts have no cursor and must be rejected
-     *                     by the caller before reaching here (see
-     *                     {@code ProjectApiService#requireCursorableProjectSort}).
-     * @param currentValue {@code currentId}'s own value of {@code sortField}, already read off the
-     *                     current entity by the caller.
+     * @param cursor where the current project stands: its {@code sortField} is a real, non-null JPA path
+     *               — {@code recordingUnitCount} and other Specification-only synthetic sorts have no
+     *               cursor and must be rejected by the caller before reaching here (see
+     *               {@code ProjectApiService#requireCursorableProjectSort}); its {@code currentValue} is
+     *               already read off the current entity by the caller.
      */
     @Transactional(readOnly = true)
     public Optional<ActionUnitDTO> findSiblingProject(
@@ -1088,10 +1024,7 @@ public class ActionUnitService implements ArkEntityService {
             Long organizationId,
             String search,
             ProjectListFilter filter,
-            String sortField,
-            Sort.Direction sortDirection,
-            Comparable<?> currentValue,
-            Long currentId,
+            ProjectCursor cursor,
             boolean forward) {
         if (accessibleInstitutionIds == null || accessibleInstitutionIds.isEmpty()) {
             return Optional.empty();
@@ -1099,6 +1032,9 @@ public class ActionUnitService implements ArkEntityService {
 
         Specification<ActionUnit> baseSpec =
                 accessibleProjectsSpec(personId, accessibleInstitutionIds, organizationId, search, filter);
+        String sortField = cursor.sortField();
+        Sort.Direction sortDirection = cursor.sortDirection();
+        Long currentId = cursor.currentId();
 
         // Walking backwards reverses both the sort field's own direction and the id tie-break —
         // ActionUnitSpec.cursor's own "forward" flag already accounts for the field, id here just
@@ -1109,7 +1045,7 @@ public class ActionUnitService implements ArkEntityService {
         Pageable onePage = PageRequest.of(0, 1, Sort.by(walkFieldDirection, sortField).and(Sort.by(idDirection, "id")));
 
         Specification<ActionUnit> cursored = baseSpec.and(
-                ActionUnitSpec.cursor(sortField, sortDirection, currentValue, currentId, forward));
+                ActionUnitSpec.cursor(sortField, sortDirection, cursor.currentValue(), currentId, forward));
         List<ActionUnit> page = actionUnitRepository.findAll(cursored, onePage).getContent();
 
         if (page.isEmpty()) {

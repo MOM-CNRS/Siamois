@@ -133,7 +133,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_forwardAscending_comparesFieldGreaterThanOrEqualWithGreaterId() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldGt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idGt = mock(Predicate.class);
@@ -141,10 +141,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("name")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.greaterThan(fieldPath, "Foss")).thenReturn(fieldGt);
         when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
-        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.greaterThan(cursorIdPath, 10L)).thenReturn(idGt);
         when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
         when(cb.or(fieldGt, andPredicate)).thenReturn(orPredicate);
 
@@ -153,7 +153,7 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).greaterThan(fieldPath, "Foss");
-        verify(cb).greaterThan(idPath, 10L);
+        verify(cb).greaterThan(cursorIdPath, 10L);
     }
 
     /**
@@ -165,7 +165,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_backwardOnAscendingSort_comparesFieldAndIdLessThan() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldLt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idLt = mock(Predicate.class);
@@ -173,10 +173,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("name")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.lessThan(fieldPath, "Foss")).thenReturn(fieldLt);
         when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
-        when(cb.lessThan(idPath, 10L)).thenReturn(idLt);
+        when(cb.lessThan(cursorIdPath, 10L)).thenReturn(idLt);
         when(cb.and(fieldEq, idLt)).thenReturn(andPredicate);
         when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
 
@@ -185,7 +185,7 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).lessThan(fieldPath, "Foss");
-        verify(cb).lessThan(idPath, 10L);
+        verify(cb).lessThan(cursorIdPath, 10L);
     }
 
     /**
@@ -197,7 +197,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_forwardOnDescendingSort_comparesFieldLessThanButIdGreaterThan() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldLt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idGt = mock(Predicate.class);
@@ -205,10 +205,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("creationTime")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.lessThan(fieldPath, "T")).thenReturn(fieldLt);
         when(cb.equal(fieldPath, "T")).thenReturn(fieldEq);
-        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.greaterThan(cursorIdPath, 10L)).thenReturn(idGt);
         when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
         when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
 
@@ -217,7 +217,7 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).lessThan(fieldPath, "T");
-        verify(cb).greaterThan(idPath, 10L);
+        verify(cb).greaterThan(cursorIdPath, 10L);
     }
 
     @Test

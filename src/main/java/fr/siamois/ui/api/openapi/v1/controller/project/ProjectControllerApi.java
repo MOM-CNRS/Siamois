@@ -111,7 +111,7 @@ public class ProjectControllerApi {
                         caller, organizationId, new ListWindow(offset, limit, sort, search), filter, fieldQuery,
                         TreeRequest.tree(parent))
                 : projectApiService.pageAccessibleProjects(
-                        caller, organizationId, search, offset, limit, sort, filter, fieldQuery);
+                        caller, organizationId, new ListWindow(offset, limit, sort, search), filter, fieldQuery);
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
