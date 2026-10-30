@@ -92,12 +92,41 @@ public class RelationFieldService {
                 .toList(), total);
     }
 
-    private Map<Long, String> conceptLabels(List<Row> rows, String lang) {
-        List<ConceptDTO> concepts = rows.stream()
+    /** A relation between two units of a set: see {@link RelationFieldRepository.LinkRow}; its type is labelled. */
+    public record Link(String kind, long fromId, long toId, @Nullable ResourceRef type, @Nullable Boolean uncertain) {
+    }
+
+    /** The relations that join two of {@code unitIds}, each with its type labelled in {@code lang}. */
+    @Transactional(readOnly = true)
+    public List<Link> linksAmong(Collection<Long> unitIds, String lang) {
+        List<RelationFieldRepository.LinkRow> rows = relationFieldRepository.linksAmong(unitIds);
+        Map<Long, String> labels = resolveConceptLabels(rows.stream()
                 .filter(row -> row.conceptId() != null)
-                .map(row -> ConceptDTO.builder().id(row.conceptId()).externalId(row.conceptExternalId()).build())
-                .toList();
+                .map(row -> conceptOf(row.conceptId(), row.conceptExternalId()))
+                .toList(), lang);
+        return rows.stream().map(row -> new Link(row.kind(), row.fromId(), row.toId(), row.conceptId() == null ? null : conceptRef(
+                row.conceptId(), row.conceptExternalId(), labels), row.uncertain())).toList();
+    }
+
+    private Map<Long, String> conceptLabels(List<Row> rows, String lang) {
+        return resolveConceptLabels(rows.stream()
+                .filter(row -> row.conceptId() != null)
+                .map(row -> conceptOf(row.conceptId(), row.conceptExternalId()))
+                .toList(), lang);
+    }
+
+    private static ConceptDTO conceptOf(long conceptId, @Nullable String externalId) {
+        return ConceptDTO.builder().id(conceptId).externalId(externalId).build();
+    }
+
+    private Map<Long, String> resolveConceptLabels(List<ConceptDTO> concepts, String lang) {
         return concepts.isEmpty() ? Map.of() : conceptLabelBatchResolver.resolveLabels(concepts, lang);
+    }
+
+    /** A concept's reference, labelled by its resolved label, or by its external id in brackets when it has none. */
+    private static ResourceRef conceptRef(long conceptId, @Nullable String externalId, Map<Long, String> labels) {
+        return new ResourceRef(String.valueOf(conceptId), FieldAnswerWireService.CONCEPTS,
+                Objects.requireNonNullElseGet(labels.get(conceptId), () -> "[" + externalId + "]"));
     }
 
     private static ResourceRef toRef(RelationField relation, Row row, Map<Long, String> conceptLabels) {
@@ -105,9 +134,8 @@ public class RelationFieldService {
         if (!relation.qualified()) {
             return new ResourceRef(id, relation.resourceType(), row.label());
         }
-        ResourceRef concept = row.conceptId() == null || !typeReadsFromOwner(row) ? null : new ResourceRef(
-                String.valueOf(row.conceptId()), FieldAnswerWireService.CONCEPTS,
-                Objects.requireNonNullElseGet(conceptLabels.get(row.conceptId()), () -> "[" + row.conceptExternalId() + "]"));
+        ResourceRef concept = row.conceptId() == null || !typeReadsFromOwner(row) ? null
+                : conceptRef(row.conceptId(), row.conceptExternalId(), conceptLabels);
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
                 concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
     }

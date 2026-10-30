@@ -4,6 +4,8 @@ import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.List;
+
 /**
  * The relations of one recording unit, grouped by where the other unit stands relative to it — what a
  * graph of the unit draws around it. The grouping is the contract: how each relation is stored
@@ -35,8 +37,21 @@ public record RecordingUnitRelationGraphResource(
 
         @Schema(description = "Champ de la fiche qui porte chaque zone stratigraphique : c'est lui qui donne la liste "
                 + "des types de relation (GET /organizations/{id}/concepts?fieldId=)")
-        Fields fields
+        Fields fields,
+
+        @Schema(description = "Relations entre deux UE affichées du graphe (hors le centre), seulement avec full=true ; "
+                + "vide sinon. Une relation va de l'UE la plus récente (ou du parent) vers la plus ancienne (ou l'enfant).")
+        List<Link> links
 ) {
+
+    /** A relation between two units of the graph, neither of them the center. */
+    public record Link(
+            @Schema(description = "UE d'où part la relation") String from,
+            @Schema(description = "UE où elle arrive") String to,
+            @Schema(description = "hierarchy, stratigraphy ou synchronous", allowableValues = {"hierarchy", "stratigraphy", "synchronous"}) String kind,
+            @Schema(description = "Type de la relation stratigraphique, s'il y en a un") ResourceRef type,
+            @Schema(description = "Relation incertaine") Boolean uncertain) {
+    }
 
     /** The ids of the fields that hold the stratigraphic zones, as strings like every field id of the API. */
     public record Fields(

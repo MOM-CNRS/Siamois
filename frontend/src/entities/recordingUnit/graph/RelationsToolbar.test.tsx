@@ -19,11 +19,13 @@ afterEach(() => {
 });
 
 function render(mode: RelationsMode, over: Partial<Parameters<typeof RelationsToolbar>[0]> = {}) {
-  const props = { onModeChange: vi.fn(), onShowLinksChange: vi.fn(), ...over };
-  act(() => root.render(<RelationsToolbar mode={mode} showLinks {...props} start={<i id="start" />} end={<i id="end" />} />));
+  const props = { onModeChange: vi.fn(), onDetailedChange: vi.fn(), ...over };
+  act(() => root.render(<RelationsToolbar mode={mode} detailed={false} {...props} start={<i id="start" />} end={<i id="end" />} />));
   act(() => (container.querySelector("button.entity-list-panel-gear-button") as HTMLElement).click());
   return props;
 }
+
+const tile = (label: string) => [...document.querySelectorAll<HTMLElement>(".entity-list-panel-view-tile")].find((el) => el.textContent === label)!;
 
 describe("RelationsToolbar", () => {
   it("holds what the view puts before and after the gear", () => {
@@ -33,27 +35,35 @@ describe("RelationsToolbar", () => {
     expect(container.querySelector("#end")).not.toBeNull();
   });
 
-  it("switches between the graph and the list from the gear", () => {
+  it("offers the graph and the list as tiles, the one in use outlined, and switches from the gear", () => {
     const { onModeChange } = render("graph");
 
-    expect(document.querySelector("#relations-mode-graph")?.closest(".p-radiobutton")?.getAttribute("data-p-checked")).toBe("true");
-    act(() => (document.querySelector("#relations-mode-list") as HTMLElement).click());
+    expect(tile("Graphe").classList.contains("is-active")).toBe(true);
+    act(() => tile("Liste").click());
 
     expect(onModeChange).toHaveBeenCalledWith("list");
   });
 
-  it("offers the graph's links on the graph", () => {
-    const { onShowLinksChange } = render("graph");
+  it("does nothing when the mode in use is chosen again", () => {
+    const { onModeChange } = render("graph");
 
-    act(() => (document.querySelector("#graph-show-links") as HTMLElement).click());
+    act(() => tile("Graphe").click());
 
-    expect(onShowLinksChange).toHaveBeenCalledWith(false);
+    expect(onModeChange).not.toHaveBeenCalled();
+  });
+
+  it("offers the detail of the links with the center on the graph", () => {
+    const { onDetailedChange } = render("graph");
+
+    act(() => (document.querySelector("#graph-detailed") as HTMLElement).click());
+
+    expect(onDetailedChange).toHaveBeenCalledWith(true);
   });
 
   it("offers no graph option on the list", () => {
     render("list");
 
-    expect(document.querySelector("#graph-show-links")).toBeNull();
-    expect(document.querySelector("#relations-mode-list")?.closest(".p-radiobutton")?.getAttribute("data-p-checked")).toBe("true");
+    expect(document.querySelector("#graph-detailed")).toBeNull();
+    expect(tile("Liste").classList.contains("is-active")).toBe(true);
   });
 });
