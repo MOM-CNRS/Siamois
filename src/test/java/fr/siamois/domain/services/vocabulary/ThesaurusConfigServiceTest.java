@@ -2,13 +2,13 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.auth.Person;
-import fr.siamois.domain.models.vocabulary.Vocabulary;
+import fr.siamois.domain.models.vocabulary.VocabularyInstance;
 import fr.siamois.domain.models.vocabulary.VocabularyApiKey;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.crypto.ApiKeyEncryptor;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyKeyRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
+import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyInstanceRepository;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.bean.settings.ThesaurusApiKey;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 class ThesaurusConfigServiceTest {
 
     @Mock
-    private VocabularyRepository vocabularyRepository;
+    private VocabularyInstanceRepository vocabularyInstanceRepository;
     @Mock
     private PersonMapper personMapper;
     @Mock
@@ -45,7 +45,7 @@ class ThesaurusConfigServiceTest {
 
     private PersonDTO personDto;
     private Person person;
-    private Vocabulary vocabulary;
+    private VocabularyInstance instance;
 
     @BeforeEach
     void setUp() {
@@ -53,8 +53,8 @@ class ThesaurusConfigServiceTest {
         personDto.setId(3L);
         person = new Person();
         person.setId(3L);
-        vocabulary = new Vocabulary();
-        vocabulary.setId(7L);
+        instance = new VocabularyInstance("https://t");
+        instance.setId(7L);
     }
 
     @AfterEach
@@ -62,10 +62,10 @@ class ThesaurusConfigServiceTest {
         ExecutionContextHolder.clear();
     }
 
-    private static VocabularyApiKey savedKey(long vocabularyId, String value) {
+    private static VocabularyApiKey savedKey(long instanceId, String value) {
         VocabularyApiKey key = new VocabularyApiKey();
         VocabularyApiKey.VocabularyApiKeyId id = new VocabularyApiKey.VocabularyApiKeyId();
-        id.setVocabularyId(vocabularyId);
+        id.setInstanceId(instanceId);
         id.setPersonId(3L);
         key.setId(id);
         key.setEncryptedKey(value);
@@ -73,7 +73,7 @@ class ThesaurusConfigServiceTest {
     }
 
     @Test
-    void findApiKeysOf_returnsTheDecryptedKeysByVocabularyId() {
+    void findApiKeysOf_returnsTheDecryptedKeysByInstanceId() {
         when(vocabularyKeyRepository.findAllByPersonId(3L)).thenReturn(List.of(savedKey(7L, "enc7"), savedKey(8L, "enc8")));
         when(apiKeyEncryptor.decrypt("enc7")).thenReturn("k7");
         when(apiKeyEncryptor.decrypt("enc8")).thenReturn("k8");
@@ -94,17 +94,18 @@ class ThesaurusConfigServiceTest {
     void updateThesaurusApiKeyConfig_createsTheKeyWithItsCompositeId() {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), personDto, "fr"));
         when(personMapper.invertConvert(personDto)).thenReturn(person);
-        when(vocabularyRepository.findById(7L)).thenReturn(Optional.of(vocabulary));
-        when(vocabularyKeyRepository.findByVocabularyAndPerson(vocabulary, person)).thenReturn(Optional.empty());
+        when(vocabularyKeyRepository.findById(any())).thenReturn(Optional.empty());
+        when(vocabularyInstanceRepository.findById(7L)).thenReturn(Optional.of(instance));
         when(apiKeyEncryptor.encrypt("secret")).thenReturn("encrypted-secret");
 
-        service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "Thésaurus", "https://t/?idt=th1", "secret")));
+        service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "https://t", "secret")));
 
         ArgumentCaptor<VocabularyApiKey> saved = ArgumentCaptor.forClass(VocabularyApiKey.class);
         verify(vocabularyKeyRepository).save(saved.capture());
         assertThat(saved.getValue().getEncryptedKey()).isEqualTo("encrypted-secret");
-        assertThat(saved.getValue().getId().getVocabularyId()).isEqualTo(7L);
+        assertThat(saved.getValue().getId().getInstanceId()).isEqualTo(7L);
         assertThat(saved.getValue().getId().getPersonId()).isEqualTo(3L);
+        assertThat(saved.getValue().getInstance()).isSameAs(instance);
     }
 
     @Test
@@ -112,8 +113,23 @@ class ThesaurusConfigServiceTest {
         ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), personDto, "fr"));
         when(personMapper.invertConvert(personDto)).thenReturn(person);
 
-        service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "Thésaurus", "https://t/?idt=th1", "  ")));
+        service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "https://t", "  ")));
 
         verify(vocabularyKeyRepository, never()).save(any());
+    }
+
+    @Test
+    void updateThesaurusApiKeyConfig_updatesTheExistingKeyOfTheInstance() {
+        ExecutionContextHolder.set(new UserInfo(new InstitutionDTO(), personDto, "fr"));
+        when(personMapper.invertConvert(personDto)).thenReturn(person);
+        VocabularyApiKey existing = savedKey(7L, "old");
+        when(vocabularyKeyRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(apiKeyEncryptor.encrypt("secret")).thenReturn("encrypted-secret");
+
+        service.updateThesaurusApiKeyConfig(List.of(new ThesaurusApiKey(7L, "https://t", "secret")));
+
+        verify(vocabularyKeyRepository).save(existing);
+        verify(vocabularyInstanceRepository, never()).findById(any());
+        assertThat(existing.getEncryptedKey()).isEqualTo("encrypted-secret");
     }
 }

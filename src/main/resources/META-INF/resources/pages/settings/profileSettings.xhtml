@@ -110,7 +110,7 @@
                                      var="thesaurus"
                                      emptyMessage="#{langBean.msg('myProfile.openthesoApiKey.empty')}">
                             <p:column headerText="#{langBean.msg('myProfile.openthesoApiKey.thesaurus')}" styleClass="api-key-thesaurus-cell">
-                                <h:outputText value="#{thesaurus.label}"/>
+                                <h:outputText value="#{thesaurus.url}"/>
                                 <h:outputLink value="#{thesaurus.url}" target="_blank" rel="noopener noreferrer"
                                               rendered="#{not empty thesaurus.url}"
                                               styleClass="api-key-open-link"

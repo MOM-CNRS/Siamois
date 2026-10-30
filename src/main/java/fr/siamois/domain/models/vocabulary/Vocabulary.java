@@ -13,7 +13,7 @@ import java.util.Objects;
 @Data
 @Entity
 @Table(name = "vocabulary", schema = "public", uniqueConstraints = @UniqueConstraint(
-        name = "uk_vocabulary_base_uri_external_id", columnNames = {"base_uri", "external_id"}))
+        name = "uk_vocabulary_instance_external_id", columnNames = {"fk_vocabulary_instance_id", "external_id"}))
 @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
 public class Vocabulary implements Serializable {
     @Id
@@ -30,13 +30,33 @@ public class Vocabulary implements Serializable {
     @Column(name = "external_id", nullable = false)
     private String externalVocabularyId;
 
+    @JsonIgnore
     @NotNull
-    @Column(name = "base_uri", nullable = false)
-    private String baseUri;
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "fk_vocabulary_instance_id", nullable = false)
+    private VocabularyInstance instance;
 
+    /**
+     * The base URI of the OpenTheso instance of this vocabulary.
+     */
+    public String getBaseUri() {
+        return instance == null ? null : instance.getBaseUri();
+    }
+
+    /**
+     * Points this vocabulary to an instance of the given base URI, not saved yet: the instance is resolved
+     * against the database when the vocabulary is saved.
+     */
+    public void setBaseUri(String baseUri) {
+        this.instance = baseUri == null ? null : new VocabularyInstance(baseUri);
+    }
+
+    /**
+     * The complete URI of the thesaurus in its instance.
+     */
     @JsonIgnore
     public String getUri() {
-        return String.format("%s?idt=%s", baseUri, externalVocabularyId);
+        return String.format("%s?idt=%s", getBaseUri(), externalVocabularyId);
     }
 
     @Override
@@ -44,16 +64,14 @@ public class Vocabulary implements Serializable {
         if (this == o) return true;
         if (!(o instanceof Vocabulary that)) return false;
 
-        return Objects.equals(baseUri, that.baseUri) &&
+        return Objects.equals(getBaseUri(), that.getBaseUri()) &&
                 Objects.equals(externalVocabularyId, that.externalVocabularyId) &&
                 Objects.equals(type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseUri, externalVocabularyId, type);
+        return Objects.hash(getBaseUri(), externalVocabularyId, type);
     }
-
-
 
 }

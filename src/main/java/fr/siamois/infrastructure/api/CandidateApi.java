@@ -32,7 +32,7 @@ public class CandidateApi {
     }
 
     public boolean postCandidateFor(VocabularyApiKey vocabularyApiKey, CandidateDTO candidateDTO) throws JsonProcessingException {
-        URI uri = URI.create(String.format("%s/openapi/v1/candidate", vocabularyApiKey.getVocabulary().getBaseUri()));
+        URI uri = URI.create(String.format("%s/openapi/v1/candidate", vocabularyApiKey.getInstance().getBaseUri()));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("API-KEY", apiKeyEncryptor.decrypt(vocabularyApiKey.getEncryptedKey()));

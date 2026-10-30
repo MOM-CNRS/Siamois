@@ -4,6 +4,9 @@ import fr.siamois.domain.models.auth.Person;
 import jakarta.persistence.*;
 import lombok.Data;
 
+/**
+ * The OpenTheso API key of a person for a whole instance: it serves every thesaurus of that instance.
+ */
 @Data
 @Entity
 @Table(name = "vocabulary_api_key")
@@ -12,10 +15,10 @@ public class VocabularyApiKey {
     @EmbeddedId
     private VocabularyApiKeyId id;
 
-    @MapsId("vocabularyId")
+    @MapsId("instanceId")
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "fk_vocabulary_id")
-    private Vocabulary vocabulary;
+    @JoinColumn(name = "fk_vocabulary_instance_id")
+    private VocabularyInstance instance;
 
     @MapsId("personId")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -33,7 +36,7 @@ public class VocabularyApiKey {
     @Data
     @Embeddable
     public static class VocabularyApiKeyId {
-        private Long vocabularyId;
+        private Long instanceId;
         private Long personId;
     }
 

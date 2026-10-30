@@ -89,7 +89,7 @@ class CustomFieldCandidateServiceTest {
         field = CustomFieldText.builder().id(10L).label("Couleur").hint("La couleur de la pâte").build();
 
         apiKey = new VocabularyApiKey();
-        apiKey.setVocabulary(vocabulary);
+        apiKey.setInstance(vocabulary.getInstance());
         apiKey.setEncryptedKey("enc");
 
         lenient().when(pendingCandidateRepository.findByFieldIdAndVocabularyId(any(), any())).thenReturn(Optional.empty());

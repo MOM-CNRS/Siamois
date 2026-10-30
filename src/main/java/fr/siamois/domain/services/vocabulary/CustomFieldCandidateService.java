@@ -169,7 +169,7 @@ public class CustomFieldCandidateService {
     /** @return whether the thesaurus accepted the candidate; false as well when the user has no API key for it */
     private boolean postCandidate(CustomField field, Vocabulary vocabulary, UserInfo user) {
         VocabularyApiKey.VocabularyApiKeyId keyId = new VocabularyApiKey.VocabularyApiKeyId();
-        keyId.setVocabularyId(vocabulary.getId());
+        keyId.setInstanceId(vocabulary.getInstance().getId());
         keyId.setPersonId(user.getUser().getId());
         Optional<VocabularyApiKey> key = vocabularyKeyRepository.findById(keyId);
         if (key.isEmpty()) {
