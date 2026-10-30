@@ -92,8 +92,9 @@ public class FindOpenApiService {
         SpecimenDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             Long projectId = ru.getActionUnit() != null ? ru.getActionUnit().getId() : null;
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER, typeConceptId);
-            fieldAnswerPatchService.applyLenient(shell, formUiDto, fieldAnswers, projectId);
-            return specimenService.save(shell);
+            Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
+                    fieldAnswerPatchService.applyOnCreate(shell, formUiDto, fieldAnswers, projectId, typeConceptId);
+            return specimenService.save(shell, additionalAnswers);
         });
         return withPermissionsAndUri(findOpenApiMapper.toResource(created), userInfo, created);
     }

@@ -10,6 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,5 +100,47 @@ class FormLayoutSeedsTest {
         return TestForms.layoutOf(table).groups().stream().flatMap(g -> g.items().stream())
                 .filter(i -> binding.equals(i.field().getValueBinding()))
                 .findFirst().orElseThrow();
+    }
+
+    // ---- defaults ----
+
+    /** The initial layout of recording units with one field carrying the given {@code "default"} JSON (null: none). */
+    @SuppressWarnings("unchecked")
+    private static FormLayout layoutWithDefault(FormLayoutSeeds seeds, String defaultJson) throws Exception {
+        long fieldId = SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "openingDate").getId();
+        String field = "{\"fieldId\":" + fieldId + (defaultJson == null ? "" : ",\"default\":" + defaultJson) + "}";
+        JsonNode tree = new ObjectMapper().readTree("{\"groups\":[{\"label\":\"G\",\"fields\":[" + field + "]}]}");
+        ((Map<ConfigurableTable, JsonNode>) ReflectionTestUtils.getField(seeds, "raw")).put(ConfigurableTable.UE, tree);
+        return seeds.layoutOf(ConfigurableTable.UE);
+    }
+
+    private static fr.siamois.domain.models.form.config.FieldDefault defaultOf(FormLayout layout) {
+        return layout.groups().get(0).items().get(0).defaultValue();
+    }
+
+    private static final String CITED_CONCEPT = "{\"concepts\":[{\"vocabularyExtId\":\"th\",\"conceptExtId\":\"1\"}]}";
+
+    @Test
+    void aFieldDefaultCitesItsConceptsLikeTheRulesDo() throws Exception {
+        FormLayoutSeeds seeds = new FormLayoutSeeds((vocabulary, concept) -> Optional.of(TestForms.CONCEPT_ID));
+
+        assertThat(defaultOf(layoutWithDefault(seeds, CITED_CONCEPT)).conceptIds())
+                .isEqualTo(List.of(String.valueOf(TestForms.CONCEPT_ID)));
+    }
+
+    @Test
+    void aDefaultCitingAConceptThisInstanceLacksIsDroppedWhole() throws Exception {
+        FormLayoutSeeds seeds = new FormLayoutSeeds((vocabulary, concept) -> Optional.empty());
+
+        assertThat(defaultOf(layoutWithDefault(seeds, CITED_CONCEPT))).isNull();
+    }
+
+    @Test
+    void anEmptyOrMissingDefaultIsNoDefault() throws Exception {
+        FormLayoutSeeds seeds = new FormLayoutSeeds((vocabulary, concept) -> Optional.of(TestForms.CONCEPT_ID));
+
+        assertThat(defaultOf(layoutWithDefault(seeds, "{\"concepts\":[]}"))).isNull();
+        assertThat(defaultOf(layoutWithDefault(seeds, "null"))).isNull();
+        assertThat(defaultOf(layoutWithDefault(seeds, null))).isNull();
     }
 }

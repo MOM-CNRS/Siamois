@@ -75,7 +75,8 @@ public class FormLayoutService {
                     ffc.isMandatory(),
                     ffc.isInstitutionLocked(),
                     parseRules(ffc),
-                    FieldUnits.fromJson(ffc.getUnits())));
+                    FieldUnits.fromJson(ffc.getUnits()),
+                    FieldDefault.fromJson(ffc.getDefaultValue())));
         }
         List<FormLayout.Group> out = groups.stream()
                 .map(g -> new FormLayout.Group(g.getId(), g.getLabel(), itemsByGroup.get(g.getId())))
@@ -135,7 +136,7 @@ public class FormLayoutService {
         FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         List<FieldFormConfig> rows = fieldFormConfigRepository.findAllByFormConfigId(config.getId());
         FieldFormConfig target = rows.stream().filter(r -> r.getField().getId() == fieldId).findFirst()
-                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
         if (target.isInstitutionLocked()) {
             log.debug("Field {} is locked by the institution, its rules cannot be changed", fieldId);
             return;
@@ -160,12 +161,41 @@ public class FormLayoutService {
         FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
         FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
                 .filter(r -> r.getField().getId() == fieldId).findFirst()
-                .orElseThrow(() -> new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName));
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
         if (target.isInstitutionLocked()) {
             log.debug("Field {} is locked by the institution, its units cannot be changed", fieldId);
             return;
         }
         target.setUnits(units == null ? null : units.toJson());
+        fieldFormConfigRepository.save(target);
+    }
+
+    /** The default stored for a field of the type's form, none when it has none. */
+    @Transactional(readOnly = true)
+    public Optional<FieldDefault> defaultOf(Long projectId, ConfigurableTable table, String typeName, long fieldId) {
+        return effectiveLayout(projectId, table, typeName).groups().stream()
+                .flatMap(g -> g.items().stream())
+                .filter(item -> item.field().getId() == fieldId)
+                .map(FormLayout.Item::defaultValue)
+                .filter(Objects::nonNull)
+                .findFirst();
+    }
+
+    /**
+     * Sets the value a new entity starts with for a field under the type's configuration, replacing any
+     * it had; null (or none) removes it. A field locked by the institution is left untouched.
+     */
+    @Transactional
+    public void saveDefault(Long projectId, ConfigurableTable table, String typeName, long fieldId, FieldDefault defaultValue) {
+        FormConfig config = ensureOwnLayoutInternal(projectId, table, typeName);
+        FieldFormConfig target = fieldFormConfigRepository.findAllByFormConfigId(config.getId()).stream()
+                .filter(r -> r.getField().getId() == fieldId).findFirst()
+                .orElseThrow(() -> noSuchField(fieldId, typeName));
+        if (target.isInstitutionLocked()) {
+            log.debug("Field {} is locked by the institution, its default cannot be changed", fieldId);
+            return;
+        }
+        target.setDefaultValue(defaultValue == null ? null : defaultValue.toJson());
         fieldFormConfigRepository.save(target);
     }
 
@@ -317,6 +347,7 @@ public class FormLayoutService {
                 row.setInstitutionLocked(item.institutionLocked());
                 row.setRules(rulesJson(item.rules()));
                 row.setUnits(item.units() == null ? null : item.units().toJson());
+                row.setDefaultValue(item.defaultValue() == null ? null : item.defaultValue().toJson());
                 fieldFormConfigRepository.save(row);
             }
         }
@@ -342,5 +373,9 @@ public class FormLayoutService {
                     ffc.getFormConfig().getId(), e.getMessage());
             return FieldRules.NONE;
         }
+    }
+
+    private static java.util.NoSuchElementException noSuchField(long fieldId, String typeName) {
+        return new java.util.NoSuchElementException("No field " + fieldId + " on type " + typeName);
     }
 }

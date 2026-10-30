@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The value a new entity starts with for a field, per form configuration (so per type). Same jsonb shape as
+    the rules and the units next to it, applied to the table and to its Envers audit table.
+    -->
+
+    <changeSet id="2026-10-29-1-field-form-config-default-value" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="field_form_config">
+            <column name="default_value" type="jsonb"/>
+        </addColumn>
+        <addColumn schemaName="public" tableName="field_form_config_aud">
+            <column name="default_value" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

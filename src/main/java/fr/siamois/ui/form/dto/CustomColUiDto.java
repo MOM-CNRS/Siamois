@@ -1,5 +1,6 @@
 package fr.siamois.ui.form.dto;
 
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.rules.FieldRules;
@@ -24,6 +25,8 @@ public class CustomColUiDto implements Serializable {
     private FieldRules rules = FieldRules.NONE;
     // Measurement: the units this form configuration offers; null keeps the field's own unit.
     private FieldUnits units;
+    // What a new entity starts with for this field; null for nothing. Applied by the server at creation.
+    private FieldDefault defaultValue;
 
     /**
      * The PrimeFaces styleClass {@code customFormPanelContent.xhtml} binds via {@code col.className}
@@ -80,6 +83,11 @@ public class CustomColUiDto implements Serializable {
 
         public Builder units(FieldUnits units) {
             col.setUnits(units);
+            return this;
+        }
+
+        public Builder defaultValue(FieldDefault defaultValue) {
+            col.setDefaultValue(defaultValue);
             return this;
         }
 
