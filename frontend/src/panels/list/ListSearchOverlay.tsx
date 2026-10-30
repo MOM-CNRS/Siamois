@@ -147,6 +147,9 @@ function ListSearchPanel({
 
   const tail = useMemo(() => tailKeyword(input, keywords), [input, keywords]);
   const parsed = useMemo(() => parseQuery(input, keywords), [input, keywords]);
+  // The filter being typed: one with options waits for a suggestion to be picked, a text one filters already.
+  const tailSpec = tail ? specByKey.get(tail.key) : undefined;
+  const suggesting = tailSpec?.loadOptions != null && (tail?.partial.length ?? 0) > 0;
 
   // What the typed keywords mean as filters of the list, with the options they were picked from.
   const typed = useMemo(() => {
@@ -183,7 +186,7 @@ function ListSearchPanel({
         offset: 0,
         limit: PREVIEW_LIMIT,
       }) as Promise<PagedResult<RowRecord>>,
-    enabled: hasQuery && !tail?.partial,
+    enabled: hasQuery && !suggesting,
     staleTime: 15_000,
     retry: false,
   });
@@ -193,7 +196,6 @@ function ListSearchPanel({
   const total = hasQuery ? (preview.data?.totalCount ?? 0) : 0;
 
   // The options to complete a keyword with: the ones of the filter being typed.
-  const tailSpec = tail ? specByKey.get(tail.key) : undefined;
   const partial = useDebounced(tail?.partial ?? "", PREVIEW_DEBOUNCE_MS);
   const suggestionQuery = useQuery({
     queryKey: ["list-search-options", entityType, params.organizationId, tail?.key, partial],
@@ -326,7 +328,7 @@ function ListSearchPanel({
       ))}
 
       {suggestions.length === 0 && preview.isFetching && hasQuery && <div className="sia-search-status">{t("search.loading")}</div>}
-      {suggestions.length === 0 && !preview.isFetching && !preview.isError && hasQuery && debounced.search === wanted.search && rowsData.length === 0 && (
+      {suggestions.length === 0 && !preview.isFetching && !preview.isError && hasQuery && debounced === wanted && rowsData.length === 0 && (
         <div className="sia-search-status">{t("search.empty", { q: parsed.text || input })}</div>
       )}
 
