@@ -1,0 +1,402 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2208" height="2176" viewBox="0 0 2208 2176">
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#0f172a" flood-opacity="0.18"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#475569"/></marker>
+<marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6"><circle cx="5" cy="5" r="4" fill="#5b8def"/></marker>
+<marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#5b8def"/></marker>
+<style>
+text { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+.title { font-size: 14px; font-weight: 700; fill: #ffffff; }
+.sub { font-size: 10.5px; font-style: italic; }
+.col { font-size: 12px; } .colmuted { font-size: 11px; }
+.mark { font-size: 10px; font-weight: 700; }
+.pill { font-size: 10px; } .card { font-size: 11px; font-weight: 700; fill: #334155; }
+.ntitle { font-size: 13px; font-weight: 700; } .ntext { font-size: 11.5px; fill: #1e293b; }
+.big { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; fill: #0f172a; }
+.small { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #475569; }
+.frame { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #1d4ed8; }
+</style></defs>
+<rect width="2208" height="2176" fill="#ffffff"/>
+<text x="60" y="40" class="big">Schéma de données spatiales SIAMOIS — modèle de Quentin Verriez + tables techniques du plugin QGIS</text>
+<text x="60" y="62" class="small">GeoPackage d'échange : 13 tables d'entités et de référence, 7 tables de liaison, et les tables siamois_* qui portent la configuration, les vocabulaires, la synchronisation et le travail hors ligne.</text>
+<rect x="562" y="96" width="1166" height="1188" rx="14" fill="#f8fbff" stroke="#93b4f5" stroke-width="1.6" stroke-dasharray="8 5"/>
+<text x="578" y="118" class="frame">Entités spatiales (9 tables) — chacune rattachée à un seul projet</text>
+<path d="M392,168.6 C432,168.6 522,168.6 562,168.6" fill="none" stroke="#1d4ed8" stroke-width="2.2"  marker-end="url(#arrow)"/><rect x="435.8" y="159.59999999999997" width="82.4" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="477.0" y="172.59999999999997" text-anchor="middle" class="pill" fill="#1d4ed8">idprojet ×9</text><text x="402" y="172.6" class="card">1</text><text x="544" y="172.6" class="card">n</text>
+<path d="M392,241.12 C462,211.12 462,271.12 392,257.12" fill="none" stroke="#1d4ed8" stroke-width="1.6" marker-end="url(#arrow)"/><rect x="446.8" y="240.12" width="50.400000000000006" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="472" y="253.12" text-anchor="middle" class="pill" fill="#1d4ed8">parent</text>
+<path d="M215.5,346 C215.5,320 226.0,322 226.0,296" fill="none" stroke="#1d4ed8" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="198.75" y="312.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="220.75" y="325.0" text-anchor="middle" class="pill" fill="#1d4ed8">1 — 1</text>
+<path d="M860,249.0 C870,249.0 1000,231.0 1010,231.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="887.4" y="231.0" width="95.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="935.0" y="244.0" text-anchor="middle" class="pill" fill="#5b8def">lien_doc_uopt</text>
+<path d="M1145.0,320 C1145.0,332 1145.0,440 1145.0,452" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1091.0" y="377.0" width="108.0" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1145.0" y="390.0" text-anchor="middle" class="pill" fill="#5b8def">lien_doc_uopoly</text>
+<path d="M860,532.0 C870,532.0 1000,559.0 1010,559.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="871.4" y="536.5" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="935.0" y="549.5" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_udpoly</text>
+<path d="M1280,559.0 C1290,559.0 1420,532.0 1430,532.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1294.6" y="536.5" width="120.80000000000001" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1355.0" y="549.5" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_udlgn</text>
+<path d="M1145.0,666 C1145.0,678 1145.0,750 1145.0,762" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1081.4" y="705.0" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1145.0" y="718.0" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_urpoly</text>
+<path d="M725.0,612 C725.0,682 940,858.3 1010,858.3" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="796.6175000000001" y="767.9496750000001" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="860.2175000000001" y="780.9496750000001" text-anchor="middle" class="pill" fill="#5b8def">lien_urpoly_udpoly</text>
+<path d="M1565.0,612 C1565.0,682 1350,858.3 1280,858.3" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1369.3825" y="767.9496750000001" width="120.80000000000001" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1429.7825" y="780.9496750000001" text-anchor="middle" class="pill" fill="#5b8def">lien_urpoly_udlgn</text>
+<path d="M528.5,1354 C528.5,1330 528.5,1308 528.5,1284" fill="none" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="493.7" y="1310.0" width="69.6" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="528.5" y="1323.0" text-anchor="middle" class="pill" fill="#c2410c">nom_table</text>
+<path d="M987.0,1354 C987.0,1330 987.0,1308 987.0,1284" fill="none" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="913.8" y="1310.0" width="146.4" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="987.0" y="1323.0" text-anchor="middle" class="pill" fill="#c2410c">(nom_table, id_local)</text>
+<path d="M1419.5,1354 C1419.5,1330 1419.5,1308 1419.5,1284" fill="none" stroke="#15803d" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="1346.3" y="1310.0" width="146.4" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="1419.5" y="1323.0" text-anchor="middle" class="pill" fill="#15803d">(nom_table, id_local)</text>
+<path d="M60,1425.2 C20,1425.2 20,198.0 60,198.0" fill="none" stroke="#15803d" stroke-width="1.6" marker-end="url(#arrow)"/><g transform="rotate(-90 29 811.6)"><rect x="-18.6" y="802.6" width="95.2" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="29" y="815.6" text-anchor="middle" class="pill" fill="#15803d">projet racine</text></g>
+<path d="M567.5,1624 C567.5,1600 528.5,1556 528.5,1532" fill="none" stroke="#15803d" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="526.0" y="1569.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="548.0" y="1582.0" text-anchor="middle" class="pill" fill="#15803d">n — 1</text>
+<path d="M325,1686.0 C339,1686.0 395,1758.0 409,1758.0" fill="none" stroke="#15803d" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="345.0" y="1713.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="367.0" y="1726.0" text-anchor="middle" class="pill" fill="#15803d">n — 1</text>
+<path d="M934.4,1624 C934.4,1600 951.6,1592 951.6,1568" fill="none" stroke="#c2410c" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="921.0" y="1587.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="943.0" y="1600.0" text-anchor="middle" class="pill" fill="#c2410c">n — 1</text>
+<path d="M1302.8,1624 C1302.8,1594 1128.6,1598 1128.6,1568" fill="none" stroke="#c2410c" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="1193.7" y="1587.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="1215.7" y="1600.0" text-anchor="middle" class="pill" fill="#c2410c">n — 1</text>
+<path d="M409,2019.0 C395,2019.0 287,2037.0 273,2037.0" fill="none" stroke="#15803d" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="319.0" y="2019.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="341.0" y="2032.0" text-anchor="middle" class="pill" fill="#15803d">1 — 1</text>
+<path d="M1248,2010.0 C1234,2010.0 1156,2019.0 1142,2019.0" fill="none" stroke="#c2410c" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="1173.0" y="2005.5" width="44.0" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="1195.0" y="2018.5" text-anchor="middle" class="pill" fill="#c2410c">1 — 1</text>
+<path d="M504.1,1892 C504.1,1918 496.3,1922 496.3,1948" fill="none" stroke="#15803d" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="443.00000000000006" y="1911.0" width="114.4" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="500.20000000000005" y="1924.0" text-anchor="middle" class="pill" fill="#15803d">code_vocabulaire</text>
+<g filter="url(#shadow)"><rect x="60" y="100" width="332" height="196" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,128 V107 Q60,100 67,100 H385 Q392,100 392,107 V128 Z" fill="#1d4ed8"/>
+<text x="70" y="119" class="title">projet</text>
+<text x="70" y="140" class="sub" fill="#0b2a6f">Projet SIAMOIS + emprise</text>
+<text x="70" y="157" class="mark" fill="#b45309">PK</text>
+<text x="96" y="157" class="col" fill="#0b2a6f">idprojet integer</text>
+<text x="70" y="175" class="mark" fill="#6d28d9">FK</text>
+<text x="96" y="175" class="col" fill="#0b2a6f">idprojet_parent integer (NULL = racine)</text>
+<text x="96" y="193" class="col" fill="#0b2a6f">numoa text</text>
+<text x="96" y="211" class="col" fill="#0b2a6f">numprojet text *</text>
+<text x="96" y="229" class="col" fill="#0b2a6f">typprojet text *</text>
+<text x="96" y="247" class="col" fill="#0b2a6f">ro text * (personnes)</text>
+<text x="96" y="265" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="96" y="283" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="60" y="346" width="311" height="232" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,374 V353 Q60,346 67,346 H364 Q371,346 371,353 V374 Z" fill="#1d4ed8"/>
+<text x="70" y="365" class="title">metadonnees</text>
+<text x="70" y="386" class="sub" fill="#0b2a6f">Dublin Core + référence spatiale</text>
+<text x="70" y="403" class="mark" fill="#b45309">PK</text>
+<text x="96" y="403" class="col" fill="#0b2a6f">idmeta integer</text>
+<text x="70" y="421" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="421" class="col" fill="#0b2a6f">idprojet integer → projet (1-1)</text>
+<text x="96" y="439" class="col" fill="#0b2a6f">dc_title, dc_creator, dc_subject</text>
+<text x="96" y="457" class="col" fill="#0b2a6f">dc_descri, dc_publish, dc_date</text>
+<text x="96" y="475" class="col" fill="#0b2a6f">dc_type, dc_format, dc_id, dc_source</text>
+<text x="96" y="493" class="col" fill="#0b2a6f">dc_lang, dc_relation</text>
+<text x="96" y="511" class="col" fill="#0b2a6f">dc_coverage, dc_right</text>
+<text x="96" y="529" class="col" fill="#0b2a6f">epsg integer *</text>
+<text x="96" y="547" class="col" fill="#0b2a6f">alti text *, geoid text *</text>
+<text x="96" y="565" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="60" y="1948" width="213" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,1976 V1955 Q60,1948 67,1948 H266 Q273,1948 273,1955 V1976 Z" fill="#1d4ed8"/>
+<text x="70" y="1967" class="title">concept</text>
+<text x="70" y="1988" class="sub" fill="#0b2a6f">Vocabulaire : terme ↔ URI</text>
+<text x="70" y="2005" class="mark" fill="#b45309">PK</text>
+<text x="96" y="2005" class="col" fill="#0b2a6f">idconcept integer</text>
+<text x="70" y="2023" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="2023" class="col" fill="#0b2a6f">nom_table text *</text>
+<text x="70" y="2041" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="2041" class="col" fill="#0b2a6f">type_entite text</text>
+<text x="70" y="2059" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="2059" class="col" fill="#0b2a6f">nom_colonne text *</text>
+<text x="70" y="2077" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="2077" class="col" fill="#0b2a6f">label text *</text>
+<text x="96" y="2095" class="col" fill="#0b2a6f">uri text</text>
+<text x="96" y="2113" class="col" fill="#0b2a6f">autsaisie, datesaisie</text>
+<g filter="url(#shadow)"><rect x="810" y="1948" width="332" height="142" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M810,1976 V1955 Q810,1948 817,1948 H1135 Q1142,1948 1142,1955 V1976 Z" fill="#1d4ed8"/>
+<text x="820" y="1967" class="title">personne</text>
+<text x="820" y="1988" class="sub" fill="#0b2a6f">Personnes et organismes</text>
+<text x="820" y="2005" class="mark" fill="#b45309">PK</text>
+<text x="846" y="2005" class="col" fill="#0b2a6f">idpersonne integer</text>
+<text x="820" y="2023" class="mark" fill="#0e7490">UQ</text>
+<text x="846" y="2023" class="col" fill="#0b2a6f">nom text * (Prénom Nom)</text>
+<text x="846" y="2041" class="col" fill="#0b2a6f">typpersonne text * (personne|organisme)</text>
+<text x="846" y="2059" class="col" fill="#0b2a6f">uri text (ORCID, IdRef, ROR)</text>
+<text x="846" y="2077" class="col" fill="#0b2a6f">autsaisie, datesaisie</text>
+<g filter="url(#shadow)"><rect x="590" y="1072" width="270" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M590,1100 V1079 Q590,1072 597,1072 H853 Q860,1072 860,1079 V1100 Z" fill="#1d4ed8"/>
+<text x="600" y="1091" class="title">ut_poly</text>
+<text x="600" y="1112" class="sub" fill="#0b2a6f">UT — emprise, décapage…</text>
+<text x="600" y="1129" class="mark" fill="#b45309">PK</text>
+<text x="626" y="1129" class="col" fill="#0b2a6f">idutpoly integer</text>
+<text x="600" y="1147" class="mark" fill="#6d28d9">FK</text>
+<text x="626" y="1147" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="626" y="1165" class="col" fill="#0b2a6f">numutpoly text *</text>
+<text x="626" y="1183" class="col" fill="#0b2a6f">typutpoly text *</text>
+<text x="626" y="1201" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="626" y="1219" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="626" y="1237" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1010" y="1072" width="270" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1010,1100 V1079 Q1010,1072 1017,1072 H1273 Q1280,1072 1280,1079 V1100 Z" fill="#1d4ed8"/>
+<text x="1020" y="1091" class="title">ut_ligne</text>
+<text x="1020" y="1112" class="sub" fill="#0b2a6f">UT — axes de coupe</text>
+<text x="1020" y="1129" class="mark" fill="#b45309">PK</text>
+<text x="1046" y="1129" class="col" fill="#0b2a6f">idutlgn integer</text>
+<text x="1020" y="1147" class="mark" fill="#6d28d9">FK</text>
+<text x="1046" y="1147" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1046" y="1165" class="col" fill="#0b2a6f">numutlgn text *</text>
+<text x="1046" y="1183" class="col" fill="#0b2a6f">typutlgn text *</text>
+<text x="1046" y="1201" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1046" y="1219" class="col" fill="#0b2a6f">geom ligne</text>
+<text x="1046" y="1237" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1430" y="1072" width="270" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1430,1100 V1079 Q1430,1072 1437,1072 H1693 Q1700,1072 1700,1079 V1100 Z" fill="#1d4ed8"/>
+<text x="1440" y="1091" class="title">ut_point</text>
+<text x="1440" y="1112" class="sub" fill="#0b2a6f">UT — cibles, altimétrie</text>
+<text x="1440" y="1129" class="mark" fill="#b45309">PK</text>
+<text x="1466" y="1129" class="col" fill="#0b2a6f">idutpt integer</text>
+<text x="1440" y="1147" class="mark" fill="#6d28d9">FK</text>
+<text x="1466" y="1147" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1466" y="1165" class="col" fill="#0b2a6f">numutpt text *</text>
+<text x="1466" y="1183" class="col" fill="#0b2a6f">typutpt text *</text>
+<text x="1466" y="1201" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1466" y="1219" class="col" fill="#0b2a6f">geom point</text>
+<text x="1466" y="1237" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1010" y="142" width="270" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1010,170 V149 Q1010,142 1017,142 H1273 Q1280,142 1280,149 V170 Z" fill="#1d4ed8"/>
+<text x="1020" y="161" class="title">raster</text>
+<text x="1020" y="182" class="sub" fill="#0b2a6f">Emprise d&#x27;un raster</text>
+<text x="1020" y="199" class="mark" fill="#b45309">PK</text>
+<text x="1046" y="199" class="col" fill="#0b2a6f">iddoc integer</text>
+<text x="1020" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="1046" y="217" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1046" y="235" class="col" fill="#0b2a6f">numdoc text *</text>
+<text x="1046" y="253" class="col" fill="#0b2a6f">typdoc text *</text>
+<text x="1046" y="271" class="col" fill="#0b2a6f">lien text (URL/chemin)</text>
+<text x="1046" y="289" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1046" y="307" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1010" y="452" width="270" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1010,480 V459 Q1010,452 1017,452 H1273 Q1280,452 1280,459 V480 Z" fill="#1d4ed8"/>
+<text x="1020" y="471" class="title">uo_poly</text>
+<text x="1020" y="492" class="sub" fill="#0b2a6f">UO — US, Faits…</text>
+<text x="1020" y="509" class="mark" fill="#b45309">PK</text>
+<text x="1046" y="509" class="col" fill="#0b2a6f">iduopoly integer</text>
+<text x="1020" y="527" class="mark" fill="#6d28d9">FK</text>
+<text x="1046" y="527" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1046" y="545" class="col" fill="#0b2a6f">numuopoly text *</text>
+<text x="1046" y="563" class="col" fill="#0b2a6f">typuopoly text *</text>
+<text x="1046" y="581" class="col" fill="#0b2a6f">interpret text</text>
+<text x="1046" y="599" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="1046" y="617" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1046" y="635" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1046" y="653" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="590" y="142" width="270" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M590,170 V149 Q590,142 597,142 H853 Q860,142 860,149 V170 Z" fill="#1d4ed8"/>
+<text x="600" y="161" class="title">uo_point</text>
+<text x="600" y="182" class="sub" fill="#0b2a6f">UO — isolats, prélèvements</text>
+<text x="600" y="199" class="mark" fill="#b45309">PK</text>
+<text x="626" y="199" class="col" fill="#0b2a6f">iduopt integer</text>
+<text x="600" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="626" y="217" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="626" y="235" class="col" fill="#0b2a6f">numuopt text *</text>
+<text x="626" y="253" class="col" fill="#0b2a6f">typuopt text *</text>
+<text x="626" y="271" class="col" fill="#0b2a6f">interpret text</text>
+<text x="626" y="289" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="626" y="307" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="626" y="325" class="col" fill="#0b2a6f">geom point</text>
+<text x="626" y="343" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1010" y="762" width="270" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1010,790 V769 Q1010,762 1017,762 H1273 Q1280,762 1280,769 V790 Z" fill="#1d4ed8"/>
+<text x="1020" y="781" class="title">ur_poly</text>
+<text x="1020" y="802" class="sub" fill="#0b2a6f">UR — restitutions</text>
+<text x="1020" y="819" class="mark" fill="#b45309">PK</text>
+<text x="1046" y="819" class="col" fill="#0b2a6f">idurpoly integer</text>
+<text x="1020" y="837" class="mark" fill="#6d28d9">FK</text>
+<text x="1046" y="837" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1046" y="855" class="col" fill="#0b2a6f">numurpoly text *</text>
+<text x="1046" y="873" class="col" fill="#0b2a6f">typurpoly text *</text>
+<text x="1046" y="891" class="col" fill="#0b2a6f">interpret text</text>
+<text x="1046" y="909" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="1046" y="927" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1046" y="945" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1046" y="963" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="590" y="452" width="270" height="160" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M590,480 V459 Q590,452 597,452 H853 Q860,452 860,459 V480 Z" fill="#1d4ed8"/>
+<text x="600" y="471" class="title">ud_poly</text>
+<text x="600" y="492" class="sub" fill="#0b2a6f">UD — détails surfaciques</text>
+<text x="600" y="509" class="mark" fill="#b45309">PK</text>
+<text x="626" y="509" class="col" fill="#0b2a6f">idudpoly integer</text>
+<text x="600" y="527" class="mark" fill="#6d28d9">FK</text>
+<text x="626" y="527" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="626" y="545" class="col" fill="#0b2a6f">numudpoly text *</text>
+<text x="626" y="563" class="col" fill="#0b2a6f">typudpoly text *</text>
+<text x="626" y="581" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="626" y="599" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1430" y="452" width="270" height="160" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1430,480 V459 Q1430,452 1437,452 H1693 Q1700,452 1700,459 V480 Z" fill="#1d4ed8"/>
+<text x="1440" y="471" class="title">ud_ligne</text>
+<text x="1440" y="492" class="sub" fill="#0b2a6f">UD — détails linéaires</text>
+<text x="1440" y="509" class="mark" fill="#b45309">PK</text>
+<text x="1466" y="509" class="col" fill="#0b2a6f">idudlgn integer</text>
+<text x="1440" y="527" class="mark" fill="#6d28d9">FK</text>
+<text x="1466" y="527" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1466" y="545" class="col" fill="#0b2a6f">numudlgn text *</text>
+<text x="1466" y="563" class="col" fill="#0b2a6f">typudlgn text *</text>
+<text x="1466" y="581" class="col" fill="#0b2a6f">geom ligne</text>
+<text x="1466" y="599" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<g filter="url(#shadow)"><rect x="1430" y="142" width="290" height="142" rx="7" fill="#f4f8ff" stroke="#b9ceF8" stroke-width="1.5"/></g>
+<path d="M1430,170 V149 Q1430,142 1437,142 H1713 Q1720,142 1720,149 V170 Z" fill="#5b8def"/>
+<text x="1440" y="161" class="title">lien_* (7 tables)</text>
+<text x="1440" y="182" class="sub" fill="#16346b">Tables de liaison n-n</text>
+<text x="1440" y="199" class="mark" fill="#b45309">PK</text>
+<text x="1466" y="199" class="col" fill="#16346b">idlien integer</text>
+<text x="1440" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="1466" y="217" class="col" fill="#16346b">clé étrangère A integer</text>
+<text x="1440" y="235" class="mark" fill="#6d28d9">FK</text>
+<text x="1466" y="235" class="col" fill="#16346b">clé étrangère B integer</text>
+<text x="1440" y="253" class="mark" fill="#0e7490">UQ</text>
+<text x="1466" y="253" class="col" fill="#16346b">UNIQUE (A, B)</text>
+<text x="1466" y="271" class="col" fill="#16346b">autsaisie, datesaisie</text>
+<g filter="url(#shadow)"><rect x="60" y="1354" width="252" height="178" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M60,1382 V1361 Q60,1354 67,1354 H305 Q312,1354 312,1361 V1382 Z" fill="#15803d"/>
+<text x="70" y="1373" class="title">siamois_connexion</text>
+<text x="70" y="1394" class="sub" fill="#0b3d1d">ex-« meta » : où est le serveur</text>
+<text x="70" y="1411" class="mark" fill="#b45309">PK</text>
+<text x="96" y="1411" class="col" fill="#0b3d1d">id integer (1 ligne)</text>
+<text x="96" y="1429" class="col" fill="#0b3d1d">base_url text</text>
+<text x="96" y="1447" class="col" fill="#0b3d1d">organisation_id text</text>
+<text x="70" y="1465" class="mark" fill="#6d28d9">FK</text>
+<text x="96" y="1465" class="col" fill="#0b3d1d">idprojet_racine → projet</text>
+<text x="96" y="1483" class="col" fill="#0b3d1d">langue text</text>
+<text x="96" y="1501" class="col" fill="#0b3d1d">schema_version text</text>
+<text x="96" y="1519" class="col" fill="#0b3d1d">derniere_synchro datetime</text>
+<g filter="url(#shadow)"><rect x="409" y="1354" width="239" height="178" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M409,1382 V1361 Q409,1354 416,1354 H641 Q648,1354 648,1361 V1382 Z" fill="#c2410c"/>
+<text x="419" y="1373" class="title">siamois_table</text>
+<text x="419" y="1394" class="sub" fill="#5a1d05">table locale → entité SIAMOIS</text>
+<text x="419" y="1411" class="mark" fill="#b45309">PK</text>
+<text x="445" y="1411" class="col" fill="#5a1d05">nom_table text</text>
+<text x="445" y="1429" class="col" fill="#5a1d05">entite_siamois text</text>
+<text x="445" y="1447" class="col" fill="#5a1d05">famille text (UT|UO|UR|UD)</text>
+<text x="445" y="1465" class="col" fill="#5a1d05">type_geometrie text</text>
+<text x="445" y="1483" class="col" fill="#5a1d05">champ_cle text</text>
+<text x="445" y="1501" class="col" fill="#5a1d05">champ_num text</text>
+<text x="445" y="1519" class="col" fill="#5a1d05">editable boolean</text>
+<g filter="url(#shadow)"><rect x="409" y="1624" width="317" height="268" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M409,1652 V1631 Q409,1624 416,1624 H719 Q726,1624 726,1631 V1652 Z" fill="#15803d"/>
+<text x="419" y="1643" class="title">siamois_champ</text>
+<text x="419" y="1664" class="sub" fill="#0b3d1d">ex-« layers.columns » : config des champs</text>
+<text x="419" y="1681" class="mark" fill="#b45309">PK</text>
+<text x="445" y="1681" class="col" fill="#0b3d1d">idchamp integer</text>
+<text x="419" y="1699" class="mark" fill="#6d28d9">FK</text>
+<text x="445" y="1699" class="col" fill="#0b3d1d">nom_table → siamois_table</text>
+<text x="445" y="1717" class="col" fill="#0b3d1d">nom_colonne text</text>
+<text x="445" y="1735" class="col" fill="#0b3d1d">id_champ_siamois text</text>
+<text x="445" y="1753" class="col" fill="#0b3d1d">libelle text</text>
+<text x="445" y="1771" class="col" fill="#0b3d1d">type_reponse text</text>
+<text x="445" y="1789" class="col" fill="#0b3d1d">code_vocabulaire text</text>
+<text x="445" y="1807" class="col" fill="#0b3d1d">binding text (type, recordingUnit…)</text>
+<text x="445" y="1825" class="col" fill="#0b3d1d">panneau text, ordre integer</text>
+<text x="445" y="1843" class="col" fill="#0b3d1d">obligatoire, lecture_seule boolean</text>
+<text x="445" y="1861" class="col" fill="#0b3d1d">borne_min, borne_max, unite</text>
+<text x="445" y="1879" class="col" fill="#0b3d1d">regles_json text</text>
+<g filter="url(#shadow)"><rect x="60" y="1624" width="265" height="124" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M60,1652 V1631 Q60,1624 67,1624 H318 Q325,1624 325,1631 V1652 Z" fill="#15803d"/>
+<text x="70" y="1643" class="title">siamois_champ_type</text>
+<text x="70" y="1664" class="sub" fill="#0b3d1d">ex-« allowed » : champs d&#x27;un type</text>
+<text x="70" y="1681" class="mark" fill="#b45309">PK</text>
+<text x="96" y="1681" class="col" fill="#0b3d1d">id integer</text>
+<text x="96" y="1699" class="col" fill="#0b3d1d">nom_table text</text>
+<text x="96" y="1717" class="col" fill="#0b3d1d">id_type_siamois text</text>
+<text x="70" y="1735" class="mark" fill="#6d28d9">FK</text>
+<text x="96" y="1735" class="col" fill="#0b3d1d">idchamp → siamois_champ</text>
+<g filter="url(#shadow)"><rect x="409" y="1948" width="291" height="142" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M409,1976 V1955 Q409,1948 416,1948 H693 Q700,1948 700,1955 V1976 Z" fill="#15803d"/>
+<text x="419" y="1967" class="title">siamois_concept</text>
+<text x="419" y="1988" class="sub" fill="#0b3d1d">ex-« vocab » : lien concept ↔ SIAMOIS</text>
+<text x="419" y="2005" class="mark" fill="#b45309">PK</text>
+<text x="445" y="2005" class="col" fill="#0b3d1d">id integer</text>
+<text x="419" y="2023" class="mark" fill="#6d28d9">FK</text>
+<text x="445" y="2023" class="col" fill="#0b3d1d">idconcept → concept</text>
+<text x="445" y="2041" class="col" fill="#0b3d1d">id_concept_siamois text</text>
+<text x="445" y="2059" class="col" fill="#0b3d1d">code_vocabulaire text (fieldCode)</text>
+<text x="445" y="2077" class="col" fill="#0b3d1d">libelle_prefere text</text>
+<g filter="url(#shadow)"><rect x="1248" y="1948" width="245" height="124" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M1248,1976 V1955 Q1248,1948 1255,1948 H1486 Q1493,1948 1493,1955 V1976 Z" fill="#c2410c"/>
+<text x="1258" y="1967" class="title">siamois_personne</text>
+<text x="1258" y="1988" class="sub" fill="#5a1d05">personne ↔ utilisateur SIAMOIS</text>
+<text x="1258" y="2005" class="mark" fill="#b45309">PK</text>
+<text x="1284" y="2005" class="col" fill="#5a1d05">id integer</text>
+<text x="1258" y="2023" class="mark" fill="#6d28d9">FK</text>
+<text x="1284" y="2023" class="col" fill="#5a1d05">idpersonne → personne</text>
+<text x="1284" y="2041" class="col" fill="#5a1d05">id_personne_siamois text</text>
+<text x="1284" y="2059" class="col" fill="#5a1d05">email text</text>
+<g filter="url(#shadow)"><rect x="810" y="1354" width="354" height="214" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M810,1382 V1361 Q810,1354 817,1354 H1157 Q1164,1354 1164,1361 V1382 Z" fill="#c2410c"/>
+<text x="820" y="1373" class="title">siamois_entite</text>
+<text x="820" y="1394" class="sub" fill="#5a1d05">correspondance locale ↔ SIAMOIS + état</text>
+<text x="820" y="1411" class="mark" fill="#b45309">PK</text>
+<text x="846" y="1411" class="col" fill="#5a1d05">identite integer</text>
+<text x="846" y="1429" class="col" fill="#5a1d05">nom_table text</text>
+<text x="846" y="1447" class="col" fill="#5a1d05">id_local integer (clé de la table)</text>
+<text x="846" y="1465" class="col" fill="#5a1d05">id_siamois text</text>
+<text x="846" y="1483" class="col" fill="#5a1d05">type_siamois text (projet|UE|mobilier|doc)</text>
+<text x="846" y="1501" class="col" fill="#5a1d05">revision_siamois integer</text>
+<text x="846" y="1519" class="col" fill="#5a1d05">etat text (synchronise|modifie|</text>
+<text x="846" y="1537" class="col" fill="#5a1d05">      nouveau|conflit|erreur)</text>
+<text x="846" y="1555" class="col" fill="#5a1d05">date_synchro datetime</text>
+<g filter="url(#shadow)"><rect x="1248" y="1354" width="343" height="160" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M1248,1382 V1361 Q1248,1354 1255,1354 H1584 Q1591,1354 1591,1361 V1382 Z" fill="#15803d"/>
+<text x="1258" y="1373" class="title">siamois_reference</text>
+<text x="1258" y="1394" class="sub" fill="#0b3d1d">ex-« base » : copie de référence (hors ligne)</text>
+<text x="1258" y="1411" class="mark" fill="#b45309">PK</text>
+<text x="1284" y="1411" class="col" fill="#0b3d1d">nom_table + id_local</text>
+<text x="1284" y="1429" class="col" fill="#0b3d1d">cellules_json text</text>
+<text x="1284" y="1447" class="col" fill="#0b3d1d">geom_wkt text</text>
+<text x="1284" y="1465" class="col" fill="#0b3d1d">revision integer</text>
+<text x="1284" y="1483" class="col" fill="#0b3d1d">incomplet_json text</text>
+<text x="1284" y="1501" class="col" fill="#0b3d1d">champs_autorises_json text</text>
+<g filter="url(#shadow)"><rect x="810" y="1624" width="311" height="178" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M810,1652 V1631 Q810,1624 817,1624 H1114 Q1121,1624 1121,1631 V1652 Z" fill="#c2410c"/>
+<text x="820" y="1643" class="title">siamois_conflit</text>
+<text x="820" y="1664" class="sub" fill="#5a1d05">conflits de révision (409)</text>
+<text x="820" y="1681" class="mark" fill="#b45309">PK</text>
+<text x="846" y="1681" class="col" fill="#5a1d05">idconflit integer</text>
+<text x="820" y="1699" class="mark" fill="#6d28d9">FK</text>
+<text x="846" y="1699" class="col" fill="#5a1d05">identite → siamois_entite</text>
+<text x="846" y="1717" class="col" fill="#5a1d05">nom_colonne text</text>
+<text x="846" y="1735" class="col" fill="#5a1d05">valeur_locale text</text>
+<text x="846" y="1753" class="col" fill="#5a1d05">valeur_serveur text</text>
+<text x="846" y="1771" class="col" fill="#5a1d05">decision text (local|serveur|fusion)</text>
+<text x="846" y="1789" class="col" fill="#5a1d05">date datetime</text>
+<g filter="url(#shadow)"><rect x="1248" y="1624" width="274" height="160" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M1248,1652 V1631 Q1248,1624 1255,1624 H1515 Q1522,1624 1522,1631 V1652 Z" fill="#c2410c"/>
+<text x="1258" y="1643" class="title">siamois_journal</text>
+<text x="1258" y="1664" class="sub" fill="#5a1d05">historique des synchronisations</text>
+<text x="1258" y="1681" class="mark" fill="#b45309">PK</text>
+<text x="1284" y="1681" class="col" fill="#5a1d05">idjournal integer</text>
+<text x="1284" y="1699" class="col" fill="#5a1d05">date datetime, utilisateur text</text>
+<text x="1284" y="1717" class="col" fill="#5a1d05">action text (pull|push|create)</text>
+<text x="1258" y="1735" class="mark" fill="#6d28d9">FK</text>
+<text x="1284" y="1735" class="col" fill="#5a1d05">identite → siamois_entite</text>
+<text x="1284" y="1753" class="col" fill="#5a1d05">statut text (ok|erreur|conflit)</text>
+<text x="1284" y="1771" class="col" fill="#5a1d05">message text</text>
+<rect x="1768" y="100" width="400" height="187" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="1780" y="122" class="ntitle" fill="#0f172a">Correspondance SIAMOIS (champ table_siamois)</text>
+<text x="1780" y="142" class="ntext">projet               → Projet</text>
+<text x="1780" y="159" class="ntext">ut_*, uo_poly,       → Unité d&#x27;enregistrement</text>
+<text x="1780" y="176" class="ntext">ur_poly, ud_*</text>
+<text x="1780" y="193" class="ntext">uo_point             → Mobilier</text>
+<text x="1780" y="210" class="ntext">                       (API : UE parente + géométrie)</text>
+<text x="1780" y="227" class="ntext">raster, metadonnees  → Document</text>
+<text x="1780" y="244" class="ntext">personne ↔ Utilisateur · concept ↔ Concept</text>
+<text x="1780" y="261" class="ntext">¹ champs communs : table_siamois, com,</text>
+<text x="1780" y="278" class="ntext">  autsaisie, datesaisie</text>
+<rect x="1768" y="309" width="400" height="119" rx="9" fill="#fffbeb" stroke="#f5d68a" stroke-width="1.4"/>
+<text x="1780" y="331" class="ntitle" fill="#0f172a">Liens « par la valeur » (sans clé étrangère)</text>
+<text x="1780" y="351" class="ntext">typ…, interpret, metacquis, table_siamois</text>
+<text x="1780" y="368" class="ntext">      →  concept.label</text>
+<text x="1780" y="385" class="ntext">autsaisie, ro, dc_creator, dc_publish</text>
+<text x="1780" y="402" class="ntext">      →  personne.nom</text>
+<text x="1780" y="419" class="ntext">(valeurs multiples séparées par des virgules)</text>
+<rect x="1768" y="450" width="400" height="200" rx="9" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="1780" y="472" class="ntitle">Légende</text>
+<rect x="1780" y="481" width="16" height="16" rx="4" fill="#1d4ed8"/>
+<text x="1804" y="494" class="ntext">Modèle de Quentin Verriez</text>
+<rect x="1780" y="505" width="16" height="16" rx="4" fill="#5b8def"/>
+<text x="1804" y="518" class="ntext">Tables de liaison du modèle (n-n)</text>
+<rect x="1780" y="529" width="16" height="16" rx="4" fill="#15803d"/>
+<text x="1804" y="542" class="ntext">Tables techniques déjà dans le plugin</text>
+<rect x="1780" y="553" width="16" height="16" rx="4" fill="#c2410c"/>
+<text x="1804" y="566" class="ntext">Tables techniques à ajouter</text>
+<text x="1780" y="596" class="ntext">PK clé primaire · FK clé étrangère · UQ unique</text>
+<text x="1780" y="614" class="ntext">* obligatoire · trait plein : clé étrangère</text>
+<text x="1780" y="632" class="ntext">tirets : lien logique (nom_table, id_local)</text>
+<rect x="1768" y="672" width="400" height="187" rx="9" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.4"/>
+<text x="1780" y="694" class="ntitle" fill="#0f172a">Travail hors ligne et synchronisation</text>
+<text x="1780" y="714" class="ntext">Les modifications restent dans le GeoPackage.</text>
+<text x="1780" y="731" class="ntext">siamois_reference garde l&#x27;état du dernier</text>
+<text x="1780" y="748" class="ntext">chargement : la différence avec les tables</text>
+<text x="1780" y="765" class="ntext">= ce qu&#x27;il y a à envoyer.</text>
+<text x="1780" y="782" class="ntext">siamois_entite.etat suit chaque ligne :</text>
+<text x="1780" y="799" class="ntext">synchronise · modifie · nouveau · conflit · erreur.</text>
+<text x="1780" y="816" class="ntext">Un seul bouton « Synchroniser » ; pas de file</text>
+<text x="1780" y="833" class="ntext">d&#x27;attente. Les conflits (409) vont dans</text>
+<text x="1780" y="850" class="ntext">siamois_conflit, tout est tracé dans le journal.</text>
+</svg>
