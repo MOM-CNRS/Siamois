@@ -246,12 +246,12 @@ public interface ActionUnitRepository extends CrudRepository<ActionUnit, Long>, 
             """, nativeQuery = true)
     List<Long> findAncestorClosure(@Param("seedIds") Long[] seedIds);
 
-    @Query(value = """
-            SELECT fk_parent_id, COUNT(*)
-            FROM action_hierarchy
-            WHERE fk_parent_id IN (:ids)
-            GROUP BY fk_parent_id
-            """, nativeQuery = true)
+    @Query("""
+            SELECT parent.id, COUNT(child)
+            FROM ActionUnit parent JOIN parent.children child
+            WHERE parent.id IN :ids
+            GROUP BY parent.id
+            """)
     List<Object[]> countChildActionUnitsByParentIds(@Param("ids") List<Long> ids);
 
     @Modifying

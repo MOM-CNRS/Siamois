@@ -1,0 +1,58 @@
+name: Wiki → Discord
+
+on: gollum
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cette page est-elle concernée ?
+        id: f
+        env:
+          PAGES: ${{ toJson(github.event.pages) }}
+        run: |
+          # Pour debug au premier test : décommenter
+          # echo "$PAGES"
+
+          # Match sur l'URL (encodée ou non) pour éviter les soucis d'accents NFC/NFD
+          SEL='[.[] | select((.html_url | endswith("Sch%C3%A9ma-de-donn%C3%A9es-spatiales-SIAMOIS"))
+                          or (.html_url | endswith("Schéma-de-données-spatiales-SIAMOIS")))][0]'
+
+          SHA=$(echo "$PAGES" | jq -r "$SEL.sha // empty")
+          URL=$(echo "$PAGES" | jq -r "$SEL.html_url // empty")
+          TITLE=$(echo "$PAGES" | jq -r "$SEL.title // empty")
+          NAME=$(echo "$PAGES" | jq -r "$SEL.page_name // empty")
+
+          echo "sha=$SHA"     >> "$GITHUB_OUTPUT"
+          echo "url=$URL"     >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME"   >> "$GITHUB_OUTPUT"
+
+      - name: Checkout du wiki
+        if: steps.f.outputs.sha != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          fetch-depth: 0
+
+      - name: Envoyer sur Discord
+        if: steps.f.outputs.sha != ''
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          SHA: ${{ steps.f.outputs.sha }}
+          URL: ${{ steps.f.outputs.url }}
+          TITLE: ${{ steps.f.outputs.title }}
+          NAME: ${{ steps.f.outputs.name }}
+          AUTHOR: ${{ github.actor }}
+        run: |
+          DIFF=$(git -c core.quotepath=off show --format= "$SHA" -- "$NAME.md" \
+                 | tail -n +5 | head -c 3500)
+
+          [ -z "$DIFF" ] && DIFF="(diff indisponible)"
+
+          jq -n \
+            --arg title "📝 Wiki : $TITLE modifiée par $AUTHOR" \
+            --arg url "$URL" \
+            --arg desc "$(printf '```diff\n%s\n```' "$DIFF")" \
+            '{embeds:[{title:$title, url:$url, description:$desc, color:5814783}]}' |
+          curl -sf -H 'Content-Type: application/json' -d @- "$WEBHOOK"

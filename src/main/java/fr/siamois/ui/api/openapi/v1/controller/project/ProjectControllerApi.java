@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.ProjectResponseMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectListFilter;
@@ -53,6 +54,7 @@ public class ProjectControllerApi {
     private final FieldQueryService fieldQueryService;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping
     @Operation(summary = "La liste des projets")
     @ApiResponses(value = {

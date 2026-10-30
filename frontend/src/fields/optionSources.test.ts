@@ -134,7 +134,7 @@ describe("optionSourceFor — reference fields", () => {
 
     const options = await optionSourceFor(field({ answerType: "SELECT_MULTIPLE_PHASE" }), 100, "5")!("ph");
 
-    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/phases?offset=0&limit=20&search=ph");
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/phases?offset=0&limit=20&search=ph&searchMode=prefix");
     expect(options).toEqual([{ id: "8", label: "Phase 1" }]);
   });
 

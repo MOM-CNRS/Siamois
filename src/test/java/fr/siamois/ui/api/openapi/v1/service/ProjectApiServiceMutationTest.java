@@ -1134,6 +1134,7 @@ class ProjectApiServiceMutationTest {
         verify(actionUnitService).findAccessibleProjects(eq(1L), eq(SCOPE), eq(10L), asked.capture());
         AccessibleProjectsQuery query = asked.getValue();
         assertThat(query.search()).isEqualTo("fouille");
+        assertThat(query.searchType()).isEqualTo(fr.siamois.dto.FilterDTO.FilterType.CONTAINS);
         assertThat(query.recordingUnitCountOrder()).isNull();
         assertThat(query.pageable().getPageNumber()).isEqualTo(2);
         assertThat(query.pageable().getPageSize()).isEqualTo(10);

@@ -20,6 +20,8 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ContainerSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.ContainerMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -61,8 +63,8 @@ public class ContainerService {
         FilterDTO.FilterInfo globalFilter = filters.filterOf(ActionUnitSpec.GLOBAL_FILTER);
         FilterDTO.FilterInfo nameFilter = filters.filterOf(ContainerSpec.IDENTIFIER_FILTER);
 
-        if (nameFilter != null && nameFilter.getType() == FilterDTO.FilterType.CONTAINS) {
-            specs = specs.and(ContainerSpec.nameContaining(nameFilter.valueAsString()));
+        if (nameFilter != null && nameFilter.getType().isTextSearch()) {
+            specs = specs.and(TextSearchSpec.matching(ContainerSpec.IDENTIFIER_FILTER, nameFilter));
         } else if (globalFilter != null && globalFilter.getType() == FilterDTO.FilterType.CONTAINS) {
             specs = specs.and(ContainerSpec.nameContaining(globalFilter.valueAsString()));
         }
@@ -112,7 +114,8 @@ public class ContainerService {
 
         Specification<Container> specs = prepareSpecs(institutionDTO, filters);
 
-        Page<Container> res = containerRepository.findAll(specs, pageable);
+        Page<Container> res = ExactMatchFirst.findAll(containerRepository, specs, pageable,
+                ContainerSpec.IDENTIFIER_FILTER, filters.searchTextOf(ContainerSpec.IDENTIFIER_FILTER));
 
         if (filters.containsColumn(ContainerSpec.IDENTIFIER_FILTER)) {
             String nameContains = filters.valueOfAsString(ContainerSpec.IDENTIFIER_FILTER);

@@ -1204,9 +1204,11 @@ class ProjectControllerApiTest {
     }
 
     /**
-     * A projects query with no search and no sort by recording-unit count — what a plain list request asks.
+     * A projects query with no search, a "contains" search mode and no sort by recording-unit count — what a
+     * plain list request asks.
      */
     private static boolean isAPlainSearch(AccessibleProjectsQuery query) {
-        return query.search() == null && query.recordingUnitCountOrder() == null;
+        return query.search() == null && query.searchType() == fr.siamois.dto.FilterDTO.FilterType.CONTAINS
+                && query.recordingUnitCountOrder() == null;
     }
 }
