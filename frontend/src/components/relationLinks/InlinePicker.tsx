@@ -13,8 +13,8 @@ interface Props {
   load: (query: string) => Promise<PickerOption[]>;
   placeholder: string;
   autoFocus?: boolean;
-  // A last line of the list, e.g. "create a new one".
-  footer?: ReactNode;
+  // A last line of the list, e.g. "create a new one"; a function gets what is typed, and `pick` to choose a made-up option.
+  footer?: ReactNode | ((typed: { query: string; pick: (option: PickerOption) => void }) => ReactNode);
 }
 
 // How long typing pauses before the search goes out.
@@ -99,7 +99,10 @@ export function InlinePicker({ value, onChange, load, placeholder, autoFocus, fo
             </li>
           ))}
           {!loading && options.length === 0 && <li className="sia-inline-picker-empty">…</li>}
-          {footer && <li className="sia-inline-picker-footer">{footer}</li>}
+          {(() => {
+            const line = typeof footer === "function" ? footer({ query, pick }) : footer;
+            return line ? <li className="sia-inline-picker-footer">{line}</li> : null;
+          })()}
         </ul>
       )}
     </div>
