@@ -246,14 +246,15 @@ export function renderAnswerValue(field: FieldResource, rawValue: unknown): stri
  * <p>References render as {@link RefChip}s. By default (a table cell, one line tall) a multi-valued
  * answer shows its first value plus a {@code +N} count, never the full list: a joined list is just a
  * long string that gets cut mid-label. {@code all} (a fiche field, the overlay) shows every value it
- * has — a preview's missing ones still counted as "+N". {@code onOpenLink} makes the chips open
+ * has — a preview's missing ones still counted as "+N" — or, with {@code max}, that many of them and
+ * the count of the others. {@code onOpenLink} makes the chips open
  * their entity, then calls it: only the overlay's, so that a cell's first click always opens the
  * overlay.</p>
  */
 export function renderAnswerCell(
   field: FieldResource,
   rawValue: unknown,
-  options: { all?: boolean; onOpenLink?: () => void } = {},
+  options: { all?: boolean; max?: number; onOpenLink?: () => void } = {},
 ): ReactNode {
   const value = unwrapAnswer(rawValue);
   // A yes/no is a checkbox, not text: the editor's own, disabled.
@@ -282,7 +283,7 @@ export function renderAnswerCell(
   };
 
   if (items.length === 1 && total === 1) return render(items[0]);
-  const shown = options.all ? items : items.slice(0, 1);
+  const shown = options.all ? items.slice(0, options.max ?? items.length) : items.slice(0, 1);
   const hidden = total - shown.length;
   // The counter's tooltip lists every value when the row has them all; a preview's are only
   // counted (the overlay loads them).
@@ -298,9 +299,9 @@ export function renderAnswerCell(
           ))
         : shown.length > 0 && <span className="cell-multi-first">{render(shown[0])}</span>}
       {/* Only a narrow fiche shows it (main-panel.css): the first value and this count, instead of every value. */}
-      {options.all && shown.length > 1 && (
+      {options.all && total > 1 && (
         <span className="cell-multi-fold" title={title}>
-          +{shown.length - 1}
+          +{total - 1}
         </span>
       )}
       {hidden > 0 && (
