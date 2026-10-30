@@ -30,7 +30,6 @@ import fr.siamois.domain.services.form.OnTheFlyFieldService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -114,7 +113,6 @@ public class RecordingUnitOpenApiService {
     private final FieldTextService fieldTextService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
-    private final SpatialUnitService spatialUnitService;
     private final FindOpenApiMapper findOpenApiMapper;
     private final LabelService labelService;
     private final TableFieldConfigService tableFieldConfigService;
@@ -1044,7 +1042,6 @@ public class RecordingUnitOpenApiService {
         shell.setValidationStatus(ValidationStatus.INCOMPLETE);
         shell.setParents(new HashSet<>());
         shell.setChildren(new HashSet<>());
-        applyDefaultSpatialUnit(shell);
         // Left empty: the first save gives it a random temporary code, unique in the project, until the real
         // identifier is set — the project's own identifier would collide between concurrent creations.
         shell.setFullIdentifier(null);
@@ -1069,27 +1066,18 @@ public class RecordingUnitOpenApiService {
         }
     }
 
-    /** A new unit is placed in the first spatial unit its project offers, which {@code NUM_USPATIAL} reads. */
-    private void applyDefaultSpatialUnit(RecordingUnitDTO unit) {
-        List<SpatialUnitSummaryDTO> suOptions = spatialUnitService.getSpatialUnitOptionsFor(unit);
-        if (!suOptions.isEmpty()) {
-            unit.setSpatialUnit(suOptions.get(0));
-        }
-    }
-
     /**
      * The identifier {@link #createRecordingUnit} would generate for {@code unit} (the creation form's
-     * suggestion, {@code GET /api/v1/identifier-suggestions}): the unit first gets the same default
-     * spatial unit and the same parent as at creation, so that every token of the format — not only
-     * the counter — renders as it will. The parent is only set on the unsaved {@code unit}: nothing is
-     * linked nor written, the creation form may still be cancelled.
+     * suggestion, {@code GET /api/v1/identifier-suggestions}): the unit first gets the same parent as
+     * at creation, so that every token of the format — not only the counter — renders as it will. The parent
+     * is only set on the unsaved {@code unit}: nothing is linked nor written, the creation form may still
+     * be cancelled.
      *
      * @param parentRecordingUnitId the unit the new one will be created under (its "nouvel enfant" row action), or null
      */
     @Transactional(readOnly = true)
     public String suggestFullIdentifier(RecordingUnitDTO unit, Long parentRecordingUnitId,
                                         Set<Long> accessibleInstitutionIds) {
-        applyDefaultSpatialUnit(unit);
         if (parentRecordingUnitId != null) {
             attachParent(unit, requireParentInProject(parentRecordingUnitId, unit.getActionUnit().getId(),
                     accessibleInstitutionIds));

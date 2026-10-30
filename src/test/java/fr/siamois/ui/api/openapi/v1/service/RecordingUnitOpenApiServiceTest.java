@@ -39,7 +39,6 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
-import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -139,8 +138,6 @@ class RecordingUnitOpenApiServiceTest {
     private ProfilePermissionService profilePermissionService;
     @Mock
     private PersonService personService;
-    @Mock
-    private SpatialUnitService spatialUnitService;
     @Mock
     private PersonMapper personMapper;
     @Mock
@@ -959,12 +956,6 @@ class RecordingUnitOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
 
-        SpatialUnitSummaryDTO su = new SpatialUnitSummaryDTO();
-        su.setId(77L);
-        // Lenient, like what follows: not reached by a creation rejected before its shell is built (a parent
-        // of another project…).
-        lenient().when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of(su));
-
         // Lenient: what happens once the UE is saved is not reached by a creation rejected before (a phase
         // of another project…).
         CustomFieldInteger intField = mock(CustomFieldInteger.class, withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
@@ -1002,19 +993,15 @@ class RecordingUnitOpenApiServiceTest {
     }
 
     @Test
-    void suggestFullIdentifier_placesTheUnitInItsDefaultSpatialUnit_asTheCreationDoes() {
+    void suggestFullIdentifier_leavesTheSpatialUnitEmpty_asTheCreationDoes() {
         RecordingUnitDTO unit = new RecordingUnitDTO();
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
         project.setId(5L);
         unit.setActionUnit(project);
-        SpatialUnitSummaryDTO su = new SpatialUnitSummaryDTO();
-        su.setId(77L);
-        su.setPlaceNumber(12);
-        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of(su));
-        when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("PROJ-12-UE1");
+        when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("PROJ-UE1");
 
-        assertThat(service.suggestFullIdentifier(unit, null, SCOPE)).isEqualTo("PROJ-12-UE1");
-        assertThat(unit.getSpatialUnit()).isSameAs(su);
+        assertThat(service.suggestFullIdentifier(unit, null, SCOPE)).isEqualTo("PROJ-UE1");
+        assertThat(unit.getSpatialUnit()).isNull();
     }
 
     @Test
@@ -1023,7 +1010,6 @@ class RecordingUnitOpenApiServiceTest {
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
         project.setId(5L);
         unit.setActionUnit(project);
-        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of());
         accessibleUnitInProject(12L, 5L);
         when(recordingUnitService.suggestFullIdentifier(project, unit)).thenReturn("PROJ-UE4-1");
 
@@ -1043,7 +1029,6 @@ class RecordingUnitOpenApiServiceTest {
         ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
         project.setId(5L);
         unit.setActionUnit(project);
-        when(spatialUnitService.getSpatialUnitOptionsFor(unit)).thenReturn(List.of());
         accessibleUnitInProject(12L, 6L);
 
         assertThatThrownBy(() -> service.suggestFullIdentifier(unit, 12L, SCOPE))
@@ -1296,7 +1281,6 @@ class RecordingUnitOpenApiServiceTest {
         when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
-        when(spatialUnitService.getSpatialUnitOptionsFor(any(RecordingUnitDTO.class))).thenReturn(List.of());
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
@@ -1341,7 +1325,6 @@ class RecordingUnitOpenApiServiceTest {
         ConceptDTO typeDto = new ConceptDTO();
         when(conceptRepository.findById(42L)).thenReturn(Optional.of(typeConcept));
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
-        when(spatialUnitService.getSpatialUnitOptionsFor(any())).thenReturn(List.of());
         when(effectiveFormResolver.resolveEffectiveForm(any(), any(), any())).thenReturn(new FormUiDto());
         CustomFormResponseViewModel responseVm = new CustomFormResponseViewModel();
         responseVm.setAnswers(Map.of());
