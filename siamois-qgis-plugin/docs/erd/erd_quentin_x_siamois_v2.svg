@@ -1,0 +1,437 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2418" height="2118" viewBox="0 0 2418 2118">
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="110%" height="115%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#0f172a" flood-opacity="0.18"/></filter>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#475569"/></marker>
+<marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6"><circle cx="5" cy="5" r="4" fill="#5b8def"/></marker>
+<marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#5b8def"/></marker>
+<style>
+text { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+.title { font-size: 14px; font-weight: 700; fill: #ffffff; }
+.sub { font-size: 10.5px; font-style: italic; }
+.col { font-size: 12px; } .colmuted { font-size: 11px; }
+.mark { font-size: 10px; font-weight: 700; }
+.pill { font-size: 10px; } .card { font-size: 11px; font-weight: 700; fill: #334155; }
+.ntitle { font-size: 13px; font-weight: 700; } .ntext { font-size: 11.5px; fill: #1e293b; }
+.big { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; fill: #0f172a; }
+.small { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 13px; fill: #475569; }
+.frame { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #1d4ed8; }
+</style></defs>
+<rect width="2418" height="2118" fill="#ffffff"/>
+<text x="60" y="40" class="big">Modèle de Quentin Verriez × SIAMOIS — version simplifiée (décisions intégrées)</text>
+<text x="60" y="62" class="small">Colonnes siamois_* ajoutées aux tables du modèle (orange), 4 tables techniques conservées, et un champ table_modele_spatial à ajouter à la configuration des types côté SIAMOIS.</text>
+<rect x="567" y="96" width="1196" height="1332" rx="14" fill="#f8fbff" stroke="#93b4f5" stroke-width="1.6" stroke-dasharray="8 5"/>
+<text x="583" y="118" class="frame">Entités spatiales (9 tables) — chacune rattachée à un seul projet</text>
+<path d="M392,174.89999999999998 C432,174.89999999999998 527,174.89999999999998 567,174.89999999999998" fill="none" stroke="#1d4ed8" stroke-width="2.2"  marker-end="url(#arrow)"/><rect x="438.3" y="165.89999999999998" width="82.4" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="479.5" y="178.89999999999998" text-anchor="middle" class="pill" fill="#1d4ed8">idprojet ×9</text><text x="402" y="178.89999999999998" class="card">1</text><text x="549" y="178.89999999999998" class="card">n</text>
+<path d="M392,232.68 C462,202.68 462,262.68 392,248.68" fill="none" stroke="#1d4ed8" stroke-width="1.6" marker-end="url(#arrow)"/><rect x="446.8" y="231.68" width="50.400000000000006" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="472" y="244.68" text-anchor="middle" class="pill" fill="#1d4ed8">parent</text>
+<path d="M228.5,364 C228.5,338 226.0,340 226.0,314" fill="none" stroke="#1d4ed8" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="205.25" y="330.0" width="44.0" height="17" rx="8.5" fill="white" stroke="#1d4ed8" stroke-width="1"/><text x="227.25" y="343.0" text-anchor="middle" class="pill" fill="#1d4ed8">1 — 1</text>
+<path d="M875,267.0 C885,267.0 1015,249.0 1025,249.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="902.4" y="249.0" width="95.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="950.0" y="262.0" text-anchor="middle" class="pill" fill="#5b8def">lien_doc_uopt</text>
+<path d="M1165.0,356 C1165.0,368 1165.0,476 1165.0,488" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1111.0" y="413.0" width="108.0" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1165.0" y="426.0" text-anchor="middle" class="pill" fill="#5b8def">lien_doc_uopoly</text>
+<path d="M875,586.0 C885,586.0 1015,613.0 1025,613.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="886.4" y="590.5" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="950.0" y="603.5" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_udpoly</text>
+<path d="M1305,613.0 C1315,613.0 1445,586.0 1455,586.0" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1319.6" y="590.5" width="120.80000000000001" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1380.0" y="603.5" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_udlgn</text>
+<path d="M1165.0,738 C1165.0,750 1165.0,822 1165.0,834" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1101.4" y="777.0" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1165.0" y="790.0" text-anchor="middle" class="pill" fill="#5b8def">lien_uopoly_urpoly</text>
+<path d="M735.0,684 C735.0,754 955,946.5 1025,946.5" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="809.49125" y="849.260625" width="127.2" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="873.0912500000001" y="862.260625" text-anchor="middle" class="pill" fill="#5b8def">lien_urpoly_udpoly</text>
+<path d="M1595.0,684 C1595.0,754 1375,946.5 1305,946.5" fill="none" stroke="#5b8def" stroke-width="1.5"  marker-start="url(#dot)" marker-end="url(#dot)"/><rect x="1396.5087500000002" y="849.260625" width="120.80000000000001" height="17" rx="8.5" fill="white" stroke="#5b8def" stroke-width="1"/><text x="1456.9087500000003" y="862.260625" text-anchor="middle" class="pill" fill="#5b8def">lien_urpoly_udlgn</text>
+<path d="M639.0,1498 C639.0,1474 639.0,1452 639.0,1428" fill="none" stroke="#15803d" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="556.2" y="1454.0" width="165.60000000000002" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="639.0" y="1467.0" text-anchor="middle" class="pill" fill="#15803d">(nom_table, nom_colonne)</text>
+<path d="M1122.5,1498 C1122.5,1474 1122.5,1452 1122.5,1428" fill="none" stroke="#15803d" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="1049.3" y="1454.0" width="146.4" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="1122.5" y="1467.0" text-anchor="middle" class="pill" fill="#15803d">(nom_table, id_local)</text>
+<path d="M1519.0,1498 C1519.0,1474 1519.0,1452 1519.0,1428" fill="none" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="6 4"  marker-end="url(#arrow)"/><rect x="1445.8" y="1454.0" width="146.4" height="17" rx="8.5" fill="white" stroke="#c2410c" stroke-width="1"/><text x="1519.0" y="1467.0" text-anchor="middle" class="pill" fill="#c2410c">(nom_table, id_local)</text>
+<path d="M327,1560.0 C341,1560.0 397,1641.0 411,1641.0" fill="none" stroke="#15803d" stroke-width="1.6"  marker-end="url(#arrow)"/><rect x="347.0" y="1591.5" width="44.0" height="17" rx="8.5" fill="white" stroke="#15803d" stroke-width="1"/><text x="369.0" y="1604.5" text-anchor="middle" class="pill" fill="#15803d">n — 1</text>
+<path d="M1938,216.0 C1908,216.0 1793,216.0 1763,216.0" fill="none" stroke="#6d28d9" stroke-width="2.2" stroke-dasharray="7 4"  marker-end="url(#arrow)"/><rect x="1780.5" y="207.0" width="140.0" height="17" rx="8.5" fill="white" stroke="#6d28d9" stroke-width="1"/><text x="1850.5" y="220.0" text-anchor="middle" class="pill" fill="#6d28d9">table_modele_spatial</text>
+<path d="M2138.0,332 C2138.0,352 2158.0,376 2158.0,396" fill="none" stroke="#6d28d9" stroke-width="2.2" stroke-dasharray="7 4"  marker-end="url(#arrow)"/><rect x="2020.4" y="355.0" width="255.20000000000002" height="17" rx="8.5" fill="white" stroke="#6d28d9" stroke-width="1"/><text x="2148.0" y="368.0" text-anchor="middle" class="pill" fill="#6d28d9">génère concept (nom_table, label, uri)</text>
+<g filter="url(#shadow)"><rect x="60" y="100" width="332" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,128 V107 Q60,100 67,100 H385 Q392,100 392,107 V128 Z" fill="#1d4ed8"/>
+<text x="70" y="119" class="title">projet</text>
+<text x="70" y="140" class="sub" fill="#0b2a6f">Projet SIAMOIS + emprise</text>
+<text x="70" y="157" class="mark" fill="#b45309">PK</text>
+<text x="96" y="157" class="col" fill="#0b2a6f">idprojet integer</text>
+<text x="70" y="175" class="mark" fill="#6d28d9">FK</text>
+<text x="96" y="175" class="col" fill="#0b2a6f">idprojet_parent integer (NULL = racine)</text>
+<text x="96" y="193" class="col" fill="#0b2a6f">numoa text</text>
+<text x="96" y="211" class="col" fill="#0b2a6f">numprojet text *</text>
+<text x="96" y="229" class="col" fill="#0b2a6f">typprojet text *</text>
+<text x="96" y="247" class="col" fill="#0b2a6f">ro text * (personnes)</text>
+<text x="96" y="265" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="96" y="283" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="63" y="289" width="326" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="301" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="301" class="col" fill="#9a3412">siamois_id text</text>
+<g filter="url(#shadow)"><rect x="60" y="364" width="337" height="304" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,392 V371 Q60,364 67,364 H390 Q397,364 397,371 V392 Z" fill="#1d4ed8"/>
+<text x="70" y="383" class="title">metadonnees</text>
+<text x="70" y="404" class="sub" fill="#0b2a6f">Dublin Core + référence spatiale + connexion</text>
+<text x="70" y="421" class="mark" fill="#b45309">PK</text>
+<text x="96" y="421" class="col" fill="#0b2a6f">idmeta integer</text>
+<text x="70" y="439" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="439" class="col" fill="#0b2a6f">idprojet integer → projet (1-1)</text>
+<text x="96" y="457" class="col" fill="#0b2a6f">dc_title, dc_creator, dc_subject</text>
+<text x="96" y="475" class="col" fill="#0b2a6f">dc_descri, dc_publish, dc_date</text>
+<text x="96" y="493" class="col" fill="#0b2a6f">dc_type, dc_format, dc_id, dc_source</text>
+<text x="96" y="511" class="col" fill="#0b2a6f">dc_lang, dc_relation</text>
+<text x="96" y="529" class="col" fill="#0b2a6f">dc_coverage, dc_right</text>
+<text x="96" y="547" class="col" fill="#0b2a6f">epsg integer *</text>
+<text x="96" y="565" class="col" fill="#0b2a6f">alti text *, geoid text *</text>
+<text x="96" y="583" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="63" y="589" width="331" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="601" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="601" class="col" fill="#9a3412">siamois_url text</text>
+<rect x="63" y="607" width="331" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="619" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="619" class="col" fill="#9a3412">siamois_organisation_id text</text>
+<rect x="63" y="625" width="331" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="637" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="637" class="col" fill="#9a3412">siamois_derniere_synchro datetime</text>
+<rect x="63" y="643" width="331" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="655" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="655" class="col" fill="#9a3412">siamois_langue text</text>
+<g filter="url(#shadow)"><rect x="1938" y="396" width="440" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1938,424 V403 Q1938,396 1945,396 H2371 Q2378,396 2378,403 V424 Z" fill="#1d4ed8"/>
+<text x="1948" y="415" class="title">concept</text>
+<text x="1948" y="436" class="sub" fill="#0b2a6f">Vocabulaire : terme ↔ URI (généré depuis SIAMOIS)</text>
+<text x="1948" y="453" class="mark" fill="#b45309">PK</text>
+<text x="1974" y="453" class="col" fill="#0b2a6f">idconcept integer</text>
+<text x="1948" y="471" class="mark" fill="#0e7490">UQ</text>
+<text x="1974" y="471" class="col" fill="#0b2a6f">nom_table text *</text>
+<text x="1948" y="489" class="mark" fill="#0e7490">UQ</text>
+<text x="1974" y="489" class="col" fill="#0b2a6f">type_entite text</text>
+<text x="1948" y="507" class="mark" fill="#0e7490">UQ</text>
+<text x="1974" y="507" class="col" fill="#0b2a6f">nom_colonne text *</text>
+<text x="1948" y="525" class="mark" fill="#0e7490">UQ</text>
+<text x="1974" y="525" class="col" fill="#0b2a6f">label text *</text>
+<text x="1974" y="543" class="col" fill="#0b2a6f">uri text</text>
+<text x="1974" y="561" class="col" fill="#0b2a6f">autsaisie, datesaisie</text>
+<rect x="1941" y="567" width="434" height="17" rx="3" fill="#ffedd5"/>
+<text x="1948" y="579" class="mark" fill="#c2410c">SI</text>
+<text x="1974" y="579" class="col" fill="#9a3412">siamois_id_concept text</text>
+<rect x="1941" y="585" width="434" height="17" rx="3" fill="#ffedd5"/>
+<text x="1948" y="597" class="mark" fill="#c2410c">SI</text>
+<text x="1974" y="597" class="col" fill="#9a3412">siamois_code_vocabulaire text</text>
+<g filter="url(#shadow)"><rect x="60" y="1854" width="253" height="178" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M60,1882 V1861 Q60,1854 67,1854 H306 Q313,1854 313,1861 V1882 Z" fill="#1d4ed8"/>
+<text x="70" y="1873" class="title">personne</text>
+<text x="70" y="1894" class="sub" fill="#0b2a6f">Personnes et organismes</text>
+<text x="70" y="1911" class="mark" fill="#b45309">PK</text>
+<text x="96" y="1911" class="col" fill="#0b2a6f">idpersonne integer</text>
+<text x="70" y="1929" class="mark" fill="#0e7490">UQ</text>
+<text x="96" y="1929" class="col" fill="#0b2a6f">nom text * (Prénom Nom)</text>
+<text x="96" y="1947" class="col" fill="#0b2a6f">typpersonne text *</text>
+<text x="96" y="1965" class="col" fill="#0b2a6f">uri text (ORCID, IdRef, ROR)</text>
+<text x="96" y="1983" class="col" fill="#0b2a6f">autsaisie, datesaisie</text>
+<rect x="63" y="1989" width="247" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="2001" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="2001" class="col" fill="#9a3412">siamois_id_personne text</text>
+<rect x="63" y="2007" width="247" height="17" rx="3" fill="#ffedd5"/>
+<text x="70" y="2019" class="mark" fill="#c2410c">SI</text>
+<text x="96" y="2019" class="col" fill="#9a3412">siamois_email text</text>
+<g filter="url(#shadow)"><rect x="595" y="1180" width="280" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M595,1208 V1187 Q595,1180 602,1180 H868 Q875,1180 875,1187 V1208 Z" fill="#1d4ed8"/>
+<text x="605" y="1199" class="title">ut_poly</text>
+<text x="605" y="1220" class="sub" fill="#0b2a6f">UT — emprise, décapage…</text>
+<text x="605" y="1237" class="mark" fill="#b45309">PK</text>
+<text x="631" y="1237" class="col" fill="#0b2a6f">idutpoly integer</text>
+<text x="605" y="1255" class="mark" fill="#6d28d9">FK</text>
+<text x="631" y="1255" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="631" y="1273" class="col" fill="#0b2a6f">numutpoly text *</text>
+<text x="631" y="1291" class="col" fill="#0b2a6f">typutpoly text *</text>
+<text x="631" y="1309" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="631" y="1327" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="631" y="1345" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="598" y="1351" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="1363" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="1363" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="598" y="1369" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="1381" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="1381" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1025" y="1180" width="280" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1025,1208 V1187 Q1025,1180 1032,1180 H1298 Q1305,1180 1305,1187 V1208 Z" fill="#1d4ed8"/>
+<text x="1035" y="1199" class="title">ut_ligne</text>
+<text x="1035" y="1220" class="sub" fill="#0b2a6f">UT — axes de coupe</text>
+<text x="1035" y="1237" class="mark" fill="#b45309">PK</text>
+<text x="1061" y="1237" class="col" fill="#0b2a6f">idutlgn integer</text>
+<text x="1035" y="1255" class="mark" fill="#6d28d9">FK</text>
+<text x="1061" y="1255" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1061" y="1273" class="col" fill="#0b2a6f">numutlgn text *</text>
+<text x="1061" y="1291" class="col" fill="#0b2a6f">typutlgn text *</text>
+<text x="1061" y="1309" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1061" y="1327" class="col" fill="#0b2a6f">geom ligne</text>
+<text x="1061" y="1345" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1028" y="1351" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="1363" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="1363" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1028" y="1369" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="1381" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="1381" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1455" y="1180" width="280" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1455,1208 V1187 Q1455,1180 1462,1180 H1728 Q1735,1180 1735,1187 V1208 Z" fill="#1d4ed8"/>
+<text x="1465" y="1199" class="title">ut_point</text>
+<text x="1465" y="1220" class="sub" fill="#0b2a6f">UT — cibles, altimétrie</text>
+<text x="1465" y="1237" class="mark" fill="#b45309">PK</text>
+<text x="1491" y="1237" class="col" fill="#0b2a6f">idutpt integer</text>
+<text x="1465" y="1255" class="mark" fill="#6d28d9">FK</text>
+<text x="1491" y="1255" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1491" y="1273" class="col" fill="#0b2a6f">numutpt text *</text>
+<text x="1491" y="1291" class="col" fill="#0b2a6f">typutpt text *</text>
+<text x="1491" y="1309" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1491" y="1327" class="col" fill="#0b2a6f">geom point</text>
+<text x="1491" y="1345" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1458" y="1351" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1465" y="1363" class="mark" fill="#c2410c">SI</text>
+<text x="1491" y="1363" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1458" y="1369" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1465" y="1381" class="mark" fill="#c2410c">SI</text>
+<text x="1491" y="1381" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1025" y="142" width="280" height="214" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1025,170 V149 Q1025,142 1032,142 H1298 Q1305,142 1305,149 V170 Z" fill="#1d4ed8"/>
+<text x="1035" y="161" class="title">raster</text>
+<text x="1035" y="182" class="sub" fill="#0b2a6f">Emprise d&#x27;un raster</text>
+<text x="1035" y="199" class="mark" fill="#b45309">PK</text>
+<text x="1061" y="199" class="col" fill="#0b2a6f">iddoc integer</text>
+<text x="1035" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="1061" y="217" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1061" y="235" class="col" fill="#0b2a6f">numdoc text *</text>
+<text x="1061" y="253" class="col" fill="#0b2a6f">typdoc text *</text>
+<text x="1061" y="271" class="col" fill="#0b2a6f">lien text (URL/chemin)</text>
+<text x="1061" y="289" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1061" y="307" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1028" y="313" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="325" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="325" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1028" y="331" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="343" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="343" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1025" y="488" width="280" height="250" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1025,516 V495 Q1025,488 1032,488 H1298 Q1305,488 1305,495 V516 Z" fill="#1d4ed8"/>
+<text x="1035" y="507" class="title">uo_poly</text>
+<text x="1035" y="528" class="sub" fill="#0b2a6f">UO — US, Faits…</text>
+<text x="1035" y="545" class="mark" fill="#b45309">PK</text>
+<text x="1061" y="545" class="col" fill="#0b2a6f">iduopoly integer</text>
+<text x="1035" y="563" class="mark" fill="#6d28d9">FK</text>
+<text x="1061" y="563" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1061" y="581" class="col" fill="#0b2a6f">numuopoly text *</text>
+<text x="1061" y="599" class="col" fill="#0b2a6f">typuopoly text *</text>
+<text x="1061" y="617" class="col" fill="#0b2a6f">interpret text</text>
+<text x="1061" y="635" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="1061" y="653" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1061" y="671" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1061" y="689" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1028" y="695" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="707" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="707" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1028" y="713" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="725" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="725" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="595" y="142" width="280" height="250" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M595,170 V149 Q595,142 602,142 H868 Q875,142 875,149 V170 Z" fill="#1d4ed8"/>
+<text x="605" y="161" class="title">uo_point</text>
+<text x="605" y="182" class="sub" fill="#0b2a6f">UO — isolats, prélèvements</text>
+<text x="605" y="199" class="mark" fill="#b45309">PK</text>
+<text x="631" y="199" class="col" fill="#0b2a6f">iduopt integer</text>
+<text x="605" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="631" y="217" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="631" y="235" class="col" fill="#0b2a6f">numuopt text *</text>
+<text x="631" y="253" class="col" fill="#0b2a6f">typuopt text *</text>
+<text x="631" y="271" class="col" fill="#0b2a6f">interpret text</text>
+<text x="631" y="289" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="631" y="307" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="631" y="325" class="col" fill="#0b2a6f">geom point</text>
+<text x="631" y="343" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="598" y="349" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="361" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="361" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="598" y="367" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="379" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="379" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1025" y="834" width="280" height="250" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1025,862 V841 Q1025,834 1032,834 H1298 Q1305,834 1305,841 V862 Z" fill="#1d4ed8"/>
+<text x="1035" y="853" class="title">ur_poly</text>
+<text x="1035" y="874" class="sub" fill="#0b2a6f">UR — restitutions</text>
+<text x="1035" y="891" class="mark" fill="#b45309">PK</text>
+<text x="1061" y="891" class="col" fill="#0b2a6f">idurpoly integer</text>
+<text x="1035" y="909" class="mark" fill="#6d28d9">FK</text>
+<text x="1061" y="909" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1061" y="927" class="col" fill="#0b2a6f">numurpoly text *</text>
+<text x="1061" y="945" class="col" fill="#0b2a6f">typurpoly text *</text>
+<text x="1061" y="963" class="col" fill="#0b2a6f">interpret text</text>
+<text x="1061" y="981" class="col" fill="#0b2a6f">datedebut, datefin integer</text>
+<text x="1061" y="999" class="col" fill="#0b2a6f">metacquis text</text>
+<text x="1061" y="1017" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="1061" y="1035" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1028" y="1041" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="1053" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="1053" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1028" y="1059" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1035" y="1071" class="mark" fill="#c2410c">SI</text>
+<text x="1061" y="1071" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="595" y="488" width="280" height="196" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M595,516 V495 Q595,488 602,488 H868 Q875,488 875,495 V516 Z" fill="#1d4ed8"/>
+<text x="605" y="507" class="title">ud_poly</text>
+<text x="605" y="528" class="sub" fill="#0b2a6f">UD — détails surfaciques</text>
+<text x="605" y="545" class="mark" fill="#b45309">PK</text>
+<text x="631" y="545" class="col" fill="#0b2a6f">idudpoly integer</text>
+<text x="605" y="563" class="mark" fill="#6d28d9">FK</text>
+<text x="631" y="563" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="631" y="581" class="col" fill="#0b2a6f">numudpoly text *</text>
+<text x="631" y="599" class="col" fill="#0b2a6f">typudpoly text *</text>
+<text x="631" y="617" class="col" fill="#0b2a6f">geom polygone</text>
+<text x="631" y="635" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="598" y="641" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="653" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="653" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="598" y="659" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="605" y="671" class="mark" fill="#c2410c">SI</text>
+<text x="631" y="671" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1455" y="488" width="280" height="196" rx="7" fill="#eff6ff" stroke="#93b4f5" stroke-width="1.5"/></g>
+<path d="M1455,516 V495 Q1455,488 1462,488 H1728 Q1735,488 1735,495 V516 Z" fill="#1d4ed8"/>
+<text x="1465" y="507" class="title">ud_ligne</text>
+<text x="1465" y="528" class="sub" fill="#0b2a6f">UD — détails linéaires</text>
+<text x="1465" y="545" class="mark" fill="#b45309">PK</text>
+<text x="1491" y="545" class="col" fill="#0b2a6f">idudlgn integer</text>
+<text x="1465" y="563" class="mark" fill="#6d28d9">FK</text>
+<text x="1491" y="563" class="col" fill="#0b2a6f">idprojet integer * → projet</text>
+<text x="1491" y="581" class="col" fill="#0b2a6f">numudlgn text *</text>
+<text x="1491" y="599" class="col" fill="#0b2a6f">typudlgn text *</text>
+<text x="1491" y="617" class="col" fill="#0b2a6f">geom ligne</text>
+<text x="1491" y="635" class="colmuted" fill="#64748b">+ champs communs ¹</text>
+<rect x="1458" y="641" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1465" y="653" class="mark" fill="#c2410c">SI</text>
+<text x="1491" y="653" class="col" fill="#9a3412">siamois_id text</text>
+<rect x="1458" y="659" width="274" height="17" rx="3" fill="#ffedd5"/>
+<text x="1465" y="671" class="mark" fill="#c2410c">SI</text>
+<text x="1491" y="671" class="col" fill="#9a3412">siamois_revision integer</text>
+<g filter="url(#shadow)"><rect x="1455" y="142" width="290" height="142" rx="7" fill="#f4f8ff" stroke="#b9ceF8" stroke-width="1.5"/></g>
+<path d="M1455,170 V149 Q1455,142 1462,142 H1738 Q1745,142 1745,149 V170 Z" fill="#5b8def"/>
+<text x="1465" y="161" class="title">lien_* (7 tables)</text>
+<text x="1465" y="182" class="sub" fill="#16346b">Tables de liaison n-n</text>
+<text x="1465" y="199" class="mark" fill="#b45309">PK</text>
+<text x="1491" y="199" class="col" fill="#16346b">idlien integer</text>
+<text x="1465" y="217" class="mark" fill="#6d28d9">FK</text>
+<text x="1491" y="217" class="col" fill="#16346b">clé étrangère A integer</text>
+<text x="1465" y="235" class="mark" fill="#6d28d9">FK</text>
+<text x="1491" y="235" class="col" fill="#16346b">clé étrangère B integer</text>
+<text x="1465" y="253" class="mark" fill="#0e7490">UQ</text>
+<text x="1491" y="253" class="col" fill="#16346b">UNIQUE (A, B)</text>
+<text x="1491" y="271" class="col" fill="#16346b">autsaisie, datesaisie</text>
+<g filter="url(#shadow)"><rect x="411" y="1498" width="456" height="286" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M411,1526 V1505 Q411,1498 418,1498 H860 Q867,1498 867,1505 V1526 Z" fill="#15803d"/>
+<text x="421" y="1517" class="title">siamois_champ</text>
+<text x="421" y="1538" class="sub" fill="#0b3d1d">ex-« layers.columns » : config des champs + mapping</text>
+<text x="421" y="1555" class="mark" fill="#b45309">PK</text>
+<text x="447" y="1555" class="col" fill="#0b3d1d">idchamp integer</text>
+<text x="447" y="1573" class="col" fill="#0b3d1d">nom_table text (NULL = toutes)</text>
+<text x="447" y="1591" class="col" fill="#0b3d1d">nom_colonne text</text>
+<text x="447" y="1609" class="col" fill="#0b3d1d">colonne_modele boolean (colonne de Quentin)</text>
+<text x="447" y="1627" class="col" fill="#0b3d1d">id_champ_siamois text</text>
+<text x="447" y="1645" class="col" fill="#0b3d1d">binding text (num, type, tpq…)</text>
+<text x="447" y="1663" class="col" fill="#0b3d1d">libelle text</text>
+<text x="447" y="1681" class="col" fill="#0b3d1d">type_reponse text</text>
+<text x="447" y="1699" class="col" fill="#0b3d1d">code_vocabulaire text → concept.siamois_code_vocabulaire</text>
+<text x="447" y="1717" class="col" fill="#0b3d1d">panneau text, ordre integer</text>
+<text x="447" y="1735" class="col" fill="#0b3d1d">obligatoire, lecture_seule boolean</text>
+<text x="447" y="1753" class="col" fill="#0b3d1d">borne_min, borne_max, unite</text>
+<text x="447" y="1771" class="col" fill="#0b3d1d">regles_json text</text>
+<g filter="url(#shadow)"><rect x="60" y="1498" width="267" height="124" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M60,1526 V1505 Q60,1498 67,1498 H320 Q327,1498 327,1505 V1526 Z" fill="#15803d"/>
+<text x="70" y="1517" class="title">siamois_champ_type</text>
+<text x="70" y="1538" class="sub" fill="#0b3d1d">ex-« allowed » : champs d&#x27;un type</text>
+<text x="70" y="1555" class="mark" fill="#b45309">PK</text>
+<text x="96" y="1555" class="col" fill="#0b3d1d">id integer</text>
+<text x="96" y="1573" class="col" fill="#0b3d1d">nom_table text</text>
+<text x="96" y="1591" class="col" fill="#0b3d1d">id_type_siamois text (concept)</text>
+<text x="70" y="1609" class="mark" fill="#6d28d9">FK</text>
+<text x="96" y="1609" class="col" fill="#0b3d1d">idchamp → siamois_champ</text>
+<g filter="url(#shadow)"><rect x="951" y="1498" width="343" height="160" rx="7" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.5"/></g>
+<path d="M951,1526 V1505 Q951,1498 958,1498 H1287 Q1294,1498 1294,1505 V1526 Z" fill="#15803d"/>
+<text x="961" y="1517" class="title">siamois_reference</text>
+<text x="961" y="1538" class="sub" fill="#0b3d1d">ex-« base » : copie de référence (hors ligne)</text>
+<text x="961" y="1555" class="mark" fill="#b45309">PK</text>
+<text x="987" y="1555" class="col" fill="#0b3d1d">nom_table + id_local</text>
+<text x="987" y="1573" class="col" fill="#0b3d1d">cellules_json text</text>
+<text x="987" y="1591" class="col" fill="#0b3d1d">geom_wkt text</text>
+<text x="987" y="1609" class="col" fill="#0b3d1d">revision integer</text>
+<text x="987" y="1627" class="col" fill="#0b3d1d">incomplet_json text</text>
+<text x="987" y="1645" class="col" fill="#0b3d1d">champs_autorises_json text</text>
+<g filter="url(#shadow)"><rect x="1378" y="1498" width="282" height="196" rx="7" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.5"/></g>
+<path d="M1378,1526 V1505 Q1378,1498 1385,1498 H1653 Q1660,1498 1660,1505 V1526 Z" fill="#c2410c"/>
+<text x="1388" y="1517" class="title">siamois_journal</text>
+<text x="1388" y="1538" class="sub" fill="#5a1d05">historique + détail des conflits</text>
+<text x="1388" y="1555" class="mark" fill="#b45309">PK</text>
+<text x="1414" y="1555" class="col" fill="#5a1d05">idjournal integer</text>
+<text x="1414" y="1573" class="col" fill="#5a1d05">date datetime, utilisateur text</text>
+<text x="1414" y="1591" class="col" fill="#5a1d05">action text (pull|push|create)</text>
+<text x="1414" y="1609" class="col" fill="#5a1d05">nom_table text, id_local integer</text>
+<text x="1414" y="1627" class="col" fill="#5a1d05">siamois_id text</text>
+<text x="1414" y="1645" class="col" fill="#5a1d05">statut text (ok|erreur|conflit)</text>
+<text x="1414" y="1663" class="col" fill="#5a1d05">message text</text>
+<text x="1414" y="1681" class="col" fill="#5a1d05">detail_json text (conflits…)</text>
+<g filter="url(#shadow)"><rect x="1938" y="100" width="400" height="232" rx="7" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/></g>
+<path d="M1938,128 V107 Q1938,100 1945,100 H2331 Q2338,100 2338,107 V128 Z" fill="#6d28d9"/>
+<text x="1948" y="119" class="title">Configuration d&#x27;un type — SIAMOIS</text>
+<text x="1948" y="140" class="sub" fill="#3b1a7a">côté serveur · exposé par l&#x27;API (…-types)</text>
+<text x="1948" y="157" class="mark" fill="#b45309">PK</text>
+<text x="1974" y="157" class="col" fill="#3b1a7a">FormConfig.id</text>
+<text x="1974" y="175" class="col" fill="#3b1a7a">projet (action unit)</text>
+<text x="1974" y="193" class="col" fill="#3b1a7a">table configurable (UE|Mobilier|Doc)</text>
+<text x="1974" y="211" class="col" fill="#3b1a7a">concept du type</text>
+<text x="1974" y="229" class="col" fill="#3b1a7a">formulaire (layout) + champs</text>
+<text x="1974" y="247" class="col" fill="#3b1a7a">identifierConfig</text>
+<rect x="1941" y="253" width="394" height="17" rx="3" fill="#ffedd5"/>
+<text x="1948" y="265" class="mark" fill="#6d28d9">NEW</text>
+<text x="1974" y="265" class="col" fill="#4c1d95">table_modele_spatial (nouveau)</text>
+<text x="1974" y="283" class="col" fill="#3b1a7a">  ut_poly | ut_ligne | ut_point</text>
+<text x="1974" y="301" class="col" fill="#3b1a7a">  uo_poly | uo_point | ur_poly</text>
+<text x="1974" y="319" class="col" fill="#3b1a7a">  ud_poly | ud_ligne | aucune</text>
+<rect x="1938" y="634" width="440" height="255" rx="9" fill="#fff7ed" stroke="#f3b27c" stroke-width="1.4"/>
+<text x="1950" y="656" class="ntitle" fill="#0f172a">Décisions</text>
+<text x="1950" y="676" class="ntext">• Colonnes siamois_* ajoutées aux tables de Quentin</text>
+<text x="1950" y="693" class="ntext">  (orange) : id SIAMOIS, révision, connexion…</text>
+<text x="1950" y="710" class="ntext">• Répartition d&#x27;une UE dans la bonne table :</text>
+<text x="1950" y="727" class="ntext">  type SIAMOIS → table_modele_spatial (config</text>
+<text x="1950" y="744" class="ntext">  du type) ; non renseigné = « non classé », non</text>
+<text x="1950" y="761" class="ntext">  chargé. La géométrie se déduit de la table.</text>
+<text x="1950" y="778" class="ntext">• Le référentiel concept est GÉNÉRÉ depuis cette</text>
+<text x="1950" y="795" class="ntext">  config : les menus de types sont filtrés par table.</text>
+<text x="1950" y="812" class="ntext">• Supprimées : siamois_entite, siamois_concept,</text>
+<text x="1950" y="829" class="ntext">  siamois_personne, siamois_table, siamois_conflit,</text>
+<text x="1950" y="846" class="ntext">  siamois_connexion (→ colonnes ou code du plugin).</text>
+<text x="1950" y="863" class="ntext">• L&#x27;état (nouveau / modifié) se déduit : pas de</text>
+<text x="1950" y="880" class="ntext">  siamois_id = nouveau ; ≠ copie de référence = modifié.</text>
+<rect x="1938" y="909" width="440" height="170" rx="9" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.4"/>
+<text x="1950" y="931" class="ntitle" fill="#0f172a">Colonnes de Quentin ↔ champs SIAMOIS (pas de doublon)</text>
+<text x="1950" y="951" class="ntext">num…         ↔ identifiant de l&#x27;UE (généré par le serveur)</text>
+<text x="1950" y="968" class="ntext">typ…         ↔ type (concept)  → table_modele_spatial</text>
+<text x="1950" y="985" class="ntext">datedebut/fin ↔ TPQ / TAQ</text>
+<text x="1950" y="1002" class="ntext">interpret    ↔ interprétation</text>
+<text x="1950" y="1019" class="ntext">com          ↔ commentaires</text>
+<text x="1950" y="1036" class="ntext">autsaisie, ro ↔ auteur / responsable (personne.nom)</text>
+<text x="1950" y="1053" class="ntext">Seuls les champs additionnels du projet SIAMOIS</text>
+<text x="1950" y="1070" class="ntext">s&#x27;ajoutent à droite ; le mapping est dans siamois_champ.</text>
+<rect x="1938" y="1099" width="440" height="170" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="1950" y="1121" class="ntitle" fill="#0f172a">Correspondance SIAMOIS (champ table_siamois)</text>
+<text x="1950" y="1141" class="ntext">projet               → Projet</text>
+<text x="1950" y="1158" class="ntext">ut_*, uo_poly,       → Unité d&#x27;enregistrement</text>
+<text x="1950" y="1175" class="ntext">ur_poly, ud_*</text>
+<text x="1950" y="1192" class="ntext">uo_point             → Mobilier</text>
+<text x="1950" y="1209" class="ntext">                       (API : UE parente + géométrie)</text>
+<text x="1950" y="1226" class="ntext">raster, metadonnees  → Document</text>
+<text x="1950" y="1243" class="ntext">¹ champs communs : table_siamois, com,</text>
+<text x="1950" y="1260" class="ntext">  autsaisie, datesaisie</text>
+<rect x="1938" y="1289" width="440" height="224" rx="9" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="1950" y="1311" class="ntitle">Légende</text>
+<rect x="1950" y="1320" width="16" height="16" rx="4" fill="#1d4ed8" stroke="#c2410c" stroke-width="0"/>
+<text x="1974" y="1333" class="ntext">Modèle de Quentin Verriez</text>
+<rect x="1950" y="1344" width="16" height="16" rx="4" fill="#ffedd5" stroke="#c2410c" stroke-width="1"/>
+<text x="1974" y="1357" class="ntext">Colonne SIAMOIS ajoutée à une table du modèle</text>
+<rect x="1950" y="1368" width="16" height="16" rx="4" fill="#15803d" stroke="#c2410c" stroke-width="0"/>
+<text x="1974" y="1381" class="ntext">Table technique conservée (déjà dans le plugin)</text>
+<rect x="1950" y="1392" width="16" height="16" rx="4" fill="#c2410c" stroke="#c2410c" stroke-width="0"/>
+<text x="1974" y="1405" class="ntext">Table technique nouvelle</text>
+<rect x="1950" y="1416" width="16" height="16" rx="4" fill="#6d28d9" stroke="#c2410c" stroke-width="0"/>
+<text x="1974" y="1429" class="ntext">Côté serveur SIAMOIS (à développer)</text>
+<text x="1950" y="1459" class="ntext">PK clé primaire · FK clé étrangère · UQ unique</text>
+<text x="1950" y="1477" class="ntext">* obligatoire · tirets : lien logique ou génération</text>
+<rect x="1938" y="1533" width="440" height="119" rx="9" fill="#f0fdf4" stroke="#86d19b" stroke-width="1.4"/>
+<text x="1950" y="1555" class="ntitle" fill="#0f172a">Travail hors ligne</text>
+<text x="1950" y="1575" class="ntext">Les modifications restent dans le GeoPackage.</text>
+<text x="1950" y="1592" class="ntext">siamois_reference garde l&#x27;état du dernier chargement :</text>
+<text x="1950" y="1609" class="ntext">la différence avec les tables = ce qu&#x27;il y a à envoyer.</text>
+<text x="1950" y="1626" class="ntext">Un seul bouton « Synchroniser » ; tout est tracé dans</text>
+<text x="1950" y="1643" class="ntext">siamois_journal (conflits 409 compris).</text>
+</svg>
