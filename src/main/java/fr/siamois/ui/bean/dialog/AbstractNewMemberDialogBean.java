@@ -81,7 +81,6 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String inviteEmail;
     protected String inviteFirstName;
     protected String inviteLastName;
-    protected String inviteUsername;
     protected String invitePassword;
     protected String invitePasswordConfirm;
 
@@ -175,7 +174,6 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         inviteEmail = null;
         inviteFirstName = null;
         inviteLastName = null;
-        inviteUsername = null;
         invitePassword = null;
         invitePasswordConfirm = null;
     }
@@ -233,7 +231,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     }
 
     /**
-     * Switches to the "invite a new user" sub-step, prefilling the e-mail/username or last name
+     * Switches to the "invite a new user" sub-step, prefilling the e-mail or last name
      * from whatever was typed in the members search field.
      */
     public void goToInvite() {
@@ -242,12 +240,10 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             inviteEmail = q;
             inviteFirstName = "";
             inviteLastName = "";
-            inviteUsername = personService.generateUniqueUsername("", "", q, reservedUsernames());
         } else {
             inviteEmail = "";
             inviteFirstName = "";
             inviteLastName = q;
-            inviteUsername = "";
         }
         invitePassword = null;
         invitePasswordConfirm = null;
@@ -296,7 +292,9 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         draft.setName(inviteFirstName.trim());
         draft.setLastname(inviteLastName.trim());
         draft.setEmail(inviteEmail.trim());
-        draft.setUsername(inviteUsername.trim());
+        // The username is never typed nor shown: it is derived from the names, with digits added on a clash.
+        draft.setUsername(personService.generateUniqueUsername(
+                draft.getName(), draft.getLastname(), draft.getEmail(), reservedUsernames()));
         draftPasswords.put(draft.getId(), StringUtils.isBlank(invitePassword) ? null : invitePassword);
         selectedMembers.add(draft);
 
@@ -307,16 +305,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     private boolean inviteFieldsAreValid() {
         if (StringUtils.isBlank(inviteEmail) || StringUtils.isBlank(inviteFirstName)
-                || StringUtils.isBlank(inviteLastName) || StringUtils.isBlank(inviteUsername)) {
+                || StringUtils.isBlank(inviteLastName)) {
             displayErrorMessage(langBean, "userDialog.error.fields");
             return false;
         }
         if (!isValidEmail(inviteEmail.trim())) {
             displayErrorMessage(langBean, "userDialog.error.email");
-            return false;
-        }
-        if (!isValidUsername(inviteUsername.trim())) {
-            displayErrorMessage(langBean, "userDialog.error.username");
             return false;
         }
         // The password is optional: when left empty, the member is created disabled and receives
@@ -342,13 +336,6 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         String domain = email.substring(at + 1);
         int dot = domain.lastIndexOf('.');
         return dot > 0 && dot < domain.length() - 1 && email.indexOf(' ') < 0;
-    }
-
-    private static boolean isValidUsername(String username) {
-        if (username.length() < 3 || username.length() > 30) {
-            return false;
-        }
-        return username.chars().allMatch(c -> Character.isLetterOrDigit(c) || c == '.');
     }
 
     /** @return a downloadable example CSV file matching the expected {@code name,lastname,email} format. */

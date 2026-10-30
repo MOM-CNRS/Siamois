@@ -64,14 +64,6 @@
                                         </div>
 
                                         <div class="form-group mb-4">
-                                            <p:outputLabel for="username" value="#{langBean.msg('register.label.username')}"/>
-                                            <h:inputText id="username" styleClass="form-control"
-                                                         value="#{registerBean.username}" required="true"
-                                                         requiredMessage="#{langBean.msg('register.error.username')}"/>
-                                            <h:message for="username" styleClass="text-danger d-block mt-1"/>
-                                        </div>
-
-                                        <div class="form-group mb-4">
                                             <p:outputLabel for="password" value="#{langBean.msg('register.label.password')}"/>
                                             <h:inputSecret id="password" styleClass="form-control"
                                                            value="#{registerBean.password}" required="true"
