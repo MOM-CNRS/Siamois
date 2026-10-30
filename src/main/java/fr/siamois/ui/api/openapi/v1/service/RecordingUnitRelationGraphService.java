@@ -37,7 +37,7 @@ public class RecordingUnitRelationGraphService {
 
     @Transactional(readOnly = true)
     public RecordingUnitRelationGraphResource graphOf(RecordingUnitDTO unit, String lang) {
-        return graphOf(unit, lang, false);
+        return readGraph(unit, lang, false);
     }
 
     /**
@@ -46,6 +46,10 @@ public class RecordingUnitRelationGraphService {
      */
     @Transactional(readOnly = true)
     public RecordingUnitRelationGraphResource graphOf(RecordingUnitDTO unit, String lang, boolean full) {
+        return readGraph(unit, lang, full);
+    }
+
+    private RecordingUnitRelationGraphResource readGraph(RecordingUnitDTO unit, String lang, boolean full) {
         long id = unit.getId();
         int limit = full ? FULL_ZONE_LIMIT : ZONE_LIMIT;
         MultiValue parents = zone(RelationField.RECORDING_UNIT_PARENTS, id, limit, lang);
