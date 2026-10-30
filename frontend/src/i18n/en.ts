@@ -395,6 +395,7 @@ export const en: Record<MessageKey, string> = {
   "search.error": "The search failed",
   "search.viewAll": "View the {n} {label}",
   "list.search.apply": "Apply the {n} results",
+  "list.search.enterHint": "Press Enter to apply the search and filters to the table",
   "list.search.keyword": "Filter on “{label}”",
   "search.keyword.projet": "Restrict to a project (identifier or name)",
 };

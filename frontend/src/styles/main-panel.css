@@ -3272,6 +3272,16 @@ div#search-bar .sia-search {
   padding: 0.4rem 0.75rem 0;
 }
 
+/* Under the list search field: Enter is what applies the search and the filters to the table. */
+.sia-search-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem 0;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8rem;
+}
+
 /* The panel of the featured-views picker: wide enough to read a title and its table on one line. */
 .home-data-access-panel { min-width: 22rem; }
 .home-data-access-panel .p-dropdown-items .p-dropdown-item { padding: 0.55rem 1rem; }
