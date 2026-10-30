@@ -386,16 +386,14 @@ public class PlaceOpenApiService {
     @Transactional
     public PlaceCreatedResponse.PlaceCreatedItem updatePlace(ProjectApiCaller caller,
                                                              long placeId,
-                                                             PlacePatchRequest patch,
+                                                             PlacePatchRequest patchRequest,
                                                              String lang) {
-        if (patch == null) {
-            patch = new PlacePatchRequest();
-        }
+        final PlacePatchRequest patch = patchRequest == null ? new PlacePatchRequest() : patchRequest;
         SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = dto.getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
         boolean fieldsChange = patch.getName() != null || patch.getTypeConceptId() != null || patch.getAddress() != null
-                || patch.isPlaceNumberPresent() || patch.isGeomPresent();
+                || patch.isPlaceNumberPresent() || patch.isGeomPresent() || patch.isTextDetailsPresent();
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), patch.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if (fieldsChange || !statusChange) {
@@ -426,6 +424,9 @@ public class PlaceOpenApiService {
                             patch.getPlaceNumber(), patch.isPlaceNumberPresent(),
                             patch.getGeom(), patch.isGeomPresent())
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
+            if (patch.isTextDetailsPresent()) {
+                saved = spatialUnitService.updatePlaceDetails(placeId, details -> applyTextDetails(details, patch));
+            }
             // After the save: it writes the entity's previous status back.
             validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(
@@ -433,6 +434,14 @@ public class PlaceOpenApiService {
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
+    }
+
+    /** Writes the plain text details the patch carries (an explicit null clears one). */
+    private static void applyTextDetails(SpatialUnitDTO dto, PlacePatchRequest patch) {
+        if (patch.isInseeCodePresent()) dto.setInseeCode(patch.getInseeCode());
+        if (patch.isLocalityNamePresent()) dto.setLocalityName(patch.getLocalityName());
+        if (patch.isShomMapNumberPresent()) dto.setShomMapNumber(patch.getShomMapNumber());
+        if (patch.isCommentsPresent()) dto.setComments(patch.getComments());
     }
 
     @Transactional

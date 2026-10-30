@@ -43,6 +43,18 @@ export async function patchPlaceAnswers(
       case String(PLACE_NUMBER_FIELD_ID):
         body.placeNumber = value;
         break;
+      case String(INSEE_CODE_FIELD_ID):
+        body.inseeCode = value;
+        break;
+      case String(LOCALITY_NAME_FIELD_ID):
+        body.localityName = value;
+        break;
+      case String(COMMENTS_FIELD_ID):
+        body.comments = value;
+        break;
+      case String(SHOM_MAP_NUMBER_FIELD_ID):
+        body.shomMapNumber = value;
+        break;
       // CODE_FIELD (-203) is read-only in SpatialUnit.DETAILS_FORM (server-generated) and the
       // address has no editor, so neither should reach this: fail loudly rather than report a
       // save that silently wrote nothing.
@@ -64,6 +76,10 @@ export async function patchPlaceAnswers(
 const NAME_FIELD_ID = -202;
 const TYPE_FIELD_ID = -201;
 const PLACE_NUMBER_FIELD_ID = -205;
+const INSEE_CODE_FIELD_ID = -206;
+const LOCALITY_NAME_FIELD_ID = -207;
+const COMMENTS_FIELD_ID = -208;
+const SHOM_MAP_NUMBER_FIELD_ID = -209;
 
 // Mirrors PlaceCreateRequest's required trio — address/placeNumber/geom stay editable afterward
 // on the fiche, same reduction as the other create overlays.

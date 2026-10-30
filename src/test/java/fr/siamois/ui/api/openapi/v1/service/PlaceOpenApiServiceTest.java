@@ -279,6 +279,61 @@ class PlaceOpenApiServiceTest {
     }
 
     @Test
+    void updatePlace_textDetails_areWrittenThroughUpdatePlaceDetails() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        existing.setInseeCode("75056");
+        existing.setLocalityName("Paris");
+
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setInseeCode(null);
+        patch.setLocalityName("Lyon");
+        patch.setShomMapNumber("7042");
+        patch.setComments("à revoir");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        when(spatialUnitService.updatePlaceDetails(eq(5L), any())).thenAnswer(invocation -> {
+            SpatialUnitDTO edited = new SpatialUnitDTO();
+            edited.setId(5L);
+            edited.setInseeCode("75056");
+            invocation.<java.util.function.Consumer<SpatialUnitDTO>>getArgument(1).accept(edited);
+            existing.setInseeCode(edited.getInseeCode());
+            existing.setLocalityName(edited.getLocalityName());
+            existing.setShomMapNumber(edited.getShomMapNumber());
+            existing.setComments(edited.getComments());
+            return edited;
+        });
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        assertThat(existing.getInseeCode()).isNull();
+        assertThat(existing.getLocalityName()).isEqualTo("Lyon");
+        assertThat(existing.getShomMapNumber()).isEqualTo("7042");
+        assertThat(existing.getComments()).isEqualTo("à revoir");
+    }
+
+    @Test
+    void updatePlace_withoutTextDetails_doesNotCallUpdatePlaceDetails() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setName("Nouveau");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(5L);
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq("Nouveau"), eq(null), eq(null))).thenReturn(saved);
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        verify(spatialUnitService, never()).updatePlaceDetails(anyLong(), any());
+    }
+
+    @Test
     void updatePlace_notFound_throws404() {
         when(spatialUnitService.findById(99L))
                 .thenThrow(new SpatialUnitNotFoundException("missing"));

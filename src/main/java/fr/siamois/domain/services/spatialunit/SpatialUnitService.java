@@ -193,6 +193,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
         spatialUnit.setCode(su.getCode());
+        spatialUnit.setPlaceNumber(su.getPlaceNumber());
         spatialUnit.setInseeCode(su.getInseeCode());
         spatialUnit.setLocalityName(su.getLocalityName());
         spatialUnit.setComments(su.getComments());
@@ -294,6 +295,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
+            managedSpatialUnit.setPlaceNumber(spatialUnit.getPlaceNumber());
             managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
             managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
             managedSpatialUnit.setComments(spatialUnit.getComments());
@@ -878,6 +880,14 @@ public class SpatialUnitService implements ArkEntityService {
         if (updateGeom) {
             dto.setGeom(newGeom);
         }
+        return persistSpatialUnitDto(dto);
+    }
+
+    /** Edits the plain details of a place that {@code updatePlace} has no parameter for (INSEE code, locality, SHOM map, comments). */
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlaceDetails(long placeId, java.util.function.Consumer<SpatialUnitDTO> edits) {
+        SpatialUnitDTO dto = loadDtoById(placeId);
+        edits.accept(dto);
         return persistSpatialUnitDto(dto);
     }
 
