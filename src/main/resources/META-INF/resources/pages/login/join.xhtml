@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<HTML xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:form="http://java.sun.com/jsf/composite/pages/shared/form"
+      xml:lang="#{langBean.languageCode}"
+>
+
+<h:head>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <h:outputStylesheet library="css" name="bootstrap.min.css"/>
+    <title>#{langBean.msg('join.title')}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
+    <h:outputStylesheet library="css" name="login.css"/>
+    <style>
+        .register-form.is-submitting { pointer-events: none; opacity: .6; }
+        .join-progress { display: none; align-items: center; gap: .75rem; margin-top: 1rem; }
+        .register-form.is-submitting .join-progress { display: flex; }
+        .join-spinner { width: 1.5rem; height: 1.5rem; border: 3px solid #cfd8dc; border-top-color: #198754;
+                        border-radius: 50%; animation: join-spin .8s linear infinite; }
+        @keyframes join-spin { to { transform: rotate(360deg); } }
+    </style>
+</h:head>
+
+<h:body>
+    <section class="h-100 gradient-form">
+        <div class="container py-5 h-100">
+            <div class="row d-flex justify-content-center align-items-center h-100">
+                <div class="col-xl-11">
+                    <div class="card rounded-3">
+                        <div class="login-logo text-center pt-4">
+                            <a href="https://siamois.eu" target="_blank" rel="noopener noreferrer">
+                                <h:graphicImage library="img" name="logos/siamois-couleur-baseline.png" alt="Siamois"/>
+                            </a>
+                        </div>
+                        <div class="row g-0">
+                            <div class="col-lg-6 hide-small-screen" id="left-image">
+                                <div class="card-body p-md-5 mx-md-4">
+                                    <h:graphicImage library="img" name="overview_siamois.png"/>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-flex align-items-center">
+                                <div class="px-3 py-4 p-md-5 mx-md-4">
+                                    <h1>#{langBean.msg('join.title')}</h1>
+                                    <p class="description">#{langBean.msg('join.description')}</p>
+                                    <hr/>
+                                    <form:csrfform formId="joinForm" styleClass="register-form">
+                                        <p:messages id="messages" globalOnly="true" closable="true" showDetail="true">
+                                            <p:autoUpdate/>
+                                        </p:messages>
+
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="lastname" value="#{langBean.msg('register.label.lastname')}"/>
+                                            <h:inputText id="lastname" styleClass="form-control"
+                                                         value="#{joinBean.lastName}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.name')}"/>
+                                            <h:message for="lastname" styleClass="text-danger d-block mt-1"/>
+                                        </div>
+
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="firstname" value="#{langBean.msg('register.label.firstname')}"/>
+                                            <h:inputText id="firstname" styleClass="form-control"
+                                                         value="#{joinBean.firstName}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.name')}"/>
+                                            <h:message for="firstname" styleClass="text-danger d-block mt-1"/>
+                                        </div>
+
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="email" value="#{langBean.msg('register.label.email')}"/>
+                                            <h:inputText id="email" styleClass="form-control"
+                                                         value="#{joinBean.email}" required="true"
+                                                         requiredMessage="#{langBean.msg('register.error.email')}"/>
+                                            <h:message for="email" styleClass="text-danger d-block mt-1"/>
+                                        </div>
+
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="password" value="#{langBean.msg('register.label.password')}"/>
+                                            <h:inputSecret id="password" styleClass="form-control"
+                                                           value="#{joinBean.password}" required="true"
+                                                           requiredMessage="#{langBean.msg('register.error.password')}"/>
+                                            <small class="text-muted d-block mt-1">#{langBean.msg('register.hint.password')}</small>
+                                            <h:message for="password" styleClass="text-danger d-block mt-1"/>
+                                        </div>
+
+                                        <div class="form-group mb-4">
+                                            <p:outputLabel for="password-confirm" value="#{langBean.msg('register.label.passwordConfirm')}"/>
+                                            <h:inputSecret id="password-confirm" styleClass="form-control"
+                                                           value="#{joinBean.confirmPassword}" required="true"
+                                                           requiredMessage="#{langBean.msg('register.error.password')}"/>
+                                            <h:message for="password-confirm" styleClass="text-danger d-block mt-1"/>
+                                        </div>
+
+                                        <h:commandButton id="joinSubmit" styleClass="btn btn-success"
+                                                         value="#{langBean.msg('register.action.submit')}"
+                                                         action="#{joinBean.register}"
+                                                         onclick="joinLock(this)"/>
+                                        <div class="join-progress" role="status" aria-live="polite">
+                                            <span class="join-spinner"></span>
+                                            <span>#{langBean.msg('join.progress')}</span>
+                                        </div>
+                                    </form:csrfform>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<script>
+    // Locks the form once it is submitted: the account and its organization take a moment to create, and
+    // a second click must not send it twice. Deferred so the browser has already collected the form data.
+    function joinLock(button) {
+        var form = button.form;
+        if (!form.checkValidity()) {
+            return true;
+        }
+        setTimeout(function () {
+            form.classList.add('is-submitting');
+            button.disabled = true;
+        }, 0);
+        return true;
+    }
+</script>
+</h:body>
+
+</HTML>
