@@ -389,13 +389,16 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   }
 
   const className = `cell-edit-overlay p-fluid${saving ? " cell-edit-overlay-saving" : ""}${mobile ? " cell-edit-overlay-sheet" : ""}`;
+  const width = `${Math.max(anchor.width, (stratigraphyPosition ? 22 : 12) * 16)}px`;
   const boxStyle = mobile
     ? undefined
     : {
         position: "fixed" as const,
         top: `${anchor.top}px`,
         left: `${anchor.left}px`,
-        minWidth: `${Math.max(anchor.width, (stratigraphyPosition ? 22 : 12) * 16)}px`,
+        minWidth: width,
+        // What a widget that would otherwise grow with its content (a reference picker's tokens) is held to.
+        "--cell-edit-width": width,
         // A yes/no is a small box and its label: it needs room around it, and enough height to hide the cell below.
         ...(field.answerType === "BOOLEAN" ? { padding: "0.5rem 1rem", minHeight: "2.75rem", display: "flex", alignItems: "center" } : {}),
         // A measurement is a small form: room around its fields.

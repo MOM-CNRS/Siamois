@@ -298,9 +298,9 @@ export function renderAnswerCell(
           ))
         : shown.length > 0 && <span className="cell-multi-first">{render(shown[0])}</span>}
       {/* Only a narrow fiche shows it (main-panel.css): the first value and this count, instead of every value. */}
-      {options.all && shown.length > 1 && (
+      {options.all && total > 1 && (
         <span className="cell-multi-fold" title={title}>
-          +{shown.length - 1}
+          +{total - 1}
         </span>
       )}
       {hidden > 0 && (
