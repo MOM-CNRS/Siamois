@@ -10,7 +10,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,15 +31,14 @@ public class VocabularyInstanceService {
     }
 
     /**
-     * The instances of the documentation thesauri of the organisations and projects whose settings a person
-     * manages, each one once, in the order of their first thesaurus.
+     * The distinct instances of the documentation thesauri of the organisations and projects whose settings a
+     * person manages, in the order of their first thesaurus.
      */
     @Transactional(readOnly = true)
-    public List<VocabularyInstance> findDocumentationInstancesIn(@NonNull ProfilePermissionService.SettingsScope scope) {
+    public Set<VocabularyInstance> findDocumentationInstancesIn(@NonNull ProfilePermissionService.SettingsScope scope) {
         return vocabularyRepository.findDocumentationThesauriOf(scope.allInstitutions(), scope.institutionIds(),
                         scope.allProjects(), scope.projectInstitutionIds(), scope.actionUnitIds()).stream()
                 .map(Vocabulary::getInstance)
-                .distinct()
-                .toList();
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }
