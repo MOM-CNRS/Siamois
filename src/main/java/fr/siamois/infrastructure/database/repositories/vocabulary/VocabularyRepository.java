@@ -58,7 +58,7 @@ public interface VocabularyRepository extends CrudRepository<Vocabulary, Long>, 
      * @return An optional containing the vocabulary if found
      */
     @Query(
-            value = "SELECT v FROM Vocabulary v WHERE upper(v.baseUri) = upper(:baseUri) AND upper(v.externalVocabularyId) = upper(:externalId) ORDER BY v.id"
+            value = "SELECT v FROM Vocabulary v WHERE upper(v.instance.baseUri) = upper(:baseUri) AND upper(v.externalVocabularyId) = upper(:externalId) ORDER BY v.id"
     )
     List<Vocabulary> findAllByBaseUriAndVocabExternalId(@Param("baseUri")String baseUri, @Param("externalId") String externalId);
 

@@ -2,16 +2,15 @@ package fr.siamois.domain.services.vocabulary;
 
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.exceptions.vocabulary.VocabularyNotFoundException;
-import fr.siamois.domain.models.vocabulary.DocumentationThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.ThesaurusInfo;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.models.vocabulary.VocabularyType;
-import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.infrastructure.api.ThesaurusApi;
 import fr.siamois.infrastructure.api.dto.LabelDTO;
 import fr.siamois.infrastructure.api.dto.ThesaurusDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyTypeRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -26,19 +25,14 @@ import java.util.Optional;
  * @author Julien Linget
  */
 @Service
+@RequiredArgsConstructor
 public class VocabularyService {
 
     private final VocabularyRepository vocabularyRepository;
     private final ThesaurusApi thesaurusApi;
     private final VocabularyTypeRepository vocabularyTypeRepository;
     private final LabelService labelService;
-
-    public VocabularyService(VocabularyRepository vocabularyRepository, ThesaurusApi thesaurusApi, VocabularyTypeRepository vocabularyTypeRepository, LabelService labelService) {
-        this.vocabularyRepository = vocabularyRepository;
-        this.thesaurusApi = thesaurusApi;
-        this.vocabularyTypeRepository = vocabularyTypeRepository;
-        this.labelService = labelService;
-    }
+    private final VocabularyInstanceService vocabularyInstanceService;
 
     /**
      * Find a action unit by its ID
@@ -73,7 +67,10 @@ public class VocabularyService {
      */
     public Vocabulary saveOrGetVocabulary(Vocabulary vocabulary) {
         Optional<Vocabulary> vocabOpt = vocabularyRepository.findVocabularyByBaseUriAndVocabExternalId(vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId());
-        return vocabOpt.orElseGet(() -> vocabularyRepository.save(vocabulary));
+        return vocabOpt.orElseGet(() -> {
+            vocabulary.setInstance(vocabularyInstanceService.findOrCreate(vocabulary.getBaseUri()));
+            return vocabularyRepository.save(vocabulary);
+        });
     }
     public String resolveRedirections(String uri) {
         return thesaurusApi.resolveRedirections(uri);
@@ -103,19 +100,6 @@ public class VocabularyService {
         }
 
         return savedVocabulary;
-    }
-
-    /**
-     * The documentation thesauri of the organisations and projects whose settings a person manages, labelled
-     * in the given language, with the id of their vocabulary.
-     */
-    public List<DocumentationThesaurusInfo> findDocumentationThesauriIn(@NonNull ProfilePermissionService.SettingsScope scope, @NonNull String langCode) {
-        return vocabularyRepository.findDocumentationThesauriOf(scope.allInstitutions(), scope.institutionIds(),
-                        scope.allProjects(), scope.projectInstitutionIds(), scope.actionUnitIds()).stream()
-                .map(vocabulary -> new DocumentationThesaurusInfo(vocabulary.getId(),
-                        new ThesaurusInfo(vocabulary.getBaseUri(), vocabulary.getExternalVocabularyId(),
-                                labelService.findLabelOf(vocabulary, langCode).getValue(), langCode)))
-                .toList();
     }
 
     /** The public thesauri of an OpenTheso instance that are meant for Siamois. */

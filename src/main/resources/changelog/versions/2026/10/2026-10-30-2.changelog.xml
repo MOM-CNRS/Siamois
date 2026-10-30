@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    OpenTheso instances: the base URI moves from each vocabulary to the instance it belongs to, and the API keys
+    are configured per instance instead of per thesaurus. When a person had keys for several thesauri of the same
+    instance, the key of the oldest thesaurus is kept.
+    -->
+
+    <!-- vocabulary_instance -->
+
+    <changeSet id="2026-10-30-2-create-vocabulary-instance" author="Julien Linget">
+        <createTable schemaName="public" tableName="vocabulary_instance">
+            <column name="vocabulary_instance_id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="base_uri" type="varchar(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_vocabulary_instance_base_uri"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fill-vocabulary-instance" author="Julien Linget">
+        <sql>
+            INSERT INTO public.vocabulary_instance (base_uri)
+            SELECT base_uri FROM public.vocabulary GROUP BY base_uri ORDER BY min(vocabulary_id);
+        </sql>
+    </changeSet>
+
+    <!-- vocabulary: base_uri replaced by fk_vocabulary_instance_id -->
+
+    <changeSet id="2026-10-30-2-add-vocabulary-fk-instance" author="Julien Linget">
+        <addColumn schemaName="public" tableName="vocabulary">
+            <column name="fk_vocabulary_instance_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-add-vocabulary-aud-fk-instance" author="Julien Linget">
+        <addColumn schemaName="public" tableName="vocabulary_aud">
+            <column name="fk_vocabulary_instance_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fill-vocabulary-fk-instance" author="Julien Linget">
+        <sql>
+            UPDATE public.vocabulary v SET fk_vocabulary_instance_id = vi.vocabulary_instance_id
+            FROM public.vocabulary_instance vi WHERE vi.base_uri = v.base_uri;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fill-vocabulary-aud-fk-instance" author="Julien Linget">
+        <sql>
+            UPDATE public.vocabulary_aud v SET fk_vocabulary_instance_id = vi.vocabulary_instance_id
+            FROM public.vocabulary_instance vi WHERE vi.base_uri = v.base_uri;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-not-null-vocabulary-fk-instance" author="Julien Linget">
+        <addNotNullConstraint schemaName="public" tableName="vocabulary" columnName="fk_vocabulary_instance_id"
+                              columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fk-vocabulary-instance" author="Julien Linget">
+        <addForeignKeyConstraint baseTableSchemaName="public" baseTableName="vocabulary"
+                                 baseColumnNames="fk_vocabulary_instance_id"
+                                 constraintName="fk_vocabulary_vocabulary_instance"
+                                 referencedTableSchemaName="public" referencedTableName="vocabulary_instance"
+                                 referencedColumnNames="vocabulary_instance_id"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-uk-vocabulary-base-uri-external-id" author="Julien Linget">
+        <dropUniqueConstraint schemaName="public" tableName="vocabulary"
+                              constraintName="uk_vocabulary_base_uri_external_id"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-uk-vocabulary-instance-external-id" author="Julien Linget">
+        <addUniqueConstraint schemaName="public" tableName="vocabulary"
+                             columnNames="fk_vocabulary_instance_id, external_id"
+                             constraintName="uk_vocabulary_instance_external_id"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-vocabulary-base-uri" author="Julien Linget">
+        <dropColumn schemaName="public" tableName="vocabulary" columnName="base_uri"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-vocabulary-aud-base-uri" author="Julien Linget">
+        <dropColumn schemaName="public" tableName="vocabulary_aud" columnName="base_uri"/>
+    </changeSet>
+
+    <!-- vocabulary_api_key: fk_vocabulary_id replaced by fk_vocabulary_instance_id -->
+
+    <changeSet id="2026-10-30-2-add-vocabulary-api-key-fk-instance" author="Julien Linget">
+        <addColumn schemaName="public" tableName="vocabulary_api_key">
+            <column name="fk_vocabulary_instance_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fill-vocabulary-api-key-fk-instance" author="Julien Linget">
+        <sql>
+            UPDATE public.vocabulary_api_key k SET fk_vocabulary_instance_id = v.fk_vocabulary_instance_id
+            FROM public.vocabulary v WHERE v.vocabulary_id = k.fk_vocabulary_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-delete-duplicate-vocabulary-api-keys" author="Julien Linget">
+        <sql>
+            DELETE FROM public.vocabulary_api_key k
+            WHERE EXISTS (SELECT 1 FROM public.vocabulary_api_key o
+                          WHERE o.fk_person_id = k.fk_person_id
+                            AND o.fk_vocabulary_instance_id = k.fk_vocabulary_instance_id
+                            AND o.fk_vocabulary_id &lt; k.fk_vocabulary_id);
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-pk-vocabulary-api-key" author="Julien Linget">
+        <dropPrimaryKey schemaName="public" tableName="vocabulary_api_key" constraintName="vocabulary_api_key_pkey"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-fk-vocabulary-api-key-vocabulary" author="Julien Linget">
+        <dropForeignKeyConstraint baseTableSchemaName="public" baseTableName="vocabulary_api_key"
+                                  constraintName="fk90sh08xxr4woag34n9dvn3mv"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-drop-vocabulary-api-key-fk-vocabulary" author="Julien Linget">
+        <dropColumn schemaName="public" tableName="vocabulary_api_key" columnName="fk_vocabulary_id"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-not-null-vocabulary-api-key-fk-instance" author="Julien Linget">
+        <addNotNullConstraint schemaName="public" tableName="vocabulary_api_key"
+                              columnName="fk_vocabulary_instance_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-pk-vocabulary-api-key" author="Julien Linget">
+        <addPrimaryKey schemaName="public" tableName="vocabulary_api_key"
+                       columnNames="fk_person_id, fk_vocabulary_instance_id" constraintName="vocabulary_api_key_pkey"/>
+    </changeSet>
+
+    <changeSet id="2026-10-30-2-fk-vocabulary-api-key-instance" author="Julien Linget">
+        <addForeignKeyConstraint baseTableSchemaName="public" baseTableName="vocabulary_api_key"
+                                 baseColumnNames="fk_vocabulary_instance_id"
+                                 constraintName="fk_vocabulary_api_key_vocabulary_instance"
+                                 referencedTableSchemaName="public" referencedTableName="vocabulary_instance"
+                                 referencedColumnNames="vocabulary_instance_id"/>
+    </changeSet>
+
+</databaseChangeLog>

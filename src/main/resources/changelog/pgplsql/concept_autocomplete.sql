@@ -261,7 +261,7 @@ BEGIN
                c2.external_id,
 
                v.vocabulary_id,
-               v.base_uri,
+               vi.base_uri,
                v.external_id,
 
                vt.vocabulary_type_id,
@@ -277,6 +277,7 @@ BEGIN
                  JOIN concept c ON ml.fk_concept_id = c.concept_id
                  LEFT JOIN concept c2 ON c2.concept_id = ml.fk_field_parent_concept_id
                  JOIN vocabulary v ON c.fk_vocabulary_id = v.vocabulary_id
+                 JOIN vocabulary_instance vi ON v.fk_vocabulary_instance_id = vi.vocabulary_instance_id
                  JOIN vocabulary_type vt ON v.fk_type_id = vt.vocabulary_type_id
         ORDER BY ml.label;
 END;

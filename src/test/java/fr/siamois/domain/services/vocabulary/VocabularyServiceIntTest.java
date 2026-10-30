@@ -40,13 +40,16 @@ class VocabularyServiceIntTest {
     @Mock
     private LabelService labelService;
 
+    @Mock
+    private VocabularyInstanceService vocabularyInstanceService;
+
     private VocabularyService vocabularyService;
 
     @BeforeEach
     void setUp() {
         RequestFactory requestFactory = new RequestFactory(new RestTemplateBuilder());
         ThesaurusApi thesaurusApi = new ThesaurusApi(requestFactory, new ConceptApi(requestFactory, null, null));
-        vocabularyService = new VocabularyService(vocabularyRepository, thesaurusApi, vocabularyTypeRepository, labelService);
+        vocabularyService = new VocabularyService(vocabularyRepository, thesaurusApi, vocabularyTypeRepository, labelService, vocabularyInstanceService);
     }
 
     @Test

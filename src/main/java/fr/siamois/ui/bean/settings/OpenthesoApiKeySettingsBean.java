@@ -3,7 +3,7 @@ package fr.siamois.ui.bean.settings;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.ThesaurusConfigService;
-import fr.siamois.domain.services.vocabulary.VocabularyService;
+import fr.siamois.domain.services.vocabulary.VocabularyInstanceService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * The "OpenTheso API key" section of the profile page: one key per thesaurus attached to an organisation
- * or a project whose settings the user manages.
+ * The "OpenTheso API key" section of the profile page: one key per OpenTheso instance of the thesauri attached
+ * to an organisation or a project whose settings the user manages.
  */
 @Slf4j
 @Getter
@@ -39,7 +39,7 @@ public class OpenthesoApiKeySettingsBean implements Serializable {
     private final SessionSettingsBean sessionSettingsBean;
     private final LangBean langBean;
     private final transient ProfilePermissionService profilePermissionService;
-    private final transient VocabularyService vocabularyService;
+    private final transient VocabularyInstanceService vocabularyInstanceService;
     private final transient ThesaurusConfigService thesaurusConfigService;
 
     private List<ThesaurusApiKey> thesauri = List.of();
@@ -53,9 +53,8 @@ public class OpenthesoApiKeySettingsBean implements Serializable {
         ProfilePermissionService.SettingsScope scope = profilePermissionService.settingsScopeOf(user);
         // a key already saved is shown, masked, in its field
         Map<Long, String> savedKeys = thesaurusConfigService.findApiKeysOf(user.getId());
-        thesauri = vocabularyService.findDocumentationThesauriIn(scope, langBean.getLanguageCode()).stream()
-                .map(info -> new ThesaurusApiKey(info.vocabularyId(), info.thesaurus().label(),
-                        info.thesaurus().completeThesaurusUrl(), savedKeys.get(info.vocabularyId())))
+        thesauri = vocabularyInstanceService.findDocumentationInstancesIn(scope).stream()
+                .map(instance -> new ThesaurusApiKey(instance.getId(), instance.getBaseUri(), savedKeys.get(instance.getId())))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
