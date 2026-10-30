@@ -24,9 +24,6 @@ import {t} from "../i18n";
  * simplicity of "the field owns its own open/closed state" outweighs the (here negligible) cost of
  * a few dozen idle overlay instances, each of which renders nothing until clicked.</p>
  */
-// How many values of a multi-valued field the fiche shows before folding the rest into "+N".
-const MAX_SHOWN_VALUES = 10;
-
 export interface FieldEditCellProps<TRow extends { id?: string | number }> {
   field: FieldResource;
   row: TRow;
@@ -88,8 +85,7 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
     return <InlineBooleanCell field={field} rowId={row.id} value={stored} readOnly={false} onSave={onSave} onSaved={onSaved} />;
   }
 
-  // A long list would stretch the field: its first values, then how many more (the overlay has them all).
-  const content = renderAnswerCell(field, stored, { all: true, max: MAX_SHOWN_VALUES });
+  const content = renderAnswerCell(field, stored, { all: true });
   // An empty field nobody can edit has nothing to open — just the same dash as any empty field.
   if (readOnly && !content) {
     return (

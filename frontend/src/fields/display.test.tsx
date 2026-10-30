@@ -37,16 +37,6 @@ describe("renderAnswerCell (every value, as a fiche field)", () => {
     expect(html).toContain("cell-multi-fold");
   });
 
-  it("shows at most `max` values, the counters covering the others", () => {
-    const values = Array.from({ length: 12 }, (_, i) => ref(String(i), `Période ${i}`));
-    const html = markup(renderAnswerCell(field(), values, { all: true, max: 10 }));
-    expect(html.match(/cell-multi-item/g)).toHaveLength(10);
-    expect(html).not.toContain(">Période 10</span>");
-    expect(html).toContain('class="cell-multi-more" title="Période 0, Période 1, Période 2, Période 3, Période 4, Période 5, Période 6, Période 7, Période 8, Période 9, Période 10, Période 11">+2');
-    // A narrow fiche's fold counts every value past the first, shown here or not.
-    expect(html).toMatch(/cell-multi-fold[^>]*>\+11</);
-  });
-
   it("has no counter for a single value", () => {
     expect(markup(renderAnswerCell(field(), [ref("1", "Néolithique")], { all: true }))).not.toContain("cell-multi-fold");
   });

@@ -992,6 +992,8 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
     align-items: center;
     flex-wrap: nowrap;
     min-width: 0;
+    max-height: none;
+    overflow: hidden;
     gap: 0.35rem;
   }
   .sia-fiche-tab .cell-multi-all > .cell-multi-item:nth-child(n + 2) {
@@ -1646,6 +1648,13 @@ body button.p-button.status-button.status-button-compact {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+/* ...and scroll past a few rows, rather than stretching the field down the fiche. */
+.sia-fiche-tab .cell-multi-all {
+  max-height: 8rem;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Edit mode: the picker's own tokens take the same per-type colour (ResourceRefRenderer sets
