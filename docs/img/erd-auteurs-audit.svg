@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" font-family="Helvetica, Arial, sans-serif" font-size="13">
+<rect width="1000" height="640" fill="#fff"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#555"/></marker></defs>
+<style>.h{font-weight:bold;fill:#fff}.t{fill:#222}.pk{font-weight:bold}.l{fill:#555;font-size:11px}</style>
+
+<!-- person -->
+<rect x="400" y="30" width="200" height="90" fill="#fff" stroke="#2b6cb0" stroke-width="2"/>
+<rect x="400" y="30" width="200" height="26" fill="#2b6cb0"/><text x="500" y="48" class="h" text-anchor="middle">person</text>
+<text x="410" y="76" class="t pk">PK person_id</text><text x="410" y="94" class="t">name, last_name, email…</text>
+
+<!-- institution -->
+<rect x="760" y="30" width="200" height="90" fill="#fff" stroke="#2b6cb0" stroke-width="2"/>
+<rect x="760" y="30" width="200" height="26" fill="#2b6cb0"/><text x="860" y="48" class="h" text-anchor="middle">institution</text>
+<text x="770" y="76" class="t pk">PK institution_id</text><text x="770" y="94" class="t">name, identifier…</text>
+
+<!-- entity -->
+<rect x="380" y="250" width="240" height="190" fill="#fff" stroke="#2f855a" stroke-width="2"/>
+<rect x="380" y="250" width="240" height="26" fill="#2f855a"/><text x="500" y="268" class="h" text-anchor="middle">entité traçable (TraceableEntity)</text>
+<text x="390" y="296" class="t pk">PK id</text>
+<text x="390" y="316" class="t">FK fk_created_by → person</text>
+<text x="390" y="336" class="t">FK fk_institution_id → institution</text>
+<text x="390" y="356" class="t">creation_time</text>
+<text x="390" y="376" class="t">validation_status</text>
+<text x="390" y="396" class="t">validated_at</text>
+<text x="390" y="416" class="t">FK fk_validated_by → person</text>
+<text x="500" y="432" class="l" text-anchor="middle">recording_unit, specimen, siamois_document, …</text>
+
+<!-- aud -->
+<rect x="40" y="250" width="240" height="150" fill="#fff" stroke="#c05621" stroke-width="2"/>
+<rect x="40" y="250" width="240" height="26" fill="#c05621"/><text x="160" y="268" class="h" text-anchor="middle">&lt;entité&gt;_aud (Envers)</text>
+<text x="50" y="296" class="t pk">PK id + rev</text>
+<text x="50" y="316" class="t">FK rev → revinfo</text>
+<text x="50" y="336" class="t">revtype (0 ADD, 1 UPDATE, 2 DEL)</text>
+<text x="50" y="356" class="t">copie des colonnes de l'entité</text>
+<text x="50" y="376" class="l">une table _aud par entité auditée</text>
+
+<!-- revinfo -->
+<rect x="40" y="30" width="240" height="120" fill="#fff" stroke="#c05621" stroke-width="2"/>
+<rect x="40" y="30" width="240" height="26" fill="#c05621"/><text x="160" y="48" class="h" text-anchor="middle">revinfo (InfoRevisionEntity)</text>
+<text x="50" y="76" class="t pk">PK rev_id</text>
+<text x="50" y="96" class="t">epoch_timestamp</text>
+<text x="50" y="116" class="t">FK fk_person_id → person</text>
+<text x="50" y="136" class="t">FK fk_institution_id → institution</text>
+
+<!-- join tables -->
+<rect x="700" y="250" width="260" height="190" fill="#fff" stroke="#6b46c1" stroke-width="2"/>
+<rect x="700" y="250" width="260" height="26" fill="#6b46c1"/><text x="830" y="268" class="h" text-anchor="middle">tables auteurs / contributeurs (N-N)</text>
+<text x="710" y="296" class="t pk">recording_unit_contributors</text>
+<text x="710" y="314" class="t">fk_recording_unit_id, fk_person_id</text>
+<text x="710" y="340" class="t pk">specimen_authors</text>
+<text x="710" y="358" class="t">fk_specimen_id, fk_person_id</text>
+<text x="710" y="384" class="t pk">document_author / _contributor</text>
+<text x="710" y="402" class="t">fk_document_id, fk_person_id</text>
+<text x="830" y="428" class="l" text-anchor="middle">+ fk_author (1-N) sur certaines entités</text>
+
+<!-- user_history -->
+<rect x="380" y="520" width="240" height="90" fill="#fff" stroke="#718096" stroke-width="2"/>
+<rect x="380" y="520" width="240" height="26" fill="#718096"/><text x="500" y="538" class="h" text-anchor="middle">user_history (navigation)</text>
+<text x="390" y="564" class="t">FK fk_person, FK fk_institution</text><text x="390" y="584" class="t">main_uri, secondary_uri, visited_at</text>
+<text x="500" y="600" class="l" text-anchor="middle">historique de pages, pas un audit</text>
+
+<!-- arrows -->
+<g stroke="#555" stroke-width="1.5" fill="none" marker-end="url(#a)">
+<path d="M500 250 L500 120"/>
+<path d="M620 290 Q800 220 790 120"/>
+<path d="M280 90 L400 80"/>
+<path d="M280 110 Q520 170 780 120"/>
+<path d="M160 250 L160 150"/>
+<path d="M700 330 L620 330"/>
+<path d="M830 250 Q760 150 600 105"/>
+<path d="M380 570 Q300 400 400 118"/>
+<path d="M380 340 L280 340" stroke-dasharray="5 4"/>
+</g>
+<text x="508" y="190" class="l">created_by / validated_by</text>
+<text x="168" y="205" class="l">rev</text>
+<text x="300" y="333" class="l">copie</text>
+<text x="300" y="72" class="l">updatedBy</text>
+<text x="760" y="215" class="l">institution</text><text x="720" y="136" class="l">updatedFrom</text>
+<text x="700" y="320" class="l" text-anchor="end"> </text>
+<text x="660" y="322" class="l">N-N</text>
+<text x="720" y="195" class="l">auteurs</text>
+</svg>
