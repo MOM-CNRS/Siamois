@@ -296,26 +296,33 @@ function ListSearchPanel({
       onKeyDown={onKeyDown}
       onClose={onClose}
       beforeDropdown={
-        chips.length > 0 && (
-          <div className="entity-list-panel-filter-chips sia-search-chips">
-            {chips.map((spec) => (
-              <span key={spec.key} className="filter-chip">
-                <span className="filter-chip-body">
-                  <span className="filter-chip-label">{spec.label}</span>
-                  <span className="filter-chip-value">{describeFilterValue(filters[spec.key], optionsByKey[spec.key])}</span>
-                </span>
-                <button
-                  type="button"
-                  className="filter-chip-remove"
-                  aria-label={t("filter.remove", { label: spec.label })}
-                  onClick={() => onFilterRemove(spec.key)}
-                >
-                  <i className="bi bi-x" />
-                </button>
-              </span>
-            ))}
+        <>
+          {/* Typing only previews: say how to make the table follow the search and its filters. */}
+          <div className="sia-search-hint">
+            <i className="bi bi-arrow-return-left" />
+            {t("list.search.enterHint")}
           </div>
-        )
+          {chips.length > 0 && (
+            <div className="entity-list-panel-filter-chips sia-search-chips">
+              {chips.map((spec) => (
+                <span key={spec.key} className="filter-chip">
+                  <span className="filter-chip-body">
+                    <span className="filter-chip-label">{spec.label}</span>
+                    <span className="filter-chip-value">{describeFilterValue(filters[spec.key], optionsByKey[spec.key])}</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="filter-chip-remove"
+                    aria-label={t("filter.remove", { label: spec.label })}
+                    onClick={() => onFilterRemove(spec.key)}
+                  >
+                    <i className="bi bi-x" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </>
       }
     >
       {suggestions.map((option) => (
