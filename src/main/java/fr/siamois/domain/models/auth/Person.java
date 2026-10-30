@@ -3,6 +3,7 @@ package fr.siamois.domain.models.auth;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fr.siamois.domain.models.FieldCode;
+import fr.siamois.domain.models.auth.invitation.InvitationLink;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -98,6 +99,17 @@ public class Person implements UserDetails {
     @ColumnDefault("true")
     @Column(name = "is_enabled")
     private boolean isEnabled = true;
+
+    /** False for accounts created through an invitation link: their address was never confirmed. */
+    @ColumnDefault("true")
+    @Column(name = "mail_verified", nullable = false)
+    private boolean mailVerified = true;
+
+    /** The invitation link this account was created through, if any. */
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_invitation_link_id")
+    private InvitationLink invitationLink;
 
     @JsonIgnore
     @Override

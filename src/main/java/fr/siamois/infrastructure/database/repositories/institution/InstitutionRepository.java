@@ -45,4 +45,6 @@ public interface InstitutionRepository extends CrudRepository<Institution, Long>
     List<Institution> findAllByIdentifierIn(Collection<String> identifiers);
 
     Optional<Institution> findByIdentifierIgnoreCase(String identifier);
+
+    boolean existsByNameIgnoreCase(String name);
 }
