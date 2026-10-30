@@ -554,6 +554,10 @@ class ProjectTableFieldSettingsBeanTest {
                 langBean,
                 new IdentifierResolverRegistry(),
                 layoutService,
-                mock(fr.siamois.domain.services.vocabulary.FieldConfigurationService.class));
+                mock(fr.siamois.domain.services.vocabulary.FieldConfigurationService.class),
+                new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)));
     }
 }

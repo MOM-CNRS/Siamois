@@ -110,8 +110,9 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
 
         Map<Long, FormConfigGroup> groups = new HashMap<>();
         for (FormConfigGroup group : groupRepository.findAllByFormConfigIdOrderByPosition(original.getId())) {
-            groups.put(group.getId(), groupRepository.save(
-                    new FormConfigGroup(copy, group.getLabel(), group.getPosition())));
+            FormConfigGroup groupCopy = new FormConfigGroup(copy, group.getLabel(), group.getPosition());
+            groupCopy.setAllowMeasures(group.isAllowMeasures());
+            groups.put(group.getId(), groupRepository.save(groupCopy));
         }
 
         List<FieldFormConfig> fields = fieldFormConfigRepository.findAllByFormConfigId(original.getId());
@@ -155,6 +156,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
         copy.setWidth(original.getWidth());
         copy.setRules(original.getRules());
         copy.setUnits(original.getUnits());
+        copy.setDefaultValue(original.getDefaultValue());
         return copy;
     }
 }

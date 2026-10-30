@@ -8,6 +8,8 @@ export interface FieldResource {
   resourceType: string;
   label: string;
   answerType: string;
+  // The field's definition: its concept's in the thesaurus, else the field's own hint. Shown in the
+  // label tooltip, truncated (FieldLabel).
   hint?: string | null;
   isSystemField: boolean;
   valueBinding?: string | null;

@@ -83,7 +83,7 @@ class DocumentOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
+        service = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)),
                 profilePermissionService, documentOpenApiMapper, documentListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentLinkService);
 
@@ -231,7 +231,7 @@ class DocumentOpenApiServiceTest {
         typeConcept.setId(2L);
         when(conceptService.findById(2L)).thenReturn(java.util.Optional.of(typeConcept));
         when(conceptMapper.convert(typeConcept)).thenReturn(new ConceptDTO());
-        when(documentService.save(any(DocumentDTO.class))).thenReturn(documentOn(au));
+        when(documentService.save(any(DocumentDTO.class), anyMap())).thenReturn(documentOn(au));
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
         req.setTypeId("2");
@@ -310,7 +310,7 @@ class DocumentOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
         DocumentDTO saved = documentOn(au);
-        when(documentService.save(any(DocumentDTO.class))).thenReturn(saved);
+        when(documentService.save(any(DocumentDTO.class), anyMap())).thenReturn(saved);
 
         DocumentCreateRequest req = new DocumentCreateRequest();
         req.setProjectId("7");
@@ -320,7 +320,7 @@ class DocumentOpenApiServiceTest {
         DocumentResource result = service.createDocument(req, personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
-        verify(documentService).save(captor.capture());
+        verify(documentService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
         assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(captor.getValue().getTitle()).isEqualTo("Document 1");
@@ -457,7 +457,7 @@ class DocumentOpenApiServiceTest {
                 new fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource(null, null);
         EntitySiblingsService siblingsService = mock(EntitySiblingsService.class);
         when(siblingsService.findSiblings(EntitySiblingsService.Kind.DOCUMENT, 7L, 5L)).thenReturn(siblings);
-        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService), profilePermissionService, documentOpenApiMapper, documentListProjectionService,
+        DocumentOpenApiService withSiblings = new DocumentOpenApiService(documentService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)), profilePermissionService, documentOpenApiMapper, documentListProjectionService,
                 ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), siblingsService,
                 new ValidationOpenApiService(validationStatusService), fieldAnswerPatchService, fieldAnswerWireService,
                 customFieldAnswerService, effectiveFormResolver, documentLinkService);
@@ -537,12 +537,12 @@ class DocumentOpenApiServiceTest {
         DocumentDTO saved = new DocumentDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(documentService.save(any(DocumentDTO.class))).thenReturn(saved);
+        when(documentService.save(any(DocumentDTO.class), anyMap())).thenReturn(saved);
 
         service.createDocument(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
-        verify(documentService).save(captor.capture());
+        verify(documentService).save(captor.capture(), anyMap());
         // Set before the save: the service then skips its own generation.
         assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
         verify(documentService).identifierAlreadyExistInProject(captor.getValue());
@@ -566,12 +566,12 @@ class DocumentOpenApiServiceTest {
         DocumentDTO saved = new DocumentDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(documentService.save(any(DocumentDTO.class))).thenReturn(saved);
+        when(documentService.save(any(DocumentDTO.class), anyMap())).thenReturn(saved);
 
         service.createDocument(creationRequest("   "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<DocumentDTO> captor = ArgumentCaptor.forClass(DocumentDTO.class);
-        verify(documentService).save(captor.capture());
+        verify(documentService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getIdentifier()).isNull();
         verify(documentService, never()).identifierAlreadyExistInProject(any(DocumentDTO.class));
     }

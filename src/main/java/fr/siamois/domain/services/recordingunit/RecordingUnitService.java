@@ -6,6 +6,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
+import fr.siamois.domain.models.exceptions.HierarchyCycleException;
 import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSaveException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
@@ -19,6 +20,7 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
@@ -38,6 +40,8 @@ import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
@@ -78,6 +82,7 @@ import java.util.stream.Collectors;
 public class RecordingUnitService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     static final String RECORDING_UNIT_NOT_FOUND_WITH_ID = "RecordingUnit not found with ID: ";
     private final RecordingUnitRepository recordingUnitRepository;
@@ -157,6 +162,8 @@ public class RecordingUnitService implements ArkEntityService {
                     recordingUnitMapper.invertConvert(recordingUnitDTO);
 
             return recordingUnitMapper.convert(save(recordingUnit));
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -179,6 +186,8 @@ public class RecordingUnitService implements ArkEntityService {
         RecordingUnitDTO saved = save(recordingUnitDTO);
         try {
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalFieldAnswers);
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -227,6 +236,8 @@ public class RecordingUnitService implements ArkEntityService {
             setupChilds(recordingUnit, savedRecordingUnit);
             return savedRecordingUnit;
 
+        } catch (HierarchyCycleException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             throw new FailedRecordingUnitSaveException(e.getMessage(), e);
@@ -280,6 +291,8 @@ public class RecordingUnitService implements ArkEntityService {
             if (missing.size() != missingIds.size()) {
                 throw new IllegalArgumentException("Some children not found: " + missingIds);
             }
+            hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                    managedRecordingUnit.getId(), Set.of(), missingIds);
             managedRecordingUnit.getChildren().addAll(missing);
         }
     }
@@ -300,6 +313,11 @@ public class RecordingUnitService implements ArkEntityService {
             throw new IllegalArgumentException("Some parents not found: " + newParentIds);
         }
         Set<RecordingUnit> newParents = new HashSet<>(loadedParents);
+
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.RECORDING_UNIT,
+                managedRecordingUnit.getId(),
+                newParents.stream().filter(p -> !currentParents.contains(p)).map(RecordingUnit::getId).collect(Collectors.toSet()),
+                Set.of());
 
         List<RecordingUnit> toSave = new ArrayList<>();
 
@@ -508,6 +526,9 @@ public class RecordingUnitService implements ArkEntityService {
                     .mapToLong(row -> ((Number) row[1]).longValue())
                     .sum();
             dto.setChildrenCount((int) children);
+        }
+        if (counts != null && counts.contains("relationships") && dto.getId() != null) {
+            dto.setRelationshipCount(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(dto.getId()));
         }
         return new AccessibleRecordingUnit(entity, dto);
     }
@@ -913,7 +934,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.recordingUnitInActionUnit(actionUnitId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, pageable, false);
+        return pageAndEnrich(specs, pageable, false, searchedIdentifier(filters));
     }
 
     /**
@@ -925,7 +946,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.hasParent(parentId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false, searchedIdentifier(filters));
     }
 
     /** Recording units of a phase, same contract as {@link #findChildrenOf} (the phase fiche's "UE" tab). */
@@ -934,7 +955,7 @@ public class RecordingUnitService implements ArkEntityService {
         Specification<RecordingUnit> specs = Specification
                 .where(RecordingUnitSpec.inPhase(phaseId))
                 .and(RecordingUnitSortFilterService.userFilterSpecs(filters));
-        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false);
+        return pageAndEnrich(specs, PageRequest.of(offset / limit, limit, sort), false, searchedIdentifier(filters));
     }
 
 
@@ -1181,15 +1202,16 @@ public class RecordingUnitService implements ArkEntityService {
      * rather than one action unit.
      *
      * @param institution the institution to search in
-     * @param query       the text the full identifier must contain, null or blank matching everything
+     * @param query       the text the full identifier must contain (the exact match first), null or blank
+     *                    matching everything
      * @param limit       how many units to return at most
      */
     @Transactional(readOnly = true)
     public List<RecordingUnitSummaryDTO> findMatchingInInstitutionByFullIdentifier(InstitutionDTO institution, String query, int limit) {
         Specification<RecordingUnit> specs = RecordingUnitSpec.recordingUnitInInstitution(institution.getId())
-                .and(RecordingUnitSpec.fullIdentifierContains(query));
+                .and(TextSearchSpec.matching(RecordingUnitSpec.FULL_IDENTIFIER, query, FilterDTO.FilterType.START_WITH));
 
-        return recordingUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(recordingUnitRepository, specs, PageRequest.ofSize(limit), RecordingUnitSpec.FULL_IDENTIFIER, query)
                 .stream()
                 .map(recordingUnitSummaryMapper::convert)
                 .toList();
@@ -1289,7 +1311,9 @@ public class RecordingUnitService implements ArkEntityService {
     public Page<RecordingUnitDTO> searchRecordingUnit(InstitutionDTO institution, FilterDTO filters, Pageable pageable,
                                                        boolean includeFullRelations) {
         Specification<RecordingUnit> specs = recordingUnitSortFilterService.prepareSpecs(institution, filters);
-        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations);
+        // The tree lists roots leading to a match, not the matches: no exact match to rank there.
+        String searched = filters.isRootOnly() ? null : searchedIdentifier(filters);
+        Page<RecordingUnitDTO> page = pageAndEnrich(specs, pageable, includeFullRelations, searched);
         if (filters.isRootOnly()) {
             applyTreeFlags(page, filters);
             return TreePage.of(page, countTreeMatches(institution, filters));
@@ -1471,8 +1495,18 @@ public class RecordingUnitService implements ArkEntityService {
      */
     private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
                                                  boolean includeFullRelations) {
+        return pageAndEnrich(specs, pageable, includeFullRelations, null);
+    }
+
+    /**
+     * Same, with the units whose full identifier is exactly {@code searchedIdentifier} first
+     * ({@link ExactMatchFirst}); null ranks nothing.
+     */
+    private Page<RecordingUnitDTO> pageAndEnrich(Specification<RecordingUnit> specs, Pageable pageable,
+                                                 boolean includeFullRelations, @Nullable String searchedIdentifier) {
         specs = recordingUnitSortFilterService.applySyntheticSort(specs, pageable.getSort());
-        Page<RecordingUnitDTO> page = recordingUnitRepository.findAll(specs, recordingUnitSortFilterService.stripSyntheticSort(pageable))
+        Page<RecordingUnitDTO> page = ExactMatchFirst.findAll(recordingUnitRepository, specs,
+                        recordingUnitSortFilterService.stripSyntheticSort(pageable), RecordingUnitSpec.FULL_IDENTIFIER, searchedIdentifier)
                 .map(recordingUnitMapper::toLightDto);
 
         List<Long> ids = page.getContent().stream()
@@ -1494,6 +1528,14 @@ public class RecordingUnitService implements ArkEntityService {
         return page;
     }
 
+
+    /**
+     * The full identifier the list searches for, or null when it searches none.
+     */
+    @Nullable
+    private static String searchedIdentifier(FilterDTO filters) {
+        return filters.searchTextOf(RecordingUnitSpec.FULL_IDENTIFIER);
+    }
 
     private void hydrateFullRelations(List<RecordingUnitDTO> rows, List<Long> ids) {
         Map<Long, Set<RecordingUnitSummaryDTO>> parentsByOwner = groupRecordingUnitsByOwner(

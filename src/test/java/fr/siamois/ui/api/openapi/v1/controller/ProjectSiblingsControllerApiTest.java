@@ -271,11 +271,9 @@ class ProjectSiblingsControllerApiTest {
         nextDto.setId(6L);
         nextDto.setName("Projet suivant");
 
-        when(actionUnitService.findSiblingProject(
-                eq(7L), any(), any(), any(), any(), eq("creationTime"), any(), any(), eq(5L), eq(false)))
+        when(actionUnitService.findSiblingProject(eq(7L), any(), any(), any(), any(), argThat(cursor -> "creationTime".equals(cursor.sortField()) && Long.valueOf(5L).equals(cursor.currentId())), eq(false)))
                 .thenReturn(Optional.of(previousDto));
-        when(actionUnitService.findSiblingProject(
-                eq(7L), any(), any(), any(), any(), eq("creationTime"), any(), any(), eq(5L), eq(true)))
+        when(actionUnitService.findSiblingProject(eq(7L), any(), any(), any(), any(), argThat(cursor -> "creationTime".equals(cursor.sortField()) && Long.valueOf(5L).equals(cursor.currentId())), eq(true)))
                 .thenReturn(Optional.of(nextDto));
 
         mockMvc.perform(get("/api/v1/projects/5/siblings"))
@@ -294,11 +292,9 @@ class ProjectSiblingsControllerApiTest {
         stubCaller();
         when(actionUnitService.findAccessibleProjectByKey(eq("5"), any()))
                 .thenReturn(rowOf(5L, "Seul projet", OffsetDateTime.now()));
-        when(actionUnitService.findSiblingProject(
-                eq(7L), any(), any(), any(), any(), anyString(), any(), any(), eq(5L), eq(false)))
+        when(actionUnitService.findSiblingProject(eq(7L), any(), any(), any(), any(), argThat(cursor -> cursor.sortField() != null && Long.valueOf(5L).equals(cursor.currentId())), eq(false)))
                 .thenReturn(Optional.empty());
-        when(actionUnitService.findSiblingProject(
-                eq(7L), any(), any(), any(), any(), anyString(), any(), any(), eq(5L), eq(true)))
+        when(actionUnitService.findSiblingProject(eq(7L), any(), any(), any(), any(), argThat(cursor -> cursor.sortField() != null && Long.valueOf(5L).equals(cursor.currentId())), eq(true)))
                 .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/projects/5/siblings"))
@@ -313,16 +309,13 @@ class ProjectSiblingsControllerApiTest {
         stubCaller();
         when(actionUnitService.findAccessibleProjectByKey(eq("5"), any()))
                 .thenReturn(rowOf(5L, "Projet courant", OffsetDateTime.now()));
-        when(actionUnitService.findSiblingProject(
-                eq(7L), any(), any(), eq("foss"), any(), anyString(), any(), any(), eq(5L), anyBoolean()))
+        when(actionUnitService.findSiblingProject(eq(7L), any(), any(), eq("foss"), any(), argThat(cursor -> cursor.sortField() != null && Long.valueOf(5L).equals(cursor.currentId())), anyBoolean()))
                 .thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/projects/5/siblings").param("search", "foss"))
                 .andExpect(status().isOk());
 
-        verify(actionUnitService).findSiblingProject(
-                eq(7L), any(), any(), eq("foss"), any(), eq("creationTime"), any(), any(), eq(5L), eq(false));
-        verify(actionUnitService).findSiblingProject(
-                eq(7L), any(), any(), eq("foss"), any(), eq("creationTime"), any(), any(), eq(5L), eq(true));
+        verify(actionUnitService).findSiblingProject(eq(7L), any(), any(), eq("foss"), any(), argThat(cursor -> "creationTime".equals(cursor.sortField()) && Long.valueOf(5L).equals(cursor.currentId())), eq(false));
+        verify(actionUnitService).findSiblingProject(eq(7L), any(), any(), eq("foss"), any(), argThat(cursor -> "creationTime".equals(cursor.sortField()) && Long.valueOf(5L).equals(cursor.currentId())), eq(true));
     }
 }

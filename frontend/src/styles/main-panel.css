@@ -3923,3 +3923,7 @@ div#search-bar .sia-topbar-search-field .sia-search {
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* Field label tooltip: the label, then the (truncated) definition of the field's concept. */
+.field-label-tooltip { max-width: 22rem; }
+.field-label-tooltip-definition { margin-top: 0.25rem; white-space: normal; }

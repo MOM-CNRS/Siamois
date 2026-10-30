@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.recordingunit;
 
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.dto.FilterDTO;
 import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
@@ -210,9 +211,7 @@ public record RecordingUnitListFilter(
      */
     public FilterDTO toFilterDTO(String search) {
         FilterDTO dto = new FilterDTO();
-        if (search != null && !search.isBlank()) {
-            dto.add(RecordingUnitSpec.FULL_IDENTIFIER, search, FilterDTO.FilterType.CONTAINS);
-        }
+        SearchMode.addSearch(dto, RecordingUnitSpec.FULL_IDENTIFIER, search);
         for (Map.Entry<String, String> e : containsFilters.entrySet()) {
             dto.add(e.getKey(), e.getValue(), FilterDTO.FilterType.CONTAINS);
         }

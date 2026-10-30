@@ -3,6 +3,7 @@ package fr.siamois.infrastructure.database.repositories.specs;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.permissions.PermissionScopeType;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
+import fr.siamois.dto.FilterDTO;
 import jakarta.persistence.criteria.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -131,7 +133,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_forwardAscending_comparesFieldGreaterThanOrEqualWithGreaterId() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldGt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idGt = mock(Predicate.class);
@@ -139,10 +141,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("name")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.greaterThan(fieldPath, "Foss")).thenReturn(fieldGt);
         when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
-        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.greaterThan(cursorIdPath, 10L)).thenReturn(idGt);
         when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
         when(cb.or(fieldGt, andPredicate)).thenReturn(orPredicate);
 
@@ -151,7 +153,7 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).greaterThan(fieldPath, "Foss");
-        verify(cb).greaterThan(idPath, 10L);
+        verify(cb).greaterThan(cursorIdPath, 10L);
     }
 
     /**
@@ -163,7 +165,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_backwardOnAscendingSort_comparesFieldAndIdLessThan() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldLt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idLt = mock(Predicate.class);
@@ -171,10 +173,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("name")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.lessThan(fieldPath, "Foss")).thenReturn(fieldLt);
         when(cb.equal(fieldPath, "Foss")).thenReturn(fieldEq);
-        when(cb.lessThan(idPath, 10L)).thenReturn(idLt);
+        when(cb.lessThan(cursorIdPath, 10L)).thenReturn(idLt);
         when(cb.and(fieldEq, idLt)).thenReturn(andPredicate);
         when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
 
@@ -183,7 +185,7 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).lessThan(fieldPath, "Foss");
-        verify(cb).lessThan(idPath, 10L);
+        verify(cb).lessThan(cursorIdPath, 10L);
     }
 
     /**
@@ -195,7 +197,7 @@ class ActionUnitSpecTest {
     @Test
     void cursor_forwardOnDescendingSort_comparesFieldLessThanButIdGreaterThan() {
         Path fieldPath = mock(Path.class);
-        Path idPath = mock(Path.class);
+        Path cursorIdPath = mock(Path.class);
         Predicate fieldLt = mock(Predicate.class);
         Predicate fieldEq = mock(Predicate.class);
         Predicate idGt = mock(Predicate.class);
@@ -203,10 +205,10 @@ class ActionUnitSpecTest {
         Predicate orPredicate = mock(Predicate.class);
 
         when(root.get("creationTime")).thenReturn(fieldPath);
-        when(root.get("id")).thenReturn(idPath);
+        when(root.get("id")).thenReturn(cursorIdPath);
         when(cb.lessThan(fieldPath, "T")).thenReturn(fieldLt);
         when(cb.equal(fieldPath, "T")).thenReturn(fieldEq);
-        when(cb.greaterThan(idPath, 10L)).thenReturn(idGt);
+        when(cb.greaterThan(cursorIdPath, 10L)).thenReturn(idGt);
         when(cb.and(fieldEq, idGt)).thenReturn(andPredicate);
         when(cb.or(fieldLt, andPredicate)).thenReturn(orPredicate);
 
@@ -215,6 +217,35 @@ class ActionUnitSpecTest {
 
         assertSame(orPredicate, result);
         verify(cb).lessThan(fieldPath, "T");
-        verify(cb).greaterThan(idPath, 10L);
+        verify(cb).greaterThan(cursorIdPath, 10L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void projectSearch_startWith_matchesTheStartOfNameIdentifierAndFullIdentifier() {
+        Expression<String> coalesced = mock(Expression.class);
+        Expression<String> lowered = mock(Expression.class);
+        when(cb.<String>coalesce(any(), eq(""))).thenReturn(coalesced);
+        when(cb.lower(any())).thenReturn(lowered);
+
+        ActionUnitSpec.projectSearch("FOU", FilterDTO.FilterType.START_WITH).toPredicate(root, query, cb);
+
+        verify(cb, times(3)).like(lowered, "fou%");
+        verify(root).get("name");
+        verify(root).get("identifier");
+        verify(root).get("fullIdentifier");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void projectSearch_default_matchesAnywhere() {
+        Expression<String> coalesced = mock(Expression.class);
+        Expression<String> lowered = mock(Expression.class);
+        when(cb.<String>coalesce(any(), eq(""))).thenReturn(coalesced);
+        when(cb.lower(any())).thenReturn(lowered);
+
+        ActionUnitSpec.projectSearch("FOU").toPredicate(root, query, cb);
+
+        verify(cb, times(3)).like(lowered, "%fou%");
     }
 }

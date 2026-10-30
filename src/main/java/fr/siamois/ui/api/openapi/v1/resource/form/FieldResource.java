@@ -14,7 +14,8 @@ public record FieldResource(
         @Schema(description = "Type de ressource", example = "fields", allowableValues = {"fields"})
         String resourceType,
 
-        @Schema(description = "Libellé affichable, résolu selon Accept-Language")
+        @Schema(description = "Libellé affichable, résolu selon Accept-Language : celui du concept du champ dans le "
+                + "thésaurus, à défaut celui du champ")
         String label,
 
         @Schema(description = "Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer",
@@ -27,7 +28,8 @@ public record FieldResource(
                         "SELECT_MULTIPLE_PHASE", "SELECT_MULTIPLE_STRATIGRAPHY"})
         String answerType,
 
-        @Schema(description = "Texte d'aide, résolu selon Accept-Language")
+        @Schema(description = "Définition du champ, résolue selon Accept-Language : celle de son concept dans le "
+                + "thésaurus, à défaut le texte d'aide du champ")
         @Nullable String hint,
 
         @Schema(description = "Vrai si le champ est un champ système (binding direct sur l'entité)")

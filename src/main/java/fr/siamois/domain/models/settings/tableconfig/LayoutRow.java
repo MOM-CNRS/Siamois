@@ -30,13 +30,20 @@ public class LayoutRow implements Serializable {
     private TypeFieldFormConfig field;
     private FieldWidth width = FieldWidth.QUARTER;
     private boolean hasRules;
+    /** Set on a group header: whether users may add measures of their own to the section. */
+    private boolean allowMeasures = true;
 
     public static LayoutRow of(TypeFieldFormConfig field, FieldWidth width) {
         return of(field, width, false);
     }
 
     public static LayoutRow header(Long groupId, String label) {
+        return header(groupId, label, true);
+    }
+
+    public static LayoutRow header(Long groupId, String label, boolean allowMeasures) {
         LayoutRow row = new LayoutRow();
+        row.allowMeasures = allowMeasures;
         row.group = true;
         row.groupId = groupId;
         row.groupLabel = label;

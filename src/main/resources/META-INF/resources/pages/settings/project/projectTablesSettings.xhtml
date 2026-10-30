@@ -195,10 +195,12 @@
             .ptc-rule-leaf-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
             .ptc-group-row > td { background: #f3f6f2 !important; font-weight: 600; border-left: none !important; border-right: none !important; overflow: visible; }
             /* The group's title input sits in the field-name cell but is wide enough to read as a title of the whole row. */
-            .ptc-group-row > td:nth-child(3) { position: relative; z-index: 1; }
-            .ptc-group-row .ptc-group-input.ui-inputtext { width: min(560px, 50vw); max-width: none; border-color: transparent; background: transparent; font-size: 0.9375rem; }
+            .ptc-group-line { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+            .ptc-group-row .ptc-group-input.ui-inputtext { flex: 1 1 8rem; width: auto; min-width: 0; max-width: 560px; border-color: transparent; background: transparent; font-size: 0.9375rem; }
             .ptc-group-row .ptc-group-input.ui-inputtext:hover, .ptc-group-row .ptc-group-input.ui-inputtext:focus { background: #fff; border-color: #cfcfca; }
             .ptc-group-input.ui-inputtext { font-weight: 600; }
+            .ptc-group-measures { display: inline-flex; flex: none; align-items: center; gap: 0.5rem; margin-left: 0.5rem; white-space: nowrap; }
+            .ptc-group-measures-label { font-size: 0.8125rem; color: #555; font-weight: 400; }
             .ui-datatable-rowordering { outline: 1px dashed #cfcfca; background: #f6f6f4 !important; height: 42px; }
 
             /* ── add-field picker ──────────────────────── */
@@ -643,8 +645,8 @@
                                         <p:column styleClass="ptc-drag-cell" style="width:38px">
                                             <span class="bi bi-grip-vertical ptc-drag-handle" title="#{langBean.msg('projectTables.champs.reorderHint')}"/>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}" style="min-width:260px">
-                                            <h:panelGroup rendered="#{r.group}">
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnField')}" style="min-width:260px" colspan="#{r.group ? 4 : 1}">
+                                            <h:panelGroup rendered="#{r.group}" layout="block" styleClass="ptc-group-line">
                                                 <p:commandLink actionListener="#{projectTableFieldSettingsBean.toggleGroup(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"
                                                                styleClass="ptc-group-chevron" title="#{langBean.msg('projectTables.layout.toggleGroup')}">
                                                     <i class="bi #{projectTableFieldSettingsBean.isGroupCollapsed(r) ? 'bi-chevron-right' : 'bi-chevron-down'}"/>
@@ -652,6 +654,13 @@
                                                 <p:inputText value="#{r.displayLabel}" styleClass="ptc-group-input" maxlength="120" title="#{langBean.msg('projectTables.layout.groupName')}">
                                                     <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onGroupRenamed}" process="@this" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
                                                 </p:inputText>
+                                                <span class="ptc-group-measures">
+                                                    <p:toggleSwitch id="groupMeasures" value="#{r.allowMeasures}">
+                                                        <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onGroupMeasuresChanged}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                    </p:toggleSwitch>
+                                                    <span class="ptc-group-measures-label">#{langBean.msg('projectTables.layout.allowMeasures')}</span>
+                                                </span>
+                                                <p:tooltip for="groupMeasures" value="#{langBean.msg('projectTables.layout.allowMeasuresHint')}"/>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{r.fieldRow}">
                                                 <i class="#{r.field.type.icon} ptc-field-icon" title="#{r.field.type.label}"/>
@@ -661,15 +670,15 @@
                                                 </h:panelGroup>
                                             </h:panelGroup>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:170px">
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnType')}" style="width:170px" rendered="#{not r.group}">
                                             <span class="ptc-chip" style="#{r.group ? 'display:none' : ''}">#{r.field.type.label}</span>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:120px">
+                                        <p:column headerText="#{langBean.msg('projectTables.champs.columnRequired')}" style="width:120px" rendered="#{not r.group}">
                                             <p:toggleSwitch rendered="#{r.fieldRow}" value="#{r.field.mandatory}" disabled="#{r.field.institutionLocked or projectTableFieldSettingsBean.isPivotField(r.field)}">
                                                 <p:ajax event="change" listener="#{projectTableFieldSettingsBean.toggleFieldMandatory(r.field)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
                                             </p:toggleSwitch>
                                         </p:column>
-                                        <p:column headerText="#{langBean.msg('projectTables.layout.columnWidth')}" style="width:120px">
+                                        <p:column headerText="#{langBean.msg('projectTables.layout.columnWidth')}" style="width:120px" rendered="#{not r.group}">
                                             <p:selectOneMenu rendered="#{r.fieldRow}" value="#{r.width}" style="width:100px">
                                                 <f:selectItems value="#{projectTableFieldSettingsBean.fieldWidths}" var="w" itemLabel="#{projectTableFieldSettingsBean.widthLabel(w)}" itemValue="#{w}"/>
                                                 <p:ajax event="change" listener="#{projectTableFieldSettingsBean.onWidthChanged(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
@@ -677,14 +686,20 @@
                                         </p:column>
                                         <p:column style="width:210px">
                                             <h:panelGroup rendered="#{r.group}">
-                                                <p:commandButton icon="bi bi-plus-lg" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.addFieldToGroup')}" actionListener="#{projectTableFieldSettingsBean.addFieldToGroup(r)}" update=":addFieldForm"/>
-                                                <p:commandButton icon="bi bi-arrow-up" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.moveGroupUp')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, -1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
-                                                <p:commandButton icon="bi bi-arrow-down" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.moveGroupDown')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, 1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
-                                                <p:commandButton icon="bi bi-trash" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.layout.deleteGroup')}" actionListener="#{projectTableFieldSettingsBean.deleteGroup(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:commandButton id="groupAddField" icon="bi bi-plus-lg" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.layout.addFieldToGroup')}" actionListener="#{projectTableFieldSettingsBean.addFieldToGroup(r)}" update=":addFieldForm"/>
+                                                <p:tooltip for="groupAddField" value="#{langBean.msg('projectTables.layout.addFieldToGroup')}"/>
+                                                <p:commandButton id="groupUp" icon="bi bi-arrow-up" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.layout.moveGroupUp')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, -1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:tooltip for="groupUp" value="#{langBean.msg('projectTables.layout.moveGroupUp')}"/>
+                                                <p:commandButton id="groupDown" icon="bi bi-arrow-down" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.layout.moveGroupDown')}" actionListener="#{projectTableFieldSettingsBean.moveGroup(r, 1)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:tooltip for="groupDown" value="#{langBean.msg('projectTables.layout.moveGroupDown')}"/>
+                                                <p:commandButton id="groupDelete" icon="bi bi-trash" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.layout.deleteGroup')}" actionListener="#{projectTableFieldSettingsBean.deleteGroup(r)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable"/>
+                                                <p:tooltip for="groupDelete" value="#{langBean.msg('projectTables.layout.deleteGroup')}"/>
                                             </h:panelGroup>
                                             <h:panelGroup rendered="#{r.fieldRow}">
-                                                <p:commandButton icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.champs.openField')}" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(r.field)}" update=":treeFormCC:treeForm :ptcMain"/>
-                                                <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" title="#{langBean.msg('projectTables.champs.removeField')}" disabled="#{r.field.institutionLocked or projectTableFieldSettingsBean.isPivotField(r.field)}" actionListener="#{projectTableFieldSettingsBean.removeField(r.field)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable :treeFormCC:treeForm"/>
+                                                <p:commandButton id="fieldOpen" icon="bi bi-pencil" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.champs.openField')}" actionListener="#{projectTableFieldSettingsBean.openDrawerForEdit(r.field)}" update=":treeFormCC:treeForm :ptcMain"/>
+                                                <p:tooltip for="fieldOpen" value="#{langBean.msg('projectTables.champs.openField')}"/>
+                                                <p:commandButton id="fieldRemove" icon="bi bi-x-lg" styleClass="ui-button-flat ui-button-sm" aria-label="#{langBean.msg('projectTables.champs.removeField')}" disabled="#{r.field.institutionLocked or projectTableFieldSettingsBean.isPivotField(r.field)}" actionListener="#{projectTableFieldSettingsBean.removeField(r.field)}" update=":projectTablesFormCC:projectTablesForm:fieldsTabs:layoutTable :treeFormCC:treeForm"/>
+                                                <p:tooltip for="fieldRemove" value="#{langBean.msg('projectTables.champs.removeField')}"/>
                                             </h:panelGroup>
                                         </p:column>
                                     </p:dataTable>

@@ -441,6 +441,22 @@
                         </h:panelGroup>
                         </h:panelGroup>
                     </h:panelGroup>
+                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftDefaultAvailable}" layout="block" styleClass="ptc-drawer-field">
+                        <label class="ptc-drawer-label" for="fieldEditForm:draftDefaultValue">#{langBean.msg('projectTables.drawer.default.label')}</label>
+                        <h:panelGroup rendered="#{not projectTableFieldSettingsBean.draftMultiple}">
+                            <h:selectOneMenu id="draftDefaultValue" value="#{projectTableFieldSettingsBean.draftDefaultConceptId}" styleClass="ptc-native-select">
+                                <f:selectItem itemLabel="#{langBean.msg('projectTables.drawer.default.none')}" itemValue="" noSelectionOption="true"/>
+                                <f:selectItems value="#{projectTableFieldSettingsBean.defaultOptions}" var="o" itemLabel="#{o.label()}" itemValue="#{o.id()}"/>
+                            </h:selectOneMenu>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftMultiple}">
+                            <p:selectCheckboxMenu id="draftDefaultValues" value="#{projectTableFieldSettingsBean.draftDefaultConceptIds}"
+                                                  label="#{langBean.msg('projectTables.drawer.default.none')}" multiple="true" style="width:100%">
+                                <f:selectItems value="#{projectTableFieldSettingsBean.defaultOptions}" var="o" itemLabel="#{o.label()}" itemValue="#{o.id()}"/>
+                            </p:selectCheckboxMenu>
+                        </h:panelGroup>
+                        <div class="ptc-field-hint">#{langBean.msg('projectTables.drawer.default.hint')}</div>
+                    </h:panelGroup>
                         <h:panelGroup rendered="#{fieldRulesEditorBean.ownConcept}" layout="block" styleClass="ptc-drawer-field ptc-rule-block">
                             <span class="ptc-drawer-label">#{langBean.msg('rules.options')}</span>
                             <h:panelGroup rendered="#{fieldRulesEditorBean.advancedOptions ne null}">

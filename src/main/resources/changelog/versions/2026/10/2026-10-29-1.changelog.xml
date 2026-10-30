@@ -4,79 +4,16 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
 
     <!--
-    Fields added on the fly ("Ajouter une mesure") to every kind of record, not the recording units alone: each
-    record has its link table to its custom fields, like recording_unit_on_the_fly_fields, and the field knows the
-    panel of the fiche it was added to.
+    The value a new entity starts with for a field, per form configuration (so per type). Same jsonb shape as
+    the rules and the units next to it, applied to the table and to its Envers audit table.
     -->
 
-    <changeSet id="2026-10-29-1-custom-field-panel-name" author="Gregory Bliault">
-        <addColumn schemaName="public" tableName="custom_field">
-            <column name="panel_name" type="varchar(255)"/>
+    <changeSet id="2026-10-29-1-field-form-config-default-value" author="Gregory Bliault">
+        <addColumn schemaName="public" tableName="field_form_config">
+            <column name="default_value" type="jsonb"/>
         </addColumn>
-    </changeSet>
-
-    <changeSet id="2026-10-29-1-specimen-on-the-fly-fields" author="Gregory Bliault">
-        <createTable schemaName="public" tableName="specimen_on_the_fly_fields">
-            <column name="fk_specimen_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_specimen_otf_specimen"
-                             references="public.specimen(specimen_id)"/>
-            </column>
-            <column name="fk_custom_field_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_specimen_otf_field"
-                             references="public.custom_field(custom_field_id)"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="2026-10-29-1-phase-on-the-fly-fields" author="Gregory Bliault">
-        <createTable schemaName="public" tableName="phase_on_the_fly_fields">
-            <column name="fk_phase_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_phase_otf_phase"
-                             references="public.phase(phase_id)"/>
-            </column>
-            <column name="fk_custom_field_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_phase_otf_field"
-                             references="public.custom_field(custom_field_id)"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="2026-10-29-1-container-on-the-fly-fields" author="Gregory Bliault">
-        <createTable schemaName="public" tableName="container_on_the_fly_fields">
-            <column name="fk_container_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_container_otf_container"
-                             references="public.container(container_id)"/>
-            </column>
-            <column name="fk_custom_field_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_container_otf_field"
-                             references="public.custom_field(custom_field_id)"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="2026-10-29-1-document-on-the-fly-fields" author="Gregory Bliault">
-        <createTable schemaName="public" tableName="document_on_the_fly_fields">
-            <column name="fk_document_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_document_otf_document"
-                             references="public.siamois_document(document_id)"/>
-            </column>
-            <column name="fk_custom_field_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_document_otf_field"
-                             references="public.custom_field(custom_field_id)"/>
-            </column>
-        </createTable>
-    </changeSet>
-
-    <changeSet id="2026-10-29-1-study-on-the-fly-fields" author="Gregory Bliault">
-        <createTable schemaName="public" tableName="study_on_the_fly_fields">
-            <column name="fk_study_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_study_otf_study"
-                             references="public.study(study_id)"/>
-            </column>
-            <column name="fk_custom_field_id" type="bigint">
-                <constraints primaryKey="true" nullable="false" foreignKeyName="fk_study_otf_field"
-                             references="public.custom_field(custom_field_id)"/>
-            </column>
-        </createTable>
+        <addColumn schemaName="public" tableName="field_form_config_aud">
+            <column name="default_value" type="jsonb"/>
+        </addColumn>
     </changeSet>
 </databaseChangeLog>

@@ -90,6 +90,14 @@ public class FieldFormConfig {
     @Column(name = "units", columnDefinition = "jsonb")
     protected String units;
 
+    /**
+     * The value a new entity starts with for this field, in the {@link FieldDefault} JSON format, or null
+     * for none. Applied when the entity is created, never to an existing one.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "default_value", columnDefinition = "jsonb")
+    protected String defaultValue;
+
     public FieldFormConfig(FieldFormConfig fieldFormConfig) {
         this.id = fieldFormConfig.getId();
         this.field = fieldFormConfig.getField();
@@ -102,6 +110,7 @@ public class FieldFormConfig {
         this.width = fieldFormConfig.getWidth();
         this.rules = fieldFormConfig.getRules();
         this.units = fieldFormConfig.getUnits();
+        this.defaultValue = fieldFormConfig.getDefaultValue();
     }
 
     public void setField(@NonNull CustomField field) {

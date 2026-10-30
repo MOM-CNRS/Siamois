@@ -5,6 +5,7 @@ import fr.siamois.dto.entity.PhaseDTO;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PhaseOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.phase.PhaseResource;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectResourcePermissions;
@@ -43,6 +44,7 @@ public class ProjectPhasesControllerApi {
     private final FieldQueryService fieldQueryService;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
+    @SearchMode.Param
     @GetMapping
     @Operation(summary = "Récupérer la liste paginée des phases d'un projet",
             description = "Clé de projet : identique à GET /api/v1/projects/{id}. Tri : paramètre sort au "

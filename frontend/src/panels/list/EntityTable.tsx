@@ -20,6 +20,7 @@ import type {ColumnDef, EntityPreview, EntityTypeConfig, ListParams,} from "../.
 import {entityChipStyle, renderAnswerValue} from "../../fields/display";
 import {describeIncoherence} from "../../fields/incoherence";
 import {entityRowLabel} from "../../fields/optionSources";
+import {InlineBooleanCell} from "../../fields/InlineBooleanCell";
 import {hasFieldRenderer} from "../../fields/registry";
 import {stratigraphyPositionOf} from "../../fields/stratigraphy";
 import type {FieldState} from "../../rules";
@@ -381,6 +382,20 @@ export function EntityTable({
         >
           {content}
         </span>
+      );
+    }
+
+    // A yes/no is toggled on the checkbox itself, saved at once: no overlay.
+    if (field.answerType === "BOOLEAN" && editable && row.id != null) {
+      return (
+        <InlineBooleanCell
+          field={field}
+          rowId={row.id}
+          value={resolveValueBinding(field).readRaw(row)}
+          readOnly={false}
+          onSave={(id, answers) => config.api.patchAnswers!(id, answers)}
+          onSaved={() => onCellSaved(row)}
+        />
       );
     }
 

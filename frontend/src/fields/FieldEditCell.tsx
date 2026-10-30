@@ -3,6 +3,7 @@ import {CellEditOverlay, type CellEditTarget} from "../components/table/CellEdit
 import type {FieldState} from "../rules";
 import {renderAnswerCell, renderAnswerValue} from "./display";
 import {FileCell, type StoredFile} from "./FileCell";
+import {InlineBooleanCell} from "./InlineBooleanCell";
 import {useCanEdit} from "../panels/pane/writeMode";
 import {describeIncoherence} from "./incoherence";
 import {hasFieldRenderer} from "./registry";
@@ -77,6 +78,11 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   // A file is sent, downloaded and removed in place, by its own endpoints (FileCell).
   if (field.answerType === "FILE" && row.id != null) {
     return <FileCell documentId={row.id} file={(stored ?? null) as StoredFile | null} editable={!readOnlyProp && field.readOnly !== true} onChanged={onSaved} />;
+  }
+
+  // A yes/no is toggled on the checkbox itself, saved at once: no overlay.
+  if (field.answerType === "BOOLEAN" && !readOnly && row.id != null) {
+    return <InlineBooleanCell field={field} rowId={row.id} value={stored} readOnly={false} onSave={onSave} onSaved={onSaved} />;
   }
 
   const content = renderAnswerCell(field, stored, { all: true });

@@ -72,6 +72,7 @@ import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.domain.services.vocabulary.FieldTextService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -110,6 +111,7 @@ public class RecordingUnitOpenApiService {
     private final ConceptRepository conceptRepository;
     private final SpecimenService specimenService;
     private final LangService langService;
+    private final FieldTextService fieldTextService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
     private final SpatialUnitService spatialUnitService;
@@ -821,9 +823,10 @@ public class RecordingUnitOpenApiService {
     }
 
     private FieldResource toFieldResource(CustomField field, Locale locale) {
-        return FieldAnswerWireService.fieldResourceOf(field,
+        FieldTextService.FieldTexts texts = fieldTextService.resolve(field, locale.getLanguage(),
                 langService.resolveMessage(field.getLabel(), locale),
                 langService.resolveMessage(field.getHint(), locale));
+        return FieldAnswerWireService.fieldResourceOf(field, texts.label(), texts.definition());
     }
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {
@@ -967,7 +970,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
-                    fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
+                    fieldAnswerPatchService.applyOnCreate(shell, formUiDto, request.getFieldAnswers(), au.getId(), typeDto.getId());
             RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell, request.getIdentifier());
             // Additional answers hang off the unit's id, so only once it exists.
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);

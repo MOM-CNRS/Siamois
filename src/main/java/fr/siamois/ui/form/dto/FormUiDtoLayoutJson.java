@@ -99,6 +99,10 @@ public final class FormUiDtoLayoutJson {
             units.put("symbols", col.getUnits().symbols());
             colMap.put("units", units);
         }
+        if (col.getDefaultValue() != null && !col.getDefaultValue().isEmpty()) {
+            colMap.put("defaultValue", Map.of("concepts", col.getDefaultValue().concepts().stream()
+                    .map(c -> Map.of("conceptId", c.conceptId())).toList()));
+        }
         return colMap;
     }
 }

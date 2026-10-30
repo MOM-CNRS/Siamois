@@ -40,7 +40,7 @@ class FieldAnswerPatchServiceDeltaTest {
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class), mock(ActionUnitSummaryMapper.class),
                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 rus, new RecordingUnitSummaryMapperImpl(mock(fr.siamois.ui.mapper.adapter.ConversionServiceAdapter.class)), mock(PhaseRepository.class), mock(PhaseMapper.class),
-                mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
+                mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class));
         CustomFieldSelectMultipleRecordingUnit f = CustomFieldSelectMultipleRecordingUnit.builder().label("x").isSystemField(true).id(-319L).valueBinding("parents").build();
         CustomColUiDto col = new CustomColUiDto(); col.setField(f);
         CustomRowUiDto row = new CustomRowUiDto(); row.setColumns(new ArrayList<>(List.of(col)));
