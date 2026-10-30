@@ -217,7 +217,7 @@ public class InvitationLinkService {
             slug = "user";
         }
         if (slug.length() > MAX_SLUG_LENGTH) {
-            slug = slug.substring(0, MAX_SLUG_LENGTH).replaceAll("-+$", "");
+            slug = trimHyphens(slug.substring(0, MAX_SLUG_LENGTH));
         }
         return PERSONAL_ORGANIZATION_IDENTIFIER_PREFIX + slug + (rank <= 1 ? "" : "-" + rank);
     }
@@ -225,7 +225,19 @@ public class InvitationLinkService {
     /** Lower case ASCII letters and digits separated by single hyphens. */
     static String slugify(String text) {
         String ascii = Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        return ascii.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+        return trimHyphens(ascii.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-"));
+    }
+
+    private static String trimHyphens(String text) {
+        int start = 0;
+        int end = text.length();
+        while (start < end && text.charAt(start) == '-') {
+            start++;
+        }
+        while (end > start && text.charAt(end - 1) == '-') {
+            end--;
+        }
+        return text.substring(start, end);
     }
 
     /** The absolute link to share for a raw token. */

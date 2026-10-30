@@ -89,10 +89,12 @@ class InvitationLinkServiceTest {
 
     @Test
     void create_rejectsOutOfBoundsValues() {
-        assertThrows(IllegalArgumentException.class, () -> service.create(Duration.ofDays(31), 1, 1L));
+        Duration tooLong = Duration.ofDays(31);
+        Duration oneHour = Duration.ofHours(1);
+        assertThrows(IllegalArgumentException.class, () -> service.create(tooLong, 1, 1L));
         assertThrows(IllegalArgumentException.class, () -> service.create(Duration.ZERO, 1, 1L));
-        assertThrows(IllegalArgumentException.class, () -> service.create(Duration.ofHours(1), 0, 1L));
-        assertThrows(IllegalArgumentException.class, () -> service.create(Duration.ofHours(1), 101, 1L));
+        assertThrows(IllegalArgumentException.class, () -> service.create(oneHour, 0, 1L));
+        assertThrows(IllegalArgumentException.class, () -> service.create(oneHour, 101, 1L));
         verify(invitationLinkRepository, never()).save(any());
     }
 
