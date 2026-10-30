@@ -528,6 +528,9 @@ public class RecordingUnitService implements ArkEntityService {
                     .sum();
             dto.setChildrenCount((int) children);
         }
+        if (counts != null && counts.contains("relationships") && dto.getId() != null) {
+            dto.setRelationshipCount(recordingUnitRepository.countStratigraphicRelationshipsByRecordingUnitId(dto.getId()));
+        }
         return new AccessibleRecordingUnit(entity, dto);
     }
 
