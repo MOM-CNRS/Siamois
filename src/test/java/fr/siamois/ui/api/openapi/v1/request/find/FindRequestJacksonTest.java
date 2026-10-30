@@ -62,4 +62,26 @@ class FindRequestJacksonTest {
         assertThat(request.getFieldAnswers()).containsEntry("8", 12);
         assertThat(request.getFieldAnswers()).containsEntry("9", java.util.List.of(1, 2));
     }
+
+    @Test
+    void patch_geom_absent_isNotPresent_nullIsPresent_lineStringAccepted() throws Exception {
+        assertThat(mapper.readValue("{}", FindPatchRequest.class).isGeomPresent()).isFalse();
+
+        FindPatchRequest cleared = mapper.readValue("{\"geom\": null}", FindPatchRequest.class);
+        assertThat(cleared.isGeomPresent()).isTrue();
+        assertThat(cleared.getGeom()).isNull();
+
+        FindPatchRequest line = mapper.readValue(
+                "{\"geom\": {\"type\": \"LineString\", \"coordinates\": [[0,0],[1,1]]}}", FindPatchRequest.class);
+        assertThat(line.isGeomPresent()).isTrue();
+        assertThat(line.getGeom().type).isEqualTo("LineString");
+    }
+
+    @Test
+    void create_geom_point_deserialized() throws Exception {
+        FindCreateRequest request = mapper.readValue(
+                "{\"recordingUnitId\":\"1\",\"typeId\":\"2\",\"geom\":{\"type\":\"Point\",\"coordinates\":[1,2]}}",
+                FindCreateRequest.class);
+        assertThat(request.getGeom().type).isEqualTo("Point");
+    }
 }

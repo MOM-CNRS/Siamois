@@ -24,7 +24,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
-import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Geometry;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -78,7 +78,7 @@ public class RecordingUnit extends RecordingUnitParent implements ArkEntity, Ref
 
     @Column(name = "geom", columnDefinition = "geometry")
     @JsonIgnore
-    protected MultiPolygon geom;
+    protected Geometry geom;
 
     @OneToMany(mappedBy = "unit1", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

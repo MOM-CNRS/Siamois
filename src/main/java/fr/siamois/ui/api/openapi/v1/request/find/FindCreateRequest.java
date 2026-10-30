@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.request.find;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -39,6 +40,10 @@ public class FindCreateRequest {
             + "absent ou vide, le serveur génère l'identifiant comme d'habitude. "
             + "S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet).")
     private String identifier;
+
+    @Schema(description = "Localisation du mobilier (GeoJSON : Point, LineString, Polygon et variantes Multi*), "
+            + "dans le SRID fourni ; aucune reprojection n'est effectuée. Absent ou null = pas de géométrie.")
+    private GeometryDTO geom;
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();

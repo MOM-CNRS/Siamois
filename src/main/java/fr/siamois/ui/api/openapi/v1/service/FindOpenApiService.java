@@ -82,6 +82,7 @@ public class FindOpenApiService {
         shell.setCollectors(new ArrayList<>(List.of(personDto)));
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidationStatus(ValidationStatus.INCOMPLETE);
+        shell.setGeom(request.getGeom());
         IdentifierPatch.applyChosen(request.getIdentifier(), identifier -> {
             shell.setFullIdentifier(identifier);
             // Generation is what sets the project otherwise — and the uniqueness check is scoped to it.
@@ -169,12 +170,12 @@ public class FindOpenApiService {
         boolean identifierChange = IdentifierPatch.changes(newIdentifier, dto.getFullIdentifier());
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), request.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
-        if ((!answers.isEmpty() || identifierChange || !statusChange) && !canEdit) {
+        if ((!answers.isEmpty() || identifierChange || request.isGeomPresent() || !statusChange) && !canEdit) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
         }
         validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
-        if (answers.isEmpty() && !identifierChange && !statusChange) {
+        if (answers.isEmpty() && !identifierChange && !request.isGeomPresent() && !statusChange) {
             return findOpenApiMapper.toResource(dto);
         }
 
@@ -182,7 +183,10 @@ public class FindOpenApiService {
             dto.setFullIdentifier(newIdentifier);
             IdentifierPatch.requireFree(specimenService.fullIdentifierAlreadyExistInAction(dto));
         }
-        if (!answers.isEmpty() || identifierChange) {
+        if (request.isGeomPresent()) {
+            dto.setGeom(request.getGeom());
+        }
+        if (!answers.isEmpty() || identifierChange || request.isGeomPresent()) {
             writeAnswers(dto, ru, answers, userInfo);
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
