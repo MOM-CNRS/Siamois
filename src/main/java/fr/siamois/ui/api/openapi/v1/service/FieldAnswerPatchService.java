@@ -25,6 +25,14 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
 import fr.siamois.domain.services.form.rules.RuleValues;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.dto.entity.DocumentDTO;
+import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.domain.services.form.OnTheFlyFieldService;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
@@ -76,6 +84,7 @@ public class FieldAnswerPatchService {
     private static final String RECORDING_UNIT_LABEL = "Unité d'enregistrement";
 
     private final FormService formService;
+    private final OnTheFlyFieldService onTheFlyFieldService;
     private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
     private final PersonRepository personRepository;
@@ -160,6 +169,8 @@ public class FieldAnswerPatchService {
                                                                Map<String, Object> defaults) {
         if ((answers == null || answers.isEmpty()) && defaults.isEmpty()) return Map.of();
 
+        // The measurements added on the fly to this very record are part of its form too.
+        effectiveForm = withOnTheFlyFields(effectiveForm, dto);
         FieldSource fieldSource = new PanelFieldSource(effectiveForm);
         CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
 
@@ -205,6 +216,16 @@ public class FieldAnswerPatchService {
             }
         }
         pending.keySet().forEach(key -> log.debug("Valeur par défaut du champ {} ignorée : le champ est inactif", key));
+    }
+
+    private FormUiDto withOnTheFlyFields(FormUiDto form, Object dto) {
+        if (dto instanceof RecordingUnitDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.UE, d.getId());
+        if (dto instanceof SpecimenDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.MOBILIER, d.getId());
+        if (dto instanceof PhaseDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.PHASE, d.getId());
+        if (dto instanceof ContainerDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.CONTENANT, d.getId());
+        if (dto instanceof DocumentDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.DOCUMENT, d.getId());
+        if (dto instanceof StudyDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.STUDY, d.getId());
+        return form;
     }
 
     /** What one {@code apply} call carries from answer to answer. */

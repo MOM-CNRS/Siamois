@@ -15,6 +15,7 @@ import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -57,6 +58,17 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "specimen_id", nullable = false)
     private Long id;
+
+    /** Measurement (and other) fields added on the fly to this record's fiche. */
+    @NotAudited
+    @JsonIgnore
+    @OneToMany
+    @JoinTable(
+            name = "specimen_on_the_fly_fields",
+            joinColumns = { @JoinColumn(name = "fk_specimen_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldOnTheFly> onTheFlyFields = new HashSet<>();
 
     @ManyToMany
     @JoinTable(

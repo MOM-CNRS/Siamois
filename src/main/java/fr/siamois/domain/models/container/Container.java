@@ -10,6 +10,7 @@ import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -69,6 +70,17 @@ public class Container extends TraceableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "container_id", nullable = false)
     private Long id;
+
+    /** Measurement (and other) fields added on the fly to this record's fiche. */
+    @NotAudited
+    @JsonIgnore
+    @OneToMany
+    @JoinTable(
+            name = "container_on_the_fly_fields",
+            joinColumns = { @JoinColumn(name = "fk_container_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldOnTheFly> onTheFlyFields = new HashSet<>();
 
     @NotNull
     @Column(name = "identifier")

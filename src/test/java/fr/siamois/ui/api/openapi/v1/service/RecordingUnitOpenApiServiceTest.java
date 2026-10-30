@@ -114,6 +114,8 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private FormService formService;
     @Mock
+    private fr.siamois.domain.services.form.OnTheFlyFieldService onTheFlyFieldService;
+    @Mock
     private FieldConfigurationService fieldConfigurationService;
     @Mock
     private RecordingUnitResponseMapper recordingUnitResponseMapper;
@@ -202,8 +204,10 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(onTheFlyFieldService.withOnTheFlyFields(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
         // The real coercion, over this test's own mocks: the PATCH tests below exercise it end to end.
-        ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService,
+        ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService, mock(fr.siamois.domain.services.form.OnTheFlyFieldService.class, inv -> inv.getArgument(0)),
                 conceptRepository, conceptMapper, personRepository, personMapper, actionUnitRepository,
                 actionUnitSummaryMapper,                 spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
                 mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
