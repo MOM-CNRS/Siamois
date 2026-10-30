@@ -50,4 +50,58 @@ public class PlacePatchRequest {
         this.geom = geom;
         this.geomPresent = true;
     }
+
+    @Schema(description = "Code INSEE de la commune; null explicite supprime la valeur")
+    private String inseeCode;
+
+    @JsonIgnore
+    private boolean inseeCodePresent;
+
+    @JsonSetter("inseeCode")
+    public void setInseeCode(String inseeCode) {
+        this.inseeCode = inseeCode;
+        this.inseeCodePresent = true;
+    }
+
+    @Schema(description = "Nom de la localité; null explicite supprime la valeur")
+    private String localityName;
+
+    @JsonIgnore
+    private boolean localityNamePresent;
+
+    @JsonSetter("localityName")
+    public void setLocalityName(String localityName) {
+        this.localityName = localityName;
+        this.localityNamePresent = true;
+    }
+
+    @Schema(description = "Numéro de carte du SHOM; null explicite supprime la valeur")
+    private String shomMapNumber;
+
+    @JsonIgnore
+    private boolean shomMapNumberPresent;
+
+    @JsonSetter("shomMapNumber")
+    public void setShomMapNumber(String shomMapNumber) {
+        this.shomMapNumber = shomMapNumber;
+        this.shomMapNumberPresent = true;
+    }
+
+    @Schema(description = "Commentaires; null explicite supprime la valeur")
+    private String comments;
+
+    @JsonIgnore
+    private boolean commentsPresent;
+
+    @JsonSetter("comments")
+    public void setComments(String comments) {
+        this.comments = comments;
+        this.commentsPresent = true;
+    }
+
+    /** Whether the patch touches one of the place's plain text details (INSEE code, locality, SHOM map, comments). */
+    @JsonIgnore
+    public boolean isTextDetailsPresent() {
+        return inseeCodePresent || localityNamePresent || shomMapNumberPresent || commentsPresent;
+    }
 }

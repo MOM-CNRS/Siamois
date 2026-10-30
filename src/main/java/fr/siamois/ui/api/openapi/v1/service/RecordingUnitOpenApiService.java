@@ -26,6 +26,7 @@ import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.form.EffectiveFormResolver;
 import fr.siamois.domain.services.form.FormService;
+import fr.siamois.domain.services.form.OnTheFlyFieldService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
@@ -71,6 +72,7 @@ import fr.siamois.ui.table.definitions.ActionUnitTableColumnDefaults;
 import fr.siamois.ui.table.definitions.RecordingUnitTableColumnDefaults;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
+import fr.siamois.domain.services.vocabulary.FieldTextService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -95,6 +97,7 @@ public class RecordingUnitOpenApiService {
     public static final String CONCEPTS = "concepts";
     private final RecordingUnitService recordingUnitService;
     private final FormService formService;
+    private final OnTheFlyFieldService onTheFlyFieldService;
     private final FieldConfigurationService fieldConfigurationService;
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
     private final ConversionService conversionService;
@@ -108,6 +111,7 @@ public class RecordingUnitOpenApiService {
     private final ConceptRepository conceptRepository;
     private final SpecimenService specimenService;
     private final LangService langService;
+    private final FieldTextService fieldTextService;
     private final ActionUnitService actionUnitService;
     private final ProfilePermissionService profilePermissionService;
     private final SpatialUnitService spatialUnitService;
@@ -167,8 +171,10 @@ public class RecordingUnitOpenApiService {
         resourceBookmarkService.markBookmarked(userInfo, resource);
         Locale locale = langService.localeForApiLang(lang);
         Map<String, FieldAnswer> fields = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
-                    dto.getType() != null ? dto.getType().getId() : null);
+            FormUiDto formUiDto = onTheFlyFieldService.withOnTheFlyFields(
+                    effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.UE,
+                            dto.getType() != null ? dto.getType().getId() : null),
+                    ConfigurableTable.UE, dto.getId());
             FieldSource fieldSource = new PanelFieldSource(formUiDto);
             return buildFieldsWithFallback(dto, fieldSource, locale);
         });
@@ -691,8 +697,10 @@ public class RecordingUnitOpenApiService {
             // The effective form, as the find-types catalog lays it out and the PATCH writes it:
             // without the type's additional fields their answers would never be read back.
             Long projectId = specimenProjectId(specimen);
-            FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
-                    specimen.getType() != null ? specimen.getType().getId() : null);
+            FormUiDto formUiDto = onTheFlyFieldService.withOnTheFlyFields(
+                    effectiveFormResolver.resolveEffectiveForm(projectId, ConfigurableTable.MOBILIER,
+                            specimen.getType() != null ? specimen.getType().getId() : null),
+                    ConfigurableTable.MOBILIER, specimen.getId());
             return buildSpecimenFieldsWithFallback(specimen, new PanelFieldSource(formUiDto), locale);
         });
 
@@ -815,9 +823,10 @@ public class RecordingUnitOpenApiService {
     }
 
     private FieldResource toFieldResource(CustomField field, Locale locale) {
-        return FieldAnswerWireService.fieldResourceOf(field,
+        FieldTextService.FieldTexts texts = fieldTextService.resolve(field, locale.getLanguage(),
                 langService.resolveMessage(field.getLabel(), locale),
                 langService.resolveMessage(field.getHint(), locale));
+        return FieldAnswerWireService.fieldResourceOf(field, texts.label(), texts.definition());
     }
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {
@@ -961,7 +970,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO created = OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
             FormUiDto formUiDto = effectiveFormResolver.resolveEffectiveForm(au.getId(), ConfigurableTable.UE, typeDto.getId());
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
-                    fieldAnswerPatchService.applyLenient(shell, formUiDto, request.getFieldAnswers(), au.getId());
+                    fieldAnswerPatchService.applyOnCreate(shell, formUiDto, request.getFieldAnswers(), au.getId(), typeDto.getId());
             RecordingUnitDTO saved = saveWithGeneratedIdentifier(shell, request.getIdentifier());
             // Additional answers hang off the unit's id, so only once it exists.
             customFieldAnswerService.saveAdditionalFieldAnswers(saved, additionalAnswers);

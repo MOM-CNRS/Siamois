@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.form.layout;
 
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -20,18 +21,33 @@ public record FormLayout(List<Group> groups) {
     /**
      * @param id    the stored group's id, or null for a group that only exists in memory
      * @param label a message key or free text
+     * @param allowMeasures whether users may add measures of their own to the section of a record's fiche
      */
-    public record Group(Long id, String label, List<Item> items) {
+    public record Group(Long id, String label, List<Item> items, boolean allowMeasures) {
+
+        /** A group that allows the measures users add on the fly, as every group did before it could be turned off. */
+        public Group(Long id, String label, List<Item> items) {
+            this(id, label, items, true);
+        }
     }
 
-    /** @param units for a measurement, the units this configuration offers; null keeps the field's own */
+    /**
+     * @param units        for a measurement, the units this configuration offers; null keeps the field's own
+     * @param defaultValue what a new entity starts with for this field; null for nothing
+     */
     public record Item(CustomField field, FieldWidth width, boolean active, boolean mandatory,
-                       boolean institutionLocked, FieldRules rules, FieldUnits units) {
+                       boolean institutionLocked, FieldRules rules, FieldUnits units, FieldDefault defaultValue) {
 
-        /** An item with no units of its own. */
+        /** An item with no units and no default of its own. */
         public Item(CustomField field, FieldWidth width, boolean active, boolean mandatory,
                     boolean institutionLocked, FieldRules rules) {
-            this(field, width, active, mandatory, institutionLocked, rules, null);
+            this(field, width, active, mandatory, institutionLocked, rules, null, null);
+        }
+
+        /** An item with no default of its own. */
+        public Item(CustomField field, FieldWidth width, boolean active, boolean mandatory,
+                    boolean institutionLocked, FieldRules rules, FieldUnits units) {
+            this(field, width, active, mandatory, institutionLocked, rules, units, null);
         }
     }
 }

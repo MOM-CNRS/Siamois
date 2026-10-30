@@ -200,6 +200,7 @@ public final class CustomFormComposer {
         copy.setHidden(col.isHidden());
         copy.setRules(col.getRules());
         copy.setUnits(col.getUnits());
+        copy.setDefaultValue(col.getDefaultValue());
         return copy;
     }
 
@@ -251,6 +252,7 @@ public final class CustomFormComposer {
         copy.setClassName(col.getClassName());
         copy.setRules(col.getRules());
         copy.setUnits(col.getUnits());
+        copy.setDefaultValue(col.getDefaultValue());
         return copy;
     }
 

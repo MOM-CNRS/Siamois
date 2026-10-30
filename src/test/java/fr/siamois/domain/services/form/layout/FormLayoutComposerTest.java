@@ -41,6 +41,19 @@ class FormLayoutComposerTest {
     }
 
     @Test
+    void aGroupSaysWhetherUsersMayAddMeasuresToItsPanel() {
+        var length = SystemFieldCatalog.fieldBoundTo(TABLE, "length");
+        var width = SystemFieldCatalog.fieldBoundTo(TABLE, "width");
+        FormLayout layout = new FormLayout(List.of(
+                new FormLayout.Group(1L, "Ouvert", List.of(item(length, FieldWidth.HALF, true, false)), true),
+                new FormLayout.Group(2L, "Fermé", List.of(item(width, FieldWidth.HALF, true, false)), false)));
+
+        FormUiDto form = FormLayoutComposer.compose(layout, TABLE);
+
+        assertThat(form.getLayout()).extracting(p -> p.getCanUserAddFields()).containsExactly(true, false);
+    }
+
+    @Test
     void threeQuartersIsTheWholeRowFromTheMediumBreakpoint() {
         assertThat(FieldWidth.THREE_QUARTERS.toColumnWidth()).isEqualTo(new ColumnWidth(12, 12, 9));
         assertThat(FieldWidth.QUARTER.toColumnWidth()).isEqualTo(ColumnWidth.STANDARD);

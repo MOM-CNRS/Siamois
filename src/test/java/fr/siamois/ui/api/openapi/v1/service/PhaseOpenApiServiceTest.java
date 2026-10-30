@@ -83,7 +83,7 @@ class PhaseOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PhaseOpenApiService(phaseService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService),
+        service = new PhaseOpenApiService(phaseService, new ProjectTypedCreationService(actionUnitService, conceptService, conceptMapper, profilePermissionService, mock(fr.siamois.domain.services.form.EffectiveFormResolver.class), mock(FieldAnswerPatchService.class)),
                 profilePermissionService, phaseOpenApiMapper, phaseListProjectionService, ListQueryStubs.multiValueAnswers(), mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), new ValidationOpenApiService(validationStatusService),
                 fieldAnswerPatchService, fieldAnswerWireService, customFieldAnswerService, effectiveFormResolver, documentService);
 
@@ -242,7 +242,7 @@ class PhaseOpenApiServiceTest {
         when(conceptMapper.convert(typeConcept)).thenReturn(typeDto);
 
         PhaseDTO saved = phaseOn(au);
-        when(phaseService.save(any(PhaseDTO.class))).thenReturn(saved);
+        when(phaseService.save(any(PhaseDTO.class), anyMap())).thenReturn(saved);
 
         PhaseCreateRequest req = new PhaseCreateRequest();
         req.setProjectId("7");
@@ -252,7 +252,7 @@ class PhaseOpenApiServiceTest {
         PhaseResource result = service.createPhase(req, personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).save(captor.capture());
+        verify(phaseService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getActionUnit().getId()).isEqualTo(7L);
         assertThat(captor.getValue().getType()).isEqualTo(typeDto);
         assertThat(captor.getValue().getTitle()).isEqualTo("Phase 1");
@@ -457,12 +457,12 @@ class PhaseOpenApiServiceTest {
         PhaseDTO saved = new PhaseDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(phaseService.save(any(PhaseDTO.class))).thenReturn(saved);
+        when(phaseService.save(any(PhaseDTO.class), anyMap())).thenReturn(saved);
 
         service.createPhase(creationRequest("  CHOSEN-1 "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).save(captor.capture());
+        verify(phaseService).save(captor.capture(), anyMap());
         // Set before the save: the service then skips its own generation.
         assertThat(captor.getValue().getIdentifier()).isEqualTo("CHOSEN-1");
         verify(phaseService).identifierAlreadyExistInAction(captor.getValue());
@@ -486,12 +486,12 @@ class PhaseOpenApiServiceTest {
         PhaseDTO saved = new PhaseDTO();
         saved.setId(5L);
         saved.setActionUnit(new ActionUnitSummaryDTO(projectWithInstitution()));
-        when(phaseService.save(any(PhaseDTO.class))).thenReturn(saved);
+        when(phaseService.save(any(PhaseDTO.class), anyMap())).thenReturn(saved);
 
         service.createPhase(creationRequest("   "), personDto, Set.of(10L), "fr");
 
         ArgumentCaptor<PhaseDTO> captor = ArgumentCaptor.forClass(PhaseDTO.class);
-        verify(phaseService).save(captor.capture());
+        verify(phaseService).save(captor.capture(), anyMap());
         assertThat(captor.getValue().getIdentifier()).isNull();
         verify(phaseService, never()).identifierAlreadyExistInAction(any(PhaseDTO.class));
     }

@@ -78,7 +78,12 @@ class PlaceOpenApiServiceTreeTest {
     void setUp() {
         service = new PlaceOpenApiService(
                 projectApiService, institutionService, spatialUnitService, conceptService, conceptMapper,
-                profilePermissionService, placeOpenApiMapper, langService, mock(ResourceBookmarkService.class),
+                profilePermissionService, placeOpenApiMapper, langService,
+                new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)),
+                mock(ResourceBookmarkService.class),
                 mock(EntitySiblingsService.class), mock(ValidationOpenApiService.class),
                 mock(fr.siamois.domain.services.document.DocumentService.class));
         PersonDTO person = new PersonDTO();

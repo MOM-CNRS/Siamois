@@ -289,6 +289,23 @@ class FormServiceTest {
     }
 
     @Test
+    void initOrReuseResponse_populatesAdditionalFieldValues_forStudy() {
+        FieldSource fieldSource = mock(FieldSource.class);
+        CustomField additionalTextField = mock(CustomField.class);
+        when(fieldSource.getAllFields()).thenReturn(List.of(additionalTextField));
+        fr.siamois.dto.entity.StudyDTO study = new fr.siamois.dto.entity.StudyDTO();
+        study.setId(5L);
+        CustomFieldAnswerTextViewModel additionalAnswer = new CustomFieldAnswerTextViewModel();
+        additionalAnswer.setValue("Datation");
+        when(customFieldAnswerService.loadAdditionalFieldAnswers(study))
+                .thenReturn(Map.of(additionalTextField, additionalAnswer));
+
+        CustomFormResponseViewModel res = formService.initOrReuseResponse(null, study, fieldSource, false);
+
+        assertSame(additionalAnswer, res.getAnswers().get(additionalTextField));
+    }
+
+    @Test
     void initOrReuseResponse_populatesConceptSystemField_andUiVal() {
         // arrange
         FieldSource fieldSource = mock(FieldSource.class);

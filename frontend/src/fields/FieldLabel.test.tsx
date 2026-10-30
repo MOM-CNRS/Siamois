@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
-import {FieldLabel} from "./FieldLabel";
+import {FieldLabel, truncateDefinition, TOOLTIP_DEFINITION_MAX_CHARS} from "./FieldLabel";
 import {FieldConfigProvider} from "./fieldConfigContext";
 import type {FieldResource} from "./types";
 
@@ -92,5 +92,17 @@ describe("FieldLabel menu", () => {
       (document.body.querySelector(".p-menuitem-link") as HTMLElement).click();
     });
     expect(onRemove).toHaveBeenCalled();
+  });
+});
+
+describe("truncateDefinition", () => {
+  it("keeps a short definition as is", () => {
+    expect(truncateDefinition("Texte court.")).toBe("Texte court.");
+  });
+
+  it("cuts a long definition and ends it with an ellipsis", () => {
+    const cut = truncateDefinition("a".repeat(TOOLTIP_DEFINITION_MAX_CHARS + 50));
+    expect(cut).toHaveLength(TOOLTIP_DEFINITION_MAX_CHARS + 1);
+    expect(cut.endsWith("…")).toBe(true);
   });
 });

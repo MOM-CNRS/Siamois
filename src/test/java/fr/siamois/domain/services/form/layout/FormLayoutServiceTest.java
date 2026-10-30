@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.form.layout;
 
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
@@ -373,6 +374,68 @@ class FormLayoutServiceTest {
         FormLayout layout = service.layoutOf(config).orElseThrow();
 
         assertThat(layout.groups().get(0).items().get(0).units().defaultSymbol()).isEqualTo("ha");
+    }
+
+    @Test
+    void theDefaultStoredForAFieldIsReadBackFromTheLayout() {
+        FormConfig config = config(1L);
+        FormConfigGroup group = group(10L, config, "G", 0);
+        FieldFormConfig withDefault = row(config, field(1L, "fa"), group, FieldWidth.QUARTER, true, false, null);
+        withDefault.setDefaultValue(FieldDefault.ofConceptIds(List.of("12")).toJson());
+        FieldFormConfig without = row(config, field(2L, "fb"), group, FieldWidth.QUARTER, true, false, null);
+        when(tableFieldConfigService.findFormConfig(5L, TABLE, "Type")).thenReturn(Optional.of(config));
+        when(groupRepository.findAllByFormConfigIdOrderByPosition(1L)).thenReturn(List.of(group));
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(withDefault, without));
+
+        assertThat(service.defaultOf(5L, TABLE, "Type", 1L)).hasValueSatisfying(d -> assertThat(d.conceptIds()).containsExactly("12"));
+        assertThat(service.defaultOf(5L, TABLE, "Type", 2L)).isEmpty();
+        assertThat(service.defaultOf(5L, TABLE, "Type", 404L)).isEmpty();
+    }
+
+    @Test
+    void theDefaultOfAFieldIsStoredAsJsonOnItsRow() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveDefault(5L, TABLE, "Type", 1L, FieldDefault.ofConceptIds(List.of("12", "13")));
+
+        assertThat(FieldDefault.fromJson(fa.getDefaultValue()).conceptIds()).containsExactly("12", "13");
+        verify(fieldFormConfigRepository).save(fa);
+    }
+
+    @Test
+    void noDefaultRemovesTheOneAFieldHad() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        fa.setDefaultValue(FieldDefault.ofConceptIds(List.of("12")).toJson());
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveDefault(5L, TABLE, "Type", 1L, null);
+
+        assertThat(fa.getDefaultValue()).isNull();
+        verify(fieldFormConfigRepository).save(fa);
+    }
+
+    @Test
+    void aFieldLockedByTheInstitutionKeepsItsDefault() {
+        FormConfig config = laidOutConfig();
+        FieldFormConfig fa = row(config, field(1L, "fa"), group(10L, config, "A", 0), FieldWidth.QUARTER, true, false, null);
+        fa.setInstitutionLocked(true);
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of(fa));
+
+        service.saveDefault(5L, TABLE, "Type", 1L, FieldDefault.ofConceptIds(List.of("12")));
+
+        verify(fieldFormConfigRepository, never()).save(fa);
+    }
+
+    @Test
+    void aDefaultForAnUnknownFieldIsRefused() {
+        laidOutConfig();
+        when(fieldFormConfigRepository.findAllByFormConfigId(1L)).thenReturn(List.of());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.saveDefault(5L, TABLE, "Type", 9L, null))
+                .isInstanceOf(java.util.NoSuchElementException.class);
     }
 
     private static FormConfig config(long id) {

@@ -25,6 +25,14 @@ import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
 import fr.siamois.domain.services.form.rules.RuleValues;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
+import fr.siamois.dto.entity.StudyDTO;
+import fr.siamois.dto.entity.DocumentDTO;
+import fr.siamois.dto.entity.ContainerDTO;
+import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.SpecimenDTO;
+import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.domain.services.form.OnTheFlyFieldService;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.infrastructure.database.repositories.ContainerRepository;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
@@ -76,6 +84,7 @@ public class FieldAnswerPatchService {
     private static final String RECORDING_UNIT_LABEL = "Unité d'enregistrement";
 
     private final FormService formService;
+    private final OnTheFlyFieldService onTheFlyFieldService;
     private final ConceptRepository conceptRepository;
     private final ConceptMapper conceptMapper;
     private final PersonRepository personRepository;
@@ -94,6 +103,7 @@ public class FieldAnswerPatchService {
     private final SpecimenSummaryMapper specimenSummaryMapper;
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final UnitDefinitionRepository unitDefinitionRepository;
+    private final FieldDefaultResolver fieldDefaultResolver;
 
     /**
      * @param dto           the entity DTO to write system fields onto
@@ -124,13 +134,43 @@ public class FieldAnswerPatchService {
         return apply(dto, effectiveForm, answers, projectId, false);
     }
 
+    /**
+     * Same as {@link #applyLenient}, for a new entity: the form's defaults are applied under the request's
+     * answers, so a field the request answers (even to clear it) keeps its own value. A default is applied
+     * only to a field the answers so far leave enabled, so one that a rule disables stays empty, and a chain
+     * of defaults ({@code nature} enabling a field with a default of its own) settles in a few rounds. A
+     * default never fails the creation: one that cannot be applied is left out and logged.
+     *
+     * @param typeConceptId the entity's type, which the defaults' vocabulary is resolved for
+     */
+    public Map<CustomField, CustomFieldAnswerViewModel> applyOnCreate(Object dto,
+                                                                      FormUiDto effectiveForm,
+                                                                      Map<String, ?> answers,
+                                                                      Long projectId,
+                                                                      Long typeConceptId) {
+        Map<String, ?> given = answers == null ? Map.of() : answers;
+        Map<String, Object> defaults = fieldDefaultResolver.defaultsOf(effectiveForm, projectId, typeConceptId, given.keySet());
+        return apply(dto, effectiveForm, given, projectId, false, defaults);
+    }
+
     private Map<CustomField, CustomFieldAnswerViewModel> apply(Object dto,
                                                                FormUiDto effectiveForm,
                                                                Map<String, ?> answers,
                                                                Long projectId,
                                                                boolean strict) {
-        if (answers == null || answers.isEmpty()) return Map.of();
+        return apply(dto, effectiveForm, answers, projectId, strict, Map.of());
+    }
 
+    private Map<CustomField, CustomFieldAnswerViewModel> apply(Object dto,
+                                                               FormUiDto effectiveForm,
+                                                               Map<String, ?> answers,
+                                                               Long projectId,
+                                                               boolean strict,
+                                                               Map<String, Object> defaults) {
+        if ((answers == null || answers.isEmpty()) && defaults.isEmpty()) return Map.of();
+
+        // The measurements added on the fly to this very record are part of its form too.
+        effectiveForm = withOnTheFlyFields(effectiveForm, dto);
         FieldSource fieldSource = new PanelFieldSource(effectiveForm);
         CustomFormResponseViewModel response = formService.initOrReuseResponse(null, dto, fieldSource, true);
 
@@ -140,15 +180,52 @@ public class FieldAnswerPatchService {
             values.put(field.getId(), formService.readAnswerValueForApi(viewModelOf(response, field)));
         }
         Patch patch = new Patch(fieldSource, effectiveForm, response, projectId, strict, values);
-        for (Map.Entry<String, ?> entry : answers.entrySet()) {
-            applyEntry(entry, patch);
+        if (answers != null) {
+            for (Map.Entry<String, ?> entry : answers.entrySet()) {
+                applyEntry(entry, patch);
+            }
         }
+        applyDefaults(defaults, patch);
 
         checkRules(effectiveForm, values, patch.written, strict);
 
         formService.updateJpaEntityFromResponse(response, dto);
         patch.clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
         return patch.touchedAdditional;
+    }
+
+    /**
+     * Writes the defaults whose field the rules leave enabled given everything written so far. Repeated
+     * while a round enables a new one, since a default can enable another field that has its own.
+     */
+    private void applyDefaults(Map<String, Object> defaults, Patch patch) {
+        Map<String, Object> pending = new LinkedHashMap<>(defaults);
+        boolean progress = !pending.isEmpty();
+        while (progress) {
+            progress = false;
+            Map<Long, FieldRulesEvaluator.FieldState> states =
+                    new FieldRulesEvaluator().evaluate(ruledColumns(patch.effectiveForm), patch.values::get);
+            for (Iterator<Map.Entry<String, Object>> it = pending.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Object> entry = it.next();
+                FieldRulesEvaluator.FieldState state = states.get(Long.parseLong(entry.getKey()));
+                if (state != null && !state.enabled()) continue;
+                it.remove();
+                int before = patch.written.size();
+                applyEntry(entry, patch);
+                progress |= patch.written.size() > before;
+            }
+        }
+        pending.keySet().forEach(key -> log.debug("Valeur par défaut du champ {} ignorée : le champ est inactif", key));
+    }
+
+    private FormUiDto withOnTheFlyFields(FormUiDto form, Object dto) {
+        if (dto instanceof RecordingUnitDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.UE, d.getId());
+        if (dto instanceof SpecimenDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.MOBILIER, d.getId());
+        if (dto instanceof PhaseDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.PHASE, d.getId());
+        if (dto instanceof ContainerDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.CONTENANT, d.getId());
+        if (dto instanceof DocumentDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.DOCUMENT, d.getId());
+        if (dto instanceof StudyDTO d) return onTheFlyFieldService.withOnTheFlyFields(form, ConfigurableTable.STUDY, d.getId());
+        return form;
     }
 
     /** What one {@code apply} call carries from answer to answer. */

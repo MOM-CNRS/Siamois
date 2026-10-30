@@ -7,6 +7,7 @@ import fr.siamois.domain.models.exceptions.form.FieldVocabularyConfigException;
 import fr.siamois.domain.models.exceptions.form.NoVocabularySelectedException;
 import fr.siamois.domain.models.exceptions.form.VocabularyConfigNotSavedException;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FieldUnits;
 import fr.siamois.domain.models.form.config.FieldWidth;
 import fr.siamois.domain.models.form.config.FormConfig;
@@ -118,6 +119,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final LangBean langBean;
     private final transient IdentifierResolverRegistry identifierResolverRegistry;
     private final transient FormLayoutService formLayoutService;
+    private final transient FieldTextService fieldTextService;
 
     private ActionUnitDTO project;
     private List<ConfigurableTable> tables = new ArrayList<>();
@@ -238,7 +240,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
                                          LabelService labelService,
                                          LangBean langBean, IdentifierResolverRegistry identifierResolverRegistry,
                                          FormLayoutService formLayoutService,
-                                         FieldConfigurationService fieldConfigurationService) {
+                                         FieldConfigurationService fieldConfigurationService,
+                                         FieldTextService fieldTextService) {
         this.tableFieldConfigService = tableFieldConfigService;
         this.formConfigService = formConfigService;
         this.fieldConfigurationService = fieldConfigurationService;
@@ -250,6 +253,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.langBean = langBean;
         this.identifierResolverRegistry = identifierResolverRegistry;
         this.formLayoutService = formLayoutService;
+        this.fieldTextService = fieldTextService;
     }
 
     @EventListener(LoginEvent.class)
@@ -277,14 +281,16 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /**
      * Caption to display for a field. A system field carries a message key rather than a caption,
      * whereas a field added from this screen carries what the user typed — same convention as
-     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}.
+     * {@code SpatialUnitFieldBean#resolveCustomFieldLabel}. A system field shows the label of its
+     * concept in the thesaurus, its own message only when it has none.
      * <p>
      * The untranslated name stays the field's identity: it is what the service is called back with
      * to activate, require or delete it.
      */
     public String resolveFieldLabel(TypeFieldFormConfig field) {
         if (field.isSystemField()) {
-            return langBean.msg(field.getName());
+            return fieldTextService.resolveSystemField(field.getId(), langBean.getLanguageCode(),
+                    langBean.msg(field.getName()), null).label();
         }
         return field.getName();
     }
@@ -597,18 +603,20 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         List<FormLayoutService.GroupSpec> specs = new ArrayList<>();
         Long id = null;
         String label = null;
+        boolean allowMeasures = true;
         List<String> names = null;
         for (LayoutRow row : layoutRows) {
             if (row.isGroup()) {
-                if (names != null) specs.add(new FormLayoutService.GroupSpec(id, label, names));
+                if (names != null) specs.add(new FormLayoutService.GroupSpec(id, label, names, allowMeasures));
                 id = row.getGroupId();
                 label = storedLabelOf(row);
+                allowMeasures = row.isAllowMeasures();
                 names = new ArrayList<>();
             } else {
                 names.add(row.getField().getName());
             }
         }
-        specs.add(new FormLayoutService.GroupSpec(id, label, names));
+        specs.add(new FormLayoutService.GroupSpec(id, label, names, allowMeasures));
         formLayoutService.saveArrangement(project.getId(), selectedTable, selectedTypeName, specs);
         reloadLayoutRows();
     }
@@ -623,6 +631,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public void onGroupRenamed() {
+        saveRows();
+    }
+
+    /** A section's « mesures additionnelles » box was ticked or cleared. */
+    public void onGroupMeasuresChanged() {
         saveRows();
     }
 
@@ -936,6 +949,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             prefillVocabularyConfig();
             browseValues("", 0);
         }
+        loadDraftDefault();
         drawerOpen = true;
         announceOpenField(field);
     }
@@ -1596,6 +1610,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             progressWrapper.reset();
         }
 
+        if (!saveDraftDefault()) {
+            loadConfigs();
+            return;
+        }
         loadConfigs();
         if (created) {
             placeAfterAdd(draftName);
@@ -1872,6 +1890,82 @@ public class ProjectTableFieldSettingsBean implements Serializable {
 
     public boolean isDraftMeasurement() {
         return draftType == FieldType.MEASUREMENT;
+    }
+
+    /** One value the default can be picked among: a concept the field's list offers. */
+    public record DefaultOption(String id, String label) implements java.io.Serializable {
+    }
+
+    /** The concepts a new entity starts with for the open field, by id; empty for no default. */
+    private List<String> draftDefaultConceptIds = new ArrayList<>();
+
+    /** The default stored when the drawer was opened, to tell "left untouched" from "changed". */
+    private List<String> draftOriginalDefaultConceptIds = new ArrayList<>();
+
+    public List<String> getDraftDefaultConceptIds() {
+        return draftDefaultConceptIds;
+    }
+
+    public void setDraftDefaultConceptIds(List<String> ids) {
+        draftDefaultConceptIds = ids == null ? new ArrayList<>() : new ArrayList<>(ids);
+    }
+
+    /** The single-choice menu's value: the first concept of the default, null for none. */
+    public String getDraftDefaultConceptId() {
+        return draftDefaultConceptIds.isEmpty() ? null : draftDefaultConceptIds.get(0);
+    }
+
+    public void setDraftDefaultConceptId(String id) {
+        draftDefaultConceptIds = id == null || id.isBlank() ? new ArrayList<>() : new ArrayList<>(List.of(id));
+    }
+
+    /** A default is offered on a vocabulary field of an existing configuration, among the values its list offers. */
+    public boolean isDraftDefaultAvailable() {
+        return isDraftConfigurable() && draftOriginalName != null && valuesAvailable;
+    }
+
+    /** The values listed in the drawer, plus the stored default's when they are on another page. */
+    public List<DefaultOption> getDefaultOptions() {
+        Map<String, DefaultOption> options = new LinkedHashMap<>();
+        for (ConceptAutocompleteDTO item : valuesItems) {
+            if (item.getConceptLabelToDisplay() == null || item.getConceptLabelToDisplay().getConcept() == null) continue;
+            String id = String.valueOf(item.getConceptLabelToDisplay().getConcept().getId());
+            options.putIfAbsent(id, new DefaultOption(id, item.getConceptLabelToDisplay().getLabel()));
+        }
+        draftDefaultConceptIds.forEach(id -> options.putIfAbsent(id, new DefaultOption(id, "#" + id)));
+        return new ArrayList<>(options.values());
+    }
+
+    private void loadDraftDefault() {
+        draftDefaultConceptIds = new ArrayList<>();
+        if (draftOriginalName != null && isDraftConfigurable()) {
+            tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftOriginalName)
+                    .flatMap(field -> formLayoutService.defaultOf(project.getId(), selectedTable, selectedTypeName, field.getId()))
+                    .ifPresent(stored -> draftDefaultConceptIds = new ArrayList<>(stored.conceptIds()));
+        }
+        draftOriginalDefaultConceptIds = new ArrayList<>(draftDefaultConceptIds);
+    }
+
+    /**
+     * Writes the default picked in the drawer onto the type's form configuration. A concept that is neither
+     * on the page of values listed nor part of the stored default is refused: the list is what the field
+     * offers, a default has to come from it. A single-choice field keeps only its first concept.
+     */
+    private boolean saveDraftDefault() {
+        if (!isDraftConfigurable() || draftOriginalName == null) return true;
+        List<String> picked = isDraftMultiple() || draftDefaultConceptIds.size() <= 1
+                ? draftDefaultConceptIds : List.of(draftDefaultConceptIds.get(0));
+        if (picked.equals(draftOriginalDefaultConceptIds)) return true;
+        Set<String> offered = getDefaultOptions().stream().map(DefaultOption::id).collect(Collectors.toSet());
+        if (!offered.containsAll(picked)) {
+            showDrawerError("projectTables.drawer.default.notOffered");
+            return false;
+        }
+        tableFieldConfigService.findField(project.getId(), selectedTable, selectedTypeName, draftOriginalName)
+                .ifPresent(field -> formLayoutService.saveDefault(project.getId(), selectedTable, selectedTypeName,
+                        field.getId(), FieldDefault.ofConceptIds(picked)));
+        draftOriginalDefaultConceptIds = new ArrayList<>(picked);
+        return true;
     }
 
     private void loadDraftOptions(FieldOptions options) {

@@ -36,11 +36,11 @@ class FieldAnswerPatchServiceDeltaTest {
         RecordingUnit p = new RecordingUnit(); p.setId(117L); ActionUnit au = new ActionUnit(); au.setId(7L); p.setActionUnit(au);
         when(rus.findById(117L)).thenReturn(Optional.of(p));
         FormService fs = new FormService(mock(LabelBean.class), mock(UnitDefinitionMapper.class), mock(CustomFieldAnswerService.class));
-        FieldAnswerPatchService service = new FieldAnswerPatchService(fs, mock(ConceptRepository.class), mock(ConceptMapper.class),
+        FieldAnswerPatchService service = new FieldAnswerPatchService(fs, mock(fr.siamois.domain.services.form.OnTheFlyFieldService.class, inv -> inv.getArgument(0)), mock(ConceptRepository.class), mock(ConceptMapper.class),
                 mock(PersonRepository.class), mock(PersonMapper.class), mock(ActionUnitRepository.class), mock(ActionUnitSummaryMapper.class),
                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 rus, new RecordingUnitSummaryMapperImpl(mock(fr.siamois.ui.mapper.adapter.ConversionServiceAdapter.class)), mock(PhaseRepository.class), mock(PhaseMapper.class),
-                mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class));
+                mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), mock(UnitDefinitionMapper.class), mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class));
         CustomFieldSelectMultipleRecordingUnit f = CustomFieldSelectMultipleRecordingUnit.builder().label("x").isSystemField(true).id(-319L).valueBinding("parents").build();
         CustomColUiDto col = new CustomColUiDto(); col.setField(f);
         CustomRowUiDto row = new CustomRowUiDto(); row.setColumns(new ArrayList<>(List.of(col)));

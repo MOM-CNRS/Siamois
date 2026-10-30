@@ -3937,3 +3937,6 @@ div#search-bar .sia-topbar-search-field .sia-search {
   justify-content: flex-start;
   margin-top: 0.25rem;
 }
+/* Field label tooltip: the label, then the (truncated) definition of the field's concept. */
+.field-label-tooltip { max-width: 22rem; }
+.field-label-tooltip-definition { margin-top: 0.25rem; white-space: normal; }

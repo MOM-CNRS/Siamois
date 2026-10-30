@@ -59,7 +59,8 @@ public class OrganizationControllerApi {
     public ResponseEntity<OrganizationListResponse> getAll(
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit,
-            @Parameter(description = "Champ de tri : id, name, identifier, creationDate ; direction asc ou desc (ex. name:asc, id:desc).")
+            @Parameter(description = "Champ de tri : id, name, identifier, creationDate ; direction asc ou desc (ex. name:asc, id:desc). "
+                    + "Répétable : chaque tri départage les égalités du précédent (ex. sort=identifier:asc&sort=name:asc).")
             @RequestParam(required = false) List<String> sort) {
 
         projectApiService.validatePagedListRequest(offset, limit);

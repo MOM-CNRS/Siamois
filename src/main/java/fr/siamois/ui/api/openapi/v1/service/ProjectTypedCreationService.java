@@ -1,6 +1,10 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.form.EffectiveFormResolver;
+import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
@@ -15,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,6 +40,8 @@ public class ProjectTypedCreationService {
     private final ConceptService conceptService;
     private final ConceptMapper conceptMapper;
     private final ProfilePermissionService profilePermissionService;
+    private final EffectiveFormResolver effectiveFormResolver;
+    private final FieldAnswerPatchService fieldAnswerPatchService;
 
     /**
      * What differs between the entities created in a project: the message of an unknown type, and how
@@ -52,6 +60,27 @@ public class ProjectTypedCreationService {
                 StudyDTO::new, StudyDTO::setActionUnit, StudyDTO::setType);
         public static final Kind<DocumentDTO> DOCUMENT = new Kind<>("Catégorie de document introuvable",
                 DocumentDTO::new, DocumentDTO::setActionUnit, DocumentDTO::setType);
+    }
+
+    /**
+     * Saves a new entity with the defaults of its type's form: the form is resolved for the project and type,
+     * its defaults are applied to the shell (see {@link FieldAnswerPatchService#applyOnCreate}), then the shell
+     * is saved together with the additional answers the defaults produced.
+     *
+     * @param table the table whose form (and defaults) the entity follows
+     * @param type  the entity's type, which picks the form
+     * @param save  the entity service's {@code save(dto, additionalAnswers)}
+     */
+    public <D extends AbstractEntityDTO> D saveWithDefaults(D shell, ProjectContext project, ConfigurableTable table,
+                                                            ConceptDTO type,
+                                                            BiFunction<D, Map<CustomField, CustomFieldAnswerViewModel>, D> save) {
+        return OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> {
+            Long projectId = project.project().getId();
+            Map<CustomField, CustomFieldAnswerViewModel> additional = fieldAnswerPatchService.applyOnCreate(
+                    shell, effectiveFormResolver.resolveEffectiveForm(projectId, table, type.getId()),
+                    null, projectId, type.getId());
+            return save.apply(shell, additional);
+        });
     }
 
     /** The project a creation targets, and the caller's context in it (its organization, their language). */

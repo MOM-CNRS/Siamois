@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
@@ -77,12 +78,12 @@ public class StudyOpenApiService {
                 PermissionConstants.INSTANCE_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                 PermissionConstants.PROJECT_EDIT_STUDIES);
-        StudyDTO shell = projectTypedCreationService.newEntity(Kind.STUDY, project,
-                projectTypedCreationService.resolveType(request.getTypeId(), Kind.STUDY));
+        ConceptDTO type = projectTypedCreationService.resolveType(request.getTypeId(), Kind.STUDY);
+        StudyDTO shell = projectTypedCreationService.newEntity(Kind.STUDY, project, type);
         IdentifierPatch.applyChosen(request.getIdentifier(), shell::setIdentifier,
                 () -> studyService.identifierAlreadyExistInAction(shell));
 
-        StudyDTO saved = OpenApiExecutionContext.callWithUserInfo(project.userInfo(), () -> studyService.save(shell));
+        StudyDTO saved = projectTypedCreationService.saveWithDefaults(shell, project, ConfigurableTable.STUDY, type, studyService::save);
         return toResourceWithPermissionsAndAnswers(saved, personDto, lang);
     }
 

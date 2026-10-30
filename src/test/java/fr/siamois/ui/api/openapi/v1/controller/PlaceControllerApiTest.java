@@ -271,8 +271,7 @@ class PlaceControllerApiTest {
         place.setCreatedByInstitution(institution);
         when(placeOpenApiService.requireAccessible(any(), eq(5L))).thenReturn(place);
         org.springframework.data.domain.Page<fr.siamois.dto.api.AccessibleProjectForApi> rows = org.springframework.data.domain.Page.empty();
-        when(projectApiService.pageAccessibleProjects(any(), eq(10L), isNull(), eq(0), eq(20), eq("name:asc"),
-                org.mockito.ArgumentMatchers.argThat(filter ->
+        when(projectApiService.pageAccessibleProjects(any(), eq(10L), eq(new fr.siamois.ui.api.openapi.v1.request.list.ListWindow(0, 20, "name:asc", null)), org.mockito.ArgumentMatchers.argThat(filter ->
                         List.of(5L).equals(filter.conceptManyInFilters().get("spatialContext"))), org.mockito.ArgumentMatchers.any(fr.siamois.dto.FieldQuery.class)))
                 .thenReturn(rows);
         when(projectListAssembler.assemble(any(), eq(rows), isNull(), eq("fr"), eq(20), eq(0)))

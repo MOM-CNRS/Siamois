@@ -113,6 +113,9 @@ public class FormService {
         if (jpaEntity instanceof DocumentDTO document) {
             return customFieldAnswerService.loadAdditionalFieldAnswers(document);
         }
+        if (jpaEntity instanceof StudyDTO study) {
+            return customFieldAnswerService.loadAdditionalFieldAnswers(study);
+        }
 
         return Map.of();
     }

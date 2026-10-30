@@ -114,6 +114,8 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private FormService formService;
     @Mock
+    private fr.siamois.domain.services.form.OnTheFlyFieldService onTheFlyFieldService;
+    @Mock
     private FieldConfigurationService fieldConfigurationService;
     @Mock
     private RecordingUnitResponseMapper recordingUnitResponseMapper;
@@ -185,6 +187,13 @@ class RecordingUnitOpenApiServiceTest {
     @Mock
     private fr.siamois.domain.services.document.DocumentService documentService;
 
+    /** Real, over empty repositories: no concept in the database, so fields keep their own label. */
+    @Spy
+    private fr.siamois.domain.services.vocabulary.FieldTextService fieldTextService = new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class));
+
     @InjectMocks
     private RecordingUnitOpenApiService service;
 
@@ -195,13 +204,15 @@ class RecordingUnitOpenApiServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient().when(onTheFlyFieldService.withOnTheFlyFields(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
         // The real coercion, over this test's own mocks: the PATCH tests below exercise it end to end.
-        ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService,
+        ReflectionTestUtils.setField(service, "fieldAnswerPatchService", new FieldAnswerPatchService(formService, mock(fr.siamois.domain.services.form.OnTheFlyFieldService.class, inv -> inv.getArgument(0)),
                 conceptRepository, conceptMapper, personRepository, personMapper, actionUnitRepository,
                 actionUnitSummaryMapper,                 spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
                 mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
                 mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class),
-                mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class)));
+                mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class)));
         ReflectionTestUtils.setField(service, "fieldAnswerWireService", new FieldAnswerWireService(formService, labelService));
         // Catalogs are decorated with each field's list capability; not what these tests are about.
         FieldQueryService fieldQueryService = mock(FieldQueryService.class);

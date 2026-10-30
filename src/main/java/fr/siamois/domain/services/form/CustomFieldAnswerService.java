@@ -65,7 +65,7 @@ public class CustomFieldAnswerService {
     private final TableFieldConfigService tableFieldConfigService;
     private final FormConfigAnswerService formConfigAnswerService;
     private final LabelService labelService;
-    private final CustomFieldMeasurementService customFieldMeasurementService;
+    private final OnTheFlyFieldService onTheFlyFieldService;
     private final UnitDefinitionService unitDefinitionService;
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final ConceptMapper conceptMapper;
@@ -95,6 +95,11 @@ public class CustomFieldAnswerService {
                                Supplier<Collection<? extends CustomField>> extraActiveFields) {
     }
 
+    /** The measurement fields added on the fly to the record, which are active on it whatever its form. */
+    private Supplier<Collection<? extends CustomField>> onTheFly(ConfigurableTable table, Long entityId) {
+        return () -> onTheFlyFieldService.fieldsOf(table, entityId);
+    }
+
     private AnswerOwner ownerOf(RecordingUnitDTO dto) {
         if (dto == null || dto.getId() == null || dto.getActionUnit() == null) return null;
         return new AnswerOwner("recording unit " + dto.getId(), dto.getActionUnit().getId(), ConfigurableTable.UE,
@@ -102,8 +107,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                // measurement fields created on the fly from this unit's own form
-                () -> customFieldMeasurementService.findByRecordingUnit(dto.getId()));
+                onTheFly(ConfigurableTable.UE, dto.getId()));
     }
 
     private AnswerOwner ownerOf(SpecimenDTO dto) {
@@ -116,7 +120,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                List::of);
+                onTheFly(ConfigurableTable.MOBILIER, dto.getId()));
     }
 
     private AnswerOwner ownerOf(PhaseDTO dto) {
@@ -126,7 +130,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                List::of);
+                onTheFly(ConfigurableTable.PHASE, dto.getId()));
     }
 
     private AnswerOwner ownerOf(ContainerDTO dto) {
@@ -136,7 +140,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                List::of);
+                onTheFly(ConfigurableTable.CONTENANT, dto.getId()));
     }
 
     private AnswerOwner ownerOf(DocumentDTO dto) {
@@ -147,7 +151,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                List::of);
+                onTheFly(ConfigurableTable.DOCUMENT, dto.getId()));
     }
 
     private AnswerOwner ownerOf(StudyDTO dto) {
@@ -158,7 +162,7 @@ public class CustomFieldAnswerService {
                 config -> formConfigAnswerService.findFormConfigAnswer(config, dto),
                 config -> formConfigAnswerService.createOrGetFormConfigAnswer(config, dto),
                 () -> formConfigAnswerService.findAllFormConfigAnswers(dto),
-                List::of);
+                onTheFly(ConfigurableTable.STUDY, dto.getId()));
     }
 
     /** A find carries its project directly, or only through its recording unit (as SpecimenPanel resolves it). */

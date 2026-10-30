@@ -8,6 +8,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -43,6 +44,17 @@ public class Phase extends TraceableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "phase_id", nullable = false)
     private Long id;
+
+    /** Measurement (and other) fields added on the fly to this record's fiche. */
+    @NotAudited
+    @JsonIgnore
+    @OneToMany
+    @JoinTable(
+            name = "phase_on_the_fly_fields",
+            joinColumns = { @JoinColumn(name = "fk_phase_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldOnTheFly> onTheFlyFields = new HashSet<>();
 
     @NotNull
     @Column(name = "identifier")

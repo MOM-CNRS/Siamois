@@ -103,6 +103,18 @@ class ProjectApiServiceOrganizationPageTest {
     }
 
     @Test
+    void pageAccessibleOrganizations_severalSorts_theNextBreaksTheTiesOfThePrevious() {
+        InstitutionDTO first = dto(1L, "Lyon", "b");
+        InstitutionDTO second = dto(2L, "Lyon", "a");
+        InstitutionDTO third = dto(3L, "Annecy", "c");
+
+        Page<InstitutionDTO> page = projectApiService.pageAccessibleOrganizations(
+                caller(List.of(first, second, third)), 0, 10, List.of("name:desc", "identifier:asc"));
+
+        assertThat(page.getContent()).extracting(InstitutionDTO::getId).containsExactly(2L, 1L, 3L);
+    }
+
+    @Test
     void pageAccessibleOrganizations_sortByIdentifierAsc_caseInsensitive() {
         InstitutionDTO z = dto(1L, "N", "zeta");
         InstitutionDTO a = dto(2L, "N", "Alpha");

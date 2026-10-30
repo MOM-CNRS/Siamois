@@ -15,6 +15,7 @@ import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
@@ -31,6 +32,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenFindSortSql;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpecimenSpec;
+import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.SpecimenMapper;
@@ -58,6 +61,7 @@ import java.util.stream.Collectors;
 public class SpecimenService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     private final SpecimenRepository specimenRepository;
     private final CustomFieldAnswerService customFieldAnswerService;
@@ -111,6 +115,12 @@ public class SpecimenService implements ArkEntityService {
 
         managedSpecimen.getChildren().removeIf(child -> !incomingIds.contains(child.getId()));
 
+        Set<Long> addedIds = incomingIds.stream()
+                .filter(id -> managedSpecimen.getChildren().stream().noneMatch(c -> c.getId().equals(id)))
+                .collect(Collectors.toSet());
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPECIMEN,
+                managedSpecimen.getId(), Set.of(), addedIds);
+
         for (Long id : incomingIds) {
             boolean alreadyPresent = managedSpecimen.getChildren().stream()
                     .anyMatch(c -> c.getId().equals(id));
@@ -135,6 +145,10 @@ public class SpecimenService implements ArkEntityService {
                     .orElseThrow(() -> new IllegalArgumentException("Parent not found: " + parentRef.getId()));
             newParents.add(parent);
         }
+
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPECIMEN, managedSpecimen.getId(),
+                newParents.stream().filter(p -> !currentParents.contains(p)).map(Specimen::getId).collect(Collectors.toSet()),
+                Set.of());
 
         for (Specimen parent : newParents) {
             if (!currentParents.contains(parent)) {
@@ -195,6 +209,8 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setParticularInterest(specimen.getParticularInterest());
         managedSpecimen.setStudyPotential(specimen.getStudyPotential());
         managedSpecimen.setStudyPotentialComment(specimen.getStudyPotentialComment());
+        managedSpecimen.setObjectOrLot(specimen.getObjectOrLot());
+        managedSpecimen.setSamplingNature(specimen.getSamplingNature());
         managedSpecimen.setSamplingPurpose(specimen.getSamplingPurpose());
         managedSpecimen.setPreservationCondition(specimen.getPreservationCondition());
         managedSpecimen.setValidityDate(specimen.getValidityDate());
@@ -713,7 +729,7 @@ public class SpecimenService implements ArkEntityService {
             InstitutionDTO institution, String query, int limit) {
         var specs = SpecimenSpec.specimenInInstitution(institution.getId())
                 .and(SpecimenSpec.fullIdentifierContaining(query));
-        return specimenRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(specimenRepository, specs, PageRequest.ofSize(limit), SpecimenSpec.FULL_IDENTIFIER_FILTER, query)
                 .stream()
                 .map(specimenSummaryMapper::convert)
                 .toList();
@@ -763,7 +779,7 @@ public class SpecimenService implements ArkEntityService {
     public Page<SpecimenDTO> searchSpecimen(InstitutionDTO institutionDTO, FilterDTO filters, Pageable pageable) {
         Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
 
-        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+        Page<Specimen> res = findAllExactMatchFirst(specs, pageable, filters);
 
         return res.map(specimenMapper::convert);
     }
@@ -773,7 +789,7 @@ public class SpecimenService implements ArkEntityService {
                                                            FilterDTO filters, Pageable pageable) {
         Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(SpecimenSpec.specimenInRecordingUnit(recordingUnitDTO.getId()));
-        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+        Page<Specimen> res = findAllExactMatchFirst(specs, pageable, filters);
 
         return res.map(specimenMapper::convert);
     }
@@ -783,9 +799,17 @@ public class SpecimenService implements ArkEntityService {
                                                            FilterDTO filters, Pageable pageable) {
         Specification<Specimen> specs = prepareSpecs(institutionDTO, filters);
         specs = specs.and(SpecimenSpec.specimenInActionUnit(actionUnitDTO.getId()));
-        Page<Specimen> res = specimenRepository.findAll(specs, pageable);
+        Page<Specimen> res = findAllExactMatchFirst(specs, pageable, filters);
 
         return res.map(specimenMapper::convert);
+    }
+
+    /**
+     * A page of {@code specs}, the finds whose full identifier is exactly the searched one first.
+     */
+    private Page<Specimen> findAllExactMatchFirst(Specification<Specimen> specs, Pageable pageable, FilterDTO filters) {
+        return ExactMatchFirst.findAll(specimenRepository, specs, pageable, SpecimenSpec.FULL_IDENTIFIER_FILTER,
+                filters.searchTextOf(SpecimenSpec.FULL_IDENTIFIER_FILTER));
     }
 
     public int countSearchResultsInActionUnit(InstitutionDTO institutionDTO,
@@ -838,7 +862,8 @@ public class SpecimenService implements ArkEntityService {
         }
 
         if (filters.containsColumn(SpecimenSpec.FULL_IDENTIFIER_FILTER)) {
-            specification = specification.and(SpecimenSpec.fullIdentifierContaining(filters.valueOfAsString(SpecimenSpec.FULL_IDENTIFIER_FILTER)));
+            specification = specification.and(TextSearchSpec.matching(SpecimenSpec.FULL_IDENTIFIER_FILTER,
+                    filters.filterOf(SpecimenSpec.FULL_IDENTIFIER_FILTER)));
         }
 
         return specification;

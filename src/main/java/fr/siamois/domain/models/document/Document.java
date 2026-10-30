@@ -15,6 +15,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.study.Study;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldOnTheFly;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -50,6 +51,17 @@ public class Document extends TraceableEntity implements ArkEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "document_id", nullable = false)
     private Long id;
+
+    /** Measurement (and other) fields added on the fly to this record's fiche. */
+    @NotAudited
+    @JsonIgnore
+    @OneToMany
+    @JoinTable(
+            name = "document_on_the_fly_fields",
+            joinColumns = { @JoinColumn(name = "fk_document_id") },
+            inverseJoinColumns = { @JoinColumn(name = "fk_custom_field_id") }
+    )
+    private Set<CustomFieldOnTheFly> onTheFlyFields = new HashSet<>();
 
     /** The document type (arrêté du 7 février 2022): the document table's configurable type. */
     @FieldCode

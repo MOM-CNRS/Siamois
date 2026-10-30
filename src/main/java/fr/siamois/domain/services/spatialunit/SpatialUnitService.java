@@ -16,6 +16,7 @@ import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.ArkEntityService;
 import fr.siamois.domain.services.EntityLinkGuard;
+import fr.siamois.domain.services.HierarchyCycleGuard;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -31,6 +32,7 @@ import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
+import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryDtoMapper;
@@ -63,6 +65,7 @@ import java.util.stream.Collectors;
 public class SpatialUnitService implements ArkEntityService {
 
     private final EntityLinkGuard entityLinkGuard;
+    private final HierarchyCycleGuard hierarchyCycleGuard;
 
     private final SpatialUnitRepository spatialUnitRepository;
     private final ConceptService conceptService;
@@ -165,6 +168,10 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
 
+    private static Set<Long> idsOf(Set<SpatialUnitSummaryDTO> units) {
+        return units == null ? Set.of() : units.stream().map(SpatialUnitSummaryDTO::getId).collect(Collectors.toSet());
+    }
+
     /**
      * Save a new SpatialUnit
      *
@@ -192,6 +199,7 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
         spatialUnit.setCode(su.getCode());
+        spatialUnit.setPlaceNumber(su.getPlaceNumber());
         spatialUnit.setInseeCode(su.getInseeCode());
         spatialUnit.setLocalityName(su.getLocalityName());
         spatialUnit.setComments(su.getComments());
@@ -209,6 +217,8 @@ public class SpatialUnitService implements ArkEntityService {
         }
 
         // Gestion des enfants et parents
+        hierarchyCycleGuard.requireNoCycleThrough(HierarchyCycleGuard.Kind.SPATIAL_UNIT, spatialUnit.getId(),
+                idsOf(su.getParents()), idsOf(su.getChildren()));
         if (su.getChildren() != null && !su.getChildren().isEmpty()) {
             Set<SpatialUnit> children = new HashSet<>();
             for (SpatialUnitSummaryDTO childDTO : su.getChildren()) {
@@ -293,6 +303,7 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setGeom(spatialUnit.getGeom());
             managedSpatialUnit.setCreatedByInstitution(spatialUnit.getCreatedByInstitution());
             managedSpatialUnit.setAddress(spatialUnit.getAddress());
+            managedSpatialUnit.setPlaceNumber(spatialUnit.getPlaceNumber());
             managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
             managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
             managedSpatialUnit.setComments(spatialUnit.getComments());
@@ -811,7 +822,7 @@ public class SpatialUnitService implements ArkEntityService {
     public List<SpatialUnitDTO> findMatchingInInstitutionByName(InstitutionDTO institutionDTO, String query, int limit) {
         Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionDTO.getId());
         specs = specs.and(SpatialUnitSpec.nameContaining(query));
-        return spatialUnitRepository.findAll(specs, PageRequest.ofSize(limit))
+        return ExactMatchFirst.findAll(spatialUnitRepository, specs, PageRequest.ofSize(limit), "name", query)
                 .map(spatialUnitMapper::convert)
                 .stream()
                 .toList();
@@ -877,6 +888,14 @@ public class SpatialUnitService implements ArkEntityService {
         if (updateGeom) {
             dto.setGeom(newGeom);
         }
+        return persistSpatialUnitDto(dto);
+    }
+
+    /** Edits the plain details of a place that {@code updatePlace} has no parameter for (INSEE code, locality, SHOM map, comments). */
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public SpatialUnitDTO updatePlaceDetails(long placeId, java.util.function.Consumer<SpatialUnitDTO> edits) {
+        SpatialUnitDTO dto = loadDtoById(placeId);
+        edits.accept(dto);
         return persistSpatialUnitDto(dto);
     }
 
