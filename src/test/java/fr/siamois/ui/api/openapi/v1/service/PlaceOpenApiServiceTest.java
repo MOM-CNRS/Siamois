@@ -87,7 +87,12 @@ class PlaceOpenApiServiceTest {
                 conceptMapper,
                 profilePermissionService,
                 placeOpenApiMapper,
-                langService, mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class), documentService);
+                langService,
+                new fr.siamois.domain.services.vocabulary.FieldTextService(
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
+                mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)),
+                mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class), documentService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);

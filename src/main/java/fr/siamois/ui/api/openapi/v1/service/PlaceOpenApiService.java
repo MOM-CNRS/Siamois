@@ -43,6 +43,7 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import fr.siamois.ui.form.dto.FormUiDtoLayoutJson;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.form.fieldsource.PanelFieldSource;
+import fr.siamois.domain.services.vocabulary.FieldTextService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,6 +69,7 @@ public class PlaceOpenApiService {
     private final ProfilePermissionService profilePermissionService;
     private final PlaceOpenApiMapper placeOpenApiMapper;
     private final LangService langService;
+    private final FieldTextService fieldTextService;
     private final ResourceBookmarkService resourceBookmarkService;
     private final EntitySiblingsService entitySiblingsService;
     private final ValidationOpenApiService validationOpenApiService;
@@ -321,9 +323,10 @@ public class PlaceOpenApiService {
     }
 
     private FieldResource toPlaceFieldResource(CustomField field, Locale locale) {
-        return FieldAnswerWireService.fieldResourceOf(field,
+        FieldTextService.FieldTexts texts = fieldTextService.resolve(field, locale.getLanguage(),
                 langService.resolveMessage(field.getLabel(), locale),
                 langService.resolveMessage(field.getHint(), locale));
+        return FieldAnswerWireService.fieldResourceOf(field, texts.label(), texts.definition());
     }
 
     @Transactional
