@@ -763,6 +763,46 @@ class FindOpenApiServiceTest {
     }
 
     @Test
+    void patchFind_geomOnly_setsGeomAndSaves() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any()))
+                .thenReturn(formUiDtoWithFields(textField(2L)));
+        when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
+
+        fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO point =
+                new fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO();
+        point.coordinates = new double[]{1, 2};
+        FindPatchRequest request = new FindPatchRequest();
+        request.setGeom(point);
+
+        service.patchFind(7L, request, personDto, SCOPE, LANG);
+
+        assertThat(specimen.getGeom()).isSameAs(point);
+        verify(specimenService).save(same(specimen), anyMap());
+    }
+
+    @Test
+    void patchFind_explicitNullGeom_clearsGeom() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        specimen.setGeom(new fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO());
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(effectiveFormResolver.resolveEffectiveForm(any(), eq(ConfigurableTable.MOBILIER), any()))
+                .thenReturn(formUiDtoWithFields(textField(2L)));
+        when(specimenService.save(same(specimen), anyMap())).thenReturn(specimen);
+
+        FindPatchRequest request = new FindPatchRequest();
+        request.setGeom(null);
+
+        service.patchFind(7L, request, personDto, SCOPE, LANG);
+
+        assertThat(specimen.getGeom()).isNull();
+        verify(specimenService).save(same(specimen), anyMap());
+    }
+
+    @Test
     void patchFind_withFieldAnswers_updatesAndSaves() {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
