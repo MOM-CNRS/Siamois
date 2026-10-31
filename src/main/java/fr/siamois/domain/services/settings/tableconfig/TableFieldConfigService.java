@@ -41,6 +41,14 @@ public interface TableFieldConfigService {
     List<TypeSummary> listTypes(Long projectId, ConfigurableTable table);
 
     /**
+     * The name a configured type goes by in the project (what the layout and rule services take as {@code typeName}),
+     * from its concept.
+     *
+     * @return empty when the project does not configure that type
+     */
+    java.util.Optional<String> typeNameOf(Long projectId, ConfigurableTable table, Long typeConceptId);
+
+    /**
      * Lists the {@link fr.siamois.domain.models.vocabulary.Concept}s a table is configured for —
      * the concept-keyed equivalent of {@link #listTypes(Long, ConfigurableTable)}.
      *

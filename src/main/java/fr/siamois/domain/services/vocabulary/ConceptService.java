@@ -106,7 +106,7 @@ public class ConceptService {
         });
     }
 
-    /** The external id of the thesaurus a field's values are read in (th337…), resolved as {@link #findFieldBranchUri} does. */
+    /** The external id of the thesaurus a field's values are read in (th338…), resolved as {@link #findFieldBranchUri} does. */
     public Optional<String> findFieldVocabularyId(@NonNull Long institutionId, @Nullable Long actionUnitId, @NonNull String fieldCode) {
         return fieldCodeResolver.find(institutionId, actionUnitId, fieldCode)
                 .map(config -> config.getVocabulary().getExternalVocabularyId());

@@ -46,7 +46,7 @@ public class GeoApiService {
 
         // On récupère le concept "Commune" (ID 417) pour typer les résultats externes
         ConceptDTO conceptDTO = conceptMapper.convert(
-                conceptRepository.findConceptByExternalIdIgnoreCase("th337", "1164")
+                conceptRepository.findConceptByExternalIdIgnoreCase("th338", "1164")
                         .orElseThrow()
         );
 

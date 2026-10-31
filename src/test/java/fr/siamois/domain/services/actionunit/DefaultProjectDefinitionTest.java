@@ -11,9 +11,9 @@ class DefaultProjectDefinitionTest {
 
     @Test
     void readsTheThesaurusAndItsIdentifiers() {
-        assertThat(definition.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idt=th337");
+        assertThat(definition.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idt=th338");
         assertThat(definition.baseUri()).isEqualTo("https://thesaurus.mom.fr");
-        assertThat(definition.externalVocabularyId()).isEqualTo("th337");
+        assertThat(definition.externalVocabularyId()).isEqualTo("th338");
     }
 
     @Test
@@ -34,8 +34,25 @@ class DefaultProjectDefinitionTest {
         assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::label).startsWith("US", "Fait", "Ensemble");
         assertThat(ue.types()).extracting(DefaultProjectDefinition.Type::identifierFormat)
                 .startsWith("US{NUM_UE:000}", "F{NUM_UE:000}", "ENS{NUM_UE:000}");
-        assertThat(ue.types().get(0).lists()).containsKeys("SIARU.GEOMORPHO", "SIARU.INTERPRETATION");
-        assertThat(ue.types().get(0).listNames()).containsOnlyKeys(ue.types().get(0).lists().keySet().toArray(String[]::new));
+    }
+
+    @Test
+    void theDefaultsAreConceptIdentifiersOfFieldsThatHaveACode() {
+        assertThat(definition.tables().stream().flatMap(table -> table.types().stream())
+                .flatMap(type -> type.defaults().entrySet().stream())).isNotEmpty().allSatisfy(entry -> {
+            assertThat(entry.getKey()).matches("^SI[A-Z]+\\.[A-Z]+$");
+            assertThat(entry.getValue()).matches("\\d+");
+        });
+    }
+
+    @Test
+    void recordingUnitsThatGroupOthersStartWithTheEnglobingNature() {
+        DefaultProjectDefinition.Table ue = definition.tables().stream()
+                .filter(table -> table.table() == ConfigurableTable.UE).findFirst().orElseThrow();
+
+        assertThat(ue.types()).filteredOn(type -> type.label().equals("Fait") || type.label().equals("Ensemble"))
+                .hasSize(2).allSatisfy(type -> assertThat(type.defaults()).containsEntry("SIARU.NATURE", "1217"));
+        assertThat(ue.types().get(0).defaults()).doesNotContainKey("SIARU.NATURE");
     }
 
     @Test
@@ -45,11 +62,5 @@ class DefaultProjectDefinitionTest {
                     .matches("^[A-Z0-9]+\\{NUM_[A-Z_]+:0+\\}$"));
             assertThat(table.types()).extracting(type -> type.identifierFormat().substring(0, type.identifierFormat().indexOf('{'))).doesNotHaveDuplicates();
         });
-    }
-
-    @Test
-    void collectionIdsAreEachListedOnce() {
-        assertThat(definition.collectionIds()).isNotEmpty().allMatch(id -> id.matches("g\\d+"));
-        assertThat(definition.collectionIds()).doesNotHaveDuplicates();
     }
 }

@@ -22,7 +22,7 @@ import java.util.List;
 public class UnitDefinitionInitializer implements DatabaseInitializer {
 
     private static final String THESAURUS_BASE_URI = "https://thesaurus.mom.fr";
-    private static final String UNITS_VOCABULARY_ID = "th337";
+    private static final String UNITS_VOCABULARY_ID = "th338";
 
     private final ThesaurusSeeder thesaurusSeeder;
     private final UnitDefinitionSeeder unitDefinitionSeeder;

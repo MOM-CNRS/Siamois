@@ -21,7 +21,12 @@
         {
           "fieldId" : -705,
           "binding" : "category",
-          "width" : "QUARTER"
+          "width" : "QUARTER",
+          "rules" : {
+            "options" : {
+              "kind" : "RELATED_TO_TYPE"
+            }
+          }
         },
         {
           "fieldId" : -708,
@@ -37,12 +42,22 @@
         {
           "fieldId" : -706,
           "binding" : "supportNatures",
-          "width" : "QUARTER"
+          "width" : "QUARTER",
+          "rules" : {
+            "options" : {
+              "kind" : "RELATED_TO_TYPE"
+            }
+          }
         },
         {
           "fieldId" : -707,
           "binding" : "format",
-          "width" : "QUARTER"
+          "width" : "QUARTER",
+          "rules" : {
+            "options" : {
+              "kind" : "RELATED_TO_TYPE"
+            }
+          }
         },
         {
           "fieldId" : -716,

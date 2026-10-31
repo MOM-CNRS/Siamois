@@ -12,6 +12,12 @@ export function filterOptionsOffline<T extends { id: string | number }>(
   context: OptionsContext | undefined,
   relatedByConcept: RelatedByConcept,
 ): T[] {
+  if (context?.kind === "RELATED_TO_TYPE") {
+    // The type relates to some of this list's values: only those. To none of them: the whole list.
+    const related = new Set(relatedByConcept[context.relatedTo ?? ""] ?? []);
+    const restricted = options.filter((o) => related.has(String(o.id)));
+    return restricted.length > 0 ? restricted : options;
+  }
   if (!context || context.kind !== "RELATED_CONCEPTS") return options;
   if (context.relatedTo == null) return [];
   const allowed = new Set(relatedByConcept[context.relatedTo] ?? []);

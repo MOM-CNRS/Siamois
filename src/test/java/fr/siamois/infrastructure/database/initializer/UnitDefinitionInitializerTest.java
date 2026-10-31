@@ -39,8 +39,8 @@ class UnitDefinitionInitializerTest {
     @BeforeEach
     void setUp() throws Exception {
         vocabulary = new Vocabulary();
-        when(thesaurusSeeder.seed(List.of(new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th337"))))
-                .thenReturn(Map.of("th337", vocabulary));
+        when(thesaurusSeeder.seed(List.of(new ThesaurusSeeder.ThesaurusSpec("https://thesaurus.mom.fr", "th338"))))
+                .thenReturn(Map.of("th338", vocabulary));
     }
 
     /**

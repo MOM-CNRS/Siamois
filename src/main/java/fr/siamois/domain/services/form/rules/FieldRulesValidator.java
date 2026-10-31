@@ -62,6 +62,10 @@ public class FieldRulesValidator {
             if (source != null && RuleFieldFamily.of(source) != RuleFieldFamily.CONCEPT) {
                 issues.add(new Issue("rules.error.optionsNotConcept", label(source)));
             }
+        } else if (options instanceof OptionsFilter.RelatedToType) {
+            if (own == null || RuleFieldFamily.of(own) != RuleFieldFamily.CONCEPT) {
+                issues.add(new Issue("rules.error.optionsOwnNotConcept"));
+            }
         } else if (options instanceof OptionsFilter.RefMatch match) {
             reference(match.fieldId(), ownFieldId, fields, issues);
         }

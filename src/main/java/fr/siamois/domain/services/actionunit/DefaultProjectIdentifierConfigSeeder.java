@@ -25,7 +25,7 @@ import java.util.List;
  * Gives every newly created project a first type for each of its tables, so a table is never without
  * one (there is no configuration standing for "any type"):
  * <ul>
- *   <li>recording units: "US", whose concept is downloaded from the system thesaurus (th337) and
+ *   <li>recording units: "US", whose concept is downloaded from the system thesaurus (th338) and
  *       persisted locally if not already there;</li>
  *   <li>the other tables: one type of the system thesaurus (e.g. "Céramique" for the finds), whose concept
  *       URI is set in {@code siamois.default-types.*}. A table whose URI is not set gets no type, and its
@@ -52,7 +52,7 @@ public class DefaultProjectIdentifierConfigSeeder {
     }
 
     private static final List<DefaultType> DEFAULT_RECORDING_UNIT_TYPES = List.of(
-            new DefaultType("https://thesaurus.mom.fr/?idc=1199&idt=th337", "US{NUM_UE:00}")
+            new DefaultType("https://thesaurus.mom.fr/?idc=1199&idt=th338", "US{NUM_UE:00}")
     );
 
     private final VocabularyService vocabularyService;

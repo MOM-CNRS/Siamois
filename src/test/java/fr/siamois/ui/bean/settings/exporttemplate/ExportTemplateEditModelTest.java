@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExportTemplateEditModelTest {
 
-    private static final ConceptRef C = new ConceptRef("th337", "1005", "https://thesaurus.mom.fr/?idt=th337&idc=1005");
+    private static final ConceptRef C = new ConceptRef("th338", "1005", "https://thesaurus.mom.fr/?idt=th338&idc=1005");
 
     /** Feuille à deux sources ; la règle de « type » vaut pour toutes (liste de sources vide). */
     private static final ExportTemplateDefinition FULL = new ExportTemplateDefinition(3, "u", "1.0.0", "Rapport", "OA{oaCode}", List.of(
@@ -56,7 +56,7 @@ class ExportTemplateEditModelTest {
 
         EditRule direct = model.getSheets().get(0).getColumns().get(0).getRules().get(0);
         assertThat(direct.getPath()).isEqualTo("project,mainLocation");
-        assertThat(direct.getField().getKey()).isEqualTo("th337|1005|https://thesaurus.mom.fr/?idt=th337&idc=1005");
+        assertThat(direct.getField().getKey()).isEqualTo("th338|1005|https://thesaurus.mom.fr/?idt=th338&idc=1005");
         assertThat(direct.isList()).isTrue();
         assertThat(direct.isListSorted()).isTrue();
         assertThat(model.getSheets().get(0).getSources().get(0).getTypeKeys()).hasSize(1);
@@ -116,7 +116,7 @@ class ExportTemplateEditModelTest {
 
     @Test
     void multiTypeSource_isExpandedToOneSourcePerType_andTargetsFollow() {
-        ConceptRef other = new ConceptRef("th337", "999", "https://thesaurus.mom.fr/?idt=th337&idc=999");
+        ConceptRef other = new ConceptRef("th338", "999", "https://thesaurus.mom.fr/?idt=th338&idc=999");
         ExportTemplateEditModel model = ExportTemplateEditModel.from(FULL);
         var sheet = model.getSheets().get(0);
         sheet.getSources().get(0).getTypeKeys().add(ExportTemplateEditModel.keyOf(other));

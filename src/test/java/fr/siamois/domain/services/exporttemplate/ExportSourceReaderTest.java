@@ -153,10 +153,10 @@ class ExportSourceReaderTest {
     void read_entitySource_withTypes_keepsOnlyThoseTypes() {
         RecordingUnit wanted = unit(1L, concept("TH337", "a"));
         when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID))
-                .thenReturn(List.of(wanted, unit(2L, concept("th337", "B")), unit(3L, null)));
+                .thenReturn(List.of(wanted, unit(2L, concept("th338", "B")), unit(3L, null)));
 
         List<ExportRow> rows = reader.read(
-                new EntitySource(EntityKind.RECORDING_UNIT, List.of(new ConceptRef("th337", "A", null))), PROJECT_ID);
+                new EntitySource(EntityKind.RECORDING_UNIT, List.of(new ConceptRef("th338", "A", null))), PROJECT_ID);
 
         assertThat(rows).singleElement().satisfies(r -> assertThat(r.entity()).isSameAs(wanted));
     }

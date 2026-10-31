@@ -45,7 +45,8 @@ class FieldRulesEvaluatorConformanceTest {
         Map<Long, Object> values = new HashMap<>();
         c.get("values").fields().forEachRemaining(e -> values.put(Long.parseLong(e.getKey()), MAPPER.convertValue(e.getValue(), Object.class)));
 
-        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get,
+                c.hasNonNull("typeConceptId") ? c.get("typeConceptId").asText() : null);
 
         c.get("expected").fields().forEachRemaining(e -> {
             JsonNode expected = e.getValue();
@@ -68,9 +69,9 @@ class FieldRulesEvaluatorConformanceTest {
             if (ctx != null) {
                 m = new LinkedHashMap<>();
                 m.put("kind", ctx.kind());
-                m.put("parentFieldId", String.valueOf(ctx.parentFieldId()));
+                if (ctx.parentFieldId() != null) m.put("parentFieldId", String.valueOf(ctx.parentFieldId()));
                 if (ctx.candidateFieldId() != null) m.put("candidateFieldId", String.valueOf(ctx.candidateFieldId()));
-                m.put(ctx.kind().equals("RELATED_CONCEPTS") ? "relatedTo" : "value", ctx.value());
+                m.put(ctx.kind().startsWith("RELATED") ? "relatedTo" : "value", ctx.value());
             }
             out.put("optionsContext", m);
         }

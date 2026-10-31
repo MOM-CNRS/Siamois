@@ -468,6 +468,7 @@
                             <h:panelGroup rendered="#{fieldRulesEditorBean.advancedOptions eq null}">
                                 <p:selectOneMenu value="#{fieldRulesEditorBean.optionsFieldId}" style="width:100%;" filter="true">
                                     <f:selectItem itemLabel="#{langBean.msg('rules.optionsNone')}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItem itemLabel="#{langBean.msg('rules.optionsByType')}" itemValue="#{fieldRulesEditorBean.byTypeId}"/>
                                     <f:selectItems value="#{fieldRulesEditorBean.conceptFields}" var="cf"
                                                    itemLabel="#{fieldRulesEditorBean.labelOf(cf)}" itemValue="#{cf.id}"/>
                                 </p:selectOneMenu>

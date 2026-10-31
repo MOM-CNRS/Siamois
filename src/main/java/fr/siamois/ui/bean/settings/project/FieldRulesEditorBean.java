@@ -86,6 +86,9 @@ public class FieldRulesEditorBean implements Serializable {
     private final transient ProjectTableFieldSettingsBean settingsBean;
     private final LangBean langBean;
 
+    /** The menu's choice "values related to the type of the record": not a field, and no field has the id 0. */
+    private static final Long BY_TYPE = 0L;
+
     private boolean open;
     private TypeFieldFormConfig field;
     private List<TypeFieldFormConfig> otherFields = new ArrayList<>();
@@ -153,6 +156,8 @@ public class FieldRulesEditorBean implements Serializable {
         keptPlaceSources = rules.placeSources();
         if (rules.options() instanceof OptionsFilter.RelatedConcepts related) {
             optionsFieldId = related.fieldId();
+        } else if (rules.options() instanceof OptionsFilter.RelatedToType) {
+            optionsFieldId = BY_TYPE;
         } else if (rules.options() != null) {
             advancedOptions = rules.options();
         }
@@ -278,6 +283,11 @@ public class FieldRulesEditorBean implements Serializable {
         constraints.remove(draft);
     }
 
+    /** The option the menu offers for "the values related to the type of the record": not a field, so no field's id. */
+    public Long getByTypeId() {
+        return BY_TYPE;
+    }
+
     public void clearAdvancedOptions() {
         advancedOptions = null;
     }
@@ -383,7 +393,8 @@ public class FieldRulesEditorBean implements Serializable {
 
     private OptionsFilter optionsOf() {
         if (advancedOptions != null) return advancedOptions;
-        return optionsFieldId == null ? null : new OptionsFilter.RelatedConcepts(optionsFieldId);
+        if (optionsFieldId == null) return null;
+        return BY_TYPE.equals(optionsFieldId) ? new OptionsFilter.RelatedToType() : new OptionsFilter.RelatedConcepts(optionsFieldId);
     }
 
     private List<FieldConstraint> constraintsOf() {

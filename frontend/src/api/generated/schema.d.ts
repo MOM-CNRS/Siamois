@@ -12429,6 +12429,8 @@ export interface operations {
                 valueConceptId?: number;
                 /** @description Liste dépendante (règle options RELATED_CONCEPTS) : seuls les concepts liés à ce concept — la réponse du champ dont celui-ci dépend. */
                 relatedToConceptId?: number;
+                /** @description Avec fieldId et valueConceptId (règle options RELATED_TO_TYPE) : seuls les concepts que le thésaurus relie au type de l'entité ; la liste entière si le type n'en relie aucun au champ. */
+                relatedToType?: boolean;
                 /** @description Texte de recherche — active le mode suggestion si présent. */
                 q?: string;
                 /** @description Nombre de résultats (ignoré en mode suggestion). */

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 class ImportVocabularyLinkServiceTest {
 
     private static final String NATURE = "SIARU.NATURE";
-    private static final String BRANCH = "https://thesaurus.mom.fr/?idc=1180&idt=th337";
+    private static final String BRANCH = "https://thesaurus.mom.fr/?idc=1180&idt=th338";
 
     @Mock private ConceptService conceptService;
 
@@ -55,7 +55,7 @@ class ImportVocabularyLinkServiceTest {
         type.setId(77L);
         when(conceptService.resolveConceptByLabel(3L, ConfigurableTable.UE.getFieldCode(), "US")).thenReturn(type);
         when(conceptService.findFieldBranchUri(3L, 5L, NATURE)).thenReturn(Optional.of(BRANCH));
-        when(conceptService.findFieldVocabularyId(3L, 5L, NATURE)).thenReturn(Optional.of("th337"));
+        when(conceptService.findFieldVocabularyId(3L, 5L, NATURE)).thenReturn(Optional.of("th338"));
 
         var links = service.linksFor(project, vocabularyError(NATURE, "US"), "/siamois");
 
@@ -63,7 +63,7 @@ class ImportVocabularyLinkServiceTest {
         assertThat(links.configKind()).isEqualTo(ImportVocabularyLinkService.ConfigKind.FIELD);
         assertThat(links.configTarget()).isEqualTo("US");
         assertThat(links.thesaurusUrl()).isEqualTo(BRANCH);
-        assertThat(links.thesaurusName()).isEqualTo("th337");
+        assertThat(links.thesaurusName()).isEqualTo("th338");
     }
 
     @Test
@@ -135,10 +135,10 @@ class ImportVocabularyLinkServiceTest {
 
     @Test
     void linksFor_aConceptNotLoadedOfARelationSheet_onlyLinksTheConcept() {
-        var links = service.linksFor(project, missingConcept("stratiRel", "https://thesaurus.mom.fr/?idc=1&idt=th337"), "");
+        var links = service.linksFor(project, missingConcept("stratiRel", "https://thesaurus.mom.fr/?idc=1&idt=th338"), "");
 
         assertThat(links.configUrl()).isNull();
-        assertThat(links.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1&idt=th337");
+        assertThat(links.thesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1&idt=th338");
     }
 
     @Test
@@ -189,7 +189,7 @@ class ImportVocabularyLinkServiceTest {
 
     @Test
     void links_exposeTheirValuesAsBeanProperties() {
-        var links = new ImportVocabularyLinkService.VocabularyLinks("/c", ImportVocabularyLinkService.ConfigKind.TYPE, "US", "/t", "th337");
+        var links = new ImportVocabularyLinkService.VocabularyLinks("/c", ImportVocabularyLinkService.ConfigKind.TYPE, "US", "/t", "th338");
 
         assertThat(links.getConfigUrl()).isEqualTo("/c");
         assertThat(links.getConfigKind()).isEqualTo("TYPE");

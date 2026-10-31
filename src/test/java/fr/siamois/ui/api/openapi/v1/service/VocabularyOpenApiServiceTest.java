@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -224,6 +227,67 @@ class VocabularyOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getConceptsForFieldRelatedToType_returnsTheValuesTheThesaurusRelatesToTheType() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(5L);
+        field.setFieldCode("SIAS.MATIERE");
+        when(customFieldRepository.findById(5L)).thenReturn(Optional.of(field));
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(1426L);
+        when(conceptService.findById(1426L)).thenReturn(Optional.of(type));
+        ConceptAutocompleteDTO metal = new ConceptAutocompleteDTO(null, "métal", "fr");
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), org.mockito.ArgumentMatchers.eq("SIAS.MATIERE"), same(type),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.eq(7L))).thenReturn(List.of(metal));
+
+        List<ConceptAutocompleteDTO> result = service.getConceptsForFieldRelatedToType(10L, 5L, 7L, 1426L, null, "fr", caller.person());
+
+        assertThat(result).containsExactly(metal);
+        verify(fieldConfigurationService, never()).fetchAutocomplete(any(CustomFieldConcept.class), any(), any(), any());
+    }
+
+    @Test
+    void getConceptsForFieldRelatedToType_readsTheWholeListWhenTheTypeIsRelatedToNoneOfItsValues() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(5L);
+        field.setFieldCode("SIARU.INTERPRETATION");
+        when(customFieldRepository.findById(5L)).thenReturn(Optional.of(field));
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(1205L);
+        when(conceptService.findById(1205L)).thenReturn(Optional.of(type));
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), any(), same(type), any(), any())).thenReturn(List.of());
+        ConceptAutocompleteDTO whole = new ConceptAutocompleteDTO(null, "Fosse", "fr");
+        when(fieldConfigurationService.fetchAutocomplete(same(field), org.mockito.ArgumentMatchers.eq("fo"),
+                org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.eq(1205L))).thenReturn(List.of(whole));
+
+        List<ConceptAutocompleteDTO> result = service.getConceptsForFieldRelatedToType(10L, 5L, 7L, 1205L, "fo", "fr", caller.person());
+
+        assertThat(result).containsExactly(whole);
+    }
+
+    @Test
+    void getConceptsForFieldRelatedToType_aSearchThatMatchesNothingAmongTheRelatedValuesStaysEmpty() throws Exception {
+        when(institutionService.findById(10L)).thenReturn(institution);
+        CustomFieldSelectOneFromFieldCode field = new CustomFieldSelectOneFromFieldCode();
+        field.setId(5L);
+        field.setFieldCode("SIAS.MATIERE");
+        when(customFieldRepository.findById(5L)).thenReturn(Optional.of(field));
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(1426L);
+        when(conceptService.findById(1426L)).thenReturn(Optional.of(type));
+        ConceptAutocompleteDTO metal = new ConceptAutocompleteDTO(null, "métal", "fr");
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), any(), same(type), org.mockito.ArgumentMatchers.isNull(), any()))
+                .thenReturn(List.of(metal));
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), any(), same(type), org.mockito.ArgumentMatchers.eq("zzz"), any()))
+                .thenReturn(List.of());
+
+        List<ConceptAutocompleteDTO> result = service.getConceptsForFieldRelatedToType(10L, 5L, null, 1426L, "zzz", "fr", caller.person());
+
+        assertThat(result).isEmpty();
     }
 
     @Test

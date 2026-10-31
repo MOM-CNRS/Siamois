@@ -12068,6 +12068,16 @@
             }
           },
           {
+            "name": "relatedToType",
+            "in": "query",
+            "description": "Avec fieldId et valueConceptId (règle options RELATED_TO_TYPE) : seuls les concepts que le thésaurus relie au type de l'entité ; la liste entière si le type n'en relie aucun au champ.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "q",
             "in": "query",
             "description": "Texte de recherche — active le mode suggestion si présent.",

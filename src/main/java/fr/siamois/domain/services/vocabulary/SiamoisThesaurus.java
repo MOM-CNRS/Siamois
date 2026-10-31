@@ -16,7 +16,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SiamoisThesaurus {
 
-    public static final String DEFAULT_URL = "https://thesaurus.mom.fr/?idt=th337";
+    public static final String DEFAULT_URL = "https://thesaurus.mom.fr/?idt=th338";
     private static final String ID_MARKER = "/?idt=";
 
     @Value("${siamois.thesaurus.url:" + DEFAULT_URL + "}")

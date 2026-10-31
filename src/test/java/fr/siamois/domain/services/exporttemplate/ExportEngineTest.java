@@ -34,8 +34,8 @@ import static org.mockito.Mockito.mock;
 class ExportEngineTest {
 
     private static final Long PROJECT_ID = 9L;
-    private static final ConceptRef CODE = new ConceptRef("th337", "1", null);
-    private static final ConceptRef NATURE = new ConceptRef("th337", "2", null);
+    private static final ConceptRef CODE = new ConceptRef("th338", "1", null);
+    private static final ConceptRef NATURE = new ConceptRef("th338", "2", null);
     private static final Source UE = new EntitySource(EntityKind.RECORDING_UNIT, List.of());
 
     @Mock private ExportSourceReader sourceReader;
@@ -239,13 +239,13 @@ class ExportEngineTest {
         rows(UE, row(Map.of("1", List.of("UE-1"))));
 
         ExportEngine.Result result = run(template(null, sheet("UE", false, List.of(), List.of(UE),
-                column("code", OutputType.TEXT, direct(new ConceptRef("th337", "unknown", null), null)))));
+                column("code", OutputType.TEXT, direct(new ConceptRef("th338", "unknown", null), null)))));
 
         try (Workbook wb = open(result)) {
             assertThat(wb.getSheet("UE").getRow(1).getCell(0).getStringCellValue()).isEmpty();
         }
         assertThat(result.warnings()).containsExactly(
-                new ExportWarning(ExportWarning.Code.FIELD_UNRESOLVED, "UE", "code", "th337|unknown"));
+                new ExportWarning(ExportWarning.Code.FIELD_UNRESOLVED, "UE", "code", "th338|unknown"));
     }
 
     @Test

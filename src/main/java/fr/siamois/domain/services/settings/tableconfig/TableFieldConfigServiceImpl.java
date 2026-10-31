@@ -112,6 +112,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<String> typeNameOf(Long projectId, ConfigurableTable table, Long typeConceptId) {
+        return listConfiguredTypeConcepts(projectId, table).stream()
+                .filter(concept -> typeConceptId.equals(concept.getId()))
+                .map(this::labelOf)
+                .findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<String> listConfigurableTypes(Long projectId, ConfigurableTable table, String input) {
         Set<String> configured = configuredTypeNames(projectId, table);
         Set<String> candidates = fieldValues(projectId, table, input).stream()

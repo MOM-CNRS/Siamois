@@ -37,11 +37,11 @@ class ImportErrorTest {
 
     @Test
     void forTable_aMissingConcept_carriesItsAddress() {
-        var failure = new RuntimeException("save", new MissingConceptException("manquant", "https://thesaurus.mom.fr/?idc=1&idt=th337"));
+        var failure = new RuntimeException("save", new MissingConceptException("manquant", "https://thesaurus.mom.fr/?idc=1&idt=th338"));
 
         ImportError error = ImportError.forTable("recording_unit", failure, "manquant");
 
-        assertThat(error.vocabulary().conceptUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1&idt=th337");
+        assertThat(error.vocabulary().conceptUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1&idt=th338");
         assertThat(error.vocabulary().fieldCode()).isNull();
     }
 

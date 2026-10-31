@@ -38,7 +38,11 @@ public final class FieldRulesEvaluator {
         }
     }
 
-    public record OptionsContext(String kind, long parentFieldId, @Nullable Long candidateFieldId, @Nullable String value) {
+    /**
+     * What a filtered field's options depend on. {@code parentFieldId} is the field whose answer filters the list, null
+     * for {@code RELATED_TO_TYPE}, which depends on the entity's type and has no field behind it.
+     */
+    public record OptionsContext(String kind, @Nullable Long parentFieldId, @Nullable Long candidateFieldId, @Nullable String value) {
     }
 
     public record Bound(double value, boolean exclusive, long fieldId) {
@@ -173,9 +177,19 @@ public final class FieldRulesEvaluator {
 
     /** One state per column, keyed by field id. */
     public Map<Long, FieldState> evaluate(List<RuledColumn> columns, LongFunction<Object> valueOf) {
+        return evaluate(columns, valueOf, null);
+    }
+
+    /**
+     * Same as {@link #evaluate(List, LongFunction)}, for an entity of the given type: what a {@code RELATED_TO_TYPE}
+     * options filter relates the list to.
+     *
+     * @param typeConceptId the entity's type concept id, null when it has none yet
+     */
+    public Map<Long, FieldState> evaluate(List<RuledColumn> columns, LongFunction<Object> valueOf, @Nullable String typeConceptId) {
         Map<Long, FieldState> states = new LinkedHashMap<>();
         for (RuledColumn col : columns) {
-            states.put(col.fieldId(), initialState(col, valueOf));
+            states.put(col.fieldId(), initialState(col, valueOf, typeConceptId));
         }
         for (RuledColumn col : columns) {
             if (col.rules() == null) continue;
@@ -188,7 +202,7 @@ public final class FieldRulesEvaluator {
     }
 
     /** A column's state before the ordering constraints: enabled, required, what it holds while disabled, its options' context. */
-    private FieldState initialState(RuledColumn col, LongFunction<Object> valueOf) {
+    private FieldState initialState(RuledColumn col, LongFunction<Object> valueOf, @Nullable String typeConceptId) {
         FieldRules rules = col.rules() == null ? FieldRules.NONE : col.rules();
         boolean enabled = safe(rules.enabledWhen(), valueOf, true);
         boolean required = enabled && (col.required() || safe(rules.requiredWhen(), valueOf, false));
@@ -199,6 +213,8 @@ public final class FieldRulesEvaluator {
         if (rules.options() instanceof OptionsFilter.RelatedConcepts rc) {
             state.optionsContext = new OptionsContext("RELATED_CONCEPTS", rc.fieldId(), null,
                     RuleValues.idOf(valueOf.apply(rc.fieldId())));
+        } else if (rules.options() instanceof OptionsFilter.RelatedToType) {
+            state.optionsContext = new OptionsContext("RELATED_TO_TYPE", null, null, typeConceptId);
         } else if (rules.options() instanceof OptionsFilter.RefMatch rm) {
             state.optionsContext = new OptionsContext("REF_MATCH", rm.fieldId(), rm.candidateFieldId(),
                     RuleValues.idOf(valueOf.apply(rm.fieldId())));

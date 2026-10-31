@@ -227,6 +227,8 @@ export async function fetchFieldConceptOptions(
   if (scope.valueConceptId) query.set("valueConceptId", scope.valueConceptId);
   const related = relatedConceptOf(scope.optionsContext);
   if (related) query.set("relatedToConceptId", related);
+  // A list that follows the record's type: the server reads the relation from the type it was just given.
+  if (scope.optionsContext?.kind === "RELATED_TO_TYPE" && scope.valueConceptId) query.set("relatedToType", "true");
   const body = await apiFetch<ConceptsResponseBody>(
     `/api/v1/organizations/${organizationId}/concepts?${query.toString()}`,
   );

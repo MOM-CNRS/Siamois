@@ -40,15 +40,30 @@
     }, {
       "fieldId" : -411,
       "binding" : "material",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -412,
       "binding" : "materialClass",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -413,
       "binding" : "normalizedInterpretation",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -414,
       "binding" : "description",
@@ -124,7 +139,12 @@
     }, {
       "fieldId" : -425,
       "binding" : "sanitaryAlert",
-      "width" : "FULL"
+      "width" : "FULL",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -428,
       "binding" : "selectiveConservationComment",

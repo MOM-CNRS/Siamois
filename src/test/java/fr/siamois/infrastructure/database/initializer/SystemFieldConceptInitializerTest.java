@@ -34,7 +34,7 @@ class SystemFieldConceptInitializerTest {
     private Vocabulary storedVocabulary() throws Exception {
         Vocabulary vocabulary = new Vocabulary();
         vocabulary.setBaseUri("https://thesaurus.mom.fr");
-        vocabulary.setExternalVocabularyId("th337");
+        vocabulary.setExternalVocabularyId("th338");
         when(vocabularyService.findOrCreateVocabularyOfUri(any())).thenReturn(vocabulary);
         return vocabulary;
     }

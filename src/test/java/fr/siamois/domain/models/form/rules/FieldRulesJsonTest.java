@@ -37,6 +37,17 @@ class FieldRulesJsonTest {
     }
 
     @Test
+    void relatedToType_isWrittenWithoutAnyField_andReadBack() throws Exception {
+        FieldRules rules = FieldRules.NONE.withOptions(new OptionsFilter.RelatedToType());
+
+        JsonNode json = wire(rules);
+
+        assertThat(json.get("options").get("kind").asText()).isEqualTo("RELATED_TO_TYPE");
+        assertThat(json.get("options").has("fieldId")).isFalse();
+        assertThat(FieldRulesJson.fromJson(json).options()).isInstanceOf(OptionsFilter.RelatedToType.class);
+    }
+
+    @Test
     void roundTrip_preservesEveryRuleKind() {
         FieldRules rules = new FieldRules(
                 Condition.all(

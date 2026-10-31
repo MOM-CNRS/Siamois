@@ -192,7 +192,7 @@ class InvitationLinkServiceTest {
         InstitutionDTO institutionDto = new InstitutionDTO();
         institutionDto.setId(30L);
         Institution institution = new Institution();
-        when(siamoisThesaurus.url()).thenReturn("https://thesaurus.mom.fr/?idt=th337");
+        when(siamoisThesaurus.url()).thenReturn("https://thesaurus.mom.fr/?idt=th338");
         when(institutionService.findByIdentifier(anyString())).thenReturn(Optional.empty());
         when(institutionService.createInstitution(any(InstitutionDTO.class), anyString())).thenReturn(institutionDto);
         when(institutionRepository.findById(Long.valueOf(30L))).thenReturn(Optional.of(institution));
@@ -205,7 +205,7 @@ class InvitationLinkServiceTest {
         assertEquals("ada.lovelace", submitted.getValue().getUsername());
         assertSame(l, person.getInvitationLink());
         ArgumentCaptor<InstitutionDTO> created = ArgumentCaptor.forClass(InstitutionDTO.class);
-        verify(institutionService).createInstitution(created.capture(), eq("https://thesaurus.mom.fr/?idt=th337"));
+        verify(institutionService).createInstitution(created.capture(), eq("https://thesaurus.mom.fr/?idt=th338"));
         assertEquals("Organisation personnelle de Ada Lovelace", created.getValue().getName());
         assertEquals("perso-ada-lovelace", created.getValue().getIdentifier());
         verify(institutionService).addToManagers(institutionDto, dto);

@@ -148,6 +148,31 @@ public class VocabularyOpenApiService {
     }
 
     /**
+     * The suggestions of a field whose list depends on the type of the record (rule {@code options: RELATED_TO_TYPE}):
+     * the values the thesaurus relates to {@code typeConceptId}. A type related to none of the field's values, or a
+     * field with no field code to read the relation from, gets the field's whole list
+     * ({@link #getConceptsForField}).
+     */
+    @Transactional
+    public List<ConceptAutocompleteDTO> getConceptsForFieldRelatedToType(long organizationId,
+                                                                         long fieldId,
+                                                                         @Nullable Long projectId,
+                                                                         long typeConceptId,
+                                                                         @Nullable String q,
+                                                                         String lang,
+                                                                         PersonDTO person) {
+        if (findField(fieldId) instanceof CustomFieldConceptFromFieldCode) {
+            List<ConceptAutocompleteDTO> unfiltered = getRelatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, null, lang, person);
+            if (!unfiltered.isEmpty()) {
+                return q == null || q.isBlank()
+                        ? unfiltered
+                        : getRelatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, q, lang, person);
+            }
+        }
+        return getConceptsForField(organizationId, fieldId, projectId, typeConceptId, q, lang, person);
+    }
+
+    /**
      * The suggestions of a field whose list depends on another field's answer (rule
      * {@code options: RELATED_CONCEPTS}): the concepts related to {@code relatedToConceptId} among
      * those configured for the field's code ({@link FieldConfigurationService#fetchAutocompleteRelated}).

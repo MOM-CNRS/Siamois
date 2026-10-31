@@ -15,7 +15,7 @@ import java.util.TreeMap;
  * "rules": {
  *   "enabledWhen":  Condition,
  *   "requiredWhen": Condition,
- *   "options":      {"kind":"RELATED_CONCEPTS","fieldId":1} | {"kind":"REF_MATCH","fieldId":1,"candidateFieldId":2},
+ *   "options":      {"kind":"RELATED_CONCEPTS","fieldId":1} | {"kind":"RELATED_TO_TYPE"} | {"kind":"REF_MATCH","fieldId":1,"candidateFieldId":2},
  *   "constraints":  [{"op":"GTE","fieldId":3}],
  *   "placeSources": [{"source":"INSEE"}, {"source":"GEOPLAT","params":{"citycode":{"fromField":4,"attribute":"CODE"}}}]
  * }
@@ -29,6 +29,7 @@ public final class FieldRulesJson {
 
     private static final String FIELD_ID = "fieldId";
     private static final String KIND_RELATED_CONCEPTS = "RELATED_CONCEPTS";
+    private static final String KIND_RELATED_TO_TYPE = "RELATED_TO_TYPE";
     private static final String KIND_REF_MATCH = "REF_MATCH";
     private static final String PLACE_SOURCES = "placeSources";
     private static final String SOURCE = "source";
@@ -116,6 +117,8 @@ public final class FieldRulesJson {
         if (filter instanceof OptionsFilter.RelatedConcepts rc) {
             m.put("kind", KIND_RELATED_CONCEPTS);
             m.put(FIELD_ID, rc.fieldId());
+        } else if (filter instanceof OptionsFilter.RelatedToType) {
+            m.put("kind", KIND_RELATED_TO_TYPE);
         } else if (filter instanceof OptionsFilter.RefMatch rm) {
             m.put("kind", KIND_REF_MATCH);
             m.put(FIELD_ID, rm.fieldId());
@@ -205,6 +208,7 @@ public final class FieldRulesJson {
         String kind = node.path("kind").asText();
         return switch (kind) {
             case KIND_RELATED_CONCEPTS -> new OptionsFilter.RelatedConcepts(node.get(FIELD_ID).asLong());
+            case KIND_RELATED_TO_TYPE -> new OptionsFilter.RelatedToType();
             case KIND_REF_MATCH -> new OptionsFilter.RefMatch(node.get(FIELD_ID).asLong(), node.get("candidateFieldId").asLong());
             default -> throw new IllegalArgumentException("Unknown options kind: " + kind);
         };

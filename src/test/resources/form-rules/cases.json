@@ -1,5 +1,5 @@
 {
-  "_doc": "Conformance cases shared by the TS evaluator (frontend/src/rules/evaluate.conformance.test.ts) and the Java one (FieldRulesEvaluatorConformanceTest). `values` are answers as the API serves them, already unwrapped: concept/ref = {resourceId}, measurement = {numericValue}, date = ISO string, multi-valued = array. `expected` lists only the asserted parts of each field's state; `incoherent` lists reason kinds; bounds give {value, exclusive} with dates in epoch ms.",
+  "_doc": "Conformance cases shared by the TS evaluator (frontend/src/rules/evaluate.conformance.test.ts) and the Java one (FieldRulesEvaluatorConformanceTest). `values` are answers as the API serves them, already unwrapped: concept/ref = {resourceId}, measurement = {numericValue}, date = ISO string, multi-valued = array. `expected` lists only the asserted parts of each field's state; `incoherent` lists reason kinds; bounds give {value, exclusive} with dates in epoch ms. `typeConceptId` (optional) is the entity's type concept id, which a RELATED_TO_TYPE options filter reads.",
   "cases": [
     {
       "name": "no rules: enabled, static required",
@@ -244,6 +244,19 @@
       ],
       "values": { "160": { "resourceId": "7", "resourceType": "places" }, "161": [{ "resourceId": "8", "resourceType": "places" }] },
       "expected": { "161": { "enabled": true, "required": false, "incoherent": [] } }
+    },
+    {
+      "name": "RELATED_TO_TYPE options context reads the type of the entity, not a field",
+      "typeConceptId": "1425",
+      "columns": [{ "fieldId": 170, "rules": { "options": { "kind": "RELATED_TO_TYPE" } } }, { "fieldId": 171 }],
+      "values": { "171": { "resourceId": "9" } },
+      "expected": { "170": { "enabled": true, "optionsContext": { "kind": "RELATED_TO_TYPE", "relatedTo": "1425" } }, "171": { "enabled": true } }
+    },
+    {
+      "name": "RELATED_TO_TYPE without a type has no type to relate to",
+      "columns": [{ "fieldId": 172, "rules": { "options": { "kind": "RELATED_TO_TYPE" } } }],
+      "values": {},
+      "expected": { "172": { "optionsContext": { "kind": "RELATED_TO_TYPE", "relatedTo": null } } }
     }
   ]
 }

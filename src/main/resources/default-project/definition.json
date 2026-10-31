@@ -1,5 +1,5 @@
 {
-  "thesaurus": "https://thesaurus.mom.fr/?idt=th337",
+  "thesaurus": "https://thesaurus.mom.fr/?idt=th338",
   "tables": [
     {
       "table": "UE",
@@ -8,40 +8,22 @@
         {
           "label": "US",
           "concept": "1199",
-          "identifierFormat": "US{NUM_UE:000}",
-          "lists": {
-            "SIARU.GEOMORPHO": "g104",
-            "SIARU.INTERPRETATION": "g107"
-          },
-          "listNames": {
-            "SIARU.GEOMORPHO": "Enregistrement · Cycle géomorphologique — US  [SIARU.GEOMORPHO @ SIARU.TYPE:us]",
-            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — US  [SIARU.INTERPRETATION @ SIARU.TYPE:us]"
-          }
+          "identifierFormat": "US{NUM_UE:000}"
         },
         {
           "label": "Fait",
           "concept": "1200",
           "identifierFormat": "F{NUM_UE:000}",
-          "lists": {
-            "SIARU.GEOMORPHO": "g105",
-            "SIARU.INTERPRETATION": "g108"
-          },
-          "listNames": {
-            "SIARU.GEOMORPHO": "Enregistrement · Cycle géomorphologique — Fait  [SIARU.GEOMORPHO @ SIARU.TYPE:fait]",
-            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Fait  [SIARU.INTERPRETATION @ SIARU.TYPE:fait]"
+          "defaults": {
+            "SIARU.NATURE": "1217"
           }
         },
         {
           "label": "Ensemble",
           "concept": "1201",
           "identifierFormat": "ENS{NUM_UE:000}",
-          "lists": {
-            "SIARU.GEOMORPHO": "g106",
-            "SIARU.INTERPRETATION": "g109"
-          },
-          "listNames": {
-            "SIARU.GEOMORPHO": "Enregistrement · Cycle géomorphologique — Ensemble  [SIARU.GEOMORPHO @ SIARU.TYPE:ensemble]",
-            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Ensemble  [SIARU.INTERPRETATION @ SIARU.TYPE:ensemble]"
+          "defaults": {
+            "SIARU.NATURE": "1217"
           }
         },
         {
@@ -52,13 +34,7 @@
         {
           "label": "Sépulture",
           "concept": "1203",
-          "identifierFormat": "SEP{NUM_UE:000}",
-          "lists": {
-            "SIARU.INTERPRETATION": "g110"
-          },
-          "listNames": {
-            "SIARU.INTERPRETATION": "Enregistrement · Interprétation normalisée — Sépulture  [SIARU.INTERPRETATION @ SIARU.TYPE:sepulture]"
-          }
+          "identifierFormat": "SEP{NUM_UE:000}"
         },
         {
           "label": "Sondage",
@@ -98,32 +74,50 @@
         {
           "label": "Unité artificielle",
           "concept": "1211",
-          "identifierFormat": "UA{NUM_UE:000}"
+          "identifierFormat": "UA{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1221"
+          }
         },
         {
           "label": "Passe mécanique",
           "concept": "1212",
-          "identifierFormat": "PM{NUM_UE:000}"
+          "identifierFormat": "PM{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1221"
+          }
         },
         {
           "label": "Nettoyage",
           "concept": "1213",
-          "identifierFormat": "NET{NUM_UE:000}"
+          "identifierFormat": "NET{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1221"
+          }
         },
         {
           "label": "Fenêtre de fouille",
           "concept": "1214",
-          "identifierFormat": "FEN{NUM_UE:000}"
+          "identifierFormat": "FEN{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1221"
+          }
         },
         {
           "label": "Entité archéologique",
           "concept": "4291339",
-          "identifierFormat": "EA{NUM_UE:000}"
+          "identifierFormat": "EA{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1217"
+          }
         },
         {
           "label": "ensemble archéologique",
           "concept": "4291340",
-          "identifierFormat": "ENSA{NUM_UE:000}"
+          "identifierFormat": "ENSA{NUM_UE:000}",
+          "defaults": {
+            "SIARU.NATURE": "1217"
+          }
         },
         {
           "label": "Entité spatiale",
@@ -160,131 +154,64 @@
           "label": "Céramique",
           "concept": "1425",
           "identifierFormat": "CER{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g119",
-            "SIAS.INTERPRETATION": "g126",
-            "SIAS.MATIERE": "g111",
-            "SIAS.SANITARYALERT": "g140"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Céramique  [SIAS.CLASS @ SIAS.CAT:ceramique]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Céramique  [SIAS.INTERPRETATION @ SIAS.CAT:ceramique]",
-            "SIAS.MATIERE": "Mobilier · Matière — Céramique  [SIAS.MATIERE @ SIAS.CAT:ceramique]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Céramique  [SIAS.SANITARYALERT @ SIAS.CAT:ceramique]"
+          "defaults": {
+            "SIAS.MATIERE": "1436",
+            "SIAS.CLASS": "1451"
           }
         },
         {
           "label": "Métal",
           "concept": "1426",
           "identifierFormat": "MET{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g121",
-            "SIAS.INTERPRETATION": "g127",
-            "SIAS.MATIERE": "g113",
-            "SIAS.SANITARYALERT": "g141"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Métal  [SIAS.CLASS @ SIAS.CAT:metal]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Métal  [SIAS.INTERPRETATION @ SIAS.CAT:metal]",
-            "SIAS.MATIERE": "Mobilier · Matière — Métal  [SIAS.MATIERE @ SIAS.CAT:metal]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Métal  [SIAS.SANITARYALERT @ SIAS.CAT:metal]"
+          "defaults": {
+            "SIAS.MATIERE": "1437"
           }
         },
         {
           "label": "Industrie lithique",
           "concept": "1427",
           "identifierFormat": "LIT{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g122",
-            "SIAS.INTERPRETATION": "g128",
-            "SIAS.MATIERE": "g114",
-            "SIAS.SANITARYALERT": "g142"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Industrie lithique  [SIAS.CLASS @ SIAS.CAT:lithique]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Industrie lithique  [SIAS.INTERPRETATION @ SIAS.CAT:lithique]",
-            "SIAS.MATIERE": "Mobilier · Matière — Industrie lithique  [SIAS.MATIERE @ SIAS.CAT:lithique]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Industrie lithique  [SIAS.SANITARYALERT @ SIAS.CAT:lithique]"
+          "defaults": {
+            "SIAS.MATIERE": "1434"
           }
         },
         {
           "label": "Verre",
           "concept": "1428",
           "identifierFormat": "VER{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g123",
-            "SIAS.INTERPRETATION": "g129",
-            "SIAS.MATIERE": "g115",
-            "SIAS.SANITARYALERT": "g143"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Verre  [SIAS.CLASS @ SIAS.CAT:verre]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Verre  [SIAS.INTERPRETATION @ SIAS.CAT:verre]",
-            "SIAS.MATIERE": "Mobilier · Matière — Verre  [SIAS.MATIERE @ SIAS.CAT:verre]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Verre  [SIAS.SANITARYALERT @ SIAS.CAT:verre]"
+          "defaults": {
+            "SIAS.MATIERE": "1438"
           }
         },
         {
           "label": "Faune",
           "concept": "1429",
           "identifierFormat": "FAU{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g124",
-            "SIAS.INTERPRETATION": "g130",
-            "SIAS.MATIERE": "g116",
-            "SIAS.SANITARYALERT": "g144"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Faune  [SIAS.CLASS @ SIAS.CAT:faune]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Faune  [SIAS.INTERPRETATION @ SIAS.CAT:faune]",
-            "SIAS.MATIERE": "Mobilier · Matière — Faune  [SIAS.MATIERE @ SIAS.CAT:faune]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Faune  [SIAS.SANITARYALERT @ SIAS.CAT:faune]"
+          "defaults": {
+            "SIAS.MATIERE": "1433"
           }
         },
         {
           "label": "Terre cuite architecturale",
           "concept": "1430",
           "identifierFormat": "TCA{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g120",
-            "SIAS.INTERPRETATION": "g132",
-            "SIAS.MATIERE": "g112",
-            "SIAS.SANITARYALERT": "g145"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Terre cuite architecturale  [SIAS.CLASS @ SIAS.CAT:tca]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Terre cuite architecturale  [SIAS.INTERPRETATION @ SIAS.CAT:tca]",
-            "SIAS.MATIERE": "Mobilier · Matière — Terre cuite architecturale  [SIAS.MATIERE @ SIAS.CAT:tca]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Terre cuite architecturale  [SIAS.SANITARYALERT @ SIAS.CAT:tca]"
+          "defaults": {
+            "SIAS.MATIERE": "1436"
           }
         },
         {
           "label": "Vestige anthropobiologique (VAB)",
           "concept": "1431",
           "identifierFormat": "VAB{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.CLASS": "g125",
-            "SIAS.INTERPRETATION": "g131",
-            "SIAS.MATIERE": "g117",
-            "SIAS.SANITARYALERT": "g146"
-          },
-          "listNames": {
-            "SIAS.CLASS": "Mobilier · Classe — Vestige anthropobiologique (VAB)  [SIAS.CLASS @ SIAS.CAT:vab]",
-            "SIAS.INTERPRETATION": "Mobilier · Détermination — Vestige anthropobiologique (VAB)  [SIAS.INTERPRETATION @ SIAS.CAT:vab]",
-            "SIAS.MATIERE": "Mobilier · Matière — Vestige anthropobiologique (VAB)  [SIAS.MATIERE @ SIAS.CAT:vab]",
-            "SIAS.SANITARYALERT": "Mobilier · Alerte sanitaire — Vestige anthropobiologique (VAB)  [SIAS.SANITARYALERT @ SIAS.CAT:vab]"
+          "defaults": {
+            "SIAS.MATIERE": "1433",
+            "SIAS.CLASS": "1442"
           }
         },
         {
           "label": "Prélèvement",
           "concept": "1432",
-          "identifierFormat": "PRE{NUM_MOBILIER:000}",
-          "lists": {
-            "SIAS.MATIERE": "g118"
-          },
-          "listNames": {
-            "SIAS.MATIERE": "Mobilier · Matière — Prélèvement  [SIAS.MATIERE @ SIAS.CAT:prelevement]"
-          }
+          "identifierFormat": "PRE{NUM_MOBILIER:000}"
         }
       ]
     },
@@ -403,620 +330,317 @@
           "label": "carnet de fouille",
           "concept": "1708",
           "identifierFormat": "CAR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g147",
-            "SIAD.FORMAT": "g227",
-            "SIAD.NATURE": "g187"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — carnet de fouille  [SIAD.CATEGORY @ SIAD.TYPE:field-book]",
-            "SIAD.FORMAT": "Document · Format du fichier — carnet de fouille  [SIAD.FORMAT @ SIAD.TYPE:field-book]",
-            "SIAD.NATURE": "Document · Nature du support — carnet de fouille  [SIAD.NATURE @ SIAD.TYPE:field-book]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "rapport étude",
           "concept": "1709",
           "identifierFormat": "RAP{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g148",
-            "SIAD.FORMAT": "g228",
-            "SIAD.NATURE": "g188"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — rapport étude  [SIAD.CATEGORY @ SIAD.TYPE:study-report]",
-            "SIAD.FORMAT": "Document · Format du fichier — rapport étude  [SIAD.FORMAT @ SIAD.TYPE:study-report]",
-            "SIAD.NATURE": "Document · Nature du support — rapport étude  [SIAD.NATURE @ SIAD.TYPE:study-report]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "fiche d'UE",
           "concept": "1710",
           "identifierFormat": "FUE{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g149",
-            "SIAD.FORMAT": "g229",
-            "SIAD.NATURE": "g189"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — fiche d'UE  [SIAD.CATEGORY @ SIAD.TYPE:su-sheet]",
-            "SIAD.FORMAT": "Document · Format du fichier — fiche d'UE  [SIAD.FORMAT @ SIAD.TYPE:su-sheet]",
-            "SIAD.NATURE": "Document · Nature du support — fiche d'UE  [SIAD.NATURE @ SIAD.TYPE:su-sheet]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "fiche d'objet",
           "concept": "1711",
           "identifierFormat": "FOB{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g150",
-            "SIAD.FORMAT": "g230",
-            "SIAD.NATURE": "g190"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — fiche d'objet  [SIAD.CATEGORY @ SIAD.TYPE:find-sheet]",
-            "SIAD.FORMAT": "Document · Format du fichier — fiche d'objet  [SIAD.FORMAT @ SIAD.TYPE:find-sheet]",
-            "SIAD.NATURE": "Document · Nature du support — fiche d'objet  [SIAD.NATURE @ SIAD.TYPE:find-sheet]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "fiche de conservation par individu",
           "concept": "1712",
           "identifierFormat": "FCI{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g151",
-            "SIAD.FORMAT": "g231",
-            "SIAD.NATURE": "g191"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — fiche de conservation par individu  [SIAD.CATEGORY @ SIAD.TYPE:conservation-sheet]",
-            "SIAD.FORMAT": "Document · Format du fichier — fiche de conservation par individu  [SIAD.FORMAT @ SIAD.TYPE:conservation-sheet]",
-            "SIAD.NATURE": "Document · Nature du support — fiche de conservation par individu  [SIAD.NATURE @ SIAD.TYPE:conservation-sheet]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "diagramme stratigraphique",
           "concept": "1713",
-          "identifierFormat": "DST{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g152",
-            "SIAD.FORMAT": "g232",
-            "SIAD.NATURE": "g192",
-            "SIAD.SCALE": "g263"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — diagramme stratigraphique  [SIAD.CATEGORY @ SIAD.TYPE:strat-diagram]",
-            "SIAD.FORMAT": "Document · Format du fichier — diagramme stratigraphique  [SIAD.FORMAT @ SIAD.TYPE:strat-diagram]",
-            "SIAD.NATURE": "Document · Nature du support — diagramme stratigraphique  [SIAD.NATURE @ SIAD.TYPE:strat-diagram]",
-            "SIAD.SCALE": "Document · Échelle — diagramme stratigraphique  [SIAD.SCALE @ SIAD.TYPE:strat-diagram]"
-          }
+          "identifierFormat": "DST{NUM_DOCUMENT:0000}"
         },
         {
           "label": "liste de points topographiques",
           "concept": "1714",
           "identifierFormat": "LPT{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g153",
-            "SIAD.FORMAT": "g233",
-            "SIAD.NATURE": "g193"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — liste de points topographiques  [SIAD.CATEGORY @ SIAD.TYPE:points-list]",
-            "SIAD.FORMAT": "Document · Format du fichier — liste de points topographiques  [SIAD.FORMAT @ SIAD.TYPE:points-list]",
-            "SIAD.NATURE": "Document · Nature du support — liste de points topographiques  [SIAD.NATURE @ SIAD.TYPE:points-list]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "base de données",
           "concept": "1715",
           "identifierFormat": "BDD{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g154",
-            "SIAD.FORMAT": "g234",
-            "SIAD.NATURE": "g194"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — base de données  [SIAD.CATEGORY @ SIAD.TYPE:database]",
-            "SIAD.FORMAT": "Document · Format du fichier — base de données  [SIAD.FORMAT @ SIAD.TYPE:database]",
-            "SIAD.NATURE": "Document · Nature du support — base de données  [SIAD.NATURE @ SIAD.TYPE:database]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "carte",
           "concept": "1716",
           "identifierFormat": "CTE{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g159",
-            "SIAD.FORMAT": "g239",
-            "SIAD.NATURE": "g199",
-            "SIAD.SCALE": "g264"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — carte  [SIAD.CATEGORY @ SIAD.TYPE:map]",
-            "SIAD.FORMAT": "Document · Format du fichier — carte  [SIAD.FORMAT @ SIAD.TYPE:map]",
-            "SIAD.NATURE": "Document · Nature du support — carte  [SIAD.NATURE @ SIAD.TYPE:map]",
-            "SIAD.SCALE": "Document · Échelle — carte  [SIAD.SCALE @ SIAD.TYPE:map]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "vue aérienne",
           "concept": "1717",
           "identifierFormat": "VAE{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g160",
-            "SIAD.FORMAT": "g240",
-            "SIAD.NATURE": "g200",
-            "SIAD.SCALE": "g265"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — vue aérienne  [SIAD.CATEGORY @ SIAD.TYPE:aerial]",
-            "SIAD.FORMAT": "Document · Format du fichier — vue aérienne  [SIAD.FORMAT @ SIAD.TYPE:aerial]",
-            "SIAD.NATURE": "Document · Nature du support — vue aérienne  [SIAD.NATURE @ SIAD.TYPE:aerial]",
-            "SIAD.SCALE": "Document · Échelle — vue aérienne  [SIAD.SCALE @ SIAD.TYPE:aerial]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "plan topographique",
           "concept": "1718",
           "identifierFormat": "PTO{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g161",
-            "SIAD.FORMAT": "g241",
-            "SIAD.NATURE": "g201",
-            "SIAD.SCALE": "g266"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — plan topographique  [SIAD.CATEGORY @ SIAD.TYPE:topo-plan]",
-            "SIAD.FORMAT": "Document · Format du fichier — plan topographique  [SIAD.FORMAT @ SIAD.TYPE:topo-plan]",
-            "SIAD.NATURE": "Document · Nature du support — plan topographique  [SIAD.NATURE @ SIAD.TYPE:topo-plan]",
-            "SIAD.SCALE": "Document · Échelle — plan topographique  [SIAD.SCALE @ SIAD.TYPE:topo-plan]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "relevé de terrain",
           "concept": "1719",
           "identifierFormat": "RTE{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g162",
-            "SIAD.FORMAT": "g242",
-            "SIAD.NATURE": "g202",
-            "SIAD.SCALE": "g267"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — relevé de terrain  [SIAD.CATEGORY @ SIAD.TYPE:field-drawing]",
-            "SIAD.FORMAT": "Document · Format du fichier — relevé de terrain  [SIAD.FORMAT @ SIAD.TYPE:field-drawing]",
-            "SIAD.NATURE": "Document · Nature du support — relevé de terrain  [SIAD.NATURE @ SIAD.TYPE:field-drawing]",
-            "SIAD.SCALE": "Document · Échelle — relevé de terrain  [SIAD.SCALE @ SIAD.TYPE:field-drawing]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "relevé d'art rupestre",
           "concept": "1720",
           "identifierFormat": "RAR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g163",
-            "SIAD.FORMAT": "g243",
-            "SIAD.NATURE": "g203",
-            "SIAD.SCALE": "g268"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — relevé d'art rupestre  [SIAD.CATEGORY @ SIAD.TYPE:rock-art]",
-            "SIAD.FORMAT": "Document · Format du fichier — relevé d'art rupestre  [SIAD.FORMAT @ SIAD.TYPE:rock-art]",
-            "SIAD.NATURE": "Document · Nature du support — relevé d'art rupestre  [SIAD.NATURE @ SIAD.TYPE:rock-art]",
-            "SIAD.SCALE": "Document · Échelle — relevé d'art rupestre  [SIAD.SCALE @ SIAD.TYPE:rock-art]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "dessin d'objet",
           "concept": "1721",
           "identifierFormat": "DOB{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g164",
-            "SIAD.FORMAT": "g244",
-            "SIAD.NATURE": "g204",
-            "SIAD.SCALE": "g269"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — dessin d'objet  [SIAD.CATEGORY @ SIAD.TYPE:object-drawing]",
-            "SIAD.FORMAT": "Document · Format du fichier — dessin d'objet  [SIAD.FORMAT @ SIAD.TYPE:object-drawing]",
-            "SIAD.NATURE": "Document · Nature du support — dessin d'objet  [SIAD.NATURE @ SIAD.TYPE:object-drawing]",
-            "SIAD.SCALE": "Document · Échelle — dessin d'objet  [SIAD.SCALE @ SIAD.TYPE:object-drawing]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "relevé des traces d'activités humaines et animales",
           "concept": "1722",
           "identifierFormat": "RTA{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g165",
-            "SIAD.FORMAT": "g245",
-            "SIAD.NATURE": "g205",
-            "SIAD.SCALE": "g270"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — relevé des traces d'activités humaines et animales  [SIAD.CATEGORY @ SIAD.TYPE:traces]",
-            "SIAD.FORMAT": "Document · Format du fichier — relevé des traces d'activités humaines et animales  [SIAD.FORMAT @ SIAD.TYPE:traces]",
-            "SIAD.NATURE": "Document · Nature du support — relevé des traces d'activités humaines et animales  [SIAD.NATURE @ SIAD.TYPE:traces]",
-            "SIAD.SCALE": "Document · Échelle — relevé des traces d'activités humaines et animales  [SIAD.SCALE @ SIAD.TYPE:traces]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "radiographie",
           "concept": "1723",
           "identifierFormat": "RAD{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g172",
-            "SIAD.FORMAT": "g252",
-            "SIAD.NATURE": "g212"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — radiographie  [SIAD.CATEGORY @ SIAD.TYPE:xray]",
-            "SIAD.FORMAT": "Document · Format du fichier — radiographie  [SIAD.FORMAT @ SIAD.TYPE:xray]",
-            "SIAD.NATURE": "Document · Nature du support — radiographie  [SIAD.NATURE @ SIAD.TYPE:xray]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "photographie de terrain",
           "concept": "1724",
           "identifierFormat": "PHT{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g173",
-            "SIAD.FORMAT": "g253",
-            "SIAD.NATURE": "g213"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — photographie de terrain  [SIAD.CATEGORY @ SIAD.TYPE:field-photo]",
-            "SIAD.FORMAT": "Document · Format du fichier — photographie de terrain  [SIAD.FORMAT @ SIAD.TYPE:field-photo]",
-            "SIAD.NATURE": "Document · Nature du support — photographie de terrain  [SIAD.NATURE @ SIAD.TYPE:field-photo]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "photographie redressée",
           "concept": "1725",
           "identifierFormat": "PHR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g174",
-            "SIAD.FORMAT": "g254",
-            "SIAD.NATURE": "g214"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — photographie redressée  [SIAD.CATEGORY @ SIAD.TYPE:rectified-photo]",
-            "SIAD.FORMAT": "Document · Format du fichier — photographie redressée  [SIAD.FORMAT @ SIAD.TYPE:rectified-photo]",
-            "SIAD.NATURE": "Document · Nature du support — photographie redressée  [SIAD.NATURE @ SIAD.TYPE:rectified-photo]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "photographie d'objet",
           "concept": "1726",
           "identifierFormat": "PHO{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g175",
-            "SIAD.FORMAT": "g255",
-            "SIAD.NATURE": "g215"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — photographie d'objet  [SIAD.CATEGORY @ SIAD.TYPE:object-photo]",
-            "SIAD.FORMAT": "Document · Format du fichier — photographie d'objet  [SIAD.FORMAT @ SIAD.TYPE:object-photo]",
-            "SIAD.NATURE": "Document · Nature du support — photographie d'objet  [SIAD.NATURE @ SIAD.TYPE:object-photo]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "orthophotographie",
           "concept": "1727",
           "identifierFormat": "ORT{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g176",
-            "SIAD.FORMAT": "g256",
-            "SIAD.NATURE": "g216"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — orthophotographie  [SIAD.CATEGORY @ SIAD.TYPE:orthophoto]",
-            "SIAD.FORMAT": "Document · Format du fichier — orthophotographie  [SIAD.FORMAT @ SIAD.TYPE:orthophoto]",
-            "SIAD.NATURE": "Document · Nature du support — orthophotographie  [SIAD.NATURE @ SIAD.TYPE:orthophoto]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "enregistrement audio",
           "concept": "1728",
           "identifierFormat": "EAU{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g177",
-            "SIAD.FORMAT": "g257",
-            "SIAD.NATURE": "g217"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — enregistrement audio  [SIAD.CATEGORY @ SIAD.TYPE:audio]",
-            "SIAD.FORMAT": "Document · Format du fichier — enregistrement audio  [SIAD.FORMAT @ SIAD.TYPE:audio]",
-            "SIAD.NATURE": "Document · Nature du support — enregistrement audio  [SIAD.NATURE @ SIAD.TYPE:audio]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "enregistrement vidéo",
           "concept": "1729",
           "identifierFormat": "EVI{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g178",
-            "SIAD.FORMAT": "g258",
-            "SIAD.NATURE": "g218"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — enregistrement vidéo  [SIAD.CATEGORY @ SIAD.TYPE:video]",
-            "SIAD.FORMAT": "Document · Format du fichier — enregistrement vidéo  [SIAD.FORMAT @ SIAD.TYPE:video]",
-            "SIAD.NATURE": "Document · Nature du support — enregistrement vidéo  [SIAD.NATURE @ SIAD.TYPE:video]"
+          "defaults": {
+            "SIAD.CATEGORY": "1705"
           }
         },
         {
           "label": "empreinte",
           "concept": "1730",
           "identifierFormat": "EMP{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g179",
-            "SIAD.NATURE": "g219"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — empreinte  [SIAD.CATEGORY @ SIAD.TYPE:imprint]",
-            "SIAD.NATURE": "Document · Nature du support — empreinte  [SIAD.NATURE @ SIAD.TYPE:imprint]"
+          "defaults": {
+            "SIAD.CATEGORY": "1706"
           }
         },
         {
           "label": "tirage",
           "concept": "1731",
           "identifierFormat": "TIR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g180",
-            "SIAD.NATURE": "g220"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — tirage  [SIAD.CATEGORY @ SIAD.TYPE:print]",
-            "SIAD.NATURE": "Document · Nature du support — tirage  [SIAD.NATURE @ SIAD.TYPE:print]"
+          "defaults": {
+            "SIAD.CATEGORY": "1706"
           }
         },
         {
           "label": "arraché de coupe",
           "concept": "1732",
           "identifierFormat": "ARR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g181",
-            "SIAD.NATURE": "g221"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — arraché de coupe  [SIAD.CATEGORY @ SIAD.TYPE:section-peel]",
-            "SIAD.NATURE": "Document · Nature du support — arraché de coupe  [SIAD.NATURE @ SIAD.TYPE:section-peel]"
+          "defaults": {
+            "SIAD.CATEGORY": "1706"
           }
         },
         {
           "label": "moule",
           "concept": "1733",
           "identifierFormat": "MOU{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g182",
-            "SIAD.NATURE": "g222"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — moule  [SIAD.CATEGORY @ SIAD.TYPE:mould]",
-            "SIAD.NATURE": "Document · Nature du support — moule  [SIAD.NATURE @ SIAD.TYPE:mould]"
+          "defaults": {
+            "SIAD.CATEGORY": "1706"
           }
         },
         {
           "label": "nuage de points",
           "concept": "1734",
           "identifierFormat": "NPT{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g183",
-            "SIAD.FORMAT": "g259",
-            "SIAD.NATURE": "g223"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — nuage de points  [SIAD.CATEGORY @ SIAD.TYPE:point-cloud]",
-            "SIAD.FORMAT": "Document · Format du fichier — nuage de points  [SIAD.FORMAT @ SIAD.TYPE:point-cloud]",
-            "SIAD.NATURE": "Document · Nature du support — nuage de points  [SIAD.NATURE @ SIAD.TYPE:point-cloud]"
+          "defaults": {
+            "SIAD.CATEGORY": "1707"
           }
         },
         {
           "label": "modèle 3D",
           "concept": "1735",
           "identifierFormat": "M3D{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g184",
-            "SIAD.FORMAT": "g260",
-            "SIAD.NATURE": "g224"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — modèle 3D  [SIAD.CATEGORY @ SIAD.TYPE:model-3d]",
-            "SIAD.FORMAT": "Document · Format du fichier — modèle 3D  [SIAD.FORMAT @ SIAD.TYPE:model-3d]",
-            "SIAD.NATURE": "Document · Nature du support — modèle 3D  [SIAD.NATURE @ SIAD.TYPE:model-3d]"
+          "defaults": {
+            "SIAD.CATEGORY": "1707"
           }
         },
         {
           "label": "prototypage",
           "concept": "1736",
           "identifierFormat": "PRO{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g185",
-            "SIAD.FORMAT": "g261",
-            "SIAD.NATURE": "g225"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — prototypage  [SIAD.CATEGORY @ SIAD.TYPE:prototype]",
-            "SIAD.FORMAT": "Document · Format du fichier — prototypage  [SIAD.FORMAT @ SIAD.TYPE:prototype]",
-            "SIAD.NATURE": "Document · Nature du support — prototypage  [SIAD.NATURE @ SIAD.TYPE:prototype]"
+          "defaults": {
+            "SIAD.CATEGORY": "1707"
           }
         },
         {
           "label": "Journal de fouille",
           "concept": "1798",
           "identifierFormat": "JDF{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g155",
-            "SIAD.FORMAT": "g235",
-            "SIAD.NATURE": "g195"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Journal de fouille  [SIAD.CATEGORY @ SIAD.TYPE:journal-de-fouille]",
-            "SIAD.FORMAT": "Document · Format du fichier — Journal de fouille  [SIAD.FORMAT @ SIAD.TYPE:journal-de-fouille]",
-            "SIAD.NATURE": "Document · Nature du support — Journal de fouille  [SIAD.NATURE @ SIAD.TYPE:journal-de-fouille]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "Fiche de prélèvement",
           "concept": "1799",
           "identifierFormat": "FPR{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g156",
-            "SIAD.FORMAT": "g236",
-            "SIAD.NATURE": "g196"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Fiche de prélèvement  [SIAD.CATEGORY @ SIAD.TYPE:fiche-de-prelevement]",
-            "SIAD.FORMAT": "Document · Format du fichier — Fiche de prélèvement  [SIAD.FORMAT @ SIAD.TYPE:fiche-de-prelevement]",
-            "SIAD.NATURE": "Document · Nature du support — Fiche de prélèvement  [SIAD.NATURE @ SIAD.TYPE:fiche-de-prelevement]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "Fiche de structure",
           "concept": "1800",
           "identifierFormat": "FST{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g157",
-            "SIAD.FORMAT": "g237",
-            "SIAD.NATURE": "g197"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Fiche de structure  [SIAD.CATEGORY @ SIAD.TYPE:fiche-de-structure]",
-            "SIAD.FORMAT": "Document · Format du fichier — Fiche de structure  [SIAD.FORMAT @ SIAD.TYPE:fiche-de-structure]",
-            "SIAD.NATURE": "Document · Nature du support — Fiche de structure  [SIAD.NATURE @ SIAD.TYPE:fiche-de-structure]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "Registre de photographies",
           "concept": "1801",
           "identifierFormat": "RPH{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g158",
-            "SIAD.FORMAT": "g238",
-            "SIAD.NATURE": "g198"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Registre de photographies  [SIAD.CATEGORY @ SIAD.TYPE:registre-de-photographies]",
-            "SIAD.FORMAT": "Document · Format du fichier — Registre de photographies  [SIAD.FORMAT @ SIAD.TYPE:registre-de-photographies]",
-            "SIAD.NATURE": "Document · Nature du support — Registre de photographies  [SIAD.NATURE @ SIAD.TYPE:registre-de-photographies]"
+          "defaults": {
+            "SIAD.CATEGORY": "1703"
           }
         },
         {
           "label": "Minute de fouille",
           "concept": "1802",
           "identifierFormat": "MIN{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g166",
-            "SIAD.FORMAT": "g246",
-            "SIAD.NATURE": "g206",
-            "SIAD.SCALE": "g271"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Minute de fouille  [SIAD.CATEGORY @ SIAD.TYPE:minute-de-fouille]",
-            "SIAD.FORMAT": "Document · Format du fichier — Minute de fouille  [SIAD.FORMAT @ SIAD.TYPE:minute-de-fouille]",
-            "SIAD.NATURE": "Document · Nature du support — Minute de fouille  [SIAD.NATURE @ SIAD.TYPE:minute-de-fouille]",
-            "SIAD.SCALE": "Document · Échelle — Minute de fouille  [SIAD.SCALE @ SIAD.TYPE:minute-de-fouille]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Relevé de coupe",
           "concept": "1803",
           "identifierFormat": "RCO{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g167",
-            "SIAD.FORMAT": "g247",
-            "SIAD.NATURE": "g207",
-            "SIAD.SCALE": "g272"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Relevé de coupe  [SIAD.CATEGORY @ SIAD.TYPE:releve-de-coupe]",
-            "SIAD.FORMAT": "Document · Format du fichier — Relevé de coupe  [SIAD.FORMAT @ SIAD.TYPE:releve-de-coupe]",
-            "SIAD.NATURE": "Document · Nature du support — Relevé de coupe  [SIAD.NATURE @ SIAD.TYPE:releve-de-coupe]",
-            "SIAD.SCALE": "Document · Échelle — Relevé de coupe  [SIAD.SCALE @ SIAD.TYPE:releve-de-coupe]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Relevé en plan",
           "concept": "1804",
           "identifierFormat": "RPL{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g168",
-            "SIAD.FORMAT": "g248",
-            "SIAD.NATURE": "g208",
-            "SIAD.SCALE": "g273"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Relevé en plan  [SIAD.CATEGORY @ SIAD.TYPE:releve-en-plan]",
-            "SIAD.FORMAT": "Document · Format du fichier — Relevé en plan  [SIAD.FORMAT @ SIAD.TYPE:releve-en-plan]",
-            "SIAD.NATURE": "Document · Nature du support — Relevé en plan  [SIAD.NATURE @ SIAD.TYPE:releve-en-plan]",
-            "SIAD.SCALE": "Document · Échelle — Relevé en plan  [SIAD.SCALE @ SIAD.TYPE:releve-en-plan]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Relevé d'élévation",
           "concept": "1805",
           "identifierFormat": "REL{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g169",
-            "SIAD.FORMAT": "g249",
-            "SIAD.NATURE": "g209",
-            "SIAD.SCALE": "g274"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Relevé d'élévation  [SIAD.CATEGORY @ SIAD.TYPE:releve-d-elevation]",
-            "SIAD.FORMAT": "Document · Format du fichier — Relevé d'élévation  [SIAD.FORMAT @ SIAD.TYPE:releve-d-elevation]",
-            "SIAD.NATURE": "Document · Nature du support — Relevé d'élévation  [SIAD.NATURE @ SIAD.TYPE:releve-d-elevation]",
-            "SIAD.SCALE": "Document · Échelle — Relevé d'élévation  [SIAD.SCALE @ SIAD.TYPE:releve-d-elevation]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Croquis de terrain",
           "concept": "1806",
           "identifierFormat": "CRO{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g170",
-            "SIAD.FORMAT": "g250",
-            "SIAD.NATURE": "g210",
-            "SIAD.SCALE": "g275"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Croquis de terrain  [SIAD.CATEGORY @ SIAD.TYPE:croquis-de-terrain]",
-            "SIAD.FORMAT": "Document · Format du fichier — Croquis de terrain  [SIAD.FORMAT @ SIAD.TYPE:croquis-de-terrain]",
-            "SIAD.NATURE": "Document · Nature du support — Croquis de terrain  [SIAD.NATURE @ SIAD.TYPE:croquis-de-terrain]",
-            "SIAD.SCALE": "Document · Échelle — Croquis de terrain  [SIAD.SCALE @ SIAD.TYPE:croquis-de-terrain]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Log stratigraphique",
           "concept": "1807",
           "identifierFormat": "LST{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g171",
-            "SIAD.FORMAT": "g251",
-            "SIAD.NATURE": "g211",
-            "SIAD.SCALE": "g276"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Log stratigraphique  [SIAD.CATEGORY @ SIAD.TYPE:log-stratigraphique]",
-            "SIAD.FORMAT": "Document · Format du fichier — Log stratigraphique  [SIAD.FORMAT @ SIAD.TYPE:log-stratigraphique]",
-            "SIAD.NATURE": "Document · Nature du support — Log stratigraphique  [SIAD.NATURE @ SIAD.TYPE:log-stratigraphique]",
-            "SIAD.SCALE": "Document · Échelle — Log stratigraphique  [SIAD.SCALE @ SIAD.TYPE:log-stratigraphique]"
+          "defaults": {
+            "SIAD.CATEGORY": "1704"
           }
         },
         {
           "label": "Couche SIG",
           "concept": "1808",
           "identifierFormat": "SIG{NUM_DOCUMENT:0000}",
-          "lists": {
-            "SIAD.CATEGORY": "g186",
-            "SIAD.FORMAT": "g262",
-            "SIAD.NATURE": "g226"
-          },
-          "listNames": {
-            "SIAD.CATEGORY": "Document · Catégorie — Couche SIG  [SIAD.CATEGORY @ SIAD.TYPE:couche-sig]",
-            "SIAD.FORMAT": "Document · Format du fichier — Couche SIG  [SIAD.FORMAT @ SIAD.TYPE:couche-sig]",
-            "SIAD.NATURE": "Document · Nature du support — Couche SIG  [SIAD.NATURE @ SIAD.TYPE:couche-sig]"
+          "defaults": {
+            "SIAD.CATEGORY": "1707"
           }
         }
       ]
