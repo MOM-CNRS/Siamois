@@ -26,6 +26,7 @@ public class FindOpenApiMapper {
         r.setValidationStatus(specimen.getValidationStatus());
         r.setFullIdentifier(specimen.getFullIdentifier());
         r.setCollectionDate(specimen.getCollectionDate());
+        r.setGeom(specimen.getGeom());
         if (specimen.getType() != null) {
             // todo: fixme
             r.setType(projectResponseMapper.toConceptFieldValue(specimen.getType(), ""));

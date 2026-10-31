@@ -69,6 +69,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -723,6 +726,7 @@ public class ProjectApiService {
             applySpatialContext(dto, patch.getSpatialContextSpatialUnitIds());
         }
         if (patch.isGeomPresent()) {
+            requireSurface(patch.getGeom());
             dto.setGeom(patch.getGeom());
         }
         applyAnswerPatch(dto, patch.getAnswers());
@@ -772,6 +776,14 @@ public class ProjectApiService {
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Impossible de supprimer : le projet est encore référencé ailleurs", e);
+        }
+    }
+
+    /** A project's extent is an area: a point or a line (or a null, which clears it) has no meaning there. */
+    private static void requireSurface(GeometryDTO geom) {
+        if (geom != null && !(geom instanceof PolygonDTO) && !(geom instanceof MultiPolygonDTO)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "L'emprise d'un projet doit être un Polygon ou un MultiPolygon, reçu : " + geom.type);
         }
     }
 

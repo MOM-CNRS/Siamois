@@ -17,7 +17,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.envers.Audited;
-import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Geometry;
 import org.springframework.lang.NonNull;
 
 import java.time.OffsetDateTime;
@@ -83,7 +83,7 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
 
     @Column(name = "geom", columnDefinition = "geometry")
     @JsonIgnore
-    protected MultiPolygon geom;
+    protected Geometry geom;
 
     @FieldCode
     public static final String TYPE_FIELD_CODE = "SIAAU.TYPE";

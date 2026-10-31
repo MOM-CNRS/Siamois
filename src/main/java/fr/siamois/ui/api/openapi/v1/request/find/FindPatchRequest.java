@@ -2,7 +2,9 @@ package fr.siamois.ui.api.openapi.v1.request.find;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import fr.siamois.domain.models.ValidationStatus;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,6 +27,20 @@ public class FindPatchRequest {
             + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "
             + "avec le droit validateur (_permissions.canValidate).")
     private ValidationStatus validationStatus;
+
+    @Schema(description = "Localisation du mobilier (GeoJSON : Point, LineString, Polygon et variantes Multi*), "
+            + "dans le SRID fourni ; aucune reprojection n'est effectuée. "
+            + "Champ absent = inchangé ; null explicite = supprime la géométrie")
+    private GeometryDTO geom;
+
+    @JsonIgnore
+    private boolean geomPresent;
+
+    @JsonSetter("geom")
+    public void setGeom(GeometryDTO geom) {
+        this.geom = geom;
+        this.geomPresent = true;
+    }
 
     @Schema(description = "Valeurs par fieldId ({ value } / { values })")
     private Map<String, AnswerInput> answers = new HashMap<>();

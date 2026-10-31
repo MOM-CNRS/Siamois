@@ -232,6 +232,50 @@ class ProjectApiServiceMutationTest {
         assertThat(au.getName()).isEqualTo("Updated");
     }
 
+    @Test
+    void patchProject_geomPoint_throws400AndDoesNotSave() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setGeom(new fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO());
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
+    void patchProject_geomPolygonOrNull_isAccepted() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest withPolygon = new ProjectPatchRequest();
+        var polygon = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        withPolygon.setGeom(polygon);
+        service.patchProject(caller, "7", withPolygon, "fr");
+        assertThat(au.getGeom()).isSameAs(polygon);
+
+        ProjectPatchRequest withMulti = new ProjectPatchRequest();
+        var multi = new fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO();
+        withMulti.setGeom(multi);
+        service.patchProject(caller, "7", withMulti, "fr");
+        assertThat(au.getGeom()).isSameAs(multi);
+
+        ProjectPatchRequest cleared = new ProjectPatchRequest();
+        cleared.setGeom(null);
+        service.patchProject(caller, "7", cleared, "fr");
+        assertThat(au.getGeom()).isNull();
+    }
+
     // ------------------------------------------------------------------
     // patchProject — answers (plan §3 phase 4b)
     // ------------------------------------------------------------------
