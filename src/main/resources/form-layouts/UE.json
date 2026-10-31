@@ -39,21 +39,6 @@
         }
       }
     }, {
-      "fieldId" : -307,
-      "binding" : "geomorphologicalCycle",
-      "width" : "QUARTER",
-      "rules" : {
-        "options" : {
-          "kind" : "RELATED_TO_TYPE"
-        }
-      },
-      "active" : false
-    }, {
-      "fieldId" : -310,
-      "binding" : "geomorphologicalAgent",
-      "width" : "QUARTER",
-      "active" : false
-    }, {
       "fieldId" : -308,
       "binding" : "normalizedInterpretation",
       "width" : "QUARTER",

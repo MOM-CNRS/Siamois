@@ -56,7 +56,6 @@ class FormLayoutSeedsTest {
     @Test
     void theListsTheThesaurusRelatesToATypeFollowTheTypeOfTheRecord() {
         assertThat(item(ConfigurableTable.UE, "nature").rules().options()).isInstanceOf(OptionsFilter.RelatedToType.class);
-        assertThat(item(ConfigurableTable.UE, "geomorphologicalCycle").rules().options()).isInstanceOf(OptionsFilter.RelatedToType.class);
         for (String binding : new String[]{"material", "materialClass", "normalizedInterpretation", "sanitaryAlert"}) {
             assertThat(item(ConfigurableTable.MOBILIER, binding).rules().options()).as(binding).isInstanceOf(OptionsFilter.RelatedToType.class);
         }
