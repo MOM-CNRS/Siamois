@@ -1417,13 +1417,14 @@ class FieldConfigurationServiceTest {
         Map<Long, FieldVocabularyConfig> result = service.describeVocabularies(
                 List.of(ownOfType, defaultOfProject, fromCode, unrestricted), 42L, 77L);
 
-        assertThat(result).containsOnlyKeys(1L, 2L, 3L);
-        assertThat(result.get(1L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 90L, null,
-                VocabularyMode.FOLLOW, Map.of(100L, ConceptState.DISABLED)));
-        assertThat(result.get(2L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 91L, null,
-                VocabularyMode.FOLLOW, Map.of(102L, ConceptState.ENABLED)));
-        assertThat(result.get(3L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, "SIARU.TYPE", null, null,
-                VocabularyMode.FOLLOW, Map.of()));
+        assertThat(result)
+                .containsOnlyKeys(1L, 2L, 3L)
+                .containsEntry(1L, new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 90L, null,
+                        VocabularyMode.FOLLOW, Map.of(100L, ConceptState.DISABLED)))
+                .containsEntry(2L, new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 91L, null,
+                        VocabularyMode.FOLLOW, Map.of(102L, ConceptState.ENABLED)))
+                .containsEntry(3L, new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, "SIARU.TYPE", null, null,
+                        VocabularyMode.FOLLOW, Map.of()));
     }
 
     @Test
