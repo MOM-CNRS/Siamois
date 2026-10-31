@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -116,7 +115,7 @@ public class VocabularyService {
         List<ThesaurusDTO> dtos = thesaurusApi.fetchAllPublicThesaurus(server);
         List<ThesaurusInfo> results = new ArrayList<>();
         for (ThesaurusDTO dto : dtos) {
-            if (siamoisOnly && !Objects.equals(dto.getType(), "Siamois")) {
+            if (siamoisOnly && (dto.getType() == null || !dto.getType().strip().equalsIgnoreCase("Siamois"))) {
                 continue;
             }
             String label;

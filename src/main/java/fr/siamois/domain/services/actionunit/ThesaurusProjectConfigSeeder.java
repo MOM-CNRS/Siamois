@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -8,13 +9,12 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFr
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
+import fr.siamois.domain.services.form.layout.FormLayoutService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.CodeSourceService;
 import fr.siamois.domain.services.vocabulary.FieldCodeResolver;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
@@ -31,11 +31,10 @@ import java.util.Optional;
 
 /**
  * Configures a new project from the {@link DefaultProjectDefinition}: for each table, the types the definition names, and for
- * each type the vocabulary of its fields. A field's list for a type is, in order:
- * <ol>
- *   <li>the collection the definition names for this field and this type;</li>
- *   <li>otherwise the subtree of the field's own code in the thesaurus, when the thesaurus defines it.</li>
- * </ol>
+ * each type the vocabulary of its fields: the subtree of the field's own code in the thesaurus, when the thesaurus
+ * defines it. Which of those values a type offers is not decided here: the thesaurus relates them to the type, and the
+ * {@code RELATED_TO_TYPE} rule of the layouts reads that relation. A field the thesaurus restricts to a single value for a type
+ * starts with it: the definition's {@code defaults}.
  * The types of each table are redirected to the thesaurus ({@link CodeSourceService}), so they are its candidates.
  *
  * <p>Nothing here reads the thesaurus: it was imported when the application started
@@ -60,11 +59,11 @@ public class ThesaurusProjectConfigSeeder {
     private final DefaultProjectDefinition definition;
     private final VocabularyRepository vocabularyRepository;
     private final ConceptRepository conceptRepository;
-    private final ConceptCollectionRepository conceptCollectionRepository;
     private final FieldCodeResolver fieldCodeResolver;
     private final CodeSourceService codeSourceService;
     private final TableFieldConfigService tableFieldConfigService;
     private final FormConfigService formConfigService;
+    private final FormLayoutService formLayoutService;
     private final PlatformTransactionManager transactionManager;
 
     public void seed(UserInfo info, Long projectId) {
@@ -135,20 +134,40 @@ public class ThesaurusProjectConfigSeeder {
         for (CustomFieldConceptFromFieldCode spec : vocabularyFields) {
             seedField(projectId, vocabulary, table, typeConceptId, type, formConfig.get(), spec);
         }
+        seedDefaults(projectId, vocabulary, table, typeConceptId, type, vocabularyFields);
+    }
+
+    /** The values a new record of the type starts with. One that cannot be resolved is left out: it never fails the type. */
+    private void seedDefaults(Long projectId, Vocabulary vocabulary, ConfigurableTable table, Long typeConceptId,
+                              DefaultProjectDefinition.Type type, List<CustomFieldConceptFromFieldCode> vocabularyFields) {
+        if (type.defaults().isEmpty()) {
+            return;
+        }
+        Optional<String> typeName = tableFieldConfigService.typeNameOf(projectId, table, typeConceptId);
+        if (typeName.isEmpty()) {
+            log.warn("Type '{}' of table {} is not configured in project {}: its defaults are not seeded", type.label(), table, projectId);
+            return;
+        }
+        for (CustomFieldConceptFromFieldCode spec : vocabularyFields) {
+            String valueId = type.defaults().get(spec.getFieldCode());
+            Optional<Concept> value = valueId == null ? Optional.empty()
+                    : conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), valueId);
+            Optional<CustomField> field = value.isEmpty() ? Optional.empty()
+                    : tableFieldConfigService.findField(projectId, table, typeConceptId, spec.getLabel());
+            if (field.isEmpty()) {
+                if (valueId != null) {
+                    log.warn("Default {} of field '{}' for type '{}' cannot be resolved: not seeded", valueId, spec.getLabel(), type.label());
+                }
+                continue;
+            }
+            formLayoutService.saveDefault(projectId, table, typeName.get(), field.get().getId(),
+                    FieldDefault.ofConceptIds(List.of(String.valueOf(value.get().getId()))));
+        }
     }
 
     private void seedField(Long projectId, Vocabulary vocabulary, ConfigurableTable table, Long typeConceptId,
                            DefaultProjectDefinition.Type type, FormConfig formConfig, CustomFieldConceptFromFieldCode spec) {
-        String collectionId = type.lists().get(spec.getFieldCode());
-        Optional<ConceptCollection> collection = collectionId == null
-                ? Optional.empty()
-                : conceptCollectionRepository.findByVocabularyAndExternalId(vocabulary, collectionId);
-        if (collectionId != null && collection.isEmpty()) {
-            log.warn("Collection {} of {} is not in the local copy: the field {} of type '{}' reads its whole list",
-                    collectionId, definition.thesaurusUrl(), spec.getFieldCode(), type.label());
-        }
-        boolean definedByThesaurus = fieldCodeResolver.findIn(vocabulary, spec.getFieldCode()).isPresent();
-        if (collection.isEmpty() && !definedByThesaurus) {
+        if (fieldCodeResolver.findIn(vocabulary, spec.getFieldCode()).isEmpty()) {
             return;
         }
         Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, typeConceptId, spec.getLabel());
@@ -156,12 +175,7 @@ public class ThesaurusProjectConfigSeeder {
             log.warn("No vocabulary field '{}' on type '{}' of table {}", spec.getLabel(), type.label(), table);
             return;
         }
-        if (collection.isPresent()) {
-            formConfigService.addConceptConfigFor(formConfig, conceptField, collection.get());
-            formConfigService.rememberSourceName(formConfig, conceptField, type.listNames().get(spec.getFieldCode()));
-        } else {
-            formConfigService.addFieldCodeConfigFor(formConfig, conceptField, vocabulary, spec.getFieldCode());
-        }
+        formConfigService.addFieldCodeConfigFor(formConfig, conceptField, vocabulary, spec.getFieldCode());
     }
 
     /** The vocabulary fields of a table other than its type, whose list the thesaurus can define. */

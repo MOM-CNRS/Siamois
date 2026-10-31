@@ -48,7 +48,7 @@ export function editContextOf(row: unknown, entityType: string | undefined, orga
   };
 }
 
-function typeIdOf(type: EntityLike["type"]): string | undefined {
+export function typeIdOf(type: EntityLike["type"]): string | undefined {
   const id = type?.id ?? type?.resourceId;
   return id != null ? String(id) : undefined;
 }

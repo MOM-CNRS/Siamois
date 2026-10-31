@@ -914,14 +914,14 @@ class ConceptServiceTest {
     @Test
     void findFieldBranchUri_returnsTheUriOfTheConceptCarryingTheFieldCode() {
         Concept root = new Concept();
-        root.setUri("https://thesaurus.mom.fr/?idc=1180&idt=th337");
+        root.setUri("https://thesaurus.mom.fr/?idc=1180&idt=th338");
         ConceptFieldConfig config = new ConceptFieldConfig();
         config.setConcept(root);
         config.setVocabulary(vocabulary);
         when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
 
         assertThat(conceptService.findFieldBranchUri(3L, 5L, "SIARU.NATURE"))
-                .contains("https://thesaurus.mom.fr/?idc=1180&idt=th337");
+                .contains("https://thesaurus.mom.fr/?idc=1180&idt=th338");
     }
 
     @Test
@@ -943,12 +943,12 @@ class ConceptServiceTest {
 
     @Test
     void findFieldVocabularyId_returnsTheExternalIdOfTheThesaurusOfTheField() {
-        vocabulary.setExternalVocabularyId("th337");
+        vocabulary.setExternalVocabularyId("th338");
         ConceptFieldConfig config = new ConceptFieldConfig();
         config.setVocabulary(vocabulary);
         when(fieldCodeResolver.find(3L, 5L, "SIARU.NATURE")).thenReturn(java.util.Optional.of(config));
 
-        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).contains("th337");
+        assertThat(conceptService.findFieldVocabularyId(3L, 5L, "SIARU.NATURE")).contains("th338");
     }
 
     @Test

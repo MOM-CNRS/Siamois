@@ -32,21 +32,21 @@
     }, {
       "fieldId" : -331,
       "binding" : "nature",
-      "width" : "QUARTER"
-    }, {
-      "fieldId" : -307,
-      "binding" : "geomorphologicalCycle",
       "width" : "QUARTER",
-      "active" : false
-    }, {
-      "fieldId" : -310,
-      "binding" : "geomorphologicalAgent",
-      "width" : "QUARTER",
-      "active" : false
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -308,
       "binding" : "normalizedInterpretation",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "rules" : {
+        "options" : {
+          "kind" : "RELATED_TO_TYPE"
+        }
+      }
     }, {
       "fieldId" : -325,
       "binding" : "matrixColor",
@@ -60,7 +60,7 @@
           "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th337",
+            "vocabularyExtId" : "th338",
             "conceptExtId" : "1216"
           } ]
         }
@@ -74,7 +74,7 @@
           "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th337",
+            "vocabularyExtId" : "th338",
             "conceptExtId" : "1216"
           } ]
         }
@@ -88,7 +88,7 @@
           "fieldId" : -331,
           "op" : "EQ",
           "values" : [ {
-            "vocabularyExtId" : "th337",
+            "vocabularyExtId" : "th338",
             "conceptExtId" : "1216"
           } ]
         }

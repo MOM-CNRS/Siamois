@@ -128,6 +128,16 @@ public class VocabularyOpenApiService {
                                                             @Nullable String q,
                                                             String lang,
                                                             PersonDTO person) {
+        return conceptsForField(organizationId, fieldId, projectId, valueConceptId, q, lang, person);
+    }
+
+    private List<ConceptAutocompleteDTO> conceptsForField(long organizationId,
+                                                          long fieldId,
+                                                          @Nullable Long projectId,
+                                                          @Nullable Long valueConceptId,
+                                                          @Nullable String q,
+                                                          String lang,
+                                                          PersonDTO person) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
@@ -145,6 +155,31 @@ public class VocabularyOpenApiService {
                         "Aucun vocabulaire configuré pour le champ : " + fieldId);
             }
         });
+    }
+
+    /**
+     * The suggestions of a field whose list depends on the type of the record (rule {@code options: RELATED_TO_TYPE}):
+     * the values the thesaurus relates to {@code typeConceptId}. A type related to none of the field's values, or a
+     * field with no field code to read the relation from, gets the field's whole list
+     * ({@link #getConceptsForField}).
+     */
+    @Transactional
+    public List<ConceptAutocompleteDTO> getConceptsForFieldRelatedToType(long organizationId,
+                                                                         long fieldId,
+                                                                         @Nullable Long projectId,
+                                                                         long typeConceptId,
+                                                                         @Nullable String q,
+                                                                         String lang,
+                                                                         PersonDTO person) {
+        if (findField(fieldId) instanceof CustomFieldConceptFromFieldCode) {
+            List<ConceptAutocompleteDTO> unfiltered = relatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, null, lang, person);
+            if (!unfiltered.isEmpty()) {
+                return q == null || q.isBlank()
+                        ? unfiltered
+                        : relatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, q, lang, person);
+            }
+        }
+        return conceptsForField(organizationId, fieldId, projectId, typeConceptId, q, lang, person);
     }
 
     /**
@@ -167,6 +202,17 @@ public class VocabularyOpenApiService {
                                                            @Nullable String q,
                                                            String lang,
                                                            PersonDTO person) {
+        return relatedConcepts(organizationId, fieldCode, fieldId, relatedToConceptId, projectId, q, lang, person);
+    }
+
+    private List<ConceptAutocompleteDTO> relatedConcepts(long organizationId,
+                                                         @Nullable String fieldCode,
+                                                         @Nullable Long fieldId,
+                                                         long relatedToConceptId,
+                                                         @Nullable Long projectId,
+                                                         @Nullable String q,
+                                                         String lang,
+                                                         PersonDTO person) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");

@@ -126,14 +126,14 @@ class ThesaurusUsageServiceTest {
     @Test
     void findUsagesOfActionUnit_namesTheThesaurusByLabelIdentifierAndInstance() {
         Vocabulary vocabulary = vocabulary("Siamois - Socle commun");
-        when(vocabulary.getExternalVocabularyId()).thenReturn("th337");
+        when(vocabulary.getExternalVocabularyId()).thenReturn("th338");
         when(vocabulary.getBaseUri()).thenReturn("https://thesaurus.mom.fr/");
         ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", concept("Céramique"));
         when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
 
         List<ThesaurusUsage> usages = service.findUsagesOfActionUnit(1L, LANG);
 
-        assertEquals("Siamois - Socle commun (th337) - https://thesaurus.mom.fr", usages.get(0).getThesaurusLabel());
+        assertEquals("Siamois - Socle commun (th338) - https://thesaurus.mom.fr", usages.get(0).getThesaurusLabel());
     }
 
     @Test
@@ -531,11 +531,11 @@ class ThesaurusUsageServiceTest {
     @Test
     void findUsagesOfActionUnit_namesAThesaurusWhoseLabelIsEmptyByItsIdentifier() {
         Vocabulary vocabulary = mock(Vocabulary.class);
-        when(vocabulary.getExternalVocabularyId()).thenReturn("th337");
+        when(vocabulary.getExternalVocabularyId()).thenReturn("th338");
         when(labelService.findLabelOf(vocabulary, LANG)).thenReturn(new VocabularyLabel());
         ConceptFieldFormConfig config = branchConfig(vocabulary, "Matériau", "Matière", concept("Céramique"));
         when(fieldFormConfigRepository.findVocabularyRestrictionsOfActionUnit(1L)).thenReturn(List.of(config));
 
-        assertEquals("th337", service.findUsagesOfActionUnit(1L, LANG).get(0).getThesaurusLabel());
+        assertEquals("th338", service.findUsagesOfActionUnit(1L, LANG).get(0).getThesaurusLabel());
     }
 }

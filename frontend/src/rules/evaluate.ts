@@ -34,6 +34,8 @@ export type IsAllowed = (fieldId: string, value: unknown, context: OptionsContex
 
 export interface EvaluateOptions {
   isAllowed?: IsAllowed;
+  /** The record's type concept id: what a RELATED_TO_TYPE options filter relates the list to. */
+  typeConceptId?: string | null;
 }
 
 const key = (id: number | string) => String(id);
@@ -155,7 +157,12 @@ export function evaluateForm(
     const state: FieldState = { enabled, required, incoherent };
     const placeContext = placeContextOf(rules.placeSources, valueOf);
     if (placeContext) state.placeContext = placeContext;
-    if (rules.options) {
+    if (rules.options?.kind === "RELATED_TO_TYPE") {
+      state.optionsContext = { kind: "RELATED_TO_TYPE", relatedTo: options.typeConceptId ?? null };
+      if (!isEmptyValue(value) && options.isAllowed?.(id, value, state.optionsContext) === false) {
+        incoherent.push({ kind: "OUT_OF_OPTIONS" });
+      }
+    } else if (rules.options) {
       const parentFieldId = key(rules.options.fieldId);
       const parentValue = idOf(valueOf(parentFieldId));
       state.optionsContext =

@@ -101,6 +101,9 @@ public class OrganizationProjectsControllerApi {
             @Parameter(description = "Liste dépendante (règle options RELATED_CONCEPTS) : seuls les concepts liés "
                     + "à ce concept — la réponse du champ dont celui-ci dépend.")
             @RequestParam(required = false) Long relatedToConceptId,
+            @Parameter(description = "Avec fieldId et valueConceptId (règle options RELATED_TO_TYPE) : seuls les concepts "
+                    + "que le thésaurus relie au type de l'entité ; la liste entière si le type n'en relie aucun au champ.")
+            @RequestParam(defaultValue = "false") boolean relatedToType,
             @Parameter(description = "Texte de recherche — active le mode suggestion si présent.")
             @RequestParam(required = false) String q,
             @Parameter(description = "Nombre de résultats (ignoré en mode suggestion).")
@@ -118,7 +121,9 @@ public class OrganizationProjectsControllerApi {
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
 
         List<ConceptAutocompleteDTO> all;
-        if (relatedToConceptId != null) {
+        if (relatedToType && fieldId != null && valueConceptId != null) {
+            all = vocabularyOpenApiService.getConceptsForFieldRelatedToType(id, fieldId, projectId, valueConceptId, q, lang, caller.person());
+        } else if (relatedToConceptId != null) {
             all = vocabularyOpenApiService.getRelatedConcepts(id, fieldCode, fieldId, relatedToConceptId, projectId, q, lang, caller.person());
         } else if (fieldId != null) {
             all = vocabularyOpenApiService.getConceptsForField(id, fieldId, projectId, valueConceptId, q, lang, caller.person());

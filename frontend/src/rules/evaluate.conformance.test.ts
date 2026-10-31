@@ -15,6 +15,7 @@ interface ExpectedState {
 
 interface Case {
   name: string;
+  typeConceptId?: string;
   columns: RuledColumn[];
   values: Record<string, unknown>;
   expected: Record<string, ExpectedState>;
@@ -40,7 +41,7 @@ function subset(state: FieldState | undefined, expected: ExpectedState): Expecte
 describe("rules conformance", () => {
   for (const c of (conformance as unknown as { cases: Case[] }).cases) {
     it(c.name, () => {
-      const states = evaluateForm(c.columns, (id) => c.values[id]);
+      const states = evaluateForm(c.columns, (id) => c.values[id], { typeConceptId: c.typeConceptId });
       for (const [fieldId, expected] of Object.entries(c.expected)) {
         expect(subset(states.get(fieldId), expected), `field ${fieldId}`).toEqual(expected);
       }

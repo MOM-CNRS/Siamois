@@ -44,6 +44,7 @@ export type Condition =
 
 export type OptionsFilter =
   | { kind: "RELATED_CONCEPTS"; fieldId: number | string }
+  | { kind: "RELATED_TO_TYPE" }
   | { kind: "REF_MATCH"; fieldId: number | string; candidateFieldId: number | string };
 
 export interface FieldConstraint {
@@ -91,6 +92,8 @@ export type IncoherenceReason =
 /** What the options source of a filtered field needs to query (or filter offline). */
 export type OptionsContext =
   | { kind: "RELATED_CONCEPTS"; parentFieldId: string; relatedTo: string | null }
+  /** The list is the values the thesaurus relates to the record's type (null: no type yet). */
+  | { kind: "RELATED_TO_TYPE"; relatedTo: string | null }
   | { kind: "REF_MATCH"; parentFieldId: string; candidateFieldId: string; value: string | null };
 
 /**

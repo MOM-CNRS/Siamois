@@ -46,7 +46,7 @@ class PlaceSourceProvidersTest {
     }
 
     private void conceptExists() {
-        when(conceptRepository.findConceptByExternalIdIgnoreCase(eq("th337"), any())).thenReturn(Optional.of(new Concept()));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(eq("th338"), any())).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any(Concept.class))).thenReturn(concept);
     }
 

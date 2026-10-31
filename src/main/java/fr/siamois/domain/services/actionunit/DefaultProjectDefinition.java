@@ -8,17 +8,15 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * What a "default project" is made of, written in {@code default-project/definition.json}: a thesaurus, and for each
- * table the types it starts with and, for each type, the collection of that thesaurus that lists the values of a field.
- * Concepts and collections are named by their identifiers in the thesaurus, so reading the definition needs no label
- * and no call to the thesaurus: it is imported once, when the application starts
- * ({@code DefaultProjectThesaurusInitializer}).
+ * table the types it starts with. A type is named by its identifier in the thesaurus, so reading the definition needs no
+ * label and no call to the thesaurus: it is imported once, when the application starts
+ * ({@code DefaultProjectThesaurusInitializer}). The values a field offers for a type are not listed here: the thesaurus
+ * relates them to the type, and the layouts' {@code RELATED_TO_TYPE} rule reads that relation.
  */
 @Component
 public class DefaultProjectDefinition {
@@ -30,17 +28,13 @@ public class DefaultProjectDefinition {
      * @param label            the type's name in the thesaurus, only to make the definition readable
      * @param concept          the identifier of the type's concept in the thesaurus
      * @param identifierFormat the format of the identifiers of this type's records, null for the table's default
-     * @param lists            the collection (its identifier in the thesaurus) holding the values of a field for this type,
-     *                         by field code; a field absent from here reads its whole list in the thesaurus
-     * @param listNames        the name of each of those collections in the thesaurus, by field code: what finds the
-     *                         same collection again when the field is moved to another thesaurus
+     * @param defaults         the concept (its identifier in the thesaurus) a new record of this type starts with, by field
+     *                         code; only for a field whose list the thesaurus restricts to that one value for this type
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Type(String label, String concept, String identifierFormat, Map<String, String> lists,
-                       Map<String, String> listNames) {
+    public record Type(String label, String concept, String identifierFormat, Map<String, String> defaults) {
         public Type {
-            lists = lists == null ? Map.of() : lists;
-            listNames = listNames == null ? Map.of() : listNames;
+            defaults = defaults == null ? Map.of() : defaults;
         }
     }
 
@@ -66,7 +60,7 @@ public class DefaultProjectDefinition {
         }
     }
 
-    /** The URL of the thesaurus, e.g. {@code https://thesaurus.mom.fr/?idt=th337}. */
+    /** The URL of the thesaurus, e.g. {@code https://thesaurus.mom.fr/?idt=th338}. */
     public String thesaurusUrl() {
         return content.thesaurus();
     }
@@ -89,12 +83,5 @@ public class DefaultProjectDefinition {
 
     public List<Table> tables() {
         return content.tables();
-    }
-
-    /** Every collection the definition reads, so each is imported once. */
-    public Set<String> collectionIds() {
-        Set<String> ids = new LinkedHashSet<>();
-        content.tables().forEach(table -> table.types().forEach(type -> ids.addAll(type.lists().values())));
-        return ids;
     }
 }

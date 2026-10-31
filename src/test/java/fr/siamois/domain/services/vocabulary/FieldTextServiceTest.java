@@ -33,7 +33,7 @@ class FieldTextServiceTest {
     private static CustomField fieldWithConcept(String externalId) {
         Vocabulary vocabulary = new Vocabulary();
         vocabulary.setBaseUri("https://thesaurus.mom.fr");
-        vocabulary.setExternalVocabularyId("th337");
+        vocabulary.setExternalVocabularyId("th338");
         CustomField field = new CustomFieldText();
         field.setConcept(new Concept.Builder().vocabulary(vocabulary).externalId(externalId).build());
         return field;
@@ -44,7 +44,7 @@ class FieldTextServiceTest {
         stored.setId(7L);
         ConceptPrefLabel pref = new ConceptPrefLabel();
         pref.setLabel(label);
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("th337", externalId)).thenReturn(Optional.of(stored));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase("th338", externalId)).thenReturn(Optional.of(stored));
         when(labelRepository.findPrefLabelByLangCodeAndConcept(eq("fr"), any())).thenReturn(Optional.of(pref));
         LocalizedConceptData data = new LocalizedConceptData();
         data.setDefinition(definition);
@@ -105,7 +105,7 @@ class FieldTextServiceTest {
         service.resolve(fieldWithConcept("1175"), "fr", "x", null);
         service.resolve(fieldWithConcept("1175"), "fr", "x", null);
 
-        verify(conceptRepository, times(1)).findConceptByExternalIdIgnoreCase("th337", "1175");
+        verify(conceptRepository, times(1)).findConceptByExternalIdIgnoreCase("th338", "1175");
         verify(dataRepository, times(1)).findByConceptAndLangCode(anyLong(), eq("fr"));
     }
 

@@ -1,5 +1,6 @@
 import {useMemo} from "react";
 import {valueOfField} from "../../fields/values";
+import {typeIdOf} from "../../fields/editContext";
 import type {FieldResource} from "../../fields/types";
 import {columnsDependencies, evaluateForm, type FieldState, type RuledColumn} from "../../rules";
 import type {RowTypeRef, TypeRules} from "./useTypeRules";
@@ -67,7 +68,9 @@ export function useRowRules<TRow extends RowTypeRef & { id?: string | number }>(
         fieldId: id,
         rules: typeRules != null ? (typeRules.rulesOf(row, id) ?? fields[id].rules) : fields[id].rules,
       }));
-      out.set(row.id, evaluateForm(columns, (id) => valueOfField(row, fields, id)));
+      out.set(row.id, evaluateForm(columns, (id) => valueOfField(row, fields, id), {
+        typeConceptId: typeIdOf((row as { type?: Parameters<typeof typeIdOf>[0] }).type),
+      }));
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps

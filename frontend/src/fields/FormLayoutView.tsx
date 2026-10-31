@@ -9,6 +9,7 @@ import {FieldLabel} from "./FieldLabel";
 import {isTypeField} from "./typeField";
 import {type AnswerInputBody, type FieldResource, resolveValueBinding} from "./types";
 import {valueOfField} from "./values";
+import {editContextOf} from "./editContext";
 import {t} from "../i18n";
 
 /**
@@ -64,8 +65,9 @@ export function FormLayoutView<TEntity extends { id?: string | number }>({
 }: FormLayoutViewProps<TEntity>) {
   const states = useMemo(() => {
     const columns = panels.flatMap((p) => p.rows.flatMap((r) => r.columns));
-    return evaluateForm(columns, (id) => valueOfField(entity, fields, id));
-  }, [panels, fields, entity]);
+    const typeConceptId = editContextOf(entity, entityType, organizationId).typeConceptId;
+    return evaluateForm(columns, (id) => valueOfField(entity, fields, id), { typeConceptId });
+  }, [panels, fields, entity, entityType, organizationId]);
 
   // Which sections are folded: remembered, so a fiche moving between panes (focus) keeps them, and kept for
   // the user, per type of fiche.

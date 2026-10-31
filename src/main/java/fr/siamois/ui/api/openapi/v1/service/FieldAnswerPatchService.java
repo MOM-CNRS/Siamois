@@ -24,6 +24,12 @@ import fr.siamois.domain.models.form.rules.FieldConstraint;
 import fr.siamois.domain.services.form.FormService;
 import fr.siamois.domain.services.form.rules.FieldRulesEvaluator;
 import fr.siamois.domain.services.form.rules.RuleValues;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.utils.context.ExecutionContextHolder;
 import fr.siamois.dto.entity.MeasurementAnswerDTO;
 import fr.siamois.dto.entity.StudyDTO;
 import fr.siamois.dto.entity.DocumentDTO;
@@ -104,6 +110,7 @@ public class FieldAnswerPatchService {
     private final UnitDefinitionMapper unitDefinitionMapper;
     private final UnitDefinitionRepository unitDefinitionRepository;
     private final FieldDefaultResolver fieldDefaultResolver;
+    private final FieldConfigurationService fieldConfigurationService;
 
     /**
      * @param dto           the entity DTO to write system fields onto
@@ -179,7 +186,7 @@ public class FieldAnswerPatchService {
         for (CustomField field : fieldSource.getAllFields()) {
             values.put(field.getId(), formService.readAnswerValueForApi(viewModelOf(response, field)));
         }
-        Patch patch = new Patch(fieldSource, effectiveForm, response, projectId, strict, values);
+        Patch patch = new Patch(fieldSource, effectiveForm, response, projectId, strict, values, typeConceptIdOf(dto));
         if (answers != null) {
             for (Map.Entry<String, ?> entry : answers.entrySet()) {
                 applyEntry(entry, patch);
@@ -187,7 +194,7 @@ public class FieldAnswerPatchService {
         }
         applyDefaults(defaults, patch);
 
-        checkRules(effectiveForm, values, patch.written, strict);
+        checkRules(effectiveForm, values, patch.written, strict, patch.typeConceptId, projectId);
 
         formService.updateJpaEntityFromResponse(response, dto);
         patch.clearedSystemFields.forEach(field -> formService.clearSystemField(dto, field));
@@ -204,7 +211,8 @@ public class FieldAnswerPatchService {
         while (progress) {
             progress = false;
             Map<Long, FieldRulesEvaluator.FieldState> states =
-                    new FieldRulesEvaluator().evaluate(ruledColumns(patch.effectiveForm), patch.values::get);
+                    new FieldRulesEvaluator().evaluate(ruledColumns(patch.effectiveForm), patch.values::get,
+                            patch.typeConceptId == null ? null : String.valueOf(patch.typeConceptId));
             for (Iterator<Map.Entry<String, Object>> it = pending.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Object> entry = it.next();
                 FieldRulesEvaluator.FieldState state = states.get(Long.parseLong(entry.getKey()));
@@ -236,18 +244,20 @@ public class FieldAnswerPatchService {
         final Long projectId;
         final boolean strict;
         final Map<Long, Object> values;
+        final Long typeConceptId;
         final List<CustomField> written = new ArrayList<>();
         final Map<CustomField, CustomFieldAnswerViewModel> touchedAdditional = new HashMap<>();
         final List<CustomField> clearedSystemFields = new ArrayList<>();
 
         Patch(FieldSource fieldSource, FormUiDto effectiveForm, CustomFormResponseViewModel response, Long projectId,
-              boolean strict, Map<Long, Object> values) {
+              boolean strict, Map<Long, Object> values, Long typeConceptId) {
             this.fieldSource = fieldSource;
             this.effectiveForm = effectiveForm;
             this.response = response;
             this.projectId = projectId;
             this.strict = strict;
             this.values = values;
+            this.typeConceptId = typeConceptId;
         }
     }
 
@@ -339,20 +349,23 @@ public class FieldAnswerPatchService {
      * concept outside the ones related to the answer a dependent list follows. The lenient (mobile
      * legacy) path logs instead: an offline record is kept, its client flags it.
      */
-    private void checkRules(FormUiDto form, Map<Long, Object> values, List<CustomField> written, boolean strict) {
+    private void checkRules(FormUiDto form, Map<Long, Object> values, List<CustomField> written, boolean strict,
+                            Long typeConceptId, Long projectId) {
         if (written.isEmpty()) return;
         List<FieldRulesEvaluator.RuledColumn> columns = ruledColumns(form);
-        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get);
+        Map<Long, FieldRulesEvaluator.FieldState> states = new FieldRulesEvaluator().evaluate(columns, values::get,
+                typeConceptId == null ? null : String.valueOf(typeConceptId));
         for (CustomField field : written) {
             FieldRulesEvaluator.FieldState state = states.get(field.getId());
-            String violation = state == null ? null : violationOf(field.getId(), values.get(field.getId()), state);
+            String violation = state == null ? null : violationOf(field, values.get(field.getId()), state, projectId);
             if (violation == null) continue;
             if (strict) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, violation);
             log.warn("Règle de formulaire non respectée, réponse conservée : {}", violation);
         }
     }
 
-    private String violationOf(long fieldId, Object value, FieldRulesEvaluator.FieldState state) {
+    private String violationOf(CustomField field, Object value, FieldRulesEvaluator.FieldState state, Long projectId) {
+        long fieldId = field.getId();
         boolean empty = RuleValues.isEmpty(value);
         if (!state.enabled() && !empty) {
             return "Champ inactif avec les réponses actuelles : " + fieldId;
@@ -369,6 +382,9 @@ public class FieldAnswerPatchService {
         if (!empty && options != null && "RELATED_CONCEPTS".equals(options.kind())) {
             return relatedConceptsViolation(fieldId, value, options);
         }
+        if (!empty && options != null && "RELATED_TO_TYPE".equals(options.kind())) {
+            return relatedToTypeViolation(field, value, options, projectId);
+        }
         // REF_MATCH is only applied client side for now (the picker's own filter).
         return null;
     }
@@ -384,6 +400,45 @@ public class FieldAnswerPatchService {
             }
         }
         return null;
+    }
+
+    /**
+     * A value must be one the thesaurus relates to the record's type — unless the type is related to no value of this
+     * field (or there is no type yet, or no way to tell), in which case the whole list stands.
+     */
+    private String relatedToTypeViolation(CustomField field, Object value, FieldRulesEvaluator.OptionsContext options, Long projectId) {
+        var context = ExecutionContextHolder.get();
+        if (options.value() == null || !(field instanceof CustomFieldConceptFromFieldCode fromFieldCode) || context == null) {
+            return null;
+        }
+        Concept type = conceptRepository.findById(Long.parseLong(options.value())).orElse(null);
+        if (type == null) return null;
+        try {
+            if (fieldConfigurationService.fetchAutocompleteRelated(context, fromFieldCode.getFieldCode(), type, null, projectId).isEmpty()) {
+                return null;
+            }
+        } catch (NoConfigForFieldException e) {
+            return null;
+        }
+        long typeId = type.getId();
+        for (Object id : RuleValues.scalarsOf(value)) {
+            if (!conceptRepository.isRelated(typeId, Long.parseLong(String.valueOf(id)))) {
+                return "Concept " + id + " hors de la liste liée au type de la fiche : " + field.getId();
+            }
+        }
+        return null;
+    }
+
+    /** The concept id of the type of an entity DTO, null when it has none (or is not one of the typed entities). */
+    private static Long typeConceptIdOf(Object dto) {
+        ConceptDTO type = null;
+        if (dto instanceof RecordingUnitDTO d) type = d.getType();
+        else if (dto instanceof SpecimenDTO d) type = d.getType();
+        else if (dto instanceof PhaseDTO d) type = d.getType();
+        else if (dto instanceof ContainerDTO d) type = d.getType();
+        else if (dto instanceof DocumentDTO d) type = d.getType();
+        else if (dto instanceof StudyDTO d) type = d.getType();
+        return type == null ? null : type.getId();
     }
 
     private static String describe(FieldConstraint.Op op) {

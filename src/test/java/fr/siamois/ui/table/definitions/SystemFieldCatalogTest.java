@@ -31,6 +31,9 @@ class SystemFieldCatalogTest {
                 .allSatisfy(spec -> assertThat(spec.field().getIsSystemField()).isTrue());
     }
 
+    /** System fields the initial layouts leave out on purpose: a new project does not offer them. */
+    private static final java.util.Set<String> LEFT_OUT_OF_THE_LAYOUT = java.util.Set.of("geomorphologicalCycle", "geomorphologicalAgent");
+
     @ParameterizedTest
     @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
     void theInitialLayoutLaysOutEveryVisibleSystemFieldExactlyOnce(ConfigurableTable table) {
@@ -40,6 +43,7 @@ class SystemFieldCatalogTest {
                 .toList();
         List<Long> visible = SystemFieldCatalog.specsOf(table).stream()
                 .filter(spec -> !spec.hidden())
+                .filter(spec -> !LEFT_OUT_OF_THE_LAYOUT.contains(spec.field().getValueBinding()))
                 .map(spec -> spec.field().getId())
                 .toList();
 

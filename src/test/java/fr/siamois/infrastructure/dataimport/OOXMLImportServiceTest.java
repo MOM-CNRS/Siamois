@@ -81,9 +81,9 @@ class OOXMLImportServiceTest {
 
     @Test
     void extractIdtAndIdcFromUri() {
-        String uri = "https://example.fr/th?idt=th337&idc=4287979";
+        String uri = "https://example.fr/th?idt=th338&idc=4287979";
 
-        assertThat(service.extractIdtFromUri(uri)).contains("th337");
+        assertThat(service.extractIdtFromUri(uri)).contains("th338");
         assertThat(service.extractIdcFromUri(uri)).contains("4287979");
     }
 
@@ -501,7 +501,7 @@ class OOXMLImportServiceTest {
     void parseRecordingUnits_natureLabel_isResolvedAgainstTheNatureField() {
         var au = actionUnitWithInstitution(7L);
         when(conceptService.resolveConceptByLabel(7L, RecordingUnit.NATURE_FIELD_CODE, "Négative"))
-                .thenReturn(conceptWithKey("th337", "1216"));
+                .thenReturn(conceptWithKey("th338", "1216"));
 
         Workbook wb = workbook();
         Sheet s = sheet(wb, "UE", "Identifiant", "Description", "nature label");
@@ -509,7 +509,7 @@ class OOXMLImportServiceTest {
 
         RecordingUnitSeeder.RecordingUnitSpecs spec = service.parseRecordingUnits(s, OOXMLImportService.ImportScope.PROJECT, au).get(0);
 
-        assertThat(spec.nature()).isEqualTo(new ConceptSeeder.ConceptKey("th337", "1216"));
+        assertThat(spec.nature()).isEqualTo(new ConceptSeeder.ConceptKey("th338", "1216"));
         assertThat(spec.geomorphologicalCycle()).isNull();
     }
 
@@ -517,7 +517,7 @@ class OOXMLImportServiceTest {
     void parseRecordingUnits_unresolvedLabel_errorCarriesTheFieldCodeAndTheTypeOfTheRow() {
         var au = actionUnitWithInstitution(7L);
         when(conceptService.resolveConceptByLabel(7L, RecordingUnit.TYPE_FIELD_CODE, "US"))
-                .thenReturn(conceptWithKey("th337", "1199"));
+                .thenReturn(conceptWithKey("th338", "1199"));
         when(conceptService.resolveConceptByLabel(7L, RecordingUnit.NATURE_FIELD_CODE, "Inconnue"))
                 .thenThrow(new IllegalStateException("Concept 'Inconnue' introuvable dans le thésaurus configuré"));
 
@@ -630,7 +630,7 @@ class OOXMLImportServiceTest {
         row.createCell(1).setCellValue("Institut national");
         row.createCell(2).setCellValue("INRAP-ID");
         row.createCell(3).setCellValue("a@inrap.fr; b@inrap.fr");
-        row.createCell(4).setCellValue("https://thesaurus.fr/api?idt=th337&idc=999");
+        row.createCell(4).setCellValue("https://thesaurus.fr/api?idt=th338&idc=999");
 
         List<ImportError> errs = errors();
         List<InstitutionSeeder.InstitutionSpec> specs =
@@ -648,7 +648,7 @@ class OOXMLImportServiceTest {
         assertThat(inst.managerEmails())
                 .containsExactly("a@inrap.fr", "b@inrap.fr");
 
-        assertThat(inst.externalId()).isEqualTo("th337");
+        assertThat(inst.externalId()).isEqualTo("th338");
     }
 
     @Test
@@ -734,7 +734,7 @@ class OOXMLImportServiceTest {
     @ParameterizedTest(name = "{index} => input={0}, expected={1}")
     @CsvSource({
             "'https://thesaurus.fr/api', 'https://thesaurus.fr/api'",
-            "'https://thesaurus.fr/api?idt=th337&idc=999', 'https://thesaurus.fr/ap'",
+            "'https://thesaurus.fr/api?idt=th338&idc=999', 'https://thesaurus.fr/ap'",
             "'a?idt=1', ''"
     })
     void extractThesaurusDomain_parametrized(String input, String expected) {
@@ -1094,7 +1094,7 @@ class OOXMLImportServiceTest {
 
     @Test
     void extractThesaurusDomain_questionMarkAtStart_returnsEmptyString() {
-        assertThat(service.extractThesaurusDomain("?idt=th337")).isNull();
+        assertThat(service.extractThesaurusDomain("?idt=th338")).isNull();
     }
 
     // -------------------------------------------------------------------------

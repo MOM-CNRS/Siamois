@@ -109,3 +109,20 @@ describe("placeContextOf", () => {
     expect([...ruleDependencies({ placeSources: [geoplat] })]).toEqual(["-108"]);
   });
 });
+
+describe("options that follow the type of the record", () => {
+  const columns = [{ fieldId: 5, rules: { options: { kind: "RELATED_TO_TYPE" as const } } }];
+
+  it("relates the list to the type the evaluation is given", () => {
+    const states = evaluateForm(columns, () => undefined, { typeConceptId: "1426" });
+    expect(states.get("5")?.optionsContext).toEqual({ kind: "RELATED_TO_TYPE", relatedTo: "1426" });
+  });
+
+  it("flags a value the offline relations do not allow for the type", () => {
+    const columnsWithValue = (v: unknown) => evaluateForm(columns, (id) => (id === "5" ? v : undefined), {
+      typeConceptId: "1426",
+      isAllowed: () => false,
+    });
+    expect(columnsWithValue({ resourceId: "9" }).get("5")?.incoherent).toEqual([{ kind: "OUT_OF_OPTIONS" }]);
+  });
+});

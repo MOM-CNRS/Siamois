@@ -9,13 +9,11 @@ import fr.siamois.domain.models.settings.ConceptFieldConfig;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.models.vocabulary.ConceptCollection;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.form.FormConfigService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.vocabulary.CodeSourceService;
 import fr.siamois.domain.services.vocabulary.FieldCodeResolver;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptCollectionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepository;
 import fr.siamois.utils.context.ExecutionContextHolder;
@@ -47,11 +45,11 @@ class ThesaurusProjectConfigSeederTest {
 
     @Mock private VocabularyRepository vocabularyRepository;
     @Mock private ConceptRepository conceptRepository;
-    @Mock private ConceptCollectionRepository conceptCollectionRepository;
     @Mock private FieldCodeResolver fieldCodeResolver;
     @Mock private CodeSourceService codeSourceService;
     @Mock private TableFieldConfigService tableFieldConfigService;
     @Mock private FormConfigService formConfigService;
+    @Mock private fr.siamois.domain.services.form.layout.FormLayoutService formLayoutService;
     @Mock private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     private final Vocabulary vocabulary = new Vocabulary();
@@ -61,7 +59,7 @@ class ThesaurusProjectConfigSeederTest {
     @BeforeEach
     void setUp() {
         seeder = new ThesaurusProjectConfigSeeder(definition, vocabularyRepository, conceptRepository,
-                conceptCollectionRepository, fieldCodeResolver, codeSourceService, tableFieldConfigService, formConfigService, transactionManager);
+                fieldCodeResolver, codeSourceService, tableFieldConfigService, formConfigService, formLayoutService, transactionManager);
         vocabulary.setExternalVocabularyId(definition.externalVocabularyId());
         when(vocabularyRepository.findVocabularyByBaseUriAndVocabExternalId(definition.baseUri(), definition.externalVocabularyId()))
                 .thenReturn(Optional.of(vocabulary));
@@ -81,12 +79,6 @@ class ThesaurusProjectConfigSeederTest {
         Concept concept = new Concept();
         concept.setId(id);
         return concept;
-    }
-
-    private static ConceptCollection collectionOf(String externalId) {
-        ConceptCollection collection = new ConceptCollection();
-        collection.setExternalId(externalId);
-        return collection;
     }
 
     private int ueTypeCount() {
@@ -116,37 +108,44 @@ class ThesaurusProjectConfigSeederTest {
     }
 
     @Test
-    void seed_usesTheCollectionTheDefinitionNamesForTheFieldAndTheType_elseTheFieldCodeOfTheThesaurus() {
+    void seed_readsEachVocabularyFieldFromItsCodeInTheThesaurus_onceForEachType() {
         thesaurusDefinesUeTypes();
-        String interpretationList = us.lists().get(RecordingUnit.INTERPRETATION_FIELD_CODE);
-        ConceptCollection collection = collectionOf(interpretationList);
-        when(conceptCollectionRepository.findByVocabularyAndExternalId(vocabulary, interpretationList)).thenReturn(Optional.of(collection));
-        ConceptFieldConfig natureCode = new ConceptFieldConfig();
-        when(fieldCodeResolver.findIn(vocabulary, RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE)).thenReturn(Optional.of(natureCode));
-
-        seeder.seed(mock(UserInfo.class), PROJECT_ID);
-
-        // the interpretation of a US is its own collection, the one of "Fait" and "Ensemble" theirs
-        verify(formConfigService, times(1)).addConceptConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(collection));
-        // and it remembers the collection's name, to find it again if the field is moved to another thesaurus
-        verify(formConfigService).rememberSourceName(eq(usFormConfig), any(CustomFieldConcept.class),
-                eq(us.listNames().get(RecordingUnit.INTERPRETATION_FIELD_CODE)));
-        // the chronology has no list per type: it follows its code, once for each type
-        verify(formConfigService, times(ueTypeCount())).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
-                eq(RecordingUnit.CHRONOLOGICAL_ATTRIBUTION_FIELD_CODE));
-    }
-
-    @Test
-    void seed_readsAFieldWholeWhenItsCollectionIsNotImported() {
-        thesaurusDefinesUeTypes();
-        when(conceptCollectionRepository.findByVocabularyAndExternalId(any(), anyString())).thenReturn(Optional.empty());
         when(fieldCodeResolver.findIn(vocabulary, RecordingUnit.INTERPRETATION_FIELD_CODE)).thenReturn(Optional.of(new ConceptFieldConfig()));
 
         seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
-        verify(formConfigService, never()).addConceptConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), any(ConceptCollection.class));
+        // which of the field's values a type offers is the thesaurus's relation, read by the layout's RELATED_TO_TYPE rule
         verify(formConfigService, times(ueTypeCount())).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
                 eq(RecordingUnit.INTERPRETATION_FIELD_CODE));
+    }
+
+    @Test
+    void seed_skipsAFieldTheThesaurusDoesNotDefine() {
+        thesaurusDefinesUeTypes();
+
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
+
+        verify(formConfigService, never()).addFieldCodeConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), eq(vocabulary),
+                eq(RecordingUnit.INTERPRETATION_FIELD_CODE));
+    }
+
+    @Test
+    void seed_startsATypeWithTheOnlyValueTheThesaurusAllowsItForAField() {
+        thesaurusDefinesUeTypes();
+        DefaultProjectDefinition.Type fait = definition.tables().stream()
+                .filter(table -> table.table() == ConfigurableTable.UE).findFirst().orElseThrow().types().get(1);
+        assertThat(fait.defaults()).containsKey("SIARU.NATURE");
+        when(fieldCodeResolver.findIn(vocabulary, "SIARU.NATURE")).thenReturn(Optional.of(new ConceptFieldConfig()));
+        when(conceptRepository.findConceptByExternalIdIgnoreCase(definition.externalVocabularyId(), fait.defaults().get("SIARU.NATURE")))
+                .thenReturn(Optional.of(conceptOf(5555L)));
+        when(tableFieldConfigService.typeNameOf(PROJECT_ID, ConfigurableTable.UE, Long.parseLong(fait.concept()))).thenReturn(Optional.of("Fait"));
+        when(tableFieldConfigService.findField(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), anyString()))
+                .thenAnswer(invocation -> Optional.of(CustomFieldSelectOneFromFieldCode.builder().id(99L).build()));
+
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
+
+        verify(formLayoutService).saveDefault(PROJECT_ID, ConfigurableTable.UE, "Fait", 99L,
+                fr.siamois.domain.models.form.config.FieldDefault.ofConceptIds(java.util.List.of("5555")));
     }
 
     @Test

@@ -53,18 +53,7 @@ public class FieldRulesValidator {
         if (leaves[0] > MAX_LEAVES) {
             issues.add(new Issue("rules.error.tooBig", MAX_LEAVES));
         }
-        OptionsFilter options = rules.options();
-        if (options instanceof OptionsFilter.RelatedConcepts related) {
-            if (own == null || RuleFieldFamily.of(own) != RuleFieldFamily.CONCEPT) {
-                issues.add(new Issue("rules.error.optionsOwnNotConcept"));
-            }
-            CustomField source = reference(related.fieldId(), ownFieldId, fields, issues);
-            if (source != null && RuleFieldFamily.of(source) != RuleFieldFamily.CONCEPT) {
-                issues.add(new Issue("rules.error.optionsNotConcept", label(source)));
-            }
-        } else if (options instanceof OptionsFilter.RefMatch match) {
-            reference(match.fieldId(), ownFieldId, fields, issues);
-        }
+        checkOptions(rules.options(), own, ownFieldId, fields, issues);
         checkPlaceSources(rules.placeSources(), own, ownFieldId, fields, issues);
         for (FieldConstraint constraint : rules.constraints()) {
             CustomField other = reference(constraint.fieldId(), ownFieldId, fields, issues);
@@ -74,6 +63,25 @@ public class FieldRulesValidator {
             }
         }
         return issues;
+    }
+
+    private void checkOptions(OptionsFilter options, CustomField own, long ownFieldId,
+                              Map<Long, CustomField> fields, List<Issue> issues) {
+        if (options instanceof OptionsFilter.RefMatch match) {
+            reference(match.fieldId(), ownFieldId, fields, issues);
+            return;
+        }
+        if (options instanceof OptionsFilter.RelatedConcepts || options instanceof OptionsFilter.RelatedToType) {
+            if (own == null || RuleFieldFamily.of(own) != RuleFieldFamily.CONCEPT) {
+                issues.add(new Issue("rules.error.optionsOwnNotConcept"));
+            }
+        }
+        if (options instanceof OptionsFilter.RelatedConcepts related) {
+            CustomField source = reference(related.fieldId(), ownFieldId, fields, issues);
+            if (source != null && RuleFieldFamily.of(source) != RuleFieldFamily.CONCEPT) {
+                issues.add(new Issue("rules.error.optionsNotConcept", label(source)));
+            }
+        }
     }
 
     /**

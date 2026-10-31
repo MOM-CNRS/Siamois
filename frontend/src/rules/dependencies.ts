@@ -14,7 +14,8 @@ export function ruleDependencies(rules: FieldRules | null | undefined): Set<stri
   if (!rules) return out;
   collect(rules.enabledWhen, out);
   collect(rules.requiredWhen, out);
-  if (rules.options) out.add(String(rules.options.fieldId));
+  // RELATED_TO_TYPE reads the record's type, not a field.
+  if (rules.options && rules.options.kind !== "RELATED_TO_TYPE") out.add(String(rules.options.fieldId));
   rules.constraints?.forEach((c) => out.add(String(c.fieldId)));
   rules.placeSources?.forEach((source) =>
     Object.values(source.params ?? {}).forEach((binding) => out.add(String(binding.fromField))),

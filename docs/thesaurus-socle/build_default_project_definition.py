@@ -8,10 +8,11 @@ Le RDF à passer est de préférence l'EXPORT d'OpenTheso du thésaurus une fois
 identifiants de concepts et de collections, et la définition doit porter ceux de l'instance réelle. Le RDF produit par
 generate_thesaurus_socle.py convient si les identifiants n'ont pas changé.
 
-Le script garde les tables, les codes de type, les libellés et les formats d'identifiant du fichier existant, et recalcule :
-  - l'identifiant du concept de chaque type (retrouvé par son libellé sous le champ type de la table) ;
-  - pour chaque type, les collections « Table · Champ — Type  [CODE @ CODE_TYPE:slug] » qui lui sont propres
-    (`lists`: code de champ -> identifiant de collection, `listNames`: code de champ -> nom exact de la collection).
+Le script garde les tables, les codes de type, les libellés et les formats d'identifiant du fichier existant, et recalcule
+l'identifiant du concept de chaque type (retrouvé par son libellé sous le champ type de la table) et la valeur par défaut des champs
+de DEFAULT_FIELDS (`defaults`: code de champ -> concept), quand le thésaurus ne relie au type qu'une seule valeur de ce champ. Les valeurs qu'un champ propose
+pour un type ne sont plus écrites ici : le thésaurus les relie au type (`skos:related`) et la règle RELATED_TO_TYPE des mises en
+page les lit. Les anciennes clés `lists` et `listNames` sont retirées.
 Pour les tables de --all-types (toutes par défaut), les types sont tous ceux que le thésaurus déclare ; le format d'identifiant
 des types est recalculé d'après PREFIXES ; sinon chaque type reçoit un préfixe
 parlant et unique dans sa table (voir PREFIXES).
@@ -38,7 +39,7 @@ ap.add_argument("--all-types", nargs="*", default=["UE", "MOBILIER", "PHASE", "C
 args = ap.parse_args()
 
 text = open(args.rdf, encoding="utf8").read()
-concepts, collections = {}, {}
+concepts = {}
 for about, body in re.findall(r'<rdf:Description rdf:about="([^"]*)">(.*?)</rdf:Description>', text, re.S):
     fr = unescape((re.findall(r'prefLabel xml:lang="fr">([^<]*)', body) or [""])[0])
     m = re.search(r"idc=(\d+)", about)
@@ -47,20 +48,9 @@ for about, body in re.findall(r'<rdf:Description rdf:about="([^"]*)">(.*?)</rdf:
             "fr": fr,
             "notation": (re.findall(r"<skos:notation>([^<]*)", body) or [None])[0],
             "narrower": re.findall(r'skos:narrower rdf:resource="[^"]*idc=(\d+)', body),
+            "related": set(re.findall(r'skos:related rdf:resource="[^"]*idc=(\d+)', body)),
         }
-    m = re.search(r"idg=(g\d+)", about)
-    if m and 'Collection"' in body:
-        collections[m.group(1)] = fr
 by_notation = {c["notation"]: k for k, c in concepts.items() if c["notation"]}
-
-
-def lists_for(type_code, label):
-    found = {}
-    for gid, name in collections.items():
-        m = re.match(r".* — (.*?)  \[(.*?) @ (.*?):(.*?)\]$", name)
-        if m and m.group(3) == type_code and m.group(1) == label:
-            found[m.group(2)] = (gid, name)
-    return {code: found[code][0] for code in sorted(found)}, {code: found[code][1] for code in sorted(found)}
 
 
 # La partie compteur du format d'identifiant par défaut de chaque table (ConfigurableTable).
@@ -103,6 +93,23 @@ PREFIXES = {
 }
 
 
+# Les champs dont la valeur est pré-remplie quand le type n'en autorise qu'une.
+DEFAULT_FIELDS = ["SIARU.NATURE", "SIAS.MATIERE", "SIAS.CLASS", "SIAD.CATEGORY"]
+
+
+def defaults_for(type_id):
+    """Code de champ -> concept, pour les champs de DEFAULT_FIELDS dont le type ne relie qu'une valeur."""
+    out = {}
+    for code in DEFAULT_FIELDS:
+        field = by_notation.get("SIAMOIS#" + code)
+        if field is None:
+            continue
+        values = [v for v in concepts[field]["narrower"] if v in concepts[type_id]["related"]]
+        if len(values) == 1:
+            out[code] = values[0]
+    return out
+
+
 def assign_prefixes(table):
     """Chaque type d'une table a un format d'identifiant `<préfixe>{compteur}`, le préfixe étant unique dans la table.
 
@@ -139,16 +146,18 @@ for table in definition["tables"]:
         table["types"] = [{"label": label, "concept": cid,
                            **({"identifierFormat": known[label]["identifierFormat"]}
                               if label in known and known[label].get("identifierFormat") else {})}
-                          for label, cid in children.items()]
+                          # l'ordre du fichier existant est gardé, les types nouveaux viennent après
+                          for label, cid in sorted(children.items(), key=lambda kv: list(known).index(kv[0]) if kv[0] in known else len(known))]
         assign_prefixes(table)
     for type_ in table["types"]:
         if type_["label"] not in children:
             sys.exit("Type introuvable sous %s : %s" % (table["typeCode"], type_["label"]))
         type_["concept"] = children[type_["label"]]
+        type_.pop("defaults", None)
+        defaults = defaults_for(type_["concept"])
+        if defaults:
+            type_["defaults"] = defaults
         type_.pop("lists", None)
         type_.pop("listNames", None)
-        lists, names = lists_for(table["typeCode"], type_["label"])
-        if lists:
-            type_["lists"], type_["listNames"] = lists, names
 open(args.definition, "w", encoding="utf8").write(json.dumps(definition, indent=2, ensure_ascii=False))
-print("définition écrite : %s (%d tables, %d collections lues)" % (args.definition, len(definition["tables"]), len(collections)))
+print("définition écrite : %s (%d tables)" % (args.definition, len(definition["tables"])))

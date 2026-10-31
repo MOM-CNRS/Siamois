@@ -48,7 +48,7 @@ stocké et envoyé par son id interne, `{conceptId}` (chaîne), que le client co
 
 ### Règles actuellement définies (mise en page initiale `form-layouts/UE.json`)
 
-Forme, profil et orientation d'érosion actifs si la **nature** = « Négative » (thésaurus **th337**, concept 1216) ;
+Forme, profil et orientation d'érosion actifs si la **nature** = « Négative » (thésaurus **th338**, concept 1216) ;
 fermeture ≥ ouverture, TAQ ≥ TPQ, Z sup ≥ Z inf. Dans `ActionUnitDetailsForm` : fin ≥ début, ZMAX ≥ ZMIN.
 **L'interprétation normalisée n'a plus aucune règle** (voir § 4) : elle proposait les concepts liés au cycle, ce qui ne fonctionne
 plus puisque le cycle est masqué et que ses valeurs n'ont pas de lien avec les interprétations.
@@ -223,7 +223,7 @@ la configuration des champs existe déjà à cette granularité.
 
 ### Quatre champs distincts
 
-| Champ | Code | Concept th337 | Valeurs | Liens `skos:related` dans th337 | Dans la mise en page |
+| Champ | Code | Concept th338 | Valeurs | Liens `skos:related` dans th338 | Dans la mise en page |
 |---|---|---|---|---|---|
 | Nature | `SIARU.NATURE` | 1180 | Positive, Négative, Englobante, US construite, Dépôt naturel, Altération, Unité artificielle, Interface, Anomalie | aucun | affiché |
 | Cycle géomorphologique | `SIARU.GEOMORPHO` | 1181 | Dépôt, Erosion, Altération, Composite | vers les types US / Fait / Ensemble ; chaque valeur vers les champs qu'elle active (érosion) | **masqué** (`active: false`) |
@@ -236,8 +236,15 @@ est le champ du référentiel (`nature_UE`).
 ### Fait pour l'instant
 
 - L'interprétation est **découplée de tout autre champ** : la règle `options` (`RELATED_CONCEPTS` sur le cycle) est retirée de
-  `form-layouts/UE.json`. La liste proposée est celle du champ, éventuellement restreinte par type via les collections
-  « Enregistrement · Interprétation normalisée — Type » du projet par défaut.
+  `form-layouts/UE.json`. La liste proposée est celle du champ, restreinte au type de la fiche par la règle `RELATED_TO_TYPE` (ci-dessous).
+- **`RELATED_TO_TYPE` (2026-10-31)** : `options: {"kind":"RELATED_TO_TYPE"}`, sans champ source. La liste d'un champ de vocabulaire est celle des
+  concepts que le thésaurus relie (`skos:related`) au **type de la fiche**. Un type qui n'est relié à aucune valeur de ce champ laisse la liste
+  complète (Sondage, Tranchée, UF…). Le type vient de l'entité (`typeConceptId` passé à `FieldRulesEvaluator.evaluate` et à `evaluateForm`), pas d'un
+  champ de la mise en page. Côté serveur, la liste passe par `GET …/concepts?fieldId=…&valueConceptId=<type>&relatedToType=true`
+  (`VocabularyOpenApiService.getConceptsForFieldRelatedToType`) et `FieldAnswerPatchService` refuse un concept hors liste. Posée dans les mises en
+  page livrées sur : UE (interprétation normalisée, cycle géomorphologique), Mobilier (matière, classe, détermination, alerte sanitaire), Document
+  (catégorie, nature du support, format). La nature de l'unité suit aussi le type (US : positive, négative, US construite, dépôt naturel, altération, interface ; Fait, Ensemble, Entité archéologique et ensemble archéologique : englobante ; unité artificielle, passe mécanique, nettoyage, fenêtre de fouille : unité artificielle ; les autres types gardent la liste complète). Elle s'ajoute ou se retire champ par champ dans l'éditeur de règles (« Type de la fiche »). Il n'y a plus de
+  collection par (champ, type) dans le thésaurus. Un seul filtre par champ : la classe d'un mobilier suit le type, pas la matière.
 - Forme, profil et orientation d'érosion dépendent de la **nature** (champ -331) = « Négative » (1216), et plus du cycle masqué.
   Le choix de « Négative » est à confirmer : aucune nature ne s'appelle « Erosion » ; c'est celle qui désigne un creusement ou une
   perte de matière.
@@ -248,9 +255,8 @@ est le champ du référentiel (`nature_UE`).
    - Mise en page : remettre `rules.options = {kind: RELATED_CONCEPTS, fieldId: -331}` sur l'interprétation (-308). Une ligne.
    - Thésaurus : relier chaque interprétation à ses natures par `skos:related` (symétrique). Ces liens n'existent pas ; ils sont à
      définir (une première proposition par le nom de l'interprétation, à faire relire).
-2. **La nature dépend du type de l'unité.** Le moteur ne sait filtrer que par la **valeur d'un autre champ**. Il faut une nouvelle
-   option, par exemple `options.kind = "RELATED_TO_TYPE"` : la liste proposée est celle des concepts reliés au **type de la fiche**
-   (US, Fait, Ensemble…), sans champ source. À faire :
+2. **La nature dépend du type de l'unité.** Le moteur sait désormais filtrer par le **type de la fiche** (`RELATED_TO_TYPE`, voir « Fait »). Reste à
+   poser la règle sur la nature et à créer les liens dans le thésaurus. Plan d'origine, réalisé sauf le thésaurus :
    - ajouter la règle dans `FieldRulesJson`, `FieldRulesEvaluator`, `FieldAnswerPatchService` (rejet d'un concept hors liste), l'endpoint
      `concepts?relatedToConceptId=` (le type de l'entité part déjà en `valueConceptId`) et l'éditeur de règles ;
    - côté TypeScript : `frontend/src/rules/` ;
@@ -261,7 +267,7 @@ est le champ du référentiel (`nature_UE`).
 
 À ajouter dans OpenTheso (`skos:related`, symétrique), à la main ou dans `generate_thesaurus_socle.py` (`applies(<concept>, [champs])`) :
 
-| Concept (id th337) | Relié à (champ) | Id du champ |
+| Concept (id th338) | Relié à (champ) | Id du champ |
 |---|---|---|
 | Nature · **Négative** (1216) | Forme de l'érosion (`SIARU.EROSIONSHAPE`) | 1184 |
 | Nature · **Négative** (1216) | Profil de l'érosion (`SIARU.EROSIONPROFILE`) | 1185 |
@@ -277,15 +283,15 @@ Il y a deux sortes de dépendances, qui ne vivent pas au même endroit :
 
 - **Règles de formulaire** : portées par la mise en page (`form-layouts/*.json`, ou le formulaire codé de Projet), évaluées par le
   moteur (§ 1). Elles activent un champ, bornent une valeur ou filtrent une liste selon la valeur d'**un autre champ**.
-- **Dépendances du thésaurus** : liens `skos:related` du socle commun (th337, généré par `docs/thesaurus-socle/generate_thesaurus_socle.py`).
+- **Dépendances du thésaurus** : liens `skos:related` du socle commun (th338, généré par `docs/thesaurus-socle/generate_thesaurus_socle.py`).
   Elles disent qu'un champ ne s'applique qu'à un type (ou une valeur), ou qu'une liste de valeurs dépend du type (ou d'un autre champ).
-  Elles ne sont lues que si une règle ou une collection les exploite (§ « Une liste qui dépend du type » du README du thésaurus).
+  Elles ne sont lues que si une règle les exploite (§ « Une liste qui dépend du type » du README du thésaurus).
 
 ### A. Règles de formulaire en place
 
 | Table | Champ conditionné | Condition | Source |
 |---|---|---|---|
-| Enregistrement | Forme de l'érosion, Profil de l'érosion, Orientation de l'érosion | actifs seulement si **Nature = Négative** (th337 · 1216, champ -331) | `UE.json` (`enabledWhen`) |
+| Enregistrement | Forme de l'érosion, Profil de l'érosion, Orientation de l'érosion | actifs seulement si **Nature = Négative** (th338 · 1216, champ -331) | `UE.json` (`enabledWhen`) |
 | Enregistrement | TAQ | ≥ TPQ | `UE.json` (`constraints`) |
 | Enregistrement | Altitude supérieure (Z sup) | ≥ Z inf | `UE.json` (`constraints`) |
 | Enregistrement | Date de fermeture | ≥ date d'ouverture | `UE.json` (`constraints`) |
@@ -303,7 +309,7 @@ en page du type et ne figurent pas ici.
 ### B. Dépendances décrites dans le thésaurus
 
 Légende : « s'applique à » = le champ n'a de sens que pour ce type ou cette valeur (lien type/valeur → champ) ; « liste selon » = les valeurs
-proposées dépendent du pilote (lien pilote → valeur, et collections « Table · Champ — Pilote »).
+proposées dépendent du pilote (lien pilote → valeur, lu par la règle `RELATED_TO_TYPE` quand le pilote est le type).
 
 **Projet** (`SIAAU`)
 
@@ -327,7 +333,7 @@ proposées dépendent du pilote (lien pilote → valeur, et collections « Table
 | Cycle géomorphologique, Agent géomorphologique | s'appliquent aux types **US, Fait, Ensemble** (ces deux champs sont masqués par défaut, § 4) |
 | Couleur de la matrice | s'applique au type **US** et aux valeurs de cycle **Dépôt, Altération, Composite** |
 | Cycle géomorphologique | liste selon le type : US = dépôt, érosion, altération, composite ; Fait = dépôt, érosion ; Ensemble = dépôt, composite |
-| Forme, Profil, Orientation de l'érosion | liés dans th337 à la valeur de cycle **Erosion** ; la règle de formulaire (A) les active selon la **nature = Négative**, **lien à créer** dans le thésaurus (voir § 4) |
+| Forme, Profil, Orientation de l'érosion | liés dans th338 à la valeur de cycle **Erosion** ; la règle de formulaire (A) les active selon la **nature = Négative**, **lien à créer** dans le thésaurus (voir § 4) |
 | Interprétation normalisée | liste selon le **type** (US 32, Fait 34, Ensemble 7, Sépulture) |
 | Attribution chronologique | copie de la liste sous chaque champ concerné, sans dépendance |
 
@@ -362,12 +368,11 @@ proposées dépendent du pilote (lien pilote → valeur, et collections « Table
 
 ### C. Écarts à connaître
 
-- Les dépendances du thésaurus (B) ne produisent un comportement que si une règle de formulaire ou une collection de type les lit.
-  Aujourd'hui seules les listes **par type** du projet par défaut (`default-project/definition.json`, collections par type) en profitent ;
-  « s'applique à » (champ réservé à un type) n'est pas lu par le moteur de règles ; je n'ai pas vérifié si la configuration du projet par
-  défaut le reprend champ par champ.
+- Les dépendances du thésaurus (B) ne produisent un comportement que si une règle de formulaire les lit. Aujourd'hui seules les listes
+  **par type** (règle `RELATED_TO_TYPE` des mises en page livrées) en profitent ; « s'applique à » (champ réservé à un type) n'est pas lu par
+  le moteur de règles.
 - Le filtre d'une liste par la valeur d'un autre champ (`RELATED_CONCEPTS`) n'est plus utilisé dans les mises en page livrées depuis le
   retrait de l'interprétation (§ 4). Il reste disponible dans l'éditeur de règles.
-- Le filtre d'une liste par le **type de la fiche** (nature → type, matière → type…) n'existe pas dans le moteur : c'est le nouveau type de
-  règle à créer (§ 4, point 2).
+- Le filtre d'une liste par le **type de la fiche** existe (`RELATED_TO_TYPE`). La nature d'une unité n'en profite pas encore : les liens
+  nature → type sont créés (2026-10-31) et la règle est posée dans `UE.json`.
 

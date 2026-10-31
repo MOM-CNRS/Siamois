@@ -243,4 +243,17 @@ class VocabularyServiceTest {
         assertEquals("fr", everything.get(2).langLabel());
         assertEquals(List.of("1"), siamoisOnly.stream().map(ThesaurusInfo::idTheso).toList());
     }
+
+    @Test
+    void findAllPublicThesaurusOf_shouldNotDependOnTheCaseOfTheType() throws InvalidEndpointException {
+        String server = "http://example.com";
+        when(thesaurusApi.fetchAllPublicThesaurus(server)).thenReturn(List.of(
+                new ThesaurusDTO("1", List.of(new LabelDTO("fr", "A")), "siamois"),
+                new ThesaurusDTO("2", List.of(new LabelDTO("fr", "B")), " SIAMOIS "),
+                new ThesaurusDTO("3", List.of(new LabelDTO("fr", "C")), "Autre")));
+
+        List<ThesaurusInfo> result = vocabularyService.findAllPublicThesaurusOf(server, "fr");
+
+        assertEquals(List.of("1", "2"), result.stream().map(ThesaurusInfo::idTheso).toList());
+    }
 }

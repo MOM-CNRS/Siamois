@@ -34,6 +34,7 @@ import fr.siamois.ui.form.dto.CustomRowUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -75,6 +77,9 @@ class FieldAnswerPatchServiceTest {
     @Mock
     private FieldDefaultResolver defaultResolver;
 
+    @Mock
+    private fr.siamois.domain.services.vocabulary.FieldConfigurationService fieldConfigurationService;
+
     private FieldAnswerPatchService service;
     private final PhaseDTO entity = new PhaseDTO();
 
@@ -85,7 +90,7 @@ class FieldAnswerPatchServiceTest {
                 mock(ActionUnitSummaryMapper.class),                 mock(SpatialUnitRepository.class), mock(SpatialUnitSummaryMapper.class),
                 mock(RecordingUnitRepository.class), mock(RecordingUnitSummaryMapper.class),
                 phaseRepository, phaseMapper, mock(ContainerRepository.class), mock(ContainerMapper.class),
-                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, unitDefinitionRepository, defaultResolver);
+                mock(SpecimenRepository.class), mock(SpecimenSummaryMapper.class), unitDefinitionMapper, unitDefinitionRepository, defaultResolver, fieldConfigurationService);
     }
 
     @Test
@@ -549,6 +554,61 @@ class FieldAnswerPatchServiceTest {
         assertThatThrownBy(() -> service.apply(entity, form, arg3, PROJECT_ID))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("hors de la liste");
+    }
+
+    // ========== A list that follows the type of the record ==========
+
+    private CustomFieldSelectOneFromFieldCode givenAnInterpretationOfAPhaseOfType(long typeId, long relatedValue, long otherValue, boolean typeRelatesToSomeValue) throws Exception {
+        entity.setType(new ConceptDTO());
+        entity.getType().setId(typeId);
+        CustomFieldSelectOneFromFieldCode interpretation = new CustomFieldSelectOneFromFieldCode();
+        interpretation.setId(2L);
+        interpretation.setFieldCode("SIARU.INTERPRETATION");
+        givenResponse(Map.of(interpretation, new CustomFieldAnswerSelectOneFromFieldCodeViewModel()));
+        fr.siamois.domain.models.vocabulary.Concept type = new fr.siamois.domain.models.vocabulary.Concept();
+        type.setId(typeId);
+        when(conceptRepository.findById(typeId)).thenReturn(Optional.of(type));
+        for (long id : new long[]{relatedValue, otherValue}) {
+            fr.siamois.domain.models.vocabulary.Concept value = new fr.siamois.domain.models.vocabulary.Concept();
+            value.setId(id);
+            value.setExternalId(String.valueOf(id));
+            lenient().when(conceptRepository.findById(id)).thenReturn(Optional.of(value));
+            ConceptDTO dto = new ConceptDTO();
+            dto.setId(id);
+            lenient().when(conceptMapper.convert(value)).thenReturn(dto);
+        }
+        lenient().when(conceptRepository.isRelated(typeId, relatedValue)).thenReturn(true);
+        lenient().when(conceptRepository.isRelated(typeId, otherValue)).thenReturn(false);
+        when(fieldConfigurationService.fetchAutocompleteRelated(any(), eq("SIARU.INTERPRETATION"), same(type), isNull(), eq(PROJECT_ID)))
+                .thenReturn(typeRelatesToSomeValue ? List.of(new fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO(null, "x", "fr")) : List.of());
+        fr.siamois.utils.context.ExecutionContextHolder.set(mock(fr.siamois.domain.models.UserInfo.class));
+        return interpretation;
+    }
+
+    @Test
+    void apply_refusesAConceptTheThesaurusDoesNotRelateToTheTypeOfTheRecord() throws Exception {
+        CustomFieldSelectOneFromFieldCode interpretation = givenAnInterpretationOfAPhaseOfType(1199L, 80L, 81L, true);
+        FormUiDto form = formOf(col(interpretation, FieldRules.NONE.withOptions(new OptionsFilter.RelatedToType())));
+
+        service.apply(entity, form, Map.of("2", new AnswerInput("80", null)), PROJECT_ID);
+        var other = Map.of("2", new AnswerInput("81", null));
+        assertThatThrownBy(() -> service.apply(entity, form, other, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("type de la fiche");
+    }
+
+    @Test
+    void apply_acceptsAnyConceptWhenTheTypeIsRelatedToNoValueOfTheField() throws Exception {
+        CustomFieldSelectOneFromFieldCode interpretation = givenAnInterpretationOfAPhaseOfType(1205L, 80L, 81L, false);
+        FormUiDto form = formOf(col(interpretation, FieldRules.NONE.withOptions(new OptionsFilter.RelatedToType())));
+
+        assertThatCode(() -> service.apply(entity, form, Map.of("2", new AnswerInput("81", null)), PROJECT_ID))
+                .doesNotThrowAnyException();
+    }
+
+    @AfterEach
+    void clearTheExecutionContext() {
+        fr.siamois.utils.context.ExecutionContextHolder.clear();
     }
 
     @Test

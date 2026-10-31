@@ -34,13 +34,11 @@ l'application, mais ils identifient le champ de façon stable.
 1. Le champ porte **toutes** les valeurs possibles, une seule fois chacune.
 2. Un lien `skos:related` (symétrique) relie le type, ou la valeur pilote, aux valeurs qu'il autorise. C'est ce que lit la règle
    `RELATED_CONCEPTS` (`fetchAutocompleteRelated`). Une valeur commune à plusieurs types (« Indéterminé ») est reliée à chacun.
-3. Une **collection** est générée par couple (champ, pilote), nommée `Table · Champ — Pilote  [CODE @ CODE_DU_CHAMP_PILOTE:pilote]`
-   (par exemple `Mobilier · Classe — Métal  [SIAS.CLASS @ SIAS.CAT:metal]`). Ce format est lu par le gabarit « Projet par défaut » de
-   l'application: le libellé du pilote, après le tiret cadratin, doit être celui du type dans le thésaurus. Elle sert quand
-   on règle la liste d'un type dans la config d'un projet (source « Collection »). Les membres sont dans la branche, donc chargés.
+3. **Aucune collection.** Elles ont été retirées (2026-10-31) : la règle de mise en page `RELATED_TO_TYPE` lit directement le lien du point 2.
+   Un type relié à aucune valeur d'un champ laisse la liste complète du champ.
 4. Un lien `skos:related` entre un type et un **champ** dit que le champ ne s'applique qu'à ce type (« Objectif du prélèvement »
    pour un prélèvement, « Échelle » pour un document graphique).
-5. La collection `SIAMOIS – Dépendance logique` regroupe les pilotes, comme dans le th230.
+5. Le générateur affiche en fin de course, pour chaque liste par pilote, les pilotes sans aucun lien (ils retombent sur la liste complète).
 
 Exemples livrés : interprétation d'une unité selon US / fait / ensemble / sépulture ; matière, classe et interprétation d'un
 mobilier selon son type (céramique, métal, lithique, verre, faune, VAB, prélèvement) ; catégorie, support, format et échelle d'un
@@ -59,7 +57,7 @@ et je n'ai pas supposé qu'il supporte un concept à plusieurs parents.
   à la place d'« unité élémentaire / incluante / subdivision » du th230. Le rôle de ces trois anciennes valeurs (porter la
   visibilité de `Nature` et `Agent`) est repris par les liens type ↔ champ.
 - **`SIAS.CAT`** mélange deux familles (nature du mobilier, conditionnement objet / lot / VAB / prélèvement) parce que l'export
-  national lit « objet » et « lot » dans le type. Deux collections les séparent.
+  national lit « objet » et « lot » dans le type. Aucune collection ne les sépare (retirées).
 - **Valeurs recopiées du th230** : nature, agent et interprétation d'une unité, avec leurs libellés et définitions (parfois en
   allemand dans l'original, les définitions « !!! » sont écartées).
 - **Identifiants** : `th999`, concepts numérotés à partir de 1000, URI `https://thesaurus.mom.fr/?idc=…&idt=th999`. À régénérer avec
@@ -109,7 +107,7 @@ types de traitement, mots-clés d'interprétation du projet.
 - **Alerte sanitaire** (`SIAS.SANITARYALERT`, choix multiple) : devenue une liste. Celle de l'objet / lot pour céramique, métal, lithique, verre,
   faune et terre cuite architecturale ; celle des vestiges anthropobiologiques pour le type VAB.
 - **Matière et classe du mobilier** : le libellé de la classe est celui du référentiel, avec la matière entre crochets (« [métal] ferreux »),
-  sans altLabel. Le lien avec la matière passe aussi par les concepts associés (`skos:related`) et les collections.
+  sans altLabel. Le lien avec la matière passe aussi par les concepts associés (`skos:related`).
 
 ### Définitions et notes
 
@@ -127,3 +125,18 @@ Le thésaurus s'appelle « Siamois DEMO » (libellé du schéma). Changements de
   azimut, pendage) ; `SIAMD.NATURE` est la façon de prendre la valeur (maximale, minimale, moyenne, inférieure, supérieure, sèche), facultative et
   **indépendante du type** (plus de collections par type de mesure). « Altitude moyenne » devient le type Altitude avec la nature Moyenne, « Poids sec »
   le type Poids avec la nature Sèche.
+
+### Sans collections, ids conservés (2026-10-31)
+
+`python3 -I generate_thesaurus_socle.py --th th338 --keep-ids "<export OpenTheso>.rdf" --out ~/Downloads/siamois-demo.rdf`
+
+- **`--keep-ids`** : chaque concept de l'export garde son identifiant (retrouvé par son parent et son libellé, sans accents ni casse) ; un
+  concept nouveau reçoit `max(id)+1…`. Le script affiche les identifiants conservés, les nouveaux, et les concepts de l'export qu'il ne
+  retrouve pas. Sur l'export du 2026-10-29 : 962 conservés, 0 nouveau, 0 perdu.
+- **Collections** : plus aucune (179 retirées, y compris « Dépendance logique » et les deux familles de types de mobilier).
+- **Ajouts faits à la main dans OpenTheso, repris par le script** : types d'UE `Entité archéologique` et `ensemble archéologique` (concepts à part,
+  sans libellé alternatif sur Fait), interprétations d'UE `Terre végétale` et `Filin` (reliées à US), déterminations de mobilier `os animal` et
+  `coquille d'huître` (reliées à Faune), libellé `Site patrimonial`.
+- **Corrections par rapport à l'export** : `Géometrie` → `Géométrie` (2 concepts) ; Forme, Profil et Orientation d'érosion ne sont plus reliés au
+  cycle `Erosion` (1225) mais à la nature `Négative` (1216), comme la règle de `UE.json`.
+- `build_default_project_definition.py` ne lit plus les collections : il met à jour les identifiants de types de `default-project/definition.json`.

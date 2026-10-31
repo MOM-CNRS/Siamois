@@ -209,7 +209,7 @@ class RecordingUnitOpenApiServiceTest {
                 actionUnitSummaryMapper,                 spatialUnitRepository, spatialUnitSummaryMapper, mock(RecordingUnitRepository.class),
                 mock(RecordingUnitSummaryMapper.class), phaseRepository, phaseMapper,
                 mock(ContainerRepository.class), mock(ContainerMapper.class), mock(SpecimenRepository.class),
-                mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class)));
+                mock(SpecimenSummaryMapper.class), unitDefinitionMapper, mock(fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository.class), mock(FieldDefaultResolver.class), mock(fr.siamois.domain.services.vocabulary.FieldConfigurationService.class)));
         ReflectionTestUtils.setField(service, "fieldAnswerWireService", new FieldAnswerWireService(formService, labelService));
         // Catalogs are decorated with each field's list capability; not what these tests are about.
         FieldQueryService fieldQueryService = mock(FieldQueryService.class);

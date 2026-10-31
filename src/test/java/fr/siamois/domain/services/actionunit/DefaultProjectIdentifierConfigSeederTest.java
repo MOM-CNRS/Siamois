@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 class DefaultProjectIdentifierConfigSeederTest {
 
     private static final Long PROJECT_ID = 42L;
-    private static final String US_URI = "https://thesaurus.mom.fr/?idc=1199&idt=th337";
+    private static final String US_URI = "https://thesaurus.mom.fr/?idc=1199&idt=th338";
 
     @Mock private VocabularyService vocabularyService;
     @Mock private ConceptService conceptService;

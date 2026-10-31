@@ -2,6 +2,7 @@ package fr.siamois.domain.services.form.layout;
 
 import fr.siamois.domain.models.form.layout.FormLayout;
 import fr.siamois.domain.models.form.rules.FieldRules;
+import fr.siamois.domain.models.form.rules.OptionsFilter;
 import fr.siamois.domain.models.form.rules.FieldValueSpec;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
@@ -43,12 +44,24 @@ class FormLayoutSeedsTest {
                 item(ConfigurableTable.UE, "erosionProfile").rules().enabledWhen());
     }
 
-    /** The interpretation is not tied to any other field for now: it will be connected to the nature later. */
+    /** The interpretation is not tied to another field's answer: its list follows the type of the record. */
     @Test
-    void theInterpretationDependsOnNoOtherField() {
+    void theInterpretationFollowsTheTypeOfTheRecordAndNoOtherField() {
         var rules = item(ConfigurableTable.UE, "normalizedInterpretation").rules();
 
-        assertThat(rules).isSameAs(FieldRules.NONE);
+        assertThat(rules.options()).isInstanceOf(OptionsFilter.RelatedToType.class);
+        assertThat(rules.enabledWhen()).isNull();
+    }
+
+    @Test
+    void theListsTheThesaurusRelatesToATypeFollowTheTypeOfTheRecord() {
+        assertThat(item(ConfigurableTable.UE, "nature").rules().options()).isInstanceOf(OptionsFilter.RelatedToType.class);
+        for (String binding : new String[]{"material", "materialClass", "normalizedInterpretation", "sanitaryAlert"}) {
+            assertThat(item(ConfigurableTable.MOBILIER, binding).rules().options()).as(binding).isInstanceOf(OptionsFilter.RelatedToType.class);
+        }
+        for (String binding : new String[]{"category", "supportNatures", "format"}) {
+            assertThat(item(ConfigurableTable.DOCUMENT, binding).rules().options()).as(binding).isInstanceOf(OptionsFilter.RelatedToType.class);
+        }
     }
 
     @Test

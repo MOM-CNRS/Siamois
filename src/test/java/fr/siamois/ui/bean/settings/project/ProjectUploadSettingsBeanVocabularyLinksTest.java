@@ -59,7 +59,7 @@ class ProjectUploadSettingsBeanVocabularyLinksTest {
 
     @Test
     void getVocabularyLinks_asksTheServiceOnceForTheSameFieldAndType() {
-        var expected = new ImportVocabularyLinkService.VocabularyLinks("/c", ImportVocabularyLinkService.ConfigKind.FIELD, "US", "/t", "th337");
+        var expected = new ImportVocabularyLinkService.VocabularyLinks("/c", ImportVocabularyLinkService.ConfigKind.FIELD, "US", "/t", "th338");
         when(linkService.linksFor(eq(project), any(ImportError.class), eq(""))).thenReturn(expected);
 
         var first = bean.getVocabularyLinks(vocabularyError(4));

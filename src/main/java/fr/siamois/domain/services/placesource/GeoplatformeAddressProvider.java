@@ -24,7 +24,7 @@ public class GeoplatformeAddressProvider implements PlaceSourceProvider {
 
     public static final String SOURCE_ID = "GEOPLAT";
     private static final int MIN_QUERY = 3;
-    private static final String THESAURUS = "th337";
+    private static final String THESAURUS = "th338";
     private static final String ADDRESS_CONCEPT = "1167";
 
     private final GeoPlatService geoPlatService;

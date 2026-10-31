@@ -5,14 +5,14 @@ Génère le thésaurus SIAMOIS « socle commun » (SKOS / RDF-XML, format d'expo
 Entrées  : th326 (référentiel national) et th230 (ancien thésaurus SIAMOIS), exportés en RDF.
 Sortie   : un RDF prêt à être importé dans OpenTheso comme nouveau thésaurus.
 
-    python3 -I generate_thesaurus_socle.py [--ref th326.rdf] [--old th230.rdf] [--out socle.rdf]
+    python3 -I generate_thesaurus_socle.py [--ref th326.rdf] [--old th230.rdf] [--out socle.rdf] [--keep-ids export-th337.rdf --th th337]
 
 Le modèle est décrit dans README.md. En bref :
   - une table = un concept (notation SIAMOIS#SIAxx) ; un champ = un concept sous la table ;
   - un champ vocabulaire porte la notation SIAMOIS#<code de champ> et ses valeurs en sous-concepts ;
   - un champ sans vocabulaire porte SIAMOISFIELD#<table>.<propriété> (ignoré par le chargeur de l'application) ;
-  - une liste qui dépend du type = skos:related entre le type et les valeurs (comme le th230),
-    plus une collection générée par couple (champ, type).
+  - une liste qui dépend du type = skos:related entre le type et les valeurs (comme le th230) ; c'est ce lien que lit la règle
+    RELATED_TO_TYPE de l'application. Aucune collection n'est générée.
 """
 import argparse
 import glob
@@ -32,6 +32,8 @@ ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__
 ap.add_argument("--base", default="https://thesaurus.mom.fr")
 ap.add_argument("--th", default="th999", help="identifiant du thésaurus dans les URI (remplacé à l'import)")
 ap.add_argument("--first-id", type=int, default=1000)
+ap.add_argument("--keep-ids", help="export RDF d'OpenTheso du thésaurus déjà importé : chaque concept déjà présent y garde son identifiant "
+                                   "(retrouvé par son parent et son libellé), les nouveaux reçoivent les identifiants suivants")
 args = ap.parse_args()
 
 BASE, TH, TODAY, CREATOR = args.base, args.th, "2026-10-27", "gregory.bliault"
@@ -139,10 +141,10 @@ class Node:
 ROOT = Node("root", "Siamois - Concepts système", "Siamois - System concepts", "SIAMOIS#SIAAUTO")
 ROOT.define("Champs du socle commun SIAMOIS : une table par entité, un concept par champ, et pour les champs à vocabulaire la "
             "liste de valeurs proposée en démonstration. Une liste qui dépend du type est portée par des liens « associé » "
-            "entre le type et les valeurs qu'il autorise ; des collections « Table · Champ — Type » en donnent la lecture directe.",
+            "entre le type et les valeurs qu'il autorise.",
             "Fields of the SIAMOIS common core: one table per entity, one concept per field, and for vocabulary fields the "
             "demonstration list of values. A list that depends on the type is carried by 'related' links between the type and "
-            "the values it allows; collections 'Table · Field — Type' give the direct reading.")
+            "the values it allows.")
 
 KIND = {
     "TEXT": "Texte court", "TEXTAREA": "Texte long", "INT": "Nombre entier", "DECIMAL": "Nombre décimal", "DATE": "Date",
@@ -219,8 +221,9 @@ def relate(a, b):
         b.related.append(a)
 
 
-COLLECTIONS = []  # (fr, en, [members])
+COLLECTIONS = []  # plus aucune collection : la liste d'un type est lue dans les liens skos:related
 DRIVERS = []
+SCOPES = []  # (champ, pilote, valeurs) : ce que l'application lit par la règle RELATED_TO_TYPE
 
 
 def applies(driver, fields):
@@ -240,12 +243,7 @@ def scoped(fld, mapping, tbl_label, tbl_label_en):
             DRIVERS.append(driver)
         for m in members:
             relate(driver, m)
-        code = (fld.code or fld.key)
-        scope = "%s:%s" % (fld.driver_field.code, driver_slug)
-        COLLECTIONS.append((
-            "%s · %s — %s  [%s @ %s]" % (tbl_label, fld.fr, driver.fr, code, scope),
-            "%s · %s — %s  [%s @ %s]" % (tbl_label_en, fld.en, driver.en or driver.fr, code, scope),
-            members))
+        SCOPES.append((fld, driver, members))
 
 
 def copy_old(fld, field_label, labels, tbl_label=None):
@@ -470,7 +468,7 @@ municipality | Commune | Municipality
 parcel | Parcelle | Cadastral parcel
 locality | Lieu-dit | Locality
 address | Adresse | Address
-site | Site archéologique | Archaeological site
+site | Site patrimonial | Archaeological site
 footprint | Emprise de projet | Project footprint
 sea-area | Zone maritime (carte Shom) | Maritime area (SHOM chart)
 """)
@@ -527,8 +525,6 @@ us-log | USlog | Log stratigraphic unit
 """, "type_UE")
 adopt(ru_type, "type_UE", ["unité artificielle", "passe mécanique", "nettoyage", "fenêtre de fouille"])
 adopt(ru_type, "type_UE", ["ensemble archéologique"], {"ensemble archéologique": "Ensemble"})  # même notion que « entité archéologique structurée »
-# « EA » du th230 (import Chartres) : le fait est une entité archéologique ; le libellé alternatif permet de la retrouver par son nom.
-child(ru_type, "fait").alt.append("entité archéologique")
 
 # Nature et agent : valeurs du th230, avec leurs définitions.
 adopt(ru_nat, "nature_UE", ref_children("nature_UE"))
@@ -544,6 +540,7 @@ for sl in ("depot", "alteration", "composite"):
     applies(child(ru_nature, sl), [ru_matrix])
 # Les champs d'érosion dépendent de la NATURE « négative » (règle de formulaire de UE.json), plus du cycle (masqué).
 applies(child(ru_nat, "negative"), [ru_shape, ru_profile, ru_orient])
+
 
 # Interprétation : liste par type (th230).
 INTERP = {
@@ -1216,13 +1213,6 @@ upper | Supérieure | Upper
 dry | Sèche | Dry
 """)
 
-# Familles de types de mobilier : deux collections lisibles dans OpenTheso.
-COLLECTIONS.append(("Mobilier · Type — par nature du mobilier  [SIAS.CAT @ nature]", "Finds · Type — by nature of the find  [SIAS.CAT @ nature]",
-                    [child(sp_type, s) for s in ("ceramique", "metal", "lithique", "verre", "faune", "tca")]))
-COLLECTIONS.append(("Mobilier · Type — conditionnement du référentiel  [SIAS.CAT @ referentiel]",
-                    "Finds · Type — conditioning required by the national referential  [SIAS.CAT @ referential]",
-                    [child(sp_type, s) for s in ("vab", "prelevement")]))
-
 # Types d'UE du référentiel national (type_UE) qui n'étaient pas repris : ils prennent le rapprochement et la définition du référentiel.
 adopt(ru_type, "type_UE", ["entité spatiale", "entité graphique", "unité graphique", "entité taphonomique", "phase"])
 # ============================================================================== CHAMPS AJOUTÉS APRÈS LA PREMIÈRE PUBLICATION
@@ -1241,6 +1231,36 @@ field(DC, "externalUrl", "Adresse externe", "External URL", "TEXT")
 field(DC, "originalPath", "Chemin d'origine", "Original path", "TEXT")
 field(DC, "rights", "Droits", "Rights", "TEXT")
 
+# Ajoutés à la main dans OpenTheso (export du 2026-10-29), repris ici pour que le script les régénère.
+values(ru_type, """
+entite-archeologique | Entité archéologique
+ensemble-archeologique | ensemble archéologique
+""")
+values(ru_interp, """
+terre-vegetale | Terre végétale
+filin | Filin
+""")
+for _n in ("terre-vegetale", "filin"):
+    relate(child(ru_type, "us"), child(ru_interp, _n))
+values(sp_interp, """
+coquille-d-huitre | coquille d'huître
+os-animal | os animal
+""")
+for _n in ("coquille-d-huitre", "os-animal"):
+    relate(child(sp_type, "faune"), child(sp_interp, _n))
+
+# Nature de l'unité selon le type (liens type → valeur, lus par la règle RELATED_TO_TYPE). Proposition à relire ; un type absent d'ici
+# (sépulture, UF, sondage, zone…) garde la liste complète. « Englobante » = regroupe d'autres UE : fait, ensemble.
+with_driver(ru_nat, ru_type)
+scoped(ru_nat, {
+    "us": ["positive", "negative", "us-construite", "depot-naturel", "alteration", "interface"],
+    "fait": ["englobante"],
+    "ensemble": ["englobante"],
+    "entite-archeologique": ["englobante"], "ensemble-archeologique": ["englobante"],
+    "unite-artificielle": ["unite-artificielle"], "passe-mecanique": ["unite-artificielle"],
+    "nettoyage": ["unite-artificielle"], "fenetre-de-fouille": ["unite-artificielle"],
+}, "Enregistrement", "Recording")
+
 # ============================================================================== DÉFINITIONS DU RÉFÉRENTIEL
 # Un concept qui a un équivalent dans le référentiel national en reprend la définition et les notes (éditoriale, d'application),
 # telles quelles ; sans équivalent, il garde sa définition.
@@ -1255,16 +1275,56 @@ for n in ORDER:
             break
 
 # ============================================================================== SÉRIALISATION
-ids = {}
-for i, n in enumerate(ORDER):
-    ids[n.key] = args.first_id + i
+def keep_ids(path):
+    """Identifiants d'un export OpenTheso : le concept du script retrouve le sien par (parent, libellé sans accents ni casse)."""
+    rdf, skos = "{%s}" % NS["rdf"], "{%s}" % NS["skos"]
+    old = {}  # id -> (parent id, libellé)
+    for e in ET.parse(path).getroot():
+        m = re.search(r"idc=(\d+)", e.get(rdf + "about") or "")
+        if not m or not any((t.get(rdf + "resource") or "").endswith("#Concept") for t in e.findall(rdf + "type")):
+            continue
+        fr = [x.text for x in e.findall(skos + "prefLabel") if x.get(XML_LANG) == "fr"]
+        b = e.find(skos + "broader")
+        parent = int(re.search(r"idc=(\d+)", b.get(rdf + "resource")).group(1)) if b is not None else None
+        old[int(m.group(1))] = (parent, norm((fr or [""])[0]))
+    by_label = {}
+    for i, (parent, label) in old.items():
+        by_label.setdefault((parent, label), []).append(i)
+    out, taken, unmatched = {}, set(), []
+    for n in ORDER:
+        parent = out[n.parent.key] if n.parent is not None else None
+        candidates = [i for i in by_label.get((parent, norm(n.fr)), []) if i not in taken]
+        if candidates:
+            out[n.key] = candidates[0]
+            taken.add(candidates[0])
+        else:
+            unmatched.append(n)
+    following = max(old) + 1
+    for n in unmatched:
+        out[n.key] = following
+        following += 1
+    lost = [(i, old[i][1]) for i in old if i not in taken]
+    print("identifiants conservés : %d, nouveaux : %d, concepts de l'export absents du script : %d" % (len(taken), len(unmatched), len(lost)))
+    for n in unmatched:
+        print("  nouveau  :", out[n.key], n.fr)
+    for i, label in lost:
+        print("  perdu    :", i, label)
+    return out
+
+
+if args.keep_ids:
+    ids = keep_ids(args.keep_ids)
+else:
+    ids = {}
+    for i, n in enumerate(ORDER):
+        ids[n.key] = args.first_id + i
 URI = {n.key: "%s/?idc=%d&idt=%s" % (BASE, ids[n.key], TH) for n in ORDER}
 SCHEME = "%s/api/ark:/66666/%s" % (BASE, TH)
 GROUP_FIRST = 100
 group_uri = lambda i: "%s/?idg=g%d&idt=%s" % (BASE, GROUP_FIRST + i, TH)
 
 # groupes : dépendance logique (pilotes) puis une collection par liste scopée
-GROUPS = [("SIAMOIS – Dépendance logique", "SIAMOIS – Logical dependency", DRIVERS)] + [(fr, en, ms) for fr, en, ms in COLLECTIONS]
+GROUPS = []  # plus de collection : ni « Dépendance logique », ni une par (champ, type)
 for gi, (_, _, members) in enumerate(GROUPS):
     for m in members:
         m.groups.append(group_uri(gi))
@@ -1361,5 +1421,12 @@ n_vocab = sum(1 for n in ORDER if getattr(n, "code", None) and getattr(n, "kind"
 print("définitions reprises du référentiel : %d" % FROM_REF)
 print("concepts : %d (tables %d, champs %d dont %d à vocabulaire), collections : %d" %
       (len(ORDER), sum(1 for n in ORDER if n.parent is ROOT), n_fields, n_vocab, len(GROUPS)))
+# Contrôle : pour chaque liste qui dépend d'un pilote, les pilotes que le thésaurus ne relie à aucune valeur retombent sur la liste complète.
+for _fld in sorted({s[0] for s in SCOPES}, key=lambda f: f.key):
+    _linked = {s[1] for s in SCOPES if s[0] is _fld}
+    _drivers = _fld.driver_field.children
+    _bare = [d.fr for d in _drivers if d not in _linked]
+    print("  %s : %d pilote(s) reliés, %d sans lien (liste complète)%s" %
+          (_fld.code or _fld.key, len(_linked), len(_bare), " : " + ", ".join(_bare[:8]) + ("…" if len(_bare) > 8 else "") if _bare else ""))
 print("écrit :", args.out)
 sys.exit(1 if ERRORS else 0)
