@@ -60,7 +60,7 @@ class ExportFieldResolverTest {
 
     @Test
     void resolve_matchesCaseInsensitively() {
-        ConceptRef oaCode = new ConceptRef("TH337", "1005", null);
+        ConceptRef oaCode = new ConceptRef("TH338", "1005", null);
 
         assertThat(resolver.resolve(ExportSubject.PROJECT, oaCode, 1L, List.of())).hasSize(1);
     }

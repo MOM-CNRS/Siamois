@@ -151,7 +151,7 @@ class ExportSourceReaderTest {
 
     @Test
     void read_entitySource_withTypes_keepsOnlyThoseTypes() {
-        RecordingUnit wanted = unit(1L, concept("TH337", "a"));
+        RecordingUnit wanted = unit(1L, concept("TH338", "a"));
         when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID))
                 .thenReturn(List.of(wanted, unit(2L, concept("th338", "B")), unit(3L, null)));
 

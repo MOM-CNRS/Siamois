@@ -116,7 +116,7 @@ public class VocabularyService {
         List<ThesaurusDTO> dtos = thesaurusApi.fetchAllPublicThesaurus(server);
         List<ThesaurusInfo> results = new ArrayList<>();
         for (ThesaurusDTO dto : dtos) {
-            if (siamoisOnly && !Objects.equals(dto.getType(), "Siamois")) {
+            if (siamoisOnly && (dto.getType() == null || !dto.getType().strip().equalsIgnoreCase("Siamois"))) {
                 continue;
             }
             String label;

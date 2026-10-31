@@ -128,7 +128,7 @@ Le thésaurus s'appelle « Siamois DEMO » (libellé du schéma). Changements de
 
 ### Sans collections, ids conservés (2026-10-31)
 
-`python3 -I generate_thesaurus_socle.py --th th337 --keep-ids "<export OpenTheso th337>.rdf" --out siamois-demo-th337-sans-collections.rdf`
+`python3 -I generate_thesaurus_socle.py --th th338 --keep-ids "<export OpenTheso>.rdf" --out ~/Downloads/siamois-demo.rdf`
 
 - **`--keep-ids`** : chaque concept de l'export garde son identifiant (retrouvé par son parent et son libellé, sans accents ni casse) ; un
   concept nouveau reçoit `max(id)+1…`. Le script affiche les identifiants conservés, les nouveaux, et les concepts de l'export qu'il ne
