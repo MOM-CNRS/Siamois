@@ -407,14 +407,14 @@ public class FieldAnswerPatchService {
      * field (or there is no type yet, or no way to tell), in which case the whole list stands.
      */
     private String relatedToTypeViolation(CustomField field, Object value, FieldRulesEvaluator.OptionsContext options, Long projectId) {
-        if (options.value() == null || !(field instanceof CustomFieldConceptFromFieldCode fromFieldCode)
-                || ExecutionContextHolder.get() == null) {
+        var context = ExecutionContextHolder.get();
+        if (options.value() == null || !(field instanceof CustomFieldConceptFromFieldCode fromFieldCode) || context == null) {
             return null;
         }
         Concept type = conceptRepository.findById(Long.parseLong(options.value())).orElse(null);
         if (type == null) return null;
         try {
-            if (fieldConfigurationService.fetchAutocompleteRelated(ExecutionContextHolder.get(), fromFieldCode.getFieldCode(), type, null, projectId).isEmpty()) {
+            if (fieldConfigurationService.fetchAutocompleteRelated(context, fromFieldCode.getFieldCode(), type, null, projectId).isEmpty()) {
                 return null;
             }
         } catch (NoConfigForFieldException e) {

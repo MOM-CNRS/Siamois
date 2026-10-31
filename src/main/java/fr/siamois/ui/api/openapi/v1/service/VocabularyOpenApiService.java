@@ -128,6 +128,16 @@ public class VocabularyOpenApiService {
                                                             @Nullable String q,
                                                             String lang,
                                                             PersonDTO person) {
+        return conceptsForField(organizationId, fieldId, projectId, valueConceptId, q, lang, person);
+    }
+
+    private List<ConceptAutocompleteDTO> conceptsForField(long organizationId,
+                                                          long fieldId,
+                                                          @Nullable Long projectId,
+                                                          @Nullable Long valueConceptId,
+                                                          @Nullable String q,
+                                                          String lang,
+                                                          PersonDTO person) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");
@@ -162,14 +172,14 @@ public class VocabularyOpenApiService {
                                                                          String lang,
                                                                          PersonDTO person) {
         if (findField(fieldId) instanceof CustomFieldConceptFromFieldCode) {
-            List<ConceptAutocompleteDTO> unfiltered = getRelatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, null, lang, person);
+            List<ConceptAutocompleteDTO> unfiltered = relatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, null, lang, person);
             if (!unfiltered.isEmpty()) {
                 return q == null || q.isBlank()
                         ? unfiltered
-                        : getRelatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, q, lang, person);
+                        : relatedConcepts(organizationId, null, fieldId, typeConceptId, projectId, q, lang, person);
             }
         }
-        return getConceptsForField(organizationId, fieldId, projectId, typeConceptId, q, lang, person);
+        return conceptsForField(organizationId, fieldId, projectId, typeConceptId, q, lang, person);
     }
 
     /**
@@ -192,6 +202,17 @@ public class VocabularyOpenApiService {
                                                            @Nullable String q,
                                                            String lang,
                                                            PersonDTO person) {
+        return relatedConcepts(organizationId, fieldCode, fieldId, relatedToConceptId, projectId, q, lang, person);
+    }
+
+    private List<ConceptAutocompleteDTO> relatedConcepts(long organizationId,
+                                                         @Nullable String fieldCode,
+                                                         @Nullable Long fieldId,
+                                                         long relatedToConceptId,
+                                                         @Nullable Long projectId,
+                                                         @Nullable String q,
+                                                         String lang,
+                                                         PersonDTO person) {
         InstitutionDTO institution = institutionService.findById(organizationId);
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization not found");

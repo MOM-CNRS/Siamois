@@ -49,6 +49,7 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -601,7 +602,8 @@ class FieldAnswerPatchServiceTest {
         CustomFieldSelectOneFromFieldCode interpretation = givenAnInterpretationOfAPhaseOfType(1205L, 80L, 81L, false);
         FormUiDto form = formOf(col(interpretation, FieldRules.NONE.withOptions(new OptionsFilter.RelatedToType())));
 
-        service.apply(entity, form, Map.of("2", new AnswerInput("81", null)), PROJECT_ID);
+        assertThatCode(() -> service.apply(entity, form, Map.of("2", new AnswerInput("81", null)), PROJECT_ID))
+                .doesNotThrowAnyException();
     }
 
     @AfterEach

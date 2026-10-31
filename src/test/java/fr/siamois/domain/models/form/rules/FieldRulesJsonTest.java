@@ -37,7 +37,7 @@ class FieldRulesJsonTest {
     }
 
     @Test
-    void relatedToType_isWrittenWithoutAnyField_andReadBack() throws Exception {
+    void relatedToType_isWrittenWithoutAnyField_andReadBack() {
         FieldRules rules = FieldRules.NONE.withOptions(new OptionsFilter.RelatedToType());
 
         JsonNode json = wire(rules);
