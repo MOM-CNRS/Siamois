@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
+import fr.siamois.domain.services.vocabulary.FieldCodeResolver;
 import fr.siamois.ui.api.openapi.v1.response.project.type.*;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -46,8 +47,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectRecordingUnitTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectRecordingUnitTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectRecordingUnitTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectRecordingUnitTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 
@@ -70,8 +71,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectFindTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectFindTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectFindTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectFindTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 
@@ -94,8 +95,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectPhaseTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectPhaseTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectPhaseTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectPhaseTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 
@@ -118,8 +119,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectDocumentTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectDocumentTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectDocumentTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectDocumentTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 
@@ -142,8 +143,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectContainerTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectContainerTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectContainerTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectContainerTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 
@@ -166,8 +167,8 @@ public class ProjectSettingsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectStudyTypeListResponse response = recordingUnitOpenApiService
-                .buildProjectStudyTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        ProjectStudyTypeListResponse response = FieldCodeResolver.withinOneReading(() -> recordingUnitOpenApiService
+                .buildProjectStudyTypeSettings(id, caller.person(), caller.accessibleInstitutionIds(), lang));
         return ResponseEntity.ok(response);
     }
 

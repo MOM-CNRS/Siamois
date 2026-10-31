@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -30,6 +31,25 @@ public interface ConceptFieldStateRepository extends JpaRepository<ConceptFieldS
             """)
     List<ConceptFieldState> findAllByFieldAndFormConfig(@Param("field") CustomField field,
                                                         @Param("formConfig") FormConfig formConfig);
+
+    /**
+     * {@link #findAllByFieldAndFormConfig} for several fields and form configurations at once. It
+     * returns every combination of them, so a caller pairs each state with its own field and
+     * configuration.
+     *
+     * @param fieldIds      the vocabulary fields
+     * @param formConfigIds the form configurations (project × type) the states belong to
+     * @return the states, the concept fetched along
+     */
+    @Query("""
+            select s
+            from ConceptFieldState s
+            join fetch s.concept
+            where s.field.id in :fieldIds
+              and s.formConfig.id in :formConfigIds
+            """)
+    List<ConceptFieldState> findAllByFieldsAndFormConfigs(@Param("fieldIds") Collection<Long> fieldIds,
+                                                          @Param("formConfigIds") Collection<Long> formConfigIds);
 
     List<ConceptFieldState> findAllByFormConfigId(Long formConfigId);
 }
