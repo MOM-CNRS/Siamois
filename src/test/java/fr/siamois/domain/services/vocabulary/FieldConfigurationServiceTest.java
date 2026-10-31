@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.ErrorProcessingExpansionException;
 import fr.siamois.domain.models.exceptions.api.NotSiamoisThesaurusException;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.*;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.misc.ProgressWrapper;
@@ -45,6 +46,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1363,6 +1365,82 @@ class FieldConfigurationServiceTest {
         when(fieldFormConfigRepository.findDefaultByFieldAndActionUnit(field, 42L)).thenReturn(Optional.empty());
 
         assertThat(service.describeVocabulary(field, 42L, null)).isNull();
+    }
+
+    // ---- describeVocabularies: the vocabularies of a whole form at once ---------------------------------
+
+    private static FormConfig formConfigWithId(long id) {
+        FormConfig formConfig = new FormConfig();
+        formConfig.setId(id);
+        return formConfig;
+    }
+
+    private static ConceptFieldFormConfig restriction(CustomFieldConcept field, FormConfig formConfig, Concept topTerm) {
+        ConceptFieldFormConfig config = new ConceptFieldFormConfig();
+        config.setField(field);
+        config.setFormConfig(formConfig);
+        config.setBranchTopTerm(topTerm);
+        return config;
+    }
+
+    private static ConceptFieldState stateOf(CustomFieldConcept field, FormConfig formConfig, long conceptId, ConceptState value) {
+        ConceptFieldState s = state(conceptWithId(conceptId), value);
+        s.setField(field);
+        s.setFormConfig(formConfig);
+        return s;
+    }
+
+    @Test
+    void describeVocabularies_shouldGiveTheSameAnswersAsDescribingEachField_inAFewQueries() {
+        CustomFieldSelectOne ownOfType = new CustomFieldSelectOne();
+        ownOfType.setId(1L);
+        CustomFieldSelectOne defaultOfProject = new CustomFieldSelectOne();
+        defaultOfProject.setId(2L);
+        CustomFieldSelectOneFromFieldCode fromCode = new CustomFieldSelectOneFromFieldCode();
+        fromCode.setId(3L);
+        fromCode.setFieldCode("SIARU.TYPE");
+        CustomFieldSelectOne unrestricted = new CustomFieldSelectOne();
+        unrestricted.setId(4L);
+        FormConfig ofType = formConfigWithId(10L);
+        FormConfig byDefault = formConfigWithId(11L);
+
+        when(fieldFormConfigRepository.findAllByFieldsAndActionUnitAndValue(Set.of(1L, 2L, 3L, 4L), 42L, 77L))
+                .thenReturn(List.of(restriction(ownOfType, ofType, conceptWithId(90L))));
+        when(fieldFormConfigRepository.findAllDefaultByFieldsAndActionUnit(Set.of(2L, 3L, 4L), 42L))
+                .thenReturn(List.of(restriction(defaultOfProject, byDefault, conceptWithId(91L))));
+        when(conceptFieldStateRepository.findAllByFieldsAndFormConfigs(Set.of(1L, 2L), Set.of(10L, 11L))).thenReturn(List.of(
+                stateOf(ownOfType, ofType, 100L, ConceptState.DISABLED),
+                // the state of field 1 in the default configuration is not its own: field 1 reads the type's
+                stateOf(ownOfType, byDefault, 101L, ConceptState.DISABLED),
+                stateOf(defaultOfProject, byDefault, 102L, ConceptState.ENABLED)));
+
+        Map<Long, FieldVocabularyConfig> result = service.describeVocabularies(
+                List.of(ownOfType, defaultOfProject, fromCode, unrestricted), 42L, 77L);
+
+        assertThat(result).containsOnlyKeys(1L, 2L, 3L);
+        assertThat(result.get(1L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 90L, null,
+                VocabularyMode.FOLLOW, Map.of(100L, ConceptState.DISABLED)));
+        assertThat(result.get(2L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 91L, null,
+                VocabularyMode.FOLLOW, Map.of(102L, ConceptState.ENABLED)));
+        assertThat(result.get(3L)).isEqualTo(new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, "SIARU.TYPE", null, null,
+                VocabularyMode.FOLLOW, Map.of()));
+    }
+
+    @Test
+    void describeVocabularies_shouldReadOnlyTheDefaultConfiguration_whenNoTypeIsGiven() {
+        CustomFieldSelectOne field = new CustomFieldSelectOne();
+        field.setId(7L);
+        when(fieldFormConfigRepository.findAllDefaultByFieldsAndActionUnit(Set.of(7L), 42L)).thenReturn(List.of());
+
+        assertThat(service.describeVocabularies(List.of(field), 42L, null)).isEmpty();
+        verify(fieldFormConfigRepository, never()).findAllByFieldsAndActionUnitAndValue(any(), any(), any());
+        verifyNoInteractions(conceptFieldStateRepository);
+    }
+
+    @Test
+    void describeVocabularies_shouldQueryNothing_forAFormWithoutVocabularyField() {
+        assertThat(service.describeVocabularies(List.of(), 42L, 77L)).isEmpty();
+        verifyNoInteractions(fieldFormConfigRepository, conceptFieldStateRepository);
     }
 
     // ---- fetchValuesPage: the values a saved configuration offers, page by page ----------------------------
