@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The answer of a TEXT additional field was limited to 255 characters, too short for a list of finds or a long
+    note (the Kition-Pervolia sheets carry texts of several thousand characters).
+    -->
+
+    <changeSet id="2026-11-01-1-custom-field-answer-text-unbounded" author="Siamois">
+        <modifyDataType schemaName="public" tableName="custom_field_answer" columnName="value_as_text" newDataType="text"/>
+    </changeSet>
+
+</databaseChangeLog>

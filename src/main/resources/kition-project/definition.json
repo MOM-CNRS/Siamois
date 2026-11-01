@@ -1,0 +1,228 @@
+{
+  "thesaurus": "https://thesaurus.mom.fr/?idt=th182",
+  "tables": [
+    {
+      "table": "UE",
+      "typeBranch": "2334010",
+      "types": [
+        {
+          "label": "Sondage",
+          "concept": "42434",
+          "identifierFormat": "S{NUM_UE:0}"
+        },
+        {
+          "label": "Tombe",
+          "concept": "42435",
+          "identifierFormat": "T{NUM_UE:000}"
+        },
+        {
+          "label": "Locus",
+          "concept": "42433",
+          "identifierFormat": "Locus {NUM_UE:0}"
+        },
+        {
+          "label": "Unité stratigraphique",
+          "concept": "42436",
+          "identifierFormat": "US{NUM_UE:000}"
+        }
+      ]
+    },
+    {
+      "table": "DOCUMENT",
+      "typeBranch": "2329206",
+      "types": [
+        {
+          "label": "Cahier de fouille",
+          "concept": "42420"
+        },
+        {
+          "label": "Relevé",
+          "concept": "42487"
+        },
+        {
+          "label": "Photographie de fouille",
+          "concept": "42488"
+        },
+        {
+          "label": "Photographie d'objet",
+          "concept": "42489"
+        }
+      ]
+    }
+  ],
+  "branchFields": [
+    {
+      "table": "UE",
+      "fieldCode": "SIARU.CHRONO",
+      "branch": "2292534"
+    },
+    {
+      "table": "UE",
+      "fieldCode": "SIARU.INTERPRETATION",
+      "branch": "2425024",
+      "types": [
+        "Locus"
+      ]
+    },
+    {
+      "table": "UE",
+      "fieldCode": "SIARU.INTERPRETATION",
+      "branch": "42436",
+      "types": [
+        "Unité stratigraphique"
+      ]
+    }
+  ],
+  "commonCoreFields": [
+    {
+      "table": "UE",
+      "fieldCode": "SIARU.NATURE",
+      "types": [
+        "Unité stratigraphique"
+      ]
+    }
+  ],
+  "extraFields": [
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Interprétation (texte libre)",
+      "description": "Interprétation telle que saisie sur la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique"
+      ],
+      "name": "Homogénéité",
+      "description": "Homogène ou hétérogène, tel que saisi sur la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique"
+      ],
+      "name": "Fiabilité",
+      "description": "Fiabilité de l'unité, telle que saisie sur la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique"
+      ],
+      "name": "Commentaire de datation",
+      "description": "Commentaire sur la datation, tel que saisi sur la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Types de matériel",
+      "description": "Types de matériel de l'unité, texte de la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Inventaire du matériel",
+      "description": "Numéros d'inventaire du matériel de l'unité, texte de la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Renvois au cahier de fouille",
+      "description": "Renvois aux pages du cahier de fouille.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Auteurs de la fiche",
+      "description": "Auteurs de la fiche d'origine.",
+      "fieldType": "TEXT"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Date de création de la fiche",
+      "description": "Date de réalisation de la fiche d'origine.",
+      "fieldType": "DATETIME"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Date de modification de la fiche",
+      "description": "Date de dernière modification de la fiche d'origine.",
+      "fieldType": "DATETIME"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Z inférieur 1",
+      "description": "Première cote inférieure de la fiche d'origine.",
+      "fieldType": "MEASUREMENT",
+      "unit": "m"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Z inférieur 2",
+      "description": "Seconde cote inférieure de la fiche d'origine.",
+      "fieldType": "MEASUREMENT",
+      "unit": "m"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Z supérieur 1",
+      "description": "Première cote supérieure de la fiche d'origine.",
+      "fieldType": "MEASUREMENT",
+      "unit": "m"
+    },
+    {
+      "table": "UE",
+      "types": [
+        "Unité stratigraphique",
+        "Locus"
+      ],
+      "name": "Z supérieur 2",
+      "description": "Seconde cote supérieure de la fiche d'origine.",
+      "fieldType": "MEASUREMENT",
+      "unit": "m"
+    }
+  ]
+}

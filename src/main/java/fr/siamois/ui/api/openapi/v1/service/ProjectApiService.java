@@ -632,7 +632,7 @@ public class ProjectApiService {
         if (templateId == null || templateId.isBlank() || ProjectTemplate.EMPTY_ID.equals(templateId)) {
             return null;
         }
-        if (ProjectTemplate.DEFAULT_ID.equals(templateId)) {
+        if (ProjectTemplate.DEFAULT_ID.equals(templateId) || ProjectTemplate.KITION_ID.equals(templateId)) {
             return templateId;
         }
         if (!templateId.startsWith(ProjectTemplate.PROJECT_PREFIX)) {
@@ -661,6 +661,7 @@ public class ProjectApiService {
         List<ProjectTemplate> templates = new ArrayList<>();
         templates.add(new ProjectTemplate(ProjectTemplate.DEFAULT_ID, "", ProjectTemplate.Kind.DEFAULT));
         templates.add(new ProjectTemplate(ProjectTemplate.EMPTY_ID, "", ProjectTemplate.Kind.EMPTY));
+        templates.add(new ProjectTemplate(ProjectTemplate.KITION_ID, "Kition-Pervolia", ProjectTemplate.Kind.KITION));
         actionUnitService.findAccessibleProjects(caller.person().getId(), caller.accessibleInstitutionIds(), orgId,
                         null, PageRequest.of(0, 200, Sort.by("name")))
                 .forEach(row -> templates.add(new ProjectTemplate(

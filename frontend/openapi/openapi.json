@@ -17352,7 +17352,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Identifiant à renvoyer à la création : 'default', 'empty' ou 'project:<id>'"
+            "description": "Identifiant à renvoyer à la création : 'default', 'empty', 'kition' ou 'project:<id>'"
           },
           "label": {
             "type": "string",
@@ -17364,7 +17364,8 @@
             "enum": [
               "default",
               "empty",
-              "project"
+              "project",
+              "kition"
             ]
           }
         },

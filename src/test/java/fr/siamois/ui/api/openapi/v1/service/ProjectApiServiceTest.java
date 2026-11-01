@@ -381,7 +381,7 @@ class ProjectApiServiceTest {
     }
 
     @Test
-    void listProjectTemplates_offersTheDefaultProjectThenEmptyThenTheAccessibleProjects() {
+    void listProjectTemplates_offersTheDefaultEmptyAndKitionTemplatesThenTheAccessibleProjects() {
         ActionUnitDTO au = new ActionUnitDTO();
         au.setId(5L);
         au.setName("Fouille A");
@@ -390,8 +390,8 @@ class ProjectApiServiceTest {
 
         var templates = service.listProjectTemplates(caller, "10");
 
-        assertThat(templates).extracting(t -> t.id()).containsExactly("default", "empty", "project:5");
-        assertThat(templates.get(2).label()).isEqualTo("Fouille A");
+        assertThat(templates).extracting(t -> t.id()).containsExactly("default", "empty", "kition", "project:5");
+        assertThat(templates.get(3).label()).isEqualTo("Fouille A");
     }
 
     @Test

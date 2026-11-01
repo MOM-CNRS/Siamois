@@ -271,6 +271,33 @@ class LabelServiceTest {
     }
 
     @Test
+    void replaceAltLabels_shouldWriteOnce_twoSynonymsThatDifferOnlyByCase() {
+        // Given: the thesaurus lists "CHA" and "ChA" for the same concept; the label column ignores case,
+        // so writing both would break its unique key.
+        Concept savedConcept = new Concept();
+        savedConcept.setId(6L);
+        savedConcept.setExternalId("6L");
+        when(conceptLabelRepository.findAllAltLabelsByConcept(savedConcept)).thenReturn(Set.of());
+        when(conceptLabelRepository.findAltLabelByConceptAndLangCodeAndLabel(any(), any(), any())).thenReturn(Optional.empty());
+        when(conceptLabelRepository.save(any(ConceptAltLabel.class))).thenAnswer(i -> i.getArgument(0));
+
+        PurlInfoDTO upper = new PurlInfoDTO();
+        upper.setLang("fr");
+        upper.setValue("CHA");
+        PurlInfoDTO mixed = new PurlInfoDTO();
+        mixed.setLang("fr");
+        mixed.setValue("ChA");
+
+        // When
+        labelService.replaceAltLabels(savedConcept, new PurlInfoDTO[]{upper, mixed}, null);
+
+        // Then
+        ArgumentCaptor<ConceptAltLabel> captor = ArgumentCaptor.forClass(ConceptAltLabel.class);
+        verify(conceptLabelRepository, times(1)).save(captor.capture());
+        assertEquals("CHA", captor.getValue().getLabel());
+    }
+
+    @Test
     void updateLabelConcept_shouldCreateAndSave_whenPrefLabelDoesNotExist_andParentDifferent() {
         // Given
         Concept savedConcept = new Concept();

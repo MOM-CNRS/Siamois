@@ -156,7 +156,7 @@ public class NewProjectDialogBean implements Serializable {
                     .map(t -> new TemplateChoice(t.id(), switch (t.kind()) {
                         case DEFAULT -> langBean.msg("projectList.create.template.default");
                         case EMPTY -> langBean.msg("projectList.create.template.empty");
-                        case PROJECT -> t.label();
+                        case PROJECT, KITION -> t.label();
                     }))
                     .toList();
         } catch (RuntimeException e) {

@@ -4267,7 +4267,7 @@ export interface components {
         };
         /** @description Un modèle de départ */
         Template: {
-            /** @description Identifiant à renvoyer à la création : 'default', 'empty' ou 'project:<id>' */
+            /** @description Identifiant à renvoyer à la création : 'default', 'empty', 'kition' ou 'project:<id>' */
             id?: string;
             /** @description Nom affiché (vide pour 'default' et 'empty' : à libeller côté client) */
             label?: string;
@@ -4275,7 +4275,7 @@ export interface components {
              * @description Nature du modèle
              * @enum {string}
              */
-            kind?: "default" | "empty" | "project";
+            kind?: "default" | "empty" | "project" | "kition";
         };
         /** @description Aperçu de l'identifiant du prochain projet de l'organisation */
         ProjectNextIdentifierResponse: {
