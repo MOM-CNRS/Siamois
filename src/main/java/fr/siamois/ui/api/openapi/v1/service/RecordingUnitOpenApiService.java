@@ -800,13 +800,19 @@ public class RecordingUnitOpenApiService {
     private Map<String, FieldResource> buildFieldsMetadataOnly(FieldSource fieldSource, Locale locale, Class<?> entityType,
                                                                Long projectId, Long typeConceptId) {
         Map<String, FieldResource> fields = buildFieldsMetadataOnly(fieldSource, locale, entityType);
+        List<CustomFieldConcept> conceptFields = new ArrayList<>();
         for (CustomField field : fieldSource.getAllFields()) {
             if (field == null || field.getId() == null) continue;
             if (Hibernate.unproxy(field) instanceof CustomFieldConcept conceptField) {
-                FieldVocabularyConfig vocabulary = fieldConfigurationService.describeVocabulary(conceptField, projectId, typeConceptId);
-                fields.computeIfPresent(String.valueOf(field.getId()),
-                        (id, resource) -> resource.withVocabulary(VocabularyResourceMapper.toResource(vocabulary)));
+                conceptFields.add(conceptField);
             }
+        }
+        Map<Long, FieldVocabularyConfig> vocabularies =
+                fieldConfigurationService.describeVocabularies(conceptFields, projectId, typeConceptId);
+        for (CustomFieldConcept conceptField : conceptFields) {
+            FieldVocabularyConfig vocabulary = vocabularies.get(conceptField.getId());
+            fields.computeIfPresent(String.valueOf(conceptField.getId()),
+                    (id, resource) -> resource.withVocabulary(VocabularyResourceMapper.toResource(vocabulary)));
         }
         return fields;
     }

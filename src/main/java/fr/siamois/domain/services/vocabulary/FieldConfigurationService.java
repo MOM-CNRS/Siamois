@@ -403,16 +403,73 @@ public class FieldConfigurationService {
     public FieldVocabularyConfig describeVocabulary(@NonNull CustomFieldConcept conceptField, @Nullable Long actionUnitId, @Nullable Long valueConceptId) {
         Optional<ConceptFieldFormConfig> opt = findFieldFormConfig(conceptField, actionUnitId, valueConceptId);
         if (opt.isPresent() && !opt.get().isNotValid()) {
-            ConceptFieldFormConfig config = opt.get();
-            Map<Long, ConceptState> states = statesOf(conceptField, config);
-            if (config.isBranchConfig()) {
-                return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, config.getBranchTopTerm().getId(), null, config.getVocabularyMode(), states);
-            }
-            if (config.isFieldCodeConfig()) {
-                return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, config.getFieldCode(), null, null, config.getVocabularyMode(), states);
-            }
-            return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, config.getCollection().getId(), config.getVocabularyMode(), states);
+            return vocabularyOf(opt.get(), statesOf(conceptField, opt.get()));
         }
+        return vocabularyWithoutRestriction(conceptField);
+    }
+
+    /**
+     * {@link #describeVocabulary} for all the vocabulary fields of one form: the same answers, read in
+     * a few queries whatever the number of fields, where describing them one by one costs two or three
+     * queries each.
+     *
+     * @param conceptFields  the vocabulary fields of the form
+     * @param actionUnitId   the project the fields are displayed in, or null for institution-only
+     * @param valueConceptId the concept of the entity's type, or null for the default configuration
+     * @return each field's vocabulary by field id; a field with neither a restriction nor a field code is left out
+     */
+    @NonNull
+    @Transactional(readOnly = true)
+    public Map<Long, FieldVocabularyConfig> describeVocabularies(@NonNull Collection<CustomFieldConcept> conceptFields,
+                                                                 @Nullable Long actionUnitId, @Nullable Long valueConceptId) {
+        Map<Long, CustomFieldConcept> fieldsById = new LinkedHashMap<>();
+        conceptFields.forEach(field -> fieldsById.put(field.getId(), field));
+        if (fieldsById.isEmpty()) {
+            return Map.of();
+        }
+
+        // The type's own restriction wins; the fields without one fall back on the project's default.
+        Map<Long, ConceptFieldFormConfig> configs = new HashMap<>();
+        if (valueConceptId != null) {
+            fieldFormConfigRepository.findAllByFieldsAndActionUnitAndValue(fieldsById.keySet(), actionUnitId, valueConceptId)
+                    .forEach(config -> configs.putIfAbsent(config.getField().getId(), config));
+        }
+        Set<Long> withoutOwn = new HashSet<>(fieldsById.keySet());
+        withoutOwn.removeAll(configs.keySet());
+        if (!withoutOwn.isEmpty()) {
+            fieldFormConfigRepository.findAllDefaultByFieldsAndActionUnit(withoutOwn, actionUnitId)
+                    .forEach(config -> configs.putIfAbsent(config.getField().getId(), config));
+        }
+        configs.values().removeIf(ConceptFieldFormConfig::isNotValid);
+
+        Map<Long, Map<Long, ConceptState>> statesByField = statesOf(configs);
+        Map<Long, FieldVocabularyConfig> vocabularies = new LinkedHashMap<>();
+        fieldsById.forEach((fieldId, field) -> {
+            ConceptFieldFormConfig config = configs.get(fieldId);
+            FieldVocabularyConfig vocabulary = config != null
+                    ? vocabularyOf(config, statesByField.getOrDefault(fieldId, new HashMap<>()))
+                    : vocabularyWithoutRestriction(field);
+            if (vocabulary != null) {
+                vocabularies.put(fieldId, vocabulary);
+            }
+        });
+        return vocabularies;
+    }
+
+    /** The vocabulary a field's own valid restriction gives it. */
+    private static FieldVocabularyConfig vocabularyOf(ConceptFieldFormConfig config, Map<Long, ConceptState> states) {
+        if (config.isBranchConfig()) {
+            return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, config.getBranchTopTerm().getId(), null, config.getVocabularyMode(), states);
+        }
+        if (config.isFieldCodeConfig()) {
+            return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, config.getFieldCode(), null, null, config.getVocabularyMode(), states);
+        }
+        return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.COLLECTION, null, null, config.getCollection().getId(), config.getVocabularyMode(), states);
+    }
+
+    /** The vocabulary of a field that has no valid restriction of its own: its field code's, if it has one. */
+    @Nullable
+    private static FieldVocabularyConfig vocabularyWithoutRestriction(CustomFieldConcept conceptField) {
         if (conceptField instanceof CustomFieldConceptFromFieldCode fromFieldCode) {
             return new FieldVocabularyConfig(FieldVocabularyConfig.Kind.FIELD_CODE, fromFieldCode.getFieldCode(), null, null, VocabularyMode.FOLLOW, Map.of());
         }
@@ -728,6 +785,27 @@ public class FieldConfigurationService {
         Map<Long, ConceptState> states = new HashMap<>();
         for (ConceptFieldState state : conceptFieldStateRepository.findAllByFieldAndFormConfig(conceptField, config.getFormConfig())) {
             states.put(state.getConcept().getId(), state.getState());
+        }
+        return states;
+    }
+
+    /**
+     * {@link #statesOf(CustomFieldConcept, ConceptFieldFormConfig)} for several restricted fields, by
+     * field id then concept id, in one query. A field's states are those of its own configuration only.
+     */
+    private Map<Long, Map<Long, ConceptState>> statesOf(Map<Long, ConceptFieldFormConfig> configsByField) {
+        if (configsByField.isEmpty()) {
+            return Map.of();
+        }
+        Set<Long> formConfigIds = new HashSet<>();
+        configsByField.values().forEach(config -> formConfigIds.add(config.getFormConfig().getId()));
+        Map<Long, Map<Long, ConceptState>> states = new HashMap<>();
+        for (ConceptFieldState state : conceptFieldStateRepository.findAllByFieldsAndFormConfigs(configsByField.keySet(), formConfigIds)) {
+            Long fieldId = state.getField().getId();
+            ConceptFieldFormConfig config = configsByField.get(fieldId);
+            if (config != null && config.getFormConfig().getId().equals(state.getFormConfig().getId())) {
+                states.computeIfAbsent(fieldId, id -> new HashMap<>()).put(state.getConcept().getId(), state.getState());
+            }
         }
         return states;
     }

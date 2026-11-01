@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -109,6 +110,46 @@ public interface FieldFormConfigRepository extends JpaRepository<FieldFormConfig
             """
     )
     Optional<ConceptFieldFormConfig> findDefaultByFieldAndActionUnit(@Param("conceptField") CustomFieldConcept conceptField,
+                                                                     @Param("actionUnitId") Long actionUnitId);
+
+    /**
+     * {@link #findByFieldAndActionUnitAndValue} for several fields at once: at most one row per field.
+     *
+     * @param fieldIds       the concept fields to look the restriction up for
+     * @param actionUnitId   the project the configuration is scoped to
+     * @param valueConceptId the concept of the entity's current scope-field value
+     * @return the value-specific configurations of those fields that have one
+     */
+    @Query(
+            """
+            SELECT ffc
+            FROM ConceptFieldFormConfig ffc
+            WHERE ffc.field.id IN :fieldIds
+              AND ffc.formConfig.actionUnit.id = :actionUnitId
+              AND ffc.formConfig.valueConcept.id = :valueConceptId
+            """
+    )
+    List<ConceptFieldFormConfig> findAllByFieldsAndActionUnitAndValue(@Param("fieldIds") Collection<Long> fieldIds,
+                                                                      @Param("actionUnitId") Long actionUnitId,
+                                                                      @Param("valueConceptId") Long valueConceptId);
+
+    /**
+     * {@link #findDefaultByFieldAndActionUnit} for several fields at once: at most one row per field.
+     *
+     * @param fieldIds     the concept fields to look the restriction up for
+     * @param actionUnitId the project the configuration is scoped to
+     * @return the default configurations of those fields that have one
+     */
+    @Query(
+            """
+            SELECT ffc
+            FROM ConceptFieldFormConfig ffc
+            WHERE ffc.field.id IN :fieldIds
+              AND ffc.formConfig.actionUnit.id = :actionUnitId
+              AND ffc.formConfig.valueConcept IS NULL
+            """
+    )
+    List<ConceptFieldFormConfig> findAllDefaultByFieldsAndActionUnit(@Param("fieldIds") Collection<Long> fieldIds,
                                                                      @Param("actionUnitId") Long actionUnitId);
 
     /**

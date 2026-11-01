@@ -16,9 +16,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Finds the concept a field code points at. A field code is a search parameter, like a branch or a
@@ -45,6 +47,12 @@ public class FieldCodeResolver {
             RecordingUnit.POSTERIOR_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE,
             RecordingUnit.SYNCHRONOUS_FIELD_CODE, RecordingUnit.STRATI_FIELD_CODE);
 
+    /** The answers of {@link #find} during a {@link #withinOneReading} on this thread; null outside one. */
+    private static final ThreadLocal<Map<FindKey, Optional<ConceptFieldConfig>>> READING = new ThreadLocal<>();
+
+    private record FindKey(Long institutionId, @Nullable Long actionUnitId, String fieldCode) {
+    }
+
     private final SiamoisThesaurus siamoisThesaurus;
     private final DocumentationThesaurusRepository documentationThesaurusRepository;
     private final ConceptFieldConfigRepository conceptFieldConfigRepository;
@@ -57,6 +65,33 @@ public class FieldCodeResolver {
      */
     @Transactional(readOnly = true)
     public Optional<ConceptFieldConfig> find(@NonNull Long institutionId, @Nullable Long actionUnitId, @NonNull String fieldCode) {
+        Map<FindKey, Optional<ConceptFieldConfig>> reading = READING.get();
+        if (reading == null) {
+            return lookUp(institutionId, actionUnitId, fieldCode);
+        }
+        return reading.computeIfAbsent(new FindKey(institutionId, actionUnitId, fieldCode),
+                key -> lookUp(institutionId, actionUnitId, fieldCode));
+    }
+
+    /**
+     * Runs {@code action} as one reading of the configuration: within it, {@link #find} looks each
+     * (institution, project, code) up once and serves the same answer to the next calls. For a
+     * computation that resolves the same codes over and over without changing them, such as building
+     * the configuration of every type of a table. A reading started within another one shares it.
+     */
+    public static <T> T withinOneReading(@NonNull Supplier<T> action) {
+        if (READING.get() != null) {
+            return action.get();
+        }
+        READING.set(new HashMap<>());
+        try {
+            return action.get();
+        } finally {
+            READING.remove();
+        }
+    }
+
+    private Optional<ConceptFieldConfig> lookUp(Long institutionId, @Nullable Long actionUnitId, String fieldCode) {
         if (actionUnitId != null) {
             Optional<ConceptFieldConfig> redirected = projectCodeSourceRepository.findByActionUnitIdAndFieldCode(actionUnitId, fieldCode)
                     .flatMap(this::resolve);

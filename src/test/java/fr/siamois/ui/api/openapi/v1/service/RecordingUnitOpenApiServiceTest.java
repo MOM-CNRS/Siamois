@@ -2740,9 +2740,9 @@ class RecordingUnitOpenApiServiceTest {
         field.setFieldCode("SIARU.MATIERE");
         when(effectiveFormResolver.resolveEffectiveForm(5L, ConfigurableTable.UE, 42L))
                 .thenReturn(formUiDtoWithOneField(field));
-        when(fieldConfigurationService.describeVocabulary(field, 5L, 42L)).thenReturn(
+        when(fieldConfigurationService.describeVocabularies(List.of(field), 5L, 42L)).thenReturn(Map.of(43L,
                 new FieldVocabularyConfig(FieldVocabularyConfig.Kind.BRANCH, null, 99L, null,
-                        VocabularyMode.FOLLOW, Map.of(101L, ConceptState.DISABLED)));
+                        VocabularyMode.FOLLOW, Map.of(101L, ConceptState.DISABLED))));
 
         ProjectRecordingUnitTypeListResponse response =
                 service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");

@@ -20,6 +20,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,6 +106,30 @@ class FieldCodeResolverTest {
     @Test
     void find_isEmpty_whenNoThesaurusDefinesTheCode() {
         assertThat(resolver.find(INSTITUTION, PROJECT, "UNKNOWN")).isEmpty();
+    }
+
+    @Test
+    void find_looksACodeUpOnce_withinOneReading() {
+        ConceptFieldConfig own = defined(institution, "OWN.CODE");
+
+        FieldCodeResolver.withinOneReading(() -> {
+            assertThat(resolver.find(INSTITUTION, null, "OWN.CODE")).contains(own);
+            assertThat(resolver.find(INSTITUTION, null, "OWN.CODE")).contains(own);
+            // a reading started within another one shares it
+            return FieldCodeResolver.withinOneReading(() -> resolver.find(INSTITUTION, null, "OWN.CODE"));
+        });
+
+        verify(conceptFieldConfigRepository, times(1)).findOneByVocabularyIdAndFieldCode(institution.getId(), "OWN.CODE");
+    }
+
+    @Test
+    void find_looksACodeUpAgain_onceTheReadingIsOver() {
+        defined(institution, "OWN.CODE");
+
+        FieldCodeResolver.withinOneReading(() -> resolver.find(INSTITUTION, null, "OWN.CODE"));
+        resolver.find(INSTITUTION, null, "OWN.CODE");
+
+        verify(conceptFieldConfigRepository, times(2)).findOneByVocabularyIdAndFieldCode(institution.getId(), "OWN.CODE");
     }
 
     @Test
