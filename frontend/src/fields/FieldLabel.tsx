@@ -9,6 +9,9 @@ import {useFieldConfigActions} from "./fieldConfigContext";
 /** The definition shown in the tooltip is cut here (with an ellipsis): the thesaurus' can run to paragraphs. */
 export const TOOLTIP_DEFINITION_MAX_CHARS = 300;
 
+/** Hover time before the label's tooltip opens. */
+const TOOLTIP_SHOW_DELAY_MS = 600;
+
 export function truncateDefinition(text: string, max: number = TOOLTIP_DEFINITION_MAX_CHARS): string {
   const trimmed = text.trim();
   if (trimmed.length <= max) return trimmed;
@@ -74,7 +77,8 @@ export function FieldLabel({
 
   return (
     <div className="header-toggle-container">
-      <Tooltip target={`#${buttonId}`} position="left">
+      {/* Delayed so that sweeping the cursor across a form does not flash a definition on every label. */}
+      <Tooltip target={`#${buttonId}`} position="left" showDelay={TOOLTIP_SHOW_DELAY_MS}>
         <div className="field-label-tooltip">
           <strong>{field.label}</strong>
           {field.hint && <div className="field-label-tooltip-definition">{truncateDefinition(field.hint)}</div>}
