@@ -127,6 +127,23 @@ class ProjectIdentifierServiceTest {
     }
 
     @Test
+    void generate_keepsTheConfigFiledUnderAnOlderReferenceThesaurus() {
+        Concept oldReference = new Concept();
+        oldReference.setId(800L);
+        FormConfig oldConfig = new FormConfig();
+        oldConfig.setId(7L);
+        oldConfig.setIdentifierFormat("OLD{NUM_PROJECT}");
+        oldConfig.setMinCode(1);
+        oldConfig.setMaxCode(999);
+        when(formConfigRepository.findFieldConceptsOfInstitution(5L, "SIAAU.TYPE")).thenReturn(List.of(oldReference));
+        when(formConfigRepository.findInstitutionDefaults(5L, 800L)).thenReturn(List.of(oldConfig));
+        when(counterRepository.nextValue(eq(5L), eq(7L), anyString(), eq(1))).thenReturn(42);
+
+        assertThat(service.generate(info).value()).isEqualTo("OLD42");
+        verify(formConfigRepository, never()).save(any());
+    }
+
+    @Test
     void preview_startsAtTheFirstNumberWhenNothingWasAllocatedYet() {
         when(formConfigRepository.findInstitutionDefaults(5L, 900L)).thenReturn(List.of());
 

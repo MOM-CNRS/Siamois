@@ -538,6 +538,46 @@ class TableFieldConfigServiceImplTest {
         assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Verre")).contains(verreConfig);
     }
 
+    // ========== A project configured under an older SIAMOIS reference thesaurus ==========
+    // The reference thesaurus changed (th337 -> th338): the type code is now read at another concept, but the types the
+    // project already configured stay filed under the concept of the old one.
+
+    private static final long OLD_REFERENCE_CONCEPT_ID = 555L;
+
+    private void configuredUnderAnOlderReference() {
+        Concept oldReference = concept(OLD_REFERENCE_CONCEPT_ID, "old");
+        when(formConfigRepository.findFieldConceptsOfProject(PROJECT_ID, ConfigurableTable.MOBILIER.getFieldCode()))
+                .thenReturn(List.of(oldReference));
+        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, OLD_REFERENCE_CONCEPT_ID))
+                .thenReturn(List.of(ceramiqueConfig));
+    }
+
+    @Test
+    void listConfiguredTypeConcepts_shouldKeepTheTypesConfiguredUnderAnOlderReferenceThesaurus() {
+        configuredUnderAnOlderReference();
+
+        assertThat(service.listConfiguredTypeConcepts(PROJECT_ID, ConfigurableTable.MOBILIER)).containsExactly(ceramiqueConcept);
+    }
+
+    @Test
+    void createOrGetFormConfig_shouldFileANewTypeUnderTheConceptTheProjectAlreadyUses() {
+        configuredUnderAnOlderReference();
+        Concept verre = concept(77L, "verre");
+        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, OLD_REFERENCE_CONCEPT_ID, 77L))
+                .thenReturn(Optional.empty());
+        when(conceptRepository.findById(77L)).thenReturn(Optional.of(verre));
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Optional<FormConfig> created = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, 77L);
+
+        assertThat(created).hasValueSatisfying(config ->
+                assertThat(config.getFieldConcept().getId()).isEqualTo(OLD_REFERENCE_CONCEPT_ID));
+    }
+
     // ========== Concept-id-keyed overloads ==========
     // These skip the label round-trip (Concept -> label -> re-resolved Concept) that the
     // String-keyed overloads above go through via findValueConcept/conceptRepository. They must

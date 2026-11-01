@@ -124,7 +124,16 @@ public class ProjectIdentifierService {
                 new MapIdentifierRenderContext(new HashMap<>(), Map.of()));
     }
 
+    /**
+     * The concept the institution's numbering config is filed under: the one it already uses, whatever thesaurus carries
+     * it, so a change of the SIAMOIS reference thesaurus does not restart the numbering. Without one, the type code's.
+     */
     private Optional<Concept> findFieldConcept(UserInfo info) {
+        Optional<Concept> anchored = formConfigRepository
+                .findFieldConceptsOfInstitution(info.getInstitution().getId(), TABLE.getFieldCode()).stream().findFirst();
+        if (anchored.isPresent()) {
+            return anchored;
+        }
         try {
             return Optional.ofNullable(fieldConfigurationService
                     .findConfigurationForFieldCode(info, TABLE.getFieldCode(), (Long) null).getConcept());

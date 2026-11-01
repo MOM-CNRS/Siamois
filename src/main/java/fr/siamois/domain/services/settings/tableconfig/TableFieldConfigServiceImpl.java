@@ -1029,14 +1029,27 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     /**
-     * The concept the configured types of a table are filed under: where the type code is read without the project's own
-     * redirection ({@link #findSourceConcept}). It does not move when the project reads its types from another source, so
-     * changing the source never touches the types already configured: it only changes the candidates offered for new ones.
-     * A code the default sources do not define is filed under the project's source.
+     * The concept the configured types of a table are filed under. Once a project has configured a type, it is the field
+     * concept its configurations already use, whatever thesaurus carries it: changing the SIAMOIS reference thesaurus or
+     * the project's source never moves the types already configured, it only changes the candidates offered for new ones.
+     * A project that has configured nothing yet files them where the type code is read without the project's own
+     * redirection ({@link #findSourceConcept}), or under the project's source for a code the default sources do not define.
      */
     private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
+        Optional<Concept> anchored = anchoredFieldConcept(projectId, table);
+        if (anchored.isPresent()) return anchored;
         Optional<Concept> key = conceptOfTypeCode(table, null, false);
         return key.isPresent() ? key : findSourceConcept(projectId, table);
+    }
+
+    private Optional<Concept> anchoredFieldConcept(Long projectId, ConfigurableTable table) {
+        if (projectId == null) return Optional.empty();
+        List<Concept> concepts = formConfigRepository.findFieldConceptsOfProject(projectId, table.getFieldCode());
+        if (concepts.size() > 1) {
+            log.warn("Project {} files its {} configurations under {} field concepts; using the oldest ({})",
+                    projectId, table.getFieldCode(), concepts.size(), concepts.get(0).getId());
+        }
+        return concepts.stream().findFirst();
     }
 
     /** The concept the project reads the candidate types of a table from: its redirection if it has one, the default otherwise. */

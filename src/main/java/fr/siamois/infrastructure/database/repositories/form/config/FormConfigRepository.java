@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.form.config;
 
 import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.vocabulary.Concept;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -88,6 +89,48 @@ public interface FormConfigRepository extends CrudRepository<FormConfig, Long> {
             """)
     List<FormConfig> findInstitutionDefaults(@Param("institutionId") Long institutionId,
                                              @Param("fieldConceptId") Long fieldConceptId);
+
+    /**
+     * The field concepts a project's configurations of a field code are filed under, oldest configuration first. A
+     * field code is carried by one concept per thesaurus, so this finds the configurations whatever thesaurus was the
+     * reference when they were made.
+     *
+     * @param actionUnitId the project the configurations are scoped to
+     * @param fieldCode    the field code, e.g. {@code SIARU.TYPE}
+     * @return the concepts, usually one; empty when the project has configured nothing for that code
+     */
+    @Query("""
+            select fc.fieldConcept
+            from FormConfig fc
+            where fc.actionUnit.id = :actionUnitId
+              and exists (select 1 from ConceptFieldConfig cfc
+                          where cfc.concept = fc.fieldConcept and cfc.fieldCode = :fieldCode)
+            group by fc.fieldConcept
+            order by min(fc.id)
+            """)
+    List<Concept> findFieldConceptsOfProject(@Param("actionUnitId") Long actionUnitId,
+                                             @Param("fieldCode") String fieldCode);
+
+    /**
+     * Same as {@link #findFieldConceptsOfProject} for the institution-level default configurations.
+     *
+     * @param institutionId the institution the configurations are scoped to
+     * @param fieldCode     the field code, e.g. {@code SIAAU.TYPE}
+     * @return the concepts, oldest configuration first
+     */
+    @Query("""
+            select fc.fieldConcept
+            from FormConfig fc
+            where fc.institution.id = :institutionId
+              and fc.actionUnit is null
+              and fc.valueConcept is null
+              and exists (select 1 from ConceptFieldConfig cfc
+                          where cfc.concept = fc.fieldConcept and cfc.fieldCode = :fieldCode)
+            group by fc.fieldConcept
+            order by min(fc.id)
+            """)
+    List<Concept> findFieldConceptsOfInstitution(@Param("institutionId") Long institutionId,
+                                                 @Param("fieldCode") String fieldCode);
 
     /** Serializes the lazy creation of an institution-level configuration (see {@code uk_form_config_scope}). */
     @Query(nativeQuery = true, value = "SELECT pg_advisory_xact_lock(:key) IS NOT NULL")
