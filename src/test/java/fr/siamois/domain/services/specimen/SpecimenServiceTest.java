@@ -10,6 +10,8 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
@@ -102,6 +104,9 @@ class SpecimenServiceTest {
 
     @Mock
     private ProfilePermissionService profilePermissionService;
+
+    @Mock
+    private fr.siamois.domain.services.measurement.UnitDefinitionService unitDefinitionService;
 
     @BeforeEach
     void stubManagedAssociationLookups() {
@@ -314,6 +319,78 @@ class SpecimenServiceTest {
         specimenService.save(specimenDTO);
 
         verify(profilePermissionService).hasProjectPermission(any(), eq(9L), eq(PermissionConstants.PROJECT_EDIT_FINDS));
+    }
+
+    /**
+     * The weight the mapper rebuilds from the DTO carries the stored weight's id: put on the managed
+     * specimen as is, it is a detached instance that the next flush fails to persist. Its values go
+     * onto the managed weight instead.
+     */
+    @Test
+    void save_shouldUpdateTheManagedWeight_whenTheSpecimenAlreadyHasOne() {
+        SpecimenDTO specimenDTO = new SpecimenDTO();
+        RecordingUnitSummaryDTO recordingUnitDTO = new RecordingUnitSummaryDTO();
+        recordingUnitDTO.setId(42L);
+        specimenDTO.setRecordingUnit(recordingUnitDTO);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(42L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(recordingUnit));
+
+        UnitDefinition kilogram = new UnitDefinition(3L, null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false);
+        MeasurementAnswer managedWeight = MeasurementAnswer.builder().id(11L).numericValue(2.0).unit(kilogram).build();
+        Specimen managed = new Specimen();
+        managed.setId(5L);
+        managed.setWeight(managedWeight);
+        when(specimenRepository.findById(5L)).thenReturn(Optional.of(managed));
+
+        Specimen incoming = new Specimen();
+        incoming.setId(5L);
+        incoming.setRecordingUnit(recordingUnit);
+        UnitDefinition kilogramCopy = new UnitDefinition(3L, null, "Kilogramme", "kg", UnitDefinition.Dimension.MASS, 1000.0, false);
+        incoming.setWeight(MeasurementAnswer.builder().id(11L).numericValue(4.5).unit(kilogramCopy).comment("sec").build());
+        when(specimenMapper.invertConvert(specimenDTO)).thenReturn(incoming);
+        when(unitDefinitionService.resolve(kilogramCopy)).thenReturn(kilogram);
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(new SpecimenDTO());
+
+        specimenService.save(specimenDTO);
+
+        assertSame(managedWeight, managed.getWeight());
+        assertEquals(4.5, managedWeight.getNumericValue());
+        assertEquals("sec", managedWeight.getComment());
+        assertSame(kilogram, managedWeight.getUnit());
+    }
+
+    @Test
+    void save_shouldClearTheWeight_whenTheDtoHasNone() {
+        SpecimenDTO specimenDTO = new SpecimenDTO();
+        RecordingUnitSummaryDTO recordingUnitDTO = new RecordingUnitSummaryDTO();
+        recordingUnitDTO.setId(42L);
+        specimenDTO.setRecordingUnit(recordingUnitDTO);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(42L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(recordingUnit));
+
+        Specimen managed = new Specimen();
+        managed.setId(5L);
+        managed.setWeight(MeasurementAnswer.builder().id(11L).numericValue(2.0).build());
+        when(specimenRepository.findById(5L)).thenReturn(Optional.of(managed));
+        Specimen incoming = new Specimen();
+        incoming.setId(5L);
+        incoming.setRecordingUnit(recordingUnit);
+        when(specimenMapper.invertConvert(specimenDTO)).thenReturn(incoming);
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(new SpecimenDTO());
+
+        specimenService.save(specimenDTO);
+
+        assertNull(managed.getWeight());
     }
 
     @Test

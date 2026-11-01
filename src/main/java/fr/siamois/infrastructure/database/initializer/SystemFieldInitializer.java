@@ -2,11 +2,15 @@ package fr.siamois.infrastructure.database.initializer;
 
 import fr.siamois.domain.models.exceptions.database.DatabaseDataInitException;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
+import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
+import fr.siamois.domain.services.measurement.UnitDefinitionService;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -32,21 +36,29 @@ import java.util.Objects;
  * {@link fr.siamois.infrastructure.database.id.AssignedOrSequenceIdGenerator} — so this checks and
  * keys existing rows by id rather than by label/binding: two definitions are the same field
  * precisely when they share an id, and a definition changing its label no longer orphans its row.
+ * <p>
+ * A measurement field's row also carries the default unit its definition declares — without it the
+ * field offers no unit to enter a value in, and its answers cannot be stored. The definitions' units
+ * are built in code, so the row gets the catalogue unit of the same symbol and dimension, hence this
+ * runs after the catalogue is seeded. A row that has no unit yet (one created before units were
+ * persisted) is given it; one whose unit was chosen since keeps it.
  */
 @Slf4j
 @Service
-@Order(-8)
+@Order(1) // after UnitDefinitionInitializer (0): a measurement field's row refers to its unit
 @RequiredArgsConstructor
 public class SystemFieldInitializer implements DatabaseInitializer {
 
     /**
      * Associations of the definitions that have no counterpart to point at: their concepts and
      * units are built in code and were never persisted, and an author is meaningless for a field
-     * the application defines. Copying them would make the insert fail on a transient reference.
+     * the application defines. Copying them would make the insert fail on a transient reference;
+     * the unit is resolved against the catalogue instead (see {@link #withUnit}).
      */
     private static final String[] NOT_PERSISTABLE = {"concept", "author", "unit", "measurementNature"};
 
     private final CustomFieldRepository customFieldRepository;
+    private final UnitDefinitionService unitDefinitionService;
 
     @Override
     @Transactional(rollbackFor = DatabaseDataInitException.class)
@@ -56,18 +68,44 @@ public class SystemFieldInitializer implements DatabaseInitializer {
                 .forEach(field -> existing.putIfAbsent(field.getId(), field));
 
         int created = 0;
+        int unitsSet = 0;
         for (ConfigurableTable table : ConfigurableTable.projectScopedTables()) {
             for (CustomField definition : SystemFieldCatalog.fieldsOf(table)) {
                 Long id = Objects.requireNonNull(definition.getId(),
                         () -> "System field '" + definition.getLabel() + "' of table " + table + " has no id");
-                if (existing.containsKey(id)) {
-                    continue;
+                CustomField row = existing.get(id);
+                if (row == null) {
+                    existing.put(id, customFieldRepository.save(withUnit(rowFor(definition), definition)));
+                    created++;
+                } else if (lacksUnit(row, definition)) {
+                    customFieldRepository.save(withUnit(row, definition));
+                    unitsSet++;
                 }
-                existing.put(id, customFieldRepository.save(rowFor(definition)));
-                created++;
             }
         }
-        log.info("System fields initialized: {} created, {} known in total", created, existing.size());
+        log.info("System fields initialized: {} created, {} given their default unit, {} known in total",
+                created, unitsSet, existing.size());
+    }
+
+    /** Whether the row of a measurement field is missing the unit its definition declares. */
+    private static boolean lacksUnit(CustomField row, CustomField definition) {
+        return definition instanceof CustomFieldMeasurement measurement && measurement.getUnit() != null
+                && Hibernate.unproxy(row) instanceof CustomFieldMeasurement stored && stored.getUnit() == null;
+    }
+
+    /** The row, given the catalogue unit its definition declares when it is a measurement field. */
+    private CustomField withUnit(CustomField row, CustomField definition) throws DatabaseDataInitException {
+        if (!(definition instanceof CustomFieldMeasurement measurement) || measurement.getUnit() == null
+                || !(Hibernate.unproxy(row) instanceof CustomFieldMeasurement stored)) {
+            return row;
+        }
+        try {
+            UnitDefinition unit = unitDefinitionService.resolve(measurement.getUnit());
+            stored.setUnit(unit);
+        } catch (IllegalStateException e) {
+            throw new DatabaseDataInitException("Unit of system field " + definition.getId() + " is not seeded", e);
+        }
+        return row;
     }
 
     /**

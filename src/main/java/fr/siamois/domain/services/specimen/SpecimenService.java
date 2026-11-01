@@ -189,7 +189,7 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setDescription(specimen.getDescription());
         managedSpecimen.setCollectors(specimen.getCollectors());
         managedSpecimen.setCollectionDate(specimen.getCollectionDate());
-        managedSpecimen.setWeight(withResolvedUnit(specimen.getWeight()));
+        managedSpecimen.setWeight(mergeMeasurementAnswer(specimen.getWeight(), managedSpecimen.getWeight()));
         managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
         managedSpecimen.setValidationStatus(specimen.getValidationStatus());
         managedSpecimen.setValidatedAt(specimen.getValidatedAt());
@@ -222,11 +222,23 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
     }
 
+    /**
+     * The incoming measurement's values on the managed one, or on a new one when there is none yet.
+     * The incoming measurement is a copy rebuilt from the DTO: it carries the stored measurement's id,
+     * so putting it on the managed specimen as is would hand Hibernate a detached instance.
+     */
     @Nullable
-    private MeasurementAnswer withResolvedUnit(@Nullable MeasurementAnswer measurement) {
-        if (measurement == null) return null;
-        measurement.setUnit(unitDefinitionService.resolve(measurement.getUnit()));
-        return measurement;
+    private MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
+                                                     @Nullable MeasurementAnswer managed) {
+        if (incoming == null) {
+            return null;
+        }
+        MeasurementAnswer target = managed != null ? managed : new MeasurementAnswer();
+        target.setNumericValue(incoming.getNumericValue());
+        target.setComment(incoming.getComment());
+        target.setNormalizedValue(incoming.getNormalizedValue());
+        target.setUnit(unitDefinitionService.resolve(incoming.getUnit()));
+        return target;
     }
 
     public boolean fullIdentifierAlreadyExistInAction(SpecimenDTO specimen) {
