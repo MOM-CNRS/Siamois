@@ -121,6 +121,9 @@ class RecordingUnitServiceTest {
     @Mock
     private fr.siamois.domain.services.HierarchyCycleGuard hierarchyCycleGuard;
 
+    @Mock
+    private fr.siamois.domain.services.measurement.UnitDefinitionService unitDefinitionService;
+
     @InjectMocks
     private RecordingUnitService recordingUnitService;
 

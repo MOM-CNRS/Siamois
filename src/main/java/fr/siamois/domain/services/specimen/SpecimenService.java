@@ -6,7 +6,6 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -47,7 +46,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -189,7 +187,7 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setDescription(specimen.getDescription());
         managedSpecimen.setCollectors(specimen.getCollectors());
         managedSpecimen.setCollectionDate(specimen.getCollectionDate());
-        managedSpecimen.setWeight(mergeMeasurementAnswer(specimen.getWeight(), managedSpecimen.getWeight()));
+        managedSpecimen.setWeight(unitDefinitionService.mergeMeasurementAnswer(specimen.getWeight(), managedSpecimen.getWeight()));
         managedSpecimen.setNormalizedInterpretation(specimen.getNormalizedInterpretation());
         managedSpecimen.setValidationStatus(specimen.getValidationStatus());
         managedSpecimen.setValidatedAt(specimen.getValidatedAt());
@@ -220,25 +218,6 @@ public class SpecimenService implements ArkEntityService {
             managedSpecimen.setCreatedBy(specimen.getCreatedBy());
         }
         managedSpecimen.setChronologicalAttribution(specimen.getChronologicalAttribution());
-    }
-
-    /**
-     * The incoming measurement's values on the managed one, or on a new one when there is none yet.
-     * The incoming measurement is a copy rebuilt from the DTO: it carries the stored measurement's id,
-     * so putting it on the managed specimen as is would hand Hibernate a detached instance.
-     */
-    @Nullable
-    private MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
-                                                     @Nullable MeasurementAnswer managed) {
-        if (incoming == null) {
-            return null;
-        }
-        MeasurementAnswer target = managed != null ? managed : new MeasurementAnswer();
-        target.setNumericValue(incoming.getNumericValue());
-        target.setComment(incoming.getComment());
-        target.setNormalizedValue(incoming.getNormalizedValue());
-        target.setUnit(unitDefinitionService.resolve(incoming.getUnit()));
-        return target;
     }
 
     public boolean fullIdentifierAlreadyExistInAction(SpecimenDTO specimen) {

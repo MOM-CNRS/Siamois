@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.measurement;
 
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
@@ -38,6 +39,29 @@ public class UnitDefinitionService {
                 .orElseThrow(() -> new IllegalStateException(
                         "No unit definition seeded for symbol '" + unit.getSymbol()
                                 + "' and dimension " + unit.getDimension()));
+    }
+
+    /**
+     * The incoming measurement's values on the managed one, or on a new one when there is none yet,
+     * in the stored unit the incoming one names. The incoming measurement is a copy rebuilt from a
+     * DTO: it carries the stored measurement's id, so putting it on a managed entity as is would hand
+     * Hibernate a detached instance that the next flush fails to persist.
+     *
+     * @param incoming the measurement as entered, null when it was cleared
+     * @param managed  the entity's current measurement, null when it has none
+     * @return the measurement to set on the entity, null when it was cleared
+     */
+    public @Nullable MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
+                                                              @Nullable MeasurementAnswer managed) {
+        if (incoming == null) {
+            return null;
+        }
+        MeasurementAnswer target = managed != null ? managed : new MeasurementAnswer();
+        target.setNumericValue(incoming.getNumericValue());
+        target.setComment(incoming.getComment());
+        target.setNormalizedValue(incoming.getNormalizedValue());
+        target.setUnit(resolve(incoming.getUnit()));
+        return target;
     }
 
     /**
