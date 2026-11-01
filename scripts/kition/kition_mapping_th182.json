@@ -1,0 +1,312 @@
+{
+  "datation": {
+    "?": {
+      "concept": null,
+      "label": null,
+      "n": 52,
+      "note": "vide ou « ? »"
+    },
+    "CC": {
+      "concept": "45615",
+      "label": "Chypro-Classique",
+      "n": 51,
+      "note": null
+    },
+    "contemporain": {
+      "concept": "45624",
+      "label": "Période moderne et contemporaine",
+      "n": 41,
+      "note": null
+    },
+    "CA": {
+      "concept": "45614",
+      "label": "Chypro-Archaïque",
+      "n": 15,
+      "note": null
+    },
+    "CCII": {
+      "concept": "41836",
+      "label": "Chypro-Classique II",
+      "n": 10,
+      "note": null
+    },
+    "CAII ?": {
+      "concept": "41833",
+      "label": "Chypro-Archaïque II",
+      "n": 8,
+      "note": "« ? » ignoré"
+    },
+    "CA ?": {
+      "concept": "45614",
+      "label": "Chypro-Archaïque",
+      "n": 6,
+      "note": "« ? » ignoré"
+    },
+    "CCII-hell": {
+      "concept": "41836",
+      "label": "Chypro-Classique II",
+      "n": 6,
+      "note": "plage ou 2 périodes, première retenue (« CCII + hell »)"
+    },
+    "CAI": {
+      "concept": "41832",
+      "label": "Chypro-Archaïque I",
+      "n": 5,
+      "note": null
+    },
+    "CAII-CCI": {
+      "concept": "41833",
+      "label": "Chypro-Archaïque II",
+      "n": 3,
+      "note": "plage ou 2 périodes, première retenue (« CAII + CCI »)"
+    },
+    "CC ?": {
+      "concept": "45615",
+      "label": "Chypro-Classique",
+      "n": 3,
+      "note": "« ? » ignoré"
+    },
+    "CCI ?": {
+      "concept": "41835",
+      "label": "Chypro-Classique I",
+      "n": 3,
+      "note": "« ? » ignoré"
+    },
+    "CC et contemporain": {
+      "concept": "45615",
+      "label": "Chypro-Classique",
+      "n": 3,
+      "note": "plage ou 2 périodes, première retenue (« CC + contemporain »)"
+    },
+    "CCII-hell.": {
+      "concept": "41836",
+      "label": "Chypro-Classique II",
+      "n": 3,
+      "note": "plage ou 2 périodes, première retenue (« CCII + hell »)"
+    },
+    "CA I": {
+      "concept": "41832",
+      "label": "Chypro-Archaïque I",
+      "n": 2,
+      "note": null
+    },
+    "CAII-CC": {
+      "concept": "41833",
+      "label": "Chypro-Archaïque II",
+      "n": 2,
+      "note": "plage ou 2 périodes, première retenue (« CAII + CC »)"
+    },
+    "CCII ?": {
+      "concept": "41836",
+      "label": "Chypro-Classique II",
+      "n": 2,
+      "note": "« ? » ignoré"
+    },
+    "CA-CCI": {
+      "concept": "45614",
+      "label": "Chypro-Archaïque",
+      "n": 1,
+      "note": "plage ou 2 périodes, première retenue (« CA + CCI »)"
+    },
+    "CAII": {
+      "concept": "41833",
+      "label": "Chypro-Archaïque II",
+      "n": 1,
+      "note": null
+    },
+    "Romain": {
+      "concept": "45619",
+      "label": "Période romaine",
+      "n": 1,
+      "note": null
+    },
+    "CAII-CC ?": {
+      "concept": "41833",
+      "label": "Chypro-Archaïque II",
+      "n": 1,
+      "note": "plage ou 2 périodes, première retenue (« CAII + CC »)"
+    },
+    "CCII-hell. ?": {
+      "concept": "41836",
+      "label": "Chypro-Classique II",
+      "n": 1,
+      "note": "plage ou 2 périodes, première retenue (« CCII + hell »)"
+    },
+    "CCI": {
+      "concept": "41835",
+      "label": "Chypro-Classique I",
+      "n": 1,
+      "note": null
+    },
+    "romain": {
+      "concept": "45619",
+      "label": "Période romaine",
+      "n": 1,
+      "note": null
+    }
+  },
+  "natureLocus": {
+    "Niche": {
+      "concept": "42445",
+      "label": "Niche",
+      "n": 17
+    },
+    "Dromos d’une tombe": {
+      "concept": "42441",
+      "label": "Dromos",
+      "n": 14
+    },
+    "Chambre d'une tombe": {
+      "concept": "42439",
+      "label": "Chambre funéraire",
+      "n": 8
+    },
+    "Niveau de sol": {
+      "concept": "42446",
+      "label": "Niveau de sol",
+      "n": 7
+    },
+    "Stomion d’une tombe": {
+      "concept": "42447",
+      "label": "Stomion",
+      "n": 6
+    },
+    "Creusement dans le rocher": {
+      "concept": "42440",
+      "label": "Creusement",
+      "n": 5
+    },
+    "Dépression probablement naturelle dans le substrat rocheux": {
+      "concept": "2425029",
+      "label": "Dépression naturelle",
+      "n": 4
+    },
+    "Fosse": {
+      "concept": "42442",
+      "label": "Fosse",
+      "n": 4
+    },
+    "Structure de pierres sèches": {
+      "concept": "2425036",
+      "label": "Structure en pierre",
+      "n": 2
+    },
+    "Fossé": {
+      "concept": null,
+      "label": null,
+      "n": 1
+    },
+    "Ligne d’arrachement de la pelle mécanique en 1958": {
+      "concept": null,
+      "label": null,
+      "n": 1
+    },
+    "Stomion d'une tombe": {
+      "concept": "42447",
+      "label": "Stomion",
+      "n": 1
+    }
+  },
+  "interpretation": {
+    "comblement": {
+      "concept": "42448",
+      "label": "Comblement",
+      "n": 102
+    },
+    "surface": {
+      "concept": "42451",
+      "label": "Surface",
+      "n": 29
+    },
+    "formation naturelle ou comblement anthropique  ?": {
+      "concept": null,
+      "label": null,
+      "n": 6
+    },
+    "remblai de la fouille 2013": {
+      "concept": "42450",
+      "label": "Remblai",
+      "n": 5
+    },
+    "formation naturelle ou comblement anthropique ?": {
+      "concept": null,
+      "label": null,
+      "n": 3
+    },
+    "démontage": {
+      "concept": null,
+      "label": null,
+      "n": 2
+    },
+    "formation naturelle ou comblement anthropique ? et comblement": {
+      "concept": null,
+      "label": null,
+      "n": 1
+    },
+    "surface et comblement": {
+      "concept": "42451",
+      "label": "Surface",
+      "n": 1
+    },
+    "comblement du dromos": {
+      "concept": "42448",
+      "label": "Comblement",
+      "n": 1
+    },
+    "remblai de la fouille 2012": {
+      "concept": "42450",
+      "label": "Remblai",
+      "n": 1
+    },
+    "rectification de coupe": {
+      "concept": null,
+      "label": null,
+      "n": 1
+    },
+    "prélèvement": {
+      "concept": null,
+      "label": null,
+      "n": 1
+    }
+  },
+  "auteurs": {
+    "Anna Cannavò": {
+      "concept": "41743",
+      "label": "Anna Cannavò"
+    },
+    "Nathalia Denninger": {
+      "concept": "41755",
+      "label": "Nathalia Denninger"
+    },
+    "Sabine Fourrier": {
+      "concept": "41741",
+      "label": "Sabine Fourrier"
+    }
+  },
+  "typeDocument": {
+    "carnet": {
+      "th182": "42420",
+      "label182": "Cahier de fouille",
+      "th338": "1708",
+      "label338": "carnet de fouille"
+    },
+    "relevé": {
+      "th182": "42487",
+      "label182": "Relevé",
+      "th338": "1719",
+      "label338": "relevé de terrain"
+    },
+    "photo de terrain": {
+      "th182": "42488",
+      "label182": "Photographie de fouille",
+      "th338": "1724",
+      "label338": "photographie de terrain"
+    },
+    "photo d'objet": {
+      "th182": "42489",
+      "label182": "Photographie d'objet",
+      "th338": "1726",
+      "label338": "photographie d'objet"
+    }
+  }
+}
