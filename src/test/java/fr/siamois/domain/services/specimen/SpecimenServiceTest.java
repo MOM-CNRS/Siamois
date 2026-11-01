@@ -10,6 +10,7 @@ import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierGenerationSpec;
@@ -102,6 +103,9 @@ class SpecimenServiceTest {
 
     @Mock
     private ProfilePermissionService profilePermissionService;
+
+    @Mock
+    private fr.siamois.domain.services.measurement.UnitDefinitionService unitDefinitionService;
 
     @BeforeEach
     void stubManagedAssociationLookups() {
@@ -314,6 +318,49 @@ class SpecimenServiceTest {
         specimenService.save(specimenDTO);
 
         verify(profilePermissionService).hasProjectPermission(any(), eq(9L), eq(PermissionConstants.PROJECT_EDIT_FINDS));
+    }
+
+    /** The weight goes through the shared merge, onto the managed specimen's current one. */
+    @Test
+    void save_shouldMergeTheWeightOntoTheManagedOne() {
+        SpecimenDTO specimenDTO = new SpecimenDTO();
+        MeasurementAnswer managedWeight = MeasurementAnswer.builder().id(11L).numericValue(2.0).build();
+        Specimen managed = new Specimen();
+        managed.setId(5L);
+        managed.setWeight(managedWeight);
+        Specimen incoming = existingSpecimenSavedFrom(specimenDTO, managed);
+        MeasurementAnswer incomingWeight = MeasurementAnswer.builder().id(11L).numericValue(4.5).build();
+        incoming.setWeight(incomingWeight);
+        when(unitDefinitionService.mergeMeasurementAnswer(incomingWeight, managedWeight)).thenReturn(managedWeight);
+
+        specimenService.save(specimenDTO);
+
+        assertSame(managedWeight, managed.getWeight());
+    }
+
+    /**
+     * {@code dto} as the mapper turns it into an entity: a copy of the stored {@code managed} one,
+     * linked to a recording unit of a project the caller may edit.
+     */
+    private Specimen existingSpecimenSavedFrom(SpecimenDTO dto, Specimen managed) {
+        RecordingUnitSummaryDTO recordingUnitDTO = new RecordingUnitSummaryDTO();
+        recordingUnitDTO.setId(42L);
+        dto.setRecordingUnit(recordingUnitDTO);
+        RecordingUnit recordingUnit = new RecordingUnit();
+        recordingUnit.setId(42L);
+        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
+        actionUnit.setId(9L);
+        recordingUnit.setActionUnit(actionUnit);
+        when(recordingUnitRepository.findById(42L)).thenReturn(Optional.of(recordingUnit));
+
+        Specimen incoming = new Specimen();
+        incoming.setId(managed.getId());
+        incoming.setRecordingUnit(recordingUnit);
+        when(specimenRepository.findById(managed.getId())).thenReturn(Optional.of(managed));
+        when(specimenMapper.invertConvert(dto)).thenReturn(incoming);
+        when(specimenRepository.save(managed)).thenReturn(managed);
+        when(specimenMapper.convert(managed)).thenReturn(new SpecimenDTO());
+        return incoming;
     }
 
     @Test

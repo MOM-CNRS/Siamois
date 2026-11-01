@@ -11,7 +11,6 @@ import fr.siamois.domain.models.exceptions.recordingunit.FailedRecordingUnitSave
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitIdentifierAlreadyExistsException;
 import fr.siamois.domain.models.exceptions.recordingunit.RecordingUnitNotFoundException;
 import fr.siamois.domain.models.form.customfield.CustomField;
-import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -367,9 +366,9 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setComments(recordingUnit.getComments());
 
         // altimetry
-        managedRecordingUnit.setZInf(mergeMeasurementAnswer(
+        managedRecordingUnit.setZInf(unitDefinitionService.mergeMeasurementAnswer(
                 recordingUnit.getZInf(), managedRecordingUnit.getZInf()));
-        managedRecordingUnit.setZSup(mergeMeasurementAnswer(
+        managedRecordingUnit.setZSup(unitDefinitionService.mergeMeasurementAnswer(
                 recordingUnit.getZSup(), managedRecordingUnit.getZSup()));
 
         if (managedRecordingUnit.getCreatedBy() == null) {
@@ -380,20 +379,6 @@ public class RecordingUnitService implements ArkEntityService {
         managedRecordingUnit.setChronologicalAttribution(recordingUnit.getChronologicalAttribution());
         managedRecordingUnit.setGeomorphologicalAgent(recordingUnit.getGeomorphologicalAgent());
 
-    }
-
-    @Nullable
-    private MeasurementAnswer mergeMeasurementAnswer(@Nullable MeasurementAnswer incoming,
-                                                     @Nullable MeasurementAnswer managed) {
-        if (incoming == null) {
-            return null;
-        }
-        MeasurementAnswer target = managed != null ? managed : new MeasurementAnswer();
-        target.setNumericValue(incoming.getNumericValue());
-        target.setComment(incoming.getComment());
-        target.setNormalizedValue(incoming.getNormalizedValue());
-        target.setUnit(unitDefinitionService.resolve(incoming.getUnit()));
-        return target;
     }
 
     private void setupStratigraphicRelationships(RecordingUnit source, RecordingUnit target) {

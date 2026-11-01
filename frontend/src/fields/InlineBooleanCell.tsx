@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {BooleanRenderer} from "./renderers";
-import {type AnswerInputBody, type FieldResource, toAnswerInput} from "./types";
+import {type AnswerInputBody, type FieldResource, toAnswerInput, unwrapAnswer} from "./types";
 import {messageForError} from "../api/errors";
 import {t} from "../i18n";
 import {useToastOnChange} from "../notify/NotifyProvider";
@@ -22,7 +22,9 @@ export function InlineBooleanCell({ field, rowId, value, readOnly, onSave, onSav
   const [error, setError] = useState<string | null>(null);
   useToastOnChange(error);
 
-  const shown = pending !== undefined ? pending : typeof value === "boolean" ? value : null;
+  // The stored value is read raw: an additional field's answer comes as its envelope ({answerType, value}).
+  const stored = unwrapAnswer(value);
+  const shown = pending !== undefined ? pending : typeof stored === "boolean" ? stored : null;
 
   async function commit(next: unknown) {
     const bool = typeof next === "boolean" ? next : null;

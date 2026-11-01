@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.measurement;
 
+import fr.siamois.domain.models.form.measurement.MeasurementAnswer;
 import fr.siamois.domain.models.form.measurement.UnitDefinition;
 import fr.siamois.dto.entity.UnitDefinitionDTO;
 import fr.siamois.infrastructure.database.repositories.measurement.UnitDefinitionRepository;
@@ -92,6 +93,48 @@ class UnitDefinitionServiceTest {
         when(unitDefinitionMapper.convert(stored)).thenReturn(dto);
 
         assertThat(service.findOptions()).containsExactly(dto);
+    }
+
+    /**
+     * The incoming measurement is rebuilt from a DTO and carries the stored one's id: set as is on a
+     * managed entity, it is a detached instance the next flush fails to persist.
+     */
+    @Test
+    @DisplayName("A measurement entered over a stored one updates the stored one")
+    void mergeMeasurementAnswer_updatesTheManagedMeasurement() {
+        UnitDefinition stored = metre(5L);
+        when(unitDefinitionRepository.findById(5L)).thenReturn(Optional.of(stored));
+        MeasurementAnswer managed = MeasurementAnswer.builder().id(11L).numericValue(2.0).unit(stored).build();
+        MeasurementAnswer incoming = MeasurementAnswer.builder().id(11L).numericValue(4.5).comment("sec").unit(metre(5L)).build();
+
+        MeasurementAnswer merged = service.mergeMeasurementAnswer(incoming, managed);
+
+        assertThat(merged).isSameAs(managed);
+        assertThat(merged.getNumericValue()).isEqualTo(4.5);
+        assertThat(merged.getComment()).isEqualTo("sec");
+        assertThat(merged.getUnit()).isSameAs(stored);
+    }
+
+    @Test
+    @DisplayName("A first measurement is a new one, in the stored unit")
+    void mergeMeasurementAnswer_createsOneWhenThereIsNone() {
+        UnitDefinition stored = metre(5L);
+        when(unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc("m", UnitDefinition.Dimension.LENGTH))
+                .thenReturn(Optional.of(stored));
+
+        MeasurementAnswer merged = service.mergeMeasurementAnswer(
+                MeasurementAnswer.builder().numericValue(3.0).unit(metre(null)).build(), null);
+
+        assertThat(merged.getId()).isNull();
+        assertThat(merged.getNumericValue()).isEqualTo(3.0);
+        assertThat(merged.getUnit()).isSameAs(stored);
+    }
+
+    @Test
+    @DisplayName("A cleared measurement is none")
+    void mergeMeasurementAnswer_returnsNullWhenCleared() {
+        assertThat(service.mergeMeasurementAnswer(null, MeasurementAnswer.builder().id(11L).build())).isNull();
+        verifyNoInteractions(unitDefinitionRepository);
     }
 
     private static UnitDefinition metre(Long id) {
