@@ -7,7 +7,7 @@ package fr.siamois.domain.services.actionunit.template;
  * {@code kind[:reference]} string so that other kinds (stored templates that are not projects) can be added
  * without changing the API.
  *
- * @param id    stable identifier sent back at creation ({@code default}, {@code empty} or {@code project:<id>})
+ * @param id    stable identifier sent back at creation ({@code default}, {@code empty}, {@code kition} or {@code project:<id>})
  * @param label name shown to the user
  * @param kind  {@link Kind} of the template
  */
@@ -15,9 +15,10 @@ public record ProjectTemplate(String id, String label, Kind kind) {
 
     public static final String DEFAULT_ID = "default";
     public static final String EMPTY_ID = "empty";
+    public static final String KITION_ID = "kition";
     public static final String PROJECT_PREFIX = "project:";
 
-    public enum Kind { DEFAULT, EMPTY, PROJECT }
+    public enum Kind { DEFAULT, EMPTY, PROJECT, KITION }
 
     public static String projectId(long projectId) {
         return PROJECT_PREFIX + projectId;

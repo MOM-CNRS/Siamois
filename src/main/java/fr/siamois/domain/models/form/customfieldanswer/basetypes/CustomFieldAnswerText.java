@@ -16,7 +16,7 @@ import java.util.Objects;
 @NoArgsConstructor
 public class CustomFieldAnswerText extends CustomFieldAnswer {
 
-    @Column(name = "value_as_text")
+    @Column(name = "value_as_text", columnDefinition = "text")
     private String value;
 
     @Override

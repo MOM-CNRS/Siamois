@@ -170,8 +170,13 @@ public class LabelService {
             conceptLabelRepository.deleteAll(toDelete);
         }
 
+        // the label column ignores case: two synonyms that differ only by case ("CHA", "ChA") are one label
+        Set<String> written = new java.util.HashSet<>();
         for (PurlInfoDTO altLabel : altLabels) {
-            updateAltLabel(savedConcept, altLabel.getLang(), altLabel.getValue(), fieldParentConcept);
+            String key = altLabel.getLang() + " " + altLabel.getValue().toLowerCase(java.util.Locale.ROOT);
+            if (written.add(key)) {
+                updateAltLabel(savedConcept, altLabel.getLang(), altLabel.getValue(), fieldParentConcept);
+            }
         }
     }
 
