@@ -28,4 +28,22 @@ describe("InlineBooleanCell", () => {
     expect(onSave).toHaveBeenCalledWith(3, { "7": { value: true } }, true);
     expect(onSaved).toHaveBeenCalled();
   });
+
+  it("shows a stored answer that comes as its envelope", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root!.render(
+        <InlineBooleanCell field={field} rowId={3} value={{ answerType: "BOOLEAN", value: true }} readOnly={false} onSave={onSave} onSaved={() => {}} />,
+      );
+    });
+    expect((host.querySelector("input[type=checkbox]") as HTMLInputElement).checked).toBe(true);
+    await act(async () => {
+      (host.querySelector("input[type=checkbox]") as HTMLElement).click();
+    });
+    expect(onSave).toHaveBeenCalledWith(3, { "7": { value: false } }, false);
+  });
 });
