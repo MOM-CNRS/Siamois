@@ -31,6 +31,11 @@ public class UnitDefinitionService {
      */
     @Transactional(readOnly = true)
     public @Nullable UnitDefinition resolve(@Nullable UnitDefinition unit) {
+        return storedUnitOf(unit);
+    }
+
+    /** {@link #resolve} without its transaction, for the methods of this service that need it. */
+    private @Nullable UnitDefinition storedUnitOf(@Nullable UnitDefinition unit) {
         if (unit == null) return null;
         if (unit.getId() != null) return findById(unit.getId());
 
@@ -60,7 +65,7 @@ public class UnitDefinitionService {
         target.setNumericValue(incoming.getNumericValue());
         target.setComment(incoming.getComment());
         target.setNormalizedValue(incoming.getNormalizedValue());
-        target.setUnit(resolve(incoming.getUnit()));
+        target.setUnit(storedUnitOf(incoming.getUnit()));
         return target;
     }
 
