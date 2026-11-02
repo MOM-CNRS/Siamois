@@ -84,6 +84,11 @@ public abstract class CustomField implements Serializable {
     }
 
     public String getConceptUri() {
+        return conceptUriOf(concept);
+    }
+
+    /** The page of {@code concept} in its thesaurus, or null when there is none to point at. */
+    public static String conceptUriOf(Concept concept) {
         if (concept == null || concept.getVocabulary() == null) {
             return null;
         }

@@ -11,6 +11,7 @@ import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.infrastructure.database.initializer.seeder.*;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
+import org.locationtech.jts.geom.Geometry;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -662,6 +663,8 @@ public class OOXMLImportService {
         Integer taq = getIntegerCellOrNull(row, cols, "taq");
         Integer tpq = getIntegerCellOrNull(row, cols, "tpq");
 
+        Geometry geometry = parseOptionalGeometry(row, cols, "geometrie");
+
         ConceptSeeder.ConceptKey erosionShape = conceptKeyFromColumnOrLabel(row, cols, "erosion forme uri", "erosion forme label",
                 RecordingUnit.EROSION_SHAPE_FIELD_CODE, institutionDbId);
         ConceptSeeder.ConceptKey erosionOrientation = conceptKeyFromColumnOrLabel(row, cols, "erosion orientation uri", "erosion orientation label",
@@ -701,8 +704,17 @@ public class OOXMLImportService {
                 erosionOrientation,
                 erosionProfile,
                 chronologicalAttribution,
+                geometry,
                 row.getRowNum() + 1
         ));
+    }
+
+    private Geometry parseOptionalGeometry(Row row, Map<String, Integer> cols, String key) {
+        try {
+            return ImportGeometry.parse(getStringCellOrNull(row, cols, key));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("[colonne '" + columnLabel(key) + "'] : " + e.getMessage(), e);
+        }
     }
 
     private SpatialUnitSeeder.SpatialUnitKey parseOptionalSpatialUnit(Row row, Map<String, Integer> cols, String key) {

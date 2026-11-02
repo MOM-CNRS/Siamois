@@ -94,6 +94,7 @@
     } ]
   }, {
     "label" : "common.header.measurement",
+    "allowMeasures" : true,
     "fields" : [ {
       "fieldId" : -420,
       "binding" : "weight",
@@ -134,7 +135,7 @@
       "width" : "QUARTER"
     }, {
       "fieldId" : -435,
-      "binding" : "storageLocation",
+      "binding" : "storagePlace",
       "width" : "QUARTER"
     }, {
       "fieldId" : -425,

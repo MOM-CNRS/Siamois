@@ -75,6 +75,7 @@ Une ligne est importée si **Identifiant** ou **Description** est renseigné.
 | Couleur de la matrice, Texture de la matrice, Composition de la matrice | Texte libre |
 | Informations complémentaires | Commentaire libre |
 | TAQ, TPQ | Terminus ante quem, terminus post quem |
+| Géométrie (WKT) | Emprise de l'UE en WKT, par ex. `SRID=3948;MULTIPOLYGON (((x y, x y, …)))`. Le préfixe `SRID=…;` est facultatif ; sans lui, aucun système de coordonnées n'est enregistré. Aucune reprojection n'est faite |
 | Institution, Projet | Ignorées dans un projet |
 
 ### Stratigraphie

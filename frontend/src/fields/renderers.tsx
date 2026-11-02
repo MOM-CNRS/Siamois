@@ -11,6 +11,7 @@ import {Dropdown} from "primereact/dropdown";
 import {Calendar} from "primereact/calendar";
 import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
 import {Button} from "primereact/button";
+import {OverlayPanel} from "primereact/overlaypanel";
 import {CreateEntityOverlay} from "../components/create/CreateEntityOverlay";
 import {useOpenEntity} from "../panels/pane/entityNavigation";
 import {getEntityType} from "../entities/registry";
@@ -71,6 +72,27 @@ function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRenderer
       onChange={(e) => onChange(e.target.value)}
       autoResize
     />
+  );
+}
+
+// A geometry's WKT, in the SRID it carries: displayed, never edited (the server sends the field read-only).
+const GEOMETRY_PREVIEW_LENGTH = 20;
+
+// A geometry's WKT can run to thousands of characters: the field shows its first few, the rest opens in an overlay.
+export function GeometryRenderer({ value }: FieldRendererProps) {
+  const overlayRef = useRef<OverlayPanel>(null);
+  const wkt = typeof value === "string" && value.length > 0 ? value : null;
+  if (!wkt) return <span>—</span>;
+  if (wkt.length <= GEOMETRY_PREVIEW_LENGTH) return <code className="field-geometry">{wkt}</code>;
+  return (
+    <>
+      <button type="button" className="field-geometry field-geometry-preview" onClick={(e) => overlayRef.current?.toggle(e)}>
+        {wkt.slice(0, GEOMETRY_PREVIEW_LENGTH)}…
+      </button>
+      <OverlayPanel ref={overlayRef} className="field-geometry-overlay">
+        <code className="field-geometry">{wkt}</code>
+      </OverlayPanel>
+    </>
   );
 }
 

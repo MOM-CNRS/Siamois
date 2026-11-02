@@ -73,7 +73,7 @@ public class FieldTextService {
      */
     public FieldTexts resolve(CustomField field, @Nullable String lang, @Nullable String fallbackLabel,
                               @Nullable String fallbackHint) {
-        ConceptTexts texts = textsOf(field == null ? null : field.getConcept(), lang);
+        ConceptTexts texts = textsOf(conceptOf(field), lang);
         return new FieldTexts(
                 texts.label() != null ? texts.label() : fallbackLabel,
                 texts.definition() != null ? texts.definition() : blankToNull(fallbackHint));
@@ -87,6 +87,22 @@ public class FieldTextService {
                                          @Nullable String fallbackHint) {
         CustomField field = fieldId == null ? null : SystemFields.BY_ID.get(fieldId);
         return resolve(field, lang, fallbackLabel, fallbackHint);
+    }
+
+    /**
+     * The field's concept. A system field read from the database has none (its concept is not persisted
+     * with its row, see {@code SystemFieldInitializer}), so it takes the one of its definition in code.
+     */
+    @Nullable
+    public static Concept conceptOf(@Nullable CustomField field) {
+        if (field == null) {
+            return null;
+        }
+        if (field.getConcept() == null && Boolean.TRUE.equals(field.getIsSystemField()) && field.getId() != null) {
+            CustomField declared = SystemFields.BY_ID.get(field.getId());
+            return declared == null ? null : declared.getConcept();
+        }
+        return field.getConcept();
     }
 
     /** The system fields of every table by id, built once on first use (class initialization is thread-safe). */

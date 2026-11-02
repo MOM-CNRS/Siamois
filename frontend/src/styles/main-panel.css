@@ -4052,3 +4052,31 @@ div#search-bar .sia-topbar-search-field .sia-search {
 /* Field label tooltip: the label, then the (truncated) definition of the field's concept. */
 .field-label-tooltip { max-width: 22rem; }
 .field-label-tooltip-definition { margin-top: 0.25rem; white-space: normal; }
+
+/* A geometry's WKT (GeometryRenderer): read-only, monospace, wrapped so a long polygon stays in its column. */
+.field-geometry {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 8rem;
+  overflow: auto;
+}
+
+.field-geometry-preview {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.field-geometry-overlay {
+  max-width: min(40rem, 90vw);
+}
+
+.field-geometry-overlay .field-geometry {
+  max-height: 20rem;
+}

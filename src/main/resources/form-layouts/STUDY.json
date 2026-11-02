@@ -27,6 +27,7 @@
     },
     {
       "label" : "study.header.treatment",
+      "allowMeasures" : true,
       "fields" : [
         {
           "fieldId" : -809,

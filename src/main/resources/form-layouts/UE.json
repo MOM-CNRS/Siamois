@@ -28,7 +28,8 @@
     }, {
       "fieldId" : -326,
       "binding" : "specimenList",
-      "width" : "QUARTER"
+      "width" : "QUARTER",
+      "active" : false
     }, {
       "fieldId" : -331,
       "binding" : "nature",
@@ -133,6 +134,7 @@
     } ]
   }, {
     "label" : "recordingunit.panel.measurements",
+    "allowMeasures" : true,
     "fields" : [ {
       "fieldId" : -322,
       "binding" : "zInf",

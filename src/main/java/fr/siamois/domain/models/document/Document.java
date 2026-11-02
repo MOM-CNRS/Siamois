@@ -212,9 +212,10 @@ public class Document extends TraceableEntity implements ArkEntity {
     @Column(name = "item_count")
     protected Integer itemCount;
 
-    /** Where the document is kept when it is not physically handed over to the State (prints and impressions). */
-    @Column(name = "storage_location", length = 1000)
-    protected String storageLocation;
+    /** Where the document is kept when it is not physically handed over to the State (prints and impressions): a place of the institution. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_storage_place")
+    protected SpatialUnit storagePlace;
 
     /** Casts: owner, number of copies, dimensions and conservation conditions. */
     @Column(name = "mold_comment", length = MAX_DESCRIPTION_LENGTH)

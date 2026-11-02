@@ -121,6 +121,40 @@ class FieldTextServiceTest {
     }
 
     @Test
+    void aSystemFieldReadFromTheDatabaseTakesTheConceptOfItsDefinitionInCode() {
+        // a project's saved layout reads its fields from their rows, which do not carry the concept
+        storeConcept("1172", "Type d'UE", "Nature de l'unité.");
+        CustomField row = new CustomFieldText();
+        row.setId(-302L);
+        row.setIsSystemField(true);
+
+        var texts = service.resolve(row, "fr", "Type", null);
+
+        assertThat(texts.label()).isEqualTo("Type d'UE");
+        assertThat(texts.definition()).isEqualTo("Nature de l'unité.");
+    }
+
+    @Test
+    void anAdditionalFieldWithoutConceptKeepsItsOwnTexts_evenWithTheIdOfASystemField() {
+        CustomField row = new CustomFieldText();
+        row.setId(-302L);
+        row.setIsSystemField(false);
+
+        assertThat(service.resolve(row, "fr", "Type", "Aide"))
+                .isEqualTo(new FieldTextService.FieldTexts("Type", "Aide"));
+    }
+
+    @Test
+    void aSystemFieldUnknownToTheCodeKeepsItsOwnTexts() {
+        CustomField row = new CustomFieldText();
+        row.setId(999_999L);
+        row.setIsSystemField(true);
+
+        assertThat(service.resolve(row, "fr", "Libellé", null))
+                .isEqualTo(new FieldTextService.FieldTexts("Libellé", null));
+    }
+
+    @Test
     void anIdThatIsNotASystemFieldGetsTheFallbacks() {
         assertThat(service.resolveSystemField(999_999L, "fr", "Libellé", "Aide"))
                 .isEqualTo(new FieldTextService.FieldTexts("Libellé", "Aide"));

@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.document.form;
 
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
@@ -29,6 +30,7 @@ public abstract class DocumentForm {
 
     private static final String LABEL_PREFIX = "document.field.";
     private static final String B_ACTION_UNIT = "actionUnit";
+    private static final String B_STORAGE_LOCATION = "storageLocation";
     private static final String B_TYPE = "type";
     private static final String B_AUTHORS = "authors";
     private static final String B_CONTRIBUTORS = "contributors";
@@ -80,7 +82,7 @@ public abstract class DocumentForm {
             Map.entry(B_RECORDING_UNITS, "1698"),
             Map.entry(B_SIZE_MB, "1694"),
             Map.entry("specimens", "1699"),
-            Map.entry("storageLocation", "1696"),
+            Map.entry(B_STORAGE_LOCATION, "1696"),
             Map.entry("supportNatures", "1680"),
             Map.entry("title", "1685"),
             Map.entry(B_TYPE, "1679"));
@@ -257,7 +259,14 @@ public abstract class DocumentForm {
     // The fields of the national report inventory: no concept in the system thesaurus yet.
 
     @Transient
-    protected static final CustomFieldText storageLocationField = text(-729L, "storageLocation", false);
+    /** Where the document is kept: a place of the institution. Its concept is still the one of its former text field. */
+    protected static final CustomFieldSelectOneSpatialUnit storageLocationField = CustomFieldSelectOneSpatialUnit.builder()
+            .label(LABEL_PREFIX + B_STORAGE_LOCATION)
+            .isSystemField(true)
+            .id(-729L)
+            .valueBinding("storagePlace")
+            .concept(concept(B_STORAGE_LOCATION))
+            .build();
 
     @Transient
     protected static final CustomFieldText moldCommentField = text(-730L, "moldComment", true);

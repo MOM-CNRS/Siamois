@@ -6,6 +6,7 @@ import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
@@ -363,14 +364,7 @@ public abstract class RecordingUnitForm {
     /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    protected static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .id(-332L)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .build();
+    protected static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-332L, GEOM_CONCEPT);
 
     @Transient
     @JsonIgnore

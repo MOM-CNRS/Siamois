@@ -53,6 +53,7 @@ public final class CustomFieldAnswerFactory {
         return Map.ofEntries(
                 // Constructeurs vides : on ignore l'argument 'f'
                 Map.entry(CustomFieldText.class, f -> new CustomFieldAnswerTextViewModel()),
+                Map.entry(CustomFieldGeometry.class, f -> new CustomFieldAnswerTextViewModel()),
                 // Never bound by an answer (the file is uploaded apart): a placeholder that keeps it in the form.
                 Map.entry(CustomFieldFile.class, f -> new CustomFieldAnswerTextViewModel()),
                 Map.entry(CustomFieldSelectOneAddress.class, f -> new CustomFieldAnswerSelectOneAddressViewModel()),
@@ -92,6 +93,7 @@ public final class CustomFieldAnswerFactory {
     private static Map<Class<? extends CustomField>, Function<Void,? extends CustomFieldAnswer>> initAnswerEntityCreators() {
         return Map.ofEntries(
                 Map.entry(CustomFieldText.class, v -> new CustomFieldAnswerText()),
+                Map.entry(CustomFieldGeometry.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldFile.class, v -> new CustomFieldAnswerText()),
                 Map.entry(CustomFieldInteger.class, v -> new CustomFieldAnswerInteger()),
                 Map.entry(CustomFieldBoolean.class, v -> new CustomFieldAnswerBoolean()),

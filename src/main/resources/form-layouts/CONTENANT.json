@@ -12,6 +12,7 @@
     } ]
   }, {
     "label" : "common.header.dimensions",
+    "allowMeasures" : true,
     "fields" : [ {
       "fieldId" : -605,
       "binding" : "length",
