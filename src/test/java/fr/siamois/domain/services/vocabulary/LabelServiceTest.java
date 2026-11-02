@@ -18,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -514,5 +516,48 @@ class LabelServiceTest {
         verify(conceptLabelRepository, never()).deleteAll(any());
         assertEquals("pot", existing.getLabel());
         verify(conceptLabelRepository).saveAll(argThat(labels -> labels.iterator().next() == existing));
+    }
+
+    @Test
+    void updateAllLabelsFromDTOs_shouldTagTheLabelsWithTheFieldParent_exceptThoseOfTheParentItself() {
+        Concept fieldParent = new Concept();
+        fieldParent.setId(100L);
+        fieldParent.setExternalId("100");
+        Concept child = new Concept();
+        child.setId(9L);
+        child.setExternalId("9");
+        ConceptPrefLabel untagged = new ConceptPrefLabel();
+        untagged.setId(4L);
+        untagged.setConcept(child);
+        untagged.setLangCode("fr");
+        untagged.setLabel("vase");
+        ConceptPrefLabel alreadyTagged = new ConceptPrefLabel();
+        alreadyTagged.setId(5L);
+        alreadyTagged.setConcept(child);
+        alreadyTagged.setLangCode("en");
+        alreadyTagged.setLabel("vase");
+        alreadyTagged.setParentConcept(fieldParent);
+        when(conceptLabelRepository.findAllByConceptIn(any())).thenReturn(List.of(untagged, alreadyTagged));
+
+        FullInfoDTO childDto = new FullInfoDTO();
+        childDto.setPrefLabel(new PurlInfoDTO[]{purl("fr", "vase"), purl("en", "vase")});
+        // the label column ignores case : the second synonym is the first one
+        childDto.setAltLabel(new PurlInfoDTO[]{purl("fr", "CHA"), purl("fr", "ChA")});
+        FullInfoDTO parentDto = new FullInfoDTO();
+        parentDto.setPrefLabel(new PurlInfoDTO[]{purl("fr", "céramique")});
+        Map<Concept, FullInfoDTO> dtoByConcept = new LinkedHashMap<>();
+        dtoByConcept.put(child, childDto);
+        dtoByConcept.put(fieldParent, parentDto);
+
+        labelService.updateAllLabelsFromDTOs(dtoByConcept, fieldParent);
+
+        ArgumentCaptor<Iterable<ConceptLabel>> captor = ArgumentCaptor.captor();
+        verify(conceptLabelRepository).saveAll(captor.capture());
+        Map<String, ConceptLabel> written = new HashMap<>();
+        captor.getValue().forEach(label -> written.put(label.getLangCode() + " " + label.getLabel(), label));
+        assertThat(written).containsOnlyKeys("fr vase", "fr CHA", "fr céramique");
+        assertThat(written.get("fr vase").getParentConcept()).isSameAs(fieldParent);
+        assertThat(written.get("fr CHA").getParentConcept()).isSameAs(fieldParent);
+        assertNull(written.get("fr céramique").getParentConcept());
     }
 }

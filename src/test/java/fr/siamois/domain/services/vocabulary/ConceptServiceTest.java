@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -303,6 +304,90 @@ class ConceptServiceTest {
         assertThat(captor.getValue().values().iterator().next().getPrefLabel())
                 .extracting(PurlInfoDTO::getValue)
                 .containsExactly("décret");
+    }
+
+    @Test
+    void saveOrGetConceptsFromFullDTOs_shouldWriteOnlyTheNewAndChangedDefinitions() {
+        concept.setLoaded(true);
+        Concept withoutDefinition = new Concept();
+        withoutDefinition.setId(2L);
+        withoutDefinition.setExternalId("concept2");
+        withoutDefinition.setVocabulary(vocabulary);
+        withoutDefinition.setLoaded(true);
+        FullInfoDTO described = conceptInfo("concept1", "Vase");
+        described.setDefinition(new PurlInfoDTO[]{
+                purl("Même définition", "fr"), purl("New definition", "en"), purl("Neue Definition", "de")});
+        Map<String, FullInfoDTO> byUrl = new LinkedHashMap<>();
+        byUrl.put("http://example.com/described", described);
+        byUrl.put("http://example.com/plain", conceptInfo("concept2", "Pot"));
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("vocab1"), any()))
+                .thenReturn(List.of(concept, withoutDefinition));
+        LocalizedConceptData sameFr = definition(concept, "fr", "Même définition");
+        LocalizedConceptData oldEn = definition(concept, "en", "Old definition");
+        when(localizedConceptDataRepository.findAllByConceptIn(any())).thenReturn(List.of(sameFr, oldEn));
+
+        conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, byUrl, null);
+
+        // both concepts are loaded and not deleted : neither is written again
+        verify(conceptRepository, never()).save(any(Concept.class));
+        ArgumentCaptor<Iterable<LocalizedConceptData>> captor = ArgumentCaptor.captor();
+        verify(localizedConceptDataRepository).saveAll(captor.capture());
+        List<String> written = new ArrayList<>();
+        captor.getValue().forEach(data -> written.add(data.getLangCode() + " " + data.getDefinition()));
+        assertThat(written).containsExactlyInAnyOrder("en New definition", "de Neue Definition");
+    }
+
+    @Test
+    void saveOrGetConceptsFromFullDTOs_shouldRestoreAConceptMarkedAsDeleted() {
+        concept.setLoaded(true);
+        concept.setDeleted(true);
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("vocab1"), any()))
+                .thenReturn(List.of(concept));
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+
+        conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, Map.of("http://example.com/c", conceptInfo("concept1", "Vase")), null);
+
+        assertThat(concept.isDeleted()).isFalse();
+        verify(conceptRepository).save(concept);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void saveOrGetConceptsFromFullDTOs_shouldMergeTheDescriptions_asIfSavedOneAfterTheOther() {
+        FullInfoDTO first = conceptInfo("1868", "décret");
+        first.setAltLabel(new PurlInfoDTO[]{purl("édit", "fr")});
+        first.setDefinition(new PurlInfoDTO[]{purl("Acte", "fr")});
+        FullInfoDTO second = conceptInfo("1868", "ignored");
+        second.setPrefLabel(new PurlInfoDTO[]{purl("decree", "en")});
+        FullInfoDTO third = conceptInfo("1868", "ignored");
+        third.setPrefLabel(null);
+        third.setAltLabel(new PurlInfoDTO[]{purl("ordonnance", "fr")});
+        Map<String, FullInfoDTO> byUrl = new LinkedHashMap<>();
+        byUrl.put("https://a.example/1868", first);
+        byUrl.put("https://b.example/1868", second);
+        byUrl.put("https://c.example/1868", third);
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("vocab1"), any()))
+                .thenReturn(List.of());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+
+        conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, byUrl, null);
+
+        ArgumentCaptor<Map<Concept, FullInfoDTO>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(labelService).updateAllLabelsFromDTOs(captor.capture(), isNull());
+        FullInfoDTO merged = captor.getValue().values().iterator().next();
+        assertThat(merged.getPrefLabel()).extracting(PurlInfoDTO::getValue).containsExactly("décret", "decree");
+        // the last alt labels replace the earlier ones, a description without any keeps them
+        assertThat(merged.getAltLabel()).extracting(PurlInfoDTO::getValue).containsExactly("ordonnance");
+        assertThat(merged.getDefinition()).extracting(PurlInfoDTO::getValue).containsExactly("Acte");
+    }
+
+    private static LocalizedConceptData definition(Concept concept, String lang, String value) {
+        LocalizedConceptData data = new LocalizedConceptData();
+        data.getId().setConceptId(concept.getId());
+        data.setConcept(concept);
+        data.setLangCode(lang);
+        data.setDefinition(value);
+        return data;
     }
 
     @Test

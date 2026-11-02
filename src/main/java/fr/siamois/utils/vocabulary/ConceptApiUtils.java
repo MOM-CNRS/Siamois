@@ -125,17 +125,7 @@ public class ConceptApiUtils {
      * and those lookups are made together, see {@link #findOrCreateStubs}.
      */
     private static void createRelatedConceptsRelations(BranchLoadComponents utils, @NonNull Vocabulary vocabulary, @NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlTosavedConcept, @Nullable ProgressWrapper progressWrapper) {
-        Set<String> unknownUris = new LinkedHashSet<>();
-        for (FullInfoDTO info : branchDTO.getData().values()) {
-            if (info.getRelated() == null) continue;
-            for (PurlInfoDTO related : info.getRelated()) {
-                String relatedUri = related.getValue();
-                if (relatedUri != null && !relatedUri.isBlank() && !urlTosavedConcept.containsKey(relatedUri)) {
-                    unknownUris.add(relatedUri);
-                }
-            }
-        }
-        findOrCreateStubs(utils, vocabulary, unknownUris, urlTosavedConcept);
+        findOrCreateStubs(utils, vocabulary, unknownRelatedUris(branchDTO, urlTosavedConcept), urlTosavedConcept);
 
         List<Long> conceptIds = new ArrayList<>();
         List<Long> relatedIds = new ArrayList<>();
@@ -144,7 +134,7 @@ public class ConceptApiUtils {
             Concept currentConcept = urlTosavedConcept.get(info.getKey());
             for (PurlInfoDTO related : info.getValue().getRelated()) {
                 String relatedUri = related.getValue();
-                if (relatedUri == null || relatedUri.isBlank()) {
+                if (isBlank(relatedUri)) {
                     // Nothing identifies the concept on the other end of the link : there is no local row to
                     // create for it, and no URI a later fetch could use to resolve it.
                     log.debug("Skipping a related link of {} : the thesaurus returned no URI for it", info.getKey());
@@ -158,6 +148,25 @@ public class ConceptApiUtils {
         if (!conceptIds.isEmpty()) {
             utils.conceptRepository.addRelatedConceptsIfAbsent(conceptIds.toArray(Long[]::new), relatedIds.toArray(Long[]::new));
         }
+    }
+
+    /** The URIs the branch's "related" links point at that the import has not saved yet. */
+    private static Set<String> unknownRelatedUris(@NonNull ConceptBranchDTO branchDTO, @NonNull Map<String, Concept> urlTosavedConcept) {
+        Set<String> unknownUris = new LinkedHashSet<>();
+        for (FullInfoDTO info : branchDTO.getData().values()) {
+            if (info.getRelated() == null) continue;
+            for (PurlInfoDTO related : info.getRelated()) {
+                String relatedUri = related.getValue();
+                if (!isBlank(relatedUri) && !urlTosavedConcept.containsKey(relatedUri)) {
+                    unknownUris.add(relatedUri);
+                }
+            }
+        }
+        return unknownUris;
+    }
+
+    private static boolean isBlank(@Nullable String value) {
+        return value == null || value.isBlank();
     }
 
     /**
@@ -220,21 +229,7 @@ public class ConceptApiUtils {
      * duplicate them.
      */
     private static void createRelations(BranchLoadComponents utils, @NonNull ConceptBranchDTO branchDTO, Map<String, Concept> savedConcept, @Nullable ProgressWrapper progressWrapper) {
-        Set<Concept> parents = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (Map.Entry<String, FullInfoDTO> info : branchDTO.getData().entrySet()) {
-            if (info.getValue().getNarrower() == null) continue;
-            Concept parent = savedConcept.get(info.getKey());
-            if (parent == null) {
-                throw new IllegalStateException("No concept found in cache map for URL " + info.getKey());
-            }
-            parents.add(parent);
-        }
-        Set<List<Long>> existingLinks = new HashSet<>();
-        for (List<Concept> chunk : chunksOf(parents)) {
-            for (Object[] link : utils.conceptHierarchyRepository.findLinkIdsBelowOutsideFieldContext(chunk)) {
-                existingLinks.add(List.of((Long) link[0], (Long) link[1]));
-            }
-        }
+        Set<List<Long>> existingLinks = existingLinkIdsBelow(utils, parentsOf(branchDTO, savedConcept));
 
         List<ConceptHierarchy> toSave = new ArrayList<>();
         for (Map.Entry<String, FullInfoDTO> info : branchDTO.getData().entrySet()) {
@@ -258,6 +253,31 @@ public class ConceptApiUtils {
             incrementIfTracked(progressWrapper, info.getValue().getNarrower().length);
         }
         utils.conceptHierarchyRepository.saveAll(toSave);
+    }
+
+    /** The saved concepts of the branch that have narrower concepts. */
+    private static Set<Concept> parentsOf(@NonNull ConceptBranchDTO branchDTO, Map<String, Concept> savedConcept) {
+        Set<Concept> parents = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Map.Entry<String, FullInfoDTO> info : branchDTO.getData().entrySet()) {
+            if (info.getValue().getNarrower() == null) continue;
+            Concept parent = savedConcept.get(info.getKey());
+            if (parent == null) {
+                throw new IllegalStateException("No concept found in cache map for URL " + info.getKey());
+            }
+            parents.add(parent);
+        }
+        return parents;
+    }
+
+    /** The narrower links outside any field context already recorded below these parents, as (parent id, child id). */
+    private static Set<List<Long>> existingLinkIdsBelow(BranchLoadComponents utils, @NonNull Set<Concept> parents) {
+        Set<List<Long>> existingLinks = new HashSet<>();
+        for (List<Concept> chunk : chunksOf(parents)) {
+            for (Object[] link : utils.conceptHierarchyRepository.findLinkIdsBelowOutsideFieldContext(chunk)) {
+                existingLinks.add(List.of((Long) link[0], (Long) link[1]));
+            }
+        }
+        return existingLinks;
     }
 
     public record BranchLoadComponents(ConceptApi conceptApi, ConceptService conceptService,

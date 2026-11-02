@@ -142,4 +142,21 @@ class ConceptApiUtilsTest {
 
         assertThat(result).containsEntry(url, concept);
     }
+
+    @Test
+    void saveAllConceptsOfBranch_shouldSkipTheRelatedLink_whenTheThesaurusGivesNoUriForIt() {
+        String url = "https://example.org/only";
+        FullInfoDTO dto = new FullInfoDTO();
+        PurlInfoDTO blank = new PurlInfoDTO();
+        blank.setValue(" ");
+        dto.setRelated(new PurlInfoDTO[]{blank, new PurlInfoDTO()});
+        ConceptBranchDTO branch = new ConceptBranchDTO();
+        branch.addConceptBranchDTO(url, dto);
+        when(conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null)).thenReturn(Map.of(url, conceptWithId(4L)));
+
+        ConceptApiUtils.saveAllConceptsOfBranch(components(), vocabulary, branch);
+
+        verify(conceptRepository, never()).addRelatedConceptsIfAbsent(any(), any());
+        verify(conceptRepository, never()).save(any(Concept.class));
+    }
 }
