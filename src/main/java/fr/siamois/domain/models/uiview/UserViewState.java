@@ -18,7 +18,7 @@ import java.util.Map;
  * kept so they find the same state next time. The view itself is never modified by it.
  *
  * <p>{@code viewKey} is {@code view:<id>} for a saved view, {@code ctx:<resourceType>:<context>} for
- * the implicit default list of a context, {@code detail:<resourceType>:<id>} for one record (its active tab and what each tab kept),
+ * the implicit default list of a context, {@code detail:<resourceType>} for the fiches of a type (their active tab and what each tab kept),
  * {@code ctx:<resourceType>:<parentType>:<parentId>-tab} for a list inside a record's tab.
  * The shape of {@code state} belongs to the front end.</p>
  */

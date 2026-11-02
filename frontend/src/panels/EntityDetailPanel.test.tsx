@@ -963,12 +963,12 @@ describe("EntityDetailPanel's tab kept per user", () => {
     vi.mocked(getViewState).mockImplementation((_org, viewKey) => Promise.resolve({ viewKey, state: null }));
   });
 
-  it("opens on the tab saved for this fiche", async () => {
-    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+  it("opens on the tab saved for this type of fiche", async () => {
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity", state: { v: 1, tab: "graph" } });
 
     await renderTabbed();
 
-    expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity:1");
+    expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity");
     expect(tabLink("Graph").getAttribute("aria-selected")).toBe("true");
     expect(container.querySelector('[data-testid="graph-body"]')).not.toBeNull();
   });
@@ -978,13 +978,13 @@ describe("EntityDetailPanel's tab kept per user", () => {
     expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
 
     act(() => root.render(null));
-    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "gone" } });
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity", state: { v: 1, tab: "gone" } });
     await renderTabbed();
     expect(tabLink("Fiche").getAttribute("aria-selected")).toBe("true");
   });
 
   it("lets a preview naming a tab win over the saved one", async () => {
-    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+    vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity", state: { v: 1, tab: "graph" } });
 
     await renderTabbed({ preview: { label: "Fake", tab: "fiche" } });
 
@@ -1002,7 +1002,7 @@ describe("EntityDetailPanel's tab kept per user", () => {
       await new Promise((resolve) => setTimeout(resolve, SAVE_DELAY_MS + 100));
     });
 
-    expect(putViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity:1", { v: 1, tab: "graph" });
+    expect(putViewState).toHaveBeenCalledWith(4, "detail:fake-tabbed-entity", { v: 1, tab: "graph" });
   });
 
   describe("the tabs configured by the project", () => {
@@ -1061,7 +1061,7 @@ describe("EntityDetailPanel's tab kept per user", () => {
 
     it("opens on the first tab when the tab the user kept is hidden", async () => {
       configured({ key: "fiche" }, { key: "graph", hidden: true });
-      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "graph" } });
+      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity", state: { v: 1, tab: "graph" } });
 
       await renderTabbed();
 
@@ -1070,7 +1070,7 @@ describe("EntityDetailPanel's tab kept per user", () => {
 
     it("opens on the kept tab at its new place", async () => {
       configured({ key: "graph" }, { key: "fiche" });
-      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity:1", state: { v: 1, tab: "fiche" } });
+      vi.mocked(getViewState).mockResolvedValue({ viewKey: "detail:fake-tabbed-entity", state: { v: 1, tab: "fiche" } });
 
       await renderTabbed();
 
@@ -1131,7 +1131,7 @@ describe("EntityDetailPanel's tab kept per user", () => {
 
     it("restores each tab's own pieces", async () => {
       vi.mocked(getViewState).mockResolvedValue({
-        viewKey: "detail:fake-stateful-entity:99",
+        viewKey: "detail:fake-stateful-entity",
         state: { v: 1, tab: "b", tabs: { a: { count: 5 }, b: { count: 7 } } },
       });
 
@@ -1140,9 +1140,41 @@ describe("EntityDetailPanel's tab kept per user", () => {
       expect(container.querySelector('[data-testid="counter-b"]')!.textContent).toBe("b:7");
       await click(tabLink("TabA"));
       expect(container.querySelector('[data-testid="counter-a"]')!.textContent).toBe("a:5");
-      // Asked per fiche: another record of the same type has its own state.
-      expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-stateful-entity:99");
-      expect(getViewState).not.toHaveBeenCalledWith(4, "detail:fake-stateful-entity:1");
+      // Asked per type of fiche: every record of the type opens the way the user last left one.
+      expect(getViewState).toHaveBeenCalledWith(4, "detail:fake-stateful-entity");
+    });
+
+    // The arrows, or a list retargeting the overview: the panel stays mounted, only the entity changes.
+    it("carries the tab and its pieces over to the next fiche, over what was saved", async () => {
+      vi.mocked(getViewState).mockResolvedValue({
+        viewKey: "detail:fake-stateful-entity",
+        state: { v: 1, tab: "a", tabs: { a: { count: 5 }, b: { count: 7 } } },
+      });
+      getMock.mockImplementation((id) => Promise.resolve({ id: String(id), name: `Entity ${id}` }));
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const show = async (entityId: string) => {
+        act(() => {
+          root.render(
+            <QueryClientProvider client={queryClient}>
+              <EntityDetailPanel entityType="fake-stateful-entity" entityId={entityId} organizationId={4} />
+            </QueryClientProvider>,
+          );
+        });
+        await flush();
+        await flush();
+      };
+
+      await show("1");
+      await click(tabLink("TabB"));
+      await click(container.querySelector('[data-testid="counter-b"]')!);
+      // The saved state is still the one read on opening: another pane may have written it since.
+      await show("2");
+
+      expect(tabLink("TabB").getAttribute("aria-selected")).toBe("true");
+      expect(container.querySelector('[data-testid="counter-b"]')!.textContent).toBe("b:8");
+      // A tab the fiche before did not show has nothing to carry: what was saved.
+      await click(tabLink("TabA"));
+      expect(container.querySelector('[data-testid="counter-a"]')!.textContent).toBe("a:5");
     });
 
     it("saves nothing for a piece the user left as it opened", async () => {

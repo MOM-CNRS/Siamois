@@ -100,6 +100,9 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value != null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
+// The active tab's key, in what a panel carries over from one fiche to the next.
+const ACTIVE_TAB = "#activeTab";
+
 // The pieces of state a tab kept, out of the fiche's saved state ({ tab, tabs: { <tabKey>: { <name>: … } } }).
 function tabPieces(state: Record<string, unknown> | undefined, tabKey: string): Record<string, unknown> {
   return asRecord(asRecord(state?.tabs)[tabKey]);
@@ -136,9 +139,15 @@ export function EntityDetailPanel({
   // commit the stale index for one paint before correcting it): comparing against the last seen
   // entityType and resetting synchronously, within the same render, whenever it changes.
   const [renderedForType, setRenderedForType] = useState(entityType);
+  // What the fiche shown before in this panel was showing (its tab, what each tab kept), carried over to
+  // the next one of its type — a sibling jump, a list retargeting the overview: the user looks for the
+  // same thing in the same place, so it wins over what they last left on any fiche of the type.
+  // Entries are `ACTIVE_TAB` and `<tabKey>/<name>`, written after each commit (usePersistedPaneState).
+  const [carried, setCarried] = useState(() => new Map<string, unknown>());
   if (entityType !== renderedForType) {
     setRenderedForType(entityType);
     setActiveTabIndex(0);
+    setCarried(new Map());
   }
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.entityDetail(entityType, entityId),
@@ -172,23 +181,34 @@ export function EntityDetailPanel({
     if (tabIndex >= 0) setActiveTabIndex(tabIndex);
   }
 
-  // The tab the user was on last time they opened this very fiche, kept server-side per fiche (one
-  // fiche's arrangement says nothing about another's). Applied once per fiche, unless a preview names
-  // its own tab; the fiche waits for it rather than opening on the first tab and jumping.
+  // The state the user last left on a fiche of this type, kept server-side per type of fiche: a fiche
+  // opened afresh opens the same way. Below what this panel carries over (`carried`), and a preview naming
+  // its own tab wins over both. Applied once per fiche, by the tab's key — a sibling of another project or
+  // sub-type may arrange its tabs otherwise —; the fiche waits for it rather than opening on the first tab
+  // and jumping.
   const ficheKey = `${entityType}:${entityId}`;
-  const tabState = useUserViewState(`detail:${ficheKey}`, organizationId);
+  const tabState = useUserViewState(`detail:${entityType}`, organizationId);
   const [tabAppliedFor, setTabAppliedFor] = usePaneState<string | undefined>("detailTabAppliedFor", undefined);
   if (tabAppliedFor !== ficheKey && tabState.settled && ficheConfig.settled) {
     setTabAppliedFor(ficheKey);
-    const savedTab = tabState.saved?.tab;
-    const savedIndex = typeof savedTab === "string" ? tabs.findIndex((tab) => tab.key === savedTab) : -1;
-    if (savedIndex >= 0 && !preview?.tab) setActiveTabIndex(savedIndex);
+    if (!preview?.tab) {
+      const index = [carried.get(ACTIVE_TAB), tabState.saved?.tab]
+        .map((key) => (typeof key === "string" ? tabs.findIndex((tab) => tab.key === key) : -1))
+        .find((found) => found >= 0);
+      setActiveTabIndex(index ?? 0);
+    }
   }
   const tabPending = tabAppliedFor !== ficheKey && !error;
+  const shownTabKey = tabPending || !data ? undefined : tabs[activeTabIndex]?.key;
+  useEffect(() => {
+    if (shownTabKey !== undefined) carried.set(ACTIVE_TAB, shownTabKey);
+  }, [carried, shownTabKey]);
   // What a tab keeps for the user — the folded sections of its form, the mode of its relations… —
   // lives in the same state as the active tab, under the tab's own key: a tab only writes its own pieces.
   const persistedTabState = (tabKey: string) => ({
     read: (name: string) => tabPieces(tabState.saved, tabKey)[name],
+    carried: (name: string) => carried.get(`${tabKey}/${name}`),
+    carry: (name: string, value: unknown) => carried.set(`${tabKey}/${name}`, value),
     write: (name: string, value: unknown) =>
       tabState.update((s) => ({
         ...s,
