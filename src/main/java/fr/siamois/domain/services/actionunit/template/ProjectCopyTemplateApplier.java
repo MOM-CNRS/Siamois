@@ -100,7 +100,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
         FormConfig copy = new FormConfig();
         copy.setActionUnit(target);
         copy.setInstitution(original.getInstitution());
-        copy.setFieldConcept(original.getFieldConcept());
+        copy.setConfiguredTable(original.getConfiguredTable());
         copy.setValueConcept(original.getValueConcept());
         copy.setIdentifierFormat(original.getIdentifierFormat());
         copy.setMinCode(original.getMinCode());

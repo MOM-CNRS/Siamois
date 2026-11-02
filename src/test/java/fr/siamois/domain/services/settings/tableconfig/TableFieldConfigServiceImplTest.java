@@ -145,11 +145,11 @@ class TableFieldConfigServiceImplTest {
         defaultConfig = formConfig(10L, standardConcept);
         ceramiqueConfig = formConfig(11L, ceramiqueConcept);
 
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, STANDARD_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(STANDARD_CONCEPT_ID)))
                 .thenReturn(Optional.of(defaultConfig));
         when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Standard"))
                 .thenReturn(List.of(standardConcept));
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(conceptRepository.findAllByFieldContextAndExactLabel(FIELD_CONCEPT_ID, "fr", "Céramique"))
                 .thenReturn(List.of(ceramiqueConcept));
@@ -172,7 +172,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listTypes_shouldOnlyListTheTypesTheProjectConfigured() {
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
 
@@ -183,7 +183,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void listTypes_shouldBeEmptyWhenNothingWasConfigured() {
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class))).thenReturn(List.of());
 
         assertThat(service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER)).isEmpty();
     }
@@ -192,7 +192,7 @@ class TableFieldConfigServiceImplTest {
     void listConfigurableTypes_shouldOfferTheVocabularyValuesThatAreNotConfiguredYet() throws Exception {
         when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("é"), eq(PROJECT_ID)))
                 .thenReturn(List.of(autocomplete("Céramique"), autocomplete("Métal"), autocomplete("Céramique")));
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
 
@@ -212,7 +212,7 @@ class TableFieldConfigServiceImplTest {
         givenSystemFieldsOf(ConfigurableTable.UE, "recordingunit.property.type");
         when(fieldConfigurationService.fetchAutocomplete(any(CustomFieldConcept.class), eq("é"), eq(PROJECT_ID)))
                 .thenReturn(List.of(autocomplete("Céramique")));
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of());
 
         assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.UE, "é"))
@@ -222,7 +222,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void addConfiguration_shouldCreateTheFormConfigOfTheChosenValue() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
@@ -508,7 +508,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void listConfiguredTypeConcepts_shouldStillListTheTypesConfiguredBeforeTheSourceChanged() throws Exception {
         readTypesFromAnotherSource();
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
 
         assertThat(service.listConfiguredTypeConcepts(PROJECT_ID, ConfigurableTable.MOBILIER)).containsExactly(ceramiqueConcept);
@@ -517,7 +517,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void findFormConfig_shouldStillFindATypeConfiguredBeforeTheSourceChanged() throws Exception {
         readTypesFromAnotherSource();
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
 
@@ -529,53 +529,27 @@ class TableFieldConfigServiceImplTest {
         Concept otherSource = readTypesFromAnotherSource();
         Concept verre = concept(77L, "verre");
         FormConfig verreConfig = formConfig(12L, verre);
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class))).thenReturn(List.of());
         when(conceptRepository.findAllByFieldContextAndExactLabel(otherSource.getId(), "fr", "Verre"))
                 .thenReturn(List.of(verre));
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 77L))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(77L)))
                 .thenReturn(Optional.of(verreConfig));
 
         assertThat(service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Verre")).contains(verreConfig);
     }
 
-    // ========== A project configured under an older SIAMOIS reference thesaurus ==========
-    // The reference thesaurus changed (th337 -> th338): the type code is now read at another concept, but the types the
-    // project already configured stay filed under the concept of the old one.
-
-    private static final long OLD_REFERENCE_CONCEPT_ID = 555L;
-
-    private void configuredUnderAnOlderReference() {
-        Concept oldReference = concept(OLD_REFERENCE_CONCEPT_ID, "old");
-        when(formConfigRepository.findFieldConceptsOfProject(PROJECT_ID, ConfigurableTable.MOBILIER.getFieldCode()))
-                .thenReturn(List.of(oldReference));
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, OLD_REFERENCE_CONCEPT_ID))
-                .thenReturn(List.of(ceramiqueConfig));
-    }
+    // ========== The reference thesaurus changed ==========
+    // A type configured for a table stays configured whatever thesaurus the type field is read in afterwards.
 
     @Test
-    void listConfiguredTypeConcepts_shouldKeepTheTypesConfiguredUnderAnOlderReferenceThesaurus() {
-        configuredUnderAnOlderReference();
+    void listConfiguredTypeConcepts_shouldListTheProjectRowsOfTheTableWhateverTheVocabulary() throws Exception {
+        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
+                .thenThrow(new NoConfigForFieldException("no config"));
+        when(formConfigRepository.findAllByActionUnitAndTable(PROJECT_ID, ConfigurableTable.MOBILIER))
+                .thenReturn(List.of(ceramiqueConfig));
 
         assertThat(service.listConfiguredTypeConcepts(PROJECT_ID, ConfigurableTable.MOBILIER)).containsExactly(ceramiqueConcept);
-    }
-
-    @Test
-    void createOrGetFormConfig_shouldFileANewTypeUnderTheConceptTheProjectAlreadyUses() {
-        configuredUnderAnOlderReference();
-        Concept verre = concept(77L, "verre");
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, OLD_REFERENCE_CONCEPT_ID, 77L))
-                .thenReturn(Optional.empty());
-        when(conceptRepository.findById(77L)).thenReturn(Optional.of(verre));
-        ActionUnit project = new ActionUnit();
-        project.setId(PROJECT_ID);
-        project.setCreatedByInstitution(new Institution());
-        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
-        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Optional<FormConfig> created = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, 77L);
-
-        assertThat(created).hasValueSatisfying(config ->
-                assertThat(config.getFieldConcept().getId()).isEqualTo(OLD_REFERENCE_CONCEPT_ID));
+        assertThat(service.isTypeFieldConfigured(PROJECT_ID, ConfigurableTable.MOBILIER)).isTrue();
     }
 
     // ========== Concept-id-keyed overloads ==========
@@ -600,7 +574,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void findFormConfig_byId_shouldReturnEmptyWhenTypeHasNoConfiguration() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 999L))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(999L)))
                 .thenReturn(Optional.empty());
 
         Optional<FormConfig> result = service.findFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, 999L);
@@ -679,7 +653,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void createOrGetFormConfig_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
@@ -699,7 +673,7 @@ class TableFieldConfigServiceImplTest {
         // Two requests race to materialize the same row: both find it missing, both attempt to
         // insert. This one loses the DB constraint and must recover by re-reading the row the
         // winner just committed, instead of surfacing the constraint violation.
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(ceramiqueConfig));
         ActionUnit project = new ActionUnit();
@@ -719,7 +693,7 @@ class TableFieldConfigServiceImplTest {
         // The constraint was violated by something other than a concurrent insert of this exact row
         // (e.g. a stale duplicate already in the table) — re-reading finds nothing either, so the
         // original exception must propagate rather than being swallowed.
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
@@ -734,7 +708,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void createOrGetFormConfig_shouldStartANewTypeOnTheBuiltInIdentifierConfiguration() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, 300L))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(300L)))
                 .thenReturn(Optional.empty());
         Concept newType = concept(300L, "nouveau");
         when(conceptRepository.findById(300L)).thenReturn(Optional.of(newType));
@@ -778,7 +752,7 @@ class TableFieldConfigServiceImplTest {
     void createOrGetFormConfig_byId_shouldMaterializeTheConfigurationOfATypeThatHasNone() {
         Long metalConceptId = 300L;
         Concept metalConcept = concept(metalConceptId, "metal");
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(metalConceptId)))
                 .thenReturn(Optional.empty());
         when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
         ActionUnit project = new ActionUnit();
@@ -800,7 +774,7 @@ class TableFieldConfigServiceImplTest {
         Long metalConceptId = 300L;
         Concept metalConcept = concept(metalConceptId, "metal");
         FormConfig metalConfig = formConfig(77L, metalConcept);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(metalConceptId)))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(metalConfig));
         when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
@@ -820,7 +794,7 @@ class TableFieldConfigServiceImplTest {
     void createOrGetFormConfig_byId_shouldRethrowTheConstraintViolation_whenRecoveryAlsoFindsNothing() {
         Long metalConceptId = 300L;
         Concept metalConcept = concept(metalConceptId, "metal");
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(metalConceptId)))
                 .thenReturn(Optional.empty());
         when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
         ActionUnit project = new ActionUnit();
@@ -844,7 +818,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void createOrGetFormConfig_byId_shouldFailWhenTheProjectDoesNotExist() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.empty());
 
@@ -856,7 +830,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void createOrGetFormConfig_byId_shouldFailWhenTheConceptIdIsUnknown() {
         Long unknownConceptId = 404L;
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, unknownConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(unknownConceptId)))
                 .thenReturn(Optional.empty());
         when(conceptRepository.findById(unknownConceptId)).thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
@@ -871,14 +845,25 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void createOrGetFormConfig_byId_shouldReturnEmptyRatherThanCreateOneWhenProjectHasNoVocabularyConfigured() throws Exception {
+    void createOrGetFormConfig_byId_shouldConfigureAnExplicitTypeWhateverTheVocabulary() throws Exception {
+        // the type is given by its concept: it does not have to be read in the thesaurus of the type field
         when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
                 .thenThrow(new NoConfigForFieldException("no config"));
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
+                .thenReturn(Optional.empty());
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT_ID);
+        project.setCreatedByInstitution(new Institution());
+        when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(conceptRepository.findById(CERAMIQUE_CONCEPT_ID)).thenReturn(Optional.of(ceramiqueConcept));
+        when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> call.getArgument(0));
 
         Optional<FormConfig> result = service.createOrGetFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
 
-        assertThat(result).isEmpty();
-        verify(formConfigRepository, never()).save(any());
+        assertThat(result).hasValueSatisfying(config -> {
+            assertThat(config.getConfiguredTable()).isEqualTo(ConfigurableTable.MOBILIER);
+            assertThat(config.getValueConcept()).isEqualTo(ceramiqueConcept);
+        });
     }
 
     @Test
@@ -1078,7 +1063,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void saveFormConfig_shouldCreateTheConfigurationWhenTheTypeHasNoneYet() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
@@ -1092,7 +1077,7 @@ class TableFieldConfigServiceImplTest {
         ArgumentCaptor<FormConfig> saved = ArgumentCaptor.forClass(FormConfig.class);
         verify(formConfigRepository).save(saved.capture());
         assertThat(saved.getValue().getActionUnit()).isEqualTo(project);
-        assertThat(saved.getValue().getFieldConcept()).isEqualTo(fieldConcept);
+        assertThat(saved.getValue().getConfiguredTable()).isEqualTo(ConfigurableTable.MOBILIER);
         assertThat(saved.getValue().getValueConcept()).isEqualTo(ceramiqueConcept);
         assertThat(saved.getValue().getIdentifierFormat()).isEqualTo(ConfigurableTable.MOBILIER.getDefaultIdentifierFormat());
         assertThat(saved.getValue().getMinCode()).isOne();
@@ -1129,7 +1114,7 @@ class TableFieldConfigServiceImplTest {
         FormConfig result = service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID);
 
         assertThat(result).isSameAs(ceramiqueConfig);
-        verify(formConfigRepository, never()).findDefaultByActionUnitAndField(anyLong(), anyLong());
+        verify(formConfigRepository, never()).findDefaultByActionUnitAndTable(anyLong(), any());
     }
 
     @Test
@@ -1147,7 +1132,7 @@ class TableFieldConfigServiceImplTest {
     void listConfigurableTypes_shouldReturnEmptyListWhenNoMatches() throws NoConfigForFieldException {
         when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("xyz"), eq(PROJECT_ID)))
                 .thenReturn(List.of());
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of());
 
         assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.MOBILIER, "xyz"))
@@ -1158,7 +1143,7 @@ class TableFieldConfigServiceImplTest {
     void listConfigurableTypes_shouldReturnEmptyListWhenInputIsNull() throws NoConfigForFieldException {
         when(fieldConfigurationService.fetchAutocomplete(any(UserInfo.class), eq("SIAS.CAT"), isNull(), eq(PROJECT_ID)))
                 .thenReturn(List.of());
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of());
 
         assertThat(service.listConfigurableTypes(PROJECT_ID, ConfigurableTable.MOBILIER, null))
@@ -1169,7 +1154,7 @@ class TableFieldConfigServiceImplTest {
     void listConfigurableTypes_shouldHandleDuplicatesInAutocomplete() throws NoConfigForFieldException {
         when(fieldConfigurationService.fetchAutocomplete(any(), eq("SIAS.CAT"), eq("é"), eq(PROJECT_ID)))
                 .thenReturn(List.of(autocomplete("Céramique"), autocomplete("Céramique"), autocomplete("Métal")));
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
 
@@ -1191,7 +1176,7 @@ class TableFieldConfigServiceImplTest {
     void saveFormConfig_byId_shouldCreateTheConfigurationWhenTheTypeHasNoneYet() {
         Long metalConceptId = 300L;
         Concept metalConcept = concept(metalConceptId, "metal");
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, metalConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(metalConceptId)))
                 .thenReturn(Optional.empty());
         when(conceptRepository.findById(metalConceptId)).thenReturn(Optional.of(metalConcept));
         ActionUnit project = new ActionUnit();
@@ -1236,7 +1221,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void saveFormConfig_byId_shouldThrowWhenConceptIdIsUnknown() {
         Long unknownConceptId = 404L;
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, unknownConceptId))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(unknownConceptId)))
                 .thenReturn(Optional.empty());
         when(conceptRepository.findById(unknownConceptId)).thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
@@ -1251,13 +1236,10 @@ class TableFieldConfigServiceImplTest {
     }
 
     @Test
-    void saveFormConfig_byId_shouldThrowWhenProjectHasNoVocabularyConfigured() throws Exception {
-        when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
-                .thenThrow(new NoConfigForFieldException("no config"));
-
+    void saveFormConfig_byId_shouldThrowWhenTheTypeIsNull() {
         TypeFormConfig config = TypeFormConfig.builder().identifierFormat("{NUM_MOBILIER:00}").build();
 
-        assertThatThrownBy(() -> service.saveFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, CERAMIQUE_CONCEPT_ID, config))
+        assertThatThrownBy(() -> service.saveFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, (Long) null, config))
                 .isInstanceOf(IllegalStateException.class);
         verify(formConfigRepository, never()).save(any());
     }
@@ -1394,7 +1376,7 @@ class TableFieldConfigServiceImplTest {
     // --- addExistingField ---
     @Test
     void addExistingField_shouldThrowWhenFieldNotFound() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(customFieldRepository.findAllReusableByInstitution(1L))
                 .thenReturn(List.of());
@@ -1407,7 +1389,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void addExistingField_shouldReturnExistingFieldIfAlreadyPresent() {
         CustomField existingField = textField(1L, "Couleur", false);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of(fieldConfig(ceramiqueConfig, existingField, true, false)));
@@ -1424,7 +1406,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void addExistingField_shouldAddFieldToType() {
         CustomField existingField = textField(1L, "Couleur", false);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of());
@@ -1443,7 +1425,7 @@ class TableFieldConfigServiceImplTest {
     @Test
     void addExistingField_shouldLandInTheAdditionalGroupOfAConfigurationThatHasALayout() {
         CustomField existingField = textField(1L, "Couleur", false);
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         fr.siamois.domain.models.form.config.FormConfigGroup general =
                 new fr.siamois.domain.models.form.config.FormConfigGroup(ceramiqueConfig, "General", 0);
@@ -1497,7 +1479,7 @@ class TableFieldConfigServiceImplTest {
     /** Nothing to remove is not a refusal: the caller must not report the field as being in use. */
     @Test
     void deleteAdditionalField_shouldDoNothingWhenFieldNotFound() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.of(ceramiqueConfig));
         when(fieldFormConfigRepository.findAllByFormConfigId(11L))
                 .thenReturn(List.of());
@@ -1510,7 +1492,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void deleteAdditionalField_shouldDoNothingWhenTypeNotFound() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
 
         assertThat(service.deleteAdditionalField(PROJECT_ID, ConfigurableTable.MOBILIER, "Inconnu", "Couleur")).isTrue();
@@ -1525,7 +1507,7 @@ class TableFieldConfigServiceImplTest {
     void listTypes_shouldUseEnglishLabels() {
         ExecutionContextHolder.set(new UserInfo(institution, person, "en"));
         when(labelService.findLabelOf(ceramiqueConcept, "en")).thenReturn(prefLabel("Ceramic"));
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig));
 
         List<TypeSummary> types = service.listTypes(PROJECT_ID, ConfigurableTable.MOBILIER);
@@ -1751,7 +1733,7 @@ class TableFieldConfigServiceImplTest {
 
     // --- createFormConfig / findFieldConcept / findValueConcept edge cases ---
     @Test
-    void addConfiguration_shouldThrowWhenProjectHasNoFieldConfiguration() throws Exception {
+    void addConfiguration_shouldThrowWhenTheTypeIsNeitherConfiguredNorOfferedByTheVocabulary() throws Exception {
         when(fieldConfigurationService.findConfigurationForFieldCode(any(), anyString(), any(Long.class)))
                 .thenThrow(new NoConfigForFieldException("no config"));
         ActionUnit project = new ActionUnit();
@@ -1760,7 +1742,7 @@ class TableFieldConfigServiceImplTest {
         when(actionUnitRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
 
         assertThatThrownBy(() -> service.addConfiguration(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique"))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
@@ -1906,7 +1888,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void reorderAdditionalFields_shouldCreateTheConfigurationOfATypeThatHasNoneYet() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
         ActionUnit project = new ActionUnit();
         project.setId(PROJECT_ID);
@@ -2147,7 +2129,7 @@ class TableFieldConfigServiceImplTest {
     void listTypes_shouldSortTheConfiguredTypesCaseInsensitively() {
         Concept metalConcept = concept(300L, "metal");
         Concept amphoreConcept = concept(400L, "amphore");
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(formConfig(12L, metalConcept), ceramiqueConfig, formConfig(13L, amphoreConcept)));
         when(labelService.findLabelOf(metalConcept, "fr")).thenReturn(prefLabel("métal"));
         when(labelService.findLabelOf(ceramiqueConcept, "fr")).thenReturn(prefLabel("Céramique"));
@@ -2180,7 +2162,7 @@ class TableFieldConfigServiceImplTest {
      */
     @Test
     void getFormConfig_shouldFallBackOnTheTypeNameWhenTheTypeHasNoConfigurationYet() {
-        when(formConfigRepository.findByActionUnitAndFieldAndValue(PROJECT_ID, FIELD_CONCEPT_ID, CERAMIQUE_CONCEPT_ID))
+        when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))
                 .thenReturn(Optional.empty());
 
         TypeFormConfig config = service.getFormConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique");
@@ -2215,7 +2197,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void resolveIdentifierConfig_shouldNumberAnUntypedEntityLikeTheFirstConfiguredType() {
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID))
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class)))
                 .thenReturn(List.of(ceramiqueConfig, defaultConfig));
 
         assertThat(service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, null))
@@ -2224,7 +2206,7 @@ class TableFieldConfigServiceImplTest {
 
     @Test
     void resolveIdentifierConfig_shouldRefuseAnUntypedEntityWhenTheTableHasNoType() {
-        when(formConfigRepository.findAllByActionUnitAndField(PROJECT_ID, FIELD_CONCEPT_ID)).thenReturn(List.of());
+        when(formConfigRepository.findAllByActionUnitAndTable(eq(PROJECT_ID), any(ConfigurableTable.class))).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.resolveIdentifierConfig(PROJECT_ID, ConfigurableTable.MOBILIER, null))
                 .isInstanceOf(IllegalStateException.class);
@@ -2243,7 +2225,7 @@ class TableFieldConfigServiceImplTest {
     private FormConfig formConfig(Long id, Concept valueConcept) {
         FormConfig config = new FormConfig();
         config.setId(id);
-        config.setFieldConcept(fieldConcept);
+        config.setConfiguredTable(ConfigurableTable.MOBILIER);
         config.setValueConcept(valueConcept);
         config.setIdentifierFormat("{NUM_MOBILIER}");
         config.setMinCode(0);

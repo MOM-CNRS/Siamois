@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    form_config: the configured table is written on the row (configured_table) instead of being deduced from
+    fk_field_concept_id. That concept belongs to one thesaurus: when the SIAMOIS reference thesaurus changed
+    (th337 -> th338), the types configured before were looked up under the concept of the new thesaurus and
+    disappeared. A configured type now stays configured whatever thesaurus is the reference.
+
+    The table is filled from the field code the field concept carries (concept_field_config), in every thesaurus.
+    fk_field_concept_id is no longer read; it becomes optional and is kept for now.
+
+    The institution-level project numbering config recreated under the new reference thesaurus is merged into the
+    oldest one: its counters keep the highest value. A type configured twice in the same project is not merged
+    automatically (its field settings and answers could differ): the migration stops before changing anything.
+    -->
+
+    <!-- form_config.configured_table -->
+
+    <changeSet id="2026-11-02-1-add-form-config-configured-table" author="gregory bliault">
+        <preConditions onFail="HALT"
+                       onFailMessage="form_config cannot be migrated to configured_table: some rows have no type field code, a type is configured twice in the same project, or a duplicated institution numbering config has field settings. Run the check query of changelog 2026-11-02-1 to list them and fix them by hand before restarting.">
+            <sqlCheck expectedResult="0">
+                WITH coded AS (
+                    SELECT fc.config_id, fc.fk_action_unit_id, fc.fk_institution_id, fc.fk_value_concept_id,
+                           min(cfc.field_code) AS field_code, count(DISTINCT cfc.field_code) AS codes
+                    FROM public.form_config fc
+                    LEFT JOIN public.concept_field_config cfc ON cfc.fk_concept_id = fc.fk_field_concept_id
+                        AND cfc.field_code IN ('SIARU.TYPE', 'SIAS.CAT', 'SIAPHASE.TYPE', 'SIAC.TYPE', 'SIAD.TYPE',
+                                               'SIAST.TYPE', 'SIAAU.TYPE')
+                    GROUP BY fc.config_id
+                )
+                SELECT (SELECT count(*) FROM coded WHERE codes &lt;&gt; 1)
+                     + (SELECT count(*) FROM (SELECT 1 FROM coded WHERE fk_action_unit_id IS NOT NULL
+                                              GROUP BY fk_action_unit_id, field_code, fk_value_concept_id
+                                              HAVING count(*) &gt; 1) project_duplicates)
+                     + (SELECT count(*) FROM coded c
+                        WHERE c.fk_action_unit_id IS NULL AND c.fk_value_concept_id IS NULL
+                          AND EXISTS (SELECT 1 FROM coded o
+                                      WHERE o.fk_action_unit_id IS NULL AND o.fk_value_concept_id IS NULL
+                                        AND o.fk_institution_id = c.fk_institution_id AND o.field_code = c.field_code
+                                        AND o.config_id &lt; c.config_id)
+                          AND (EXISTS (SELECT 1 FROM public.field_form_config x WHERE x.fk_form_config_id = c.config_id)
+                               OR EXISTS (SELECT 1 FROM public.form_config_group x WHERE x.fk_form_config_id = c.config_id)
+                               OR EXISTS (SELECT 1 FROM public.concept_field_state x WHERE x.fk_form_config_id = c.config_id)
+                               OR EXISTS (SELECT 1 FROM public.form_config_answer x WHERE x.fk_form_config_id = c.config_id)
+                               OR EXISTS (SELECT 1 FROM public.identifier_counter x WHERE x.fk_form_config_id = c.config_id)))
+            </sqlCheck>
+        </preConditions>
+        <addColumn schemaName="public" tableName="form_config">
+            <column name="configured_table" type="varchar(32)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-add-form-config-aud-configured-table" author="gregory bliault">
+        <addColumn schemaName="public" tableName="form_config_aud">
+            <column name="configured_table" type="varchar(32)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-fill-form-config-configured-table" author="gregory bliault">
+        <sql>
+            UPDATE public.form_config fc
+            SET configured_table = CASE cfc.field_code
+                                       WHEN 'SIARU.TYPE' THEN 'UE'
+                                       WHEN 'SIAS.CAT' THEN 'MOBILIER'
+                                       WHEN 'SIAPHASE.TYPE' THEN 'PHASE'
+                                       WHEN 'SIAC.TYPE' THEN 'CONTENANT'
+                                       WHEN 'SIAD.TYPE' THEN 'DOCUMENT'
+                                       WHEN 'SIAST.TYPE' THEN 'STUDY'
+                                       WHEN 'SIAAU.TYPE' THEN 'PROJECT'
+                                   END
+            FROM public.concept_field_config cfc
+            WHERE cfc.fk_concept_id = fc.fk_field_concept_id
+              AND cfc.field_code IN ('SIARU.TYPE', 'SIAS.CAT', 'SIAPHASE.TYPE', 'SIAC.TYPE', 'SIAD.TYPE', 'SIAST.TYPE',
+                                     'SIAAU.TYPE');
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-fill-form-config-aud-configured-table" author="gregory bliault">
+        <sql>
+            UPDATE public.form_config_aud fc
+            SET configured_table = CASE cfc.field_code
+                                       WHEN 'SIARU.TYPE' THEN 'UE'
+                                       WHEN 'SIAS.CAT' THEN 'MOBILIER'
+                                       WHEN 'SIAPHASE.TYPE' THEN 'PHASE'
+                                       WHEN 'SIAC.TYPE' THEN 'CONTENANT'
+                                       WHEN 'SIAD.TYPE' THEN 'DOCUMENT'
+                                       WHEN 'SIAST.TYPE' THEN 'STUDY'
+                                       WHEN 'SIAAU.TYPE' THEN 'PROJECT'
+                                   END
+            FROM public.concept_field_config cfc
+            WHERE cfc.fk_concept_id = fc.fk_field_concept_id
+              AND cfc.field_code IN ('SIARU.TYPE', 'SIAS.CAT', 'SIAPHASE.TYPE', 'SIAC.TYPE', 'SIAD.TYPE', 'SIAST.TYPE',
+                                     'SIAAU.TYPE');
+        </sql>
+    </changeSet>
+
+    <!-- duplicated institution numbering configs: merged into the oldest one -->
+
+    <changeSet id="2026-11-02-1-merge-institution-numbering-counters" author="gregory bliault">
+        <sql>
+            WITH duplicate AS (
+                SELECT fc.config_id,
+                       min(fc.config_id) OVER (PARTITION BY fc.fk_institution_id, fc.configured_table) AS kept_id
+                FROM public.form_config fc
+                WHERE fc.fk_action_unit_id IS NULL AND fc.fk_value_concept_id IS NULL
+            ), highest AS (
+                SELECT d.kept_id, c.fk_institution_id, c.canonical_key, max(c.counter) AS counter
+                FROM duplicate d
+                JOIN public.institution_identifier_counter c ON c.fk_form_config_id = d.config_id
+                WHERE d.config_id &lt;&gt; d.kept_id
+                GROUP BY d.kept_id, c.fk_institution_id, c.canonical_key
+            )
+            UPDATE public.institution_identifier_counter k
+            SET counter = greatest(k.counter, h.counter)
+            FROM highest h
+            WHERE k.fk_form_config_id = h.kept_id
+              AND k.fk_institution_id = h.fk_institution_id
+              AND k.canonical_key = h.canonical_key;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-delete-merged-institution-numbering-counters" author="gregory bliault">
+        <sql>
+            WITH duplicate AS (
+                SELECT fc.config_id,
+                       min(fc.config_id) OVER (PARTITION BY fc.fk_institution_id, fc.configured_table) AS kept_id
+                FROM public.form_config fc
+                WHERE fc.fk_action_unit_id IS NULL AND fc.fk_value_concept_id IS NULL
+            )
+            DELETE FROM public.institution_identifier_counter c
+            USING duplicate d
+            WHERE c.fk_form_config_id = d.config_id
+              AND d.config_id &lt;&gt; d.kept_id
+              AND EXISTS (SELECT 1 FROM public.institution_identifier_counter k
+                          WHERE k.fk_form_config_id = d.kept_id
+                            AND k.fk_institution_id = c.fk_institution_id
+                            AND k.canonical_key = c.canonical_key);
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-move-institution-numbering-counters" author="gregory bliault">
+        <sql>
+            WITH duplicate AS (
+                SELECT fc.config_id,
+                       min(fc.config_id) OVER (PARTITION BY fc.fk_institution_id, fc.configured_table) AS kept_id
+                FROM public.form_config fc
+                WHERE fc.fk_action_unit_id IS NULL AND fc.fk_value_concept_id IS NULL
+            )
+            UPDATE public.institution_identifier_counter c
+            SET fk_form_config_id = d.kept_id
+            FROM duplicate d
+            WHERE c.fk_form_config_id = d.config_id
+              AND d.config_id &lt;&gt; d.kept_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-delete-duplicate-institution-numbering-configs" author="gregory bliault">
+        <sql>
+            DELETE FROM public.form_config fc
+            WHERE fc.fk_action_unit_id IS NULL AND fc.fk_value_concept_id IS NULL
+              AND EXISTS (SELECT 1 FROM public.form_config o
+                          WHERE o.fk_action_unit_id IS NULL AND o.fk_value_concept_id IS NULL
+                            AND o.fk_institution_id = fc.fk_institution_id
+                            AND o.configured_table = fc.configured_table
+                            AND o.config_id &lt; fc.config_id);
+        </sql>
+    </changeSet>
+
+    <!-- constraints: a config is identified by (project, table, type) -->
+
+    <changeSet id="2026-11-02-1-not-null-form-config-configured-table" author="gregory bliault">
+        <addNotNullConstraint schemaName="public" tableName="form_config" columnName="configured_table"
+                              columnDataType="varchar(32)"/>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-drop-not-null-form-config-fk-field-concept" author="gregory bliault">
+        <dropNotNullConstraint schemaName="public" tableName="form_config" columnName="fk_field_concept_id"
+                               columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-drop-uk-form-config-scope" author="gregory bliault">
+        <dropUniqueConstraint schemaName="public" tableName="form_config" constraintName="uk_form_config_scope"/>
+    </changeSet>
+
+    <changeSet id="2026-11-02-1-uk-form-config-scope" author="gregory bliault">
+        <addUniqueConstraint schemaName="public" tableName="form_config"
+                             columnNames="fk_action_unit_id, configured_table, fk_value_concept_id"
+                             constraintName="uk_form_config_scope"/>
+    </changeSet>
+
+</databaseChangeLog>

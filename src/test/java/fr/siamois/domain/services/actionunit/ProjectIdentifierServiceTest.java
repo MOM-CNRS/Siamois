@@ -4,12 +4,10 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.institution.Institution;
-import fr.siamois.domain.models.settings.ConceptFieldConfig;
-import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierPartitionService;
 import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
@@ -32,7 +30,6 @@ import static org.mockito.Mockito.*;
 class ProjectIdentifierServiceTest {
 
     private final FormConfigRepository formConfigRepository = mock(FormConfigRepository.class);
-    private final FieldConfigurationService fieldConfigurationService = mock(FieldConfigurationService.class);
     private final InstitutionIdentifierCounterRepository counterRepository = mock(InstitutionIdentifierCounterRepository.class);
     private final ActionUnitRepository actionUnitRepository = mock(ActionUnitRepository.class);
     private final EntityManager entityManager = mock(EntityManager.class);
@@ -42,9 +39,9 @@ class ProjectIdentifierServiceTest {
     private FormConfig config;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         IdentifierResolverRegistry registry = new IdentifierResolverRegistry();
-        service = new ProjectIdentifierService(formConfigRepository, fieldConfigurationService, registry,
+        service = new ProjectIdentifierService(formConfigRepository, registry,
                 new IdentifierPartitionService(registry), counterRepository, actionUnitRepository);
         ReflectionTestUtils.setField(service, "entityManager", entityManager);
         when(entityManager.getFlushMode()).thenReturn(FlushModeType.AUTO);
@@ -54,19 +51,12 @@ class ProjectIdentifierServiceTest {
         info = mock(UserInfo.class);
         when(info.getInstitution()).thenReturn(institution);
 
-        Concept field = new Concept();
-        field.setId(900L);
-        ConceptFieldConfig fieldConfig = new ConceptFieldConfig();
-        fieldConfig.setConcept(field);
-        when(fieldConfigurationService.findConfigurationForFieldCode(any(), eq("SIAAU.TYPE"), eq((Long) null)))
-                .thenReturn(fieldConfig);
-
         config = new FormConfig();
         config.setId(11L);
         config.setIdentifierFormat("PROJ{NUM_PROJECT}");
         config.setMinCode(1);
         config.setMaxCode(999);
-        when(formConfigRepository.findInstitutionDefaults(5L, 900L)).thenReturn(List.of(config));
+        when(formConfigRepository.findInstitutionDefaults(5L, ConfigurableTable.PROJECT)).thenReturn(List.of(config));
     }
 
     @Test
@@ -98,7 +88,7 @@ class ProjectIdentifierServiceTest {
 
     @Test
     void generate_createsTheInstitutionConfigWithTheBuiltInFormatOnFirstUse() {
-        when(formConfigRepository.findInstitutionDefaults(5L, 900L)).thenReturn(List.of());
+        when(formConfigRepository.findInstitutionDefaults(5L, ConfigurableTable.PROJECT)).thenReturn(List.of());
         when(formConfigRepository.save(any(FormConfig.class))).thenAnswer(call -> {
             FormConfig saved = call.getArgument(0);
             saved.setId(12L);
@@ -114,6 +104,7 @@ class ProjectIdentifierServiceTest {
         assertThat(saved.getValue().getActionUnit()).isNull();
         assertThat(saved.getValue().getValueConcept()).isNull();
         assertThat(saved.getValue().getIdentifierFormat()).isEqualTo("PROJ{NUM_PROJECT}");
+        assertThat(saved.getValue().getConfiguredTable()).isEqualTo(ConfigurableTable.PROJECT);
     }
 
     @Test
@@ -127,25 +118,8 @@ class ProjectIdentifierServiceTest {
     }
 
     @Test
-    void generate_keepsTheConfigFiledUnderAnOlderReferenceThesaurus() {
-        Concept oldReference = new Concept();
-        oldReference.setId(800L);
-        FormConfig oldConfig = new FormConfig();
-        oldConfig.setId(7L);
-        oldConfig.setIdentifierFormat("OLD{NUM_PROJECT}");
-        oldConfig.setMinCode(1);
-        oldConfig.setMaxCode(999);
-        when(formConfigRepository.findFieldConceptsOfInstitution(5L, "SIAAU.TYPE")).thenReturn(List.of(oldReference));
-        when(formConfigRepository.findInstitutionDefaults(5L, 800L)).thenReturn(List.of(oldConfig));
-        when(counterRepository.nextValue(eq(5L), eq(7L), anyString(), eq(1))).thenReturn(42);
-
-        assertThat(service.generate(info).value()).isEqualTo("OLD42");
-        verify(formConfigRepository, never()).save(any());
-    }
-
-    @Test
     void preview_startsAtTheFirstNumberWhenNothingWasAllocatedYet() {
-        when(formConfigRepository.findInstitutionDefaults(5L, 900L)).thenReturn(List.of());
+        when(formConfigRepository.findInstitutionDefaults(5L, ConfigurableTable.PROJECT)).thenReturn(List.of());
 
         assertThat(service.preview(info)).contains("PROJ1");
     }

@@ -49,7 +49,7 @@ public class OrganizationFieldCatalogService {
 
         Map<String, FieldResource> fields = new LinkedHashMap<>();
         List<CustomField> catalog = new ArrayList<>(SystemFieldCatalog.fieldsOf(table));
-        catalog.addAll(customFieldRepository.findActiveAdditionalByInstitutionAndTable(organizationId, table.getFieldCode()));
+        catalog.addAll(customFieldRepository.findActiveAdditionalByInstitutionAndTable(organizationId, table));
         for (CustomField field : catalog) {
             if (field == null || field.getId() == null) continue;
             FieldResource resource = toFieldResource(field, locale);
