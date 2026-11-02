@@ -1,6 +1,7 @@
 package fr.siamois.infrastructure.database.repositories.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -78,12 +79,11 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
 
     /**
      * The additional (non-system) fields active in at least one of an institution's projects for one
-     * table — the union behind an organization-wide list's column catalog. A table is recognized by
-     * its type field: a {@code FormConfig}'s {@code fieldConcept} is the concept that field code is
-     * configured on, at the institution level or overridden by a project of that institution.
+     * table — the union behind an organization-wide list's column catalog: the fields of every
+     * {@code FormConfig} of that table, at the institution level or in a project of that institution.
      *
      * @param institutionId the institution whose projects are aggregated
-     * @param fieldCode     the table's type field code ({@code ConfigurableTable#getFieldCode()})
+     * @param table         the table
      * @return the distinct active additional fields, ordered by label
      */
     @Query("""
@@ -94,12 +94,9 @@ public interface CustomFieldRepository extends CrudRepository<CustomField, Long>
             where fc.institution.id = :institutionId
               and ffc.isActive = true
               and f.isSystemField = false
-              and fc.fieldConcept.id in (
-                  select cfc.concept.id
-                  from ConceptFieldConfig cfc
-                  where cfc.fieldCode = :fieldCode)
+              and fc.configuredTable = :table
             order by f.label
             """)
     List<CustomField> findActiveAdditionalByInstitutionAndTable(@Param("institutionId") Long institutionId,
-                                                               @Param("fieldCode") String fieldCode);
+                                                               @Param("table") ConfigurableTable table);
 }

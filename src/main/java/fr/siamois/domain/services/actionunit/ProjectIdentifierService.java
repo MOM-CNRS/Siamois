@@ -1,16 +1,13 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
-import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.identifier.GeneratedIdentifier;
 import fr.siamois.domain.services.identifier.IdentifierPartitionService;
 import fr.siamois.domain.services.identifier.IdentifierResolverRegistry;
 import fr.siamois.domain.services.identifier.MapIdentifierRenderContext;
-import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.identifier.InstitutionIdentifierCounterRepository;
@@ -29,7 +26,7 @@ import java.util.Optional;
 /**
  * Numbers the projects of an institution ({@code PROJ1}, {@code PROJ2}...), the way the entities of a project
  * are numbered inside it: a token format and a counter, but scoped to the institution. The format lives in an
- * institution-level {@link FormConfig} (no project, no value concept) of the project type field, so it can later
+ * institution-level {@link FormConfig} (no project, no value concept) of the {@link ConfigurableTable#PROJECT} table, so it can later
  * be configured per project type from an institution settings screen.
  */
 @Service
@@ -43,7 +40,6 @@ public class ProjectIdentifierService {
     private static final long LOCK_NAMESPACE = 0x5052_4F4A_0000_0000L;
 
     private final FormConfigRepository formConfigRepository;
-    private final FieldConfigurationService fieldConfigurationService;
     private final IdentifierResolverRegistry resolverRegistry;
     private final IdentifierPartitionService partitionService;
     private final InstitutionIdentifierCounterRepository counterRepository;
@@ -55,13 +51,12 @@ public class ProjectIdentifierService {
     /**
      * Allocates the next free project identifier of the institution.
      *
-     * @throws IllegalStateException if the institution has no project type vocabulary configured, or its range is exhausted
+     * @throws IllegalStateException if the institution's range is exhausted
      */
     @Transactional
     public GeneratedIdentifier generate(UserInfo info) {
         Long institutionId = info.getInstitution().getId();
-        FormConfig config = resolveConfig(info)
-                .orElseThrow(() -> new IllegalStateException("No project type vocabulary configured"));
+        FormConfig config = resolveConfig(info);
         if (config.getMinCode() < 0 || config.getMaxCode() < config.getMinCode()) {
             throw new IllegalArgumentException("Invalid identifier range on form config " + config.getId());
         }
@@ -124,46 +119,29 @@ public class ProjectIdentifierService {
                 new MapIdentifierRenderContext(new HashMap<>(), Map.of()));
     }
 
-    private Optional<Concept> findFieldConcept(UserInfo info) {
-        try {
-            return Optional.ofNullable(fieldConfigurationService
-                    .findConfigurationForFieldCode(info, TABLE.getFieldCode(), (Long) null).getConcept());
-        } catch (NoConfigForFieldException e) {
-            return Optional.empty();
-        }
-    }
-
     private Optional<FormConfig> findConfig(UserInfo info) {
-        return findFieldConcept(info).flatMap(field ->
-                formConfigRepository.findInstitutionDefaults(info.getInstitution().getId(), field.getId())
-                        .stream().findFirst());
+        return formConfigRepository.findInstitutionDefaults(info.getInstitution().getId(), TABLE).stream().findFirst();
     }
 
     /** The institution's project numbering config, created with the built-in format on first use. */
-    private Optional<FormConfig> resolveConfig(UserInfo info) {
-        Optional<Concept> field = findFieldConcept(info);
-        if (field.isEmpty()) {
-            return Optional.empty();
+    private FormConfig resolveConfig(UserInfo info) {
+        Optional<FormConfig> existing = findConfig(info);
+        if (existing.isPresent()) {
+            return existing.get();
         }
         Long institutionId = info.getInstitution().getId();
-        Long fieldId = field.get().getId();
-        Optional<FormConfig> existing = formConfigRepository.findInstitutionDefaults(institutionId, fieldId)
-                .stream().findFirst();
-        if (existing.isPresent()) {
-            return existing;
-        }
         // NULLs are never equal in a UNIQUE constraint: serialize the lazy creation of the default row
         formConfigRepository.lockTransaction(LOCK_NAMESPACE | (institutionId & 0xFFFF_FFFFL));
-        return Optional.of(formConfigRepository.findInstitutionDefaults(institutionId, fieldId).stream().findFirst()
+        return findConfig(info)
                 .orElseGet(() -> {
                     FormConfig config = new FormConfig();
                     config.setInstitution(entityManager.getReference(Institution.class, institutionId));
-                    config.setFieldConcept(field.get());
+                    config.setConfiguredTable(TABLE);
                     config.setFieldConfigs(new ArrayList<>());
                     config.setIdentifierFormat(TABLE.getDefaultIdentifierFormat());
                     config.setMinCode(DEFAULT_MIN_CODE);
                     config.setMaxCode(DEFAULT_MAX_CODE);
                     return formConfigRepository.save(config);
-                }));
+                });
     }
 }

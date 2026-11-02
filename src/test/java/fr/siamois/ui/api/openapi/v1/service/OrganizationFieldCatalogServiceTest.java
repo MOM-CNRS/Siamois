@@ -50,7 +50,7 @@ class OrganizationFieldCatalogServiceTest {
 
     @Test
     void systemFieldsFirst_thenTheUnionOfTheProjectsAdditionalFields() {
-        when(customFieldRepository.findActiveAdditionalByInstitutionAndTable(7L, ConfigurableTable.UE.getFieldCode()))
+        when(customFieldRepository.findActiveAdditionalByInstitutionAndTable(7L, ConfigurableTable.UE))
                 .thenReturn(List.of(additional(501L, "Couleur"), additional(502L, "Texture")));
 
         OrganizationFieldCatalogResponse response = service.build(7L, ConfigurableTable.UE, "fr");

@@ -54,10 +54,11 @@ import java.util.stream.Collectors;
  * Reads and writes the per-type field configuration of a table on top of {@code FormConfig} /
  * {@code FieldFormConfig}.
  * <p>
- * A table maps to the "type" field of its entity ({@link ConfigurableTable#getFieldCode()}); the
- * concept that field is configured on is the {@code fieldConcept} of every {@code FormConfig} of
- * that table. A type name is the label of a value of that field, which is the {@code valueConcept}
- * of the configuration. Every configuration belongs to a type: there is no configuration standing for
+ * Every {@code FormConfig} carries the table it configures ({@code configuredTable}) and its type
+ * ({@code valueConcept}). A table's configured types are therefore read from the project's own rows, whatever
+ * thesaurus they come from: the "type" field of the entity ({@link ConfigurableTable#getFieldCode()}) is only read
+ * in a thesaurus to offer the types that can still be configured. A type name is the label of a configured type,
+ * or of one of those candidates. Every configuration belongs to a type: there is no configuration standing for
  * "any type" — a table's types are the ones somebody configured, and a value that has no configuration
  * yet is served by the table's built-in form until something is configured on it.
  * <p>
@@ -139,10 +140,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     public List<Concept> listConfiguredTypeConcepts(Long projectId, ConfigurableTable table) {
-        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty()) return List.of();
-
-        return formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.get().getId()).stream()
+        return formConfigRepository.findAllByActionUnitAndTable(projectId, table).stream()
                 .map(FormConfig::getValueConcept)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -161,8 +159,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         Optional<Concept> valueConcept = stored
                 .map(FormConfig::getValueConcept);
         if (valueConcept.isEmpty()) {
-            valueConcept = findFieldConcept(projectId, table)
-                    .flatMap(fieldConcept -> findValueConcept(projectId, table, typeName));
+            valueConcept = findValueConcept(projectId, table, typeName);
         }
         FormConfig identifiers = stored.orElse(null);
         return TypeFormConfig.builder()
@@ -222,17 +219,17 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                     .orElseThrow(() -> new IllegalStateException("No type field configured for " + table));
         }
         // an entity without a type is numbered like the table's first configured type
-        return findFieldConcept(projectId, table)
-                .flatMap(fieldConcept -> formConfigRepository.findAllByActionUnitAndField(projectId, fieldConcept.getId()).stream()
-                        .filter(config -> config.getValueConcept() != null)
-                        .findFirst())
+        return formConfigRepository.findAllByActionUnitAndTable(projectId, table).stream()
+                .filter(config -> config.getValueConcept() != null)
+                .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No type configured for " + table));
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isTypeFieldConfigured(Long projectId, ConfigurableTable table) {
-        return findFieldConcept(projectId, table).isPresent();
+        return !formConfigRepository.findAllByActionUnitAndTable(projectId, table).isEmpty()
+                || findSourceConcept(projectId, table).isPresent();
     }
 
     /**
@@ -802,23 +799,16 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, String typeName) {
-        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty()) return Optional.empty();
-
         return findValueConcept(projectId, table, typeName)
-                .flatMap(value -> formConfigRepository.findByActionUnitAndFieldAndValue(
-                        projectId, fieldConcept.get().getId(), value.getId()));
+                .flatMap(value -> formConfigRepository.findByActionUnitAndTableAndValue(projectId, table, value.getId()));
     }
 
     @Override
     public Optional<FormConfig> findFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
-        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty()) return Optional.empty();
-
         if (typeConceptId == null) {
             return Optional.empty();
         }
-        return formConfigRepository.findByActionUnitAndFieldAndValue(projectId, fieldConcept.get().getId(), typeConceptId);
+        return formConfigRepository.findByActionUnitAndTableAndValue(projectId, table, typeConceptId);
     }
 
     /**
@@ -837,8 +827,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             return existing;
         }
 
-        Optional<Concept> fieldConcept = findFieldConcept(projectId, table);
-        if (fieldConcept.isEmpty() || findValueConcept(projectId, table, typeName).isEmpty()) {
+        if (findValueConcept(projectId, table, typeName).isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(createOrRecoverFormConfig(projectId, table, typeName));
@@ -850,7 +839,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         if (existing.isPresent()) {
             return existing;
         }
-        if (typeConceptId == null || findFieldConcept(projectId, table).isEmpty()) {
+        if (typeConceptId == null) {
             return Optional.empty();
         }
         return Optional.of(createOrRecoverFormConfig(projectId, table, typeConceptId));
@@ -987,14 +976,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private FormConfig createFormConfig(Long projectId, ConfigurableTable table, String typeName) {
         ActionUnit project = actionUnitRepository.findById(projectId)
                 .orElseThrow(() -> new NoSuchElementException("Unknown project: " + projectId));
-        Concept fieldConcept = findFieldConcept(projectId, table)
-                .orElseThrow(() -> new IllegalStateException(
-                        NO_VOCABULARY_CONFIGURED_FOR_FIELD + table.getFieldCode() + OF_PROJECT + projectId));
 
         FormConfig config = new FormConfig();
         config.setActionUnit(project);
         config.setInstitution(project.getCreatedByInstitution());
-        config.setFieldConcept(fieldConcept);
+        config.setConfiguredTable(table);
         config.setFieldConfigs(new ArrayList<>());
         initializeIdentifierConfig(config, table);
         config.setValueConcept(findValueConcept(projectId, table, typeName)
@@ -1006,14 +992,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private FormConfig createFormConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
         ActionUnit project = actionUnitRepository.findById(projectId)
                 .orElseThrow(() -> new NoSuchElementException("Unknown project: " + projectId));
-        Concept fieldConcept = findFieldConcept(projectId, table)
-                .orElseThrow(() -> new IllegalStateException(
-                        NO_VOCABULARY_CONFIGURED_FOR_FIELD + table.getFieldCode() + OF_PROJECT + projectId));
 
         FormConfig config = new FormConfig();
         config.setActionUnit(project);
         config.setInstitution(project.getCreatedByInstitution());
-        config.setFieldConcept(fieldConcept);
+        config.setConfiguredTable(table);
         config.setFieldConfigs(new ArrayList<>());
         initializeIdentifierConfig(config, table);
         config.setValueConcept(conceptRepository.findById(typeConceptId)
@@ -1028,31 +1011,14 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         config.setMaxCode(DEFAULT_MAX_CODE);
     }
 
-    /**
-     * The concept the configured types of a table are filed under: where the type code is read without the project's own
-     * redirection ({@link #findSourceConcept}). It does not move when the project reads its types from another source, so
-     * changing the source never touches the types already configured: it only changes the candidates offered for new ones.
-     * A code the default sources do not define is filed under the project's source.
-     */
-    private Optional<Concept> findFieldConcept(Long projectId, ConfigurableTable table) {
-        Optional<Concept> key = conceptOfTypeCode(table, null, false);
-        return key.isPresent() ? key : findSourceConcept(projectId, table);
-    }
-
     /** The concept the project reads the candidate types of a table from: its redirection if it has one, the default otherwise. */
     private Optional<Concept> findSourceConcept(Long projectId, ConfigurableTable table) {
-        return conceptOfTypeCode(table, projectId, true);
-    }
-
-    private Optional<Concept> conceptOfTypeCode(ConfigurableTable table, @Nullable Long projectId, boolean warnWhenMissing) {
         try {
             ConceptFieldConfig config = fieldConfigurationService
                     .findConfigurationForFieldCode(currentUser(), table.getFieldCode(), projectId);
             return config == null ? Optional.empty() : Optional.ofNullable(config.getConcept());
         } catch (NoConfigForFieldException e) {
-            if (warnWhenMissing) {
-                log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
-            }
+            log.warn(NO_CONFIG_FOR_FIELD, table.getFieldCode(), projectId, e);
             return Optional.empty();
         }
     }

@@ -4,6 +4,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
 import fr.siamois.domain.models.form.config.FormConfig;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.form.config.FormConfigGroup;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.institution.Institution;
@@ -74,15 +75,13 @@ class ProjectCopyTemplateApplierTest {
 
     @Test
     void apply_copiesFormConfigGroupsFieldsAndRemapsThemToTheCopies() {
-        Concept fieldConcept = new Concept();
-        fieldConcept.setId(900L);
         Concept typeValue = new Concept();
         typeValue.setId(901L);
         FormConfig original = new FormConfig();
         original.setId(1L);
         original.setActionUnit(source);
         original.setInstitution(institution);
-        original.setFieldConcept(fieldConcept);
+        original.setConfiguredTable(ConfigurableTable.UE);
         original.setValueConcept(typeValue);
         original.setIdentifierFormat("US{NUM_UE:00}");
         original.setMinCode(1);
