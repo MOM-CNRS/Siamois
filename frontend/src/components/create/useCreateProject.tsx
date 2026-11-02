@@ -4,6 +4,7 @@ import {CreateFormField} from "./CreateFormShell";
 import {type CreatableProject, searchCreatableProjects} from "../../entities/shared/creatableProjects";
 import {scopeProjectId} from "../../entities/shared/scope";
 import type {CreatableKind, ListScope} from "../../entities/shared/types";
+import {readLastSubmitted, writeLastSubmitted} from "./lastSubmitted";
 import {t} from "../../i18n";
 
 export interface CreateProject {
@@ -11,6 +12,8 @@ export interface CreateProject {
   projectId?: string;
   // The project field to render first in the form — null when the list already fixes the project.
   picker: ReactNode;
+  // Keeps the picked project for the next form of this kind (call once a creation succeeded).
+  remember: () => void;
 }
 
 /**
@@ -29,13 +32,14 @@ export function useCreateProject({
   kind: CreatableKind;
 }): CreateProject {
   const fixedProjectId = scopeProjectId(scope);
-  const [picked, setPicked] = useState<CreatableProject | null>(null);
-  const [query, setQuery] = useState("");
+  // An organization-wide list starts on the project of the last creation of this kind.
+  const [picked, setPicked] = useState<CreatableProject | null>(() => readLastSubmitted<CreatableProject>(`${kind}.project`));
+  const [query, setQuery] = useState(() => picked?.fullIdentifier ?? "");
   const [suggestions, setSuggestions] = useState<CreatableProject[]>([]);
   const autoCompleteRef = useRef<AutoComplete>(null);
 
   if (fixedProjectId != null || organizationId == null) {
-    return { projectId: fixedProjectId, picker: null };
+    return { projectId: fixedProjectId, picker: null, remember: () => {} };
   }
 
   async function search(e: AutoCompleteCompleteEvent) {
@@ -74,5 +78,8 @@ export function useCreateProject({
     </CreateFormField>
   );
 
-  return { projectId: picked ? String(picked.id) : undefined, picker };
+  const remember = () => {
+    if (picked) writeLastSubmitted(`${kind}.project`, picked);
+  };
+  return { projectId: picked ? String(picked.id) : undefined, picker, remember };
 }

@@ -1,4 +1,5 @@
 import {createEntityApi} from "../shared/createEntityApi";
+import type {AnswerInputBody} from "../../fields/types";
 import type {FindDetail, FindSummary} from "./types";
 
 // Mirrors FindCreateRequest's required pair: a mobilier is created ON a recording unit, never
@@ -6,6 +7,9 @@ import type {FindDetail, FindSummary} from "./types";
 export interface FindCreateBody {
   recordingUnitId: string;
   typeId: string;
+  identifier?: string;
+  // Fields filled in the creation form (collectors, collection date), by fieldId.
+  answers?: Record<string, AnswerInputBody>;
 }
 
 const api = createEntityApi<FindSummary, FindDetail, FindCreateBody>("finds");

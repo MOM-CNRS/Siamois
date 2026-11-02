@@ -11,6 +11,9 @@ import type {FieldResource} from "../../fields/types";
 import {CreateFormField, CreateFormShell} from "./CreateFormShell";
 import {useCreateProject} from "./useCreateProject";
 import {useSuggestedIdentifier} from "./useSuggestedIdentifier";
+import {readLastSubmitted, writeLastSubmitted} from "./lastSubmitted";
+import {useCreateFields} from "./useCreateFields";
+import type {AnswerInputBody} from "../../fields/types";
 import {messageForError} from "../../api/errors";
 import {t} from "../../i18n";
 import {useToastOnChange} from "../../notify/NotifyProvider";
@@ -21,13 +24,19 @@ interface ConceptPick {
   label?: string | null;
 }
 
+const NO_BINDINGS: readonly string[] = [];
+
 export interface TypeOnlyCreateFormProps extends CreateFormContext {
   entityType: CreatableKind;
   title: string;
   // The project catalog whose untyped form carries the type field (valueBinding "type").
   typesSegment: string;
   // `identifier` is set only when the user replaced the suggested one: otherwise the server generates it.
-  create: (body: { projectId: string; typeId: string; identifier?: string }) => Promise<{ id: string | number }>;
+  create: (body: { projectId: string; typeId: string; identifier?: string; answers?: Record<string, AnswerInputBody> }) => Promise<{ id: string | number }>;
+  // Optional fields offered under the identifier, by valueBinding, pre-filled with the last submission.
+  extraFieldBindings?: readonly string[];
+  // Those of the extra fields that are dates starting at now rather than at the last submission.
+  nowFieldBindings?: readonly string[];
   // Read-only lines under the type: what the creation is linked to (a prefilled parent…).
   children?: ReactNode;
   // The recording unit the new one is created under: the suggested identifier renders its tokens.
@@ -46,6 +55,8 @@ export function TypeOnlyCreateForm({
   typesSegment,
   create,
   children,
+  extraFieldBindings,
+  nowFieldBindings,
   parentRecordingUnitId,
   organizationId,
   scope,
@@ -53,13 +64,14 @@ export function TypeOnlyCreateForm({
   onCreated,
   onCancel,
 }: TypeOnlyCreateFormProps) {
-  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: entityType });
+  const { projectId, picker: projectPicker, remember: rememberProject } = useCreateProject({ scope, organizationId, kind: entityType });
   const [type, setType] = useState<ConceptPick | null>(null);
   // Types are per project: a pick from the previous project's catalog no longer applies.
   useEffect(() => {
     setType(null);
   }, [projectId]);
   const [error, setError] = useState<string | null>(null);
+  const [lastType] = useState(() => readLastSubmitted<string>(`${entityType}.type`) ?? undefined);
   const identifier = useSuggestedIdentifier(entityType, projectId, type?.resourceId, parentRecordingUnitId);
 
   const formQuery = useQuery({
@@ -75,7 +87,8 @@ export function TypeOnlyCreateForm({
   const { options: declaredTypes, loaded: typesLoaded } = useDeclaredTypesState(typesSegment, projectId);
 
   // Created from a list tab filtered on one type: that type is picked already (still changeable).
-  const prefilledType = prefill?.typeId;
+  // else the type of the last creation of this kind (if the project declares it).
+  const prefilledType = prefill?.typeId ?? lastType;
   const appliedPrefill = useRef<string | null>(null);
   useEffect(() => {
     appliedPrefill.current = null;
@@ -87,9 +100,30 @@ export function TypeOnlyCreateForm({
     if (option) setType({ resourceId: option.id, resourceType: referenceTargetOf(typeField).resourceType, label: option.label });
   }, [prefilledType, typeField, typesLoaded, declaredTypes]);
 
+  const extra = useCreateFields({
+    kind: entityType,
+    segment: typesSegment,
+    bindings: extraFieldBindings ?? NO_BINDINGS,
+    nowBindings: nowFieldBindings,
+    projectId,
+    typeId: type?.resourceId,
+    organizationId,
+  });
+
   const mutation = useMutation({
-    mutationFn: () => create({ projectId: projectId as string, typeId: type!.resourceId, ...identifier.chosen }),
-    onSuccess: (created) => onCreated(created.id),
+    mutationFn: () =>
+      create({
+        projectId: projectId as string,
+        typeId: type!.resourceId,
+        ...identifier.chosen,
+        ...(Object.keys(extra.answers).length > 0 ? { answers: extra.answers } : {}),
+      }),
+    onSuccess: (created) => {
+      extra.remember();
+      rememberProject();
+      writeLastSubmitted(`${entityType}.type`, type!.resourceId);
+      onCreated(created.id);
+    },
     onError: (err: unknown) => setError(messageForError(err, t("create.failed"))),
   });
 
@@ -127,6 +161,8 @@ export function TypeOnlyCreateForm({
       </CreateFormField>
 
       {identifier.field}
+
+      {extra.fields}
 
       {children}
     </CreateFormShell>

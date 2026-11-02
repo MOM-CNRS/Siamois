@@ -12,7 +12,10 @@ import {fetchList} from "../shared/listApi";
 import {createFind} from "./api";
 import {getEffectiveForm} from "../shared/typeCatalog";
 import {queryKeys} from "../../api/queryKeys";
+import {referenceTargetOf} from "../../fields/optionSources";
 import {useCreateProject} from "../../components/create/useCreateProject";
+import {readLastSubmitted, writeLastSubmitted} from "../../components/create/lastSubmitted";
+import {useCreateFields} from "../../components/create/useCreateFields";
 import {useSuggestedIdentifier} from "../../components/create/useSuggestedIdentifier";
 import {messageForError} from "../../api/errors";
 import {t} from "../../i18n";
@@ -41,9 +44,13 @@ interface RecordingUnitOption {
   fullIdentifier?: string | null;
 }
 
+const EXTRA_FIELDS = ["collectors", "collectionDate"] as const;
+
+const NOW_FIELDS = ["collectionDate"] as const;
+
 export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCancel }: CreateFormContext) {
   // The list's own project, or — on an organization-wide list — the one picked first in the form.
-  const { projectId, picker: projectPicker } = useCreateProject({ scope, organizationId, kind: "find" });
+  const { projectId, picker: projectPicker, remember: rememberProject } = useCreateProject({ scope, organizationId, kind: "find" });
   // Created from a recording unit (its row action, its "Mobilier" tab): that UE, no picker.
   const fixedRecordingUnit = prefill?.recordingUnit;
   const [recordingUnit, setRecordingUnit] = useState<RecordingUnitOption | null>(null);
@@ -70,10 +77,24 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
 
   const { options: declaredTypes, loaded: typesLoaded } = useDeclaredTypesState("find-types", projectId);
 
+  // The type of the last creation is picked again once the project's types are known (still changeable).
+  const [lastType] = useState(() => readLastSubmitted<string>("find.type"));
+  const appliedLastType = useRef(false);
+  useEffect(() => {
+    appliedLastType.current = false;
+  }, [projectId]);
+
   const typeField = useMemo<FieldResource | undefined>(
     () => Object.values(typesQuery.data?.fields ?? {}).find((f) => f.valueBinding === "type"),
     [typesQuery.data],
   );
+
+  useEffect(() => {
+    if (lastType == null || appliedLastType.current || !typeField || !typesLoaded) return;
+    appliedLastType.current = true;
+    const option = declaredTypes.find((o) => o.id === lastType);
+    if (option) setType({ resourceId: option.id, resourceType: referenceTargetOf(typeField).resourceType, label: option.label });
+  }, [lastType, typeField, typesLoaded, declaredTypes]);
 
   async function searchRecordingUnits(e: AutoCompleteCompleteEvent) {
     if (projectId == null) return;
@@ -86,9 +107,31 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
     setRuSuggestions(result.data);
   }
 
+  // Collectors and collection date, pre-filled (collectors with the last submission, the date with now); empty ones fall back to the server's defaults.
+  const extra = useCreateFields({
+    kind: "find",
+    segment: "find-types",
+    bindings: EXTRA_FIELDS,
+    nowBindings: NOW_FIELDS,
+    projectId,
+    typeId: type?.resourceId,
+    organizationId,
+  });
+
   const mutation = useMutation({
-    mutationFn: () => createFind({ recordingUnitId: String(recordingUnitId), typeId: type!.resourceId, ...identifier.chosen }),
-    onSuccess: (created) => onCreated(created.id),
+    mutationFn: () =>
+      createFind({
+        recordingUnitId: String(recordingUnitId),
+        typeId: type!.resourceId,
+        ...identifier.chosen,
+        ...(Object.keys(extra.answers).length > 0 ? { answers: extra.answers } : {}),
+      }),
+    onSuccess: (created) => {
+      extra.remember();
+      rememberProject();
+      writeLastSubmitted("find.type", type!.resourceId);
+      onCreated(created.id);
+    },
     onError: (err: unknown) => {
       setError(messageForError(err, t("create.failed")));
     },
@@ -155,6 +198,8 @@ export function FindCreateForm({ organizationId, scope, prefill, onCreated, onCa
       </CreateFormField>
 
       {identifier.field}
+
+      {extra.fields}
     </CreateFormShell>
   );
 }
