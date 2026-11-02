@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    user_view_state: the state of a fiche (active tab, folded sections, what each tab kept) is kept per type of
+    fiche, detail:<resourceType>, no longer per record, detail:<resourceType>:<id>. A fiche opens the way the user
+    last left a fiche of its type.
+
+    For each user, institution and type, the record state updated last becomes the type's; the others are deleted.
+    -->
+
+    <changeSet id="2026-11-02-2-user-view-state-detail-per-type" author="gregory bliault">
+        <sql>
+            WITH ranked AS (
+                SELECT id,
+                       row_number() OVER (PARTITION BY fk_person, fk_institution, split_part(view_key, ':', 2)
+                                          ORDER BY updated_at DESC NULLS LAST, id DESC) AS rank
+                FROM public.user_view_state
+                WHERE view_key ~ '^detail:[^:]+:.+$'
+            )
+            UPDATE public.user_view_state s
+            SET view_key = 'detail:' || split_part(s.view_key, ':', 2)
+            FROM ranked r
+            WHERE r.id = s.id
+              AND r.rank = 1
+              AND NOT EXISTS (SELECT 1 FROM public.user_view_state t
+                              WHERE t.fk_person = s.fk_person
+                                AND t.fk_institution = s.fk_institution
+                                AND t.view_key = 'detail:' || split_part(s.view_key, ':', 2));
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-2-delete-user-view-state-detail-per-record" author="gregory bliault">
+        <sql>
+            DELETE FROM public.user_view_state
+            WHERE view_key ~ '^detail:[^:]+:.+$';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

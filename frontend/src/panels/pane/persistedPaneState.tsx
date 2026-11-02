@@ -9,12 +9,20 @@ import {usePaneState} from "./paneState";
 // PersistedTabState. A component inside a tab keeps a piece of its state with usePersistedPaneState: the
 // same as usePaneState, plus that piece is read from and written to the fiche's state under the tab's own
 // key — so changing tab never loses the state of the others, as each tab only writes its own pieces.
+//
+// The panel also carries each piece over to the next fiche it shows (a sibling jump, a list retargeting the
+// overview): what the fiche before was showing wins over what was saved, which only opens a fiche afresh.
 
 export interface PersistedTabStateValue {
   // What was saved under (this tab, name); undefined when nothing yet.
   read: (name: string) => unknown;
   // Merges `value` into the saved state under (this tab, name).
   write: (name: string, value: unknown) => void;
+  // What the fiche shown before in the same panel had under (this tab, name), in its saved form; undefined
+  // when nothing to carry over.
+  carried?: (name: string) => unknown;
+  // Keeps the current value, in its saved form, for the next fiche the panel shows.
+  carry?: (name: string, value: unknown) => void;
 }
 
 const PersistedTabContext = createContext<PersistedTabStateValue | null>(null);
@@ -35,8 +43,9 @@ export interface PersistOptions<T, S> {
 
 /**
  * `usePaneState` whose value is also kept for the user when it lives inside a fiche's tab
- * (PersistedTabState). Outside one it is plain `usePaneState`. Only the user's changes are written, not
- * the value the component opened with.
+ * (PersistedTabState). Outside one it is plain `usePaneState`. Opens on the value carried over from the
+ * fiche shown before, else the saved one, else `initial`. Only the user's changes are written, not the
+ * value the component opened with; every value is carried over.
  */
 export function usePersistedPaneState<T, S = T>(
   name: string,
@@ -47,15 +56,18 @@ export function usePersistedPaneState<T, S = T>(
   const { toSaved, fromSaved, isValid } = options;
 
   const [value, setValue] = usePaneState<T>(name, () => {
-    const saved = persisted?.read(name);
-    if (saved === undefined || (isValid && !isValid(saved))) return initial;
+    const usable = (saved: unknown) => saved !== undefined && (!isValid || isValid(saved));
+    const saved = [persisted?.carried?.(name), persisted?.read(name)].find(usable);
+    if (saved === undefined) return initial;
     return fromSaved ? fromSaved(saved as S, initial) : (saved as T);
   });
 
   const encode = (v: T) => (toSaved ? toSaved(v) : v);
   const lastKept = useRef<string | undefined>(undefined);
   const write = persisted?.write;
+  const carry = persisted?.carry;
   useEffect(() => {
+    carry?.(name, encode(value));
     if (!write) return;
     const snapshot = JSON.stringify(encode(value));
     if (lastKept.current === undefined) {
@@ -67,7 +79,7 @@ export function usePersistedPaneState<T, S = T>(
       write(name, encode(value));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, write, name]);
+  }, [value, write, carry, name]);
 
   return [value, setValue];
 }
