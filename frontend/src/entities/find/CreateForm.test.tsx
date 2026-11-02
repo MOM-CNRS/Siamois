@@ -84,6 +84,7 @@ function submitButton(): HTMLButtonElement {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   mockedGetFindEffectiveForm.mockReset();
   mockedGetFindEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-201": typeField } });
   mockedCreateFind.mockReset();

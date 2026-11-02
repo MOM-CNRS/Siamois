@@ -1,5 +1,6 @@
 import {apiFetch} from "../../api/client";
 import {createEntityApi} from "../shared/createEntityApi";
+import type {AnswerInputBody} from "../../fields/types";
 import type {DuplicationNode, DuplicationResult, DuplicationStructure} from "../shared/types";
 import type {RecordingUnitDetail, RecordingUnitSummary} from "./types";
 
@@ -15,6 +16,8 @@ export interface RecordingUnitCreateBody {
   childRecordingUnitId?: string | number;
   // The phase the new UE is attached to (same project).
   phaseId?: string | number;
+  // Fields filled in the creation form (place, author, opening date), by fieldId.
+  answers?: Record<string, AnswerInputBody>;
 }
 
 const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, RecordingUnitCreateBody>("recording-units", {
@@ -27,6 +30,7 @@ const api = createEntityApi<RecordingUnitSummary, RecordingUnitDetail, Recording
     parentRecordingUnitId: body.parentRecordingUnitId != null ? Number(body.parentRecordingUnitId) : undefined,
     childRecordingUnitId: body.childRecordingUnitId != null ? Number(body.childRecordingUnitId) : undefined,
     phaseId: body.phaseId != null ? Number(body.phaseId) : undefined,
+    answers: body.answers,
   }),
 });
 

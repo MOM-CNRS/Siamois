@@ -63,6 +63,7 @@ function submitButton(): HTMLButtonElement {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   mockedGetPhaseEffectiveForm.mockReset();
   mockedGetPhaseEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-502": typeField } });
   mockedCreatePhase.mockReset();

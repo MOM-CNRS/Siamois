@@ -102,6 +102,7 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   mockedGetRecordingUnitTypes.mockReset();
   mockedGetRecordingUnitTypes.mockResolvedValue({ layoutJson: "[]", fields: { "-101": typeField } });
   mockedCreateRecordingUnit.mockReset();

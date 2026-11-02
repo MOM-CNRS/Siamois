@@ -71,6 +71,7 @@ function submitButton(): HTMLButtonElement {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   mockedGetDocumentEffectiveForm.mockReset();
   mockedGetDocumentEffectiveForm.mockResolvedValue({ layoutJson: "[]", fields: { "-704": typeField } });
   mockedFetchTypesCatalog.mockReset();

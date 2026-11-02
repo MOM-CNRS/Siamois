@@ -4,6 +4,11 @@ import type {CreateFormContext} from "../shared/types";
 import {createRecordingUnit} from "./api";
 import {t} from "../../i18n";
 
+// The optional fields offered with the type: place, author, opening date — pre-filled with the last submission.
+const EXTRA_FIELDS = ["spatialUnit", "author", "openingDate"] as const;
+
+const NOW_FIELDS = ["openingDate"] as const;
+
 // A recording unit needs only its type. Its identifier is suggested by the server (a peek at the
 // counter, not a consumption), shown pre-filled and modifiable — an edited one is sent, an
 // untouched suggestion lets the server generate it, as in JSF. Created from another UE's row
@@ -18,6 +23,8 @@ export function RecordingUnitCreateForm(ctx: CreateFormContext) {
       title={t("create.newRecordingUnit")}
       typesSegment="recording-unit-types"
       parentRecordingUnitId={prefill?.parent?.id}
+      extraFieldBindings={EXTRA_FIELDS}
+      nowFieldBindings={NOW_FIELDS}
       create={(body) =>
         createRecordingUnit({
           ...body,
