@@ -194,6 +194,123 @@ public class ConceptService {
     }
 
     /**
+     * Bulk variant of {@link #saveOrGetConceptFromFullDTO} for a whole branch or collection : the existing
+     * concepts, labels and definitions are read with one query each, compared in memory, and only what is
+     * new or changed is written. Saving concept by concept took several lookups per concept, each flushing
+     * — and dirty-checking — everything the import had saved so far : a time that grew with the square of
+     * the size of the collection.
+     *
+     * @param conceptsByUrl      the concepts of the thesaurus, keyed by their URL
+     * @param fieldParentConcept the parent concept in the field context, if applicable
+     * @return the saved concepts, keyed by the same URLs
+     */
+    @NonNull
+    public Map<String, Concept> saveOrGetConceptsFromFullDTOs(@NonNull Vocabulary vocabulary,
+                                                              @NonNull Map<String, FullInfoDTO> conceptsByUrl,
+                                                              @Nullable Concept fieldParentConcept) {
+        Map<String, Concept> byLowerExternalId = new HashMap<>();
+        Set<String> lowerExternalIds = new HashSet<>();
+        for (FullInfoDTO dto : conceptsByUrl.values()) {
+            lowerExternalIds.add(dto.getIdentifier()[0].getValue().toLowerCase(Locale.ROOT));
+        }
+        for (List<String> chunk : ConceptApiUtils.chunksOf(lowerExternalIds)) {
+            for (Concept existing : conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(vocabulary.getExternalVocabularyId(), chunk)) {
+                byLowerExternalId.putIfAbsent(existing.getExternalId().toLowerCase(Locale.ROOT), existing);
+            }
+        }
+
+        // several URLs of a thesaurus can designate the same concept : it is saved once, see mergeDescriptions
+        Map<String, Concept> byUrl = new LinkedHashMap<>();
+        Set<Concept> toSave = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Map.Entry<String, FullInfoDTO> entry : conceptsByUrl.entrySet()) {
+            String externalId = entry.getValue().getIdentifier()[0].getValue();
+            Concept concept = byLowerExternalId.computeIfAbsent(externalId.toLowerCase(Locale.ROOT), key -> {
+                Concept created = new Concept();
+                created.setVocabulary(vocabulary);
+                created.setExternalId(externalId);
+                return created;
+            });
+            if (concept.getId() == null || concept.isDeleted() || !concept.isLoaded()) {
+                concept.setDeleted(false);
+                concept.setLoaded(true);
+                toSave.add(concept);
+            }
+            byUrl.put(entry.getKey(), concept);
+        }
+        if (!toSave.isEmpty()) {
+            // outside a transaction save merges, and returns another instance than the one given
+            Map<Concept, Concept> saved = new IdentityHashMap<>();
+            for (Concept concept : toSave) {
+                saved.put(concept, conceptRepository.save(concept));
+            }
+            byUrl.replaceAll((url, concept) -> saved.getOrDefault(concept, concept));
+        }
+
+        Map<Concept, FullInfoDTO> dtoByConcept = new LinkedHashMap<>();
+        for (Map.Entry<String, Concept> entry : byUrl.entrySet()) {
+            dtoByConcept.merge(entry.getValue(), conceptsByUrl.get(entry.getKey()), ConceptService::mergeDescriptions);
+        }
+        labelService.updateAllLabelsFromDTOs(dtoByConcept, fieldParentConcept);
+        updateAllDefinitionsFromDTOs(dtoByConcept);
+        return byUrl;
+    }
+
+    /**
+     * Two descriptions of the same concept, under two URLs — an ark and the URL of a partner institution
+     * sharing its identifier, say — read as if saved one after the other : pref labels and definitions
+     * add up language by language, the later winning, and the later alt labels replace the earlier ones
+     * unless it has none. Keeping only one of them would drop the labels of the other.
+     */
+    @NonNull
+    private static FullInfoDTO mergeDescriptions(@NonNull FullInfoDTO earlier, @NonNull FullInfoDTO later) {
+        FullInfoDTO merged = new FullInfoDTO();
+        merged.setIdentifier(later.getIdentifier());
+        merged.setPrefLabel(concat(earlier.getPrefLabel(), later.getPrefLabel()));
+        merged.setAltLabel(later.getAltLabel() != null ? later.getAltLabel() : earlier.getAltLabel());
+        merged.setDefinition(concat(earlier.getDefinition(), later.getDefinition()));
+        return merged;
+    }
+
+    @Nullable
+    private static PurlInfoDTO[] concat(@Nullable PurlInfoDTO[] first, @Nullable PurlInfoDTO[] second) {
+        if (first == null) return second;
+        if (second == null) return first;
+        PurlInfoDTO[] both = Arrays.copyOf(first, first.length + second.length);
+        System.arraycopy(second, 0, both, first.length, second.length);
+        return both;
+    }
+
+    private void updateAllDefinitionsFromDTOs(@NonNull Map<Concept, FullInfoDTO> dtoByConcept) {
+        Map<Long, Map<String, LocalizedConceptData>> existingByConceptId = new HashMap<>();
+        for (List<Concept> chunk : ConceptApiUtils.chunksOf(dtoByConcept.keySet())) {
+            for (LocalizedConceptData data : localizedConceptDataRepository.findAllByConceptIn(chunk)) {
+                existingByConceptId.computeIfAbsent(data.getId().getConceptId(), id -> new HashMap<>()).put(data.getLangCode(), data);
+            }
+        }
+        Set<LocalizedConceptData> toSave = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Map.Entry<Concept, FullInfoDTO> entry : dtoByConcept.entrySet()) {
+            if (entry.getValue().getDefinition() == null) {
+                continue;
+            }
+            Map<String, LocalizedConceptData> existing = existingByConceptId.computeIfAbsent(entry.getKey().getId(), id -> new HashMap<>());
+            for (PurlInfoDTO definition : entry.getValue().getDefinition()) {
+                LocalizedConceptData data = existing.get(definition.getLang());
+                if (data == null) {
+                    data = new LocalizedConceptData();
+                    data.setConcept(entry.getKey());
+                    data.setLangCode(definition.getLang());
+                    existing.put(definition.getLang(), data);
+                } else if (Objects.equals(data.getDefinition(), definition.getValue())) {
+                    continue;
+                }
+                data.setDefinition(definition.getValue());
+                toSave.add(data);
+            }
+        }
+        localizedConceptDataRepository.saveAll(toSave);
+    }
+
+    /**
      * Fetches the concept designated by a thesaurus URI and persists it (or returns the existing
      * local copy), unlike {@link #fetchConceptDesignatedBy(VocabularyDTO, String)} which only
      * returns a detached preview.

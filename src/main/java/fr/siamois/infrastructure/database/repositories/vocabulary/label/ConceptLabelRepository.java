@@ -25,6 +25,9 @@ public interface ConceptLabelRepository extends CrudRepository<ConceptLabel, Lon
 
     Set<ConceptAltLabel> findAllAltLabelsByConcept(Concept concept);
 
+    /** The pref and alt labels of several concepts at once, for an import that compares them in memory. */
+    List<ConceptLabel> findAllByConceptIn(Collection<Concept> concepts);
+
     Optional<ConceptPrefLabel> findPrefLabelByLangCodeAndConcept(String langCode, Concept concept);
 
     Set<ConceptAltLabel> findAllAltLabelsByLangCodeAndConcept(String langCode, Concept concept);

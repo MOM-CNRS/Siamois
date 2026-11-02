@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -308,8 +309,8 @@ class ConceptCollectionServiceTest {
                 .vocabulary(jpaVocabulary)
                 .build();
         stubBranchLoadComponents();
-        when(conceptService.saveOrGetConceptFromFullDTO(jpaVocabulary, branch.getData().get(CONCEPT_URL), null))
-                .thenReturn(importedConcept);
+        when(conceptService.saveOrGetConceptsFromFullDTOs(jpaVocabulary, branch.getData(), null))
+                .thenReturn(Map.of(CONCEPT_URL, importedConcept));
 
         ConceptCollection result = conceptCollectionService.createOrUpdateConceptCollection(detached);
 
@@ -334,8 +335,9 @@ class ConceptCollectionServiceTest {
 
         Concept member = new Concept.Builder().id(30L).externalId("12").vocabulary(jpaVocabulary).build();
         stubBranchLoadComponents();
-        when(conceptService.saveOrGetConceptFromFullDTO(jpaVocabulary, branch.getData().get(CONCEPT_URL), null)).thenReturn(member);
-        when(conceptRepository.findConceptByExternalIdIgnoreCase(any(), any())).thenReturn(Optional.empty());
+        when(conceptService.saveOrGetConceptsFromFullDTOs(jpaVocabulary, branch.getData(), null))
+                .thenReturn(Map.of(CONCEPT_URL, member));
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(any(), any())).thenReturn(List.of());
         when(conceptRepository.save(any(Concept.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ConceptCollection result = conceptCollectionService.createOrUpdateConceptCollection(detached);

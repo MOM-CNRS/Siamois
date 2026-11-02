@@ -84,6 +84,20 @@ public interface ConceptRepository extends CrudRepository<Concept, Long>, Revisi
     )
     void addRelatedConceptIfAbsent(@Param("conceptId") Long conceptId, @Param("relatedConceptId") Long relatedConceptId);
 
+    /**
+     * Bulk variant of {@link #addRelatedConceptIfAbsent} : the pair at index {@code i} of both arrays is
+     * one link. One statement for a whole import — a native query flushes the persistence context, so
+     * running one per link re-checked every entity the import had loaded, once per link.
+     */
+    @Modifying
+    @Query(
+            nativeQuery = true,
+            value = "INSERT INTO concept_related (fk_concept_id, fk_related_concept_id) " +
+                    "SELECT * FROM unnest(CAST(:conceptIds AS bigint[]), CAST(:relatedConceptIds AS bigint[])) " +
+                    "ON CONFLICT DO NOTHING"
+    )
+    void addRelatedConceptsIfAbsent(@Param("conceptIds") Long[] conceptIds, @Param("relatedConceptIds") Long[] relatedConceptIds);
+
     Optional<Concept> findByUri(String uri);
 
     /**

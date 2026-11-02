@@ -6,6 +6,7 @@ import fr.siamois.domain.models.vocabulary.label.ConceptAltLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import fr.siamois.domain.models.vocabulary.label.VocabularyLabel;
+import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
@@ -16,10 +17,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -447,5 +453,111 @@ class LabelServiceTest {
         assertTrue(result.isEmpty());
         verify(conceptLabelRepository, times(1))
                 .findAllAltLabelsByLangCodeAndConcept("fr", concept);
+    }
+
+    private static PurlInfoDTO purl(String lang, String value) {
+        PurlInfoDTO purl = new PurlInfoDTO();
+        purl.setLang(lang);
+        purl.setValue(value);
+        return purl;
+    }
+
+    @Test
+    void updateAllLabelsFromDTOs_shouldReadTheLabelsOnce_andWriteOnlyWhatChanged() {
+        Concept savedConcept = new Concept();
+        savedConcept.setId(7L);
+        savedConcept.setExternalId("7");
+        ConceptPrefLabel unchanged = new ConceptPrefLabel();
+        unchanged.setId(1L);
+        unchanged.setConcept(savedConcept);
+        unchanged.setLangCode("fr");
+        unchanged.setLabel("vase");
+        ConceptAltLabel stale = new ConceptAltLabel();
+        stale.setId(2L);
+        stale.setConcept(savedConcept);
+        stale.setLangCode("fr");
+        stale.setLabel("perime");
+        when(conceptLabelRepository.findAllByConceptIn(any())).thenReturn(List.of(unchanged, stale));
+
+        FullInfoDTO dto = new FullInfoDTO();
+        dto.setPrefLabel(new PurlInfoDTO[]{purl("fr", "vase"), purl("en", "vase")});
+        dto.setAltLabel(new PurlInfoDTO[]{purl("fr", "pot")});
+
+        labelService.updateAllLabelsFromDTOs(Map.of(savedConcept, dto), null);
+
+        verify(conceptLabelRepository, times(1)).findAllByConceptIn(any());
+        verify(conceptLabelRepository).deleteAll(List.of(stale));
+        ArgumentCaptor<Iterable<ConceptLabel>> captor = ArgumentCaptor.captor();
+        verify(conceptLabelRepository).saveAll(captor.capture());
+        List<String> written = new ArrayList<>();
+        captor.getValue().forEach(label -> written.add(label.getLangCode() + " " + label.getLabel()));
+        // the unchanged French pref label is not written again
+        assertThat(written).containsExactlyInAnyOrder("en vase", "fr pot");
+    }
+
+    @Test
+    void updateAllLabelsFromDTOs_shouldUpdateTheExistingSynonym_whenOnlyItsCaseChanged() {
+        // the label column ignores case : deleting "Pot" and inserting "pot" would collide on its unique key
+        Concept savedConcept = new Concept();
+        savedConcept.setId(8L);
+        savedConcept.setExternalId("8");
+        ConceptAltLabel existing = new ConceptAltLabel();
+        existing.setId(3L);
+        existing.setConcept(savedConcept);
+        existing.setLangCode("fr");
+        existing.setLabel("Pot");
+        when(conceptLabelRepository.findAllByConceptIn(any())).thenReturn(List.of(existing));
+
+        FullInfoDTO dto = new FullInfoDTO();
+        dto.setAltLabel(new PurlInfoDTO[]{purl("fr", "pot")});
+
+        labelService.updateAllLabelsFromDTOs(Map.of(savedConcept, dto), null);
+
+        verify(conceptLabelRepository, never()).deleteAll(any());
+        assertEquals("pot", existing.getLabel());
+        verify(conceptLabelRepository).saveAll(argThat(labels -> labels.iterator().next() == existing));
+    }
+
+    @Test
+    void updateAllLabelsFromDTOs_shouldTagTheLabelsWithTheFieldParent_exceptThoseOfTheParentItself() {
+        Concept fieldParent = new Concept();
+        fieldParent.setId(100L);
+        fieldParent.setExternalId("100");
+        Concept child = new Concept();
+        child.setId(9L);
+        child.setExternalId("9");
+        ConceptPrefLabel untagged = new ConceptPrefLabel();
+        untagged.setId(4L);
+        untagged.setConcept(child);
+        untagged.setLangCode("fr");
+        untagged.setLabel("vase");
+        ConceptPrefLabel alreadyTagged = new ConceptPrefLabel();
+        alreadyTagged.setId(5L);
+        alreadyTagged.setConcept(child);
+        alreadyTagged.setLangCode("en");
+        alreadyTagged.setLabel("vase");
+        alreadyTagged.setParentConcept(fieldParent);
+        when(conceptLabelRepository.findAllByConceptIn(any())).thenReturn(List.of(untagged, alreadyTagged));
+
+        FullInfoDTO childDto = new FullInfoDTO();
+        childDto.setPrefLabel(new PurlInfoDTO[]{purl("fr", "vase"), purl("en", "vase")});
+        // the label column ignores case : the second synonym is the first one
+        childDto.setAltLabel(new PurlInfoDTO[]{purl("fr", "CHA"), purl("fr", "ChA")});
+        FullInfoDTO parentDto = new FullInfoDTO();
+        parentDto.setPrefLabel(new PurlInfoDTO[]{purl("fr", "céramique")});
+        Map<Concept, FullInfoDTO> dtoByConcept = new LinkedHashMap<>();
+        dtoByConcept.put(child, childDto);
+        dtoByConcept.put(fieldParent, parentDto);
+
+        labelService.updateAllLabelsFromDTOs(dtoByConcept, fieldParent);
+
+        ArgumentCaptor<Iterable<ConceptLabel>> captor = ArgumentCaptor.captor();
+        verify(conceptLabelRepository).saveAll(captor.capture());
+        Map<String, ConceptLabel> written = new HashMap<>();
+        captor.getValue().forEach(label -> written.put(label.getLangCode() + " " + label.getLabel(), label));
+        assertThat(written).containsOnlyKeys("fr vase", "fr CHA", "fr céramique");
+        assertThat(written.get("fr vase").getParentConcept()).isSameAs(fieldParent);
+        assertThat(written.get("fr CHA").getParentConcept()).isSameAs(fieldParent);
+        assertNull(written.get("fr céramique").getParentConcept());
     }
 }
