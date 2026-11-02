@@ -10,14 +10,17 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepo
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
  * Gives a new project the thesaurus it documents its fields and types in ({@link DocumentationThesaurus}).
- * The default and empty templates rest on the common-core thesaurus (th338); a project copied from another takes the
- * copied project's, and failing that its institution's, and failing that th338.
+ * A new project takes its institution's thesaurus, and failing that the common-core one (th338); a project copied from
+ * another takes the copied project's first. The thesaurus a template reads its configuration from is a separate
+ * matter: the configuration names its own thesaurus (code sources, field configs), whatever the project's is.
  */
 @Slf4j
 @Component
@@ -29,13 +32,20 @@ public class ProjectThesaurusAssigner {
     private final VocabularyRepository vocabularyRepository;
     private final DefaultProjectDefinition definition;
 
-    /** The project documents its fields in the common-core thesaurus (default and empty templates). */
-    public void assignCommonCore(Long projectId) {
-        ActionUnit project = load(projectId);
-        commonCore().ifPresent(vocabulary -> assign(project, vocabulary));
+    /**
+     * {@link #assignInstitutionOrCommonCore(ActionUnit)} for the default, empty and Kition templates. Those run after the
+     * creation committed, when its still-bound transaction would never flush: the assignment is written in a
+     * transaction of its own.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void assignInstitutionOrCommonCore(Long projectId) {
+        assignInstitutionOrCommonCore(load(projectId));
     }
 
-    /** The project keeps the thesaurus it already has, else takes its institution's, else the common-core one. */
+    /**
+     * The project keeps the thesaurus it already has, else takes its institution's, else the common-core one. Joins the
+     * caller's transaction (the copy of a project, applied before the creation commits).
+     */
     public void assignInstitutionOrCommonCore(ActionUnit project) {
         if (documentationThesaurusRepository.findByActionUnitId(project.getId()).isPresent()) {
             return;

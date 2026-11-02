@@ -30,6 +30,6 @@ class DefaultProjectTemplateApplierTest {
 
         assertThat(applier.transactional()).isFalse();
         verify(seeder).seed(info, 42L);
-        verify(assigner).assignCommonCore(42L);
+        verify(assigner).assignInstitutionOrCommonCore(42L);
     }
 }
