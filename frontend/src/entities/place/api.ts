@@ -49,15 +49,29 @@ export async function patchPlaceAnswers(
       case String(LOCALITY_NAME_FIELD_ID):
         body.localityName = value;
         break;
+      case String(ADDRESS_STREET_FIELD_ID):
+        body.addressStreet = value;
+        break;
+      case String(ADDRESS_POSTCODE_FIELD_ID):
+        body.addressPostcode = value;
+        break;
+      case String(ADDRESS_CITY_FIELD_ID):
+        body.addressCity = value;
+        break;
+      case String(PARCEL_SECTION_FIELD_ID):
+        body.parcelSection = value;
+        break;
+      case String(PARCEL_NUMBER_FIELD_ID):
+        body.parcelNumber = value;
+        break;
       case String(COMMENTS_FIELD_ID):
         body.comments = value;
         break;
       case String(SHOM_MAP_NUMBER_FIELD_ID):
         body.shomMapNumber = value;
         break;
-      // CODE_FIELD (-203) is read-only in SpatialUnit.DETAILS_FORM (server-generated) and the
-      // address has no editor, so neither should reach this: fail loudly rather than report a
-      // save that silently wrote nothing.
+      // The address object has no editor, so it should not reach this: fail loudly rather than
+      // report a save that silently wrote nothing.
       default:
         throw new Error(`Champ ${fieldId} non modifiable sur un lieu`);
     }
@@ -80,6 +94,11 @@ const INSEE_CODE_FIELD_ID = -206;
 const LOCALITY_NAME_FIELD_ID = -207;
 const COMMENTS_FIELD_ID = -208;
 const SHOM_MAP_NUMBER_FIELD_ID = -209;
+const ADDRESS_STREET_FIELD_ID = -211;
+const ADDRESS_POSTCODE_FIELD_ID = -212;
+const ADDRESS_CITY_FIELD_ID = -213;
+const PARCEL_SECTION_FIELD_ID = -214;
+const PARCEL_NUMBER_FIELD_ID = -215;
 
 // Mirrors PlaceCreateRequest's required trio — address/placeNumber/geom stay editable afterward
 // on the fiche, same reduction as the other create overlays.

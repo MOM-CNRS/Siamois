@@ -198,10 +198,14 @@ public class SpatialUnitService implements ArkEntityService {
         SpatialUnit spatialUnit = new SpatialUnit();
         spatialUnit.setName(name);
         spatialUnit.setAddress(su.getAddress());
-        spatialUnit.setCode(su.getCode());
         spatialUnit.setPlaceNumber(su.getPlaceNumber());
         spatialUnit.setInseeCode(su.getInseeCode());
         spatialUnit.setLocalityName(su.getLocalityName());
+        spatialUnit.setAddressStreet(su.getAddressStreet());
+        spatialUnit.setAddressPostcode(su.getAddressPostcode());
+        spatialUnit.setAddressCity(su.getAddressCity());
+        spatialUnit.setParcelSection(su.getParcelSection());
+        spatialUnit.setParcelNumber(su.getParcelNumber());
         spatialUnit.setComments(su.getComments());
         spatialUnit.setShomMapNumber(su.getShomMapNumber());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
@@ -306,6 +310,11 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setPlaceNumber(spatialUnit.getPlaceNumber());
             managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
             managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
+            managedSpatialUnit.setAddressStreet(spatialUnit.getAddressStreet());
+            managedSpatialUnit.setAddressPostcode(spatialUnit.getAddressPostcode());
+            managedSpatialUnit.setAddressCity(spatialUnit.getAddressCity());
+            managedSpatialUnit.setParcelSection(spatialUnit.getParcelSection());
+            managedSpatialUnit.setParcelNumber(spatialUnit.getParcelNumber());
             managedSpatialUnit.setComments(spatialUnit.getComments());
             managedSpatialUnit.setShomMapNumber(spatialUnit.getShomMapNumber());
             Concept type = conceptService.saveOrGetConcept(conceptDTO);
@@ -547,13 +556,13 @@ public class SpatialUnitService implements ArkEntityService {
     }
 
     /**
-     * The place of the institution a suggestion already stands for: the one with the same code and category,
+     * The place of the institution a suggestion already stands for: the one with the same INSEE code and category,
      * else the one with the same name (names are unique per institution).
      */
-    public Optional<SpatialUnitDTO> findExistingForSuggestion(Long institutionId, String name, String code, Long typeId) {
-        if (code != null && !code.isBlank() && typeId != null) {
+    public Optional<SpatialUnitDTO> findExistingForSuggestion(Long institutionId, String name, String inseeCode, Long typeId) {
+        if (inseeCode != null && !inseeCode.isBlank() && typeId != null) {
             Optional<SpatialUnit> byCode = spatialUnitRepository
-                    .findFirstByCodeAndTypeIdAndCreatedByInstitutionId(code, typeId, institutionId);
+                    .findFirstByInseeCodeAndTypeIdAndCreatedByInstitutionId(inseeCode, typeId, institutionId);
             if (byCode.isPresent()) {
                 return byCode.map(spatialUnitMapper::convert);
             }
@@ -565,7 +574,7 @@ public class SpatialUnitService implements ArkEntityService {
         PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
         dto.setId(entity.getId());
         dto.setName(entity.getName());
-        dto.setCode(entity.getCode());
+        dto.setCode(entity.getInseeCode());
         if (entity.getType() != null) {
             dto.setType(conceptMapper.convert(entity.getType()));
         }

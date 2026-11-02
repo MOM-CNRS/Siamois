@@ -7,6 +7,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
@@ -98,9 +99,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     @ColumnTransformer(write = "?::jsonb")
     public FullAddress address;
 
-    @Column(name = "code")
-    public String code;
-
     /** INSEE code of the municipality the place lies in (national report inventory). */
     @Column(name = "insee_code")
     private String inseeCode;
@@ -108,6 +106,25 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     /** Name of the locality (lieu-dit) the place lies in. */
     @Column(name = "locality_name")
     private String localityName;
+
+    /** Street line of the place's address; the export concatenates it with the postcode and the city. */
+    @Column(name = "address_street")
+    private String addressStreet;
+
+    @Column(name = "address_postcode")
+    private String addressPostcode;
+
+    /** Name of the municipality: the address city of an address, the municipality of a parcel. */
+    @Column(name = "address_city")
+    private String addressCity;
+
+    /** Cadastral section of a parcel (e.g. AZ). */
+    @Column(name = "parcel_section")
+    private String parcelSection;
+
+    /** Number of a parcel in its cadastral section (e.g. 128). */
+    @Column(name = "parcel_number")
+    private String parcelNumber;
 
     @Column(name = "comments", length = 5000)
     private String comments;
@@ -167,13 +184,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
     @Transient
     @JsonIgnore
-    public static final Concept CODE_CONCEPT = new Concept.Builder()
-            .vocabulary(SYSTEM_THESO)
-            .externalId("1156")
-            .build();
-
-    @Transient
-    @JsonIgnore
     public static final Concept PLACE_NUMBER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
             .externalId("1157")
@@ -208,6 +218,42 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("1160")
             .build();
 
+    // Flat address and parcel components.
+    @Transient
+    @JsonIgnore
+    public static final Concept ADDRESS_STREET_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291354")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept ADDRESS_POSTCODE_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291355")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept ADDRESS_CITY_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291356")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept PARCEL_SECTION_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291357")
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final Concept PARCEL_NUMBER_CONCEPT = new Concept.Builder()
+            .vocabulary(SYSTEM_THESO)
+            .externalId("4291358")
+            .build();
+
     // address
     @Transient
     @JsonIgnore
@@ -224,6 +270,8 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .vocabulary(SYSTEM_THESO)
             .externalId("1162")
             .build();
+
+    private static final String GENERAL_PANEL = "common.header.general";
 
     // --------------- Fields
 
@@ -251,16 +299,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .id(-202L)
             .valueBinding("name")
             .concept(NAME_CONCEPT)
-            .build();
-
-    @Transient
-    @JsonIgnore
-    public static final CustomFieldText CODE_FIELD =  CustomFieldText.builder()
-            .label("common.label.code")
-            .isSystemField(true)
-            .id(-203L)
-            .valueBinding("code")
-            .concept(CODE_CONCEPT)
             .build();
 
     @Transient
@@ -314,6 +352,56 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .concept(SHOM_MAP_NUMBER_CONCEPT)
             .build();
 
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText ADDRESS_STREET_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.addressStreet")
+            .isSystemField(true)
+            .id(-211L)
+            .valueBinding("addressStreet")
+            .concept(ADDRESS_STREET_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText ADDRESS_POSTCODE_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.addressPostcode")
+            .isSystemField(true)
+            .id(-212L)
+            .valueBinding("addressPostcode")
+            .concept(ADDRESS_POSTCODE_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText ADDRESS_CITY_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.addressCity")
+            .isSystemField(true)
+            .id(-213L)
+            .valueBinding("addressCity")
+            .concept(ADDRESS_CITY_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText PARCEL_SECTION_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.parcelSection")
+            .isSystemField(true)
+            .id(-214L)
+            .valueBinding("parcelSection")
+            .concept(PARCEL_SECTION_CONCEPT)
+            .build();
+
+    @Transient
+    @JsonIgnore
+    public static final CustomFieldText PARCEL_NUMBER_FIELD = CustomFieldText.builder()
+            .label("spatialUnit.field.parcelNumber")
+            .isSystemField(true)
+            .id(-215L)
+            .valueBinding("parcelNumber")
+            .concept(PARCEL_NUMBER_CONCEPT)
+            .build();
+
     /** The place's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
@@ -334,7 +422,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final FormUiDto NEW_UNIT_FORM = new FormUiDto.Builder()
             .addPanel(
                     new CustomFormPanelUiDto.Builder()
-                            .name("common.header.general")
+                            .name(GENERAL_PANEL)
                             .isSystemPanel(true)
                             .addRow(
                                     new CustomRowUiDto.Builder()
@@ -367,7 +455,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final FormUiDto DETAILS_FORM = new FormUiDto.Builder()
             .addPanel(
                     new CustomFormPanelUiDto.Builder()
-                            .name("common.header.general")
+                            .name(GENERAL_PANEL)
                             .isSystemPanel(true)
                             .addRow(
                                     new CustomRowUiDto.Builder()
@@ -382,12 +470,6 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                                     .isRequired(true)
                                                     .className(COLUMN_CLASS_NAME)
                                                     .field(SPATIAL_UNIT_TYPE_FIELD)
-                                                    .build())
-                                            .addColumn(new CustomColUiDto.Builder()
-                                                    .readOnly(true)
-                                                    .isRequired(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(CODE_FIELD)
                                                     .build())
                                             .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(false)
@@ -431,6 +513,14 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                             .build()
                             ).addRow(
                                     new CustomRowUiDto.Builder()
+                                            .addColumn(textColumn(ADDRESS_STREET_FIELD))
+                                            .addColumn(textColumn(ADDRESS_POSTCODE_FIELD))
+                                            .addColumn(textColumn(ADDRESS_CITY_FIELD))
+                                            .addColumn(textColumn(PARCEL_SECTION_FIELD))
+                                            .addColumn(textColumn(PARCEL_NUMBER_FIELD))
+                                            .build()
+                            ).addRow(
+                                    new CustomRowUiDto.Builder()
                                             .addColumn(new CustomColUiDto.Builder()
                                                     .readOnly(true)
                                                     .isRequired(false)
@@ -441,6 +531,89 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                             ).build()
             )
             .build();
+
+    private static CustomColUiDto textColumn(CustomField field) {
+        return new CustomColUiDto.Builder()
+                .readOnly(false)
+                .isRequired(false)
+                .className(COLUMN_CLASS_NAME)
+                .field(field)
+                .build();
+    }
+
+    private static CustomFormPanelUiDto.Builder generalPanel(CustomField... firstRow) {
+        CustomRowUiDto.Builder row = new CustomRowUiDto.Builder();
+        for (CustomField field : firstRow) {
+            boolean required = field == NAME_FIELD || field == SPATIAL_UNIT_TYPE_FIELD;
+            row.addColumn(new CustomColUiDto.Builder()
+                    .readOnly(false)
+                    .isRequired(required)
+                    .className(COLUMN_CLASS_NAME)
+                    .field(field)
+                    .build());
+        }
+        return new CustomFormPanelUiDto.Builder().name(GENERAL_PANEL).isSystemPanel(true).addRow(row.build());
+    }
+
+    private static CustomRowUiDto rowOf(CustomField... fields) {
+        CustomRowUiDto.Builder row = new CustomRowUiDto.Builder();
+        for (CustomField field : fields) {
+            row.addColumn(field == GEOM_FIELD
+                    ? new CustomColUiDto.Builder().readOnly(true).isRequired(false).className(COLUMN_CLASS_NAME).field(field).build()
+                    : textColumn(field));
+        }
+        return row.build();
+    }
+
+    private static final String SYSTEM_THESAURUS_COMMUNE = "1164";
+    private static final String SYSTEM_THESAURUS_PARCEL = "1165";
+    private static final String SYSTEM_THESAURUS_ADDRESS = "1167";
+
+    @Transient
+    @JsonIgnore
+    private static final FormUiDto COMMUNE_FORM = new FormUiDto.Builder()
+            .addPanel(generalPanel(NAME_FIELD, SPATIAL_UNIT_TYPE_FIELD, PLACE_NUMBER_FIELD)
+                    .addRow(rowOf(INSEE_CODE_FIELD, COMMENTS_FIELD))
+                    .addRow(rowOf(GEOM_FIELD))
+                    .build())
+            .build();
+
+    @Transient
+    @JsonIgnore
+    private static final FormUiDto PARCEL_FORM = new FormUiDto.Builder()
+            .addPanel(generalPanel(NAME_FIELD, SPATIAL_UNIT_TYPE_FIELD, PLACE_NUMBER_FIELD)
+                    .addRow(rowOf(PARCEL_SECTION_FIELD, PARCEL_NUMBER_FIELD, INSEE_CODE_FIELD, ADDRESS_CITY_FIELD))
+                    .addRow(rowOf(LOCALITY_NAME_FIELD, COMMENTS_FIELD))
+                    .addRow(rowOf(GEOM_FIELD))
+                    .build())
+            .build();
+
+    @Transient
+    @JsonIgnore
+    private static final FormUiDto ADDRESS_FORM = new FormUiDto.Builder()
+            .addPanel(generalPanel(NAME_FIELD, SPATIAL_UNIT_TYPE_FIELD, PLACE_NUMBER_FIELD)
+                    .addRow(rowOf(ADDRESS_STREET_FIELD, ADDRESS_POSTCODE_FIELD, ADDRESS_CITY_FIELD, INSEE_CODE_FIELD))
+                    .addRow(rowOf(LOCALITY_NAME_FIELD, COMMENTS_FIELD))
+                    .addRow(rowOf(GEOM_FIELD))
+                    .build())
+            .build();
+
+    /**
+     * The details form of a place of the given type (external id in the system thesaurus): a commune has no
+     * address, a parcel has a cadastral reference, an address has its components. Any other type keeps the full
+     * {@link #DETAILS_FORM}, which is also the catalogue of every field.
+     */
+    public static FormUiDto detailsFormFor(String typeExternalId) {
+        if (typeExternalId == null) {
+            return DETAILS_FORM;
+        }
+        return switch (typeExternalId) {
+            case SYSTEM_THESAURUS_COMMUNE -> COMMUNE_FORM;
+            case SYSTEM_THESAURUS_PARCEL -> PARCEL_FORM;
+            case SYSTEM_THESAURUS_ADDRESS -> ADDRESS_FORM;
+            default -> DETAILS_FORM;
+        };
+    }
 
 
 

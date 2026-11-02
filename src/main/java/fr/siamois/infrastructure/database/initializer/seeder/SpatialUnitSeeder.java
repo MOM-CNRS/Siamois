@@ -27,9 +27,20 @@ public class SpatialUnitSeeder {
     private final SpatialUnitRepository spatialUnitRepository;
 
 
-    public record SpatialUnitSpecs(String name, String typeVocabularyExtId, String typeConceptExtId, String authorEmail,
-                                   String institutionIdentifier) {
+    /** The optional details of a place, as read from the sheet (null: the column is absent or the cell blank). */
+    public record Details(String inseeCode, String localityName, String addressStreet, String addressPostcode,
+                          String addressCity, String parcelSection, String parcelNumber, String shomMapNumber,
+                          String comments) {
+        public static final Details NONE = new Details(null, null, null, null, null, null, null, null, null);
+    }
 
+    public record SpatialUnitSpecs(String name, String typeVocabularyExtId, String typeConceptExtId, String authorEmail,
+                                   String institutionIdentifier, Details details) {
+
+        public SpatialUnitSpecs(String name, String typeVocabularyExtId, String typeConceptExtId, String authorEmail,
+                                String institutionIdentifier) {
+            this(name, typeVocabularyExtId, typeConceptExtId, authorEmail, institutionIdentifier, Details.NONE);
+        }
     }
 
     public record SpatialUnitKey(String unitName) {}
@@ -118,6 +129,7 @@ public class SpatialUnitSeeder {
         toGetOrCreate.setCreatedByInstitution(institution);
         toGetOrCreate.setCreatedBy(author);
         toGetOrCreate.setType(type);
+        applyDetails(toGetOrCreate, s.details());
         return toGetOrCreate;
     }
 
@@ -159,6 +171,29 @@ public class SpatialUnitSeeder {
      */
     private void mergeSpatialUnitInto(SpatialUnit built, SpatialUnit existing) {
         existing.setType(built.getType());
+        // A blank cell leaves the stored value alone: only what the sheet gives is overwritten.
+        if (built.getInseeCode() != null) existing.setInseeCode(built.getInseeCode());
+        if (built.getLocalityName() != null) existing.setLocalityName(built.getLocalityName());
+        if (built.getAddressStreet() != null) existing.setAddressStreet(built.getAddressStreet());
+        if (built.getAddressPostcode() != null) existing.setAddressPostcode(built.getAddressPostcode());
+        if (built.getAddressCity() != null) existing.setAddressCity(built.getAddressCity());
+        if (built.getParcelSection() != null) existing.setParcelSection(built.getParcelSection());
+        if (built.getParcelNumber() != null) existing.setParcelNumber(built.getParcelNumber());
+        if (built.getShomMapNumber() != null) existing.setShomMapNumber(built.getShomMapNumber());
+        if (built.getComments() != null) existing.setComments(built.getComments());
+    }
+
+    private static void applyDetails(SpatialUnit unit, Details details) {
+        if (details == null) return;
+        unit.setInseeCode(details.inseeCode());
+        unit.setLocalityName(details.localityName());
+        unit.setAddressStreet(details.addressStreet());
+        unit.setAddressPostcode(details.addressPostcode());
+        unit.setAddressCity(details.addressCity());
+        unit.setParcelSection(details.parcelSection());
+        unit.setParcelNumber(details.parcelNumber());
+        unit.setShomMapNumber(details.shomMapNumber());
+        unit.setComments(details.comments());
     }
 
     private SpatialUnit findExistingSpatialUnit(SpatialUnitSpecs s, Map<String, Institution> institutionsByIdentifier,

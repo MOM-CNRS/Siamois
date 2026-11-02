@@ -67,6 +67,9 @@ public class GeoplatformeAddressProvider implements PlaceSourceProvider {
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName(place.name());
         draft.setAddress(address);
+        draft.setAddressStreet(address.getStreet());
+        draft.setAddressPostcode(address.getPostcode());
+        draft.setAddressCity(address.getCity());
         draft.setType(type());
         return draft;
     }

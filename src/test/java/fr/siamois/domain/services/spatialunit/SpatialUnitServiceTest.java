@@ -765,7 +765,7 @@ class SpatialUnitServiceTest {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(100L);
         unit.setName("Paris Office");
-        unit.setCode("PAR-01");
+        unit.setInseeCode("PAR-01");
         // Mock category if necessary
         unit.setType(new Concept());
 
@@ -1583,5 +1583,31 @@ class SpatialUnitServiceTest {
 
         assertEquals(0L, spatialUnitService.countMatchesBelow(5L, filter));
         verifyNoInteractions(spatialUnitRepository);
+    }
+
+    @Test
+    void findExistingForSuggestion_prefersThePlaceWithTheSameInseeCodeAndType() {
+        SpatialUnit entity = new SpatialUnit();
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(5L);
+        when(spatialUnitRepository.findFirstByInseeCodeAndTypeIdAndCreatedByInstitutionId("28085", 417L, 10L))
+                .thenReturn(java.util.Optional.of(entity));
+        when(spatialUnitMapper.convert(entity)).thenReturn(dto);
+
+        assertEquals(dto, spatialUnitService.findExistingForSuggestion(10L, "Chartres", "28085", 417L).orElseThrow());
+        verify(spatialUnitRepository, never()).findByNameAndInstitution(any(), any());
+    }
+
+    @Test
+    void findExistingForSuggestion_fallsBackToTheNameWhenNoPlaceHasTheInseeCode() {
+        SpatialUnit entity = new SpatialUnit();
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setId(6L);
+        when(spatialUnitRepository.findFirstByInseeCodeAndTypeIdAndCreatedByInstitutionId("28085", 417L, 10L))
+                .thenReturn(java.util.Optional.empty());
+        when(spatialUnitRepository.findByNameAndInstitution("Chartres", 10L)).thenReturn(java.util.Optional.of(entity));
+        when(spatialUnitMapper.convert(entity)).thenReturn(dto);
+
+        assertEquals(dto, spatialUnitService.findExistingForSuggestion(10L, "Chartres", "28085", 417L).orElseThrow());
     }
 }

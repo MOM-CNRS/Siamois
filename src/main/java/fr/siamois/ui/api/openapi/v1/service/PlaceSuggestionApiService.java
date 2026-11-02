@@ -97,7 +97,7 @@ public class PlaceSuggestionApiService {
                 request.organizationId(), request.query(), null, null, null, request.lang(),
                 PageRequest.of(0, request.limit(), Sort.by("name")));
         return page.getContent().stream()
-                .map(dto -> new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getCode(), SOURCE_INTERNAL,
+                .map(dto -> new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getInseeCode(), SOURCE_INTERNAL,
                         resolveConcept(dto.getType(), request.lang()), null))
                 .toList();
     }
@@ -158,11 +158,19 @@ public class PlaceSuggestionApiService {
             return null;
         }
         String value = switch (binding.attribute()) {
-            case CODE -> place.getCode();
+            case CODE -> place.getInseeCode();
             case NAME -> place.getName();
-            case POSTCODE -> place.getAddress() == null ? null : place.getAddress().getPostcode();
+            case POSTCODE -> postcodeOf(place);
         };
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** The postcode of the place's own field, else the one of its address object. */
+    private static String postcodeOf(SpatialUnitDTO place) {
+        if (place.getAddressPostcode() != null) {
+            return place.getAddressPostcode();
+        }
+        return place.getAddress() == null ? null : place.getAddress().getPostcode();
     }
 
     private SpatialUnitDTO loadPlace(long placeId, Map<Long, SpatialUnitDTO> cache) {
@@ -219,16 +227,16 @@ public class PlaceSuggestionApiService {
         ConceptDTO category = provider.type();
         ExternalPlace picked = new ExternalPlace(name, blankToNull(request.getCode()), request.getAddress());
         SpatialUnitDTO draft = provider.draftOf(picked);
-        String code = draft.getCode();
+        String code = draft.getInseeCode();
 
         var existing = spatialUnitService.findExistingForSuggestion(institution.getId(), draft.getName(), code, category.getId());
         if (existing.isPresent()) {
             SpatialUnitDTO found = existing.get();
-            return new PlaceCreatedResponse.PlaceCreatedItem(found.getId(), found.getName(), found.getCode(), found.getPlaceNumber());
+            return new PlaceCreatedResponse.PlaceCreatedItem(found.getId(), found.getName(), found.getInseeCode(), found.getPlaceNumber());
         }
         try {
             SpatialUnitDTO saved = spatialUnitService.save(userInfo, draft);
-            return new PlaceCreatedResponse.PlaceCreatedItem(saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+            return new PlaceCreatedResponse.PlaceCreatedItem(saved.getId(), saved.getName(), saved.getInseeCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }

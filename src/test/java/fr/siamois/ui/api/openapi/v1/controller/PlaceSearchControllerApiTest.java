@@ -112,7 +112,7 @@ class PlaceSearchControllerApiTest {
         SpatialUnitDTO su = new SpatialUnitDTO();
         su.setId(77L);
         su.setName("Rue des Lilas");
-        su.setCode("LILAS");
+        su.setInseeCode("LILAS");
         when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
                 eq(10L),
                 eq("lilas"),

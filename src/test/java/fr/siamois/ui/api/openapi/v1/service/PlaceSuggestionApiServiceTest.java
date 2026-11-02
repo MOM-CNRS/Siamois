@@ -82,7 +82,7 @@ class PlaceSuggestionApiServiceTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(id);
         dto.setName(name);
-        dto.setCode(code);
+        dto.setInseeCode(code);
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(organization);
         dto.setCreatedByInstitution(institution);
@@ -284,7 +284,7 @@ class PlaceSuggestionApiServiceTest {
         stubAllowedCreation();
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName("Lyon");
-        draft.setCode("69123");
+        draft.setInseeCode("69123");
         when(insee.draftOf(any())).thenReturn(draft);
         SpatialUnitDTO existing = place(9L, "Lyon", "69123", 10L);
         when(spatialUnitService.findExistingForSuggestion(10L, "Lyon", "69123", 417L)).thenReturn(Optional.of(existing));
@@ -302,7 +302,7 @@ class PlaceSuggestionApiServiceTest {
         stubAllowedCreation();
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName("Lyon");
-        draft.setCode("69123");
+        draft.setInseeCode("69123");
         draft.setType(communeConcept);
         when(insee.draftOf(new ExternalPlace("Lyon", "69123", null))).thenReturn(draft);
         when(spatialUnitService.findExistingForSuggestion(any(), any(), any(), any())).thenReturn(Optional.empty());
@@ -336,5 +336,50 @@ class PlaceSuggestionApiServiceTest {
         request.setSource(source);
         request.setName(name);
         return request;
+    }
+
+    private static PlaceSourceSpec geoplatPostcodeBoundToMainLocation() {
+        return new PlaceSourceSpec("GEOPLAT",
+                Map.of("zipcode", new PlaceSourceSpec.ParamBinding(MAIN_LOCATION, PlaceSourceSpec.PlaceAttribute.POSTCODE)),
+                PlaceSourceSpec.OnMissing.UNFILTERED);
+    }
+
+    @Test
+    void suggest_readsThePostcodeFromThePlacesOwnPostcodeField() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        SpatialUnitDTO picked = place(7L, "Chartres", null, 10L);
+        picked.setAddressPostcode("28000");
+        when(spatialUnitService.findById(7L)).thenReturn(picked);
+        when(geoplat.search("rue", Map.of("zipcode", "28000"))).thenReturn(List.of());
+
+        assertTrue(suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources().isEmpty());
+        verify(geoplat).search("rue", Map.of("zipcode", "28000"));
+    }
+
+    @Test
+    void suggest_fallsBackToThePostcodeOfThePlacesAddressObject() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        SpatialUnitDTO picked = place(7L, "Lyon", null, 10L);
+        FullAddress address = new FullAddress();
+        address.setPostcode("69001");
+        picked.setAddress(address);
+        when(spatialUnitService.findById(7L)).thenReturn(picked);
+        when(geoplat.search("rue", Map.of("zipcode", "69001"))).thenReturn(List.of());
+
+        suggest("rue", Map.of(MAIN_LOCATION, 7L));
+
+        verify(geoplat).search("rue", Map.of("zipcode", "69001"));
+    }
+
+    @Test
+    void suggest_hasNoPostcodeForAPlaceWithNeitherPostcodeNorAddress() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Nulle part", null, 10L));
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of());
+
+        assertEquals(List.of("GEOPLAT"), suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources());
     }
 }

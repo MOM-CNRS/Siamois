@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    spatial_unit: the components of an address (street, postcode, city) and of a parcel (cadastral section and
+    number) as plain columns, read by the national report export. The existing address (a jsonb object) is kept.
+    -->
+
+    <changeSet id="2026-11-03-1-spatial-unit-address-parcel-components" author="gregory bliault">
+        <sql>
+            ALTER TABLE public.spatial_unit
+                ADD COLUMN IF NOT EXISTS address_street   character varying(255),
+                ADD COLUMN IF NOT EXISTS address_postcode character varying(255),
+                ADD COLUMN IF NOT EXISTS address_city     character varying(255),
+                ADD COLUMN IF NOT EXISTS parcel_section   character varying(255),
+                ADD COLUMN IF NOT EXISTS parcel_number    character varying(255);
+            ALTER TABLE public.spatial_unit_aud
+                ADD COLUMN IF NOT EXISTS address_street   character varying(255),
+                ADD COLUMN IF NOT EXISTS address_postcode character varying(255),
+                ADD COLUMN IF NOT EXISTS address_city     character varying(255),
+                ADD COLUMN IF NOT EXISTS parcel_section   character varying(255),
+                ADD COLUMN IF NOT EXISTS parcel_number    character varying(255);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

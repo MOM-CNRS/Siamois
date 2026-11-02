@@ -793,7 +793,7 @@ class ActionUnitServiceTest {
         dto.setIdentifier("id");
         SpatialUnitSummaryDTO newLoc = new SpatialUnitSummaryDTO();
         newLoc.setName("New place");
-        newLoc.setCode("CODE");
+        newLoc.setInseeCode("CODE");
         dto.setMainLocation(newLoc);
 
         ActionUnit entity = new ActionUnit();

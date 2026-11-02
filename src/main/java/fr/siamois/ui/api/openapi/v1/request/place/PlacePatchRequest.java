@@ -87,6 +87,66 @@ public class PlacePatchRequest {
         this.shomMapNumberPresent = true;
     }
 
+    @Schema(description = "Rue de l'adresse; null explicite supprime la valeur")
+    private String addressStreet;
+
+    @JsonIgnore
+    private boolean addressStreetPresent;
+
+    @JsonSetter("addressStreet")
+    public void setAddressStreet(String addressStreet) {
+        this.addressStreet = addressStreet;
+        this.addressStreetPresent = true;
+    }
+
+    @Schema(description = "Code postal de l'adresse; null explicite supprime la valeur")
+    private String addressPostcode;
+
+    @JsonIgnore
+    private boolean addressPostcodePresent;
+
+    @JsonSetter("addressPostcode")
+    public void setAddressPostcode(String addressPostcode) {
+        this.addressPostcode = addressPostcode;
+        this.addressPostcodePresent = true;
+    }
+
+    @Schema(description = "Commune de l'adresse ou de la parcelle; null explicite supprime la valeur")
+    private String addressCity;
+
+    @JsonIgnore
+    private boolean addressCityPresent;
+
+    @JsonSetter("addressCity")
+    public void setAddressCity(String addressCity) {
+        this.addressCity = addressCity;
+        this.addressCityPresent = true;
+    }
+
+    @Schema(description = "Section cadastrale de la parcelle; null explicite supprime la valeur")
+    private String parcelSection;
+
+    @JsonIgnore
+    private boolean parcelSectionPresent;
+
+    @JsonSetter("parcelSection")
+    public void setParcelSection(String parcelSection) {
+        this.parcelSection = parcelSection;
+        this.parcelSectionPresent = true;
+    }
+
+    @Schema(description = "Numéro de la parcelle; null explicite supprime la valeur")
+    private String parcelNumber;
+
+    @JsonIgnore
+    private boolean parcelNumberPresent;
+
+    @JsonSetter("parcelNumber")
+    public void setParcelNumber(String parcelNumber) {
+        this.parcelNumber = parcelNumber;
+        this.parcelNumberPresent = true;
+    }
+
     @Schema(description = "Commentaires; null explicite supprime la valeur")
     private String comments;
 
@@ -102,6 +162,8 @@ public class PlacePatchRequest {
     /** Whether the patch touches one of the place's plain text details (INSEE code, locality, SHOM map, comments). */
     @JsonIgnore
     public boolean isTextDetailsPresent() {
-        return inseeCodePresent || localityNamePresent || shomMapNumberPresent || commentsPresent;
+        return inseeCodePresent || localityNamePresent || shomMapNumberPresent || commentsPresent
+                || addressStreetPresent || addressPostcodePresent || addressCityPresent
+                || parcelSectionPresent || parcelNumberPresent;
     }
 }

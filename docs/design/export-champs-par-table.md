@@ -176,6 +176,11 @@ Un champ se lit par son concept ; un chemin de jointure suit des navigations sé
 | `placeNumber` | Identifiant | Integer |
 | `inseeCode` | Code INSEE | Text |
 | `localityName` | Lieu-dit | Text |
+| `addressStreet` | Rue | Text |
+| `addressPostcode` | Code postal | Text |
+| `addressCity` | Commune | Text |
+| `parcelSection` | Section cadastrale | Text |
+| `parcelNumber` | Numéro de parcelle | Text |
 | `shomMapNumber` | Numéro de carte Shom | Text |
 | `comments` | Commentaires | Text |
 

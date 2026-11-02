@@ -207,7 +207,7 @@ public class PlaceSearchControllerApi {
         return new PlaceAutocompleteItemApi(
                 dto.getId(),
                 dto.getName(),
-                dto.getCode(),
+                dto.getInseeCode(),
                 concept);
     }
 }
