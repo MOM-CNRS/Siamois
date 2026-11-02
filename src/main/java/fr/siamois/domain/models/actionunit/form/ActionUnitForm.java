@@ -5,6 +5,7 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
@@ -196,7 +197,7 @@ public abstract class ActionUnitForm {
     /** The project's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    public static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
+    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.builder()
             .label("common.field.geometry")
             .isSystemField(true)
             .isTextArea(true)

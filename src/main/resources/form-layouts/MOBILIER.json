@@ -134,7 +134,7 @@
       "width" : "QUARTER"
     }, {
       "fieldId" : -435,
-      "binding" : "storageLocation",
+      "binding" : "storagePlace",
       "width" : "QUARTER"
     }, {
       "fieldId" : -425,

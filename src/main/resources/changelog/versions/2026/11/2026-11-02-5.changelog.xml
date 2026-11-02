@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Object / lot of a find (field -436) is a controlled vocabulary, field code SIAS.objectOrLot (concept 1388 of th338,
+    notation SIAMOISFIELD#SIAS.objectOrLot), no longer a yes/no: fk_object_or_lot.
+
+    The yes/no column is kept, unmapped: its values cannot be turned into concepts before the thesaurus defines them.
+    -->
+
+    <changeSet id="2026-11-02-5-specimen-object-or-lot-concept" author="gregory bliault">
+        <addColumn schemaName="public" tableName="specimen">
+            <column name="fk_object_or_lot" type="bigint">
+                <constraints foreignKeyName="fk_specimen_object_or_lot" references="public.concept(concept_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-5-specimen-aud-object-or-lot-concept" author="gregory bliault">
+        <addColumn schemaName="public" tableName="specimen_aud">
+            <column name="fk_object_or_lot" type="bigint"/>
+            <column name="fk_object_or_lot_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-5-object-or-lot-field-type" author="gregory bliault">
+        <sql>
+            UPDATE public.custom_field
+            SET answer_type = 'SELECT_ONE_FROM_FIELD_CODE',
+                field_code = 'SIAS.objectOrLot',
+                allow_no_answer = NULL
+            WHERE custom_field_id = -436;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

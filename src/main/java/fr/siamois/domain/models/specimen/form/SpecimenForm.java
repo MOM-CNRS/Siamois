@@ -1,12 +1,14 @@
 package fr.siamois.domain.models.specimen.form;
 
 
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.container.CustomFieldSelectMultipleContainer;
 import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectMultiplePerson;
@@ -457,6 +459,7 @@ public abstract class SpecimenForm {
     private static final String B_STUDY_POTENTIAL = "studyPotential";
     private static final String B_VALIDITY_DATE = "validityDate";
     private static final String B_STORAGE_LOCATION = "storageLocation";
+    private static final String B_STORAGE_PLACE = "storagePlace";
 
     /** Concept of each of these fields in the system thesaurus, by binding. */
     private static final Map<String, String> CONCEPT_IDS = Map.ofEntries(
@@ -562,11 +565,12 @@ public abstract class SpecimenForm {
 
     @Transient
     @JsonIgnore
-    protected static CustomFieldText storageLocationField = CustomFieldText.builder()
+    /** Where the find is kept: a place of the institution. Its concept is still the one of its former text field. */
+    protected static CustomFieldSelectOneSpatialUnit storageLocationField = CustomFieldSelectOneSpatialUnit.builder()
             .label("specimen.field.storageLocation")
             .isSystemField(true)
             .id(-435L)
-            .valueBinding(B_STORAGE_LOCATION)
+            .valueBinding(B_STORAGE_PLACE)
             .concept(symbolicConcept(B_STORAGE_LOCATION))
             .build();
 
@@ -580,7 +584,7 @@ public abstract class SpecimenForm {
     /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    protected static CustomFieldText geomField = CustomFieldText.builder()
+    protected static CustomFieldGeometry geomField = CustomFieldGeometry.builder()
             .label("common.field.geometry")
             .isSystemField(true)
             .isTextArea(true)
@@ -591,13 +595,8 @@ public abstract class SpecimenForm {
 
     @Transient
     @JsonIgnore
-    protected static CustomFieldBoolean objectOrLotField = CustomFieldBoolean.builder()
-            .label("specimen.field.objectOrLot")
-            .isSystemField(true)
-            .id(-436L)
-            .valueBinding(B_OBJECT_OR_LOT)
-            .concept(symbolicConcept(B_OBJECT_OR_LOT))
-            .build();
+    protected static CustomFieldSelectOneFromFieldCode objectOrLotField =
+            selectOne(-436L, B_OBJECT_OR_LOT, Specimen.OBJECT_OR_LOT_FIELD);
 
     @Transient
     @JsonIgnore

@@ -212,7 +212,7 @@ public class SpecimenService implements ArkEntityService {
         managedSpecimen.setSamplingPurpose(specimen.getSamplingPurpose());
         managedSpecimen.setPreservationCondition(specimen.getPreservationCondition());
         managedSpecimen.setValidityDate(specimen.getValidityDate());
-        managedSpecimen.setStorageLocation(specimen.getStorageLocation());
+        managedSpecimen.setStoragePlace(specimen.getStoragePlace());
         managedSpecimen.setActionUnit(specimen.getActionUnit());
         if (managedSpecimen.getCreatedBy() == null) {
             managedSpecimen.setCreatedBy(specimen.getCreatedBy());

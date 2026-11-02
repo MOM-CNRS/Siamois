@@ -69,7 +69,7 @@ public class FieldAnswerWireService {
         } else if (f instanceof CustomFieldSelectMultipleFromFieldCode multi) {
             fieldCode = multi.getFieldCode();
         }
-        return new FieldResource(
+        FieldResource resource = new FieldResource(
                 String.valueOf(field.getId()),
                 "fields",
                 label,
@@ -82,6 +82,8 @@ public class FieldAnswerWireService {
                 field.getIcon(),
                 field.getConceptUri(),
                 constraintsOf(f));
+        // A geometry is displayed, never edited: read-only wherever it shows, a list as a fiche.
+        return f instanceof CustomFieldGeometry ? resource.withReadOnly(true) : resource;
     }
 
     /**
@@ -161,7 +163,7 @@ public class FieldAnswerWireService {
 
     public FieldAnswer toTypedAnswer(String answerType, FieldResource field, Object raw, String lang) {
         return switch (answerType) {
-            case "TEXT" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
+            case "TEXT", "GEOMETRY" -> new TextFieldAnswer(answerType, field, raw instanceof String s ? s : null);
             case "INTEGER" -> new IntegerFieldAnswer(answerType, field, raw instanceof Number n ? n.intValue() : null);
             case "DECIMAL" -> new DecimalFieldAnswer(answerType, field, raw instanceof Number n ? n.doubleValue() : null);
             case "BOOLEAN" -> new BooleanFieldAnswer(answerType, field, raw instanceof Boolean b ? b : null);

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    custom_field: the geometry of a project (-140), a place (-210), a recording unit (-332) and a find (-438) is a
+    field type of its own, GEOMETRY (CustomFieldGeometry), no longer a TEXT: shown as WKT, never edited.
+    -->
+
+    <changeSet id="2026-11-02-3-custom-field-geometry-type" author="gregory bliault">
+        <sql>
+            UPDATE public.custom_field
+            SET answer_type = 'GEOMETRY'
+            WHERE custom_field_id IN (-140, -210, -332, -438)
+              AND answer_type = 'TEXT';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.document.form;
 
+import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
@@ -257,7 +258,14 @@ public abstract class DocumentForm {
     // The fields of the national report inventory: no concept in the system thesaurus yet.
 
     @Transient
-    protected static final CustomFieldText storageLocationField = text(-729L, "storageLocation", false);
+    /** Where the document is kept: a place of the institution. Its concept is still the one of its former text field. */
+    protected static final CustomFieldSelectOneSpatialUnit storageLocationField = CustomFieldSelectOneSpatialUnit.builder()
+            .label(LABEL_PREFIX + "storageLocation")
+            .isSystemField(true)
+            .id(-729L)
+            .valueBinding("storagePlace")
+            .concept(concept("storageLocation"))
+            .build();
 
     @Transient
     protected static final CustomFieldText moldCommentField = text(-730L, "moldComment", true);

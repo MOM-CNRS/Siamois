@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {renderToStaticMarkup} from "react-dom/server";
-import {BooleanRenderer, FallbackRenderer, MeasurementRenderer, TextRenderer} from "./renderers";
+import {BooleanRenderer, FallbackRenderer, GeometryRenderer, MeasurementRenderer, TextRenderer} from "./renderers";
 import type {FieldResource} from "./types";
 
 function field(overrides: Partial<FieldResource> = {}): FieldResource {
@@ -48,6 +48,25 @@ describe("FallbackRenderer", () => {
 
   it("falls back to an em-dash for an object with no recognizable label", () => {
     expect(render({ resourceType: "places", id: "1" })).toContain("—");
+  });
+});
+
+describe("GeometryRenderer", () => {
+  const renderGeometry = (value: unknown) =>
+    renderToStaticMarkup(
+      <GeometryRenderer field={field({ answerType: "GEOMETRY" })} value={value} readOnly={false} required={false} onChange={() => {}} />,
+    );
+
+  it("shows the WKT as text, with no input to edit it", () => {
+    const html = renderGeometry("POINT (2.35 48.85)");
+    expect(html).toContain("POINT (2.35 48.85)");
+    expect(html).not.toContain("<input");
+    expect(html).not.toContain("<textarea");
+  });
+
+  it("shows an em-dash when there is no geometry", () => {
+    expect(renderGeometry(null)).toContain("—");
+    expect(renderGeometry("")).toContain("—");
   });
 });
 

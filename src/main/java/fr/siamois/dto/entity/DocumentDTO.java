@@ -37,7 +37,7 @@ public class DocumentDTO extends AbstractEntityDTO {
     private String rights;
     private Set<ConceptDTO> keywords;
     private Integer itemCount;
-    private String storageLocation;
+    private SpatialUnitSummaryDTO storagePlace;
     private String moldComment;
     private Double sizeMb;
     private String crs;
@@ -84,7 +84,7 @@ public class DocumentDTO extends AbstractEntityDTO {
                 "rights",
                 "keywords",
                 "itemCount",
-                "storageLocation",
+                "storagePlace",
                 "moldComment",
                 "sizeMb",
                 "crs",

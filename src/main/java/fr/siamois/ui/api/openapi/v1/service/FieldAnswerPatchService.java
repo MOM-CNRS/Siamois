@@ -270,8 +270,8 @@ public class FieldAnswerPatchService {
             field = requireField(patch.fieldSource, entry.getKey());
             // A column the form marks readOnly — the project the entity belongs to, a generated
             // identifier — is never written: moving a recording unit to another project is not
-            // an edit.
-            if (isReadOnlyIn(patch.effectiveForm, field)) {
+            // an edit. Nor is a geometry, whatever the layout says: it is displayed, never edited.
+            if (isReadOnlyIn(patch.effectiveForm, field) || Hibernate.unproxy(field) instanceof CustomFieldGeometry) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
             }
             viewModel = viewModelOf(patch.response, field);
