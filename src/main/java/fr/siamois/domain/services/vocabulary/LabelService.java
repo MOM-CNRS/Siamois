@@ -10,9 +10,11 @@ import fr.siamois.dto.entity.vocabulary.ConceptAltLabelDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO;
+import fr.siamois.infrastructure.api.dto.FullInfoDTO;
 import fr.siamois.infrastructure.api.dto.PurlInfoDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.label.VocabularyLabelRepository;
+import fr.siamois.utils.vocabulary.ConceptApiUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionService;
@@ -178,6 +180,116 @@ public class LabelService {
                 updateAltLabel(savedConcept, altLabel.getLang(), altLabel.getValue(), fieldParentConcept);
             }
         }
+    }
+
+    /**
+     * Bulk variant of {@link #updateLabel(Concept, String, String, Concept)} and {@link #replaceAltLabels}
+     * for the concepts of a whole import : their labels are read with one query, compared in memory, and
+     * only the new or changed ones are written.
+     *
+     * @param dtoByConcept       the saved concepts, with what the thesaurus says of each
+     * @param fieldParentConcept the parent concept of the field, can be null
+     */
+    public void updateAllLabelsFromDTOs(@NonNull Map<Concept, FullInfoDTO> dtoByConcept, @Nullable Concept fieldParentConcept) {
+        Map<Long, List<ConceptLabel>> existingByConceptId = new HashMap<>();
+        for (List<Concept> chunk : ConceptApiUtils.chunksOf(dtoByConcept.keySet())) {
+            for (ConceptLabel label : conceptLabelRepository.findAllByConceptIn(chunk)) {
+                existingByConceptId.computeIfAbsent(label.getConcept().getId(), id -> new ArrayList<>()).add(label);
+            }
+        }
+
+        List<ConceptLabel> toDelete = new ArrayList<>();
+        Set<ConceptLabel> toSave = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Map.Entry<Concept, FullInfoDTO> entry : dtoByConcept.entrySet()) {
+            Concept concept = entry.getKey();
+            FullInfoDTO dto = entry.getValue();
+            List<ConceptLabel> existing = existingByConceptId.getOrDefault(concept.getId(), List.of());
+            Concept parentToSet = fieldParentConcept != null && !fieldParentConcept.equals(concept) ? fieldParentConcept : null;
+            if (dto.getPrefLabel() != null) {
+                collectPrefLabelChanges(concept, dto.getPrefLabel(), existing, parentToSet, toSave);
+            }
+            if (dto.getAltLabel() != null) {
+                collectAltLabelChanges(concept, dto.getAltLabel(), existing, parentToSet, toSave, toDelete);
+            }
+        }
+        if (!toDelete.isEmpty()) {
+            conceptLabelRepository.deleteAll(toDelete);
+        }
+        conceptLabelRepository.saveAll(toSave);
+    }
+
+    private static void collectPrefLabelChanges(Concept concept, PurlInfoDTO[] prefLabels, List<ConceptLabel> existing,
+                                                @Nullable Concept parentToSet, Set<ConceptLabel> toSave) {
+        Map<String, ConceptPrefLabel> byLang = new HashMap<>();
+        for (ConceptLabel label : existing) {
+            if (label instanceof ConceptPrefLabel prefLabel) {
+                byLang.put(prefLabel.getLangCode(), prefLabel);
+            }
+        }
+        for (PurlInfoDTO dto : prefLabels) {
+            ConceptPrefLabel prefLabel = byLang.computeIfAbsent(dto.getLang(), lang -> {
+                ConceptPrefLabel created = new ConceptPrefLabel();
+                created.setConcept(concept);
+                created.setLangCode(lang);
+                return created;
+            });
+            if (applyLabel(prefLabel, dto.getValue(), parentToSet)) {
+                toSave.add(prefLabel);
+            }
+        }
+    }
+
+    /** Same rules as {@link #replaceAltLabels} : the label column ignores case, so does the comparison. */
+    private static void collectAltLabelChanges(Concept concept, PurlInfoDTO[] altLabels, List<ConceptLabel> existing,
+                                               @Nullable Concept parentToSet, Set<ConceptLabel> toSave, List<ConceptLabel> toDelete) {
+        Map<String, ConceptAltLabel> byKey = new HashMap<>();
+        for (ConceptLabel label : existing) {
+            if (label instanceof ConceptAltLabel altLabel) {
+                byKey.put(altLabelKey(altLabel.getLangCode(), altLabel.getLabel()), altLabel);
+            }
+        }
+        Set<String> written = new HashSet<>();
+        for (PurlInfoDTO dto : altLabels) {
+            String key = altLabelKey(dto.getLang(), dto.getValue());
+            if (!written.add(key)) {
+                continue;
+            }
+            ConceptAltLabel altLabel = byKey.remove(key);
+            if (altLabel == null) {
+                altLabel = new ConceptAltLabel();
+                altLabel.setConcept(concept);
+                altLabel.setLangCode(dto.getLang());
+            }
+            if (applyLabel(altLabel, dto.getValue(), parentToSet)) {
+                toSave.add(altLabel);
+            }
+        }
+        // what is left is no longer in the thesaurus
+        toDelete.addAll(byKey.values());
+    }
+
+    private static String altLabelKey(String lang, String value) {
+        return lang + " " + value.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * Sets the value and the field parent of a label.
+     *
+     * @return whether the label is new or changed, and has to be saved
+     */
+    private static boolean applyLabel(ConceptLabel label, String value, @Nullable Concept parentToSet) {
+        boolean changed = label.getId() == null;
+        if (!Objects.equals(label.getLabel(), value)) {
+            label.setLabel(value);
+            changed = true;
+        }
+        // compared by id : the parent is a lazy proxy, comparing the entities would load it
+        if (parentToSet != null && (label.getParentConcept() == null
+                || !Objects.equals(label.getParentConcept().getId(), parentToSet.getId()))) {
+            label.setParentConcept(parentToSet);
+            changed = true;
+        }
+        return changed;
     }
 
     /**

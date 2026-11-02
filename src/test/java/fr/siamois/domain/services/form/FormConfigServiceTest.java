@@ -32,8 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
 
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -305,13 +304,11 @@ class FormConfigServiceTest {
         FullInfoDTO childInfo = branch.getData().get(CHILD_URL);
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, childInfo, null)).thenReturn(childConcept);
+        stubSavedConcepts(parentInfo, branchTopConcept, childInfo, childConcept);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(conceptService).saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null);
-        verify(conceptService).saveOrGetConceptFromFullDTO(vocabulary, childInfo, null);
+        verify(conceptService).saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null);
         assertThat(captureSavedConfig().getBranchTopTerm()).isSameAs(branchTopConcept);
     }
 
@@ -323,16 +320,18 @@ class FormConfigServiceTest {
         parentInfo.setNarrower(new PurlInfoDTO[]{purl(CHILD_URL)});
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, childInfo, null)).thenReturn(childConcept);
+        stubSavedConcepts(parentInfo, branchTopConcept, childInfo, childConcept);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        ArgumentCaptor<ConceptHierarchy> captor = ArgumentCaptor.forClass(ConceptHierarchy.class);
-        verify(conceptHierarchyRepository).save(captor.capture());
-        assertThat(captor.getValue().getParent()).isSameAs(branchTopConcept);
-        assertThat(captor.getValue().getChild()).isSameAs(childConcept);
-        assertThat(captor.getValue().getParentFieldContext()).isNull();
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> {
+            Iterator<ConceptHierarchy> iterator = links.iterator();
+            ConceptHierarchy link = iterator.next();
+            return !iterator.hasNext()
+                    && link.getParent() == branchTopConcept
+                    && link.getChild() == childConcept
+                    && link.getParentFieldContext() == null;
+        }));
     }
 
     @Test
@@ -344,11 +343,11 @@ class FormConfigServiceTest {
         parentInfo.setNarrower(new PurlInfoDTO[]{purl(PARENT_URL)});
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
+        stubSavedConcepts(parentInfo, branchTopConcept);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(conceptHierarchyRepository, never()).save(any());
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> !links.iterator().hasNext()));
     }
 
     @Test
@@ -363,11 +362,11 @@ class FormConfigServiceTest {
         parentInfo.setNarrower(new PurlInfoDTO[]{purl(UNKNOWN_URL)});
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
+        stubSavedConcepts(parentInfo, branchTopConcept);
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(conceptHierarchyRepository, never()).save(any());
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> !links.iterator().hasNext()));
         verify(fieldFormConfigRepository).save(any());
     }
 
@@ -385,7 +384,7 @@ class FormConfigServiceTest {
                 .build();
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
+        stubSavedConcepts(parentInfo, branchTopConcept);
         when(conceptRepository.findByUri(RELATED_URL)).thenReturn(Optional.empty());
         when(conceptRepository.save(any(Concept.class))).thenReturn(savedStub);
 
@@ -396,7 +395,7 @@ class FormConfigServiceTest {
         assertThat(stubCaptor.getValue().getUri()).isEqualTo(RELATED_URL);
         assertThat(stubCaptor.getValue().isLoaded()).isFalse();
         assertThat(stubCaptor.getValue().getVocabulary()).isSameAs(vocabulary);
-        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), savedStub.getId());
+        verify(conceptRepository).addRelatedConceptsIfAbsent(new Long[]{branchTopConcept.getId()}, new Long[]{savedStub.getId()});
         // The concept behind the link is only fetched when something actually reads it.
         verify(conceptApi, never()).fetchConceptInfoByUri(any(Vocabulary.class), anyString());
     }
@@ -416,12 +415,13 @@ class FormConfigServiceTest {
                 .build();
 
         stubDownExpansion(branch);
-        when(conceptService.saveOrGetConceptFromFullDTO(vocabulary, parentInfo, null)).thenReturn(branchTopConcept);
-        when(conceptRepository.findConceptByExternalIdIgnoreCase("th221", "4242")).thenReturn(Optional.of(alreadyImported));
+        stubSavedConcepts(parentInfo, branchTopConcept);
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn("th221", List.of("4242")))
+                .thenReturn(List.of(alreadyImported));
 
         formConfigService.addConceptConfigFor(formConfig, field, branchTopConceptDTO);
 
-        verify(conceptRepository).addRelatedConceptIfAbsent(branchTopConcept.getId(), alreadyImported.getId());
+        verify(conceptRepository).addRelatedConceptsIfAbsent(new Long[]{branchTopConcept.getId()}, new Long[]{alreadyImported.getId()});
         verify(conceptRepository, never()).save(any(Concept.class));
     }
 
@@ -717,6 +717,24 @@ class FormConfigServiceTest {
         verify(fieldFormConfigRepository).save(captor.capture());
         assertThat(captor.getValue()).isInstanceOf(ConceptFieldFormConfig.class);
         return (ConceptFieldFormConfig) captor.getValue();
+    }
+
+    /**
+     * The bulk save of the branch answers each description with the concept given for it.
+     *
+     * @param descriptionThenConcept pairs of a {@link FullInfoDTO} of the branch and the {@link Concept} it is saved as
+     */
+    private void stubSavedConcepts(Object... descriptionThenConcept) {
+        Map<FullInfoDTO, Concept> byDescription = new IdentityHashMap<>();
+        for (int i = 0; i < descriptionThenConcept.length; i += 2) {
+            byDescription.put((FullInfoDTO) descriptionThenConcept[i], (Concept) descriptionThenConcept[i + 1]);
+        }
+        when(conceptService.saveOrGetConceptsFromFullDTOs(eq(vocabulary), any(), isNull())).thenAnswer(invocation -> {
+            Map<String, FullInfoDTO> data = invocation.getArgument(1);
+            Map<String, Concept> saved = new LinkedHashMap<>();
+            data.forEach((url, dto) -> saved.put(url, byDescription.get(dto)));
+            return saved;
+        });
     }
 
     private void stubDownExpansion(ConceptBranchDTO branch) throws ErrorProcessingExpansionException, InvalidEndpointException {

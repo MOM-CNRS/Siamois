@@ -34,6 +34,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -254,6 +255,54 @@ class ConceptServiceTest {
         verify(conceptRepository, times(1)).save(any(Concept.class));
         verify(labelService, times(1)).updateLabel(savedConcept, "en", "Label EN", null);
         verify(localizedConceptDataRepository, times(1)).save(any(LocalizedConceptData.class));
+    }
+
+    @Test
+    void saveOrGetConceptsFromFullDTOs_shouldLookTheConceptsUpTogether_reusingTheKnownOnes_andCreatingTheOthers() {
+        concept.setLoaded(true);
+        Map<String, FullInfoDTO> byUrl = new LinkedHashMap<>();
+        byUrl.put("http://example.com/known", conceptInfo("concept1", "Connu"));
+        byUrl.put("http://example.com/new", conceptInfo("concept2", "Nouveau"));
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("vocab1"), any()))
+                .thenReturn(List.of(concept));
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+
+        Map<String, Concept> result = conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, byUrl, null);
+
+        assertThat(result.get("http://example.com/known")).isSameAs(concept);
+        assertThat(result.get("http://example.com/new").getExternalId()).isEqualTo("concept2");
+        assertThat(result.get("http://example.com/new").isLoaded()).isTrue();
+        verify(conceptRepository, times(1)).findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(any(), any());
+        verify(conceptRepository, never()).findConceptByExternalIdIgnoreCase(any(), any());
+        // the known concept is loaded and not deleted : only the new one is written
+        verify(conceptRepository, times(1)).save(any(Concept.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void saveOrGetConceptsFromFullDTOs_shouldKeepTheLabelsOfEveryUrl_whenTwoUrlsDesignateTheSameConcept() {
+        // an ark and the URL of a partner institution can share an identifier, the second without labels
+        Map<String, FullInfoDTO> byUrl = new LinkedHashMap<>();
+        byUrl.put("https://ark.example/1868", conceptInfo("1868", "décret"));
+        FullInfoDTO partner = new FullInfoDTO();
+        PurlInfoDTO identifier = new PurlInfoDTO();
+        identifier.setValue("1868");
+        partner.setIdentifier(new PurlInfoDTO[]{identifier});
+        byUrl.put("https://partner.example/1868", partner);
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("vocab1"), any()))
+                .thenReturn(List.of());
+        when(conceptRepository.save(any(Concept.class))).thenAnswer(i -> i.getArgument(0));
+
+        Map<String, Concept> result = conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, byUrl, null);
+
+        assertThat(result.get("https://ark.example/1868")).isSameAs(result.get("https://partner.example/1868"));
+        verify(conceptRepository, times(1)).save(any(Concept.class));
+        ArgumentCaptor<Map<Concept, FullInfoDTO>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(labelService).updateAllLabelsFromDTOs(captor.capture(), isNull());
+        assertThat(captor.getValue()).hasSize(1);
+        assertThat(captor.getValue().values().iterator().next().getPrefLabel())
+                .extracting(PurlInfoDTO::getValue)
+                .containsExactly("décret");
     }
 
     @Test

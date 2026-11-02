@@ -1,6 +1,7 @@
 package fr.siamois.utils.vocabulary;
 
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.ConceptHierarchy;
 import fr.siamois.domain.models.vocabulary.Vocabulary;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.infrastructure.api.ConceptApi;
@@ -14,12 +15,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,18 +77,37 @@ class ConceptApiUtilsTest {
 
         Concept parent = conceptWithId(1L);
         Concept child = conceptWithId(2L);
-        FullInfoDTO parentDto = branch.getData().get(parentUrl);
-        FullInfoDTO childDto = branch.getData().get(childUrl);
-        when(conceptService.saveOrGetConceptFromFullDTO(any(), any(), any())).thenAnswer(invocation -> {
-            FullInfoDTO arg = invocation.getArgument(1);
-            if (arg == parentDto) return parent;
-            if (arg == childDto) return child;
-            throw new AssertionError("Unexpected FullInfoDTO argument: " + arg);
-        });
+        when(conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null))
+                .thenReturn(Map.of(parentUrl, parent, childUrl, child));
 
         ConceptApiUtils.saveAllConceptsOfBranch(components(), vocabulary, branch);
 
-        verify(conceptHierarchyRepository).save(any());
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> {
+            List<ConceptHierarchy> list = new ArrayList<>();
+            links.forEach(list::add);
+            return list.size() == 1 && list.get(0).getParent() == parent && list.get(0).getChild() == child;
+        }));
+    }
+
+    @Test
+    void saveAllConceptsOfBranch_shouldNotDuplicateTheHierarchyRelation_whenItIsAlreadyRecorded() {
+        String parentUrl = "https://example.org/parent";
+        String childUrl = "https://example.org/child";
+        ConceptBranchDTO branch = new ConceptBranchDTO();
+        branch.addConceptBranchDTO(parentUrl, conceptWithNarrower(childUrl));
+        branch.addConceptBranchDTO(childUrl, new FullInfoDTO());
+
+        Concept parent = conceptWithId(1L);
+        Concept child = conceptWithId(2L);
+        when(conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null))
+                .thenReturn(Map.of(parentUrl, parent, childUrl, child));
+        List<Object[]> recorded = new ArrayList<>();
+        recorded.add(new Object[]{1L, 2L});
+        when(conceptHierarchyRepository.findLinkIdsBelowOutsideFieldContext(any())).thenReturn(recorded);
+
+        ConceptApiUtils.saveAllConceptsOfBranch(components(), vocabulary, branch);
+
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> !links.iterator().hasNext()));
     }
 
     @Test
@@ -100,12 +121,13 @@ class ConceptApiUtilsTest {
         branch.addConceptBranchDTO(parentUrl, conceptWithNarrower(outsideChildUrl));
 
         Concept parent = conceptWithId(1L);
-        when(conceptService.saveOrGetConceptFromFullDTO(any(), eq(branch.getData().get(parentUrl)), any())).thenReturn(parent);
+        when(conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null))
+                .thenReturn(Map.of(parentUrl, parent));
 
         assertThatCode(() -> ConceptApiUtils.saveAllConceptsOfBranch(components(), vocabulary, branch))
                 .doesNotThrowAnyException();
 
-        verify(conceptHierarchyRepository, never()).save(any());
+        verify(conceptHierarchyRepository).saveAll(argThat(links -> !links.iterator().hasNext()));
     }
 
     @Test
@@ -114,7 +136,7 @@ class ConceptApiUtilsTest {
         ConceptBranchDTO branch = new ConceptBranchDTO();
         branch.addConceptBranchDTO(url, new FullInfoDTO());
         Concept concept = conceptWithId(3L);
-        when(conceptService.saveOrGetConceptFromFullDTO(any(), any(), any())).thenReturn(concept);
+        when(conceptService.saveOrGetConceptsFromFullDTOs(vocabulary, branch.getData(), null)).thenReturn(Map.of(url, concept));
 
         Map<String, Concept> result = ConceptApiUtils.saveAllConceptsOfBranch(components(), vocabulary, branch);
 
