@@ -11,6 +11,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.VocabularyRepo
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -53,12 +55,25 @@ class ProjectThesaurusAssignerTest {
     }
 
     @Test
-    void defaultAndEmptyTemplatesRestOnTheCommonCoreThesaurus() {
-        assigner.assignCommonCore(5L);
+    void aNewProjectTakesItsInstitutionThesaurus() {
+        DocumentationThesaurus institutionThesaurus = new DocumentationThesaurus();
+        institutionThesaurus.setVocabulary(institutionVocabulary);
+        when(documentation.findOfInstitution(1L)).thenReturn(Optional.of(institutionThesaurus));
+
+        assigner.assignInstitutionOrCommonCore(5L);
 
         DocumentationThesaurus thesaurus = saved();
-        assertThat(thesaurus.getVocabulary()).isSameAs(commonCore);
+        assertThat(thesaurus.getVocabulary()).isSameAs(institutionVocabulary);
         assertThat(thesaurus.getActionUnit()).isSameAs(project);
+    }
+
+    @Test
+    void aNewProjectWhoseInstitutionHasNoThesaurusTakesTheCommonCore() {
+        when(documentation.findOfInstitution(1L)).thenReturn(Optional.empty());
+
+        assigner.assignInstitutionOrCommonCore(5L);
+
+        assertThat(saved().getVocabulary()).isSameAs(commonCore);
     }
 
     @Test
@@ -91,10 +106,11 @@ class ProjectThesaurusAssignerTest {
     }
 
     @Test
-    void whenTheCommonCoreIsMissingNothingIsAssigned() {
+    void whenNeitherTheInstitutionNorTheCommonCoreHasOneNothingIsAssigned() {
+        when(documentation.findOfInstitution(1L)).thenReturn(Optional.empty());
         when(vocabularies.findVocabularyByBaseUriAndVocabExternalId(anyString(), anyString())).thenReturn(Optional.empty());
 
-        assigner.assignCommonCore(5L);
+        assigner.assignInstitutionOrCommonCore(5L);
 
         verify(documentation, never()).save(any());
     }
@@ -103,8 +119,18 @@ class ProjectThesaurusAssignerTest {
     void assigningTwiceKeepsTheFirstThesaurus() {
         when(documentation.findByActionUnitId(5L)).thenReturn(Optional.of(new DocumentationThesaurus()));
 
-        assigner.assignCommonCore(5L);
+        assigner.assignInstitutionOrCommonCore(5L);
 
         verify(documentation, never()).save(any());
+    }
+
+    @Test
+    void aNewProjectIsAssignedInATransactionOfItsOwn() throws NoSuchMethodException {
+        // the templates call it after the creation committed: joining that transaction would never write it
+        Transactional transactional = ProjectThesaurusAssigner.class.getMethod("assignInstitutionOrCommonCore", Long.class)
+                .getAnnotation(Transactional.class);
+
+        assertThat(transactional).isNotNull();
+        assertThat(transactional.propagation()).isEqualTo(Propagation.REQUIRES_NEW);
     }
 }

@@ -79,7 +79,7 @@ public class KitionProjectTemplateApplier implements ProjectTemplateApplier {
         UserInfo previous = ExecutionContextHolder.get();
         ExecutionContextHolder.set(info);
         try {
-            thesaurusAssigner.assignCommonCore(newProjectId);
+            thesaurusAssigner.assignInstitutionOrCommonCore(newProjectId);
             applyAll(newProjectId);
         } catch (RuntimeException e) {
             log.warn("The Kition project {} could not be fully configured from {}", newProjectId, definition.thesaurusUrl(), e);

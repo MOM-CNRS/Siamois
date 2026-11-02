@@ -108,7 +108,7 @@ class KitionProjectTemplateApplierTest {
         // 4 stratigraphic types + 4 kinds of documentation
         verify(tableFieldConfigService, times(4)).saveFormConfig(eq(PROJECT), eq(ConfigurableTable.UE), anyLong(), any());
         verify(tableFieldConfigService, times(4)).saveFormConfig(eq(PROJECT), eq(ConfigurableTable.DOCUMENT), anyLong(), any());
-        verify(thesaurusAssigner).assignCommonCore(PROJECT);
+        verify(thesaurusAssigner).assignInstitutionOrCommonCore(PROJECT);
     }
 
     @Test

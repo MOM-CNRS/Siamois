@@ -29,6 +29,6 @@ public class DefaultProjectTemplateApplier implements ProjectTemplateApplier {
     @Override
     public void apply(UserInfo info, String templateId, Long newProjectId) {
         seeder.seed(info, newProjectId);
-        thesaurusAssigner.assignCommonCore(newProjectId);
+        thesaurusAssigner.assignInstitutionOrCommonCore(newProjectId);
     }
 }
