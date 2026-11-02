@@ -52,8 +52,8 @@ public class SpecimenDTO extends AbstractEntityDTO {
     private String samplingPurpose;
     private String preservationCondition;
     private OffsetDateTime validityDate;
-    private String storageLocation;
-    private Boolean objectOrLot;
+    private SpatialUnitSummaryDTO storagePlace;
+    private ConceptDTO objectOrLot;
     private GeometryDTO geom;
     private ConceptDTO samplingNature;
 
@@ -92,7 +92,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
         samplingPurpose = original.getSamplingPurpose();
         preservationCondition = original.getPreservationCondition();
         validityDate = original.getValidityDate();
-        storageLocation = original.getStorageLocation();
+        storagePlace = original.getStoragePlace();
         objectOrLot = original.getObjectOrLot();
         geom = original.getGeom();
         samplingNature = original.getSamplingNature();
@@ -138,7 +138,7 @@ public class SpecimenDTO extends AbstractEntityDTO {
                 "samplingPurpose",
                 "preservationCondition",
                 "validityDate",
-                "storageLocation",
+                "storagePlace",
                 "objectOrLot",
                 "geom",
                 "samplingNature"

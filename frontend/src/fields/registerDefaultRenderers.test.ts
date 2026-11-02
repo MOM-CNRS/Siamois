@@ -17,6 +17,7 @@ const PROJECT_FICHE_ANSWER_TYPES = [
   "SELECT_MULTIPLE", // periods, subjects
   "SELECT_ONE_SPATIAL_UNIT", // mainLocation
   "SELECT_MULTIPLE_SPATIAL_UNIT_TREE", // spatialContext
+  "GEOMETRY", // geom, read-only
 ];
 
 describe("registerDefaultFieldRenderers", () => {

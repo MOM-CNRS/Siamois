@@ -911,6 +911,9 @@ public class ProjectApiService {
     }
 
     private Object coerceScalarAnswer(CustomField field, Object raw) {
+        if (field instanceof CustomFieldGeometry) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+        }
         if (field instanceof CustomFieldText) return String.valueOf(raw);
         if (field instanceof CustomFieldInteger) return coerceIntegerAnswer(raw);
         if (field instanceof CustomFieldDecimal) return coerceDecimalAnswer(raw);

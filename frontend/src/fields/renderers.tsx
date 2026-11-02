@@ -74,6 +74,12 @@ function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRenderer
   );
 }
 
+// A geometry's WKT, in the SRID it carries: displayed, never edited (the server sends the field read-only).
+export function GeometryRenderer({ value }: FieldRendererProps) {
+  const wkt = typeof value === "string" && value.length > 0 ? value : null;
+  return wkt ? <code className="field-geometry" title={wkt}>{wkt}</code> : <span>—</span>;
+}
+
 export function IntegerRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const numberValue = typeof value === "number" ? value : null;
   return (

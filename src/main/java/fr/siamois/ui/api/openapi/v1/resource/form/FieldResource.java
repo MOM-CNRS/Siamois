@@ -19,7 +19,7 @@ public record FieldResource(
         String label,
 
         @Schema(description = "Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer",
-                allowableValues = {"TEXT", "INTEGER", "DECIMAL", "DATETIME", "BOOLEAN", "MEASUREMENT",
+                allowableValues = {"TEXT", "GEOMETRY", "INTEGER", "DECIMAL", "DATETIME", "BOOLEAN", "MEASUREMENT",
                         "SELECT_ONE", "SELECT_ONE_PERSON", "SELECT_ONE_ACTION_UNIT",
                         "SELECT_ONE_SPATIAL_UNIT", "SELECT_ONE_RECORDING_UNIT", "SELECT_ONE_DOCUMENT", "SELECT_ADDRESS",
                         "SELECT_MULTIPLE", "SELECT_MULTIPLE_PERSON",

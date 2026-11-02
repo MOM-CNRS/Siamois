@@ -3,9 +3,9 @@ import {projectEntityConfig} from "./config";
 import type {ProjectDetail} from "./types";
 
 describe("projectEntityConfig detail tabs", () => {
-  it("declares the fiche tab first, then documents, studies, recording-units, containers, phases, finds and places", () => {
+  it("declares the fiche tab first, then documents, recording-units, finds, phases, studies, containers and places", () => {
     const keys = projectEntityConfig.detail.tabs.map((t) => t.key);
-    expect(keys).toEqual(["fiche", "documents", "studies", "recording-units", "containers", "phases", "finds", "places"]);
+    expect(keys).toEqual(["fiche", "documents", "recording-units", "finds", "phases", "studies", "containers", "places"]);
   });
 
   it("the studies tab reads its badge count from the project's study count", () => {

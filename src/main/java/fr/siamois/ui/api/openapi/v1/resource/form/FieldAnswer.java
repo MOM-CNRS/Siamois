@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "answerType", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = TextFieldAnswer.class, names = {"TEXT"}),
+        @JsonSubTypes.Type(value = TextFieldAnswer.class, names = {"TEXT", "GEOMETRY"}),
         @JsonSubTypes.Type(value = IntegerFieldAnswer.class, names = {"INTEGER"}),
         @JsonSubTypes.Type(value = DecimalFieldAnswer.class, names = {"DECIMAL"}),
         @JsonSubTypes.Type(value = BooleanFieldAnswer.class, names = {"BOOLEAN"}),

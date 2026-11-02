@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The storage location of a find (field -435) and of a document (field -729) is a place of the institution,
+    fk_storage_place, no longer free text.
+
+    A text that names exactly one place of the record's institution (ignoring case and surrounding spaces) becomes
+    a link to it. The text column is kept, unmapped: a text that matched no place, or several, is not lost.
+    -->
+
+    <changeSet id="2026-11-02-4-specimen-storage-place" author="gregory bliault">
+        <addColumn schemaName="public" tableName="specimen">
+            <column name="fk_storage_place" type="bigint">
+                <constraints foreignKeyName="fk_specimen_storage_place"
+                             references="public.spatial_unit(spatial_unit_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-specimen-aud-storage-place" author="gregory bliault">
+        <addColumn schemaName="public" tableName="specimen_aud">
+            <column name="fk_storage_place" type="bigint"/>
+            <column name="fk_storage_place_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-specimen-storage-place-index" author="gregory bliault">
+        <createIndex schemaName="public" tableName="specimen" indexName="idx_specimen_storage_place">
+            <column name="fk_storage_place"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-document-storage-place" author="gregory bliault">
+        <addColumn schemaName="public" tableName="siamois_document">
+            <column name="fk_storage_place" type="bigint">
+                <constraints foreignKeyName="fk_siamois_document_storage_place"
+                             references="public.spatial_unit(spatial_unit_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-document-aud-storage-place" author="gregory bliault">
+        <addColumn schemaName="public" tableName="siamois_document_aud">
+            <column name="fk_storage_place" type="bigint"/>
+            <column name="fk_storage_place_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-document-storage-place-index" author="gregory bliault">
+        <createIndex schemaName="public" tableName="siamois_document" indexName="idx_siamois_document_storage_place">
+            <column name="fk_storage_place"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-specimen-storage-place-from-text" author="gregory bliault">
+        <sql>
+            UPDATE public.specimen s
+            SET fk_storage_place = match.spatial_unit_id
+            FROM (SELECT s2.specimen_id, min(su.spatial_unit_id) AS spatial_unit_id
+                  FROM public.specimen s2
+                  JOIN public.spatial_unit su
+                    ON su.fk_institution_id = s2.fk_institution_id
+                   AND lower(trim(su.name)) = lower(trim(s2.storage_location))
+                  WHERE nullif(trim(s2.storage_location), '') IS NOT NULL
+                  GROUP BY s2.specimen_id
+                  HAVING count(*) = 1) match
+            WHERE match.specimen_id = s.specimen_id
+              AND s.fk_storage_place IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-document-storage-place-from-text" author="gregory bliault">
+        <sql>
+            UPDATE public.siamois_document d
+            SET fk_storage_place = match.spatial_unit_id
+            FROM (SELECT d2.document_id, min(su.spatial_unit_id) AS spatial_unit_id
+                  FROM public.siamois_document d2
+                  JOIN public.spatial_unit su
+                    ON su.fk_institution_id = d2.fk_institution_id
+                   AND lower(trim(su.name)) = lower(trim(d2.storage_location))
+                  WHERE nullif(trim(d2.storage_location), '') IS NOT NULL
+                  GROUP BY d2.document_id
+                  HAVING count(*) = 1) match
+            WHERE match.document_id = d.document_id
+              AND d.fk_storage_place IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-02-4-storage-place-field-type" author="gregory bliault">
+        <sql>
+            UPDATE public.custom_field
+            SET answer_type = 'SELECT_ONE_SPATIAL_UNIT',
+                value_binding = 'storagePlace',
+                is_text_area = NULL
+            WHERE custom_field_id IN (-435, -729);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

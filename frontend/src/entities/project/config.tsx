@@ -91,7 +91,7 @@ export const projectEntityConfig: EntityTypeConfig<
           <ProjectFicheTab entity={entity} onSaved={helpers.refetch} />
         ),
       },
-      // actionUnitTabView.xhtml's order: détails, documents, UE, contenants, phases. The project is
+      // Order: détails, documents, UE, mobilier, phases, then études, contenants, lieux. The project is
       // the document's own attachment, not a link: the tab lists, creates, and has nothing to link —
       // but bulk import still targets this project via action_unit_document.
       relationTab<ProjectDetail>({
@@ -105,28 +105,21 @@ export const projectEntityConfig: EntityTypeConfig<
         ),
       }),
       relationTab<ProjectDetail>({
-        key: "studies",
-        label: t("entity.study.plural"),
-        target: "study",
-        scopeEntityType: "project",
-        badge: (entity) => entity._counts?.studies ?? 0,
-      }),
-      relationTab<ProjectDetail>({
         key: "recording-units",
         label: t("entity.recordingUnit.unit"),
         target: "recordingUnit",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.recordingUnits ?? 0,
       }),
-      // actionUnitTabView.xhtml's own order is détails, documents, UE, contenants, phases —
-      // reproduced here now that both are migrated (target order: détails, UE, contenants,
-      // phases, mobilier, lieux — see the migration plan).
+      // Migration plan lot 1 ("Mobilier") — new on the project fiche (no JSF tab), REST segment
+      // GET /api/v1/projects/{id}/finds.
       relationTab<ProjectDetail>({
-        key: "containers",
-        label: t("entity.container.plural"),
-        target: "container",
+        key: "finds",
+        label: t("entity.find.plural"),
+        target: "find",
         scopeEntityType: "project",
-        badge: (entity) => entity._counts?.containers ?? 0,
+        path: "finds",
+        badge: (entity) => entity._counts?.finds ?? 0,
       }),
       relationTab<ProjectDetail>({
         key: "phases",
@@ -135,17 +128,19 @@ export const projectEntityConfig: EntityTypeConfig<
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.phases ?? 0,
       }),
-      // Migration plan lot 1 ("Mobilier") — no JSF equivalent tab exists on the project fiche
-      // today (SpecimenLazyDataModel scoped to the action unit is built in
-      // ActionUnitPanel.init() but never wired to a tab there), so this is new functionality,
-      // not a migration. The REST segment is GET /api/v1/projects/{id}/finds.
       relationTab<ProjectDetail>({
-        key: "finds",
-        label: t("entity.find.plural"),
-        target: "find",
+        key: "studies",
+        label: t("entity.study.plural"),
+        target: "study",
         scopeEntityType: "project",
-        path: "finds",
-        badge: (entity) => entity._counts?.finds ?? 0,
+        badge: (entity) => entity._counts?.studies ?? 0,
+      }),
+      relationTab<ProjectDetail>({
+        key: "containers",
+        label: t("entity.container.plural"),
+        target: "container",
+        scopeEntityType: "project",
+        badge: (entity) => entity._counts?.containers ?? 0,
       }),
       // Migration plan lot 4 ("Lieux") — deliberately NOT a relationTab: there is no
       // GET /api/v1/projects/{id}/places, so this renders straight from the already-loaded

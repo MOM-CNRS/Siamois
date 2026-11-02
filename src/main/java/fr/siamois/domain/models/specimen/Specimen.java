@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.specimen;
 
 
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.FieldCode;
@@ -120,6 +121,9 @@ public class Specimen extends TraceableEntity implements ArkEntity {
 
     @FieldCode
     public static final String SELECTIVE_CONSERVATION_FIELD = "SIAS.SELECTIVECONSERVATION";
+
+    @FieldCode
+    public static final String OBJECT_OR_LOT_FIELD = "SIAS.objectOrLot";
 
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_ark_id")
@@ -274,18 +278,20 @@ public class Specimen extends TraceableEntity implements ArkEntity {
     @JsonIgnore
     protected org.locationtech.jts.geom.Geometry geom;
 
-    /** Whether the record is a lot (checked) or an individual object (unchecked): {@code objet-lot}. */
-    @Column(name = "object_or_lot")
-    protected Boolean objectOrLot;
+    /** Whether the record is an individual object or a lot ({@code objet-lot}): a concept of {@link #OBJECT_OR_LOT_FIELD}. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_object_or_lot")
+    protected Concept objectOrLot;
 
     /** Samples: what the sample is made of ({@code nature_prelevement}). */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_sampling_nature")
     protected Concept samplingNature;
 
-    /** Where the find is kept when it is not physically handed over to the State. */
-    @Column(name = "storage_location", length = 1000)
-    protected String storageLocation;
+    /** Where the find is kept when it is not physically handed over to the State: a place of the institution. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_storage_place")
+    protected SpatialUnit storagePlace;
 
     @Override
     public boolean equals(Object o) {

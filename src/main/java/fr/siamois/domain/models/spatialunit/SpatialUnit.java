@@ -8,6 +8,7 @@ import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneAddress;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -316,14 +317,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     /** The place's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    public static final CustomFieldText GEOM_FIELD = CustomFieldText.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .id(-210L)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .build();
+    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-210L, GEOM_CONCEPT);
 
     @Transient
     @JsonIgnore

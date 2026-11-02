@@ -4,6 +4,7 @@ import {
     DateRenderer,
     DecimalRenderer,
     FallbackRenderer,
+    GeometryRenderer,
     IntegerRenderer,
     MeasurementRenderer,
     SelectManyRefRenderer,
@@ -42,6 +43,7 @@ export function registerDefaultFieldRenderers(): void {
   registered = true;
 
   registerFieldRenderer("TEXT", TextRenderer);
+  registerFieldRenderer("GEOMETRY", GeometryRenderer);
   registerFieldRenderer("INTEGER", IntegerRenderer);
   registerFieldRenderer("DECIMAL", DecimalRenderer);
   registerFieldRenderer("DATETIME", DateRenderer);
