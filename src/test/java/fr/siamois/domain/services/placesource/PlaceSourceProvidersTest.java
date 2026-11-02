@@ -70,7 +70,7 @@ class PlaceSourceProvidersTest {
         SpatialUnitDTO draft = insee.draftOf(new ExternalPlace("Lyon", "69123", null));
 
         assertThat(draft.getName()).isEqualTo("Lyon");
-        assertThat(draft.getCode()).isEqualTo("69123");
+        assertThat(draft.getInseeCode()).isEqualTo("69123");
         assertThat(draft.getType()).isSameAs(concept);
     }
 
@@ -110,7 +110,7 @@ class PlaceSourceProvidersTest {
         SpatialUnitDTO withoutAddress = geoplat.draftOf(new ExternalPlace("2 rue Y", null, null));
 
         assertThat(withAddress.getAddress()).isSameAs(address);
-        assertThat(withAddress.getCode()).isNull();
+        assertThat(withAddress.getInseeCode()).isNull();
         assertThat(withoutAddress.getAddress().getLabel()).isEqualTo("2 rue Y");
     }
 

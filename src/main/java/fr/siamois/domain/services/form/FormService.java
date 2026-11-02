@@ -320,7 +320,7 @@ public class FormService {
         SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
         dto.setId(ans.getId());
         dto.setName(ans.getName());
-        dto.setCode(ans.getCode());
+        dto.setInseeCode(ans.getCode());
         dto.setType(ans.getType());
         return dto;
     }
@@ -332,7 +332,7 @@ public class FormService {
                     SpatialUnitSummaryDTO dto = new SpatialUnitSummaryDTO();
                     dto.setId(place.getId());
                     dto.setName(place.getName());
-                    dto.setCode(place.getCode());
+                    dto.setInseeCode(place.getCode());
                     dto.setType(place.getType());
                     return dto;
                 })
@@ -594,7 +594,7 @@ public class FormService {
         PlaceSuggestionDTO dto = new PlaceSuggestionDTO();
         dto.setId(val.getId());
         dto.setName(val.getName());
-        dto.setCode(val.getCode());
+        dto.setCode(val.getInseeCode());
         dto.setSourceName("INTERNAL");
         dto.setType(val.getType());
         return dto;

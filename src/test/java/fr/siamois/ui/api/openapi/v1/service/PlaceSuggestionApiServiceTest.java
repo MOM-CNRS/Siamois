@@ -82,7 +82,7 @@ class PlaceSuggestionApiServiceTest {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(id);
         dto.setName(name);
-        dto.setCode(code);
+        dto.setInseeCode(code);
         InstitutionDTO institution = new InstitutionDTO();
         institution.setId(organization);
         dto.setCreatedByInstitution(institution);
@@ -284,7 +284,7 @@ class PlaceSuggestionApiServiceTest {
         stubAllowedCreation();
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName("Lyon");
-        draft.setCode("69123");
+        draft.setInseeCode("69123");
         when(insee.draftOf(any())).thenReturn(draft);
         SpatialUnitDTO existing = place(9L, "Lyon", "69123", 10L);
         when(spatialUnitService.findExistingForSuggestion(10L, "Lyon", "69123", 417L)).thenReturn(Optional.of(existing));
@@ -302,7 +302,7 @@ class PlaceSuggestionApiServiceTest {
         stubAllowedCreation();
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName("Lyon");
-        draft.setCode("69123");
+        draft.setInseeCode("69123");
         draft.setType(communeConcept);
         when(insee.draftOf(new ExternalPlace("Lyon", "69123", null))).thenReturn(draft);
         when(spatialUnitService.findExistingForSuggestion(any(), any(), any(), any())).thenReturn(Optional.empty());

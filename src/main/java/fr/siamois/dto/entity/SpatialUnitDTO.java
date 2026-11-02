@@ -44,7 +44,6 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private Set<RecordingUnitSummaryDTO> recordingUnitList;
     private Set<ActionUnitSummaryDTO> relatedActionUnitList;
     private Long recordingUnitCount;
-    private String code;
     private Integer placeNumber;
     private String inseeCode;
     private String localityName;
@@ -58,7 +57,7 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
     private GeometryDTO geom;
 
     public List<String> getBindableFieldNames() {
-        return List.of("type", "name", "address", "code", "placeNumber",
+        return List.of("type", "name", "address", "placeNumber",
                 "inseeCode", "localityName", "comments", "shomMapNumber",
                 "addressStreet", "addressPostcode", "addressCity", "parcelSection", "parcelNumber");
     }

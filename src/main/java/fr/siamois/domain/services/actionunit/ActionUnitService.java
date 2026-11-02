@@ -212,7 +212,7 @@ public class ActionUnitService implements ArkEntityService {
         toSave.setType(actionUnit.getMainLocation().getType());
         toSave.setName(mainLocation.getName());
         toSave.setCreatedBy(actionUnit.getCreatedBy());
-        toSave.setCode(mainLocation.getCode());
+        toSave.setInseeCode(mainLocation.getInseeCode());
         toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());
         return spatialUnitRepository.save(toSave);
     }
@@ -232,7 +232,7 @@ public class ActionUnitService implements ArkEntityService {
         if (summary.getId() == null) {
             SpatialUnit toSave = new SpatialUnit();
             toSave.setName(summary.getName());
-            toSave.setCode(summary.getCode());
+            toSave.setInseeCode(summary.getInseeCode());
             toSave.setType(conceptMapper.invertConvert(summary.getType()));
             toSave.setCreatedBy(actionUnit.getCreatedBy());
             toSave.setCreatedByInstitution(actionUnit.getCreatedByInstitution());

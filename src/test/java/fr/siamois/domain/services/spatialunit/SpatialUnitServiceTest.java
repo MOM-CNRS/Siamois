@@ -765,7 +765,7 @@ class SpatialUnitServiceTest {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(100L);
         unit.setName("Paris Office");
-        unit.setCode("PAR-01");
+        unit.setInseeCode("PAR-01");
         // Mock category if necessary
         unit.setType(new Concept());
 

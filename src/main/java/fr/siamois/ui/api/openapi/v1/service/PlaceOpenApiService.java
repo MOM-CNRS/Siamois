@@ -280,7 +280,6 @@ public class PlaceOpenApiService {
                                                    fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource resolvedType) {
         Map<String, Object> answers = new LinkedHashMap<>();
         answers.put(String.valueOf(SpatialUnit.NAME_FIELD.getId()), dto.getName());
-        answers.put(String.valueOf(SpatialUnit.CODE_FIELD.getId()), dto.getCode());
         answers.put(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), dto.getPlaceNumber());
         answers.put(String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId()), dto.getInseeCode());
         answers.put(String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId()), dto.getLocalityName());
@@ -396,7 +395,7 @@ public class PlaceOpenApiService {
         try {
             SpatialUnitDTO saved = spatialUnitService.save(userInfo, toSave);
             return new PlaceCreatedResponse.PlaceCreatedItem(
-                    saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+                    saved.getId(), saved.getName(), saved.getInseeCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
@@ -423,7 +422,7 @@ public class PlaceOpenApiService {
                 profilePermissionService.hasPlaceValidatePermission(userInfo));
         if (!fieldsChange && statusChange) {
             validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
-            return new PlaceCreatedResponse.PlaceCreatedItem(dto.getId(), dto.getName(), dto.getCode(), dto.getPlaceNumber());
+            return new PlaceCreatedResponse.PlaceCreatedItem(dto.getId(), dto.getName(), dto.getInseeCode(), dto.getPlaceNumber());
         }
 
         ConceptDTO category = null;
@@ -449,7 +448,7 @@ public class PlaceOpenApiService {
             // After the save: it writes the entity's previous status back.
             validationOpenApiService.apply(SpatialUnit.class, placeId, patch.getValidationStatus(), caller.person());
             return new PlaceCreatedResponse.PlaceCreatedItem(
-                    saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+                    saved.getId(), saved.getName(), saved.getInseeCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }
@@ -525,7 +524,7 @@ public class PlaceOpenApiService {
             try {
                 SpatialUnitDTO saved = spatialUnitService.save(userInfo, copy);
                 return new PlaceCreatedResponse.PlaceCreatedItem(
-                        saved.getId(), saved.getName(), saved.getCode(), saved.getPlaceNumber());
+                        saved.getId(), saved.getName(), saved.getInseeCode(), saved.getPlaceNumber());
             } catch (SpatialUnitAlreadyExistsException e) {
                 // name taken: try the next suffix
             }

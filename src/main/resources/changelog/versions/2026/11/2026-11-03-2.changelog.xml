@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    spatial_unit.code is dropped: the INSEE code (insee_code) identifies a commune. A code shaped like an INSEE
+    code (5 digits, or 2A/2B for Corsica) moves to insee_code when that is still empty; any other code is lost.
+    -->
+
+    <changeSet id="2026-11-03-2-spatial-unit-drop-code" author="gregory bliault">
+        <sql>
+            UPDATE public.spatial_unit
+            SET insee_code = code
+            WHERE insee_code IS NULL
+              AND code ~ '^([0-9]{5}|2[AB][0-9]{3})$';
+            ALTER TABLE public.spatial_unit DROP COLUMN IF EXISTS code;
+            ALTER TABLE public.spatial_unit_aud DROP COLUMN IF EXISTS code;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -70,9 +70,8 @@ export async function patchPlaceAnswers(
       case String(SHOM_MAP_NUMBER_FIELD_ID):
         body.shomMapNumber = value;
         break;
-      // CODE_FIELD (-203) is read-only in SpatialUnit.DETAILS_FORM (server-generated) and the
-      // address has no editor, so neither should reach this: fail loudly rather than report a
-      // save that silently wrote nothing.
+      // The address object has no editor, so it should not reach this: fail loudly rather than
+      // report a save that silently wrote nothing.
       default:
         throw new Error(`Champ ${fieldId} non modifiable sur un lieu`);
     }

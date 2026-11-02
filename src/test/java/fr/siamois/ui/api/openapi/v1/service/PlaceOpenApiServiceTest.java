@@ -179,7 +179,7 @@ class PlaceOpenApiServiceTest {
         SpatialUnitDTO saved = new SpatialUnitDTO();
         saved.setId(99L);
         saved.setName("Rue du Temple");
-        saved.setCode("L-99");
+        saved.setInseeCode("L-99");
         when(spatialUnitService.save(any(UserInfo.class), any(SpatialUnitDTO.class))).thenReturn(saved);
 
         PlaceCreatedResponse.PlaceCreatedItem item = service.createPlace(caller, request, "fr");
@@ -272,7 +272,7 @@ class PlaceOpenApiServiceTest {
         SpatialUnitDTO saved = new SpatialUnitDTO();
         saved.setId(5L);
         saved.setName("Nouveau");
-        saved.setCode("L-5");
+        saved.setInseeCode("L-5");
         when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), eq("Nouveau"), eq(category), eq(null)))
                 .thenReturn(saved);
 
@@ -714,7 +714,7 @@ class PlaceOpenApiServiceTest {
         SpatialUnitDTO existing = new SpatialUnitDTO();
         existing.setId(5L);
         existing.setName("Cave A");
-        existing.setCode("L-5");
+        existing.setInseeCode("L-5");
         existing.setPlaceNumber(3);
         existing.setCreatedByInstitution(institution);
         when(spatialUnitService.findById(5L)).thenReturn(existing);
@@ -734,7 +734,7 @@ class PlaceOpenApiServiceTest {
         assertThat(result.getFields()).isNotEmpty();
         assertThat(result.getAnswers())
                 .containsEntry(String.valueOf(SpatialUnit.NAME_FIELD.getId()), "Cave A")
-                .containsEntry(String.valueOf(SpatialUnit.CODE_FIELD.getId()), "L-5")
+                .containsEntry(String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId()), "L-5")
                 .containsEntry(String.valueOf(SpatialUnit.PLACE_NUMBER_FIELD.getId()), 3);
         assertThat(result.getResourceUri()).isEqualTo("/spatial-unit/5");
         assertThat(result.getPermissions().canEdit()).isFalse();

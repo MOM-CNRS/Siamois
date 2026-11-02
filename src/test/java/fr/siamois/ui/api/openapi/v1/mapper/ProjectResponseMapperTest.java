@@ -116,14 +116,14 @@ class ProjectResponseMapperTest {
         SpatialUnitSummaryDTO main = new SpatialUnitSummaryDTO();
         main.setId(1L);
         main.setName("Commune A");
-        main.setCode("75001");
+        main.setInseeCode("75001");
         dto.setMainLocation(main);
 
         SpatialUnitSummaryDTO ctx1 = new SpatialUnitSummaryDTO();
         ctx1.setName("Zone nord");
         SpatialUnitSummaryDTO ctx2 = new SpatialUnitSummaryDTO();
         ctx2.setName("Commune A");
-        ctx2.setCode("75001");
+        ctx2.setInseeCode("75001");
         Set<SpatialUnitSummaryDTO> ctx = new LinkedHashSet<>();
         ctx.add(ctx1);
         ctx.add(ctx2);
