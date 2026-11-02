@@ -218,40 +218,40 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("1160")
             .build();
 
-    // Flat address and parcel components: no concept in the system thesaurus yet either.
+    // Flat address and parcel components.
     @Transient
     @JsonIgnore
     public static final Concept ADDRESS_STREET_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("1865")
+            .externalId("4291354")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept ADDRESS_POSTCODE_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("1866")
+            .externalId("4291355")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept ADDRESS_CITY_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("1867")
+            .externalId("4291356")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept PARCEL_SECTION_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("1868")
+            .externalId("4291357")
             .build();
 
     @Transient
     @JsonIgnore
     public static final Concept PARCEL_NUMBER_CONCEPT = new Concept.Builder()
             .vocabulary(SYSTEM_THESO)
-            .externalId("1869")
+            .externalId("4291358")
             .build();
 
     // address
