@@ -22,6 +22,11 @@ class PlaceOpenApiServiceFieldsTest {
     private static final String INSEE = String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId());
     private static final String LOCALITY = String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId());
     private static final String SHOM = String.valueOf(SpatialUnit.SHOM_MAP_NUMBER_FIELD.getId());
+    private static final String STREET = String.valueOf(SpatialUnit.ADDRESS_STREET_FIELD.getId());
+    private static final String POSTCODE = String.valueOf(SpatialUnit.ADDRESS_POSTCODE_FIELD.getId());
+    private static final String CITY = String.valueOf(SpatialUnit.ADDRESS_CITY_FIELD.getId());
+    private static final String SECTION = String.valueOf(SpatialUnit.PARCEL_SECTION_FIELD.getId());
+    private static final String PARCEL_NUMBER = String.valueOf(SpatialUnit.PARCEL_NUMBER_FIELD.getId());
     private static final String COMMENTS = String.valueOf(SpatialUnit.COMMENTS_FIELD.getId());
     private static final String GEOM = String.valueOf(SpatialUnit.GEOM_FIELD.getId());
 
@@ -30,7 +35,7 @@ class PlaceOpenApiServiceFieldsTest {
         List<String> ids = PlaceOpenApiService.listableFields().stream()
                 .map(CustomField::getId).map(String::valueOf).toList();
 
-        assertThat(ids).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS, GEOM).doesNotContain(ADDRESS);
+        assertThat(ids).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, STREET, POSTCODE, CITY, SECTION, PARCEL_NUMBER, COMMENTS, GEOM).doesNotContain(ADDRESS);
     }
 
     @Test
@@ -42,8 +47,8 @@ class PlaceOpenApiServiceFieldsTest {
 
     @Test
     void allMeansEveryListableField() {
-        assertThat(PlaceOpenApiService.requestedFieldIds("all")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS, GEOM);
-        assertThat(PlaceOpenApiService.requestedFieldIds(" ALL ")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, COMMENTS, GEOM);
+        assertThat(PlaceOpenApiService.requestedFieldIds("all")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, STREET, POSTCODE, CITY, SECTION, PARCEL_NUMBER, COMMENTS, GEOM);
+        assertThat(PlaceOpenApiService.requestedFieldIds(" ALL ")).containsExactlyInAnyOrder(NAME, CODE, TYPE, NUMBER, INSEE, LOCALITY, SHOM, STREET, POSTCODE, CITY, SECTION, PARCEL_NUMBER, COMMENTS, GEOM);
     }
 
     @Test

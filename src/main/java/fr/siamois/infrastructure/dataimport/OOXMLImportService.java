@@ -371,6 +371,10 @@ public class OOXMLImportService {
         return new ArrayList<>(specsByName.values());
     }
 
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     private void parseSpatialRow(Row row, Map<String, Integer> cols, ActionUnitDTO actionUnit,
                                   Map<String, SpatialUnitSeeder.SpatialUnitSpecs> specsByName,
                                   List<SpatialUnitRelSeeder.SpatialUnitRelDTO> childRelsOut) {
@@ -389,7 +393,17 @@ public class OOXMLImportService {
                 typeKey != null ? typeKey.vocabularyExtId() : null,
                 typeKey != null ? typeKey.conceptExtId() : null,
                 SIAMOIS_SYSTEM,
-                institution
+                institution,
+                new SpatialUnitSeeder.Details(
+                        blankToNull(getStringCellOrNull(row, cols, "code insee")),
+                        blankToNull(getStringCellOrNull(row, cols, "lieu-dit")),
+                        blankToNull(getStringCellOrNull(row, cols, "rue")),
+                        blankToNull(getStringCellOrNull(row, cols, "code postal")),
+                        blankToNull(getStringCellOrNull(row, cols, "commune")),
+                        blankToNull(getStringCellOrNull(row, cols, "section cadastrale")),
+                        blankToNull(getStringCellOrNull(row, cols, "numero parcelle")),
+                        blankToNull(getStringCellOrNull(row, cols, "numero carte shom")),
+                        blankToNull(getStringCellOrNull(row, cols, "commentaires")))
         );
         specsByName.put(name, spec);
 

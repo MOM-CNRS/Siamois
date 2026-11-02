@@ -54,6 +54,8 @@ public class InseeCommunesProvider implements PlaceSourceProvider {
         SpatialUnitDTO draft = new SpatialUnitDTO();
         draft.setName(place.name());
         draft.setCode(place.code());
+        draft.setInseeCode(place.code());
+        draft.setAddressCity(place.name());
         draft.setType(type());
         return draft;
     }

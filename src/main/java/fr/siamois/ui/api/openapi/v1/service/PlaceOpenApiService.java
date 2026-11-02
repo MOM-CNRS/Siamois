@@ -233,7 +233,8 @@ public class PlaceOpenApiService {
 
         Locale locale = langService.localeForApiLang(lang);
         FieldSource fieldSource = new PanelFieldSource(SpatialUnit.DETAILS_FORM);
-        resource.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(SpatialUnit.DETAILS_FORM.getLayout())));
+        resource.setFormBundle(new FormResource(FormUiDtoLayoutJson.serialize(
+                SpatialUnit.detailsFormFor(typeExternalIdOf(dto)).getLayout())));
         resource.setFields(buildPlaceFieldsMetadataOnly(fieldSource, locale));
         // resource.getType() is already the resolved concept ref (placeOpenApiMapper.toResource
         // above) — reused here rather than re-resolving the same label a second time.
@@ -259,6 +260,16 @@ public class PlaceOpenApiService {
         return resource;
     }
 
+    /** External id, in the system thesaurus, of the place's type; null when it has none or is from another thesaurus. */
+    private static String typeExternalIdOf(SpatialUnitDTO dto) {
+        if (dto.getType() == null || dto.getType().getVocabulary() == null
+                || !SpatialUnit.SPATIAL_UNIT_TYPE_CONCEPT.getVocabulary().getExternalVocabularyId()
+                .equals(dto.getType().getVocabulary().getExternalVocabularyId())) {
+            return null;
+        }
+        return dto.getType().getExternalId();
+    }
+
     /**
      * Valeurs brutes des champs système de {@link SpatialUnit#DETAILS_FORM}, indexées par id de
      * champ — même convention que {@code PhaseResource}/{@code ContainerResource}.answers (aucune
@@ -274,6 +285,11 @@ public class PlaceOpenApiService {
         answers.put(String.valueOf(SpatialUnit.INSEE_CODE_FIELD.getId()), dto.getInseeCode());
         answers.put(String.valueOf(SpatialUnit.LOCALITY_NAME_FIELD.getId()), dto.getLocalityName());
         answers.put(String.valueOf(SpatialUnit.SHOM_MAP_NUMBER_FIELD.getId()), dto.getShomMapNumber());
+        answers.put(String.valueOf(SpatialUnit.ADDRESS_STREET_FIELD.getId()), dto.getAddressStreet());
+        answers.put(String.valueOf(SpatialUnit.ADDRESS_POSTCODE_FIELD.getId()), dto.getAddressPostcode());
+        answers.put(String.valueOf(SpatialUnit.ADDRESS_CITY_FIELD.getId()), dto.getAddressCity());
+        answers.put(String.valueOf(SpatialUnit.PARCEL_SECTION_FIELD.getId()), dto.getParcelSection());
+        answers.put(String.valueOf(SpatialUnit.PARCEL_NUMBER_FIELD.getId()), dto.getParcelNumber());
         answers.put(String.valueOf(SpatialUnit.COMMENTS_FIELD.getId()), dto.getComments());
         answers.put(String.valueOf(SpatialUnit.GEOM_FIELD.getId()), fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText.of(dto.getGeom()));
         if (dto.getType() != null && resolvedType != null) {
@@ -443,6 +459,11 @@ public class PlaceOpenApiService {
     private static void applyTextDetails(SpatialUnitDTO dto, PlacePatchRequest patch) {
         if (patch.isInseeCodePresent()) dto.setInseeCode(patch.getInseeCode());
         if (patch.isLocalityNamePresent()) dto.setLocalityName(patch.getLocalityName());
+        if (patch.isAddressStreetPresent()) dto.setAddressStreet(patch.getAddressStreet());
+        if (patch.isAddressPostcodePresent()) dto.setAddressPostcode(patch.getAddressPostcode());
+        if (patch.isAddressCityPresent()) dto.setAddressCity(patch.getAddressCity());
+        if (patch.isParcelSectionPresent()) dto.setParcelSection(patch.getParcelSection());
+        if (patch.isParcelNumberPresent()) dto.setParcelNumber(patch.getParcelNumber());
         if (patch.isShomMapNumberPresent()) dto.setShomMapNumber(patch.getShomMapNumber());
         if (patch.isCommentsPresent()) dto.setComments(patch.getComments());
     }

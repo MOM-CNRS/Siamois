@@ -803,9 +803,8 @@
       "field": {
         "concept": {
           "thesaurus": "th338",
-          "id": "1161"
-        },
-        "property": "city"
+          "id": "1867"
+        }
       }
     },
     {
@@ -1203,12 +1202,30 @@
     },
     {
       "target": "mobilier.identifiant_parcelle",
-      "source": "mobilier_1_recordingUnit_spatialUnit",
-      "field": {
-        "concept": {
-          "thesaurus": "th338",
-          "id": "1155"
-        }
+      "source": "mobilier_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "mobilier_1_recordingUnit_spatialUnit",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1868"
+              }
+            }
+          },
+          {
+            "source": "mobilier_1_recordingUnit_spatialUnit",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1869"
+              }
+            }
+          }
+        ]
       }
     },
     {

@@ -748,11 +748,29 @@
     {
       "target": "situation.identifiant_parcelle",
       "source": "situation_1",
-      "field": {
-        "concept": {
-          "thesaurus": "th338",
-          "id": "1155"
-        }
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "situation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1868"
+              }
+            }
+          },
+          {
+            "source": "situation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1869"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -761,9 +779,8 @@
       "field": {
         "concept": {
           "thesaurus": "th338",
-          "id": "1161"
-        },
-        "property": "city"
+          "id": "1867"
+        }
       }
     },
     {
@@ -789,11 +806,38 @@
     {
       "target": "situation.adresse_OA",
       "source": "situation_1",
-      "field": {
-        "concept": {
-          "thesaurus": "th338",
-          "id": "1161"
-        }
+      "concat": {
+        "separator": ", ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "situation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1865"
+              }
+            }
+          },
+          {
+            "source": "situation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1866"
+              }
+            }
+          },
+          {
+            "source": "situation_1",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1867"
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -1181,12 +1225,30 @@
     },
     {
       "target": "mobilier.identifiant_parcelle",
-      "source": "mobilier_1_recordingUnit_spatialUnit",
-      "field": {
-        "concept": {
-          "thesaurus": "th338",
-          "id": "1155"
-        }
+      "source": "mobilier_1",
+      "concat": {
+        "separator": " & ",
+        "labelSeparator": ": ",
+        "parts": [
+          {
+            "source": "mobilier_1_recordingUnit_spatialUnit",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1868"
+              }
+            }
+          },
+          {
+            "source": "mobilier_1_recordingUnit_spatialUnit",
+            "field": {
+              "concept": {
+                "thesaurus": "th338",
+                "id": "1869"
+              }
+            }
+          }
+        ]
       }
     },
     {

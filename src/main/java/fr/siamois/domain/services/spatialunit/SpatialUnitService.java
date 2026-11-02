@@ -202,6 +202,11 @@ public class SpatialUnitService implements ArkEntityService {
         spatialUnit.setPlaceNumber(su.getPlaceNumber());
         spatialUnit.setInseeCode(su.getInseeCode());
         spatialUnit.setLocalityName(su.getLocalityName());
+        spatialUnit.setAddressStreet(su.getAddressStreet());
+        spatialUnit.setAddressPostcode(su.getAddressPostcode());
+        spatialUnit.setAddressCity(su.getAddressCity());
+        spatialUnit.setParcelSection(su.getParcelSection());
+        spatialUnit.setParcelNumber(su.getParcelNumber());
         spatialUnit.setComments(su.getComments());
         spatialUnit.setShomMapNumber(su.getShomMapNumber());
         spatialUnit.setCreatedByInstitution(institutionMapper.invertConvert(institutionService.findById(info.getInstitution().getId())));
@@ -306,6 +311,11 @@ public class SpatialUnitService implements ArkEntityService {
             managedSpatialUnit.setPlaceNumber(spatialUnit.getPlaceNumber());
             managedSpatialUnit.setInseeCode(spatialUnit.getInseeCode());
             managedSpatialUnit.setLocalityName(spatialUnit.getLocalityName());
+            managedSpatialUnit.setAddressStreet(spatialUnit.getAddressStreet());
+            managedSpatialUnit.setAddressPostcode(spatialUnit.getAddressPostcode());
+            managedSpatialUnit.setAddressCity(spatialUnit.getAddressCity());
+            managedSpatialUnit.setParcelSection(spatialUnit.getParcelSection());
+            managedSpatialUnit.setParcelNumber(spatialUnit.getParcelNumber());
             managedSpatialUnit.setComments(spatialUnit.getComments());
             managedSpatialUnit.setShomMapNumber(spatialUnit.getShomMapNumber());
             Concept type = conceptService.saveOrGetConcept(conceptDTO);
