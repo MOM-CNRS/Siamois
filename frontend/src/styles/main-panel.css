@@ -4063,3 +4063,20 @@ div#search-bar .sia-topbar-search-field .sia-search {
   max-height: 8rem;
   overflow: auto;
 }
+
+.field-geometry-preview {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.field-geometry-overlay {
+  max-width: min(40rem, 90vw);
+}
+
+.field-geometry-overlay .field-geometry {
+  max-height: 20rem;
+}

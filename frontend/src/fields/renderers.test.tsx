@@ -64,6 +64,13 @@ describe("GeometryRenderer", () => {
     expect(html).not.toContain("<textarea");
   });
 
+  it("shows only the first 20 characters of a long WKT, the rest being in the overlay", () => {
+    const wkt = "MULTIPOLYGON (((1587452.963 7250980.855, 1587454.281 7250981.951)))";
+    const html = renderGeometry(wkt);
+    expect(html).toContain("MULTIPOLYGON (((1587…");
+    expect(html).not.toContain("7250980.855");
+  });
+
   it("shows an em-dash when there is no geometry", () => {
     expect(renderGeometry(null)).toContain("—");
     expect(renderGeometry("")).toContain("—");
