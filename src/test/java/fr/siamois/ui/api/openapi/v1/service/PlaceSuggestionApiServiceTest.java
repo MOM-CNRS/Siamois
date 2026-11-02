@@ -337,4 +337,49 @@ class PlaceSuggestionApiServiceTest {
         request.setName(name);
         return request;
     }
+
+    private static PlaceSourceSpec geoplatPostcodeBoundToMainLocation() {
+        return new PlaceSourceSpec("GEOPLAT",
+                Map.of("zipcode", new PlaceSourceSpec.ParamBinding(MAIN_LOCATION, PlaceSourceSpec.PlaceAttribute.POSTCODE)),
+                PlaceSourceSpec.OnMissing.UNFILTERED);
+    }
+
+    @Test
+    void suggest_readsThePostcodeFromThePlacesOwnPostcodeField() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        SpatialUnitDTO picked = place(7L, "Chartres", null, 10L);
+        picked.setAddressPostcode("28000");
+        when(spatialUnitService.findById(7L)).thenReturn(picked);
+        when(geoplat.search("rue", Map.of("zipcode", "28000"))).thenReturn(List.of());
+
+        assertTrue(suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources().isEmpty());
+        verify(geoplat).search("rue", Map.of("zipcode", "28000"));
+    }
+
+    @Test
+    void suggest_fallsBackToThePostcodeOfThePlacesAddressObject() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        SpatialUnitDTO picked = place(7L, "Lyon", null, 10L);
+        FullAddress address = new FullAddress();
+        address.setPostcode("69001");
+        picked.setAddress(address);
+        when(spatialUnitService.findById(7L)).thenReturn(picked);
+        when(geoplat.search("rue", Map.of("zipcode", "69001"))).thenReturn(List.of());
+
+        suggest("rue", Map.of(MAIN_LOCATION, 7L));
+
+        verify(geoplat).search("rue", Map.of("zipcode", "69001"));
+    }
+
+    @Test
+    void suggest_hasNoPostcodeForAPlaceWithNeitherPostcodeNorAddress() {
+        ownPlaces();
+        when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
+        when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Nulle part", null, 10L));
+        when(geoplat.search("rue", Map.of())).thenReturn(List.of());
+
+        assertEquals(List.of("GEOPLAT"), suggest("rue", Map.of(MAIN_LOCATION, 7L)).unnarrowedSources());
+    }
 }

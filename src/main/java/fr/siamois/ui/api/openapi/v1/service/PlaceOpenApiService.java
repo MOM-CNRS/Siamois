@@ -261,7 +261,7 @@ public class PlaceOpenApiService {
     }
 
     /** External id, in the system thesaurus, of the place's type; null when it has none or is from another thesaurus. */
-    private static String typeExternalIdOf(SpatialUnitDTO dto) {
+    static String typeExternalIdOf(SpatialUnitDTO dto) {
         if (dto.getType() == null || dto.getType().getVocabulary() == null
                 || !SpatialUnit.SPATIAL_UNIT_TYPE_CONCEPT.getVocabulary().getExternalVocabularyId()
                 .equals(dto.getType().getVocabulary().getExternalVocabularyId())) {

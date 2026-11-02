@@ -160,10 +160,17 @@ public class PlaceSuggestionApiService {
         String value = switch (binding.attribute()) {
             case CODE -> place.getInseeCode();
             case NAME -> place.getName();
-            case POSTCODE -> place.getAddressPostcode() != null ? place.getAddressPostcode()
-                    : place.getAddress() == null ? null : place.getAddress().getPostcode();
+            case POSTCODE -> postcodeOf(place);
         };
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** The postcode of the place's own field, else the one of its address object. */
+    private static String postcodeOf(SpatialUnitDTO place) {
+        if (place.getAddressPostcode() != null) {
+            return place.getAddressPostcode();
+        }
+        return place.getAddress() == null ? null : place.getAddress().getPostcode();
     }
 
     private SpatialUnitDTO loadPlace(long placeId, Map<Long, SpatialUnitDTO> cache) {

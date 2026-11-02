@@ -271,6 +271,8 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .externalId("1162")
             .build();
 
+    private static final String GENERAL_PANEL = "common.header.general";
+
     // --------------- Fields
 
 
@@ -420,7 +422,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final FormUiDto NEW_UNIT_FORM = new FormUiDto.Builder()
             .addPanel(
                     new CustomFormPanelUiDto.Builder()
-                            .name("common.header.general")
+                            .name(GENERAL_PANEL)
                             .isSystemPanel(true)
                             .addRow(
                                     new CustomRowUiDto.Builder()
@@ -453,7 +455,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     public static final FormUiDto DETAILS_FORM = new FormUiDto.Builder()
             .addPanel(
                     new CustomFormPanelUiDto.Builder()
-                            .name("common.header.general")
+                            .name(GENERAL_PANEL)
                             .isSystemPanel(true)
                             .addRow(
                                     new CustomRowUiDto.Builder()
@@ -550,7 +552,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                     .field(field)
                     .build());
         }
-        return new CustomFormPanelUiDto.Builder().name("common.header.general").isSystemPanel(true).addRow(row.build());
+        return new CustomFormPanelUiDto.Builder().name(GENERAL_PANEL).isSystemPanel(true).addRow(row.build());
     }
 
     private static CustomRowUiDto rowOf(CustomField... fields) {

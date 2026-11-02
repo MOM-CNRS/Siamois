@@ -51,6 +51,8 @@ class PlaceOpenApiServiceTest {
     private final fr.siamois.domain.services.document.DocumentService documentService = mock(fr.siamois.domain.services.document.DocumentService.class);
 
     private static final Set<Long> SCOPE = Set.of(10L);
+    private final fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService validationOpenApiService =
+            mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class);
 
     @Mock
     private ProjectApiService projectApiService;
@@ -92,7 +94,7 @@ class PlaceOpenApiServiceTest {
                 mock(fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository.class),
                 mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
                 mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)),
-                mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class), documentService);
+                mock(ResourceBookmarkService.class), mock(EntitySiblingsService.class), validationOpenApiService, documentService);
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -936,5 +938,116 @@ class PlaceOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
         verify(spatialUnitService, never()).save(any(), any());
+    }
+
+    // --- type of a place in the system thesaurus ---
+
+    private static ConceptDTO conceptOf(String vocabularyId, String externalId) {
+        fr.siamois.dto.entity.vocabulary.VocabularyDTO vocabulary = new fr.siamois.dto.entity.vocabulary.VocabularyDTO();
+        vocabulary.setExternalVocabularyId(vocabularyId);
+        ConceptDTO concept = new ConceptDTO();
+        concept.setVocabulary(vocabulary);
+        concept.setExternalId(externalId);
+        return concept;
+    }
+
+    @Test
+    void typeExternalIdOf_isTheConceptIdOfASystemThesaurusType() {
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        dto.setType(conceptOf("th338", "1164"));
+
+        assertThat(PlaceOpenApiService.typeExternalIdOf(dto)).isEqualTo("1164");
+    }
+
+    @Test
+    void typeExternalIdOf_isNullWithoutTypeOrForATypeOfAnotherThesaurus() {
+        SpatialUnitDTO dto = new SpatialUnitDTO();
+        assertThat(PlaceOpenApiService.typeExternalIdOf(dto)).isNull();
+
+        dto.setType(conceptOf("th1", "1164"));
+        assertThat(PlaceOpenApiService.typeExternalIdOf(dto)).isNull();
+
+        dto.setType(new ConceptDTO());
+        assertThat(PlaceOpenApiService.typeExternalIdOf(dto)).isNull();
+    }
+
+    @Test
+    void getPlaceById_answersTheAddressAndParcelComponents() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setName("Parcelle DA 154");
+        existing.setType(conceptOf("th338", "1165"));
+        existing.setAddressStreet("1 rue X");
+        existing.setAddressPostcode("28000");
+        existing.setAddressCity("Chartres");
+        existing.setParcelSection("DA");
+        existing.setParcelNumber("154");
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        PlaceResource mapped = new PlaceResource();
+        mapped.setResourceType("places");
+        mapped.setId("5");
+        when(placeOpenApiMapper.toResource(existing, "fr")).thenReturn(mapped);
+        when(langService.localeForApiLang("fr")).thenReturn(Locale.FRENCH);
+
+        PlaceResource result = service.getPlaceById(caller, 5L, "fr");
+
+        assertThat(result.getAnswers())
+                .containsEntry(String.valueOf(SpatialUnit.ADDRESS_STREET_FIELD.getId()), "1 rue X")
+                .containsEntry(String.valueOf(SpatialUnit.ADDRESS_POSTCODE_FIELD.getId()), "28000")
+                .containsEntry(String.valueOf(SpatialUnit.ADDRESS_CITY_FIELD.getId()), "Chartres")
+                .containsEntry(String.valueOf(SpatialUnit.PARCEL_SECTION_FIELD.getId()), "DA")
+                .containsEntry(String.valueOf(SpatialUnit.PARCEL_NUMBER_FIELD.getId()), "154");
+    }
+
+    @Test
+    void updatePlace_writesTheAddressAndParcelComponents() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(5L);
+        when(spatialUnitService.updatePlaceDetails(eq(5L), any())).thenAnswer(inv -> {
+            java.util.function.Consumer<SpatialUnitDTO> change = inv.getArgument(1);
+            change.accept(saved);
+            return saved;
+        });
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setAddressStreet("1 rue X");
+        patch.setAddressPostcode("28000");
+        patch.setAddressCity("Chartres");
+        patch.setParcelSection("DA");
+        patch.setParcelNumber("154");
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        assertThat(saved.getAddressStreet()).isEqualTo("1 rue X");
+        assertThat(saved.getAddressPostcode()).isEqualTo("28000");
+        assertThat(saved.getAddressCity()).isEqualTo("Chartres");
+        assertThat(saved.getParcelSection()).isEqualTo("DA");
+        assertThat(saved.getParcelNumber()).isEqualTo("154");
+    }
+
+    @Test
+    void updatePlace_aStatusChangeAloneAnswersWithThePlaceIdentity() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setName("Chartres");
+        existing.setInseeCode("28085");
+        existing.setPlaceNumber(2);
+        existing.setValidationStatus(fr.siamois.domain.models.ValidationStatus.INCOMPLETE);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setValidationStatus(fr.siamois.domain.models.ValidationStatus.VALIDATED);
+
+        PlaceCreatedResponse.PlaceCreatedItem item = service.updatePlace(caller, 5L, patch, "fr");
+
+        assertThat(item.getId()).isEqualTo(5L);
+        assertThat(item.getCode()).isEqualTo("28085");
+        assertThat(item.getPlaceNumber()).isEqualTo(2);
+        verify(validationOpenApiService).apply(eq(SpatialUnit.class), eq(5L), eq(fr.siamois.domain.models.ValidationStatus.VALIDATED), any());
     }
 }
