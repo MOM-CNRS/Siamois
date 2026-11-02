@@ -100,6 +100,6 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
                 "parents", "children", "comments", "zInf", "zSup",
                 "nature", "geomorphologicalCycle", "normalizedInterpretation", "author", "geomorphologicalAgent",
                 "matrixComposition", "matrixColor", "matrixTexture", "erosionShape", "erosionOrientation",
-                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier", "phases");
+                "erosionProfile", "taq", "tpq", "chronologicalPhase", "fullIdentifier", "phases", "geom");
     }
 }

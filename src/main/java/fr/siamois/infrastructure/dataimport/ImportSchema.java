@@ -25,6 +25,7 @@ public final class ImportSchema {
     private static final String HEADER_DESCRIPTION = "Description";
     private static final String HEADER_IDENTIFIER = "Identifiant";
     private static final String KEY_COMMENT = "commentaire";
+    private static final String KEY_GEOMETRY = "geometrie";
     private static final String KEY_CHRONOLOGY_LABEL = "chronologie label";
     private static final String KEY_PARENT = "parent";
     private static final String KEY_CHILD = "enfant";
@@ -106,7 +107,7 @@ public final class ImportSchema {
                                                 "unite spatiale", "unite d'action",
                                                 "couleur de la matrice", "texture de la matrice", "composition de la matrice",
                                                 "phases",
-                                                KEY_COMMENT, "taq", "tpq",
+                                                KEY_COMMENT, "taq", "tpq", KEY_GEOMETRY,
                                                 "erosion forme uri", "erosion forme label",
                                                 "erosion orientation uri", "erosion orientation label",
                                                 "erosion profil uri", "erosion profil label",
@@ -163,6 +164,7 @@ public final class ImportSchema {
                     "couleur de la matrice", "Couleur de la matrice", "texture de la matrice", "Texture de la matrice",
                     "composition de la matrice", "Composition de la matrice",
                     KEY_COMMENT, "Informations complémentaires", "taq", "TAQ", "tpq", "TPQ",
+                    KEY_GEOMETRY, "Géométrie (WKT)",
                     "erosion forme label", "Forme de l'érosion", "erosion orientation label", "Orientation de l'érosion",
                     "erosion profil label", "Profil de l'érosion", KEY_CHRONOLOGY_LABEL, "Attribution chronologique"),
             SPECIMEN, ordered(

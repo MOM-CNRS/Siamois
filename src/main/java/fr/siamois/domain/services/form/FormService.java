@@ -14,6 +14,8 @@ import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
 import fr.siamois.ui.viewmodel.CustomFormResponseViewModel;
 import fr.siamois.ui.viewmodel.fieldanswer.*;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -496,7 +498,8 @@ public class FormService {
 
     private void handleString(CustomFieldAnswerViewModel answer, Object value) {
         if (answer instanceof CustomFieldAnswerTextViewModel textAnswer) {
-            textAnswer.setValue((String) value);
+            // a geometry field shows its WKT
+            textAnswer.setValue(value instanceof GeometryDTO geometry ? GeometryText.of(geometry) : (String) value);
         }
     }
 

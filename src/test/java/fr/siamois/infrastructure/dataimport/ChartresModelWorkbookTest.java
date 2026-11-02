@@ -105,6 +105,7 @@ class ChartresModelWorkbookTest {
             assertThat(result.specs().recordingUnitStratiRelSpecs()).isNotEmpty();
             assertThat(result.specs().spatialUnitRelSpecs()).isNotEmpty();
             assertThat(result.specs().recordingUnits().get(0).type()).isNotNull();
+            assertThat(result.specs().recordingUnits()).anyMatch(ru -> ru.geometry() != null && ru.geometry().getSRID() == 3948);
         }
     }
 

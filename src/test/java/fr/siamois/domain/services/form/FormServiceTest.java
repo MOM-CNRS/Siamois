@@ -124,6 +124,18 @@ class FormServiceTest {
     }
 
     @Test
+    void applyTypedValueToAnswer_geometryOnATextAnswer_showsItsWkt() {
+        fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO point = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO();
+        point.coordinates = new double[]{1, 2};
+        point.srid = 3948;
+        CustomFieldAnswerTextViewModel answer = new CustomFieldAnswerTextViewModel();
+
+        formService.applyTypedValueToAnswer(answer, point);
+
+        assertEquals("POINT (1 2)", answer.getValue());
+    }
+
+    @Test
     void initOrReuseResponse_skipsAFieldWithNoAnswerTypeRatherThanLosingTheWholeForm() {
         FieldSource fieldSource = mock(FieldSource.class);
         CustomField unsupported = mock(CustomField.class);

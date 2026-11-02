@@ -132,6 +132,7 @@ class RecordingUnitSeederTest {
                         null,
                         null,
                         null,
+                        null,
                         null
                 )
         );
@@ -153,7 +154,7 @@ class RecordingUnitSeederTest {
                 original.matrixComposition(), original.matrixTexture(), original.phaseIdentifiers(),
                 original.comments(), original.taq(), original.tpq(), original.erosionShape(),
                 original.erosionOrientation(), original.erosionProfile(), original.chronologicalAttribution(),
-                42);
+                original.geometry(), 42);
 
         List<RecordingUnitSeeder.RecordingUnitSpecs> specsWithRealRow = List.of(withRealRow);
         IllegalStateException ex = assertThrows(IllegalStateException.class,

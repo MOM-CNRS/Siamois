@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import org.locationtech.jts.geom.Geometry;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ImportProgress;
@@ -73,6 +74,7 @@ public class RecordingUnitSeeder {
                                      ConceptSeeder.ConceptKey erosionOrientation,
                                      ConceptSeeder.ConceptKey erosionProfile,
                                      ConceptSeeder.ConceptKey chronologicalAttribution,
+                                     Geometry geometry,
                                      Integer excelRowNumber) {
 
     }
@@ -241,6 +243,7 @@ public class RecordingUnitSeeder {
         toGetOrCreate.setErosionOrientation(erosionOrientation);
         toGetOrCreate.setErosionProfile(erosionProfile);
         toGetOrCreate.setChronologicalAttribution(chronologicalAttribution);
+        toGetOrCreate.setGeom(s.geometry);
 
         if (s.phaseIdentifiers != null && !s.phaseIdentifiers.isEmpty()) {
             toGetOrCreate.setPhases(resolvePhases(s, au, phasesByCompositeKey));
@@ -462,6 +465,9 @@ public class RecordingUnitSeeder {
         existing.setErosionOrientation(built.getErosionOrientation());
         existing.setErosionProfile(built.getErosionProfile());
         existing.setChronologicalAttribution(built.getChronologicalAttribution());
+        if (built.getGeom() != null) {
+            existing.setGeom(built.getGeom());
+        }
         if (built.getPhases() != null && !built.getPhases().isEmpty()) {
             existing.setPhases(built.getPhases());
         }

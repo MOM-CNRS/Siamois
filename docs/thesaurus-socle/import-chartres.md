@@ -53,6 +53,13 @@ ont des titres lisibles (les anciens `sheet_id`, `sheet_name`, `column_alias`, `
 
 Les colonnes d'URI ne figurent plus ni dans le modèle ni dans la feuille `_meta` ; l'importeur les lit encore si un ancien classeur en a.
 
+## Géométrie des UE
+
+La colonne **Géométrie (WKT)** de la feuille Unité d'enregistrement vient du geopackage `C309_01_PoleGare_CC48` (couche `C309_01_UNOBS`,
+RGF93 / CC48, EPSG:3948). Le lien se fait sur `numunobs` = Identifiant de l'UE ; les entités d'une même UE sont réunies en un seul
+`MULTIPOLYGON`, coordonnées arrondies au millimètre, préfixées `SRID=3948;`. 24 UE du classeur ont une géométrie ; les 99 autres
+numéros du geopackage ne sont pas dans la feuille.
+
 ## Types d'UE (feuille Unité d'enregistrement)
 
 | Avant | Après | Résolution dans th337 |
