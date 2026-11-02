@@ -47,4 +47,21 @@ class FieldAnswerWireServiceAnswerTypeTest {
 
         assertThat(FieldAnswerWireService.fieldResourceOf(text, "Commentaires", null).readOnly()).isNull();
     }
+
+    @Test
+    void aSystemFieldReadFromTheDatabaseLinksToTheConceptOfItsDefinitionInCode() {
+        // -330: the synchronous relationships of a recording unit, concept 1378; its row carries no concept
+        CustomFieldText row = CustomFieldText.builder().id(-330L).isSystemField(true).build();
+
+        String conceptUri = FieldAnswerWireService.fieldResourceOf(row, "Synchrone", null).conceptUri();
+
+        assertThat(conceptUri).isNotNull().endsWith("&idc=1378");
+    }
+
+    @Test
+    void anAdditionalFieldWithoutConceptHasNoThesaurusLink() {
+        CustomFieldText additional = CustomFieldText.builder().id(42L).isSystemField(false).build();
+
+        assertThat(FieldAnswerWireService.fieldResourceOf(additional, "Libre", null).conceptUri()).isNull();
+    }
 }

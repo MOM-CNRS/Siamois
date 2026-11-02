@@ -364,14 +364,7 @@ public abstract class RecordingUnitForm {
     /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    protected static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .id(-332L)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .build();
+    protected static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-332L, GEOM_CONCEPT);
 
     @Transient
     @JsonIgnore

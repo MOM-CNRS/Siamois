@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.services.vocabulary.FieldTextService;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -80,7 +81,8 @@ public class FieldAnswerWireService {
                 fieldCode,
                 f instanceof CustomFieldText text ? text.getIsTextArea() : null,
                 field.getIcon(),
-                field.getConceptUri(),
+                // Its concept's page, a system field read from the database included (its row has no concept).
+                CustomField.conceptUriOf(FieldTextService.conceptOf(field)),
                 constraintsOf(f));
         // A geometry is displayed, never edited: read-only wherever it shows, a list as a fiche.
         return f instanceof CustomFieldGeometry ? resource.withReadOnly(true) : resource;

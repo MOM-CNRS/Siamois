@@ -94,7 +94,7 @@ public class FieldTextService {
      * with its row, see {@code SystemFieldInitializer}), so it takes the one of its definition in code.
      */
     @Nullable
-    private static Concept conceptOf(@Nullable CustomField field) {
+    public static Concept conceptOf(@Nullable CustomField field) {
         if (field == null) {
             return null;
         }

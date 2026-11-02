@@ -50,7 +50,10 @@ public class FormLayoutSeeds {
     private final ConceptIdLookup conceptIds;
     private final Map<ConfigurableTable, JsonNode> raw = new EnumMap<>(ConfigurableTable.class);
 
-    /** The table's initial layout: every field active unless the seed says {@code "active": false}, mandatory where it says so. */
+    /**
+     * The table's initial layout: every field active unless the seed says {@code "active": false}, mandatory where it
+     * says so; a section takes the measures users add on the fly only where it says {@code "allowMeasures": true}.
+     */
     public FormLayout layoutOf(ConfigurableTable table) {
         Map<Long, CustomField> catalog = SystemFieldCatalog.sharedFieldsOf(table).stream()
                 .collect(Collectors.toMap(CustomField::getId, f -> f));
@@ -74,7 +77,9 @@ public class FormLayoutSeeds {
                         null,
                         defaultOf(table, fieldId, field.get("default"))));
             }
-            groups.add(new FormLayout.Group(null, group.get("label").asText(), items));
+            // Only the sections a seed opens to them take the measures users add on the fly.
+            groups.add(new FormLayout.Group(null, group.get("label").asText(), items,
+                    group.path("allowMeasures").asBoolean(false)));
         }
         return new FormLayout(groups);
     }

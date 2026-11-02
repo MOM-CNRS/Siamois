@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.form.customfield.basetypes;
 
+import fr.siamois.domain.models.vocabulary.Concept;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -17,6 +18,18 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @SuperBuilder
 public class CustomFieldGeometry extends CustomFieldText {
+
+    /** The geometry system field of a table: its fixed id and its concept, bound to the record's {@code geom}. */
+    public static CustomFieldGeometry of(long id, Concept concept) {
+        CustomFieldGeometry field = new CustomFieldGeometry();
+        field.setId(id);
+        field.setLabel("common.field.geometry");
+        field.setIsSystemField(true);
+        field.setIsTextArea(true);
+        field.setValueBinding("geom");
+        field.setConcept(concept);
+        return field;
+    }
 
     @Override
     public String getIcon() {

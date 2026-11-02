@@ -134,6 +134,7 @@
     } ]
   }, {
     "label" : "recordingunit.panel.measurements",
+    "allowMeasures" : true,
     "fields" : [ {
       "fieldId" : -322,
       "binding" : "zInf",

@@ -584,14 +584,7 @@ public abstract class SpecimenForm {
     /** The find's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    protected static CustomFieldGeometry geomField = CustomFieldGeometry.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .id(-438L)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .build();
+    protected static CustomFieldGeometry geomField = CustomFieldGeometry.of(-438L, GEOM_CONCEPT);
 
     @Transient
     @JsonIgnore

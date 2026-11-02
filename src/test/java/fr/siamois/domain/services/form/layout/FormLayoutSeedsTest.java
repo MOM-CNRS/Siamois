@@ -35,6 +35,25 @@ class FormLayoutSeedsTest {
     }
 
     @Test
+    void onlyTheMeasurementSectionsTakeTheMeasuresUsersAdd() {
+        Map<ConfigurableTable, List<String>> open = new java.util.EnumMap<>(ConfigurableTable.class);
+        for (ConfigurableTable table : ConfigurableTable.values()) {
+            if (table == ConfigurableTable.PROJECT) continue;
+            open.put(table, TestForms.layoutOf(table).groups().stream()
+                    .filter(FormLayout.Group::allowMeasures)
+                    .map(FormLayout.Group::label)
+                    .toList());
+        }
+
+        assertThat(open).containsEntry(ConfigurableTable.UE, List.of("recordingunit.panel.measurements"))
+                .containsEntry(ConfigurableTable.MOBILIER, List.of("common.header.measurement"))
+                .containsEntry(ConfigurableTable.STUDY, List.of("study.header.treatment"))
+                .containsEntry(ConfigurableTable.CONTENANT, List.of("common.header.dimensions"))
+                .containsEntry(ConfigurableTable.PHASE, List.of())
+                .containsEntry(ConfigurableTable.DOCUMENT, List.of());
+    }
+
+    @Test
     void aRecordingUnitLaysOutItsErosionFieldsBehindTheErosionNature() {
         var erosionShape = item(ConfigurableTable.UE, "erosionShape");
 

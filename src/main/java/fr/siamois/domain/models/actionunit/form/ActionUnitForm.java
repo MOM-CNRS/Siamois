@@ -197,14 +197,7 @@ public abstract class ActionUnitForm {
     /** The project's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .id(-140L)
-            .build();
+    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-140L, GEOM_CONCEPT);
 
     public static final CustomFieldSelectOneSpatialUnit MAIN_LOCATION_FIELD = CustomFieldSelectOneSpatialUnit.builder()
             .label("common.label.mainLocation")

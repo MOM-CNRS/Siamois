@@ -317,14 +317,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     /** The place's geometry, shown as WKT: it is displayed by the form, never edited through it. */
     @Transient
     @JsonIgnore
-    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.builder()
-            .label("common.field.geometry")
-            .isSystemField(true)
-            .isTextArea(true)
-            .id(-210L)
-            .valueBinding("geom")
-            .concept(GEOM_CONCEPT)
-            .build();
+    public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-210L, GEOM_CONCEPT);
 
     @Transient
     @JsonIgnore

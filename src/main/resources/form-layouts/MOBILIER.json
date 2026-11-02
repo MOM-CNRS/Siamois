@@ -94,6 +94,7 @@
     } ]
   }, {
     "label" : "common.header.measurement",
+    "allowMeasures" : true,
     "fields" : [ {
       "fieldId" : -420,
       "binding" : "weight",
