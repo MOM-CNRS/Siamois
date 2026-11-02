@@ -306,6 +306,54 @@ class OOXMLImportServiceTest {
     }
 
     @Test
+    void readSheetMetadata_readableMetaSheet_tablesByNameAndFieldsByTheirDefaultHeader() {
+        Workbook wb = workbook();
+        sheet(wb, "Feuille UE", "Identifiant", "Nature", "Informations complémentaires");
+        Sheet meta = sheet(wb, "_meta", ImportSchema.META_TABLE, ImportSchema.META_SHEET_NAME,
+                ImportSchema.META_COLUMN, ImportSchema.META_FIELD);
+        row(meta, 1, "Unité d'enregistrement", "Feuille UE", "Identifiant", "Identifiant");
+        row(meta, 2, "Unité d'enregistrement", "Feuille UE", "Nature", "Nature");
+        row(meta, 3, "Unité d'enregistrement", "Feuille UE", "Informations complémentaires", "Informations complémentaires");
+
+        SheetMetadata result = service.readSheetMetadata(wb);
+
+        assertThat(result.tableToSheets()).containsEntry("recording_unit", List.of("Feuille UE"));
+        assertThat(result.columnAliases().get("Feuille UE"))
+                .containsEntry("nature", "nature label")
+                .containsEntry("informations complementaires", "commentaire")
+                .containsEntry("identifiant", "identifiant");
+    }
+
+    @Test
+    void readSheetMetadata_defaultSheetNamesAndHeaders_areRecognizedWithoutMetaSheet() {
+        Workbook wb = workbook();
+        sheet(wb, "Lieu", "Intitulé", "Type");
+        sheet(wb, "Unité d'enregistrement", "Identifiant", "Lieu(x)", "Attribution chronologique");
+
+        SheetMetadata result = service.readSheetMetadata(wb);
+
+        assertThat(result.tableToSheets()).containsEntry("spatial_unit", List.of("Lieu"))
+                .containsEntry("recording_unit", List.of("Unité d'enregistrement"));
+        assertThat(result.columnAliases().get("Unité d'enregistrement"))
+                .containsEntry("lieu(x)", "unite spatiale")
+                .containsEntry("attribution chronologique", "chronologie label");
+        assertThat(result.columnAliases().get("Lieu")).containsEntry("intitule", "nom").containsEntry("type", "type label");
+    }
+
+    @Test
+    void readSheetMetadata_formerDefaultSheetNames_stillRecognized() {
+        Workbook wb = workbook();
+        sheet(wb, "Unité spatiale", "Nom");
+        sheet(wb, "UE", "Identifiant");
+        sheet(wb, "Prelev", "Identifiant");
+
+        SheetMetadata result = service.readSheetMetadata(wb);
+
+        assertThat(result.tableToSheets()).containsEntry("spatial_unit", List.of("Unité spatiale"))
+                .containsEntry("recording_unit", List.of("UE")).containsEntry("specimen", List.of("Prelev"));
+    }
+
+    @Test
     void importFromExcel_multipleSheetsSameTable() throws Exception {
         Workbook wb = workbook();
 
@@ -530,7 +578,7 @@ class OOXMLImportServiceTest {
                 errors, new ImportProgress());
 
         assertThat(errors).singleElement().satisfies(error -> {
-            assertThat(error.column()).isEqualTo("nature label");
+            assertThat(error.column()).isEqualTo("Nature");
             assertThat(error.isVocabularyError()).isTrue();
             assertThat(error.vocabulary().fieldCode()).isEqualTo(RecordingUnit.NATURE_FIELD_CODE);
             assertThat(error.vocabulary().typeLabel()).isEqualTo("US");
@@ -857,7 +905,7 @@ class OOXMLImportServiceTest {
 
         assertThat(specs).isEmpty();
         assertThat(errors).hasSize(1);
-        assertThat(errors.get(0).column()).isEqualTo("relation label");
+        assertThat(errors.get(0).column()).isEqualTo("Type de relation");
         assertThat(errors.get(0).message()).contains("introuvable");
     }
 

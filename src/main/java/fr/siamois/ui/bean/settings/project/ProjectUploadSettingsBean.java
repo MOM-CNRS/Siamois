@@ -275,7 +275,7 @@ public class ProjectUploadSettingsBean {
     private ColumnAliasView buildColumnAliasView(String col, Map<String, String> aliases) {
         String norm = ExcelCellHelper.normalize(col);
         if (aliases.containsKey(norm)) {
-            return new ColumnAliasView(col, aliases.get(norm), false);
+            return new ColumnAliasView(col, ImportSchema.columnLabel(aliases.get(norm)), false);
         }
         return new ColumnAliasView(col, "", true);
     }

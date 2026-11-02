@@ -42,15 +42,15 @@ public class OOXMLImportService {
     // -------------------------------------------------------------------------
 
     public SheetMetadata readSheetMetadata(Workbook workbook) {
-        Sheet metaSheet = workbook.getSheet("_meta");
+        Sheet metaSheet = workbook.getSheet(META_SHEET);
         SheetMetadata base = metaSheet == null
                 ? fallbackSheetMapping(workbook)
                 : readMetadataSheet(metaSheet);
 
         Map<String, List<String>> enriched = new LinkedHashMap<>(base.tableToSheets());
-        DEFAULT_SHEET_NAMES.forEach((tableId, defaultName) -> {
-            if (!enriched.containsKey(tableId) && workbook.getSheet(defaultName) != null) {
-                enriched.put(tableId, List.of(defaultName));
+        DEFAULT_SHEET_NAMES.keySet().forEach(tableId -> {
+            if (!enriched.containsKey(tableId)) {
+                defaultSheetName(workbook, tableId).ifPresent(name -> enriched.put(tableId, List.of(name)));
             }
         });
 
@@ -76,13 +76,21 @@ public class OOXMLImportService {
 
         for (String raw : headerCellValues(sheet.getRow(0))) {
             String norm = normalize(raw);
-            String canonical = explicit.getOrDefault(norm, norm);
+            String canonical = explicit.containsKey(norm) ? explicit.get(norm) : columnKey(tableId, norm);
             if (!explicit.containsKey(norm) && expected.contains(canonical)) {
                 full.put(norm, canonical);
             }
         }
 
         if (!full.isEmpty()) enrichedAliases.put(sheetName, full);
+    }
+
+    /** The sheet a workbook has for a table when nothing maps it: under the default name, else under a former one. */
+    private static Optional<String> defaultSheetName(Workbook workbook, String tableId) {
+        List<String> names = new ArrayList<>();
+        names.add(DEFAULT_SHEET_NAMES.get(tableId));
+        names.addAll(LEGACY_SHEET_NAMES.getOrDefault(tableId, List.of()));
+        return names.stream().filter(n -> n != null && workbook.getSheet(n) != null).findFirst();
     }
 
     /** Non-blank cell values of a header row, in column order (empty list if the row is missing). */
@@ -98,11 +106,8 @@ public class OOXMLImportService {
 
     private SheetMetadata fallbackSheetMapping(Workbook workbook) {
         Map<String, List<String>> tableToSheets = new LinkedHashMap<>();
-        DEFAULT_SHEET_NAMES.forEach((tableId, defaultName) -> {
-            if (workbook.getSheet(defaultName) != null) {
-                tableToSheets.put(tableId, List.of(defaultName));
-            }
-        });
+        DEFAULT_SHEET_NAMES.keySet().forEach(tableId ->
+                defaultSheetName(workbook, tableId).ifPresent(name -> tableToSheets.put(tableId, List.of(name))));
         return new SheetMetadata(tableToSheets, Map.of());
     }
 
@@ -114,10 +119,10 @@ public class OOXMLImportService {
         if (header == null) return new SheetMetadata(Map.of(), columnAliases);
 
         Map<String, Integer> colIndex = indexColumns(header);
-        Integer sheetIdCol      = colIndex.get("sheet_id");
-        Integer sheetNameCol    = colIndex.get("sheet_name");
-        Integer aliasCol        = colIndex.get("column_alias");
-        Integer canonicalCol    = colIndex.get("column_canonical");
+        Integer sheetIdCol      = metaColumn(colIndex, META_TABLE, 0);
+        Integer sheetNameCol    = metaColumn(colIndex, META_SHEET_NAME, 1);
+        Integer aliasCol        = metaColumn(colIndex, META_COLUMN, 2);
+        Integer canonicalCol    = metaColumn(colIndex, META_FIELD, 3);
 
         // Mapping of the sheet names if no cols defined
         if (sheetIdCol == null || sheetNameCol == null) return new SheetMetadata(Map.of(), columnAliases);
@@ -132,13 +137,19 @@ public class OOXMLImportService {
         return new SheetMetadata(tableToSheets, columnAliases);
     }
 
+    /** A column of the mapping sheet, under its readable header or under the technical one it had before. */
+    private static Integer metaColumn(Map<String, Integer> colIndex, String header, int legacyIndex) {
+        Integer col = colIndex.get(normalize(header));
+        return col != null ? col : colIndex.get(LEGACY_META_HEADERS.get(legacyIndex));
+    }
+
     private void registerMetaRow(Row row, int sheetIdCol, int sheetNameCol, Integer aliasCol, Integer canonicalCol,
                                   Map<String, LinkedHashSet<String>> tableToSheetsTemp,
                                   Map<String, Map<String, String>> columnAliases) {
         String id   = row != null ? getStringCell(row, sheetIdCol) : null;
         String name = row != null ? getStringCell(row, sheetNameCol) : null;
         if (id == null || name == null) return;
-        id = id.trim();
+        id = tableIdOf(id);
         name = name.trim();
 
         tableToSheetsTemp.computeIfAbsent(id, k -> new LinkedHashSet<>()).add(name);
@@ -149,7 +160,7 @@ public class OOXMLImportService {
         if (alias == null || alias.isBlank() || canonical == null || canonical.isBlank()) return;
 
         columnAliases.computeIfAbsent(name, k -> new HashMap<>())
-                .put(normalize(alias.trim()), normalize(canonical.trim()));
+                .put(normalize(alias.trim()), columnKey(id, canonical.trim()));
     }
 
     // -------------------------------------------------------------------------
@@ -562,7 +573,7 @@ public class OOXMLImportService {
             Integer col = cols.get(key);
             return col != null ? parseOffsetDateTime(row.getCell(col)) : null;
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+            throw new IllegalStateException("[colonne '" + columnLabel(key) + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -685,7 +696,7 @@ public class OOXMLImportService {
             String name = getStringCellOrNull(row, cols, key);
             return (name == null || name.isBlank()) ? null : new SpatialUnitSeeder.SpatialUnitKey(name.trim());
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+            throw new IllegalStateException("[colonne '" + columnLabel(key) + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -694,7 +705,7 @@ public class OOXMLImportService {
             String ident = getStringCellOrNull(row, cols, key);
             return (ident == null || ident.isBlank()) ? null : new ActionUnitSeeder.ActionUnitKey(ident.trim(), institutionIdentifier);
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+            throw new IllegalStateException("[colonne '" + columnLabel(key) + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -904,7 +915,7 @@ public class OOXMLImportService {
         try {
             return conceptKeyFromUri(raw);
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+            throw new IllegalStateException("[colonne '" + columnLabel(key) + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -927,13 +938,13 @@ public class OOXMLImportService {
         }
         if (label == null || label.isBlank()) return null;
         if (institutionId == null) {
-            throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
+            throw new IllegalStateException("[colonne '" + columnLabel(labelKey) + "'] : résolution par label indisponible hors contexte projet");
         }
         try {
             Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
             return new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label);
         } catch (Exception e) {
-            throw new VocabularyResolutionException(fieldCode, "[colonne '" + labelKey + "'] : " + e.getMessage(), e);
+            throw new VocabularyResolutionException(fieldCode, "[colonne '" + columnLabel(labelKey) + "'] : " + e.getMessage(), e);
         }
     }
 
@@ -966,21 +977,21 @@ public class OOXMLImportService {
                 ConceptSeeder.ConceptKey key = conceptKeyFromUri(uri);
                 if (key != null) result.add(key);
             } catch (Exception e) {
-                throw new IllegalStateException("[colonne '" + uriKey + "'] : " + e.getMessage(), e);
+                throw new IllegalStateException("[colonne '" + columnLabel(uriKey) + "'] : " + e.getMessage(), e);
             }
         }
 
         String labelRaw = getStringCellOrNull(row, cols, labelKey);
         List<String> labels = parsePersonList(labelRaw);
         if (!labels.isEmpty() && institutionId == null) {
-            throw new IllegalStateException("[colonne '" + labelKey + "'] : résolution par label indisponible hors contexte projet");
+            throw new IllegalStateException("[colonne '" + columnLabel(labelKey) + "'] : résolution par label indisponible hors contexte projet");
         }
         for (String label : labels) {
             try {
                 Concept concept = conceptService.resolveConceptByLabel(institutionId, fieldCode, label);
                 result.add(new ConceptSeeder.ConceptKey(concept.getVocabulary().getExternalVocabularyId(), concept.getExternalId(), label));
             } catch (Exception e) {
-                throw new VocabularyResolutionException(fieldCode, "[colonne '" + labelKey + "'] : " + e.getMessage(), e);
+                throw new VocabularyResolutionException(fieldCode, "[colonne '" + columnLabel(labelKey) + "'] : " + e.getMessage(), e);
             }
         }
 
