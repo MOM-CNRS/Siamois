@@ -56,7 +56,7 @@ public final class ExcelCellHelper {
             Integer index = cols.get(key);
             return index != null ? getStringCell(row, index) : null;
         } catch (Exception e) {
-            throw new IllegalStateException("[colonne '" + key + "'] : " + e.getMessage(), e);
+            throw new IllegalStateException("[colonne '" + ImportSchema.columnLabel(key) + "'] : " + e.getMessage(), e);
         }
     }
 
