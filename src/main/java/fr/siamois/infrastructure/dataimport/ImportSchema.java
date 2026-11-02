@@ -19,6 +19,16 @@ public final class ImportSchema {
     public static final String SIAMOIS_SYSTEM = "siamois system";
     public static final String DESCRIPTION    = "description";
 
+    // Literals used several times below
+    private static final String HEADER_INSTITUTION = "Institution";
+    private static final String HEADER_RECORDING_UNIT = "Unité d'enregistrement";
+    private static final String HEADER_DESCRIPTION = "Description";
+    private static final String HEADER_IDENTIFIER = "Identifiant";
+    private static final String KEY_COMMENT = "commentaire";
+    private static final String KEY_CHRONOLOGY_LABEL = "chronologie label";
+    private static final String KEY_PARENT = "parent";
+    private static final String KEY_CHILD = "enfant";
+
     public static final String ACTION_UNIT = "action_unit";
     public static final String SPATIAL_UNIT = "spatial_unit";
     public static final String RECORDING_UNIT = "recording_unit";
@@ -35,12 +45,12 @@ public final class ImportSchema {
      * EXPECTED_COLUMNS ("spatial_unit", "recording_unit"…) — not the French display names.
      */
     public static final Map<String, String> DEFAULT_SHEET_NAMES = Map.ofEntries(
-            Map.entry(INSTITUTION,      "Institution"),
+            Map.entry(INSTITUTION,      HEADER_INSTITUTION),
             Map.entry(PERSON,           "Personne"),
             Map.entry("code",           "Code"),
             Map.entry(ACTION_UNIT,    "Unite action"),
             Map.entry(SPATIAL_UNIT,   "Lieu"),
-            Map.entry(RECORDING_UNIT, "Unité d'enregistrement"),
+            Map.entry(RECORDING_UNIT, HEADER_RECORDING_UNIT),
             Map.entry(SPECIMEN,       "Mobilier"),
             Map.entry(PHASE,          "Phase"),
             Map.entry(RECORDING_REL,   "Relations entre UE"),
@@ -66,12 +76,12 @@ public final class ImportSchema {
      * (e.g. "this sheet maps to table: Lieu"), as opposed to the technical ID itself.
      */
     public static final Map<String, String> TABLE_LABELS = Map.ofEntries(
-            Map.entry(INSTITUTION,      "Institution"),
+            Map.entry(INSTITUTION,      HEADER_INSTITUTION),
             Map.entry(PERSON,           "Personne"),
             Map.entry("code",           "Code"),
             Map.entry(ACTION_UNIT,    "Unité d'action"),
             Map.entry(SPATIAL_UNIT,   "Lieu"),
-            Map.entry(RECORDING_UNIT, "Unité d'enregistrement"),
+            Map.entry(RECORDING_UNIT, HEADER_RECORDING_UNIT),
             Map.entry(SPECIMEN,       "Mobilier"),
             Map.entry(PHASE,          "Phase"),
             Map.entry(RECORDING_REL,   "Relations entre UE"),
@@ -96,18 +106,18 @@ public final class ImportSchema {
                                                 "unite spatiale", "unite d'action",
                                                 "couleur de la matrice", "texture de la matrice", "composition de la matrice",
                                                 "phases",
-                                                "commentaire", "taq", "tpq",
+                                                KEY_COMMENT, "taq", "tpq",
                                                 "erosion forme uri", "erosion forme label",
                                                 "erosion orientation uri", "erosion orientation label",
                                                 "erosion profil uri", "erosion profil label",
-                                                "chronologie uri", "chronologie label")),
+                                                "chronologie uri", KEY_CHRONOLOGY_LABEL)),
             Map.entry(SPECIMEN,       List.of(IDENTIFIANT, INSTITUTION, "auteur fiche email",
                                                 "matiere", "matiere uri", "matiere label",
                                                 "categorie", "categorie uri", "categorie label",
                                                 "designation", "designation uri", "designation label",
                                                 "collecteurs emails", "unite d'enregistrement",
-                                                DESCRIPTION, "commentaire", "numero isolat", "taq", "tpq",
-                                                "autre identifiant", "chronologie uri", "chronologie label",
+                                                DESCRIPTION, KEY_COMMENT, "numero isolat", "taq", "tpq",
+                                                "autre identifiant", "chronologie uri", KEY_CHRONOLOGY_LABEL,
                                                 "nombre d'elements", "date de collecte",
                                                 "methode de collecte uri", "methode de collecte label",
                                                 "etat sanitaire uri", "etat sanitaire label",
@@ -116,9 +126,9 @@ public final class ImportSchema {
                                                 "ordre", "borne inferieure", "borne superieure",
                                                 "auteur", "projet", INSTITUTION,
                                                 "periodes uri", "periodes label", "mots cles uri", "mots cles label")),
-            Map.entry(RECORDING_REL,   List.of("parent", "enfant")),
+            Map.entry(RECORDING_REL,   List.of(KEY_PARENT, KEY_CHILD)),
             Map.entry(STRATI_REL,      List.of("us1", "us2", "relation", "relation label", "direction vocabulaire", "asynchrone", "incertain")),
-            Map.entry(SPATIAL_UNIT_REL, List.of("parent", "enfant"))
+            Map.entry(SPATIAL_UNIT_REL, List.of(KEY_PARENT, KEY_CHILD))
     );
 
     /** Header of the sheet-mapping sheet ({@link #META_SHEET}): which SIAMOIS table a sheet of the file feeds. */
@@ -141,40 +151,40 @@ public final class ImportSchema {
      */
     public static final Map<String, Map<String, String>> COLUMN_LABELS = Map.of(
             SPATIAL_UNIT, ordered(
-                    "nom", "Intitulé", TYPE_LABEL, "Type", INSTITUTION, "Institution", "enfants", "Enfants"),
+                    "nom", "Intitulé", TYPE_LABEL, "Type", INSTITUTION, HEADER_INSTITUTION, "enfants", "Enfants"),
             RECORDING_UNIT, ordered(
-                    IDENTIFIANT, "Identifiant", TYPE_LABEL, "Type", DESCRIPTION, "Description",
+                    IDENTIFIANT, HEADER_IDENTIFIER, TYPE_LABEL, "Type", DESCRIPTION, HEADER_DESCRIPTION,
                     "nature label", "Nature", "cycle label", "Cycle géomorphologique",
                     "agent label", "Agent géomorphologique", "interpretation label", "Interprétation normalisée",
-                    "author email", "Auteur scientifique/technique", INSTITUTION, "Institution",
+                    "author email", "Auteur scientifique/technique", INSTITUTION, HEADER_INSTITUTION,
                     "contributeurs email", "Contributeur(s) scientifique(s)/technique(s)",
                     "date d'ouverture", "Date d'ouverture", "date de fermeture", "Date de fermeture",
                     "unite spatiale", "Lieu(x)", "unite d'action", "Projet", "phases", "Phases",
                     "couleur de la matrice", "Couleur de la matrice", "texture de la matrice", "Texture de la matrice",
                     "composition de la matrice", "Composition de la matrice",
-                    "commentaire", "Informations complémentaires", "taq", "TAQ", "tpq", "TPQ",
+                    KEY_COMMENT, "Informations complémentaires", "taq", "TAQ", "tpq", "TPQ",
                     "erosion forme label", "Forme de l'érosion", "erosion orientation label", "Orientation de l'érosion",
-                    "erosion profil label", "Profil de l'érosion", "chronologie label", "Attribution chronologique"),
+                    "erosion profil label", "Profil de l'érosion", KEY_CHRONOLOGY_LABEL, "Attribution chronologique"),
             SPECIMEN, ordered(
-                    IDENTIFIANT, "Identifiant", "categorie label", "Type", "matiere label", "Matière",
+                    IDENTIFIANT, HEADER_IDENTIFIER, "categorie label", "Type", "matiere label", "Matière",
                     "classe matiere label", "Classe", "designation label", "Détermination",
-                    INSTITUTION, "Institution", "auteur fiche email", "Auteurs", "collecteurs emails", "Collecteurs",
-                    "unite d'enregistrement", "Unité d'enregistrement", DESCRIPTION, "Description",
-                    "commentaire", "Informations complémentaires", "numero isolat", "Identifiant d'isolation",
+                    INSTITUTION, HEADER_INSTITUTION, "auteur fiche email", "Auteurs", "collecteurs emails", "Collecteurs",
+                    "unite d'enregistrement", HEADER_RECORDING_UNIT, DESCRIPTION, HEADER_DESCRIPTION,
+                    KEY_COMMENT, "Informations complémentaires", "numero isolat", "Identifiant d'isolation",
                     "taq", "TAQ", "tpq", "TPQ", "autre identifiant", "Autre identifiant",
-                    "chronologie label", "Attribution chronologique", "nombre d'elements", "Nombre d'éléments",
+                    KEY_CHRONOLOGY_LABEL, "Attribution chronologique", "nombre d'elements", "Nombre d'éléments",
                     "date de collecte", "Date de collecte", "methode de collecte label", "Nature du prélèvement",
                     "etat sanitaire label", "État sanitaire"),
             PHASE, ordered(
-                    IDENTIFIANT, "Identifiant", "titre", "Titre", TYPE_LABEL, "Type", DESCRIPTION, "Description",
+                    IDENTIFIANT, HEADER_IDENTIFIER, "titre", "Titre", TYPE_LABEL, "Type", DESCRIPTION, HEADER_DESCRIPTION,
                     "ordre", "Numéro d'ordre", "borne inferieure", "Borne inférieure", "borne superieure", "Borne supérieure",
-                    "auteur", "Auteur", "projet", "Projet", INSTITUTION, "Institution",
+                    "auteur", "Auteur", "projet", "Projet", INSTITUTION, HEADER_INSTITUTION,
                     "periodes label", "Périodes", "mots cles label", "Mots-clés"),
-            RECORDING_REL, ordered("parent", "Parent", "enfant", "Enfant"),
+            RECORDING_REL, ordered(KEY_PARENT, "Parent", KEY_CHILD, "Enfant"),
             STRATI_REL, ordered(
                     "us1", "Unité 1", "us2", "Unité 2", "relation label", "Type de relation",
                     "asynchrone", "Asynchrone", "incertain", "Incertain"),
-            SPATIAL_UNIT_REL, ordered("parent", "Parent", "enfant", "Enfant"));
+            SPATIAL_UNIT_REL, ordered(KEY_PARENT, "Parent", KEY_CHILD, "Enfant"));
 
     private static Map<String, String> ordered(String... keysAndLabels) {
         Map<String, String> map = new java.util.LinkedHashMap<>();

@@ -62,9 +62,10 @@ class ImportSchemaTest {
 
     @Test
     void formerSheetNamesBelongToTablesWithADefaultName() {
+        Map<String, String> defaults = Map.copyOf(ImportSchema.DEFAULT_SHEET_NAMES);
         ImportSchema.LEGACY_SHEET_NAMES.forEach((table, names) -> {
-            assertThat(ImportSchema.DEFAULT_SHEET_NAMES).containsKey(table);
-            assertThat(names).isNotEmpty().doesNotContainAnyElementsOf(List.of(ImportSchema.DEFAULT_SHEET_NAMES.get(table)));
+            assertThat(defaults).containsKey(table);
+            assertThat(names).isNotEmpty().doesNotContainAnyElementsOf(List.of(defaults.get(table)));
         });
     }
 }

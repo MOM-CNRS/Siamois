@@ -33,11 +33,11 @@ class ChartresModelWorkbookTest {
                 Map<String, String> aliases = meta.columnAliases().get(sheet.getSheetName());
                 assertThat(aliases).as(sheet.getSheetName()).isNotNull();
                 for (String header : headers(sheet)) {
-                    assertThat(aliases).as(sheet.getSheetName() + " / " + header)
-                            .containsKey(ExcelCellHelper.normalize(header));
+                    String normalizedHeader = ExcelCellHelper.normalize(header);
+                    assertThat(aliases).as(sheet.getSheetName() + " / " + header).containsKey(normalizedHeader);
                 }
             }
-            assertThat(meta.tableToSheets().keySet()).contains("spatial_unit", "recording_unit", "specimen", "phase",
+            assertThat(meta.tableToSheets()).containsKeys("spatial_unit", "recording_unit", "specimen", "phase",
                     "recordingRel", "stratiRel", "spatialUnitRel");
         }
     }

@@ -306,7 +306,7 @@ class OOXMLImportServiceTest {
     }
 
     @Test
-    void readSheetMetadata_readableMetaSheet_tablesByNameAndFieldsByTheirDefaultHeader() throws Exception {
+    void readSheetMetadata_readableMetaSheet_tablesByNameAndFieldsByTheirDefaultHeader() {
         Workbook wb = workbook();
         sheet(wb, "Feuille UE", "Identifiant", "Nature", "Informations complémentaires");
         Sheet meta = sheet(wb, "_meta", ImportSchema.META_TABLE, ImportSchema.META_SHEET_NAME,
@@ -325,7 +325,7 @@ class OOXMLImportServiceTest {
     }
 
     @Test
-    void readSheetMetadata_defaultSheetNamesAndHeaders_areRecognizedWithoutMetaSheet() throws Exception {
+    void readSheetMetadata_defaultSheetNamesAndHeaders_areRecognizedWithoutMetaSheet() {
         Workbook wb = workbook();
         sheet(wb, "Lieu", "Intitulé", "Type");
         sheet(wb, "Unité d'enregistrement", "Identifiant", "Lieu(x)", "Attribution chronologique");
@@ -341,7 +341,7 @@ class OOXMLImportServiceTest {
     }
 
     @Test
-    void readSheetMetadata_formerDefaultSheetNames_stillRecognized() throws Exception {
+    void readSheetMetadata_formerDefaultSheetNames_stillRecognized() {
         Workbook wb = workbook();
         sheet(wb, "Unité spatiale", "Nom");
         sheet(wb, "UE", "Identifiant");
