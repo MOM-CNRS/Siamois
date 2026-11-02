@@ -155,7 +155,11 @@ public final class ImportSchema {
      */
     public static final Map<String, Map<String, String>> COLUMN_LABELS = Map.of(
             SPATIAL_UNIT, ordered(
-                    "nom", "Intitulé", TYPE_LABEL, "Type", INSTITUTION, HEADER_INSTITUTION, "enfants", "Enfants"),
+                    "nom", "Intitulé", TYPE_LABEL, "Type", INSTITUTION, HEADER_INSTITUTION, "enfants", "Enfants",
+                    "code insee", "Code INSEE", "lieu-dit", "Lieu-dit", "rue", "Rue", "code postal", "Code postal",
+                    "commune", "Commune", "section cadastrale", "Section cadastrale",
+                    "numero parcelle", "Numéro de parcelle", "numero carte shom", "Numéro de carte Shom",
+                    "commentaires", "Commentaires"),
             RECORDING_UNIT, ordered(
                     IDENTIFIANT, HEADER_IDENTIFIER, TYPE_LABEL, "Type", DESCRIPTION, HEADER_DESCRIPTION,
                     "nature label", "Nature", "cycle label", "Cycle géomorphologique",
