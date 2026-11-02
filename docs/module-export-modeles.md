@@ -189,7 +189,7 @@ Les avertissements de résolution sont affichés avec le fichier produit.
     identique au national sauf la feuille `situation`, qui reprend le tableau sous-marin du référentiel (même nom de feuille,
     autres en-têtes : un fichier ne contient qu'une des deux). `latitude_OA`, `longitude_OA` et `nom_commune_OA` lisent les
     parties de l'adresse du lieu ; `profondeur_OA` lit le champ `zmin` du projet (profondeur maximale = altitude la plus basse).
-  - `situation` : lignes = lieux (sans filtre de type, à restreindre aux parcelles).
+  - `situation` : lignes = lieux du projet filtrés sur le type « Parcelle » (th338, concept 1165) dans le modèle terrestre ; le modèle sous-marin garde tous les types de lieu.
   - Le nom de fichier utilise `{dateCompact}` (aaaammjj) ; les espaces deviennent `_`.
 
 ## 8. Ordre de livraison envisagé

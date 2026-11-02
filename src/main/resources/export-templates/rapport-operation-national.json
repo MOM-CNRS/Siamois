@@ -10,7 +10,13 @@
     },
     "situation_1": {
       "kind": "ENTITY",
-      "entity": "SPATIAL_UNIT"
+      "entity": "SPATIAL_UNIT",
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1165"
+        }
+      ]
     },
     "UE_1": {
       "kind": "ENTITY",
