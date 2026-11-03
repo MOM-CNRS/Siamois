@@ -222,7 +222,16 @@
                         <!-- Projet de référence, en petit texte sous l'en-tête -->
                         <div class="xe-refbar">
                             <span class="xe-refbar-label">#{langBean.msg('exportTemplates.editor.refProject.label')}</span>
-                            <span class="xe-refbar-value">#{exportTemplateEditorBean.referenceProjectLabel}</span>
+                            <p:selectOneMenu rendered="#{not empty exportTemplateEditorBean.projectItems}" value="#{exportTemplateEditorBean.referenceProject}"
+                                             styleClass="xe-select" style="min-width: 260px" appendTo="@this">
+                                <p:ajax listener="#{exportTemplateEditorBean.onPreviewProjectChange()}" process="@this" update="@form"/>
+                                <f:selectItem itemLabel="#{langBean.msg('exportTemplates.editor.referenceProject.none')}" itemValue=""/>
+                                <f:selectItems value="#{exportTemplateEditorBean.projectItems}" var="o"
+                                               itemLabel="#{o.label()}" itemValue="#{o.value()}"/>
+                            </p:selectOneMenu>
+                            <h:panelGroup rendered="#{empty exportTemplateEditorBean.projectItems}">
+                                <span class="xe-refbar-value">#{exportTemplateEditorBean.referenceProjectLabel}</span>
+                            </h:panelGroup>
                             <p:commandLink rendered="#{empty exportTemplateEditorBean.projectItems}" styleClass="xe-chip" ajax="false" immediate="true"
                                            action="#{navBean.goToProjectsSettings()}" value="+ #{langBean.msg('exportTemplates.editor.refProject.create')}"/>
                             <span class="xe-refbar-hint">#{langBean.msg('exportTemplates.editor.refProject.hint')}</span>

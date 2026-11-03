@@ -248,8 +248,21 @@ class ExportTemplateServiceTest {
 
         assertThatThrownBy(() -> service.updateDefinition(userInfo, 5L, same)).isInstanceOf(ForbiddenOperationException.class);
         assertThatThrownBy(() -> service.rename(userInfo, 5L, "B")).isInstanceOf(ForbiddenOperationException.class);
-        assertThatThrownBy(() -> service.setReferenceProject(userInfo, 5L, null)).isInstanceOf(ForbiddenOperationException.class);
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void publishedTemplate_acceptsAReferenceProject() {
+        allowManage();
+        ExportTemplate existing = stored(5L, sampleJson("u1", "A"));
+        existing.setPublished(true);
+        existing.setReferenceProject(new ActionUnit());
+        when(repository.findByIdAndInstitution(5L, institution)).thenReturn(Optional.of(existing));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.setReferenceProject(userInfo, 5L, null);
+
+        assertThat(existing.getReferenceProject()).isNull();
     }
 
     @Test

@@ -205,11 +205,14 @@ public class ExportTemplateService {
                 d.schemaVersion(), d.id(), d.version(), newName, d.fileNamePattern(), d.sheets()));
     }
 
-    /** Le projet de référence est une donnée locale, absente du JSON partagé. */
+    /**
+     * Le projet de référence est une donnée locale, absente du JSON partagé : il se choisit aussi sur un modèle
+     * publié (il sert à son aperçu), contrairement à la définition.
+     */
     @Transactional
     public ExportTemplateDTO setReferenceProject(UserInfo userInfo, Long id, @Nullable Long projectId) {
         assertCanManage(userInfo);
-        ExportTemplate template = loadEditable(userInfo, id);
+        ExportTemplate template = load(userInfo, id);
         template.setReferenceProject(projectId == null ? null : projectOf(userInfo, projectId));
         return toDto(exportTemplateRepository.save(template));
     }
