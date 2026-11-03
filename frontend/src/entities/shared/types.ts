@@ -97,7 +97,8 @@ export interface EntitySibling {
 // sibling's label from the siblings lookup. Enough to draw the fiche header's identifier chip at
 // once; everything below it is a skeleton until the entity arrives.
 export interface EntityPreview {
-  label: string;
+  // Absent when the preview only names a tab (a freshly created entity): the header shows a skeleton chip.
+  label?: string;
   validationStatus?: string | null;
   // The key of the detail tab the fiche opens on (a DetailTabDef.key); the fiche's own tab when absent.
   tab?: string;
@@ -269,7 +270,7 @@ export interface DetailTabDef<TDetail> {
 // switch panels in place instead of a full page navigation.
 export interface HomeWidgetContext {
   organizationId?: number;
-  onNavigate?: (entityType: string, id?: string | number) => void;
+  onNavigate?: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // Opens a list on a saved view (a bookmark of a view), and a fiche in the overview pane.
   onOpenView?: (entityType: string, viewId?: number) => void;
   onOpenOverview?: (entityType: string, id: string | number) => void;
