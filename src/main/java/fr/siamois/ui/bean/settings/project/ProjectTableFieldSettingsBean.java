@@ -701,6 +701,55 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /** What the open nodes loaded (types of a table, fields of a type) — dropped whenever a config is reloaded. */
     private final Map<String, Object> treeCache = new HashMap<>();
 
+    /** What the user typed in the tree's search field; empty when the tree is not filtered. */
+    private String treeSearch = "";
+
+    public boolean isTreeFiltered() {
+        return !normalizedSearch().isEmpty();
+    }
+
+    private String normalizedSearch() {
+        return normalizeForSearch(treeSearch);
+    }
+
+    private static String normalizeForSearch(String text) {
+        if (text == null) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+    }
+
+    private static boolean matches(String text, String normalizedSearch) {
+        return normalizeForSearch(text).contains(normalizedSearch);
+    }
+
+    /** The types of a table the tree shows: all of them, or only those matching the search (all when the table itself matches). */
+    public List<TypeSummary> visibleTypesOf(ConfigurableTable table) {
+        List<TypeSummary> types = typesOf(table);
+        String search = normalizedSearch();
+        if (search.isEmpty() || matches(table.getLabel(), search)) {
+            return types;
+        }
+        return types.stream().filter(type -> matches(type.getName(), search)).toList();
+    }
+
+    /** A table stays in the tree when nothing is searched, or when it or one of its types matches. */
+    public boolean isTableVisible(ConfigurableTable table) {
+        return !isTreeFiltered() || matches(table.getLabel(), normalizedSearch()) || !visibleTypesOf(table).isEmpty();
+    }
+
+    public boolean isAnyTableVisible() {
+        return tables.stream().anyMatch(this::isTableVisible);
+    }
+
+    /** Tables unfold on their own while searching, so the matching types show without a click. */
+    public boolean isTableShownOpen(ConfigurableTable table) {
+        return isTreeFiltered() || isTableExpanded(table);
+    }
+
     private static String tableNode(ConfigurableTable table) {
         return "T:" + table.name();
     }
