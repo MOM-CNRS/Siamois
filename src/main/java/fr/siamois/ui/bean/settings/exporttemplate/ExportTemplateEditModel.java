@@ -177,7 +177,30 @@ public class ExportTemplateEditModel implements Serializable {
         e.sortBy = new ArrayList<>(s.sortBy());
         s.sources().forEach(src -> e.sources.add(sourceFrom(src)));
         s.columns().forEach(c -> e.columns.add(columnFrom(c)));
+        targetEachType(e);
         return e;
+    }
+
+    /**
+     * Une source d'entité à plusieurs types se cible type par type (« i:type ») : un mapping qui visait la source
+     * entière (« i ») vise désormais chacun de ses types, ce qui revient au même à l'export.
+     */
+    private static void targetEachType(EditSheet sheet) {
+        for (int i = 0; i < sheet.sources.size(); i++) {
+            EditSource src = sheet.sources.get(i);
+            if (!KIND_ENTITY.equals(src.kind) || src.typeKeys.size() < 2) {
+                continue;
+            }
+            String whole = String.valueOf(i);
+            List<String> perType = src.typeKeys.stream().map(key -> whole + ":" + key).toList();
+            for (EditColumn column : sheet.columns) {
+                for (EditRule rule : column.rules) {
+                    if (rule.sources.remove(whole)) {
+                        rule.sources.addAll(perType);
+                    }
+                }
+            }
+        }
     }
 
     private static EditSource sourceFrom(Source source) {

@@ -452,9 +452,10 @@ a.xe-row { color: var(--text); text-decoration: none; cursor: pointer; }
 .xe-search:focus-within { border-color: var(--primary-dark); }
 
 /* ---- sources dans les réglages de la feuille : une ligne par source, types en liste à cocher */
-.xe-src-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+/* La ligne d'une source : icône, nom de la table et « retirer » en haut, la liste de ses types dessous, sur toute la largeur. */
+.xe-src-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 10px; }
 .xe-src-row .xe-src-name { font-size: 13.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
-.xe-src-row .ui-selectcheckboxmenu { flex: 1; min-width: 0; }
+.xe-src-row .ui-selectcheckboxmenu { flex: 1 1 100%; order: 3; min-width: 0; }
 .xe-src-row .xe-x { margin-left: auto; }
 .xe-box i { color: #fff; line-height: 1; }
 .xe-tabs .ui-button.xe-tab-add { background: var(--surface); border: 1px solid var(--primary); color: var(--primary-dark); box-shadow: none;
