@@ -605,6 +605,8 @@ tr.row-clickable { cursor: pointer; }
     border: 1px solid var(--primary); border-radius: 6px; background: var(--surface); color: var(--primary-dark); cursor: pointer; }
 .xe-tabs-nav:disabled { opacity: .35; cursor: default; }
 .xe-tabs > .xe-tab-add, .xe-tabs > .ui-button.xe-tab-add { flex: 0 0 auto; margin-bottom: 4px; }
+/* « Ajouter une feuille » et « Réglages de la feuille » : tout à droite de la barre, au même bord que « Ajouter une colonne » (28px). */
+.xe-tabs > .xe-tab-add:not(.xe-sheet-settings) { margin-left: auto; }
 
 /* Titre et actions : souple, passe à la ligne sur petit écran */
 
