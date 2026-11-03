@@ -560,4 +560,82 @@ class ProjectTableFieldSettingsBeanTest {
                 mock(fr.siamois.infrastructure.database.repositories.vocabulary.label.ConceptLabelRepository.class),
                 mock(fr.siamois.infrastructure.database.repositories.vocabulary.LocalizedConceptDataRepository.class)));
     }
+
+    // ---- the tree's search: types and fields ----
+
+    private ProjectTableFieldSettingsBean searchableBean() {
+        TableFieldConfigService service = mock(TableFieldConfigService.class);
+        when(service.listTypes(42L, ConfigurableTable.UE)).thenReturn(List.of(new TypeSummary("Tranchée"), new TypeSummary("Sondage")));
+        when(service.listTypes(42L, ConfigurableTable.MOBILIER)).thenReturn(List.of(new TypeSummary("Céramique")));
+        when(service.getFieldsConfig(42L, ConfigurableTable.UE, "Tranchée")).thenReturn(
+                new TypeFieldsConfig(List.of(field("recordingunit.field.profondeur", true))));
+        when(service.getFieldsConfig(42L, ConfigurableTable.UE, "Sondage")).thenReturn(new TypeFieldsConfig(List.of()));
+        when(service.getFieldsConfig(42L, ConfigurableTable.MOBILIER, "Céramique")).thenReturn(new TypeFieldsConfig(List.of()));
+        ProjectTableFieldSettingsBean bean = bean(service);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(42L);
+        bean.setProject(project);
+        bean.setTables(List.of(ConfigurableTable.UE, ConfigurableTable.MOBILIER));
+        return bean;
+    }
+
+    @Test
+    void treeSearch_withNothingTyped_showsEveryTableAndType() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+
+        assertThat(bean.isTreeFiltered()).isFalse();
+        assertThat(bean.isTableVisible(ConfigurableTable.UE)).isTrue();
+        assertThat(bean.visibleTypesOf(ConfigurableTable.UE)).extracting(TypeSummary::getName).containsExactly("Tranchée", "Sondage");
+        assertThat(bean.isTableShownOpen(ConfigurableTable.UE)).isFalse();
+    }
+
+    @Test
+    void treeSearch_matchesATypeNameIgnoringCaseAndAccents_andHidesTheOtherTables() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+        bean.setTreeSearch("TRANCHEE");
+
+        assertThat(bean.isTreeFiltered()).isTrue();
+        assertThat(bean.isTableVisible(ConfigurableTable.UE)).isTrue();
+        assertThat(bean.isTableVisible(ConfigurableTable.MOBILIER)).isFalse();
+        assertThat(bean.visibleTypesOf(ConfigurableTable.UE)).extracting(TypeSummary::getName).containsExactly("Tranchée");
+        assertThat(bean.isTableShownOpen(ConfigurableTable.UE)).isTrue();
+        assertThat(bean.isAnyTableVisible()).isTrue();
+    }
+
+    @Test
+    void treeSearch_aTableLabelMatchKeepsAllItsTypes() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+        bean.setTreeSearch("mobilier");
+
+        assertThat(bean.visibleTypesOf(ConfigurableTable.MOBILIER)).extracting(TypeSummary::getName).containsExactly("Céramique");
+        assertThat(bean.isTableVisible(ConfigurableTable.UE)).isFalse();
+    }
+
+    @Test
+    void treeSearch_matchesAFieldLabel_andOpensItsTypeOnThatField() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+        bean.setTreeSearch("profondeur");
+
+        assertThat(bean.visibleTypesOf(ConfigurableTable.UE)).extracting(TypeSummary::getName).containsExactly("Tranchée");
+        assertThat(bean.isTypeShownOpen(ConfigurableTable.UE, "Tranchée")).isTrue();
+        assertThat(bean.isTypeShownOpen(ConfigurableTable.UE, "Sondage")).isFalse();
+        assertThat(bean.visibleFieldsOf(ConfigurableTable.UE, "Tranchée")).hasSize(1);
+    }
+
+    @Test
+    void treeSearch_withoutAnyMatch_showsNoTable() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+        bean.setTreeSearch("zzz");
+
+        assertThat(bean.isAnyTableVisible()).isFalse();
+    }
+
+    @Test
+    void treeSearch_aBlankOrNullTermIsNotAFilter() {
+        ProjectTableFieldSettingsBean bean = searchableBean();
+        bean.setTreeSearch("   ");
+        assertThat(bean.isTreeFiltered()).isFalse();
+        bean.setTreeSearch(null);
+        assertThat(bean.isTreeFiltered()).isFalse();
+    }
 }

@@ -179,7 +179,7 @@ public class ExportTemplateEditorBean implements Serializable {
      * donc remplacées par celles du projet quand thésaurus et identifiant concordent. Seulement au chargement,
      * avant que les cibles des mappings ne s'y réfèrent.
      */
-    private void alignTypeKeysWithProject() {
+    void alignTypeKeysWithProject() {
         if (referenceProjectId == null) {
             return;
         }
