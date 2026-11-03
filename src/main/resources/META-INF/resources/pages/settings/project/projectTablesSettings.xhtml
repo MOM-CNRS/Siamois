@@ -371,7 +371,7 @@
                                     <div class="ptc-tree-node ptc-tree-type-row #{projectTableFieldSettingsBean.selectedTable eq t and projectTableFieldSettingsBean.selectedTypeName eq ty.name ? 'ptc-selected' : ''}">
                                         <p:commandLink actionListener="#{projectTableFieldSettingsBean.toggleType(t, ty.name)}" update="@form"
                                                        styleClass="ptc-tree-chevron" title="#{langBean.msg('projectTables.tree.toggle')}">
-                                            <i class="bi #{projectTableFieldSettingsBean.isTypeExpanded(t, ty.name) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
+                                            <i class="bi #{projectTableFieldSettingsBean.isTypeShownOpen(t, ty.name) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
                                         </p:commandLink>
                                         <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTypeOf(t, ty.name)}" update=":treeFormCC:treeForm :ptcMain"
                                                        styleClass="ptc-tree-label">
@@ -380,8 +380,8 @@
                                     </div>
 
                                     <!-- Third level: the fields of the type, each with the icon of its kind. -->
-                                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTypeExpanded(t, ty.name)}" layout="block" styleClass="ptc-tree-fields">
-                                        <ui:repeat value="#{projectTableFieldSettingsBean.fieldsOf(t, ty.name)}" var="fld">
+                                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTypeShownOpen(t, ty.name)}" layout="block" styleClass="ptc-tree-fields">
+                                        <ui:repeat value="#{projectTableFieldSettingsBean.visibleFieldsOf(t, ty.name)}" var="fld">
                                             <p:commandLink actionListener="#{projectTableFieldSettingsBean.openFieldOf(t, ty.name, fld)}"
                                                            update=":treeFormCC:treeForm :ptcMain"
                                                            styleClass="ptc-tree-field-row #{projectTableFieldSettingsBean.drawerOpen and projectTableFieldSettingsBean.selectedTable eq t and projectTableFieldSettingsBean.selectedTypeName eq ty.name and projectTableFieldSettingsBean.draftOriginalName eq fld.name ? 'ptc-selected' : ''} #{not fld.active ? 'ptc-tree-field-off' : ''}">

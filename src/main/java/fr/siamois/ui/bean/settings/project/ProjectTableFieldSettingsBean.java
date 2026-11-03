@@ -726,14 +726,41 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return normalizeForSearch(text).contains(normalizedSearch);
     }
 
-    /** The types of a table the tree shows: all of them, or only those matching the search (all when the table itself matches). */
+    /** The fields of a type whose label matches the search; none when nothing is searched. */
+    private List<TypeFieldFormConfig> matchingFieldsOf(ConfigurableTable table, String typeName) {
+        String search = normalizedSearch();
+        if (search.isEmpty()) {
+            return List.of();
+        }
+        return fieldsOf(table, typeName).stream()
+                .filter(field -> matches(resolveFieldLabel(field), search))
+                .toList();
+    }
+
+    /**
+     * The types of a table the tree shows: all of them, or only those matching the search — by their name or
+     * by one of their fields (all of them when the table itself matches).
+     */
     public List<TypeSummary> visibleTypesOf(ConfigurableTable table) {
         List<TypeSummary> types = typesOf(table);
         String search = normalizedSearch();
         if (search.isEmpty() || matches(table.getLabel(), search)) {
             return types;
         }
-        return types.stream().filter(type -> matches(type.getName(), search)).toList();
+        return types.stream()
+                .filter(type -> matches(type.getName(), search) || !matchingFieldsOf(table, type.getName()).isEmpty())
+                .toList();
+    }
+
+    /** The fields of a type the tree shows: those matching the search when some do, else all of them. */
+    public List<TypeFieldFormConfig> visibleFieldsOf(ConfigurableTable table, String typeName) {
+        List<TypeFieldFormConfig> matching = matchingFieldsOf(table, typeName);
+        return matching.isEmpty() ? fieldsOf(table, typeName) : matching;
+    }
+
+    /** A type unfolds on its own while searching when one of its fields matches, so the field shows without a click. */
+    public boolean isTypeShownOpen(ConfigurableTable table, String typeName) {
+        return isTypeExpanded(table, typeName) || !matchingFieldsOf(table, typeName).isEmpty();
     }
 
     /** A table stays in the tree when nothing is searched, or when it or one of its types matches. */
