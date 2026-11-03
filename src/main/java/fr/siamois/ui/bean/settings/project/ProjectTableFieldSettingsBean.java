@@ -52,6 +52,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -701,6 +702,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     /** What the open nodes loaded (types of a table, fields of a type) — dropped whenever a config is reloaded. */
     private final Map<String, Object> treeCache = new HashMap<>();
 
+    private static final Pattern DIACRITICS = Pattern.compile("\\p{M}");
+
     /** What the user typed in the tree's search field; empty when the tree is not filtered. */
     private String treeSearch = "";
 
@@ -716,8 +719,8 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         if (text == null) {
             return "";
         }
-        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
+        return DIACRITICS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD))
+                .replaceAll("")
                 .toLowerCase(Locale.ROOT)
                 .trim();
     }

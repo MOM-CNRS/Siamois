@@ -125,16 +125,17 @@ public class ExportTemplateService {
             Optional<ExportTemplate> present = exportTemplateRepository.findByInstitutionAndTemplateUuid(institution, definition.id());
             if (present.isPresent()) {
                 refreshBuiltIn(present.get(), definition);
-                continue;
+            } else if (!isKnown(institution, definition)) {
+                ExportTemplate template = save(userInfo, definition);
+                template.setPublished(true);
+                exportTemplateRepository.save(template);
             }
-            if (exportTemplateRepository.existsByInstitutionAndTemplateUuid(institution, definition.id())
-                    || exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, definition.name(), definition.version())) {
-                continue;
-            }
-            ExportTemplate template = save(userInfo, definition);
-            template.setPublished(true);
-            exportTemplateRepository.save(template);
         }
+    }
+
+    private boolean isKnown(Institution institution, ExportTemplateDefinition definition) {
+        return exportTemplateRepository.existsByInstitutionAndTemplateUuid(institution, definition.id())
+                || exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, definition.name(), definition.version());
     }
 
     private void refreshBuiltIn(ExportTemplate template, ExportTemplateDefinition definition) {

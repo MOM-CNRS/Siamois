@@ -394,7 +394,7 @@ class ExportTemplateServiceTest {
         stale.setPublished(true);
         ActionUnit project = new ActionUnit();
         stale.setReferenceProject(project);
-        when(repository.findByInstitutionAndTemplateUuid(eq(institution), eq("rapport-operation-national"))).thenReturn(Optional.of(stale));
+        when(repository.findByInstitutionAndTemplateUuid(institution, "rapport-operation-national")).thenReturn(Optional.of(stale));
         when(repository.existsByInstitutionAndTemplateUuid(eq(institution), anyString())).thenReturn(true);
         when(repository.findByInstitutionOrderByNameAsc(institution)).thenReturn(List.of());
 
@@ -409,7 +409,7 @@ class ExportTemplateServiceTest {
     void findAll_doesNotTouchAnUnpublishedTemplateSharingABuiltInIdentifier() {
         allowView();
         ExportTemplate edited = stored(5L, sampleJson("rapport-operation-national", "Mine"));
-        when(repository.findByInstitutionAndTemplateUuid(eq(institution), eq("rapport-operation-national"))).thenReturn(Optional.of(edited));
+        when(repository.findByInstitutionAndTemplateUuid(institution, "rapport-operation-national")).thenReturn(Optional.of(edited));
         when(repository.existsByInstitutionAndTemplateUuid(eq(institution), anyString())).thenReturn(true);
         when(repository.findByInstitutionOrderByNameAsc(institution)).thenReturn(List.of());
 
