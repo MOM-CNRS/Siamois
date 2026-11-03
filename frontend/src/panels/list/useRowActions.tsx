@@ -9,6 +9,7 @@ import {CreateEntityOverlay} from "../../components/create/CreateEntityOverlay";
 import {DuplicateStructureOverlay} from "../../components/duplicate/DuplicateStructureOverlay";
 import type {
     CreatePrefill,
+    EntityPreview,
     EntityTypeConfig,
     ListScope,
     RowActionContext,
@@ -44,7 +45,7 @@ export interface UseRowActionsOptions {
   organizationId?: number;
   writeMode: boolean;
   // Where a created or duplicated entity opens — the overview, like JSF's row actions.
-  onOpen?: (entityType: string, id: string | number) => void;
+  onOpen?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // listPreferences key: the action bar layout (which actions are inline, in which order) is
   // restored from and saved to this browser's storage.
   prefsKey?: string;
@@ -327,7 +328,7 @@ export function useRowActions({ entityType, config, organizationId, writeMode, o
         const created = pendingCreate!;
         setPendingCreate(null);
         refreshAfterChange();
-        onOpen?.(created.entityType, id);
+        onOpen?.(created.entityType, id, { tab: "fiche" });
       }}
       onHide={() => setPendingCreate(null)}
     />

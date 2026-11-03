@@ -511,11 +511,10 @@ public class FormService {
 
     @SuppressWarnings("unchecked")
     private void handlePersonList(CustomFieldAnswerViewModel answer, Object value) {
-        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer) {
-            List<?> list = (List<?>) value;
-            if (list.stream().allMatch(PersonDTO.class::isInstance)) {
-                multiplePersonAnswer.setValue((List<PersonDTO>) list);
-            }
+        if (answer instanceof CustomFieldAnswerSelectMultiplePersonViewModel multiplePersonAnswer
+                && value instanceof List<?> list
+                && list.stream().allMatch(PersonDTO.class::isInstance)) {
+            multiplePersonAnswer.setValue((List<PersonDTO>) list);
         }
     }
 

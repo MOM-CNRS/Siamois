@@ -119,7 +119,7 @@ function RecentProjectsWidget({ organizationId, onNavigate }: HomeWidgetContext)
               createOverlayRef.current?.hide();
               void queryClient.invalidateQueries({ queryKey: queryKeys.entityList("project") });
               void queryClient.invalidateQueries({ queryKey: queryKeys.projectHomeRecent(organizationId) });
-              onNavigate?.("project", id);
+              onNavigate?.("project", id, { tab: "fiche" });
             }}
             onCancel={() => createOverlayRef.current?.hide()}
           />

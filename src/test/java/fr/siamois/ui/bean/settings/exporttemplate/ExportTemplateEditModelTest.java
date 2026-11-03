@@ -144,4 +144,32 @@ class ExportTemplateEditModelTest {
         assertThat(model.toPreviewDefinition().sheets().get(0).columns().get(0).rules())
                 .hasSize(model.getSheets().get(0).getColumns().get(0).getRules().size() - 1);
     }
+
+    @Test
+    void aRuleTargetingAMultiTypeSourceAsAWhole_targetsEachOfItsTypes() {
+        ConceptRef other = new ConceptRef("th338", "999", "https://thesaurus.mom.fr/?idt=th338&idc=999");
+        ExportTemplateDefinition d = new ExportTemplateDefinition(3, "u", "1", "T", null, List.of(
+                new Sheet("UE", false,
+                        List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of(C, other)), new ProjectSource()),
+                        List.of(),
+                        List.of(new Column("code", OutputType.TEXT, List.of(
+                                new ConstantRule(List.of(0), "a"), new ConstantRule(List.of(1), "b")))))));
+
+        var rules = ExportTemplateEditModel.from(d).getSheets().get(0).getColumns().get(0).getRules();
+
+        assertThat(rules.get(0).getSources())
+                .containsExactly("0:" + ExportTemplateEditModel.keyOf(C), "0:" + ExportTemplateEditModel.keyOf(other));
+        // a single-type or project source keeps its plain index
+        assertThat(rules.get(1).getSources()).containsExactly("1");
+    }
+
+    @Test
+    void aRuleTargetingASingleTypeSource_keepsItsPlainIndex() {
+        ExportTemplateDefinition d = new ExportTemplateDefinition(3, "u", "1", "T", null, List.of(
+                new Sheet("UE", false, List.of(new EntitySource(EntityKind.RECORDING_UNIT, List.of(C))), List.of(),
+                        List.of(new Column("code", OutputType.TEXT, List.of(new ConstantRule(List.of(0), "a")))))));
+
+        assertThat(ExportTemplateEditModel.from(d).getSheets().get(0).getColumns().get(0).getRules().get(0).getSources())
+                .containsExactly("0");
+    }
 }

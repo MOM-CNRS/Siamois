@@ -1418,4 +1418,23 @@ class FormServiceTest {
         }
     }
 
+
+    @Test
+    void populate_withANullPersonList_leavesTheMultiplePersonAnswerUntouched() throws Exception {
+        CustomFieldAnswerSelectMultiplePersonViewModel answer = new CustomFieldAnswerSelectMultiplePersonViewModel();
+
+        populate(answer, null);
+
+        assertTrue(answer.getValue().isEmpty());
+    }
+
+    @Test
+    void populate_withAListOfPersons_setsTheMultiplePersonAnswer() throws Exception {
+        CustomFieldAnswerSelectMultiplePersonViewModel answer = new CustomFieldAnswerSelectMultiplePersonViewModel();
+        List<PersonDTO> persons = List.of(mock(PersonDTO.class));
+
+        populate(answer, persons);
+
+        assertEquals(persons, answer.getValue());
+    }
 }

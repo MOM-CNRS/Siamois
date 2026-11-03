@@ -1374,7 +1374,7 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
       document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
     });
 
-    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+    expect(onOpenOverview).toHaveBeenCalledWith("fake-entity-with-create-form", "99", { tab: "fiche" });
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -1404,7 +1404,7 @@ describe("EntityListPanel create overlay (config.list.createForm)", () => {
       document.body.querySelector<HTMLButtonElement>('[data-testid="fake-create-form-submit"]')!.click();
     });
 
-    expect(onNavigate).toHaveBeenCalledWith("fake-entity-with-create-form", "99");
+    expect(onNavigate).toHaveBeenCalledWith("fake-entity-with-create-form", "99", { tab: "fiche" });
   });
 });
 

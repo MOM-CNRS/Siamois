@@ -36,6 +36,9 @@
             /* ── tree ───────────────────────────────────── */
             .ptc-tree { width: 280px; flex: none; border: none; border-right: 1px solid #e7e7e3; border-radius: 0; background: #fff; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: none; min-height: 0; height: 100%; overflow: auto; box-sizing: border-box; }
             .ptc-tree-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+            .ptc-tree-search { margin: 4px 0 8px; }
+            .ptc-tree-search input { width: 100%; }
+            .ptc-tree-empty { font-size: 0.8125rem; color: #a3a3a0; padding: 6px 4px; }
             .ptc-tree-title { font-size: 0.7188rem; letter-spacing: .06em; text-transform: uppercase; color: #a3a3a0; }
             .ptc-tree-node { display: flex; align-items: center; gap: 2px; }
             .ptc-tree-chevron.ui-commandlink { flex: none; width: 22px; text-align: center; color: #8c8c8c; font-size: 0.75rem; text-decoration: none; }
@@ -337,11 +340,24 @@
 
                         <!-- Tables, their types, the fields of each type: every level folds and unfolds with its
                              chevron, independently of what is selected. -->
+                        <div class="ptc-tree-search">
+                            <p:inputText id="treeSearch" value="#{projectTableFieldSettingsBean.treeSearch}"
+                                         placeholder="#{langBean.msg('projectTables.tree.search')}"
+                                         autocomplete="off">
+                                <p:ajax event="keyup" delay="300" process="@this" update="treeBody"/>
+                            </p:inputText>
+                        </div>
+
+                        <h:panelGroup id="treeBody" layout="block">
+                        <h:panelGroup rendered="#{projectTableFieldSettingsBean.treeFiltered and not projectTableFieldSettingsBean.anyTableVisible}" layout="block" styleClass="ptc-tree-empty">
+                            #{langBean.msg('projectTables.tree.searchEmpty')}
+                        </h:panelGroup>
                         <ui:repeat value="#{projectTableFieldSettingsBean.tables}" var="t">
+                          <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTableVisible(t)}">
                             <div class="ptc-tree-node ptc-tree-table-row #{projectTableFieldSettingsBean.selectedTable eq t ? 'ptc-selected' : ''}">
                                 <p:commandLink actionListener="#{projectTableFieldSettingsBean.toggleTable(t)}" update="@form"
                                                styleClass="ptc-tree-chevron" title="#{langBean.msg('projectTables.tree.toggle')}">
-                                    <i class="bi #{projectTableFieldSettingsBean.isTableExpanded(t) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
+                                    <i class="bi #{projectTableFieldSettingsBean.isTableShownOpen(t) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
                                 </p:commandLink>
                                 <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTableOnly(t)}" update=":treeFormCC:treeForm :ptcMain"
                                                styleClass="ptc-tree-label">
@@ -350,12 +366,12 @@
                                 </p:commandLink>
                             </div>
 
-                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTableExpanded(t)}" layout="block" styleClass="ptc-tree-types">
-                                <ui:repeat value="#{projectTableFieldSettingsBean.typesOf(t)}" var="ty">
+                            <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTableShownOpen(t)}" layout="block" styleClass="ptc-tree-types">
+                                <ui:repeat value="#{projectTableFieldSettingsBean.visibleTypesOf(t)}" var="ty">
                                     <div class="ptc-tree-node ptc-tree-type-row #{projectTableFieldSettingsBean.selectedTable eq t and projectTableFieldSettingsBean.selectedTypeName eq ty.name ? 'ptc-selected' : ''}">
                                         <p:commandLink actionListener="#{projectTableFieldSettingsBean.toggleType(t, ty.name)}" update="@form"
                                                        styleClass="ptc-tree-chevron" title="#{langBean.msg('projectTables.tree.toggle')}">
-                                            <i class="bi #{projectTableFieldSettingsBean.isTypeExpanded(t, ty.name) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
+                                            <i class="bi #{projectTableFieldSettingsBean.isTypeShownOpen(t, ty.name) ? 'bi-chevron-down' : 'bi-chevron-right'}"/>
                                         </p:commandLink>
                                         <p:commandLink actionListener="#{projectTableFieldSettingsBean.selectTypeOf(t, ty.name)}" update=":treeFormCC:treeForm :ptcMain"
                                                        styleClass="ptc-tree-label">
@@ -364,8 +380,8 @@
                                     </div>
 
                                     <!-- Third level: the fields of the type, each with the icon of its kind. -->
-                                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTypeExpanded(t, ty.name)}" layout="block" styleClass="ptc-tree-fields">
-                                        <ui:repeat value="#{projectTableFieldSettingsBean.fieldsOf(t, ty.name)}" var="fld">
+                                    <h:panelGroup rendered="#{projectTableFieldSettingsBean.isTypeShownOpen(t, ty.name)}" layout="block" styleClass="ptc-tree-fields">
+                                        <ui:repeat value="#{projectTableFieldSettingsBean.visibleFieldsOf(t, ty.name)}" var="fld">
                                             <p:commandLink actionListener="#{projectTableFieldSettingsBean.openFieldOf(t, ty.name, fld)}"
                                                            update=":treeFormCC:treeForm :ptcMain"
                                                            styleClass="ptc-tree-field-row #{projectTableFieldSettingsBean.drawerOpen and projectTableFieldSettingsBean.selectedTable eq t and projectTableFieldSettingsBean.selectedTypeName eq ty.name and projectTableFieldSettingsBean.draftOriginalName eq fld.name ? 'ptc-selected' : ''} #{not fld.active ? 'ptc-tree-field-off' : ''}">
@@ -387,7 +403,9 @@
                                                      onclick="PF('newConfigDialogWidget').show()"/>
                                 </h:panelGroup>
                             </h:panelGroup>
+                          </h:panelGroup>
                         </ui:repeat>
+                        </h:panelGroup>
                     </div>
 
                     </form:csrfform>

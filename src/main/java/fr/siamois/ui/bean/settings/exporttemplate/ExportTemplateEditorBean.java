@@ -4,6 +4,9 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException;
 import fr.siamois.domain.models.exporttemplate.*;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.ConceptRef;
+import fr.siamois.domain.models.spatialunit.SpatialUnit;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
+import org.springframework.lang.Nullable;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.EntityKind;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.OutputType;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateJson;
@@ -102,6 +105,8 @@ public class ExportTemplateEditorBean implements Serializable {
 
     private transient Map<ExportSubject, List<FieldOption>> fieldCache = new EnumMap<>(ExportSubject.class);
     private transient Map<ConfigurableTable, List<Item>> typeCache = new EnumMap<>(ConfigurableTable.class);
+    /** Types des lieux (valeurs de leur catégorie) ; nul tant qu'ils ne sont pas chargés. */
+    private transient List<Item> placeTypeCache;
     private transient Map<ExportSubject, SourceCounts> countCache = new EnumMap<>(ExportSubject.class);
     private transient Map<ExportTechnicalSource, Integer> technicalCountCache = new EnumMap<>(ExportTechnicalSource.class);
 
@@ -160,11 +165,43 @@ public class ExportTemplateEditorBean implements Serializable {
         sourceDialog.reset();
         clearCaches();
         loadProjects();
+        alignTypeKeysWithProject();
         // L'aperçu est la vue par défaut ; sans projet de référence, il invite à en choisir un.
         previewOpen = false;
         preview = null;
         previewWarnings = new ArrayList<>();
         refreshPreview();
+    }
+
+    /**
+     * Un modèle écrit à la main (ou par un autre outil) peut nommer un type sans son URI : la clé ne serait alors
+     * jamais égale à celle du projet de référence et le type resterait « non résolu ». Les clés des sources sont
+     * donc remplacées par celles du projet quand thésaurus et identifiant concordent. Seulement au chargement,
+     * avant que les cibles des mappings ne s'y réfèrent.
+     */
+    void alignTypeKeysWithProject() {
+        if (referenceProjectId == null) {
+            return;
+        }
+        for (EditSheet sheet : model.getSheets()) {
+            for (EditSource source : sheet.getSources()) {
+                Optional<EntityKind> kind = entityOf(source);
+                if (kind.isEmpty() || source.getTypeKeys().isEmpty()) {
+                    continue;
+                }
+                List<Item> known = typeItemsFor(kind.get(), List.of());
+                source.getTypeKeys().replaceAll(key -> known.stream()
+                        .map(Item::value)
+                        .filter(value -> sameType(value, key))
+                        .findFirst().orElse(key));
+            }
+        }
+    }
+
+    private static boolean sameType(String a, String b) {
+        String[] x = a.split("\\|", 3);
+        String[] y = b.split("\\|", 3);
+        return x.length >= 2 && y.length >= 2 && x[0].equalsIgnoreCase(y[0]) && x[1].equalsIgnoreCase(y[1]);
     }
 
     /** Choix du projet de référence depuis l'aperçu : écrit tout de suite, puis l'aperçu est recalculé. */
@@ -242,6 +279,7 @@ public class ExportTemplateEditorBean implements Serializable {
     private void clearCaches() {
         fieldCache = new EnumMap<>(ExportSubject.class);
         typeCache = new EnumMap<>(ConfigurableTable.class);
+        placeTypeCache = null;
         countCache = new EnumMap<>(ExportSubject.class);
         technicalCountCache = new EnumMap<>(ExportTechnicalSource.class);
         sample = null;
@@ -1033,6 +1071,11 @@ public class ExportTemplateEditorBean implements Serializable {
 
     /** Case d'une table : tout cocher, ou tout décocher si tout l'est déjà. */
     public void toggleTable(ExportSourceDialog.Table table) {
+        if (referenceProjectId != null && !table.isAll() && isTypedTable(table.getKey()) && typeKeysOf(table.getKey()).isEmpty()) {
+            // Une table d'entités se choisit par ses types : sans type configuré dans le projet de référence, il n'y a rien à cocher.
+            // (Sans projet de référence, les types sont inconnus : le choix est repris au chargement, une fois un projet choisi.)
+            return;
+        }
         boolean changed = !table.getKey().equals(sourceDialog.getTable());
         if (table.isAll()) {
             sourceDialog.setTable(null);
@@ -1043,6 +1086,10 @@ public class ExportTemplateEditorBean implements Serializable {
             sourceDialog.setExpanded(table.getKey());
         }
         rebuildFieldRowsIf(changed || sourceDialog.getTable() == null);
+    }
+
+    private boolean isTypedTable(String tableKey) {
+        return tableDef(tableKey).map(TableDef::entity).isPresent();
     }
 
     /** Case d'un type : choisir un type d'une autre table remplace le choix (une source = une table). */
@@ -1195,10 +1242,9 @@ public class ExportTemplateEditorBean implements Serializable {
         } else {
             source.setKind(ExportTemplateEditModel.KIND_ENTITY);
             source.setEntity(key);
-            // Tous les types cochés = pas de filtre (les entités sans type en font partie).
-            if (!sourceDialog.getTypes().containsAll(typeKeysOf(key))) {
-                source.getTypeKeys().addAll(sourceDialog.getTypes());
-            }
+            // La source se règle toujours par type : la case d'une table n'est que le raccourci « tous ses types »,
+            // et une table d'entités n'est jamais prise sans type.
+            source.getTypeKeys().addAll(sourceDialog.getTypes().isEmpty() ? typeKeysOf(key) : sourceDialog.getTypes());
         }
     }
 
@@ -2067,13 +2113,38 @@ public class ExportTemplateEditorBean implements Serializable {
         if (typeCache == null) {
             clearCaches();
         }
-        List<Item> items = new ArrayList<>(table == null || referenceProjectId == null ? List.of() : typeCache.computeIfAbsent(table, this::loadTypes));
+        List<Item> items = new ArrayList<>(referenceProjectId == null ? List.of() : knownTypes(kind, table));
         for (String key : extraKeys) {
             if (items.stream().noneMatch(i -> i.value().equals(key))) {
                 items.add(new Item(langBean.msg("exportTemplates.editor.unresolved", key), key));
             }
         }
         return items;
+    }
+
+    /** Types connus du projet de référence : ceux configurés pour la table, ou, pour les lieux (sans configuration par type), les valeurs de leur catégorie. */
+    private List<Item> knownTypes(EntityKind kind, @Nullable ConfigurableTable table) {
+        if (table != null) {
+            return typeCache.computeIfAbsent(table, this::loadTypes);
+        }
+        if (ExportSubject.of(kind) != ExportSubject.SPATIAL_UNIT) {
+            return List.of();
+        }
+        if (placeTypeCache == null) {
+            placeTypeCache = loadPlaceTypes();
+        }
+        return placeTypeCache;
+    }
+
+    private List<Item> loadPlaceTypes() {
+        return tableFieldConfigService.measureConcepts(referenceProjectId, SpatialUnit.TYPE_FIELD_CODE, null).stream()
+                .map(ConceptAutocompleteDTO::getConceptLabelToDisplay)
+                .filter(label -> label != null && label.getConcept() != null && label.getConcept().getVocabulary() != null
+                        && label.getConcept().getExternalId() != null)
+                .map(label -> new Item(label.getLabel(), ExportTemplateEditModel.keyOf(new ConceptRef(
+                        label.getConcept().getVocabulary().getExternalVocabularyId(), label.getConcept().getExternalId(), null))))
+                .distinct()
+                .toList();
     }
 
     private List<Item> loadTypes(ConfigurableTable table) {

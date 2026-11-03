@@ -405,7 +405,7 @@ function EntityListPanelBody({
           onCreate={onCreate}
           // Opens in the overview, so the list stays where it was; the full fiche is one click away
           // (the overview's focus button).
-          onCreated={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id)}
+          onCreated={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id, { tab: "fiche" })}
           // Gear (table settings) then search then the filter chips on the left, create on the
           // right. The gear leads because it acts on the table's shape, which the search box and
           // filters do not.

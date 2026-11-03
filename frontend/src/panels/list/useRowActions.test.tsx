@@ -239,7 +239,7 @@ describe("list row actions", () => {
     expect(ctx.scope).toEqual({ entityType: "project", id: 5 });
 
     await click(document.body.querySelector('[data-testid="row-create-submit"]')!);
-    expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "77");
+    expect(onOpenOverview).toHaveBeenCalledWith("row-action-entity", "77", { tab: "fiche" });
   });
 
   it("puts actions taken out of the row into a \"…\" menu, keeping the bookmark inline", async () => {

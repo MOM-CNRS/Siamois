@@ -52,6 +52,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -700,6 +701,84 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     private final Set<String> expandedNodes = new HashSet<>();
     /** What the open nodes loaded (types of a table, fields of a type) — dropped whenever a config is reloaded. */
     private final Map<String, Object> treeCache = new HashMap<>();
+
+    private static final Pattern DIACRITICS = Pattern.compile("\\p{M}");
+
+    /** What the user typed in the tree's search field; empty when the tree is not filtered. */
+    private String treeSearch = "";
+
+    public boolean isTreeFiltered() {
+        return !normalizedSearch().isEmpty();
+    }
+
+    private String normalizedSearch() {
+        return normalizeForSearch(treeSearch);
+    }
+
+    private static String normalizeForSearch(String text) {
+        if (text == null) {
+            return "";
+        }
+        return DIACRITICS.matcher(Normalizer.normalize(text, Normalizer.Form.NFD))
+                .replaceAll("")
+                .toLowerCase(Locale.ROOT)
+                .trim();
+    }
+
+    private static boolean matches(String text, String normalizedSearch) {
+        return normalizeForSearch(text).contains(normalizedSearch);
+    }
+
+    /** The fields of a type whose label matches the search; none when nothing is searched. */
+    private List<TypeFieldFormConfig> matchingFieldsOf(ConfigurableTable table, String typeName) {
+        String search = normalizedSearch();
+        if (search.isEmpty()) {
+            return List.of();
+        }
+        return fieldsOf(table, typeName).stream()
+                .filter(field -> matches(resolveFieldLabel(field), search))
+                .toList();
+    }
+
+    /**
+     * The types of a table the tree shows: all of them, or only those matching the search — by their name or
+     * by one of their fields (all of them when the table itself matches).
+     */
+    public List<TypeSummary> visibleTypesOf(ConfigurableTable table) {
+        List<TypeSummary> types = typesOf(table);
+        String search = normalizedSearch();
+        if (search.isEmpty() || matches(table.getLabel(), search)) {
+            return types;
+        }
+        return types.stream()
+                .filter(type -> matches(type.getName(), search) || !matchingFieldsOf(table, type.getName()).isEmpty())
+                .toList();
+    }
+
+    /** The fields of a type the tree shows: those matching the search when some do, else all of them. */
+    public List<TypeFieldFormConfig> visibleFieldsOf(ConfigurableTable table, String typeName) {
+        List<TypeFieldFormConfig> matching = matchingFieldsOf(table, typeName);
+        return matching.isEmpty() ? fieldsOf(table, typeName) : matching;
+    }
+
+    /** A type unfolds on its own while searching when one of its fields matches, so the field shows without a click. */
+    public boolean isTypeShownOpen(ConfigurableTable table, String typeName) {
+        return isTypeExpanded(table, typeName) || !matchingFieldsOf(table, typeName).isEmpty();
+    }
+
+    /** A table stays in the tree when nothing is searched, or when it or one of its types matches. */
+    public boolean isTableVisible(ConfigurableTable table) {
+        return !isTreeFiltered() || matches(table.getLabel(), normalizedSearch()) || !visibleTypesOf(table).isEmpty();
+    }
+
+    public boolean isAnyTableVisible() {
+        return tables.stream().anyMatch(this::isTableVisible);
+    }
+
+    /** Tables unfold on their own while searching, so the matching types show without a click. */
+    public boolean isTableShownOpen(ConfigurableTable table) {
+        return isTreeFiltered() || isTableExpanded(table);
+    }
 
     private static String tableNode(ConfigurableTable table) {
         return "T:" + table.name();

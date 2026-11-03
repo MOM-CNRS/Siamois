@@ -9,9 +9,6 @@ vi.mock("./api", () => ({ unlinkDocument: vi.fn(), linkDocument: vi.fn(), listDo
 vi.mock("./AssociateDocument", () => ({
   AssociateDocument: (props: Record<string, unknown>) => ({ type: "AssociateDocument", props }),
 }));
-vi.mock("./BulkImportDocument", () => ({
-  BulkImportDocument: (props: Record<string, unknown>) => ({ type: "BulkImportDocument", props }),
-}));
 
 const mockedUnlink = vi.mocked(unlinkDocument);
 
@@ -72,12 +69,8 @@ describe("documentsTab", () => {
   });
 
   it("offers « Associer » on the entity's own segment, with the organization and project", () => {
-    const fragment = buildSpec().toolbarExtra(phase, { organizationId: 42 }) as unknown as {
-      props: { children: Array<{ props: Record<string, unknown> }> };
-    };
-    // toolbarExtra is not rendered: children are React elements whose `type` is the component
-    // function. Associer is the one that also carries organization/project (BulkImport does not).
-    const associate = fragment.props.children.find((child) => "organizationId" in (child?.props ?? {}));
+    // toolbarExtra is not rendered: it is the React element of the Associer button.
+    const associate = buildSpec().toolbarExtra(phase, { organizationId: 42 }) as unknown as { props: Record<string, unknown> };
 
     expect(associate?.props).toMatchObject({ segment: "phases", entityId: "5", organizationId: 42, projectId: "7" });
   });

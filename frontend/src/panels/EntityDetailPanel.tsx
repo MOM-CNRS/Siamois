@@ -312,7 +312,7 @@ export function EntityDetailPanel({
             title={
               <span className="entity-detail-panel-preview-header">
                 <Skeleton shape="circle" size="2rem" />
-                {preview ? (
+                {preview?.label ? (
                   // The header's own identifier chip class (<entity>-chip-alt, filled in the
                   // entity's colour by the theme), so nothing changes colour when the entity loads.
                   <span
@@ -475,7 +475,8 @@ export function EntityDetailPanel({
           void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
           // Same destination as the list toolbar's create: the overview, so the current view stays
           // in place (the full fiche is one click away, the overview's focus button).
-          (onOpenOverview ?? onNavigate)?.(entityType, id);
+          // A new entity opens on its fiche tab, whatever tab the user last left on this type.
+          (onOpenOverview ?? onNavigate)?.(entityType, id, { tab: "fiche" });
         }}
       />
       {deletion.dialog}
