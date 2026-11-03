@@ -36,6 +36,7 @@ public final class ActionUnitTableColumnDefaults {
     }
 
     private static final List<ColumnDefault> COLUMNS = List.of(
+            new ColumnDefault("type", "specimen.field.type", ActionUnitForm.ACTION_UNIT_TYPE_FIELD, true),
             new ColumnDefault("recordingUnits", "actionunit.field.recordingUnits", ActionUnitForm.RECORDING_UNITS_FIELD, true),
             new ColumnDefault("status", "actionunit.field.status", ActionUnitForm.STATUS_FIELD, true),
             new ColumnDefault("oaCode", "actionunit.field.oaCode", ActionUnitForm.OA_CODE_FIELD, true),

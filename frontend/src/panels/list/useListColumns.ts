@@ -94,8 +94,13 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
       .map((c): FilterSpec => ({ key: c.key, label: c.header, kind: "contains" as FilterKind }));
 
     if (!catalog) return pinned;
+    // A pinned column showing a catalog field (the type, say) is filterable through that field, unless
+    // it is already `filterable` on its own text.
+    const alreadyFiltered = new Set(
+      (config?.list.columns ?? []).filter((c) => c.filterable === true && c.fieldId).map((c) => c.fieldId as string),
+    );
     const dynamic = catalog.columns
-      .filter((c) => !pinnedFieldIds.has(c.fieldId))
+      .filter((c) => !alreadyFiltered.has(c.fieldId))
       .slice()
       .sort((a, b) => a.order - b.order)
       .flatMap((c) => {

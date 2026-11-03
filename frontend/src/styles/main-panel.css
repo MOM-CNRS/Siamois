@@ -826,7 +826,7 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
      padded button's; pulling the label the same distance puts both on one left edge, and both hover
      backgrounds in the same gutter. */
   margin-left: -0.4rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   /* A label is only a button when there is a thesaurus entry behind it — see FieldLabel. */
   cursor: default;
 }
@@ -1101,7 +1101,7 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
   width: 100%;
 }
 
-/* One field: its label above it, the fiche's label look (FieldLabel: grey, .875rem). */
+/* One field: its label above it, the fiche's label look (FieldLabel: grey, .8rem). */
 .sia-create-form-field {
   display: flex;
   flex-direction: column;
@@ -1110,7 +1110,7 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
 
 .sia-create-form-label {
   color: var(--text-light, #6b7280);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .sia-create-form-label-required::after {

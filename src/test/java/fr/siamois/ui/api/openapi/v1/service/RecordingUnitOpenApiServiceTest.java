@@ -596,7 +596,7 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(tableColumns)
                 .filteredOn(ProjectTableColumnResource::visible)
                 .extracting(ProjectTableColumnResource::columnId)
-                .containsExactlyInAnyOrder("recordingUnits", "status", "oaCode", "mainLocation", "openingRate",
+                .containsExactlyInAnyOrder("type", "recordingUnits", "status", "oaCode", "mainLocation", "openingRate",
                         "periods", "subjects", "scientificManager");
         assertThat(tableColumns)
                 .extracting(ProjectTableColumnResource::columnId)
