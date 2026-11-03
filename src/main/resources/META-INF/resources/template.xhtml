@@ -343,7 +343,7 @@
 
 
         <!-- Contenu principal -->
-        <div class="content" id="content">
+        <div class="content #{navBean.settingsMode ? 'settings-scroll' : ''}" id="content">
             <form:csrfform formId="templateForm" id="templateFormCC">
                 <p:growl closable="true" id="templateGrowl" widgetVar="templateGrowlVar" showDetail="true"
                          autoUpdate="true" showSummary="true">

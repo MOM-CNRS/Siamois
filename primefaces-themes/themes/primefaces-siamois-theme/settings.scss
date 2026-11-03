@@ -1213,6 +1213,22 @@ body .sia-create-dialog.ui-dialog .ui-dialog-content {
     margin-top: 0.75em;
 }
 
+// The settings pages scroll inside the app shell (which is one screen high and never scrolls itself): the
+// content area is as high as the screen and scrolls vertically, so a small screen never cuts a page off.
+// Wide tables and sections scroll sideways on their own.
+.content.settings-scroll {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+// ...except the tables & fields page below, whose own sections scroll.
+.content.settings-scroll:has(> main.ptc-fixed) {
+    overflow-y: hidden;
+}
+
 // The tables & fields page is one screen high: the header stays put and its two sections (the tree, the
 // details of the type or field) each scroll on their own.
 main.ptc-fixed {
