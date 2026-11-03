@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -114,11 +115,18 @@ public class ExportTemplateService {
     /**
      * Ajoute à l'institution les modèles livrés (référentiel national, milieu sous-marin) qu'elle n'a pas encore,
      * publiés donc en lecture seule : on les duplique ou on en fait une nouvelle version pour les adapter.
+     * Un modèle livré déjà présent est remis à jour quand sa définition a changé dans l'application (il est en
+     * lecture seule, personne ne l'a modifié) ; son projet de référence, donnée locale, est conservé.
      */
     private void provisionBuiltIns(UserInfo userInfo) {
         Institution institution = institutionOf(userInfo);
         for (BuiltInTemplate builtIn : BuiltInTemplate.values()) {
             ExportTemplateDefinition definition = ExportTemplateJson.parse(readResource(builtIn.resource));
+            Optional<ExportTemplate> present = exportTemplateRepository.findByInstitutionAndTemplateUuid(institution, definition.id());
+            if (present.isPresent()) {
+                refreshBuiltIn(present.get(), definition);
+                continue;
+            }
             if (exportTemplateRepository.existsByInstitutionAndTemplateUuid(institution, definition.id())
                     || exportTemplateRepository.existsByInstitutionAndNameIgnoreCaseAndVersion(institution, definition.name(), definition.version())) {
                 continue;
@@ -127,6 +135,15 @@ public class ExportTemplateService {
             template.setPublished(true);
             exportTemplateRepository.save(template);
         }
+    }
+
+    private void refreshBuiltIn(ExportTemplate template, ExportTemplateDefinition definition) {
+        String json = ExportTemplateJson.toJson(definition);
+        if (!template.isPublished() || json.equals(ExportTemplateJson.toJson(ExportTemplateJson.parse(template.getDefinition())))) {
+            return;
+        }
+        apply(template, definition, json);
+        exportTemplateRepository.save(template);
     }
 
     @Transactional

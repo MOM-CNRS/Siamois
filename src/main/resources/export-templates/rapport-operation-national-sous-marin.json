@@ -10,11 +10,111 @@
     },
     "situation_1": {
       "kind": "ENTITY",
-      "entity": "SPATIAL_UNIT"
+      "entity": "SPATIAL_UNIT",
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1165"
+        }
+      ]
     },
     "UE_1": {
       "kind": "ENTITY",
-      "entity": "RECORDING_UNIT"
+      "entity": "RECORDING_UNIT",
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1199"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1200"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1201"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1202"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1203"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1204"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1205"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1206"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1207"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1208"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1209"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1210"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1211"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1212"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1213"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1214"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291339"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291340"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291341"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291342"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291343"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291344"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "4291345"
+        }
+      ]
     },
     "UE_1_project": {
       "join": {
@@ -58,7 +158,33 @@
     },
     "mobilier_1": {
       "kind": "ENTITY",
-      "entity": "SPECIMEN"
+      "entity": "SPECIMEN",
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1425"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1426"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1427"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1428"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1429"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1430"
+        }
+      ]
     },
     "mobilier_1_project": {
       "join": {
@@ -80,7 +206,169 @@
     },
     "documentation_1": {
       "kind": "ENTITY",
-      "entity": "DOCUMENT"
+      "entity": "DOCUMENT",
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1708"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1709"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1710"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1711"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1712"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1713"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1714"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1715"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1716"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1717"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1718"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1719"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1720"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1721"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1722"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1723"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1724"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1725"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1726"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1727"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1728"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1729"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1730"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1731"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1732"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1733"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1734"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1735"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1736"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1798"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1799"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1800"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1801"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1802"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1803"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1804"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1805"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1806"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1807"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1808"
+        }
+      ]
     },
     "documentation_1_project": {
       "join": {
@@ -150,7 +438,108 @@
     "traitement_1": {
       "kind": "ENTITY",
       "entity": "STUDY",
-      "types": []
+      "types": [
+        {
+          "thesaurus": "th338",
+          "id": "1652"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1653"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1654"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1655"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1656"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1657"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1658"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1659"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1660"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1661"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1662"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1663"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1664"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1665"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1666"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1667"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1668"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1669"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1670"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1671"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1672"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1673"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1674"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1675"
+        },
+        {
+          "thesaurus": "th338",
+          "id": "1676"
+        }
+      ]
     },
     "traitement_1_project": {
       "join": {

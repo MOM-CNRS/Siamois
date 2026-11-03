@@ -386,4 +386,36 @@ class ExportTemplateServiceTest {
 
         verify(repository, never()).save(any());
     }
+
+    @Test
+    void findAll_refreshesAPublishedBuiltInWhoseDefinitionChanged_keepingItsReferenceProject() {
+        allowView();
+        ExportTemplate stale = stored(5L, sampleJson("rapport-operation-national", "Old"));
+        stale.setPublished(true);
+        ActionUnit project = new ActionUnit();
+        stale.setReferenceProject(project);
+        when(repository.findByInstitutionAndTemplateUuid(eq(institution), eq("rapport-operation-national"))).thenReturn(Optional.of(stale));
+        when(repository.existsByInstitutionAndTemplateUuid(eq(institution), anyString())).thenReturn(true);
+        when(repository.findByInstitutionOrderByNameAsc(institution)).thenReturn(List.of());
+
+        service.findAll(userInfo);
+
+        verify(repository).save(stale);
+        assertThat(stale.getName()).isNotEqualTo("Old");
+        assertThat(stale.getReferenceProject()).isSameAs(project);
+    }
+
+    @Test
+    void findAll_doesNotTouchAnUnpublishedTemplateSharingABuiltInIdentifier() {
+        allowView();
+        ExportTemplate edited = stored(5L, sampleJson("rapport-operation-national", "Mine"));
+        when(repository.findByInstitutionAndTemplateUuid(eq(institution), eq("rapport-operation-national"))).thenReturn(Optional.of(edited));
+        when(repository.existsByInstitutionAndTemplateUuid(eq(institution), anyString())).thenReturn(true);
+        when(repository.findByInstitutionOrderByNameAsc(institution)).thenReturn(List.of());
+
+        service.findAll(userInfo);
+
+        verify(repository, never()).save(edited);
+        assertThat(edited.getName()).isEqualTo("Mine");
+    }
 }

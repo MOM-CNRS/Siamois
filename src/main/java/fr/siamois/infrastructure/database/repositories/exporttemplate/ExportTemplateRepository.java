@@ -15,6 +15,8 @@ public interface ExportTemplateRepository extends CrudRepository<ExportTemplate,
 
     Optional<ExportTemplate> findByIdAndInstitution(Long id, Institution institution);
 
+    Optional<ExportTemplate> findByInstitutionAndTemplateUuid(Institution institution, String templateUuid);
+
     boolean existsByInstitutionAndTemplateUuid(Institution institution, String templateUuid);
 
     boolean existsByInstitutionAndNameIgnoreCaseAndVersion(Institution institution, String name, String version);
