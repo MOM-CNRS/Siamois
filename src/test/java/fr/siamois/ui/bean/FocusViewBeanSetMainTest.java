@@ -38,7 +38,8 @@ class FocusViewBeanSetMainTest {
     void setUp() {
         bean = new FocusViewBean(panelFactory, historyBean, mock(LangBean.class), mock(SessionSettingsBean.class),
                 resourceInstitutionService, mock(ProfilePermissionService.class),
-                mock(InstitutionChangeEventPublisher.class), mock(LoginEventPublisher.class), mock(RedirectBean.class));
+                mock(InstitutionChangeEventPublisher.class), mock(LoginEventPublisher.class), mock(RedirectBean.class),
+                mock(fr.siamois.domain.services.UiViewService.class));
         // A list or an entity of the active organisation: no switch, no permission check to make.
         when(resourceInstitutionService.findInstitutionOf(any(), any())).thenReturn(Optional.empty());
 

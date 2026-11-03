@@ -35,4 +35,14 @@ public interface BookmarkRepository extends CrudRepository<Bookmark, Long> {
     @Modifying
     @Query("delete from Bookmark b where b.institution.id = :institutionId and b.resourceUri like concat('%?viewId=', :viewId)")
     int deleteAllOfView(@Param("institutionId") Long institutionId, @Param("viewId") Long viewId);
+
+    /**
+     * Gives the bookmarks of a saved view that still carry the view's old name its new one: a bookmark
+     * the user renamed on its own keeps its name.
+     */
+    @Modifying
+    @Query("update Bookmark b set b.titleCode = :newTitle where b.institution.id = :institutionId "
+            + "and b.resourceUri like concat('%?viewId=', :viewId) and b.titleCode = :oldTitle")
+    int renameBookmarksOfView(@Param("institutionId") Long institutionId, @Param("viewId") Long viewId,
+                              @Param("oldTitle") String oldTitle, @Param("newTitle") String newTitle);
 }

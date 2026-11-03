@@ -90,7 +90,12 @@ public class ViewOpenApiService {
     public ViewResource update(UserInfo user, Long id, ViewWriteRequest body) {
         UiTableView view = requireOwnedUserView(user, id);
         requireWritable(body.resourceType(), body.title(), body.state());
+        String oldTitle = view.getTitle();
         apply(view, body);
+        if (!Objects.equals(oldTitle, view.getTitle())) {
+            // A bookmark the user never renamed follows the view's name.
+            bookmarkRepository.renameBookmarksOfView(user.getInstitution().getId(), id, oldTitle, view.getTitle());
+        }
         return toResource(uiViewRepository.save(view), user);
     }
 

@@ -3,10 +3,12 @@ package fr.siamois.ui.bean;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.services.UiViewService;
 import fr.siamois.domain.services.ResourceInstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.dto.view.UITableViewDTO;
 import fr.siamois.ui.bean.panel.PanelFactory;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
 import jakarta.faces.context.FacesContext;
@@ -37,6 +39,7 @@ public class FocusViewBean implements Serializable {
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
     private final transient LoginEventPublisher loginEventPublisher;
     private final transient RedirectBean redirectBean;
+    private final transient UiViewService uiViewService;
 
 
     private AbstractPanel mainPanel;
@@ -96,7 +99,7 @@ public class FocusViewBean implements Serializable {
             HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
             mainPanel = panelFactory.create(parsedMain.type(), parsedMain.id());
             mainPanel.setRoot(true);
-            mainPanel.setViewId(parsedMain.viewId());
+            applyView(mainPanel, parsedMain.viewId());
             if (backToken != null) {
                 mainPanel.setGoBackUrl(decodeToken(backToken));
             }
@@ -154,7 +157,7 @@ public class FocusViewBean implements Serializable {
 
         AbstractPanel overview = mainPanel.getParentOrOverview();
         next.setRoot(true);
-        next.setViewId(parsed.viewId());
+        applyView(next, parsed.viewId());
         if (overview != null) {
             next.setParentOrOverview(overview);
             overview.setParentOrOverview(next);
@@ -167,6 +170,22 @@ public class FocusViewBean implements Serializable {
             entry.setSecondary(historyComponentOf(overview));
         }
         historyBean.addItem(entry);
+    }
+
+    /** Opens the panel on a saved view: the view's name is then the panel's title (history, favorite, tab). */
+    private void applyView(AbstractPanel panel, Long viewId) {
+        panel.setViewId(viewId);
+        if (viewId == null) {
+            return;
+        }
+        try {
+            UITableViewDTO view = uiViewService.findOne(viewId);
+            if (view != null && view.getTitle() != null && !view.getTitle().isBlank()) {
+                panel.setTitleCodeOrTitle(view.getTitle());
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("View {} not found, keeping the list's title", viewId);
+        }
     }
 
     private static HistoryBean.HistoryItemComponent historyComponentOf(AbstractPanel panel) {
