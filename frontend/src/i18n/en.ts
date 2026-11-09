@@ -113,7 +113,7 @@ export const en: Record<MessageKey, string> = {
   "views.rename": "Rename the view",
   "views.failed": "save the view",
   "views.drawer.search": "Search a view",
-  "views.drawer.noProject": "No project.",
+  "views.drawer.projectTab": "{label} of project {project}",
   "views.drawer.filterProject": "Project",
   "views.drawer.filterUser": "User",
   "views.drawer.filters_one": "{count} filter",

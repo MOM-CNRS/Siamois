@@ -113,7 +113,7 @@ export const fr = {
   "views.rename": "Renommer la vue",
   "views.failed": "enregistrer la vue",
   "views.drawer.search": "Rechercher une vue",
-  "views.drawer.noProject": "Aucun projet.",
+  "views.drawer.projectTab": "{label} du projet {project}",
   "views.drawer.filterProject": "Projet",
   "views.drawer.filterUser": "Utilisateur",
   "views.drawer.filters_one": "{count} filtre",

@@ -1,5 +1,5 @@
 import {useLayoutEffect, useRef, useState, useSyncExternalStore} from "react";
-import {useQuery} from "@tanstack/react-query";
+import {useQueries, useQuery} from "@tanstack/react-query";
 import {Button} from "primereact/button";
 import {InputText} from "primereact/inputtext";
 import {getFicheConfig} from "../api/resources/ficheConfigs";
@@ -15,7 +15,7 @@ import {editableTabs} from "../panels/detail/ficheTabsModel";
 import {ficheScopeOf} from "../panels/detail/ficheConfig";
 import {getContext, getNavigation, subscribeContext} from "../navigation/externalBus";
 import {t, tn} from "../i18n";
-import {groupViews, matches, projectOfView} from "./viewsTree";
+import {matches, projectOfView} from "./viewsTree";
 
 const PAGE = 200;
 
@@ -66,76 +66,37 @@ function UserViewRow({ view, level }: { view: ViewResource; level?: number }) {
   );
 }
 
-/** The built-in and configured list tabs of one project's fiche, each opening that list for the project. */
-function ProjectTabs({ organizationId, project, userViews }: { organizationId: number; project: ProjectRow; userViews: ViewResource[] }) {
-  const scope = ficheScopeOf(PROJECT_KEY, project);
-  const config = useQuery({
-    queryKey: queryKeys.ficheConfig(organizationId, PROJECT_KEY, scope.projectId, scope.typeId),
-    queryFn: () => getFicheConfig({ organizationId, resourceType: PROJECT_KEY, ...scope }),
-    staleTime: 0,
-  });
-  const code = tableOf(PROJECT_KEY)?.detail?.tabs ?? [];
-  const rows = editableTabs(code as never, config.data?.tabs)
-    .filter((row) => !row.hidden)
-    .map((row) => {
-      const target = row.kind === "list" ? row.target : code.find((tab) => tab.key === row.key)?.relation?.target;
-      return target ? { key: row.key, label: row.label || row.defaultLabel, target } : null;
-    })
-    .filter((row): row is { key: string; label: string; target: string } => row != null);
-  return (
-    <div>
-      {rows.map((row) => (
-        <Row
-          key={row.key}
-          level={2}
-          icon={tableOf(row.target)?.icon ?? "bi bi-table"}
-          color={row.target}
-          label={row.label}
-          onOpen={() => getNavigation()?.openList(row.target, { projectId: project.id })}
-        />
-      ))}
-      {userViews.map((view) => (
-        <UserViewRow key={view.id} view={view} level={2} />
-      ))}
-    </div>
-  );
-}
-
-// Keys of the projects in the set of open nodes (a table's key is its entity type's).
-const PROJECT_PREFIX = "project:";
-
 interface ProjectRow {
   id: number | string;
   name?: string | null;
   type?: { id?: unknown } | null;
 }
 
-function Projects({ organizationId, projects, userViews, open, onToggle }: {
-  organizationId: number; projects: ProjectRow[]; userViews: Map<string, ViewResource[]>; open: Set<string>; onToggle: (id: string) => void;
-}) {
-  if (projects.length === 0) return <div className="sia-views-empty" style={{ paddingLeft: 40 }}>{t("views.drawer.noProject")}</div>;
-  return (
-    <>
-      {projects.map((project) => {
-        const id = String(project.id);
-        const expanded = open.has(PROJECT_PREFIX + id);
-        return (
-          <div key={id}>
-            <Row
-              level={1}
-              icon={tableOf(PROJECT_KEY)?.icon ?? "bi bi-table"}
-              color={PROJECT_KEY}
-              label={project.name ?? id}
-              expanded={expanded}
-              onToggle={() => onToggle(PROJECT_PREFIX + id)}
-              onOpen={() => getNavigation()?.navigate(PROJECT_KEY, project.id)}
-            />
-            {expanded && <ProjectTabs organizationId={organizationId} project={project} userViews={userViews.get(id) ?? []} />}
-          </div>
-        );
-      })}
-    </>
-  );
+/** A list tab of a project's fiche, shown under the table it lists: « UE du projet X ». */
+interface ProjectTabEntry {
+  key: string;
+  label: string;
+  target: string;
+  project: ProjectRow;
+}
+
+/**
+ * The list tabs of the projects, built-in and configured by the project (renamed, hidden, added), by the table they
+ * list. A project whose configuration is not known yet shows the code's own tabs.
+ */
+function projectTabEntries(projects: ProjectRow[], configs: Array<Record<string, unknown> | undefined>): Map<string, ProjectTabEntry[]> {
+  const code = tableOf(PROJECT_KEY)?.detail?.tabs ?? [];
+  const byTable = new Map<string, ProjectTabEntry[]>();
+  projects.forEach((project, i) => {
+    for (const row of editableTabs(code as never, configs[i])) {
+      if (row.hidden) continue;
+      const target = row.kind === "list" ? row.target : code.find((tab) => tab.key === row.key)?.relation?.target;
+      if (!target) continue;
+      const label = t("views.drawer.projectTab", { label: row.label || row.defaultLabel, project: project.name ?? String(project.id) });
+      byTable.set(target, [...(byTable.get(target) ?? []), { key: `${project.id}:${row.key}`, label, target, project }]);
+    }
+  });
+  return byTable;
 }
 
 /**
@@ -200,7 +161,6 @@ export function ViewsDrawer({ organizationId }: { organizationId?: number }) {
     enabled: organizationId != null,
     staleTime: 0,
   });
-  if (organizationId == null) return null;
   const searching = search.trim() !== "";
   const allProjects = (projects.data?.data ?? []) as ProjectRow[];
   const projectName = (id: string) => allProjects.find((p) => String(p.id) === id)?.name ?? id;
@@ -210,9 +170,7 @@ export function ViewsDrawer({ organizationId }: { organizationId?: number }) {
       : (pickedProject ?? undefined);
   const projectIds = projectFilter?.op === "in" ? projectFilter.v : [];
   const ownerIds = ownerFilter?.op === "in" ? ownerFilter.v : [];
-  const shownProjects = allProjects.filter(
-    (p) => (projectIds.length === 0 || projectIds.includes(String(p.id))) && (!searching || matches(p.name ?? "", search)),
-  );
+  const shownProjects = allProjects.filter((p) => projectIds.length === 0 || projectIds.includes(String(p.id)));
   // A view tied to another project is hidden by the project filter, the views tied to none stay; the user filter
   // keeps the views of the users picked.
   const all = (views.data ?? []).filter((v) => {
@@ -247,15 +205,26 @@ export function ViewsDrawer({ organizationId }: { organizationId?: number }) {
     if (key === "project") setPickedProject(value ?? null);
     else setOwnerFilter(value);
   };
-  const { byProject } = groupViews(all);
   const tables = getAllEntityTypes().filter((config) => config.routes?.list != null);
+  // The projects' own configuration of their tabs is read once something is opened or searched, not for every
+  // project the moment the drawer shows.
+  const configs = useQueries({
+    queries: shownProjects.map((project) => {
+      const scope = ficheScopeOf(PROJECT_KEY, project);
+      return {
+        queryKey: queryKeys.ficheConfig(organizationId, PROJECT_KEY, scope.projectId, scope.typeId),
+        queryFn: () => getFicheConfig({ organizationId: organizationId!, resourceType: PROJECT_KEY, ...scope }),
+        enabled: organizationId != null && (open.size > 0 || searching),
+        staleTime: 0,
+      };
+    }),
+  });
+  const tabEntries = projectTabEntries(shownProjects, configs.map((c) => c.data?.tabs ?? undefined));
   const withViews = (key: string) => all.filter((v) => v.resourceType === key && (!searching || matches(v.title, search)));
+  const withTabs = (key: string) => (tabEntries.get(key) ?? []).filter((entry) => !searching || matches(entry.label, search));
   const toggle = (key: string) => setOpen((prev) => { const next = new Set(prev); if (!next.delete(key)) next.add(key); return next; });
-  const expandAll = () =>
-    setOpen(new Set([
-      ...tables.filter((c) => c.key === PROJECT_KEY || withViews(c.key).length > 0).map((c) => c.key),
-      ...shownProjects.map((p) => PROJECT_PREFIX + p.id),
-    ]));
+  const expandAll = () => setOpen(new Set(tables.filter((c) => withViews(c.key).length > 0 || withTabs(c.key).length > 0).map((c) => c.key)));
+  if (organizationId == null) return null;
   return (
     <div className="sia-views-drawer">
       <div className="sia-views-search">
@@ -268,12 +237,12 @@ export function ViewsDrawer({ organizationId }: { organizationId?: number }) {
       </div>
       <div className="sia-views-body">
         {tables.map((config) => {
-          const isProject = config.key === PROJECT_KEY;
           const own = withViews(config.key);
-          // A search keeps the tables that match, or hold a matching view or project.
-          if (searching && !matches(config.labels.plural, search) && own.length === 0 && !(isProject && shownProjects.length > 0)) return null;
-          const expandable = isProject || own.length > 0;
-          const expanded = expandable && (open.has(config.key) || (searching && (own.length > 0 || isProject)));
+          const tabs = withTabs(config.key);
+          // A search keeps the tables that match, or hold a matching view or project tab.
+          if (searching && !matches(config.labels.plural, search) && own.length === 0 && tabs.length === 0) return null;
+          const expandable = own.length > 0 || tabs.length > 0;
+          const expanded = expandable && (open.has(config.key) || (searching && !matches(config.labels.plural, search)));
           return (
             <div key={config.key}>
               <Row
@@ -285,9 +254,17 @@ export function ViewsDrawer({ organizationId }: { organizationId?: number }) {
                 onOpen={() => openTable(config.key)}
               />
               {expanded && own.map((view) => <UserViewRow key={view.id} view={view} level={1} />)}
-              {expanded && isProject && (
-                <Projects organizationId={organizationId} projects={shownProjects} userViews={byProject} open={open} onToggle={toggle} />
-              )}
+              {expanded &&
+                tabs.map((entry) => (
+                  <Row
+                    key={entry.key}
+                    level={1}
+                    icon={config.icon}
+                    color={config.key}
+                    label={entry.label}
+                    onOpen={() => getNavigation()?.openList(entry.target, { projectId: entry.project.id })}
+                  />
+                ))}
             </div>
           );
         })}
