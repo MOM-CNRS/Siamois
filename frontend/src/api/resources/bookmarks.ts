@@ -26,3 +26,18 @@ export async function getBookmarkStatus(resourceUri: string, organizationId: num
   const body = await apiFetch<{ bookmarked: boolean }>(`/api/v1/bookmarks/status?${query.toString()}`);
   return body.bookmarked;
 }
+
+// GET /api/v1/bookmarks — the user's favorites in the organization, most recent first (50 at most); titles are
+// already in the user's language. A favorite of a list or of a saved view (`/recording-unit?viewId=3`) is what the
+// home page calls a pinned view.
+export interface BookmarkItem {
+  id: number;
+  title: string;
+  resourceUri: string;
+}
+
+export async function listBookmarks(organizationId: number, limit = 50): Promise<BookmarkItem[]> {
+  const query = new URLSearchParams({ organizationId: String(organizationId), limit: String(limit) });
+  const body = await apiFetch<{ data: BookmarkItem[] }>(`/api/v1/bookmarks?${query.toString()}`);
+  return body.data;
+}

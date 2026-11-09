@@ -16,6 +16,8 @@ public record HomeAccessRequest(
         @Schema(description = "Ce que dit la carte : le nom du type montré (ou de la table)")
         String label,
         @Schema(description = "État de la vue : filtre sur le type choisi")
-        TableViewState state
+        TableViewState state,
+        @Schema(description = "Vrai : une carte sur la vue de base de la table `resourceType`, sans vue enregistrée")
+        Boolean table
 ) {
 }

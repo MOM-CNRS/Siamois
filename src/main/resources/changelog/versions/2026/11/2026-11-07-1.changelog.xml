@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    A card of the home page's data access may now open a table on its own base view, with no saved view behind it:
+    fk_view is then null and resource_type names the table. A table has at most one such card per organisation.
+    -->
+
+    <changeSet id="2026-11-07-1-home-access-table-card" author="Siamois">
+        <addColumn schemaName="public" tableName="home_access">
+            <column name="resource_type" type="varchar(100)"/>
+        </addColumn>
+        <dropNotNullConstraint schemaName="public" tableName="home_access" columnName="fk_view" columnDataType="bigint"/>
+        <sql>
+            ALTER TABLE public.home_access
+                ADD CONSTRAINT ck_home_access_view_or_table CHECK (fk_view IS NOT NULL OR resource_type IS NOT NULL);
+            CREATE UNIQUE INDEX ux_home_access_table ON public.home_access (fk_institution, resource_type) WHERE fk_view IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

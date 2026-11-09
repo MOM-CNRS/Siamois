@@ -15,6 +15,8 @@ export interface ExternalNavigation {
   navigate: (entityType: string, id?: string | number) => void;
   openOverview: (entityType: string, id: string | number) => void;
   openList: (entityType: string, seed: Omit<ListSeed, "nonce">) => void;
+  // The entity type's list in the main pane, on a saved view (without an id, its default list).
+  openView: (entityType: string, viewId?: number) => void;
   // Opens a page of the Back/Forward trail from its address, like the browser's own Back would.
   restoreUrl: (url: string) => void;
 }

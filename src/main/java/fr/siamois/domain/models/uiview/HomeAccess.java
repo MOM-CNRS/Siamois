@@ -13,7 +13,8 @@ import java.time.Instant;
 
 /**
  * An access to data on the home page of an organisation: a card opening a table on a view (a table, and
- * the type to show, are what the view holds). Configured by who may edit the organisation's default views;
+ * the type to show, are what the view holds), or a table on its own base view ({@code view} is then null and
+ * {@code resourceType} names the table). Configured by who may edit the organisation's default views;
  * seen by every member. Deleting the view takes its access with it.
  */
 @Entity
@@ -32,10 +33,15 @@ public class HomeAccess {
     @JoinColumn(name = "fk_institution", nullable = false)
     private Institution institution;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "fk_view", nullable = false)
+    /** The view the card opens; null for a card on a table's base view. */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_view")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UiTableView view;
+
+    /** The table of a card with no view (key of the front registry); null when there is a view. */
+    @Column(name = "resource_type", length = 100)
+    private String resourceType;
 
     /** What the card says: the name of the type it shows (or of the table); the view's title when absent. */
     @Column(length = 200)

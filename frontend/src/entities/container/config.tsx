@@ -93,7 +93,6 @@ export const containerEntityConfig: EntityTypeConfig<ContainerSummary, Container
       description: t("home.container.description"),
       className: "sia-welcome-card sia-container",
       chipClassName: "container-count-chip",
-      order: 60,
     }),
   },
 };

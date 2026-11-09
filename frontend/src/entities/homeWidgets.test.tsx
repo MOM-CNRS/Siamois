@@ -18,13 +18,13 @@ const mockedApiFetch = vi.mocked(apiFetch);
 const COUNTS = { projects: 1, places: 2, recordingUnits: 3, finds: 4, phases: 5, containers: 6 };
 
 // The five non-project cards: each shows its own count and opens its organization-wide React list
-// through App's router, in homePanel.xhtml's order.
-const CASES: [string, (ctx: HomeWidgetContext) => HomeWidgetDef[], string, string, number][] = [
-  ["Lieux", placeEntityConfig.home!.widgets!, "2", "place", 20],
-  ["Unités d'enregistrement", recordingUnitEntityConfig.home!.widgets!, "3", "recordingUnit", 30],
-  ["Mobilier", findEntityConfig.home!.widgets!, "4", "find", 40],
-  ["Phases", phaseEntityConfig.home!.widgets!, "5", "phase", 50],
-  ["Contenants", containerEntityConfig.home!.widgets!, "6", "container", 60],
+// through App's router.
+const CASES: [string, (ctx: HomeWidgetContext) => HomeWidgetDef[], string, string][] = [
+  ["Lieux", placeEntityConfig.home!.widgets!, "2", "place"],
+  ["Unités d'enregistrement", recordingUnitEntityConfig.home!.widgets!, "3", "recordingUnit"],
+  ["Mobilier", findEntityConfig.home!.widgets!, "4", "find"],
+  ["Phases", phaseEntityConfig.home!.widgets!, "5", "phase"],
+  ["Contenants", containerEntityConfig.home!.widgets!, "6", "container"],
 ];
 
 let container: HTMLDivElement;
@@ -49,7 +49,7 @@ async function flush() {
   });
 }
 
-describe.each(CASES)("%s home card", (label, factory, count, entityType, order) => {
+describe.each(CASES)("%s home card", (label, factory, count, entityType) => {
   function renderCard(onNavigate = vi.fn()) {
     const [widget] = factory({ organizationId: 7, onNavigate });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -59,10 +59,9 @@ describe.each(CASES)("%s home card", (label, factory, count, entityType, order) 
     return { widget, onNavigate };
   }
 
-  it("is a card widget placed in homePanel.xhtml's order", () => {
+  it("is a card widget", () => {
     const [widget] = factory({ organizationId: 7 });
     expect(widget.kind).toBe("card");
-    expect(widget.order).toBe(order);
   });
 
   it("shows its label and its own count from the organization counts", async () => {

@@ -279,17 +279,11 @@ export interface HomeWidgetContext {
 export interface HomeWidgetDef {
   key: string;
   render: () => ReactNode;
-  // homePanel.xhtml is two separate sibling p:panels, not one — "Mes derniers projets"
-  // (myActionUnits, a standalone toggleable panel) and "Accéder aux bases de données" (dbAccess,
-  // one toggleable panel holding a grid of every entity's welcomeCard.xhtml-style count tile).
   // "panel" (default) renders standalone, already wrapped in its own <Panel> by the widget
-  // itself (RecentProjectsWidget does this). "card" widgets are collected by HomePanel and
-  // placed together inside the one shared "Accéder aux bases de données" panel/grid, mirroring
-  // dbAccessPanelGrid — never each in a separate top-level panel.
+  // itself (RecentProjectsWidget does this). A "card" is the entity's table card (its count, opening
+  // its list): HomePanel skips it, the « Accès aux données » section shows it for the organization's
+  // table cards, in the order the organization set.
   kind?: "panel" | "card";
-  // Position among the "card" widgets — widgets otherwise arrive in mount.ts's registration
-  // order, not homePanel.xhtml's. Lower first; absent sorts last.
-  order?: number;
 }
 
 // Handed to a row action's `run`: what it may do besides calling the API itself.

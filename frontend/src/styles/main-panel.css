@@ -4080,3 +4080,23 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .field-geometry-overlay .field-geometry {
   max-height: 20rem;
 }
+
+/* Sidebar « Vues » drawer (views/ViewsDrawer.tsx): its own scrolling box, the app shell never scrolls. */
+.sia-views-drawer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.sia-views-search { padding: 6px 8px; }
+.sia-views-body { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
+.sia-views-section-title { margin: 10px 12px 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+.sia-views-row { display: flex; align-items: center; gap: 2px; width: 100%; padding-right: 8px; }
+.sia-views-row:hover { background: rgba(0, 0, 0, 0.06); }
+.sia-views-chevron { width: 22px; flex: none; border: 0; background: transparent; color: inherit; padding: 6px 0; cursor: pointer; }
+.sia-views-chevron:disabled { cursor: default; }
+.sia-views-open { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; border: 0; background: transparent; text-align: left; cursor: pointer; color: inherit; font: inherit; padding: 6px 0; }
+.sia-views-open > i { color: var(--sia-row-color, var(--siamois-green)); }
+.sia-views-row-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sia-views-empty { padding: 4px 12px; opacity: 0.6; font-style: italic; }
+.sia-views-tools { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.sia-views-filters { flex: 1; min-width: 0; overflow: hidden; }
+.sia-views-filters .entity-list-panel-filter-chips { flex-wrap: nowrap; }
+.home-data-access-item { position: relative; }
+.home-data-access-remove-floating { position: absolute; top: 6px; right: 6px; }
+.home-pinned-unpin { margin-left: auto; }

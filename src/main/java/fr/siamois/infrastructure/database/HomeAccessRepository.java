@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database;
 
 import fr.siamois.domain.models.uiview.HomeAccess;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,10 +12,17 @@ import java.util.Optional;
 public interface HomeAccessRepository extends JpaRepository<HomeAccess, Long> {
 
     /** An organisation's accesses, in display order, with their view. */
-    @Query("select a from HomeAccess a join fetch a.view where a.institution.id = :institutionId order by a.position, a.id")
+    @Query("select a from HomeAccess a left join fetch a.view where a.institution.id = :institutionId order by a.position, a.id")
     List<HomeAccess> findAllOf(@Param("institutionId") Long institutionId);
 
     boolean existsByViewIdAndInstitutionId(Long viewId, Long institutionId);
+
+    boolean existsByInstitutionIdAndResourceTypeAndViewIsNull(Long institutionId, String resourceType);
+
+    /** Removes every card of an organisation (its views stay). */
+    @Modifying
+    @Query("delete from HomeAccess a where a.institution.id = :institutionId")
+    void deleteAllOf(@Param("institutionId") Long institutionId);
 
     Optional<HomeAccess> findByIdAndInstitutionId(Long id, Long institutionId);
 

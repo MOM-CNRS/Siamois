@@ -52,6 +52,8 @@ class HomeAccessOpenApiServiceTest {
         PersonDTO person = new PersonDTO();
         person.setId(7L);
         user = new UserInfo(institution, person, "fr");
+        // By default the organisation has configured cards (not the defaults).
+        lenient().when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of(access(99, 99, "find", "Mobiliers")));
     }
 
     private static HomeAccess access(long id, long viewId, String type, String title) {
@@ -89,7 +91,7 @@ class HomeAccessOpenApiServiceTest {
             saved.setId(5L);
             return saved;
         });
-        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "US – Couche", "Couche", state);
+        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "US – Couche", "Couche", state, null);
 
         HomeAccessResource result = service.create(user, request);
 
@@ -112,7 +114,7 @@ class HomeAccessOpenApiServiceTest {
         when(existing.title()).thenReturn("Mobiliers");
         when(viewService.get(user, 11L)).thenReturn(existing);
         when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> call.getArgument(0));
-        HomeAccessRequest request = new HomeAccessRequest(100L, 11L, null, null, null, null);
+        HomeAccessRequest request = new HomeAccessRequest(100L, 11L, null, null, null, null, null);
 
         HomeAccessResource result = service.create(user, request);
 
@@ -181,16 +183,16 @@ class HomeAccessOpenApiServiceTest {
         when(viewService.create(any(UserInfo.class), any(ViewWriteRequest.class))).thenReturn(created);
         when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> call.getArgument(0));
 
-        assertEquals("Mobiliers", service.create(user, new HomeAccessRequest(100L, null, "find", "Mobiliers", " ", new TableViewState())).label());
+        assertEquals("Mobiliers", service.create(user, new HomeAccessRequest(100L, null, "find", "Mobiliers", " ", new TableViewState(), null)).label());
 
-        HomeAccessRequest tooLong = new HomeAccessRequest(100L, null, "find", "Mobiliers", "x".repeat(201), new TableViewState());
+        HomeAccessRequest tooLong = new HomeAccessRequest(100L, null, "find", "Mobiliers", "x".repeat(201), new TableViewState(), null);
         assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class, () -> service.create(user, tooLong)).getStatusCode());
     }
 
     @Test
     void create_withoutThePermission_isForbiddenAndCreatesNothing() {
         when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(false);
-        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "x", "x", new TableViewState());
+        HomeAccessRequest request = new HomeAccessRequest(100L, null, "recordingUnit", "x", "x", new TableViewState(), null);
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class, () -> service.create(user, request));
 
@@ -229,5 +231,101 @@ class HomeAccessOpenApiServiceTest {
         assertEquals(HttpStatus.FORBIDDEN, error.getStatusCode());
         assertFalse(error.getReason().isBlank());
         verify(homeAccessRepository, never()).delete(any());
+    }
+
+    @Test
+    void list_withNothingConfigured_givesOneUnstoredCardPerTable() {
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of());
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+
+        HomeAccessListResponse response = service.list(user);
+
+        assertTrue(response.defaults());
+        assertEquals(HomeAccessOpenApiService.DEFAULT_TABLES, response.data().stream().map(HomeAccessResource::resourceType).toList());
+        assertTrue(response.data().stream().allMatch(card -> card.id() == null && card.viewId() == null));
+    }
+
+    @Test
+    void list_givesATableCardWithNoView() {
+        HomeAccess table = new HomeAccess();
+        table.setId(3L);
+        table.setResourceType("find");
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of(table));
+
+        HomeAccessListResponse response = service.list(user);
+
+        assertFalse(response.defaults());
+        assertEquals(List.of(new HomeAccessResource(3L, null, "find", null, null, null)), response.data());
+    }
+
+    @Test
+    void customize_storesTheDefaultsOnlyWhenNothingIsConfigured() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of());
+
+        service.customize(user);
+
+        ArgumentCaptor<HomeAccess> saved = ArgumentCaptor.forClass(HomeAccess.class);
+        verify(homeAccessRepository, times(HomeAccessOpenApiService.DEFAULT_TABLES.size())).save(saved.capture());
+        assertEquals(HomeAccessOpenApiService.DEFAULT_TABLES, saved.getAllValues().stream().map(HomeAccess::getResourceType).toList());
+        assertEquals(1, saved.getAllValues().get(0).getPosition());
+        assertTrue(saved.getAllValues().stream().allMatch(a -> a.getView() == null));
+    }
+
+    @Test
+    void customize_withCardsAlreadyThere_storesNothing() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+
+        service.customize(user);
+
+        verify(homeAccessRepository, never()).save(any());
+    }
+
+    @Test
+    void create_onTheDefaults_keepsTheTablesThenAddsTheCard() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        when(homeAccessRepository.findAllOf(100L)).thenReturn(List.of());
+        ViewResource created = mock(ViewResource.class);
+        when(created.id()).thenReturn(11L);
+        when(viewService.create(any(UserInfo.class), any(ViewWriteRequest.class))).thenReturn(created);
+        when(homeAccessRepository.maxPosition(100L)).thenReturn(8);
+        when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> call.getArgument(0));
+
+        service.create(user, new HomeAccessRequest(100L, null, "find", "Mobilier daté", null, new TableViewState(), null));
+
+        verify(homeAccessRepository, times(HomeAccessOpenApiService.DEFAULT_TABLES.size() + 1)).save(any(HomeAccess.class));
+    }
+
+    @Test
+    void create_aTableCard_hasNoViewAndRefusesAnUnknownOrFeaturedTable() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+        when(homeAccessRepository.maxPosition(100L)).thenReturn(2);
+        when(homeAccessRepository.save(any(HomeAccess.class))).thenAnswer(call -> {
+            HomeAccess saved = call.getArgument(0);
+            saved.setId(8L);
+            return saved;
+        });
+
+        HomeAccessResource result = service.create(user, new HomeAccessRequest(100L, null, "study", null, null, null, true));
+
+        assertEquals(new HomeAccessResource(8L, null, "study", null, null, null), result);
+        verifyNoInteractions(viewService);
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ResponseStatusException.class,
+                () -> service.create(user, new HomeAccessRequest(100L, null, "nope", null, null, null, true))).getStatusCode());
+        when(homeAccessRepository.existsByInstitutionIdAndResourceTypeAndViewIsNull(100L, "study")).thenReturn(true);
+        assertEquals(HttpStatus.CONFLICT, assertThrows(ResponseStatusException.class,
+                () -> service.create(user, new HomeAccessRequest(100L, null, "study", null, null, null, true))).getStatusCode());
+    }
+
+    @Test
+    void reset_removesEveryCardButNeedsThePermission() {
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(true);
+
+        service.reset(user);
+
+        verify(homeAccessRepository).deleteAllOf(100L);
+
+        when(profilePermissionService.hasDefaultViewEditPermission(user, null)).thenReturn(false);
+        assertThrows(ResponseStatusException.class, () -> service.reset(user));
     }
 }

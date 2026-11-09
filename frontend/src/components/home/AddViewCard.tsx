@@ -10,10 +10,11 @@ import {t} from "../../i18n";
 import {useToastOnChange} from "../../notify/NotifyProvider";
 
 /**
- * The last slot of the featured views, in edit mode: a transparent card holding the search of the organization's
- * views — picking one features it at once. Its footer, « Créer une nouvelle vue », hands over to the creation dialog.
+ * The last slot of the cards, in edit mode: a transparent card holding the search of the organization's views and of
+ * the tables that lost their card — picking one adds it at once. Its footer, « Créer une nouvelle vue », hands over
+ * to the creation dialog.
  */
-export function AddViewCard({ organizationId, onCreate }: { organizationId: number; onCreate: () => void }) {
+export function AddViewCard({ organizationId, featuredTables, onCreate }: { organizationId: number; featuredTables: string[]; onCreate: () => void }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const views = useQuery({
@@ -22,17 +23,31 @@ export function AddViewCard({ organizationId, onCreate }: { organizationId: numb
     staleTime: 0,
   });
   const add = useMutation({
-    mutationFn: (viewId: number) => createHomeAccess({ organizationId, viewId }),
+    // A value is a view's id, or `table:<key>` for a table's base view.
+    mutationFn: (value: number | string) =>
+      typeof value === "number" ? createHomeAccess({ organizationId, viewId: value }) : createHomeAccess({ organizationId, resourceType: value.slice("table:".length), table: true }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.homeAccesses(organizationId) }),
   });
   const tableName = (key: string) => getAllEntityTypes().find((config) => config.key === key)?.labels.plural ?? key;
+  // The tables that can come back: those of the home page (they declare a card) with no card now.
+  const missingTables = getAllEntityTypes()
+    .filter((config) => config.home?.widgets?.({}).some((widget) => widget.kind === "card") && !featuredTables.includes(config.key))
+    .filter((config) => !search || config.labels.plural.toLowerCase().includes(search.toLowerCase()));
+  const groups = [
+    ...(missingTables.length > 0
+      ? [{ group: t("home.dataAccess.tables"), items: missingTables.map((c) => ({ value: `table:${c.key}`, label: c.labels.plural, table: "" })) }]
+      : []),
+    { group: t("home.dataAccess.views"), items: (views.data?.data ?? []).map((v) => ({ value: v.id as number | string, label: v.title, table: tableName(v.resourceType) })) },
+  ].filter((g) => g.items.length > 0);
 
   useToastOnChange(add.isError ? messageForError(add.error, t("home.dataAccess.addFailed")) : null);
   return (
     <div className="home-data-access-add">
       <Dropdown
         value={null}
-        options={(views.data?.data ?? []).map((v) => ({ value: v.id, label: v.title, table: tableName(v.resourceType) }))}
+        options={groups}
+        optionGroupLabel="group"
+        optionGroupChildren="items"
         optionLabel="label"
         itemTemplate={(o: { label: string; table: string }) => (
           <span className="home-data-access-view-item">
@@ -46,7 +61,7 @@ export function AddViewCard({ organizationId, onCreate }: { organizationId: numb
         className="home-data-access-dropdown"
         panelClassName="home-data-access-panel"
         disabled={add.isPending}
-        onChange={(e) => add.mutate(e.value as number)}
+        onChange={(e) => add.mutate(e.value as number | string)}
         // The search goes to the server: the organization may have more views than one page.
         filter
         onFilter={(e) => setSearch(e.filter)}

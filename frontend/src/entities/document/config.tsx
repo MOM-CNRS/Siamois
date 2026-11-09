@@ -96,7 +96,6 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
       description: t("home.document.description"),
       className: "sia-welcome-card sia-document",
       chipClassName: "document-count-chip",
-      order: 55,
     }),
   },
 };

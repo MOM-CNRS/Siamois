@@ -49,7 +49,7 @@ export const queryKeys = {
   tableTypeOptions: (organizationId: number | undefined, entityType: string) =>
     ["table-type-options", organizationId, entityType] as const,
   // The pages the user opened lately, on the home page.
-  homeHistory: (organizationId: number | undefined) => ["home-history", organizationId] as const,
+  homePinnedViews: (organizationId: number | undefined) => ["home-pinned-views", organizationId] as const,
 
   // What one user changed on one view (GET /api/v1/view-states): per organization and view key.
   viewState: (organizationId: number | undefined, viewKey: string | undefined) =>

@@ -54,89 +54,54 @@ afterEach(() => {
   act(() => root.unmount());
 });
 
-describe("home history", () => {
-  it("shows the title of the overview and reopens the page with it", async () => {
+describe("pinned views", () => {
+  it("lists the favorites that are a list or a view, in the colour and icon of their table, and opens them", async () => {
     mockedApiFetch.mockResolvedValue({
       data: [
-        {
-          id: 1,
-          title: "US 9",
-          icon: "bi bi-pencil-square",
-          mainUri: "/action-unit/2",
-          mainTitle: "Projet A",
-          secondaryUri: "/recording-unit/9",
-          secondaryTitle: "US 9",
-          project: { id: 2, name: "Projet A" },
-        },
+        { id: 1, title: "UE – Couche", resourceUri: "/recording-unit?viewId=12" },
+        { id: 2, title: "Projet A", resourceUri: "/action-unit/2" },
+        { id: 3, title: "Projets", resourceUri: "/action-unit" },
+        { id: 4, title: "Ailleurs", resourceUri: "/nope" },
       ],
     });
-    const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenOverview: vi.fn() };
+    const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenView: vi.fn() };
     render(ctx);
     await flush();
 
-    expect(String(mockedApiFetch.mock.calls[0][0])).toContain("/api/v1/history?organizationId=7&limit=20");
-    const row = container.querySelector<HTMLButtonElement>(".sia-clickable-card")!;
-    expect(row.textContent).toContain("US 9");
-    expect(row.textContent).toContain("Projet A");
-    expect(row.querySelector(".sia-project-name")?.textContent).toBe("Projet A");
-
-    act(() => row.click());
-    expect(ctx.onNavigate).toHaveBeenCalledWith("project", "2");
-    expect(ctx.onOpenOverview).toHaveBeenCalledWith("recordingUnit", "9");
-  });
-
-  it("opens a list entry without an overview", async () => {
-    mockedApiFetch.mockResolvedValue({ data: [{ id: 1, title: "Projets", mainUri: "/action-unit", mainTitle: "Projets" }] });
-    const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenOverview: vi.fn() };
-    render(ctx);
-    await flush();
-
-    act(() => container.querySelector<HTMLElement>(".sia-clickable-card")!.click());
-
-    expect(ctx.onNavigate).toHaveBeenCalledWith("project");
-    expect(ctx.onOpenOverview).not.toHaveBeenCalled();
-  });
-
-  it("leaves the home page out and shows each card in the colour and icon of its type", async () => {
-    mockedApiFetch.mockResolvedValue({
-      data: [
-        { id: 1, title: "Accueil", mainUri: "/home", mainTitle: "Accueil" },
-        { id: 4, title: "Ailleurs", mainUri: "/nope/1", mainTitle: "Ailleurs" },
-        { id: 2, title: "Projet A", mainUri: "/action-unit/2", mainTitle: "Projet A" },
-        { id: 3, title: "US 9", mainUri: "/recording-unit/9", mainTitle: "US 9" },
-      ],
-    });
-    render({ organizationId: 7 });
-    await flush();
-
+    expect(String(mockedApiFetch.mock.calls[0][0])).toContain("/api/v1/bookmarks?organizationId=7&limit=50");
     const cards = container.querySelectorAll<HTMLElement>(".sia-clickable-card");
+    // A favorite fiche and a table the app does not know are not pinned views.
     expect(cards).toHaveLength(2);
-    expect(cards[0].querySelector(".sia-welcome-card")?.className).toContain("sia-action-unit");
-    expect(cards[0].querySelector("i")?.className).toBe("bi bi-arrow-down-square");
-    expect(cards[1].querySelector(".sia-welcome-card")?.className).toContain("sia-recording-unit");
-    expect(cards[1].querySelector("i")?.className).toBe("bi bi-pencil-square");
+    expect(cards[0].textContent).toContain("UE – Couche");
+    expect(cards[0].querySelector(".sia-welcome-card")?.className).toContain("sia-recording-unit");
+    expect(cards[0].querySelector("i")?.className).toBe("bi bi-pencil-square");
+
+    act(() => cards[0].click());
+    expect(ctx.onOpenView).toHaveBeenCalledWith("recordingUnit", 12);
+    act(() => cards[1].click());
+    expect(ctx.onNavigate).toHaveBeenCalledWith("project");
   });
 
-  it("keeps a fiche opened beside a pane the server still knows as Home, and reopens just that fiche", async () => {
-    mockedApiFetch.mockResolvedValue({
-      data: [{ id: 1, title: "US 9", mainUri: "/home", mainTitle: "Accueil", secondaryUri: "/recording-unit/9", secondaryTitle: "US 9" }],
-    });
-    const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenOverview: vi.fn() };
+  it("unpins a view without opening it", async () => {
+    mockedApiFetch.mockResolvedValue({ data: [{ id: 1, title: "UE – Couche", resourceUri: "/recording-unit?viewId=12" }] });
+    const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenView: vi.fn() };
     render(ctx);
     await flush();
 
-    act(() => container.querySelector<HTMLElement>(".sia-clickable-card")!.click());
+    await act(async () => container.querySelector<HTMLElement>(".home-pinned-unpin")!.click());
 
-    expect(ctx.onNavigate).not.toHaveBeenCalled();
-    expect(ctx.onOpenOverview).toHaveBeenCalledWith("recordingUnit", "9");
+    expect(String(mockedApiFetch.mock.calls.find(([, init]) => init?.method === "DELETE")![0])).toContain(
+      "/api/v1/bookmarks?resourceUri=%2Frecording-unit%3FviewId%3D12&organizationId=7",
+    );
+    expect(ctx.onOpenView).not.toHaveBeenCalled();
   });
 
-  it("says when there is no recent page", async () => {
+  it("says when nothing is pinned", async () => {
     mockedApiFetch.mockResolvedValue({ data: [] });
     render({ organizationId: 7 });
     await flush();
 
-    expect(container.textContent).toContain("Aucune page récente");
+    expect(container.textContent).toContain("Aucune vue épinglée");
   });
 });
 
@@ -183,6 +148,22 @@ describe("openSidebarDrawer", () => {
     document.body.appendChild(link);
 
     openSidebarDrawer("views");
+
+    expect(clicked).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the favorites drawer through the bookmarks entry", () => {
+    const el = document.createElement("div");
+    el.id = "subSidebarForm";
+    el.className = "mode-historique";
+    document.body.appendChild(el);
+    const link = document.createElement("a");
+    link.id = "navForm:bookmarksLinkNav";
+    const clicked = vi.fn();
+    link.addEventListener("click", clicked);
+    document.body.appendChild(link);
+
+    openSidebarDrawer("bookmarks");
 
     expect(clicked).toHaveBeenCalledTimes(1);
   });

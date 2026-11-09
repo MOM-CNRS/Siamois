@@ -104,7 +104,6 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
       description: t("home.find.description"),
       className: "sia-welcome-card sia-specimen",
       chipClassName: "specimen-count-chip",
-      order: 40,
     }),
   },
 };

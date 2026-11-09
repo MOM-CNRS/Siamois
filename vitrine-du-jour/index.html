@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Siamois – la vitrine</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--ocre:#c8873a;--terre:#5b3a1e;--sable:#f6ecd9;--vert:#3f6b4f}
+*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;background:var(--sable);color:var(--terre)}
+header{background:var(--terre);color:var(--sable);padding:28px 20px;text-align:center;border-bottom:8px double var(--ocre)}
+header h1{margin:0;font-size:2.6rem;letter-spacing:2px}header p{margin:6px 0 0;font-style:italic;color:#e9c98f}
+main{max-width:1000px;margin:0 auto;padding:20px}
+#login{max-width:340px;margin:40px auto;background:#fff;padding:24px;border:2px dashed var(--ocre);border-radius:8px}
+input,button{width:100%;padding:10px;margin:6px 0;font-size:1rem;border-radius:6px;border:1px solid #bba}
+button{background:var(--ocre);color:#fff;border:0;cursor:pointer;font-weight:bold}button:hover{background:var(--terre)}
+.err{color:#b00;font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:20px 0}
+.stat{background:#fff;border:2px solid var(--ocre);border-radius:10px;padding:16px;text-align:center}
+.stat b{font-size:2.6rem;display:block;color:var(--vert)}.stat span{font-size:.9rem}
+.joke{text-align:center;font-style:italic;margin:10px 0 24px;font-size:1.1rem}
+section h2{border-bottom:3px solid var(--ocre);padding-bottom:4px}
+ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+li{background:#fff;border-left:6px solid var(--vert);padding:10px 12px;border-radius:4px;box-shadow:0 1px 3px #0002}
+li small{display:block;color:#876}li:hover{transform:rotate(-1deg)}
+.empty{background:#fff;padding:16px;border-radius:8px;text-align:center}
+footer{text-align:center;padding:30px;font-size:.85rem;color:#876}
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:10px}.board{background:#fff;border:2px solid var(--vert);border-radius:10px;padding:12px 16px}.board h3{margin:0 0 6px}.board ol{padding:0;margin:0;list-style:none;display:block}.board li{display:flex;justify-content:space-between;border:0;box-shadow:none;padding:4px 0;border-bottom:1px dotted #cba;border-radius:0}.champ{font-style:italic;color:var(--vert);margin:8px 0 0}
+</style></head><body>
+<header><h1>⛏️ SIAMOIS</h1><p id="sub">Toute l'histoire du sol, creusée à la main (et à l'API)</p></header>
+<main>
+ <form id="login"><b>Pass fouille obligatoire 🪪</b>
+  <input id="email" placeholder="email" autocomplete="username"><input id="pwd" type="password" placeholder="mot de passe" autocomplete="current-password">
+  <button>Descendre dans le sondage</button><div class="err" id="err"></div></form>
+ <div id="app" hidden>
+  <div class="joke" id="joke"></div><div class="stats" id="stats"></div><div id="lists"></div>
+ </div>
+</main>
+<footer>Cette vitrine a été codée en quelques minutes au-dessus de l'API Siamois. Aucune truelle n'a été maltraitée.<br>
+<a href="#" id="raw">voir le JSON brut (pour les curieux)</a></footer>
+<script>
+const $=s=>document.querySelector(s);
+const JOKES=["Aujourd'hui encore, la stratigraphie a eu le dernier mot.","Un tesson ne fait pas le printemps, mais deux, ça commence à faire un contexte.","« C'est sûrement un silex. » — tout le monde, tous les jours.","Les UE sont comme les oignons : plein de couches, et ça fait pleurer.","Si ça ne bouge pas, c'est un mobilier. Si ça bouge, ce n'est pas notre périmètre.","Pelle-o-mètre en surchauffe : prévoir de l'arnica."];
+const KINDS=[{key:'recording-units',icon:'🧱',name:'Unités d\'enregistrement',unit:'UE sorties de terre'}];
+const ROLES=[{re:/author|auteur/i,name:'Auteurs',icon:'✍️',fun:'Les plumes de la stratigraphie'},{re:/contribut/i,name:'Contributeurs',icon:'🤝',fun:'Les petites mains du chantier'}];
+let FIELDMAP={},PLACEF={},placeNames={};
+const PLACE_RE=/spatial|lieu|place/i;
+const placesOf=i=>{const a=i.answers||{};const out=new Set();for(const [k,v] of Object.entries(a))if(PLACEF[k]){(function w(x){if(x==null)return;if(Array.isArray(x))return x.forEach(w);if(typeof x==='object'){const n=x.label||x.name||x.fullIdentifier||x.identifier||placeNames[String(x.id)];if(n)out.add(n);else w(x.id)}else out.add(placeNames[String(x)]||('Lieu #'+x))})(v)}return [...out]};
+const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const EXCLUDED_ORGS=['organisation personnelle de b greg','organisation personnelle de miled rousse','bidon'];
+const orgBanned=o=>{const n=norm(o.name);return EXCLUDED_ORGS.some(e=>n===e||n.startsWith(e))};
+const EXCLUDED=['miled rousset','admin admin','b greg','pascal gibut'];
+const banned=n=>{const k=String(n).toLowerCase().replace(/\s+/g,' ').trim();const w=k.split(' ').sort().join(' ');return EXCLUDED.some(e=>e===k||e.split(' ').sort().join(' ')===w)};
+let token=sessionStorage.tok,user=null,lastRaw={},people={};
+const api=async(p)=>{const r=await fetch('/api/v1/'+p,{headers:{Authorization:'Bearer '+token}});if(r.status===401){sessionStorage.removeItem('tok');location.reload()}if(!r.ok)throw new Error(p+' → '+r.status);return r.json()};
+const find=(o,k)=>{if(!o||typeof o!=='object')return;if(k in o)return o[k];for(const v of Object.values(o)){const r=find(v,k);if(r!==undefined)return r}};
+const label=i=>{for(const k of['fullIdentifier','identifier','name','title','label']){const v=i[k]??find(i,k);if(typeof v==='string'&&v)return v}return '#'+(i.id??'?')};
+const sub=i=>{const t=i.type;return t&&(t.label||t.name||(typeof t==='string'&&t))||''};
+const today=new Date().toLocaleDateString('sv');
+const DATEKEYS=[/creationtime/i,/creation/i,/opening|ouverture|collection/i];
+const dateOf=i=>{const a=i.answers||{};for(const re of DATEKEYS){for(const [k,v] of Object.entries({...i,...a}))if(re.test(k)&&typeof v==='string'&&/^\d{4}-\d\d-\d\d/.test(v))return v}};
+const isToday=i=>{const d=dateOf(i);return d&&new Date(d).toLocaleDateString('sv')===today};
+const nameOf=v=>{if(v==null)return[];if(Array.isArray(v))return v.flatMap(nameOf);
+ if(typeof v==='object'){const n=[v.name,v.lastname].filter(Boolean).join(' ')||v.label||v.username||people[v.id];return n?[n]:nameOf(v.id)}
+ return [people[String(v)]||('Inconnu·e #'+v)]};
+const peopleBy=(i,re)=>{const a=i.answers||{};const out=new Set();
+ for(const [k,v] of Object.entries(a))if(FIELDMAP[k]&&re.test(FIELDMAP[k]))nameOf(v).filter(n=>!banned(n)).forEach(n=>out.add(n));return [...out]};
+const authorsOf=i=>[...new Set(ROLES.flatMap(r=>peopleBy(i,r.re)))];
+$('#login').onsubmit=async e=>{e.preventDefault();try{
+ const r=await fetch('/api/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('#email').value,password:$('#pwd').value})});
+ if(!r.ok)throw new Error(r.status===401||r.status===403?'Mauvais identifiants : le sondage est refermé.':'Erreur '+r.status);
+ const j=await r.json();token=j.accessToken;sessionStorage.tok=token;sessionStorage.user=JSON.stringify(j.user);start()}catch(x){$('#err').textContent=x.message}};
+async function start(){
+ user=JSON.parse(sessionStorage.user||'null');if(!user)user=await api('auth/me');
+ $('#login').hidden=true;$('#app').hidden=false;
+ $('#sub').textContent='Toute l\'histoire du sol, creusée à la main (et à l\'API)';
+ const orgs=(user.organizations||[]).filter(o=>!orgBanned(o));
+ for(const p of orgs.map(o=>'users?organizationId='+o.id).concat(['users'])){try{const j=await api(p);(j.data||j).forEach(u=>people[String(u.id)]=[u.name,u.lastname].filter(Boolean).join(' ')||u.username)}catch(e){}}
+ // 1. configuration des champs : où sont auteur / contributeurs ?
+ const wanted={};
+ for(const o of orgs){try{const c=await api('organizations/'+o.id+'/recording-unit-types');lastRaw['catalog@'+o.id]=Object.values(c.fields||{}).map(f=>({id:f.id,label:f.label,answerType:f.answerType}));
+  for(const f of Object.values(c.fields||{})){const txt=f.id+' '+(f.label||'');if(ROLES.some(r=>r.re.test(txt))){FIELDMAP[f.id]=txt;(wanted[o.id]=wanted[o.id]||[]).push(f.id)}else if(PLACE_RE.test(txt)){PLACEF[f.id]=txt;(wanted[o.id]=wanted[o.id]||[]).push(f.id)}}}catch(e){lastRaw['catalog@'+o.id]=String(e)}}
+ $('#joke').textContent='Champs repérés : '+(Object.keys({...FIELDMAP,...PLACEF}).join(', ')||'aucun (voir JSON brut)');
+ for(const o of orgs){try{for(let off=0;;off+=200){const j=await api('places?organizationId='+o.id+'&limit=200&offset='+off);const d=j.data||[];d.forEach(p=>placeNames[String(p.id)]=p.name||p.label||p.fullIdentifier);if(d.length<200||(j.meta&&off+200>=j.meta.total))break}}catch(e){}}
+ // 2. toutes les UE
+ let items=[];
+ for(const o of orgs){const fl=(wanted[o.id]||[]).join(',');
+  try{for(let off=0;;off+=200){const j=await api('recording-units?organizationId='+o.id+'&sort=creationTime:desc&limit=200&offset='+off+(fl?'&fields='+fl:''));
+   const d=j.data||[];if(off===0)lastRaw['ue@'+o.id]=d.slice(0,3);d.forEach(i=>items.push({...i,_org:o.name}));
+   $('#joke').textContent='⛏️ Fouille de '+o.name+' : '+items.length+(j.meta&&j.meta.total?' / '+j.meta.total:'')+' UE…';
+   if(d.length<200||(j.meta&&off+200>=j.meta.total))break}}catch(e){lastRaw['ue@'+o.id]=String(e)}}
+ const board=(its,re)=>{const c={};its.forEach(i=>(re?peopleBy(i,re):authorsOf(i)).forEach(n=>c[n]=(c[n]||0)+1));return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10)};
+ const medals=['🥇','🥈','🥉'];
+ const slackers=()=>{const cnt={};items.forEach(i=>authorsOf(i).forEach(n=>cnt[n]=(cnt[n]||0)+1));
+  const all=[...new Set(Object.values(people))].filter(n=>n&&!banned(n)).map(n=>[n,cnt[n]||0]).sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0]));
+  const sh=['🦥','🛋️','☕','🏖️','🎣','😴','🐌','🍹','🧘','🎮'];const zero=all.filter(x=>x[1]===0).length;
+  return `<div class="board"><h3>🦥 Le Top des Touristes — le classement par le bas</h3>`+(all.length?`<ol>${all.slice(0,10).map(([n,c],r)=>`<li><span>${sh[r%sh.length]} ${esc(n)}</span><b>${c} UE</b></li>`).join('')}</ol><p class="champ">${zero} personne${zero>1?'s':''} à 0 UE. Le sol vous attend. 🪏</p>`:'<p>Aucun utilisateur trouvé.</p>')+'</div>'};
+ const mk=(t,b,champ)=>`<div class="board"><h3>${t}</h3>`+(b.length?`<ol>${b.map(([n,c],r)=>`<li><span>${medals[r]||(r+1)+'.'} ${esc(n)}</span><b>${c}</b></li>`).join('')}</ol><p class="champ">${champ} ${esc(b[0][0])} 🏆</p>`:'<p>Personne au classement. La pelle dort encore.</p>')+'</div>';
+ let boards='<div class="boards">'+mk(ROLES[0].icon+' '+ROLES[0].name+' — '+ROLES[0].fun,board(items,ROLES[0].re),'Champion·ne :')+'</div>';
+ const pc={};items.forEach(i=>placesOf(i).forEach(n=>pc[n]=(pc[n]||0)+1));const pb=Object.entries(pc).sort((a,b)=>b[1]-a[1]);
+ boards=boards.replace(/<\/div>$/,'')+`<div class="board"><h3>📍 Top des lieux fouillés — là où ça gratte</h3>`+(pb.length?`<ol>${pb.slice(0,10).map(([n,c],r)=>`<li><span>${medals[r]||(r+1)+'.'} ${esc(n)}</span><b>${c} UE</b></li>`).join('')}</ol><p class="champ">Terrain le plus retourné : ${esc(pb[0][0])} 🪏</p>`:'<p>Aucun lieu trouvé (voir JSON brut).</p>')+'</div>';
+ const oc={};items.forEach(i=>oc[i._org]=(oc[i._org]||0)+1);const ob=Object.entries(oc).sort((a,b)=>b[1]-a[1]);
+ boards+=`<div class="board"><h3>🏛️ Top des organisations — les plus gros terrassiers</h3><ol>${ob.slice(0,10).map(([n,c],r)=>`<li><span>${medals[r]||(r+1)+'.'} ${esc(n)}</span><b>${c} UE</b></li>`).join('')}</ol>${ob.length?`<p class="champ">Reine de la pelle : ${esc(ob[0][0])} 🏆</p>`:''}</div></div>`;
+ const withP=items.filter(i=>authorsOf(i).length).length;
+ $('#joke').textContent='« '+JOKES[Math.floor(Math.random()*JOKES.length)]+' »';
+ $('#stats').innerHTML=`<div class="stat"><b>${items.length}</b><span>🧱 UE sorties de terre</span></div><div class="stat"><b>${pb.length}</b><span>📍 lieux fouillés</span></div>`;
+ $('#lists').innerHTML=boards+`<section><h2>🧱 Dernières UE (${items.length})</h2><ul>${items.slice(0,60).map(i=>`<li>${esc(label(i))}<small>${esc(sub(i))} ${authorsOf(i).length?'· 👷 '+esc(authorsOf(i).join(', ')):''}</small></li>`).join('')}</ul></section>`}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#raw').onclick=e=>{e.preventDefault();const w=open('','_blank');w.document.write('<pre>'+esc(JSON.stringify(lastRaw,null,1))+'</pre>')};
+if(token)start().catch(e=>{$('#err').textContent=e.message;$('#login').hidden=false});
+</script></body></html>

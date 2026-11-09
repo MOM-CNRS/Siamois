@@ -171,7 +171,7 @@ export function App({ options }: { options: MountOptions }) {
   useRestoreFocus(overview != null);
 
   // What the top search bar (its own React root) can drive.
-  const external = useMemo(() => ({ navigate, openOverview, openList, restoreUrl }), [navigate, openOverview, openList, restoreUrl]);
+  const external = useMemo(() => ({ navigate, openOverview, openList, openView, restoreUrl }), [navigate, openOverview, openList, openView, restoreUrl]);
   useEffect(() => registerNavigation(external), [external]);
 
   // A deleted entity can no longer be shown: close the overview that displays it, and leave a main

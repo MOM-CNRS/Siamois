@@ -8,10 +8,9 @@ export interface CountCardSpec {
   icon: string;
   label: string;
   description: string;
-  // homePanel.xhtml's card and count chip classes, and the card's place among the others.
+  // homePanel.xhtml's card and count chip classes.
   className: string;
   chipClassName: string;
-  order: number;
 }
 
 function CountCard({ spec, organizationId, onNavigate }: HomeWidgetContext & { spec: CountCardSpec }) {
@@ -35,6 +34,6 @@ function CountCard({ spec, organizationId, onNavigate }: HomeWidgetContext & { s
  */
 export function countCardWidgets(spec: CountCardSpec): (ctx: HomeWidgetContext) => HomeWidgetDef[] {
   return (ctx) => [
-    { key: `${spec.entityType}-count`, kind: "card", order: spec.order, render: () => <CountCard spec={spec} {...ctx} /> },
+    { key: `${spec.entityType}-count`, kind: "card", render: () => <CountCard spec={spec} {...ctx} /> },
   ];
 }

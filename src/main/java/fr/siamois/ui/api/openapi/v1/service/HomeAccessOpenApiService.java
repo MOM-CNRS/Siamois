@@ -28,12 +28,20 @@ import java.util.List;
  * organisation's default views ({@code ORGANIZATION_EDIT_DEFAULT_VIEWS}, or the instance counterpart). Adding one
  * creates the view it opens, owned by whoever added it and visible, like any view, to the whole organisation.
  * Removing one leaves its view in place.
+ * <p>
+ * An organisation that configured nothing shows one card per table, on the table's base view (the defaults,
+ * not stored). The first change — or {@link #customize} — stores them, so they can be reordered, removed and
+ * mixed with views; {@link #reset} goes back to the defaults.
  */
 @Service
 @RequiredArgsConstructor
 public class HomeAccessOpenApiService {
 
     private static final int MAX_LABEL_LENGTH = 200;
+
+    /** The tables of the home page, in the order the defaults show them (keys of the front registry). */
+    static final List<String> DEFAULT_TABLES = List.of(
+            "project", "place", "recordingUnit", "find", "phase", "document", "container", "study");
 
     private final HomeAccessRepository homeAccessRepository;
     private final ViewOpenApiService viewService;
@@ -47,13 +55,55 @@ public class HomeAccessOpenApiService {
         List<HomeAccessResource> data = homeAccessRepository.findAllOf(user.getInstitution().getId()).stream()
                 .map(HomeAccessOpenApiService::toResource)
                 .toList();
-        return new HomeAccessListResponse(data, canEdit(user));
+        if (data.isEmpty()) {
+            return new HomeAccessListResponse(
+                    DEFAULT_TABLES.stream().map(HomeAccessOpenApiService::tableResource).toList(), canEdit(user), true);
+        }
+        return new HomeAccessListResponse(data, canEdit(user), false);
+    }
+
+    /** Stores the default cards (one per table) when nothing is configured yet, then gives the cards. */
+    @Transactional
+    public HomeAccessListResponse customize(UserInfo user) {
+        requireEditor(user);
+        materializeDefaults(user.getInstitution().getId());
+        return list(user);
+    }
+
+    /** Removes every card: the organisation is back to one card per table. Views are kept. */
+    @Transactional
+    public void reset(UserInfo user) {
+        requireEditor(user);
+        homeAccessRepository.deleteAllOf(user.getInstitution().getId());
+    }
+
+    private void materializeDefaults(Long institutionId) {
+        if (!homeAccessRepository.findAllOf(institutionId).isEmpty()) {
+            return;
+        }
+        int position = 1;
+        for (String table : DEFAULT_TABLES) {
+            homeAccessRepository.save(tableAccess(institutionId, table, position++));
+        }
+    }
+
+    private HomeAccess tableAccess(Long institutionId, String table, int position) {
+        HomeAccess access = new HomeAccess();
+        access.setInstitution(entityManager.getReference(Institution.class, institutionId));
+        access.setResourceType(table);
+        access.setPosition(position);
+        return access;
     }
 
     @Transactional
     public HomeAccessResource create(UserInfo user, HomeAccessRequest body) {
         requireEditor(user);
         Long institutionId = user.getInstitution().getId();
+        // Adding to an organisation still on the defaults keeps the tables.
+        materializeDefaults(institutionId);
+        if (Boolean.TRUE.equals(body.table())) {
+            return createTableCard(institutionId, body.resourceType());
+        }
         Long viewId;
         String resourceType = body.resourceType();
         String title = body.title();
@@ -83,6 +133,18 @@ public class HomeAccessOpenApiService {
         HomeAccess saved = homeAccessRepository.save(access);
         return new HomeAccessResource(saved.getId(), viewId, resourceType, title, label,
                 state == null ? null : state.getListFilters());
+    }
+
+    private HomeAccessResource createTableCard(Long institutionId, String table) {
+        if (!DEFAULT_TABLES.contains(table)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Table inconnue");
+        }
+        if (homeAccessRepository.existsByInstitutionIdAndResourceTypeAndViewIsNull(institutionId, table)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette table est déjà à la une");
+        }
+        HomeAccess saved = homeAccessRepository.save(
+                tableAccess(institutionId, table, homeAccessRepository.maxPosition(institutionId) + 1));
+        return new HomeAccessResource(saved.getId(), null, table, null, null, null);
     }
 
     @Transactional
@@ -125,8 +187,15 @@ public class HomeAccessOpenApiService {
         }
     }
 
+    private static HomeAccessResource tableResource(String table) {
+        return new HomeAccessResource(null, null, table, null, null, null);
+    }
+
     private static HomeAccessResource toResource(HomeAccess access) {
         UiTableView view = access.getView();
+        if (view == null) {
+            return new HomeAccessResource(access.getId(), null, access.getResourceType(), null, null, null);
+        }
         String label = access.getLabel() == null || access.getLabel().isBlank() ? view.getTitle() : access.getLabel();
         return new HomeAccessResource(access.getId(), view.getId(), view.getResourceType(), view.getTitle(), label,
                 view.getState() == null ? null : view.getState().getListFilters());

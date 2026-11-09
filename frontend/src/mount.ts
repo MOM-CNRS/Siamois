@@ -19,6 +19,7 @@ import {studyEntityConfig} from "./entities/study/config";
 import {type ActionResolver, MountContractError, type MountOptions, parseMountOptions} from "./mountOptions";
 import {App} from "./App";
 import {mountAllSearchBars} from "./search/mountSearchBar";
+import {watchViewsDrawers} from "./views/mountViewsDrawer";
 
 registerDefaultFieldRenderers();
 // One registerEntityType call per entity module (plan §3/§8 phase 4) — the next entity to
@@ -108,3 +109,6 @@ for (const container of queued) {
 
 // The header search bar (topbar.xhtml) is its own root, outside the panels' tree.
 mountAllSearchBars();
+
+// The sidebar's « Vues » drawer is its own root too, rendered by JSF only while that drawer is open.
+watchViewsDrawers();

@@ -38,6 +38,10 @@ export interface FilterChipBarProps {
   // `options` carries the labels for an "in" filter, which FilterValue itself (ids only) cannot.
   onChange: (key: string, value: FilterValue | undefined, options?: FilterOption[]) => void;
   optionsByKey: Record<string, FilterOption[]>;
+  // How many chips stay in the bar (the others are behind the « more » chip); the table's own bar shows three.
+  maxVisible?: number;
+  // What the « more » chip says for `n` hidden filters; « +n » by default.
+  moreLabel?: (n: number) => string;
 }
 
 // Chips shown in the bar; the other active filters are behind a « +N » chip (clicked: they are listed there).
@@ -46,7 +50,7 @@ export const MAX_VISIBLE_CHIPS = 3;
 // Case- and accent-insensitive, so « etat » finds « État ».
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export function FilterChipBar({ specs, filters, onChange, optionsByKey }: FilterChipBarProps) {
+export function FilterChipBar({ specs, filters, onChange, optionsByKey, maxVisible = MAX_VISIBLE_CHIPS, moreLabel }: FilterChipBarProps) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
   // filled in.
@@ -75,7 +79,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
     .map((s) => s.key)
     .filter((key) => filters[key] != null || pendingKeys.includes(key));
   // The first filters stay in the bar; a chip just added (still being filled in) always does, so it is never hidden under « +N ».
-  const shownKeys = activeKeys.filter((key, i) => i < MAX_VISIBLE_CHIPS || pendingKeys.includes(key));
+  const shownKeys = activeKeys.filter((key, i) => i < maxVisible || pendingKeys.includes(key));
   const hiddenKeys = activeKeys.filter((key) => !shownKeys.includes(key));
   const availableSpecs = specs.filter((s) => !activeKeys.includes(s.key));
 
@@ -203,7 +207,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
           aria-label={t("filter.more", { n: hiddenKeys.length })}
           onClick={(e) => morePanel.current?.toggle(e)}
         >
-          +{hiddenKeys.length}
+          {moreLabel ? moreLabel(hiddenKeys.length) : `+${hiddenKeys.length}`}
         </button>
       )}
 

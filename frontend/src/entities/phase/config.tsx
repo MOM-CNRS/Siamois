@@ -106,7 +106,6 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
       description: t("home.phase.description"),
       className: "sia-welcome-card sia-recording-unit",
       chipClassName: "recording-unit-count-chip",
-      order: 50,
     }),
   },
 };

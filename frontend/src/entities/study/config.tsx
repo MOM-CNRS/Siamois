@@ -83,7 +83,6 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
       description: t("home.study.description"),
       className: "sia-welcome-card sia-study",
       chipClassName: "study-count-chip",
-      order: 65,
     }),
   },
 };

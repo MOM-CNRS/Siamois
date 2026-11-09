@@ -62,6 +62,35 @@ public class HomeAccessControllerApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PostMapping("/customize")
+    @Operation(summary = "Enregistrer les cartes par défaut",
+            description = "Tant que rien n'est configuré, l'accueil montre une carte par table sans l'avoir enregistrée ; cet appel les enregistre pour pouvoir les modifier. Sans effet si des cartes existent. Droit de modifier les vues par défaut requis.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cartes enregistrées"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Droit manquant ou organisation hors périmètre")
+    })
+    public HomeAccessListResponse customize(
+            @RequestParam Long organizationId,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        return homeAccessService.customize(requireUserInfo(organizationId, acceptLanguage));
+    }
+
+    @DeleteMapping
+    @Operation(summary = "Revenir aux cartes par défaut",
+            description = "Retire toutes les cartes de l'organisation (leurs vues restent) : l'accueil montre de nouveau une carte par table. Droit de modifier les vues par défaut requis.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Retirées"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "403", description = "Droit manquant ou organisation hors périmètre")
+    })
+    public ResponseEntity<Void> reset(
+            @RequestParam Long organizationId,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        homeAccessService.reset(requireUserInfo(organizationId, acceptLanguage));
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping(value = "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Réordonner les accès aux données",
             description = "Fixe l'ordre d'affichage des cartes. Droit de modifier les vues par défaut requis.")

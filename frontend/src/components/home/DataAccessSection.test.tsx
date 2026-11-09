@@ -37,9 +37,9 @@ function render(ctx: Parameters<typeof DataAccessSection>[0]) {
   });
 }
 
-const accesses = (canEdit: boolean, data: unknown[] = []) =>
+const accesses = (canEdit: boolean, data: unknown[] = [], defaults = false) =>
   mockedApiFetch.mockImplementation(async (path: string, init?: { method?: string }) => {
-    if (path.startsWith("/api/v1/home-accesses") && (init?.method ?? "GET") === "GET") return { data, canEdit };
+    if (path.startsWith("/api/v1/home-accesses") && (init?.method ?? "GET") === "GET") return { data, canEdit, defaults };
     if (path.includes("/concepts")) return { data: [{ id: "412", resolvedLabel: "Couche" }, { id: "413", resolvedLabel: "Fosse" }] };
     return {};
   });
@@ -56,11 +56,17 @@ beforeAll(() => {
     routes: { list: "/recording-unit", detail: (id: string | number) => `/recording-unit/${id}` },
     list: { schema: { load: async () => catalog } },
     api: { list: listMock },
+    home: {
+      widgets: (ctx: { onNavigate?: (type: string) => void }) => [
+        { key: "recordingUnit-count", kind: "card", render: () => <button type="button" role="link" className="sia-clickable-card" onClick={() => ctx.onNavigate?.("recordingUnit")}>Table des UE</button> },
+      ],
+    },
   } as unknown as EntityTypeConfig<unknown, unknown>);
 });
 
 beforeEach(() => {
   mockedApiFetch.mockReset();
+  listMock.mockClear();
   document.body.innerHTML = "";
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -94,7 +100,7 @@ describe("DataAccessSection", () => {
     // The view's name, with how many there are under the view's own filters.
     expect(card.textContent).toBe("UE – Couche42");
     expect(listMock).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 7, filters: { type: { op: "in", v: ["412"] } } }));
-    expect(button("Modifier les vues à la une")).toBeUndefined();
+    expect(button("Modifier")).toBeUndefined();
     expect(button("Retirer de la une")).toBeUndefined();
 
     act(() => card.click());
@@ -107,7 +113,7 @@ describe("DataAccessSection", () => {
     render({ organizationId: 7, onOpenView });
     await flush();
 
-    await act(async () => button("Modifier les vues à la une")!.click());
+    await act(async () => button("Modifier")!.click());
     await act(async () => button("Retirer de la une")!.click());
     expect(mockedApiFetch).not.toHaveBeenCalledWith("/api/v1/home-accesses/1?organizationId=7", { method: "DELETE" });
     // The confirmation dialog's own button comes after the card's.
@@ -118,22 +124,21 @@ describe("DataAccessSection", () => {
     expect(onOpenView).not.toHaveBeenCalled();
   });
 
-  it("shows a manager the empty section, with « Modifier les vues à la une » in its header", async () => {
+  it("shows a manager the empty section, with « Modifier » in its header", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
 
-    expect(container.textContent).toContain("Vues à la une");
-    expect(container.textContent).toContain("Vues à la une");
-    expect(container.textContent).toContain("Aucune vue à la une.");
-    expect(button("Modifier les vues à la une")).toBeDefined();
+    expect(container.textContent).toContain("Vues épinglées par l'organisation");
+    expect(container.textContent).toContain("Aucun accès aux données.");
+    expect(button("Modifier")).toBeDefined();
   });
 
   it("adding a table and a type creates the access with a view filtered on the type", async () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => button("Modifier les vues à la une")!.click());
+    await act(async () => button("Modifier")!.click());
     // The last card searches the existing views; creating one is the footer of that list.
     await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
     await flush();
@@ -166,7 +171,7 @@ describe("DataAccessSection", () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => button("Modifier les vues à la une")!.click());
+    await act(async () => button("Modifier")!.click());
     // The last card searches the existing views; creating one is the footer of that list.
     await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
     await flush();
@@ -221,7 +226,7 @@ describe("DataAccessSection", () => {
     accesses(true);
     render({ organizationId: 7 });
     await flush();
-    await act(async () => button("Modifier les vues à la une")!.click());
+    await act(async () => button("Modifier")!.click());
     // The last card searches the existing views; creating one is the footer of that list.
     await act(async () => document.querySelector<HTMLElement>(".p-dropdown")!.click());
     await flush();
@@ -231,5 +236,52 @@ describe("DataAccessSection", () => {
     const add = Array.from(document.querySelectorAll<HTMLButtonElement>(".home-data-access-actions button")).pop()!;
     expect(add.disabled).toBe(true);
     expect(mockedApiFetch.mock.calls.some(([path, init]) => path === "/api/v1/home-accesses" && init?.method === "POST")).toBe(false);
+  });
+
+  it("shows a table card, with no view, from its entity's home card, opening the table", async () => {
+    accesses(false, [{ id: 4, viewId: null, resourceType: "recordingUnit", title: null, label: null }]);
+    const onNavigate = vi.fn();
+    render({ organizationId: 7, onNavigate });
+    await flush();
+
+    expect(container.textContent).toContain("Table des UE");
+    expect(listMock).not.toHaveBeenCalled();
+    act(() => container.querySelector<HTMLElement>(".sia-clickable-card, [role=link]")!.click());
+    expect(onNavigate).toHaveBeenCalledWith("recordingUnit");
+  });
+
+  it("stores the default cards when a manager starts editing them", async () => {
+    mockedApiFetch.mockImplementation(async (path: string, init?: { method?: string }) => {
+      if (path.startsWith("/api/v1/home-accesses/customize")) {
+        return { data: [{ id: 4, viewId: null, resourceType: "recordingUnit", title: null, label: null }], canEdit: true, defaults: false };
+      }
+      if (path.startsWith("/api/v1/home-accesses") && (init?.method ?? "GET") === "GET") {
+        return { data: [{ id: null, viewId: null, resourceType: "recordingUnit", title: null, label: null }], canEdit: true, defaults: true };
+      }
+      return {};
+    });
+    render({ organizationId: 7 });
+    await flush();
+
+    // No card can be changed while they are only the defaults.
+    expect(button("Revenir aux tables")).toBeUndefined();
+    await act(async () => button("Modifier")!.click());
+    await flush();
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/home-accesses/customize?organizationId=7", { method: "POST" });
+    expect(button("Revenir aux tables")).toBeDefined();
+    expect(button("Retirer de la une")).toBeDefined();
+  });
+
+  it("goes back to the tables on request", async () => {
+    accesses(true, [{ id: 1, viewId: 11, resourceType: "recordingUnit", title: "UE – Couche", label: "Couche" }]);
+    render({ organizationId: 7 });
+    await flush();
+    await act(async () => button("Modifier")!.click());
+    await act(async () => button("Revenir aux tables")!.click());
+    const confirms = Array.from(document.querySelectorAll("button")).filter((b) => b.textContent?.includes("Revenir aux tables"));
+    await act(async () => confirms[confirms.length - 1].click());
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/home-accesses?organizationId=7", { method: "DELETE" });
   });
 });

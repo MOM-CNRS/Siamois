@@ -222,7 +222,6 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
       description: t("home.recordingUnit.description"),
       className: "sia-welcome-card sia-recording-unit",
       chipClassName: "recording-unit-count-chip",
-      order: 30,
     }),
   },
 };

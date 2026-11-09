@@ -66,7 +66,7 @@ class HomeAccessControllerApiTest {
     void list_returnsTheCardsAndWhetherTheCallerEdits() throws Exception {
         inScope();
         when(homeAccessService.list(any(UserInfo.class)))
-                .thenReturn(new HomeAccessListResponse(List.of(new HomeAccessResource(1L, 11L, "recordingUnit", "US", "US", null)), true));
+                .thenReturn(new HomeAccessListResponse(List.of(new HomeAccessResource(1L, 11L, "recordingUnit", "US", "US", null)), true, false));
 
         mockMvc.perform(get("/api/v1/home-accesses").param("organizationId", "10"))
                 .andExpect(status().isOk())

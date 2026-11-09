@@ -1,6 +1,6 @@
-export type SidebarDrawer = "historique" | "views";
+export type SidebarDrawer = "historique" | "bookmarks" | "views";
 
-const LINK_IDS: Record<SidebarDrawer, string> = { historique: "historyLinkNav", views: "viewsLinkNav" };
+const LINK_IDS: Record<SidebarDrawer, string> = { historique: "historyLinkNav", bookmarks: "bookmarksLinkNav", views: "viewsLinkNav" };
 
 /**
  * Opens a drawer of the JSF sidebar (the sidebar belongs to JSF: its entries are ajax links). Does nothing when
