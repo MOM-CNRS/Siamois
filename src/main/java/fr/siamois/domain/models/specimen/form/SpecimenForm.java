@@ -366,7 +366,8 @@ public abstract class SpecimenForm {
             .id(-417L)
             .valueBinding("taq")
             .maxValue(Integer.MAX_VALUE)
-            .minValue(0)
+            // A year, like the TPQ: negative before our era (#828).
+            .minValue(Integer.MIN_VALUE)
             .concept(taqConcept)
             .build();
 

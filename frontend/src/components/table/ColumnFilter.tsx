@@ -2,7 +2,6 @@ import {ConceptOptionItem, useFieldWidthCap} from "../../fields/ConceptOptionIte
 import {useEffect, useRef, useState} from "react";
 import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
 import {Calendar} from "primereact/calendar";
-import {InputNumber} from "primereact/inputnumber";
 import {InputText} from "primereact/inputtext";
 import {SelectButton} from "primereact/selectbutton";
 import type {FilterValue} from "../../panels/list/tableState";
@@ -10,6 +9,7 @@ import type {FilterKind, FilterOption} from "../../fields/optionSources";
 import {t} from "../../i18n";
 import {calendarDateFormat} from "../../i18n/dates";
 import {ReferencePickerSheet} from "../../fields/ReferencePickerSheet";
+import {SignedInputNumber} from "../../fields/SignedInputNumber";
 import {useIsMobile} from "../../viewport";
 
 /**
@@ -106,14 +106,14 @@ function RangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilterPro
 
   return (
     <span className="entity-list-panel-range-filter">
-      <InputNumber
+      <SignedInputNumber
         placeholder={t("filter.min", { label })}
         autoFocus={autoFocus}
         value={from != null ? Number(from) : null}
         onBlur={(e) => commit(e.target.value ? e.target.value : undefined, to)}
         onValueChange={(e) => commit(e.value != null ? String(e.value) : undefined, to)}
       />
-      <InputNumber
+      <SignedInputNumber
         placeholder={t("filter.max", { label })}
         value={to != null ? Number(to) : null}
         onBlur={(e) => commit(from, e.target.value ? e.target.value : undefined)}

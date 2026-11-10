@@ -535,6 +535,51 @@ describe("CellEditOverlay", () => {
       expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: 42 } });
     });
 
+    // PrimeReact takes a "-" typed into an empty input for a decimal separator and shows 0 (#828).
+    it("saves a typed negative integer on Enter", async () => {
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: integerField, anchor: ANCHOR } });
+      await flush();
+
+      const input = overlayInput();
+      await typeNumber(input, "-42");
+      await act(async () => {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: -42 } });
+    });
+
+    it("replaces the current integer with a negative one typed over it", async () => {
+      const row = { id: "1", answers: { "-200": 5 } } as unknown as Row;
+      const { onSave } = renderOverlay({ target: { row, field: integerField, anchor: ANCHOR } });
+      await flush();
+
+      const input = overlayInput();
+      await typeNumber(input, "-7");
+      await act(async () => {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: -7 } });
+    });
+
+    it("refuses the minus sign on a field that does not take negatives", async () => {
+      const countField: FieldResource = { ...integerField, constraints: { min: 0 } };
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: countField, anchor: ANCHOR } });
+      await flush();
+
+      const input = overlayInput();
+      await typeNumber(input, "-3");
+      await act(async () => {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-200": { value: 3 } });
+    });
+
     it("saves the typed integer when focus leaves the editor", async () => {
       const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: integerField, anchor: ANCHOR } });
       await flush();
@@ -559,6 +604,19 @@ describe("CellEditOverlay", () => {
       await flush();
 
       expect(onSave).toHaveBeenCalledWith("1", { "-201": { value: { numericValue: 12, symbol: "cm", comment: null } } });
+    });
+
+    it("saves a negative measurement", async () => {
+      const { onSave } = renderOverlay({ target: { row: { id: "1" }, field: measurementField, anchor: ANCHOR } });
+      await flush();
+
+      await typeNumber(overlayInput(), "-12");
+      await act(async () => {
+        document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      });
+      await flush();
+
+      expect(onSave).toHaveBeenCalledWith("1", { "-201": { value: { numericValue: -12, symbol: "cm", comment: null } } });
     });
   });
 

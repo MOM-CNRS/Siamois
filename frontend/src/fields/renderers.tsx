@@ -5,7 +5,6 @@ import {useIsMobile} from "../viewport";
 import {type CSSProperties, useRef, useState} from "react";
 import {InputText} from "primereact/inputtext";
 import {InputTextarea} from "primereact/inputtextarea";
-import {InputNumber} from "primereact/inputnumber";
 import {Checkbox} from "primereact/checkbox";
 import {Dropdown} from "primereact/dropdown";
 import {Calendar} from "primereact/calendar";
@@ -20,6 +19,7 @@ import type {Bound} from "../rules";
 import type {FieldRendererProps} from "./registry";
 import type {FieldEditContext} from "./editContext";
 import {formatDateAnswer, parseDateAnswer} from "./dateAnswer";
+import {SignedInputNumber} from "./SignedInputNumber";
 import {refColor, YesNoTriState} from "./display";
 import {
     createPlaceFromSuggestion,
@@ -100,7 +100,7 @@ export function GeometryRenderer({ value }: FieldRendererProps) {
 export function IntegerRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const numberValue = typeof value === "number" ? value : null;
   return (
-    <InputNumber
+    <SignedInputNumber
       value={numberValue}
       disabled={readOnly}
       required={required}
@@ -118,7 +118,7 @@ export function IntegerRenderer({ field, value, readOnly, required, onChange }: 
 export function DecimalRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
   const numberValue = typeof value === "number" ? value : null;
   return (
-    <InputNumber
+    <SignedInputNumber
       value={numberValue}
       disabled={readOnly}
       required={required}
@@ -571,7 +571,7 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
   }
 
   const inputNumber = (
-    <InputNumber
+    <SignedInputNumber
       value={current.numericValue ?? null}
       disabled={readOnly}
       required={required}
