@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.auth.PersonName;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
@@ -586,6 +587,27 @@ class PersonServiceTest {
 
         assertTrue(result.isEmpty());
         verify(personMapper, never()).convert(any(Person.class));
+    }
+
+    @Test
+    void createAccountlessPerson_savesDisabledPersonWithoutEmail() {
+        when(personRepository.findByUsernameIgnoreCase("marie.curie")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed");
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        PersonDTO converted = new PersonDTO();
+        when(personMapper.convert(any(Person.class))).thenReturn(converted);
+
+        PersonDTO result = personService.createAccountlessPerson(new PersonName(" Marie ", "Curie"));
+
+        ArgumentCaptor<Person> saved = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(saved.capture());
+        assertSame(converted, result);
+        assertEquals("Marie", saved.getValue().getName());
+        assertEquals("Curie", saved.getValue().getLastname());
+        assertEquals("marie.curie", saved.getValue().getUsername());
+        assertEquals("hashed", saved.getValue().getPassword());
+        assertNull(saved.getValue().getEmail());
+        assertFalse(saved.getValue().isEnabled());
     }
 
     @Test

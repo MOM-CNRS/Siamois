@@ -22,6 +22,37 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
     List<Person> findAllByNameIgnoreCaseIn(Collection<String> names);
 
 
+    /**
+     * Persons created from their name only, still awaiting the creation of their account (a pending person
+     * without registration token), whose first and last names are the given ones, ignoring case and accents.
+     *
+     * @param firstName     the first name, trimmed
+     * @param lastName      the last name, trimmed
+     * @param institutionId when not null, only the persons holding a profile of this institution
+     * @return the matching persons, oldest first
+     */
+    @Query(
+            nativeQuery = true,
+            value = """
+                    SELECT p.*
+                    FROM person p
+                             JOIN pending_person pp ON pp.fk_person_id = p.person_id
+                    WHERE pp.register_token IS NULL
+                      AND LOWER(public.unaccent(TRIM(COALESCE(p.name, '')))) = LOWER(public.unaccent(CAST(:firstName AS TEXT)))
+                      AND LOWER(public.unaccent(TRIM(COALESCE(p.lastname, '')))) = LOWER(public.unaccent(CAST(:lastName AS TEXT)))
+                      AND (CAST(:institutionId AS BIGINT) IS NULL OR EXISTS (
+                            SELECT 1
+                            FROM person_profile_assignment ppa
+                                     JOIN profile prof ON prof.profile_id = ppa.fk_profile_id
+                            WHERE ppa.fk_person_id = p.person_id
+                              AND prof.fk_institution_id = CAST(:institutionId AS BIGINT)))
+                    ORDER BY p.person_id
+                    """
+    )
+    List<Person> findAwaitingAccountByName(@Param("firstName") String firstName,
+                                           @Param("lastName") String lastName,
+                                           @Param("institutionId") Long institutionId);
+
     @Query(
             nativeQuery = true,
             value = "SELECT DISTINCT p.* " +

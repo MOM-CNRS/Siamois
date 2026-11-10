@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -27,10 +29,24 @@ public class UserOpenApiService {
 
     private final PersonService personService;
     private final InstitutionService institutionService;
+    private final PendingPersonService pendingPersonService;
 
-    public UserOpenApiService(PersonService personService, InstitutionService institutionService) {
+    public UserOpenApiService(PersonService personService, InstitutionService institutionService,
+                              PendingPersonService pendingPersonService) {
         this.personService = personService;
         this.institutionService = institutionService;
+        this.pendingPersonService = pendingPersonService;
+    }
+
+    /**
+     * Among the given persons, the ids of the ones still awaiting the creation of their account.
+     *
+     * @param persons the listed persons
+     * @return the ids of the persons created from their name only
+     */
+    @Transactional(readOnly = true)
+    public Set<Long> idsAwaitingAccount(Collection<PersonDTO> persons) {
+        return pendingPersonService.findPersonIdsAwaitingAccount(persons.stream().map(PersonDTO::getId).toList());
     }
 
     @Transactional(readOnly = true)

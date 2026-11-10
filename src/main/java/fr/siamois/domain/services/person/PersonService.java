@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.person;
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.auth.PersonName;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.settings.PersonSettings;
@@ -121,6 +122,25 @@ public class PersonService {
         person = personRepository.save(person);
 
         return conversionService.convert(person, PersonDTO.class);
+    }
+
+    /**
+     * Create a disabled Person from their first and last name only, without e-mail: someone named in a form
+     * (the scientific manager of a project, say) who does not have an account yet. Their username is derived
+     * from their name, their password is random: they cannot log in until an account is created for them.
+     *
+     * @param name the person's name
+     * @return the created Person with its ID set
+     */
+    @Transactional
+    public PersonDTO createAccountlessPerson(PersonName name) {
+        Person person = new Person();
+        person.setName(name.firstName());
+        person.setLastname(name.lastName());
+        person.setUsername(generateUniqueUsername(name.firstName(), name.lastName(), null, Set.of()));
+        person.setPassword(passwordEncoder.encode(generateRandomPassword()));
+        person.setEnabled(false);
+        return personMapper.convert(personRepository.save(person));
     }
 
     private static String generateRandomPassword() {

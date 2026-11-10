@@ -138,11 +138,42 @@ class PendingPersonServiceTest {
     }
 
     @Test
+    void createOrGetInvitation_shouldIssueTokenToPersonAwaitingAccount() {
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setId(1L);
+        PendingPerson awaiting = PendingPerson.awaitingAccountOf(person);
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(awaiting));
+        when(pendingPersonRepository.existsByRegisterToken(anyString())).thenReturn(false);
+        when(pendingPersonRepository.save(any(PendingPerson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PendingPerson result = pendingPersonService.createOrGetInvitation(personDTO);
+
+        assertSame(awaiting, result);
+        assertFalse(result.isAwaitingAccount());
+        assertNotNull(result.getPendingInvitationExpirationDate());
+        verify(personMapper, never()).invertConvert(any());
+    }
+
+    @Test
+    void findPersonIdsAwaitingAccount_shouldReturnMatchingIds() {
+        List<Long> personIds = List.of(1L, 2L);
+        when(pendingPersonRepository.findAwaitingAccountPersonIdsIn(personIds)).thenReturn(Set.of(1L));
+
+        assertEquals(Set.of(1L), pendingPersonService.findPersonIdsAwaitingAccount(personIds));
+    }
+
+    @Test
+    void findPersonIdsAwaitingAccount_shouldSkipQueryForEmptyInput() {
+        assertEquals(Set.of(), pendingPersonService.findPersonIdsAwaitingAccount(List.of()));
+        verifyNoInteractions(pendingPersonRepository);
+    }
+
+    @Test
     void hasPendingInvitation_shouldDelegateToRepository() {
-        when(pendingPersonRepository.existsByDisabledPersonId(1L)).thenReturn(true);
+        when(pendingPersonRepository.existsByDisabledPersonIdAndRegisterTokenIsNotNull(1L)).thenReturn(true);
 
         assertTrue(pendingPersonService.hasPendingInvitation(1L));
-        verify(pendingPersonRepository).existsByDisabledPersonId(1L);
+        verify(pendingPersonRepository).existsByDisabledPersonIdAndRegisterTokenIsNotNull(1L);
     }
 
     @Test

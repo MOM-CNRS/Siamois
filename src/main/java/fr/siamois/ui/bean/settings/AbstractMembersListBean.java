@@ -38,12 +38,14 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
 
     private transient Set<Long> pendingInvitationPersonIds;
     private transient Set<Long> expiredInvitationPersonIds;
+    private transient Set<Long> awaitingAccountPersonIds;
     private transient ProfileDTO selectedProfile;
 
     /** Loads the pending- and expired-invitation state for the given listed members. Call from {@code init(...)}. */
     protected final void loadPendingInvitations(Collection<Long> memberPersonIds) {
         pendingInvitationPersonIds = new HashSet<>(pendingPersonService.findPersonIdsWithPendingInvitation(memberPersonIds));
         expiredInvitationPersonIds = new HashSet<>(pendingPersonService.findPersonIdsWithExpiredInvitation(memberPersonIds));
+        awaitingAccountPersonIds = new HashSet<>(pendingPersonService.findPersonIdsAwaitingAccount(memberPersonIds));
     }
 
     /** Tracks a member added after the initial load. Call when a new member joins the list. */
@@ -57,6 +59,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
     protected final void resetPendingInvitations() {
         pendingInvitationPersonIds = null;
         expiredInvitationPersonIds = null;
+        awaitingAccountPersonIds = null;
     }
 
     /**
@@ -81,7 +84,18 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
 
     /**
      * @param person the listed member
-     * @return the CSS chip class matching the member's account status (active / expired / invited / disabled)
+     * @return {@code true} when the member was created from their name only (in a form field) and still
+     * awaits the creation of their account
+     */
+    public final boolean isAwaitingAccount(PersonDTO person) {
+        return !person.isEnabled()
+                && awaitingAccountPersonIds != null
+                && awaitingAccountPersonIds.contains(person.getId());
+    }
+
+    /**
+     * @param person the listed member
+     * @return the CSS chip class matching the member's account status (active / expired / invited or awaiting account / disabled)
      */
     public final String accountStatusChipClass(PersonDTO person) {
         if (person.isEnabled()) {
@@ -90,7 +104,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         if (isInvitationExpired(person)) {
             return "chip-status-expired";
         }
-        if (hasPendingInvitation(person)) {
+        if (hasPendingInvitation(person) || isAwaitingAccount(person)) {
             return "chip-status-invited";
         }
         return "chip-status-inactive";
@@ -98,7 +112,7 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
 
     /**
      * @param person the listed member
-     * @return the localised label matching the member's account status (active / expired / invited / disabled)
+     * @return the localised label matching the member's account status (active / expired / invited / awaiting account / disabled)
      */
     public final String accountStatusLabel(PersonDTO person) {
         if (person.isEnabled()) {
@@ -109,6 +123,9 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         }
         if (hasPendingInvitation(person)) {
             return langBean.msg("common.label.accountStatus.invited");
+        }
+        if (isAwaitingAccount(person)) {
+            return langBean.msg("common.label.accountStatus.awaitingAccount");
         }
         return langBean.msg("common.label.accountStatus.disabled");
     }
@@ -130,6 +147,9 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
         }
         if (pendingInvitationPersonIds != null) {
             pendingInvitationPersonIds.add(invitee.getId());
+        }
+        if (awaitingAccountPersonIds != null) {
+            awaitingAccountPersonIds.remove(invitee.getId());
         }
         if (sent) {
             displayInfoMessage(langBean, "newMember.invitation.resent", invitee.getEmail());
