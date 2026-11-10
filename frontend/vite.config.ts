@@ -35,5 +35,14 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["src/test/setup.ts"],
+    // lcov report consumed by SonarCloud (sonar.javascript.lcov.reportPaths in pom.xml).
+    coverage: {
+      provider: "v8",
+      // projectRoot ".." writes lcov paths relative to the Maven root (frontend/src/...), where the scanner runs.
+      reporter: ["text-summary", ["lcov", {projectRoot: ".."}]],
+      reportsDirectory: "coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/api/generated/**", "src/**/*.d.ts"],
+    },
   },
 });

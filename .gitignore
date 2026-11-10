@@ -28,6 +28,7 @@ siamois-e2e/.idea
 # output copied into the classpath at process-resources; none of this is source.
 frontend/node_modules/
 frontend/dist/
+frontend/coverage/
 frontend/tsconfig.tsbuildinfo
 frontend/*.local
 frontend/npm-debug.log*
