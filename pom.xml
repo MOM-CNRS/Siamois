@@ -19,7 +19,7 @@
 
     <properties>
         <!-- Configuration du projet -->
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
@@ -41,6 +41,8 @@
         <jts.version>1.20.0</jts.version>
         <mockito.version>5.14.2</mockito.version>
         <jacoco.version>0.8.12</jacoco.version>
+        <!-- Valeur par défaut, surchargée par jacoco:prepare-agent dans le profil coverage -->
+        <argLine></argLine>
         <jackson.version>2.22</jackson.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <org.mapstruct.extensions.spring.version>2.0.0</org.mapstruct.extensions.spring.version>
@@ -671,8 +673,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -696,9 +697,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.5.2</version>
                 <configuration>
                     <excludedGroups>integration</excludedGroups>
+                    <!-- Java 21 avertit (JEP 451) quand Mockito/Byte Buddy chargent un agent dynamiquement.
+                         @{argLine} conserve l'agent JaCoCo injecté par le profil coverage. -->
+                    <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
                 </configuration>
             </plugin>
         </plugins>

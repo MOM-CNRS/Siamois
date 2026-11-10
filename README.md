@@ -12,7 +12,7 @@ SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésau
 > Vous pouvez retrouver plus d'informations sur le site [siamois.eu](https://siamois.eu)
 
 # Environnement utilisé
-* Java 17
+* Java 21
 * PostgreSQL 16/17
 * Pour compiler depuis les sources : Maven 3.9 (Node.js 20 est téléchargé automatiquement par Maven pour construire l'interface React)
 

@@ -57,6 +57,6 @@ Mobilier, documents, contenants, études, phases : `positionOf` déjà couvert p
 - `placeholderData: previous` garde l'ancienne page affichée : attendre la fin du fetch avant de défiler.
 
 ## Vérification
-- Backend : tests d'intégration du `/position` par type (JDK 17, cf. reference_backend_tests_jdk17).
+- Backend : tests d'intégration du `/position` par type (JDK 21, cf. reference_backend_tests_jdk17).
 - Front : `vitest` sur `EntityListPanel`, `useTreeRows`, `ListSearchOverlay`.
 - À la main dans le harnais mock : liste longue (page 3), arbre profond avec polyhiérarchie, cible masquée par un filtre, tri changé avant la révélation.
