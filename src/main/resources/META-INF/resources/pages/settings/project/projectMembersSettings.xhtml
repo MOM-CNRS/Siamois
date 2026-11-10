@@ -10,6 +10,7 @@
     <ui:define name="metadata">
         <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
         <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
+        <f:event type="preRenderView" listener="#{projectMembersListBean.reloadOnPageLoad}"/>
     </ui:define>
 
     <ui:define name="head">
@@ -91,6 +92,12 @@
                                          actionListener="#{projectMembersListBean.resendInvitation(member)}"
                                          update="membersDatatable"
                                          styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
+                        <p:commandButton value="#{langBean.msg('common.action.sendInvitation')}"
+                                         icon="bi bi-envelope"
+                                         rendered="#{projectMembersListBean.isAwaitingAccount(member.person)}"
+                                         actionListener="#{projectMembersListBean.openInvitationDialog(member.person, member.profiles)}"
+                                         process="@this"
+                                         styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
                     </p:column>
                     <p:column>
                         <p:commandButton value="#{langBean.msg('common.action.remove')}"
@@ -112,6 +119,10 @@
                 </div>
             </p:tab>
             </p:tabView>
+            <ui:include src="/dialog/shared/inviteAwaitingMemberDialog.xhtml">
+                <ui:param name="bean" value="#{projectMembersListBean}"/>
+                <ui:param name="updateTarget" value=":projectMembersTabs:projectMembersDatatable:formCC:projectMembersForm:membersDatatable"/>
+            </ui:include>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newProjectMemberDialogBean}"/>
                 <ui:param name="updateTarget" value=":projectMembersTabs:projectMembersDatatable:formCC:projectMembersForm:membersDatatable"/>

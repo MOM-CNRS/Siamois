@@ -2214,6 +2214,18 @@ body button.p-button.status-button.status-button-compact {
   color: var(--red-500, #c0584d);
 }
 
+/* A person awaiting the creation of their account: a discreet note after their name in a person picker. */
+.person-option-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.person-option-pending {
+  color: var(--text-color-secondary, #6b7280);
+  font-style: italic;
+}
+
 /* BOOLEAN in the editing overlay: the box and the name of its state, with room around them. The room
    is on the overlay itself (it shows a widget edge to edge, and the widget's own padding would not
    move it off the border), and the overlay is at least a form row tall so it hides the cell below. */

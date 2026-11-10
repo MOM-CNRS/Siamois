@@ -12,7 +12,7 @@ import {registerEntityType} from "../entities/registry";
 import {EntityNavigationProvider} from "../panels/pane/entityNavigation";
 import type {FieldRendererProps} from "./registry";
 import type {FieldResource} from "./types";
-import {createPlaceFromSuggestion, type FilterOption, optionSourceFor} from "./optionSources";
+import {createPersonAwaitingAccount, createPlaceFromSuggestion, type FilterOption, optionSourceFor} from "./optionSources";
 
 
 vi.mock("./optionSources", async (importOriginal) => {
@@ -21,10 +21,12 @@ vi.mock("./optionSources", async (importOriginal) => {
     ...actual,
     optionSourceFor: vi.fn(actual.optionSourceFor),
     createPlaceFromSuggestion: vi.fn(),
+    createPersonAwaitingAccount: vi.fn(),
   };
 });
 const mockedOptionSourceFor = vi.mocked(optionSourceFor);
 const mockedCreatePlace = vi.mocked(createPlaceFromSuggestion);
+const mockedCreatePerson = vi.mocked(createPersonAwaitingAccount);
 
 function conceptField(overrides: Partial<FieldResource> = {}): FieldResource {
   return {
@@ -456,6 +458,76 @@ describe("« Nouveau » footer", () => {
     await openPicker({ organizationId: 100 });
 
     expect(newButton()).toBeUndefined();
+  });
+});
+
+describe("« Nouvelle personne » footer", () => {
+  function personField(): FieldResource {
+    return { id: "-112", resourceType: "fields", label: "Responsable scientifique", answerType: "SELECT_ONE_PERSON", isSystemField: true };
+  }
+
+  async function openPicker(context: FieldRendererProps["context"], onChange: (v: unknown) => void = () => {}, typed = "") {
+    mockedOptionSourceFor.mockImplementation(() => async () => []);
+    act(() => {
+      root.render(
+        <SelectOneRefRenderer
+          field={personField()}
+          value={null}
+          readOnly={false}
+          required={false}
+          onChange={onChange}
+          organizationId={100}
+          context={context}
+        />,
+      );
+    });
+    const input = container.querySelector("input") as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+      if (typed) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+        setter.call(input, typed);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      await new Promise((r) => setTimeout(r, 400));
+    });
+  }
+
+  function newPersonButton(): HTMLElement | undefined {
+    return Array.from(document.body.querySelectorAll("button")).find((b) => b.textContent?.includes("Nouvelle personne"));
+  }
+
+  it("offers to create a person inside the edited entity's project", async () => {
+    await openPicker({ organizationId: 100, projectId: "5", entityType: "project", entityId: 5 });
+
+    expect(newPersonButton()).toBeTruthy();
+  });
+
+  it("offers nothing outside a project", async () => {
+    await openPicker({ organizationId: 100 });
+
+    expect(newPersonButton()).toBeUndefined();
+  });
+
+  it("creates the person from the typed name and picks them", async () => {
+    mockedCreatePerson.mockResolvedValueOnce({ id: "42", label: "Marie Curie", accountPending: true });
+    const onChange = vi.fn();
+    await openPicker({ organizationId: 100, projectId: "5", entityType: "project", entityId: 5 }, onChange, "Marie Curie");
+
+    await act(async () => {
+      newPersonButton()!.click();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const inputs = Array.from(document.body.querySelectorAll(".sia-create-form input")) as HTMLInputElement[];
+    expect(inputs.map((i) => i.value)).toEqual(["Marie", "Curie"]);
+
+    await act(async () => {
+      (document.body.querySelector(".sia-create-form") as HTMLFormElement).requestSubmit();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(mockedCreatePerson).toHaveBeenCalledWith("5", { name: "Marie", lastname: "Curie" });
+    expect(onChange).toHaveBeenLastCalledWith({ resourceId: "42", resourceType: "persons", label: "Marie Curie" });
   });
 });
 

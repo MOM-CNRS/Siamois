@@ -83,25 +83,44 @@ public class PendingPersonService {
      * @return the pending person carrying the registration token
      */
     public PendingPerson createOrGetInvitation(PersonDTO disabledPerson) {
-        return pendingPersonRepository.findByDisabledPersonId(disabledPerson.getId())
-                .orElseGet(() -> {
-                    PendingPerson pendingPerson = new PendingPerson();
-                    pendingPerson.setDisabledPerson(personMapper.invertConvert(disabledPerson));
-                    pendingPerson.setRegisterToken(generateToken());
-                    pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
-                    return pendingPersonRepository.save(pendingPerson);
-                });
+        Optional<PendingPerson> existing = pendingPersonRepository.findByDisabledPersonId(disabledPerson.getId());
+        if (existing.isPresent() && !existing.get().isAwaitingAccount()) {
+            return existing.get();
+        }
+        // A person awaiting the creation of their account has no token yet: inviting them issues their first one.
+        PendingPerson pendingPerson = existing.orElseGet(() -> {
+            PendingPerson created = new PendingPerson();
+            created.setDisabledPerson(personMapper.invertConvert(disabledPerson));
+            return created;
+        });
+        pendingPerson.setRegisterToken(generateToken());
+        pendingPerson.setPendingInvitationExpirationDate(OffsetDateTime.now(ZoneOffset.UTC).plusDays(INVITATION_VALIDITY_DAYS));
+        return pendingPersonRepository.save(pendingPerson);
     }
 
     /**
      * Check whether a person still has a pending invitation (i.e. was invited but has not completed
-     * their registration yet).
+     * their registration yet). A person awaiting the creation of their account was never invited.
      *
      * @param personId the id of the person
      * @return true if an invitation exists for this person
      */
     public boolean hasPendingInvitation(Long personId) {
-        return pendingPersonRepository.existsByDisabledPersonId(personId);
+        return pendingPersonRepository.existsByDisabledPersonIdAndRegisterTokenIsNotNull(personId);
+    }
+
+    /**
+     * Among the given person ids, find the ones created from their name only (on the fly, from a form
+     * field), who still await the creation of their account.
+     *
+     * @param personIds the person ids to check
+     * @return the subset of ids awaiting an account
+     */
+    public Set<Long> findPersonIdsAwaitingAccount(Collection<Long> personIds) {
+        if (personIds.isEmpty()) {
+            return Set.of();
+        }
+        return pendingPersonRepository.findAwaitingAccountPersonIdsIn(personIds);
     }
 
     /**
@@ -182,6 +201,11 @@ public class PendingPersonService {
         return pendingPersonRepository.findByRegisterToken(token);
     }
 
+    /**
+     * Delete the pending person (invitation or awaiting account) of the given person, if any.
+     *
+     * @param person the person whose pending state must be removed
+     */
     @Transactional
     public void deleteByPerson(PersonDTO person) {
         pendingPersonRepository.deleteByDisabledPersonId(person.getId());

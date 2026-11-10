@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.FieldCode;
 import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -106,9 +107,15 @@ public class Study extends TraceableEntity {
     @Column(name = "treatment_place")
     protected String treatmentPlace;
 
-    /** {@code nom_responsable_traitement}, as "Nom & Prénom". */
-    @Column(name = "treatment_manager")
-    protected String treatmentManager;
+    /**
+     * {@code nom_responsable_traitement}: a person, who may still await the creation of their account (see
+     * {@code PendingAccountPersonService}). The former free-text column {@code treatment_manager} is kept,
+     * unmapped, by the changelog that turned it into this link.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_treatment_manager_id")
+    @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+    protected Person treatmentManager;
 
     /** {@code identifiant_lie_au_traitement}. */
     @Column(name = "treatment_identifier")

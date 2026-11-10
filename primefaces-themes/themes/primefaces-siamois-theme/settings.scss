@@ -597,6 +597,27 @@ a:hover {
     width: 100%;
 }
 
+.invite-link-candidates {
+    border: 1px solid #e3e3e3;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fafafa;
+}
+
+.invite-link-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+.invite-link-hint {
+    font-size: 0.8438rem;
+    color: #6b6b6b;
+    margin: 0 0 8px;
+}
+
 .invite-by-email-link {
     display: inline-flex;
     align-items: center;

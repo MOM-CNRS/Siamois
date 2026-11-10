@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -65,8 +66,9 @@ public class UsersControllerApi {
         Page<PersonDTO> page = userOpenApiService.pageUsersInOrganization(
                 caller, organizationId, search, offset, limit, sort);
 
+        Set<Long> awaitingAccount = userOpenApiService.idsAwaitingAccount(page.getContent());
         List<PersonResource> resources = page.getContent().stream()
-                .map(personOpenApiMapper::toResource)
+                .map(person -> personOpenApiMapper.toResource(person, awaitingAccount.contains(person.getId())))
                 .toList();
         ListMeta meta = new ListMeta(page.getTotalElements(), limit, (long) offset);
 

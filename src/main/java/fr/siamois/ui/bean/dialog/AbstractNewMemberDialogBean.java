@@ -1,9 +1,11 @@
 package fr.siamois.ui.bean.dialog;
 
+import fr.siamois.domain.models.auth.PersonName;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -47,6 +49,11 @@ import static fr.siamois.utils.MessageUtils.displayInfoMessage;
  * (the same "not persisted yet" convention used by {@link PersonService#createPerson}), so it can
  * live directly inside the multi-select member field like any other chip.
  * <p>
+ * When an invitee has the name of a person awaiting the creation of their account (someone created on the
+ * fly from a form field, see {@link PendingAccountPersonService}), the manager can link the new account to
+ * that person instead of creating another one: the account then takes over that very person, who keeps the
+ * fields and projects they are already named in.
+ * <p>
  * Subclasses only supply what differs by scope (institution / project / application-wide): the
  * dialog's widget var, the assignable profiles, and the already-member exclusion query.
  */
@@ -57,6 +64,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
 
     protected final transient PersonService personService;
     protected final transient PendingPersonService pendingPersonService;
+    protected final transient PendingAccountPersonService pendingAccountPersonService;
     protected final transient InvitationMailer invitationMailer;
     protected final SessionSettingsBean sessionSettingsBean;
     protected final LangBean langBean;
@@ -71,6 +79,8 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String searchQuery;
     protected transient List<PersonDTO> selectedMembers = new ArrayList<>();
     protected transient Map<Long, String> draftPasswords = new HashMap<>();
+    // Draft id -> id of the person awaiting their account that the draft's account is given to
+    protected transient Map<Long, Long> draftLinks = new HashMap<>();
     protected long nextDraftId = -1;
 
     // Profiles multi-select (applied to every member added in this batch)
@@ -83,6 +93,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
     protected String inviteLastName;
     protected String invitePassword;
     protected String invitePasswordConfirm;
+    // Persons awaiting their account who bear the invitee's name, and the manager's choice among them
+    protected transient List<PersonDTO> linkCandidates = new ArrayList<>();
+    protected String linkChoice;
+
+    /** {@link #linkChoice} value meaning "create a new person rather than link to one awaiting their account". */
+    public static final String LINK_CHOICE_NEW = "new";
 
     // CSV import sub-step
     protected transient List<CsvImportRow> csvPreviewRows;
@@ -162,6 +178,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         searchQuery = null;
         selectedMembers = new ArrayList<>();
         draftPasswords = new HashMap<>();
+        draftLinks = new HashMap<>();
         nextDraftId = -1;
         selectedProfiles = new ArrayList<>();
         availableProfiles = new ArrayList<>();
@@ -176,6 +193,60 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         inviteLastName = null;
         invitePassword = null;
         invitePasswordConfirm = null;
+        clearLinkCandidates();
+    }
+
+    private void clearLinkCandidates() {
+        linkCandidates = new ArrayList<>();
+        linkChoice = null;
+    }
+
+    /**
+     * Looks up the persons awaiting the creation of their account who bear the name typed in the invite
+     * form, so the manager can link the new account to one of them. The oldest one is proposed by default.
+     * Called whenever the first or last name of the invitee changes.
+     */
+    public void refreshLinkCandidates() {
+        clearLinkCandidates();
+        if (StringUtils.isBlank(inviteFirstName) || StringUtils.isBlank(inviteLastName)) {
+            return;
+        }
+        PersonName name = new PersonName(inviteFirstName, inviteLastName);
+        Set<Long> alreadyLinked = new HashSet<>(draftLinks.values());
+        linkCandidates = pendingAccountPersonService.findLinkCandidates(name).stream()
+                .filter(candidate -> !alreadyLinked.contains(candidate.getId()))
+                .toList();
+        if (!linkCandidates.isEmpty()) {
+            linkChoice = String.valueOf(linkCandidates.get(0).getId());
+        }
+    }
+
+    /**
+     * @return whether the invitee bears the name of persons awaiting their account, to whom the new account
+     * may be linked
+     */
+    public boolean isLinkable() {
+        return !linkCandidates.isEmpty();
+    }
+
+    /**
+     * @param candidate a person awaiting their account who bears the invitee's name
+     * @return the label of the option linking the new account to that person
+     */
+    public String linkCandidateLabel(PersonDTO candidate) {
+        return langBean.msg("newOrganizationMember.link.option", candidate.displayName());
+    }
+
+    /** @return the {@link #linkChoice} value meaning "create a new person", for the view. */
+    public String getLinkChoiceNew() {
+        return LINK_CHOICE_NEW;
+    }
+
+    private Optional<Long> chosenLinkCandidateId() {
+        return linkCandidates.stream()
+                .map(PersonDTO::getId)
+                .filter(id -> String.valueOf(id).equals(linkChoice))
+                .findFirst();
     }
 
     /** Resets the whole wizard state and closes the dialog client-side without submitting anything. */
@@ -225,9 +296,12 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         String label = StringUtils.isNotBlank(person.getEmail())
                 ? person.displayName() + " (" + person.getEmail() + ")"
                 : person.displayName();
-        return isDraft(person)
-                ? label + " · " + langBean.msg("newOrganizationMember.chip.newAccount")
-                : label;
+        if (!isDraft(person)) {
+            return label;
+        }
+        return label + " · " + langBean.msg(draftLinks.containsKey(person.getId())
+                ? "newOrganizationMember.chip.linkedAccount"
+                : "newOrganizationMember.chip.newAccount");
     }
 
     /**
@@ -296,6 +370,7 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         draft.setUsername(personService.generateUniqueUsername(
                 draft.getName(), draft.getLastname(), draft.getEmail(), reservedUsernames()));
         draftPasswords.put(draft.getId(), StringUtils.isBlank(invitePassword) ? null : invitePassword);
+        chosenLinkCandidateId().ifPresent(personId -> draftLinks.put(draft.getId(), personId));
         selectedMembers.add(draft);
 
         searchQuery = null;
@@ -424,10 +499,21 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         } else if (!isValidEmail(row.getEmail())) {
             row.setError(langBean.msg("newOrganizationMember.csv.error.invalidEmail"));
         } else {
-            personService.findDtoByEmail(row.getEmail()).ifPresent(row::setExistingPerson);
+            personService.findDtoByEmail(row.getEmail()).ifPresentOrElse(row::setExistingPerson,
+                    () -> row.setLinkedPerson(singleLinkCandidate(row)));
         }
         row.setIncluded(row.getError() == null);
         return row;
+    }
+
+    /**
+     * The person awaiting their account to whom a CSV row's new account is linked: the one bearing the row's
+     * name, when there is exactly one; none when several are (the manager can still invite them one by one).
+     */
+    private PersonDTO singleLinkCandidate(CsvImportRow row) {
+        List<PersonDTO> candidates = pendingAccountPersonService.findLinkCandidates(
+                new PersonName(row.getName(), row.getLastname()));
+        return candidates.size() == 1 ? candidates.get(0) : null;
     }
 
     /**
@@ -517,6 +603,9 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         draft.setEmail(row.getEmail());
         draft.setUsername(personService.generateUniqueUsername(row.getName(), row.getLastname(), row.getEmail(), reservedUsernames()));
         draftPasswords.put(draft.getId(), null);
+        if (row.isLinked() && !draftLinks.containsValue(row.getLinkedPerson().getId())) {
+            draftLinks.put(draft.getId(), row.getLinkedPerson().getId());
+        }
         selectedMembers.add(draft);
     }
 
@@ -542,8 +631,11 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         if (row.getError() != null) {
             return row.getError();
         }
-        return langBean.msg(row.isExisting()
-                ? "newOrganizationMember.csv.status.existing"
+        if (row.isExisting()) {
+            return langBean.msg("newOrganizationMember.csv.status.existing");
+        }
+        return langBean.msg(row.isLinked()
+                ? "newOrganizationMember.csv.status.linked"
                 : "newOrganizationMember.csv.status.new");
     }
 
@@ -566,11 +658,18 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         private String lastname;
         private String email;
         private transient PersonDTO existingPerson;
+        // The person awaiting their account, of the same name, that the row's new account is given to
+        private transient PersonDTO linkedPerson;
         private String error;
         private boolean included = true;
 
         public boolean isExisting() {
             return existingPerson != null;
+        }
+
+        /** @return whether the row's new account is given to a person awaiting their account */
+        public boolean isLinked() {
+            return linkedPerson != null;
         }
 
         /** @return the chip CSS class for this row's status — existing/new/error, reusing the app's account-status chips. */
@@ -641,10 +740,9 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
         person.setPassToModify(true);
 
         try {
-            PersonDTO created = password == null
-                    ? personService.createDisabledPersonWithRandomPassword(person)
-                    : personService.createPerson(person, password);
+            PersonDTO created = createOrLinkAccount(draft, person, password);
             draftPasswords.remove(draft.getId());
+            draftLinks.remove(draft.getId());
             return created;
         } catch (InvalidUsernameException e) {
             displayErrorMessage(langBean, "userDialog.error.username");
@@ -658,8 +756,26 @@ public abstract class AbstractNewMemberDialogBean implements Serializable {
             displayErrorMessage(langBean, "userDialog.error.password");
         } catch (InvalidNameException e) {
             displayErrorMessage(langBean, "userDialog.error.name");
+        } catch (IllegalStateException e) {
+            displayErrorMessage(langBean, "newOrganizationMember.link.error.notAwaiting", draft.displayName());
         }
         return null;
+    }
+
+    /**
+     * Creates the draft's account: on the person awaiting their account it was linked to, if any, otherwise as
+     * a new person — enabled with the password, or disabled until the invitation is completed.
+     */
+    private PersonDTO createOrLinkAccount(PersonDTO draft, PersonDTO identity, String password)
+            throws InvalidUsernameException, InvalidEmailException, UserAlreadyExistException,
+            InvalidPasswordException, InvalidNameException {
+        Long linkedPersonId = draftLinks.get(draft.getId());
+        if (linkedPersonId != null) {
+            return pendingAccountPersonService.giveAccount(linkedPersonId, identity, password);
+        }
+        return password == null
+                ? personService.createDisabledPersonWithRandomPassword(identity)
+                : personService.createPerson(identity, password);
     }
 
     /**

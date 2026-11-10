@@ -80,7 +80,8 @@ public record ProjectListFilter(
             Map.entry("name", Kind.TEXT_CONTAINS),
             Map.entry("fullIdentifier", Kind.TEXT_CONTAINS),
             Map.entry("oaCode", Kind.TEXT_CONTAINS),
-            Map.entry("scientificManager", Kind.TEXT_CONTAINS),
+            // A person: filtered by person id, the same "@ManyToOne id IN" filter as a concept.
+            Map.entry("scientificManager", Kind.CONCEPT_ONE_IN),
             Map.entry("status", Kind.CONCEPT_ONE_IN),
             Map.entry("periods", Kind.CONCEPT_MANY_IN),
             Map.entry("subjects", Kind.CONCEPT_MANY_IN),

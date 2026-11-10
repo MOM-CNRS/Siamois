@@ -9,7 +9,8 @@ registerDefaultFieldRenderers();
 // contract: a field whose answerType is missing here falls through to FallbackRenderer and is
 // read-only, which for the fiche means a field the user simply cannot fill in.
 const PROJECT_FICHE_ANSWER_TYPES = [
-  "TEXT", // name, oaCode, scientificManager, hostStructure, developer, comments, …
+  "TEXT", // name, oaCode, hostStructure, developer, comments, …
+  "SELECT_ONE_PERSON", // scientificManager
   "INTEGER", // volumeCount, pageCount, figureCount, appendixCount
   "DECIMAL", // zmin, zmax, excavatedArea, accessibleArea, openingRate, prescribedArea
   "DATETIME", // beginDate, endDate, prescriptionOrderDate, designationOrderDate

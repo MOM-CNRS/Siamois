@@ -12,6 +12,7 @@ import fr.siamois.domain.models.exceptions.actionunit.NullActionUnitIdentifierEx
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectOneSpatialUnit;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultipleFromFieldCode;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -45,6 +46,7 @@ import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.*;
 import fr.siamois.mapper.ConceptMapper;
 import fr.siamois.mapper.PersonMapper;
+import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.ui.api.openapi.v1.OpenApiExecutionContext;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.ProjectDocumentOpenApiMapper;
@@ -154,6 +156,7 @@ public class ProjectApiService {
     private final BookmarkService bookmarkService;
     private final HistoryAuditService historyAuditService;
     private final ValidationOpenApiService validationOpenApiService;
+    private final PersonService personService;
 
     private static final String ACTION_UNIT_RESOURCE_URI_PREFIX = "/action-unit/";
 
@@ -819,7 +822,7 @@ public class ProjectApiService {
      * comme en lecture, écrire une réponse est une écriture réflexive directe sur la propriété
      * {@code ActionUnitDTO} que {@code valueBinding} désigne, pas un appel au moteur de formulaire.
      * Champs pris en charge : TEXT, INTEGER, DECIMAL, DATETIME, SELECT_ONE_FROM_FIELD_CODE,
-     * SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT — le sous-ensemble que
+     * SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT, SELECT_ONE_PERSON — le sous-ensemble que
      * {@code ActionUnit.DETAILS_FORM} utilise réellement (pas tout le zoo de {@code CustomField}
      * que RecordingUnit doit couvrir).</p>
      */
@@ -921,6 +924,7 @@ public class ProjectApiService {
         if (field instanceof CustomFieldBoolean) return coerceBooleanAnswer(raw);
         if (field instanceof CustomFieldSelectOneFromFieldCode) return coerceConceptId(raw);
         if (field instanceof CustomFieldSelectOneSpatialUnit) return coerceSpatialUnitId(raw);
+        if (field instanceof CustomFieldSelectOnePerson) return coercePersonId(raw);
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Ce champ n'est pas modifiable via l'API : " + field.getClass().getSimpleName());
     }
@@ -950,6 +954,15 @@ public class ProjectApiService {
                     "Le document " + documentId + " n'appartient pas à ce projet");
         }
         return new DocumentSummaryDTO(document);
+    }
+
+    private PersonDTO coercePersonId(Object raw) {
+        long personId = extractLongId(raw);
+        Person person = personService.findById(personId);
+        if (person == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Personne introuvable : " + personId);
+        }
+        return personMapper.convert(person);
     }
 
     private SpatialUnitSummaryDTO coerceSpatialUnitId(Object raw) {

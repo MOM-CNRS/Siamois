@@ -17,10 +17,15 @@ public interface PendingPersonRepository extends CrudRepository<PendingPerson, L
 
     Optional<PendingPerson> findByDisabledPersonId(Long disabledPersonId);
 
-    boolean existsByDisabledPersonId(Long disabledPersonId);
+    boolean existsByDisabledPersonIdAndRegisterTokenIsNotNull(Long disabledPersonId);
 
-    @Query("SELECT p.disabledPerson.id FROM PendingPerson p WHERE p.disabledPerson.id IN :personIds")
+    /** Among the given persons, the ones invited by e-mail whose registration is still pending. */
+    @Query("SELECT p.disabledPerson.id FROM PendingPerson p WHERE p.disabledPerson.id IN :personIds AND p.registerToken IS NOT NULL")
     Set<Long> findDisabledPersonIdsIn(@Param("personIds") Collection<Long> personIds);
+
+    /** Among the given persons, the ones created from their name only, still awaiting the creation of their account. */
+    @Query("SELECT p.disabledPerson.id FROM PendingPerson p WHERE p.disabledPerson.id IN :personIds AND p.registerToken IS NULL")
+    Set<Long> findAwaitingAccountPersonIdsIn(@Param("personIds") Collection<Long> personIds);
 
     @Query("SELECT p.disabledPerson.id FROM PendingPerson p WHERE p.disabledPerson.id IN :personIds AND p.pendingInvitationExpirationDate < :now")
     Set<Long> findExpiredDisabledPersonIdsIn(@Param("personIds") Collection<Long> personIds, @Param("now") OffsetDateTime now);
