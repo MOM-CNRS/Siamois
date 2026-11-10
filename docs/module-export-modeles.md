@@ -1,7 +1,15 @@
 # Module d'export et modèles d'export — décisions de conception
 
 Document de reprise : synthèse de la discussion de conception (2026-10-02), à relire après un `/clear`.
-Aucune implémentation n'existe encore. Le plan par lots reste à écrire.
+
+> **Statut au 2026-11-10 : implémenté.** Le module existe : moteur dans
+> `domain/services/exporttemplate` (`ExportEngine`, `ExportSourceReader`, `ExportWorkbookWriter`…),
+> modèle et JSON dans `domain/models/exporttemplate` (`ExportTemplate`, `ExportTemplateJson`), écrans JSF
+> dans les paramètres (`pages/settings/exportTemplates.xhtml`, `exportTemplateEditor.xhtml`,
+> `exportRun.xhtml`, beans `ui/bean/settings/exporttemplate`), modèles livrés dans
+> `src/main/resources/export-templates/` (`rapport-operation-national.json` et sa variante
+> `-sous-marin`). Le langage de mapping est décrit dans [mapping-description-langage.md](mapping-description-langage.md).
+> La suite de ce document garde les décisions de conception ; l'« ordre de livraison » du §8 est réalisé.
 
 ## 1. Objectif
 

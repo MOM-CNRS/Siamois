@@ -1,5 +1,7 @@
 # Overnight progress log (2026-09-25 → 26)
 
+> **Historical log**, kept for the record. It describes uncommitted work on a branch since merged; the files it names (e.g. `tabTitle.xhtml`) may no longer exist. Current state: [onboarding-react.md](onboarding-react.md).
+
 Plan: `~/.claude/plans/we-are-now-going-functional-gosling.md`. Nothing is committed; all changes are uncommitted on `feat/main-panel-react-migration`.
 
 ## Status

@@ -14,11 +14,12 @@ SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésau
 # Environnement utilisé
 * Java 17
 * PostgreSQL 16/17
+* Pour compiler depuis les sources : Maven 3.9 (Node.js 20 est téléchargé automatiquement par Maven pour construire l'interface React)
 
 # Installation
 1. Télécharger le fichier JAR de la dernière release
 2. Créer une base de données PostgresSQL ainsi qu'un utilisateur pour SIAMOIS
-3. Copier le fichier src/main/resources/application.yml dans le même dossier que le fichier JAR
+3. Copier le fichier src/main/resources/application.yaml dans le même dossier que le fichier JAR
 4. Modifier les valeurs du fichier, soit par des variables d'environnement, soit en dur.
 ## Variables d'environnement
 | Variable d'environnement | Description                                                                                                                          |
@@ -28,6 +29,7 @@ SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésau
 | DEFAULT_LANG             | Langue par défaut de l'application. Sans modification, elle est définie sur français (`fr`). La valeur peut être `fr` ou `en`        |
 | SIAMOIS_ADMIN_LOGIN      | Nom d'utilisateur du superadministrateur de l'instance.                                                                              |
 | SIAMOIS_ADMIN_EMAIL      | Adresse email du superadministrateur de l'instance.                                                                                  |
+| SIAMOIS_ADMIN_PASSWORD   | Mot de passe initial du superadministrateur de l'instance.                                                                           |
 | SIAMOIS_DOCUMENTS_PATH   | Indique le dossier où les documents seront stockés.                                                                                  |
 | SIAMOIS_JWT_SECRET       | Valeur secrète du Json Web Token. **À remplacer par une clé d'au moins 256 bits**.                                                   |
 | SIAMOIS_API_KEY_ENCRYPTION_PASSWORD | Mot de passe chiffrant les clés API (OpenTheso) stockées en base. **À remplacer par une valeur forte et secrète**.              |
@@ -41,7 +43,17 @@ SIAMOIS intègre également la gestion de vocabulaires contrôlés et de thésau
 | SMTP_PORT                | Port du serveur SMTP                                                                                                                 |
 | SMTP_USERNAME            | Nom d'utilisateur pour se connecter au serveur SMTP                                                                                  |
 | SMTP_PASSWORD            | Mot de passe du serveur SMTP                                                                                                         |
+| SIAMOIS_GITHUB_FEEDBACK_TOKEN | Facultatif. Jeton GitHub utilisé pour transformer les retours utilisateurs en tickets. Sans jeton, les retours ne sont pas transmis (un avertissement est journalisé). |
+| SIAMOIS_DEFAULT_TYPE_*   | Facultatif. Premier type (URI d'un concept OpenTheso) des tables d'un nouveau projet : `MOBILIER`, `PHASE`, `CONTENANT`, `DOCUMENT`, `STUDY_MOBILIER`, `STUDY_UE`, `STUDY_TRAITEMENT`. Les valeurs par défaut sont dans `application.yaml`. |
 
+
+# Compiler depuis les sources
+```sh
+mvn clean package
+```
+Produit `target/siamois.jar`. La compilation construit aussi l'application React du dossier `frontend/` et l'intègre au JAR. `mvn test` lance les tests Java ainsi que le lint et les tests de l'application React.
+
+La base de données est créée et mise à jour au démarrage par Liquibase (voir [docs/liquibase-changelog.md](docs/liquibase-changelog.md)).
 
 # Démarrage de l'application
 Une fois les variables renseignées, et que le jar et le fichier application.yaml se trouvent dans le même dossier, il faut exécuter :

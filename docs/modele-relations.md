@@ -125,7 +125,7 @@ Le projet n'est pas un lien : c'est le rattachement du document, qui détermine 
 (`PROJECT_EDIT_DOCUMENTS`…) et la configuration de la table (catégorie = type de la table configurable
 `DOCUMENT`).
 
-**Migration** (`changelog/versions/2026.10.01-0.xml`) : le projet d'un document existant vient, dans cet ordre,
+**Migration** (à l'origine `changelog/versions/2026.10.01-0.xml`, aujourd'hui fondu dans le schéma initial `changelog/init/dll-init.sql`) : le projet d'un document existant vient, dans cet ordre,
 de `action_unit_document`, de l'UE liée, de l'UE du mobilier lié, ou du seul projet dont le contexte spatial
 contient le lieu lié. Les documents restés sans projet gardent `NULL` : ils apparaissent dans les listes de
 l'organisation (lecture seule, fiche introuvable) et sont à rattacher à la main. L'identifiant des documents

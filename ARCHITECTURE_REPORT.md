@@ -1,5 +1,29 @@
 # Siamois — Architecture Report
 
+> **Archived snapshot — no longer describes the code (status checked 2026-11-10, v0.16.32).**
+> Since this report: the main panel was migrated to React (`frontend/`, see
+> [docs/onboarding-react.md](docs/onboarding-react.md)), the JSF side runs Jakarta Faces 4.0.11 +
+> PrimeFaces 15 (not JSF 2.2 + PrimeFaces 6), the REST API `/api/v1` became the main backend surface,
+> and Liquibase now owns the schema ([docs/liquibase-changelog.md](docs/liquibase-changelog.md)).
+> Package inventory, counts and the "Frontend" section below are obsolete.
+>
+> Status of the recommendations of §12:
+>
+> | Recommendation | Status (2026-11-10) |
+> |---|---|
+> | 12.1 `ddl-auto: update` → `validate` | **Done**: `validate`, schema managed by Liquibase only |
+> | 12.2 Reduce Hikari pool size | Not done (`maximum-pool-size: 1000`) |
+> | 12.3 Complete or remove stub REST endpoints | Superseded: `/api/v1` was rebuilt for the React app |
+> | 12.4 Consolidate DTO and mapper layers | Not done: the API v1 has its own DTO layer next to `fr.siamois.dto` |
+> | 12.5 Integration tests for controllers/authorization | Not done: still no Spring context in tests |
+> | 12.6 Seed data → Liquibase changesets | Partly: initial schema squashed into `changelog/init`, seeding still done by `DatabaseInitializer` beans |
+> | 12.7 Authorization at the service layer | Partly: API services call `ProfilePermissionService` explicitly |
+> | 12.8 Formalize identifier generation | Not reassessed |
+> | 12.9 Eliminate dual templating (JSF + Thymeleaf) | No code uses Thymeleaf any more (e-mails are plain HTML templates); `spring-boot-starter-thymeleaf` is still declared in `pom.xml` |
+> | 12.10 Gradual frontend migration | **Done for the main panel** (React); shell, login and settings remain JSF |
+>
+> Up-to-date overview: [docs/onboarding-react.md](docs/onboarding-react.md) and [docs/liquibase-changelog.md](docs/liquibase-changelog.md).
+
 **Date:** 2026-05-31  
 **Analyst:** Claude Code (Sonnet 4.6)  
 **Branch analyzed:** `feat/us-125`  

@@ -1,5 +1,7 @@
 # React main panel — architecture report
 
+> **Snapshot of 2026-09-30**, figures outdated (see [react-patterns.md](react-patterns.md), 2026-10-22, for the current patterns and [onboarding-react.md](onboarding-react.md) for the structure).
+
 **Scope:** `frontend/` (React 18, PrimeReact 10.9, TanStack Query 5, Vite, Vitest), embedded in the JSF shell (`pages/focus.xhtml`).
 **Date:** 2026-09-30, branch `feat/field-rules-engine`.
 **Size:** 12.7k lines of non-test TS/TSX, 92 test files, 758 tests. `tsc --strict`, ESLint and Vitest run in the Maven `test` phase.
