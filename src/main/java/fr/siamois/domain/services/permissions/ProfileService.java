@@ -153,7 +153,8 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_DELETE_ENTITIES,
-                PermissionConstants.ORGANIZATION_DELETE_PROJECT
+                PermissionConstants.ORGANIZATION_DELETE_PROJECT,
+                PermissionConstants.ORGANIZATION_VALIDATE
         ), institutionDTO);
     }
 
@@ -212,7 +213,8 @@ public class ProfileService {
             PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS,
             PermissionConstants.PROJECT_EDIT_STUDIES,
             PermissionConstants.PROJECT_DELETE_ENTITIES,
-            PermissionConstants.PROJECT_DELETE_PROJECT
+            PermissionConstants.PROJECT_DELETE_PROJECT,
+            PermissionConstants.PROJECT_VALIDATE
     );
 
     private static final List<String> PROJECT_MEMBER_PERMISSIONS = List.of(
