@@ -54,7 +54,7 @@ public class Institution implements Serializable {
         return creationDate.atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
 
-    public static final int MAX_NAME_LENGTH = 40;
+    public static final int MAX_NAME_LENGTH = 60;
 
     @Override
     public boolean equals(Object o) {
