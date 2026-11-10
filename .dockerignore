@@ -1,0 +1,10 @@
+# Artefacts locaux exclus du contexte de build Docker
+.git
+.idea
+.local
+.sonar
+target
+frontend/node_modules
+frontend/dist
+frontend/coverage
+frontend/dev/.generated

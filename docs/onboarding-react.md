@@ -189,7 +189,7 @@ npm run api:pull     # re-synchronise openapi.json + schema.d.ts depuis un backe
 
 **Application complète** : backend Spring Boot + JSF. Un changement Java demande un redémarrage (sinon page JSF blanche) ; un changement React est repris à chaud.
 
-**Tests backend** : Maven doit tourner sous **JDK 17** (`JAVA_HOME` sur un Corretto 17), le JDK par défaut casse Mockito.
+**Tests backend** : Maven doit tourner sous **JDK 21** (`JAVA_HOME` sur un Corretto 21), le JDK par défaut casse Mockito.
 
 ---
 

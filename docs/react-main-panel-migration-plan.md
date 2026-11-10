@@ -276,7 +276,7 @@ Each future entity migration then becomes: write one `entities/<type>/config.tsx
 6. **Project Detail** — `EntityDetailPanel`, fiche tab only: schema-driven Details, identifier edit, validate toggle, prev/next.
 7. **Home** — recent/my-projects widget + Project card only.
 8. **JSF integration** — `isReactPanelEnabled()`, the `focus.xhtml` branch (with the overview fallback check), `p:remoteCommand` bridge for both toolbars, PrimeReact `Splitter` wiring.
-9. **Automated tests** — Java: the permission fix (both the project-scoped positive case and that org-wide still works) and the new `project-types`/`_permissions`/history endpoints, **run under Java 17** (`mvn` defaults to a newer JDK here, which breaks Mockito's inline mock maker — gotcha from the RU migration). React: Vitest coverage for the registry / field-renderer / `valueBinding` resolver, mirroring the RU branch's pure-logic coverage. Not optional.
+9. **Automated tests** — Java: the permission fix (both the project-scoped positive case and that org-wide still works) and the new `project-types`/`_permissions`/history endpoints, **run under Java 21** (`mvn` defaults to a newer JDK here, which breaks Mockito's inline mock maker — gotcha from the RU migration). React: Vitest coverage for the registry / field-renderer / `valueBinding` resolver, mirroring the RU branch's pure-logic coverage. Not optional.
 10. **Manual verification** — see below.
 11. **Cleanup / migration notes** — document the registry pattern and the `isReactPanelEnabled()` switch so the next entity is a config-only change; flag branch reconciliation (§9). **Do not remove the old JSF Project templates/beans** — dead-code removal happens once, after every entity type has migrated.
 
@@ -285,7 +285,7 @@ Each future entity migration then becomes: write one `entities/<type>/config.tsx
 ## Verification
 
 - **Build**: `mvn -DskipTests package` produces the React bundle under `META-INF/resources/resources/react-main-panel/`; confirm the RU `react-ru-panel/` path is untouched.
-- **Java tests** (Java 17): `JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test -Dtest='ProjectApiService*,*ProjectTypes*,*Bookmark*'` — permission fix in both directions, `project-types` shape, `_permissions`/`bookmarked` batching (assert one query per page, not per row).
+- **Java tests** (Java 21): `JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn test -Dtest='ProjectApiService*,*ProjectTypes*,*Bookmark*'` — permission fix in both directions, `project-types` shape, `_permissions`/`bookmarked` batching (assert one query per page, not per row).
 - **React tests**: `npm test` in `frontend/` (Vitest) — registry resolution, field renderer per `answerType`, `valueBinding` read/write.
 - **End-to-end, in the running app**: Home → recent projects + Project card; List → search, sort, paginate, create, row click into detail; Detail → edit a field, inline-edit identifier, toggle validate, prev/next, bookmark on/off (verify the row lands in the Favoris sidebar with `resourceUri = /action-unit/{id}`).
 - **Permission gating**: as a project-scoped-only user, confirm edit now works through the API (this is the bug fix); as an org-wide user, confirm `canCreateProjects` is correct per organization.
