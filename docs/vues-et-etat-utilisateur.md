@@ -209,10 +209,12 @@ personnalisées : il n'y en a qu'une par couple.
 - `GET /api/v1/views/default?organizationId&resourceType&projectId&typeId` : `{ view, canEdit }`. `view`
   est absent tant que personne n'en a enregistré une, `canEdit` dit si l'utilisateur peut le faire.
 - `PUT /api/v1/views/default` : enregistre. Demande le droit ci-dessous.
-- Une contrainte d'unicité partielle (`2026.10.20-0.xml`) garantit une seule vue par défaut par couple.
+- Une contrainte d'unicité partielle (à l'origine `2026.10.20-0.xml`) garantissait une seule vue par défaut par
+  couple. **À vérifier :** elle ne figure pas dans le schéma initial refondu (`changelog/init/dll-init.sql`),
+  qui ne contient aucun `CREATE UNIQUE INDEX` sur `ui_table_view`.
 - **Non utilisée par l'application** : aucune interface n'écrit ni ne lit cette vue par défaut de liste. Elle a
   été retirée du périmètre : les colonnes par défaut se règlent dans le paramétrage du projet
-  (`ProjectTableColumnDefault`) et les vues nommées partagent un état de liste. L'API reste, si le besoin revient
+  (colonnes par défaut par type : `ui/table/definitions/*TableColumnDefaults`) et les vues nommées partagent un état de liste. L'API reste, si le besoin revient
   (il faudrait alors que le catalogue de colonnes la lise et que le cache `typesCatalog` soit invalidé).
 
 **Droit** : `PROJECT_EDIT_DEFAULT_VIEWS`, avec ses contreparties `ORGANIZATION_EDIT_DEFAULT_VIEWS` et

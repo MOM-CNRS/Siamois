@@ -1,8 +1,14 @@
 # Règles conditionnelles des champs
 
-Passation de la phase 1 (moteur de rendu, faite) et cadrage de la phase 2 (configuration par table et
-par type, à faire). Rédigé le 2026-09-30, branche `feat/field-rules-engine` (changements indexés, non
-commités).
+Passation de la phase 1 (moteur de rendu, faite) et de la phase 2 (configuration par table et par type).
+Rédigé le 2026-09-30 sur `feat/field-rules-engine`, complété ensuite par sections datées.
+
+> **État au 2026-11-10 :** les phases 1 et 2 sont dans `main`. Les formulaires UE, mobilier, phase,
+> contenant, document et étude sont composés depuis la configuration projet × type (`FormConfig`,
+> `EffectiveFormResolver`, mises en page initiales dans `src/main/resources/form-layouts/*.json`) ; projet et
+> lieu restent codés en dur. Les règles s'éditent dans le tiroir de champ des paramètres de tables
+> (`pages/settings/project/fieldEditDrawer.xhtml` + `ruleCondition.xhtml`, `FieldRulesEditorBean`). Le
+> reste à faire est listé à la fin du §2 et au §4.
 
 ## 1. Ce que fait le moteur (phase 1)
 
@@ -94,8 +100,8 @@ Plan : `~/.claude/plans/vectorized-imagining-bird.md`.
 
 **Lot 3 (fait) : éditeur de règles**
 
-- Bouton « Règles du champ » sur chaque ligne de l'écran → tiroir `fieldRulesDrawer.xhtml`
-  (`FieldRulesEditorBean`). Il édite « Modifiable seulement si », « Obligatoire si » (une comparaison, ou
+- Bouton « Règles du champ » sur chaque ligne de l'écran → tiroir de règles (aujourd'hui intégré à
+  `fieldEditDrawer.xhtml` + `ruleCondition.xhtml`, `FieldRulesEditorBean`). Il édite « Modifiable seulement si », « Obligatoire si » (une comparaison, ou
   plusieurs combinées par tout/au moins une), « Valeurs proposées » (concepts liés à un autre champ) et
   l'ordre avec d'autres champs. Une règle plus complexe (composition imbriquée, filtre `REF_MATCH`) est
   conservée telle quelle, affichée comme « règle avancée », supprimable mais pas modifiable.

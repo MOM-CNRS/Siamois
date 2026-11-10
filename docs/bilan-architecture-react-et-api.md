@@ -2,6 +2,8 @@
 
 État au 01/10/2026, branche `feat/field-rules-engine`, avant le merge de la migration du panneau principal.
 
+> **Document daté**, non mis à jour depuis : certains défauts relevés ont pu être corrigés. Structure actuelle : [onboarding-react.md](onboarding-react.md).
+
 Ce document est un avis d'ensemble, sans complaisance. Il ne remplace pas les documents de détail :
 - `docs/react-architecture-review.md` : l'architecture React, avec chaque point chiffré (§2.1 à §2.13) ;
 - `docs/api-changes-vs-main.md` : le contrat de l'API (ruptures, nouveautés), en anglais pour les consommateurs externes ;

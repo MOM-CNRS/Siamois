@@ -1,5 +1,7 @@
 # React/PrimeReact migration of the main panel area — starting with Project
 
+> **Plan historique (septembre 2026), réalisé.** Les fichiers JSF qu'il cite (`flow.xhtml`, `panelContent.xhtml`, `homePanel.xhtml`, `entityDataTable.xhtml`, `*TableDefinitionFactory`, `LazyTreeTable`…) ont été supprimés depuis. État actuel : [onboarding-react.md](onboarding-react.md).
+
 > **Follow-up plan saved to the repo 2026-09-21** from the working plan at
 > `~/.claude/plans/i-was-migrating-my-eager-meadow.md` — "React project list — path to JSF
 > parity" (phases 0–5), the plan that picks up right where the status note below leaves off (list

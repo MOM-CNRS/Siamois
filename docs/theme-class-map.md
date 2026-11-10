@@ -65,6 +65,11 @@ PrimeReact 10's `primereact.min.css` is an empty, deprecated stub. Each componen
 
 ## App class names: JSX ↔ XHTML
 
+> The JSF panel templates cited in this section (`panelContent.xhtml`, `*ListPanelHeader.xhtml`,
+> `*PanelHeader.xhtml`, `tabTitle.xhtml`, `entityDataTable.xhtml`) and the `*Form` beans have since been
+> **deleted**: the main panel is React only. The JSF column is kept as the record of where each class
+> name came from; the "JSF inconsistencies" below no longer exist in the code.
+
 | Where | JSF (`.xhtml` / bean) | React before | React now |
 |---|---|---|---|
 | Main pane root | `#{panelClass} panel-docked focus` on the `focus.xhtml` wrapper, e.g. `siamois-panel action-unit-panel single-panel` | `panel-splitter-panel-l` only. It inherited the class of the entity **JSF mounted**, even after navigating to another type client-side. | `panel-splitter-panel-l siamois-panel <entity>-panel single-panel\|list-panel`, computed from the view shown now (`App.tsx` `paneClassName`) |
