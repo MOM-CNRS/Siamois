@@ -2,7 +2,10 @@ package fr.siamois.ui.bean.settings;
 
 import fr.siamois.domain.models.auth.pending.PendingPerson;
 import fr.siamois.domain.models.permissions.PermissionConstants;
+import fr.siamois.domain.models.exceptions.auth.EmailAlreadyExistException;
+import fr.siamois.domain.models.exceptions.auth.InvalidEmailException;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.dto.entity.PermissionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -10,10 +13,12 @@ import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.email.InvitationMailer;
 import fr.siamois.ui.email.InvitationMessages;
 import jakarta.faces.event.ActionEvent;
+import org.primefaces.PrimeFaces;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -27,19 +32,28 @@ import static fr.siamois.utils.MessageUtils.displayInfoMessage;
  * Base class for the members-list settings beans (institution, project, application-wide).
  * Tracks which listed members still have a pending invitation (and whether it has expired) so the
  * datatable can display an "invitation sent" / "invitation expired" account status chip, and offers
- * the shared "resend invitation" action that replaces an expired invitation with a fresh one.
+ * the shared "resend invitation" action that replaces an expired invitation with a fresh one, and the
+ * "send an invitation" dialog that asks the e-mail of a member awaiting the creation of their account.
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class AbstractMembersListBean implements SettingsDatatableBean {
 
     protected final transient PendingPersonService pendingPersonService;
+    protected final transient PendingAccountPersonService pendingAccountPersonService;
     protected final transient InvitationMailer invitationMailer;
     protected final LangBean langBean;
+
+    /** Widget var of the "send an invitation" dialog, shared by the members pages. */
+    public static final String INVITE_AWAITING_DIALOG = "inviteAwaitingMemberDialog";
 
     private transient Set<Long> pendingInvitationPersonIds;
     private transient Set<Long> expiredInvitationPersonIds;
     private transient Set<Long> awaitingAccountPersonIds;
     private transient ProfileDTO selectedProfile;
+    // "Send an invitation" dialog: the member awaiting their account, their profiles and the typed address
+    private transient PersonDTO invitationTarget;
+    private transient List<ProfileDTO> invitationProfiles = new ArrayList<>();
+    private String invitationEmail;
 
     /** Loads the pending- and expired-invitation state for the given listed members. Call from {@code init(...)}. */
     protected final void loadPendingInvitations(Collection<Long> memberPersonIds) {
@@ -139,6 +153,10 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
      * @param profiles the profiles the member currently holds in this scope, listed in the e-mail
      */
     protected final void resendInvitationTo(PersonDTO invitee, Collection<ProfileDTO> profiles) {
+        sendInvitationTo(invitee, profiles, "newMember.invitation.resent");
+    }
+
+    private void sendInvitationTo(PersonDTO invitee, Collection<ProfileDTO> profiles, String sentMessageKey) {
         PendingPerson pendingPerson = pendingPersonService.resendInvitation(invitee);
         boolean sent = invitationMailer.send(pendingPerson, invitee, invitationScopeName(),
                 invitationMailSubject(), InvitationMessages.profilesLabel(langBean, profiles));
@@ -152,10 +170,68 @@ public abstract class AbstractMembersListBean implements SettingsDatatableBean {
             awaitingAccountPersonIds.remove(invitee.getId());
         }
         if (sent) {
-            displayInfoMessage(langBean, "newMember.invitation.resent", invitee.getEmail());
+            displayInfoMessage(langBean, sentMessageKey, invitee.getEmail());
         } else {
             displayErrorMessage(langBean, "newMember.invitation.failed", invitee.getEmail());
         }
+    }
+
+    /**
+     * Opens the "send an invitation" dialog for a member awaiting the creation of their account.
+     *
+     * @param person   the member awaiting their account
+     * @param profiles the profiles the member holds in this scope, listed in the e-mail
+     */
+    public final void openInvitationDialog(PersonDTO person, Collection<ProfileDTO> profiles) {
+        invitationTarget = person;
+        invitationProfiles = new ArrayList<>(profiles);
+        invitationEmail = null;
+        PrimeFaces.current().ajax().update(INVITE_AWAITING_DIALOG);
+        PrimeFaces.current().executeScript("PF('" + INVITE_AWAITING_DIALOG + "').show();");
+    }
+
+    /**
+     * Gives the typed address to the member awaiting their account and sends them the invitation e-mail,
+     * then closes the dialog. On an invalid or already used address the dialog stays open with the error.
+     * Subclasses check the caller's rights first.
+     */
+    protected final void inviteAwaitingMember() {
+        try {
+            PersonDTO invitee = pendingAccountPersonService.assignInvitationEmail(invitationTarget.getId(), invitationEmail);
+            invitationTarget.setEmail(invitee.getEmail());
+            sendInvitationTo(invitationTarget, invitationProfiles, "newMember.invitation.sent");
+            closeInvitationDialog();
+        } catch (EmailAlreadyExistException e) {
+            displayErrorMessage(langBean, "userDialog.error.email.alreadyexists", invitationEmail);
+        } catch (InvalidEmailException e) {
+            displayErrorMessage(langBean, "userDialog.error.email");
+        } catch (IllegalStateException e) {
+            displayErrorMessage(langBean, "member.invitation.error.notAwaiting", invitationTarget.displayName());
+            closeInvitationDialog();
+        }
+    }
+
+    /** Closes the "send an invitation" dialog and forgets its member. */
+    public final void closeInvitationDialog() {
+        invitationTarget = null;
+        invitationProfiles = new ArrayList<>();
+        invitationEmail = null;
+        PrimeFaces.current().executeScript("PF('" + INVITE_AWAITING_DIALOG + "').hide();");
+    }
+
+    /** @return the member awaiting their account the "send an invitation" dialog is open for, or {@code null} */
+    public final PersonDTO getInvitationTarget() {
+        return invitationTarget;
+    }
+
+    /** @return the address typed in the "send an invitation" dialog */
+    public final String getInvitationEmail() {
+        return invitationEmail;
+    }
+
+    /** @param invitationEmail the address typed in the "send an invitation" dialog */
+    public final void setInvitationEmail(String invitationEmail) {
+        this.invitationEmail = invitationEmail;
     }
 
     /** @return the profile currently shown in the read-only profile detail drawer, or {@code null} when closed. */

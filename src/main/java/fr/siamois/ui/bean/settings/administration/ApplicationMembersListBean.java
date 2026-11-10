@@ -6,6 +6,7 @@ import fr.siamois.domain.services.ApplicationMembersServiceInterface;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ApplicationMemberDTO;
 import fr.siamois.dto.entity.ProfileDTO;
@@ -54,11 +55,12 @@ public class ApplicationMembersListBean extends AbstractMembersListBean {
                                       SessionSettingsBean sessionSettingsBean,
                                       ProfilePermissionService profilePermissionService,
                                       PendingPersonService pendingPersonService,
+                                      PendingAccountPersonService pendingAccountPersonService,
                                       InvitationMailer invitationMailer,
                                       RedirectBean redirectBean,
                                       InstitutionService institutionService,
                                       ActionUnitService actionUnitService) {
-        super(pendingPersonService, invitationMailer, langBean);
+        super(pendingPersonService, pendingAccountPersonService, invitationMailer, langBean);
         this.applicationMembersService = applicationMembersService;
         this.sessionSettingsBean = sessionSettingsBean;
         this.profilePermissionService = profilePermissionService;

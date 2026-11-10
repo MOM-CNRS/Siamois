@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.settings.project;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.ProjectMemberDTO;
@@ -32,11 +33,13 @@ class ProjectMembersListBeanSettingsAccessTest {
     @Mock private SessionSettingsBean sessionSettingsBean;
     @Mock private PendingPersonService pendingPersonService;
     @Mock private InvitationMailer invitationMailer;
+    @Mock private PendingAccountPersonService pendingAccountPersonService;
 
     @Test
     void removeMember_isRefusedWithoutProjectSettingsPermission() {
         ProjectMembersListBean bean = new ProjectMembersListBean(projectMembersService, newProjectMemberDialogBean,
-                langBean, profilePermissionService, sessionSettingsBean, pendingPersonService, invitationMailer);
+                langBean, profilePermissionService, sessionSettingsBean, pendingPersonService,
+                pendingAccountPersonService, invitationMailer);
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(7L);
         bean.setProject(project);
@@ -51,5 +54,27 @@ class ProjectMembersListBeanSettingsAccessTest {
                     Mockito.eq(ProjectMembersListBean.PROJECT_SETTINGS_ERROR_NOT_MANAGER)));
         }
         verify(projectMembersService, never()).removeMemberFromProject(any(), any());
+    }
+
+    @Test
+    void sendInvitationToAwaitingMember_isRefusedWithoutProjectSettingsPermission() throws Exception {
+        ProjectMembersListBean bean = new ProjectMembersListBean(projectMembersService, newProjectMemberDialogBean,
+                langBean, profilePermissionService, sessionSettingsBean, pendingPersonService,
+                pendingAccountPersonService, invitationMailer);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        bean.setProject(project);
+        bean.setInvitationEmail("marie@curie.fr");
+        when(sessionSettingsBean.getAuthenticatedUser()).thenReturn(null);
+        when(profilePermissionService.hasProjectSettingsPermission(nullable(PersonDTO.class), any(ActionUnitDTO.class))).thenReturn(false);
+
+        try (MockedStatic<MessageUtils> messages = Mockito.mockStatic(MessageUtils.class)) {
+            bean.sendInvitationToAwaitingMember();
+
+            messages.verify(() -> MessageUtils.displayWarnMessage(any(LangBean.class),
+                    Mockito.eq(ProjectMembersListBean.PROJECT_SETTINGS_ERROR_NOT_MANAGER)));
+        }
+        verify(pendingAccountPersonService, never()).assignInvitationEmail(any(), any());
+        verifyNoInteractions(invitationMailer);
     }
 }

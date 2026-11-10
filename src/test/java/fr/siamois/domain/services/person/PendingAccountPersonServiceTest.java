@@ -134,4 +134,27 @@ class PendingAccountPersonServiceTest {
         assertThrows(IllegalStateException.class, () -> service.giveAccount(1L, identity, null));
         verify(personService, never()).giveAccountTo(any(), any(), any());
     }
+
+    @Test
+    void assignInvitationEmail_givesTheTrimmedAddressToPersonAwaitingAccount() throws Exception {
+        Person awaiting = new Person();
+        PersonDTO converted = new PersonDTO();
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(PendingPerson.awaitingAccountOf(awaiting)));
+        when(personRepository.getReferenceById(1L)).thenReturn(awaiting);
+        when(personMapper.convert(awaiting)).thenReturn(converted);
+
+        PersonDTO result = service.assignInvitationEmail(1L, " marie@curie.fr ");
+
+        verify(personService).updateEmail(1L, "marie@curie.fr");
+        assertSame(converted, result);
+        assertEquals("marie@curie.fr", result.getEmail());
+    }
+
+    @Test
+    void assignInvitationEmail_refusesPersonNoLongerAwaitingAccount() throws Exception {
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> service.assignInvitationEmail(1L, "marie@curie.fr"));
+        verify(personService, never()).updateEmail(any(), any());
+    }
 }

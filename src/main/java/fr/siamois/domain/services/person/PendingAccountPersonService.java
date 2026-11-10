@@ -96,6 +96,27 @@ public class PendingAccountPersonService {
     }
 
     /**
+     * Gives an e-mail address to a person awaiting their account, so that they can be invited to create it.
+     *
+     * @param personId the id of the person awaiting their account
+     * @param email    the address the invitation is sent to
+     * @return the person, now carrying the address
+     * @throws IllegalStateException if the person does not await an account (any more)
+     * @throws InvalidEmailException if the address is invalid or already used
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PersonDTO assignInvitationEmail(Long personId, String email) throws InvalidEmailException {
+        if (!isAwaitingAccount(personId)) {
+            throw new IllegalStateException("Person " + personId + " does not await an account");
+        }
+        String address = email == null ? "" : email.trim();
+        personService.updateEmail(personId, address);
+        PersonDTO person = personMapper.convert(personRepository.getReferenceById(personId));
+        person.setEmail(address);
+        return person;
+    }
+
+    /**
      * Tells whether the person still awaits the creation of their account.
      *
      * @param personId the person's id

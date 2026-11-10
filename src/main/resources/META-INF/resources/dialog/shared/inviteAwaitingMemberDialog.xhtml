@@ -1,0 +1,59 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:form="http://xmlns.jcp.org/jsf/composite/pages/shared/form"
+             xmlns:h="http://java.sun.com/jsf/html"
+>
+    <!-- Shared "Envoyer une invitation" dialog for a member awaiting the creation of their account: asks the
+         address the invitation is sent to. Callers must pass in via ui:param:
+           - bean: the AbstractMembersListBean subclass instance backing the members page
+           - updateTarget: the absolute client id of the caller's members datatable to refresh once sent
+    -->
+
+    <p:dialog
+            widgetVar="inviteAwaitingMemberDialog"
+            id="inviteAwaitingMemberDialog"
+            width="440px"
+            showEffect="fade"
+            appendToBody="true"
+            closable="false"
+            showHeader="false"
+            styleClass="newOrganizationMemberDialog"
+    >
+        <div class="dialog-new-organization-member">
+            <div class="dialog-new-organization-member-header">
+                <h3>#{langBean.msg('member.invitation.dialog.title')}</h3>
+            </div>
+            <form:csrfform id="inviteAwaitingMemberFormCC" formId="inviteAwaitingMemberForm">
+                <div class="dialog-new-organization-member-body">
+                    <h:panelGroup layout="block" styleClass="invite-form" rendered="#{not empty bean.invitationTarget}">
+                        <p class="invite-link-hint">
+                            #{langBean.msg('member.invitation.dialog.hint', bean.invitationTarget.displayName())}
+                        </p>
+                        <div class="invite-form-field">
+                            <p:outputLabel class="col-form-label" for="invitationEmail">
+                                #{langBean.msg('newOrganizationMember.label.email')}*
+                            </p:outputLabel>
+                            <p:inputText id="invitationEmail" type="email" autocomplete="off"
+                                         placeholder="#{langBean.msg('newOrganizationMember.placeholder.email')}"
+                                         value="#{bean.invitationEmail}"/>
+                        </div>
+                    </h:panelGroup>
+                </div>
+                <div class="dialog-buttons">
+                    <p:commandButton value="#{langBean.msg('common.action.cancel')}"
+                                     styleClass="ui-button-secondary"
+                                     action="#{bean.closeInvitationDialog()}"
+                                     process="@this"
+                                     immediate="true"/>
+                    <p:commandButton value="#{langBean.msg('member.invitation.dialog.send')}"
+                                     icon="bi bi-envelope"
+                                     action="#{bean.sendInvitationToAwaitingMember()}"
+                                     process="@form"
+                                     update="@form #{updateTarget}"/>
+                </div>
+            </form:csrfform>
+        </div>
+    </p:dialog>
+
+</ui:fragment>
