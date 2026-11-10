@@ -18,7 +18,7 @@
     The text columns are kept, unmapped: the original text is not lost if the split guessed wrong.
     -->
 
-    <changeSet id="2026-11-10-2-action-unit-scientific-manager" author="julien linget">
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager" author="Julien Linget">
         <addColumn schemaName="public" tableName="action_unit">
             <column name="fk_scientific_manager_id" type="bigint">
                 <constraints foreignKeyName="fk_action_unit_scientific_manager"
@@ -27,20 +27,20 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-action-unit-aud-scientific-manager" author="julien linget">
+    <changeSet id="2026-11-10-2-action-unit-aud-scientific-manager" author="Julien Linget">
         <addColumn schemaName="public" tableName="action_unit_aud">
             <column name="fk_scientific_manager_id" type="bigint"/>
             <column name="fk_scientific_manager_id_mod" type="boolean"/>
         </addColumn>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-action-unit-scientific-manager-index" author="julien linget">
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager-index" author="Julien Linget">
         <createIndex schemaName="public" tableName="action_unit" indexName="idx_action_unit_scientific_manager">
             <column name="fk_scientific_manager_id"/>
         </createIndex>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-study-treatment-manager" author="julien linget">
+    <changeSet id="2026-11-10-2-study-treatment-manager" author="Julien Linget">
         <addColumn schemaName="public" tableName="study">
             <column name="fk_treatment_manager_id" type="bigint">
                 <constraints foreignKeyName="fk_study_treatment_manager"
@@ -49,21 +49,21 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-study-aud-treatment-manager" author="julien linget">
+    <changeSet id="2026-11-10-2-study-aud-treatment-manager" author="Julien Linget">
         <addColumn schemaName="public" tableName="study_aud">
             <column name="fk_treatment_manager_id" type="bigint"/>
             <column name="fk_treatment_manager_id_mod" type="boolean"/>
         </addColumn>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-study-treatment-manager-index" author="julien linget">
+    <changeSet id="2026-11-10-2-study-treatment-manager-index" author="Julien Linget">
         <createIndex schemaName="public" tableName="study" indexName="idx_study_treatment_manager">
             <column name="fk_treatment_manager_id"/>
         </createIndex>
     </changeSet>
 
     <!-- Migration helpers, dropped by the last changeSet of this file. -->
-    <changeSet id="2026-11-10-2-person-for-name-helpers" author="julien linget">
+    <changeSet id="2026-11-10-2-person-for-name-helpers" author="Julien Linget">
         <sql splitStatements="false"><![CDATA[
             CREATE OR REPLACE FUNCTION public.tmp_siamois_person_for_name(p_raw text, p_last_name_first boolean,
                                                                           p_institution_id bigint)
@@ -169,7 +169,7 @@
         ]]></sql>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-action-unit-scientific-manager-from-text" author="julien linget">
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager-from-text" author="Julien Linget">
         <sql splitStatements="false"><![CDATA[
             DO
             $do$
@@ -200,7 +200,7 @@
         ]]></sql>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-study-treatment-manager-from-text" author="julien linget">
+    <changeSet id="2026-11-10-2-study-treatment-manager-from-text" author="Julien Linget">
         <sql splitStatements="false"><![CDATA[
             DO
             $do$
@@ -231,14 +231,14 @@
         ]]></sql>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-drop-person-for-name-helpers" author="julien linget">
+    <changeSet id="2026-11-10-2-drop-person-for-name-helpers" author="Julien Linget">
         <sql splitStatements="false"><![CDATA[
             DROP FUNCTION IF EXISTS public.tmp_siamois_add_awaiting_member(bigint, bigint, bigint);
             DROP FUNCTION IF EXISTS public.tmp_siamois_person_for_name(text, boolean, bigint);
         ]]></sql>
     </changeSet>
 
-    <changeSet id="2026-11-10-2-manager-fields-type" author="julien linget">
+    <changeSet id="2026-11-10-2-manager-fields-type" author="Julien Linget">
         <sql>
             UPDATE public.custom_field
             SET answer_type = 'SELECT_ONE_PERSON',
