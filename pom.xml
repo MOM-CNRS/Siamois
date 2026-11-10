@@ -49,9 +49,24 @@
         <sonar.projectKey>MOM-CNRS_Siamois</sonar.projectKey>
         <sonar.organization>mom-cnrs</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.sources>src/main/java,src/main/resources/META-INF/resources</sonar.sources>
-        <sonar.tests>src/test/java</sonar.tests>
+        <sonar.sources>src/main/java,src/main/resources/META-INF/resources,frontend/src</sonar.sources>
+        <!-- Les tests Vitest sont à côté du code dans frontend/src : ils sont exclus des sources
+             (sonar.exclusions) et seuls eux sont retenus côté tests (sonar.test.inclusions).
+             sonar.test.inclusions s'applique à tous les dossiers de test, d'où src/test/java/**. -->
+        <sonar.tests>src/test/java,frontend/src</sonar.tests>
+        <sonar.test.inclusions>
+            src/test/java/**/*,
+            frontend/src/**/*.test.ts,
+            frontend/src/**/*.test.tsx,
+            frontend/src/test/**/*
+        </sonar.test.inclusions>
+        <!-- Couverture Vitest (npm run test:coverage dans frontend/) -->
+        <sonar.javascript.lcov.reportPaths>frontend/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
         <sonar.exclusions>
+            frontend/src/**/*.test.ts,
+            frontend/src/**/*.test.tsx,
+            frontend/src/test/**/*,
+            frontend/src/api/generated/**/*,
             src/main/resources/static/**/*,
             src/main/resources/META-INF/resources/resources/js/bootstrap*,
             src/main/resources/META-INF/resources/resources/js/jquery*,
@@ -60,44 +75,46 @@
         </sonar.exclusions>
         <sonar.coverage.exclusions>
             <!-- Contrat REST OpenAPI v1 : requêtes, réponses, ressources JSON (pas de logique métier) -->
-            **/ui/api/openapi/v1/request/**,
-            **/ui/api/openapi/v1/response/**,
-            **/ui/api/openapi/v1/resource/**,
-            **/ui/api/openapi/v1/auth/dto/**,
-            **/ui/api/openapi/v1/generic/response/**,
-            **/infrastructure/api/dto/**Response.*,
-            **/models/**/*.*,
-            **/config/**/*.*,
-            **/*Exception.*,
-            **/*Bean.*,
-            **/*DatasetInitializer.*,
-            **/ui/bean/dialog/newunit/**,
-            **/ui/form/rules/**,
-            **/ui/lazydatamodel/scope/**,
-            **/ui/lazydatamodel/tree/**,
-            **/utils/**,
-            **/ui/table/**,
-            **/dto/**,
-            **/ui/form/**,
-            **/ui/custom/**,
-            **/ui/email/**,
-            **/*ViewModel.*,
-            **/*Converter.*,
-            **/*Builder.*,
-            **/*Controller.*,
-            **/ui/api/openapi/v1/controller/**/*Controller*.*,
-            **/*Settings.*,
-            **/**Factory.*,
-            **/SiamoisApplication.*,
-            **/**DTO.*,
-            **/**Utils.*,
-            **/**Listener.*,
-            **/events/**/*.*,
-            **/files/**/*.*,
-            **/resources/**/*.*,
-            **/*Spec.*,
-            **/initializer/*Seeder.*,
-            **/Mock*Service.*
+            src/main/java/**/ui/api/openapi/v1/request/**,
+            src/main/java/**/ui/api/openapi/v1/response/**,
+            src/main/java/**/ui/api/openapi/v1/resource/**,
+            src/main/java/**/ui/api/openapi/v1/auth/dto/**,
+            src/main/java/**/ui/api/openapi/v1/generic/response/**,
+            src/main/java/**/infrastructure/api/dto/**Response.*,
+            src/main/java/**/models/**/*.*,
+            src/main/java/**/config/**/*.*,
+            src/main/java/**/*Exception.*,
+            src/main/java/**/*Bean.*,
+            src/main/java/**/*DatasetInitializer.*,
+            src/main/java/**/ui/bean/dialog/newunit/**,
+            src/main/java/**/ui/form/rules/**,
+            src/main/java/**/ui/lazydatamodel/scope/**,
+            src/main/java/**/ui/lazydatamodel/tree/**,
+            src/main/java/**/utils/**,
+            src/main/java/**/ui/table/**,
+            src/main/java/**/dto/**,
+            src/main/java/**/ui/form/**,
+            src/main/java/**/ui/custom/**,
+            src/main/java/**/ui/email/**,
+            src/main/java/**/*ViewModel.*,
+            src/main/java/**/*Converter.*,
+            src/main/java/**/*Builder.*,
+            src/main/java/**/*Controller.*,
+            src/main/java/**/ui/api/openapi/v1/controller/**/*Controller*.*,
+            src/main/java/**/*Settings.*,
+            src/main/java/**/**Factory.*,
+            src/main/java/**/SiamoisApplication.*,
+            src/main/java/**/**DTO.*,
+            src/main/java/**/**Utils.*,
+            src/main/java/**/**Listener.*,
+            src/main/java/**/events/**/*.*,
+            src/main/java/**/files/**/*.*,
+            src/main/java/**/resources/**/*.*,
+            <!-- JS/CSS des vues JSF : non couverts par les tests (motif **/resources/** avant le passage au front React) -->
+            src/main/resources/**/*,
+            src/main/java/**/*Spec.*,
+            src/main/java/**/initializer/*Seeder.*,
+            src/main/java/**/Mock*Service.*
         </sonar.coverage.exclusions>
     </properties>
 

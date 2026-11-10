@@ -53,7 +53,7 @@ jobs:
         working-directory: frontend
         run: |
           npm run lint
-          npm test
+          npm run test:coverage
 
       - name: Compilation backend - Spring Boot/JSF
         run: mvn -B compile $MAVEN_SKIP_FRONT
