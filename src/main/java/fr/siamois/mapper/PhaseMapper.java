@@ -13,6 +13,7 @@ import org.springframework.lang.NonNull;
 public interface PhaseMapper extends Converter<Phase, PhaseDTO> {
 
     @Override
+    @Mapping(target = "recordingUnits", ignore = true)
     PhaseDTO convert(@NonNull Phase source);
 
     @InheritInverseConfiguration

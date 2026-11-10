@@ -146,8 +146,8 @@ public abstract class PhaseForm {
             .concept(actionUnitConcept)
             .build();
 
-    // The inverse of a recording unit's phases (recording_unit_phase): read-only here, written from
-    // the recording unit's side.
+    // The inverse of a recording unit's phases (recording_unit_phase): editable from both sides,
+    // PhaseService writes it onto the recording units, which own the relation.
     @Transient
     protected static final CustomFieldSelectMultipleRecordingUnit recordingUnitsField = CustomFieldSelectMultipleRecordingUnit.builder()
             .label("phase.field.recordingUnits")
@@ -170,7 +170,7 @@ public abstract class PhaseForm {
             SystemFieldSpec.of(orderNumberField),
             SystemFieldSpec.of(keywordsField),
             SystemFieldSpec.of(descriptionField),
-            SystemFieldSpec.readOnly(recordingUnitsField),
+            SystemFieldSpec.of(recordingUnitsField),
             SystemFieldSpec.of(periodsField),
             SystemFieldSpec.of(lowerBoundField),
             SystemFieldSpec.of(upperBoundField));

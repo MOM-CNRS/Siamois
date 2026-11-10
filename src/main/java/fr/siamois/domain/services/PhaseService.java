@@ -6,6 +6,7 @@ import fr.siamois.domain.models.exceptions.permission.ForbiddenOperationExceptio
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.services.form.CustomFieldAnswerService;
 import fr.siamois.domain.services.identifier.EntityIdentifierGenerator;
@@ -16,12 +17,16 @@ import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ActionUnitSummaryDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PhaseDTO;
+import fr.siamois.dto.entity.RecordingUnitSummaryDTO;
 import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.specs.ActionUnitSpec;
+import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.infrastructure.database.repositories.specs.PhaseSpec;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.infrastructure.database.repositories.specs.TextSearchSpec;
 import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.PhaseMapper;
+import fr.siamois.mapper.RecordingUnitSummaryMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +37,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -50,6 +60,8 @@ public class PhaseService {
     private final PhaseMapper phaseMapper;
     private final EntityIdentifierGenerator identifierGenerator;
     private final ProfilePermissionService profilePermissionService;
+    private final RecordingUnitRepository recordingUnitRepository;
+    private final RecordingUnitSummaryMapper recordingUnitSummaryMapper;
 
     private Specification<Phase> userFilterSpecs(FilterDTO filters) {
         // The list's per-field sort/filters (FieldQuery), then the named ones.
@@ -145,7 +157,64 @@ public class PhaseService {
 
         identifierGenerator.generateIdentifierIfRequired(managed, phaseIdentifierSpec());
 
-        return phaseMapper.convert(phaseRepository.save(managed));
+        Phase saved = phaseRepository.save(managed);
+        if (dto.getRecordingUnits() != null) {
+            synchronizeRecordingUnits(saved, dto.getRecordingUnits());
+        }
+        return phaseMapper.convert(saved);
+    }
+
+    /**
+     * The recording units attached to a phase (recording_unit_phase), in no particular order.
+     *
+     * @param phaseId the phase's id
+     * @return the summaries of its recording units, empty when it has none
+     */
+    @Transactional(readOnly = true)
+    public Set<RecordingUnitSummaryDTO> findRecordingUnits(long phaseId) {
+        return recordingUnitRepository.findAll(RecordingUnitSpec.inPhase(phaseId)).stream()
+                .map(recordingUnitSummaryMapper::convert)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * Makes the phase's recording units exactly {@code wanted}. The relation is owned by
+     * {@link RecordingUnit#getPhases()}, so it is written on each recording unit added or removed.
+     * A recording unit of another project is refused.
+     */
+    private void synchronizeRecordingUnits(Phase phase, Set<RecordingUnitSummaryDTO> wanted) {
+        Long phaseId = phase.getId();
+        Long projectId = phase.getActionUnit().getId();
+        Set<Long> wantedIds = wanted.stream()
+                .map(RecordingUnitSummaryDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<RecordingUnit> changed = new ArrayList<>();
+        Set<Long> alreadyLinkedIds = new HashSet<>();
+        for (RecordingUnit linked : recordingUnitRepository.findAll(RecordingUnitSpec.inPhase(phaseId))) {
+            if (wantedIds.contains(linked.getId())) {
+                alreadyLinkedIds.add(linked.getId());
+            } else if (linked.getPhases().removeIf(p -> Objects.equals(p.getId(), phaseId))) {
+                changed.add(linked);
+            }
+        }
+
+        Set<Long> toLinkIds = new HashSet<>(wantedIds);
+        toLinkIds.removeAll(alreadyLinkedIds);
+        if (!toLinkIds.isEmpty()) {
+            for (RecordingUnit added : recordingUnitRepository.findAllById(toLinkIds)) {
+                if (added.getActionUnit() == null || !Objects.equals(added.getActionUnit().getId(), projectId)) {
+                    throw new IllegalArgumentException("Recording unit " + added.getId() + " is not in the phase's project");
+                }
+                added.getPhases().add(phase);
+                changed.add(added);
+            }
+        }
+
+        if (!changed.isEmpty()) {
+            recordingUnitRepository.saveAll(changed);
+        }
     }
 
     /**
