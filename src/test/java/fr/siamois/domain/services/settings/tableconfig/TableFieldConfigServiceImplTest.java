@@ -220,6 +220,24 @@ class TableFieldConfigServiceImplTest {
         verify(fieldConfigurationService, never()).fetchAutocomplete(any(UserInfo.class), anyString(), any(), any());
     }
 
+    /** Issue #796: only the sections the seed opens to them offer "Ajouter une mesure". */
+    @Test
+    void legacyLayout_shouldKeepTheSeedChoiceOfAllowingMeasuresPerSection() {
+        Map<String, Boolean> expected = new LinkedHashMap<>();
+        formLayoutSeeds.layoutOf(ConfigurableTable.UE).groups()
+                .forEach(group -> expected.put(group.label(), group.allowMeasures()));
+
+        Map<String, Boolean> actual = new LinkedHashMap<>();
+        service.legacyLayout(PROJECT_ID, ConfigurableTable.UE, "Céramique").groups()
+                .forEach(group -> actual.put(group.label(), group.allowMeasures()));
+
+        assertThat(actual).containsAllEntriesOf(expected);
+        assertThat(actual)
+                .containsEntry("common.header.general", false)
+                .containsEntry("recordingunit.panel.chronology", false)
+                .containsEntry("recordingunit.panel.measurements", true);
+    }
+
     @Test
     void addConfiguration_shouldCreateTheFormConfigOfTheChosenValue() {
         when(formConfigRepository.findByActionUnitAndTableAndValue(eq(PROJECT_ID), any(ConfigurableTable.class), eq(CERAMIQUE_CONCEPT_ID)))

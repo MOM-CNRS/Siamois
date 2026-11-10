@@ -761,7 +761,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
      * The layout a configuration without a stored one effectively has: the table's initial layout
      * carrying the type's (and the default's) active/mandatory flags, plus the additional fields in a
      * group of their own. It is what the form showed before layouts were stored, and what gets
-     * written when a configuration is first edited.
+     * written when a configuration is first edited. Each section keeps the seed's choice of taking
+     * the measures users add on the fly, so only the measurement sections offer "Ajouter une mesure".
      */
     @Override
     @Transactional(readOnly = true)
@@ -783,7 +784,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 items.add(new FormLayout.Item(field.field(), seed.width(), field.active(), field.mandatory(),
                         field.institutionLocked(), seed.rules()));
             }
-            groups.add(new FormLayout.Group(null, seedGroup.label(), items));
+            groups.add(new FormLayout.Group(null, seedGroup.label(), items, seedGroup.allowMeasures()));
         }
         List<FormLayout.Item> additional = effective.values().stream()
                 .filter(field -> !placed.contains(field.field().getId()) && !isSystemField(field.field()))
