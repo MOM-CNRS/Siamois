@@ -1944,7 +1944,8 @@ describe("EntityListPanel with catalog rules (FieldResource.rules)", () => {
     await flush();
     await flush();
 
-    const cell = cellOf("2024-05-01")!;
+    // The cell shows the day in the French regional format (i18n/dates.ts), not the raw ISO value.
+    const cell = cellOf("01/05/2024")!;
     expect(cell.querySelector(".entity-list-panel-cell-warning")).not.toBeNull();
     expect(cell.getAttribute("title")).toContain("« Ouverture »");
   });

@@ -13,7 +13,8 @@ import {patchProject, type ProjectPatch} from "./api";
 import type {ProjectDetail} from "./types";
 import {FormSkeleton} from "../../components/layout/DetailSkeleton";
 import {queryKeys} from "../../api/queryKeys";
-import {intlLocale, t} from "../../i18n";
+import {t} from "../../i18n";
+import {formatDateTime} from "../../i18n/dates";
 import {useToastOnChange} from "../../notify/NotifyProvider";
 
 // The fiche, schema-driven off GET /api/v1/organizations/{id}/project-types — it renders every
@@ -246,8 +247,4 @@ function refId(value: unknown): string {
     if (ref.id != null) return String(ref.id);
   }
   return String(value);
-}
-
-function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString(intlLocale());
 }

@@ -11,6 +11,7 @@ import {getEntityType} from "../entities/registry";
 import {type EntityKey, isEntityKey} from "../entities/keys";
 import {useOpenEntity} from "../panels/pane/entityNavigation";
 import {t} from "../i18n";
+import {formatDate} from "../i18n/dates";
 
 // ResourceRef.StratigraphicQualifier: what a stratigraphic relationship says of its other unit.
 interface StratigraphicQualifier {
@@ -211,7 +212,7 @@ function formatOne(field: FieldResource, value: unknown): string {
     return (value as { fileName?: string | null }).fileName ?? "";
   }
   if (field.answerType === "DATETIME" && typeof value === "string") {
-    return value.slice(0, 10);
+    return formatDate(value);
   }
   if (field.answerType === "BOOLEAN" && typeof value === "boolean") {
     return value ? t("field.yes") : t("field.no");

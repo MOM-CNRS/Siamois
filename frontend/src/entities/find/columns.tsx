@@ -1,6 +1,7 @@
 import type {ColumnDef} from "../shared/types";
 import type {FindSummary} from "./types";
-import {intlLocale, t} from "../../i18n";
+import {t} from "../../i18n";
+import {formatDate} from "../../i18n/dates";
 
 // Pinned, hand-written columns only — no EntityTypeConfig.list.schema for Find yet (reduced
 // scope, migration plan lot 1: dynamic columns via GET /api/v1/projects/{id}/find-types are
@@ -34,6 +35,6 @@ export const findColumns: ColumnDef<FindSummary>[] = [
     key: "collectionDate",
     header: t("column.collectionDate"),
     sortable: true,
-    render: (row) => (row.collectionDate ? new Date(row.collectionDate).toLocaleDateString(intlLocale()) : ""),
+    render: (row) => formatDate(row.collectionDate),
   },
 ];

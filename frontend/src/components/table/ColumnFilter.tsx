@@ -8,6 +8,7 @@ import {SelectButton} from "primereact/selectbutton";
 import type {FilterValue} from "../../panels/list/tableState";
 import type {FilterKind, FilterOption} from "../../fields/optionSources";
 import {t} from "../../i18n";
+import {calendarDateFormat} from "../../i18n/dates";
 import {ReferencePickerSheet} from "../../fields/ReferencePickerSheet";
 import {useIsMobile} from "../../viewport";
 
@@ -149,14 +150,14 @@ function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilte
       <Calendar
         placeholder={t("filter.from", { label })}
         autoFocus={autoFocus}
-        dateFormat="dd/mm/yy"
+        dateFormat={calendarDateFormat()}
         value={fromIsoDate(from)}
         showButtonBar
         onChange={(e) => commit(toIsoDate(e.value as Date | null), to)}
       />
       <Calendar
         placeholder={t("filter.to", { label })}
-        dateFormat="dd/mm/yy"
+        dateFormat={calendarDateFormat()}
         value={fromIsoDate(to)}
         showButtonBar
         onChange={(e) => commit(from, toIsoDate(e.value as Date | null))}
