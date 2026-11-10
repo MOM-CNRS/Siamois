@@ -409,3 +409,16 @@ Additive, no break. The hierarchical lists (places, recording units, projects) c
 New row fields (only in tree mode): `hasChildren` (the row has children to show, within the ancestor closure when filtered) and `match` (`false` = context parent that does not match; absent without search or filter, where every row matches). New `meta.matchCount` on tree roots: distinct matching entities, context parents excluded; absent on flat lists and on children responses.
 
 A sort alone does not count as a filter. The ancestor closure is computed server-side and tolerates cycles. A polyhierarchical entity appears under each of its parents but counts once.
+
+## 11. Persons awaiting the creation of their account (2026-11-10)
+
+A field that names a person can now name someone without an account: they are created on the fly from their first and last name, as a **person awaiting the creation of their account** (disabled, no e-mail, a `pending_person` row without registration token), and join the project as a member. When an account is later created for someone of the same name, the manager can link it to that person (member dialog), who then keeps every field and membership that named them.
+
+| Endpoint / schema | Change |
+|---|---|
+| `POST /api/v1/projects/{id}/persons` | **New.** Body `{ name, lastname }` (first name, last name). Creates a person awaiting their account and adds them to the project's members; if the organization already has a person awaiting their account with this name (case and accents ignored), that one is returned and added. `201` → `PersonResponse { data: PersonResource }`. `400` blank or too long name, `403` without the right to edit the project or any of its data. |
+| `PersonResource` (`GET /api/v1/users`, the new `POST`) | **+ `accountPending`** (boolean): `true` for a person awaiting the creation of their account. |
+| Project field **-112** `scientificManager` | **Breaking.** `TEXT` → **`SELECT_ONE_PERSON`**: the answer is a `ResourceRef` (`resourceType: "persons"`), written with the person's id (`value: "<personId>"`). The list filter `f.scientificManager` takes person ids (it used to be a text "contains"); `f.-112` follows the field's new kind. |
+| Study field **-813** `treatmentManager` | **Breaking.** `TEXT` → **`SELECT_ONE_PERSON`**, same shape. |
+
+Existing texts were turned into persons by Liquibase `2026-11-10-2`: linked to the person of the organization who has this name, or created as persons awaiting their account. The former text columns are kept, unmapped.

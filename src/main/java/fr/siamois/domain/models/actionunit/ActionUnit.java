@@ -7,6 +7,7 @@ import fr.siamois.domain.models.TraceableEntity;
 import fr.siamois.domain.models.actionunit.form.ActionUnitDetailsForm;
 import fr.siamois.domain.models.actionunit.form.ActionUnitNewForm;
 import fr.siamois.domain.models.ark.Ark;
+import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.exceptions.institution.NullInstitutionIdentifier;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
@@ -171,8 +172,15 @@ public class ActionUnit extends TraceableEntity implements ArkEntity {
     @Column(name = "prescription_order_date")
     protected OffsetDateTime prescriptionOrderDate;
 
-    @Column(name = "scientific_manager")
-    protected String scientificManager;
+    /**
+     * The scientific manager of the project: a person, who may still await the creation of their account
+     * (see {@code PendingAccountPersonService}). The former free-text column {@code scientific_manager} is
+     * kept, unmapped, by the changelog that turned it into this link.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_scientific_manager_id")
+    @Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+    protected Person scientificManager;
 
     @Column(name = "host_structure")
     protected String hostStructure;

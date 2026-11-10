@@ -113,7 +113,8 @@ class HistoryControllerApiTest {
                 phaseService,
                 containerService, mock(fr.siamois.domain.services.study.StudyService.class),
                 bookmarkService,
-                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                org.mockito.Mockito.mock(fr.siamois.domain.services.person.PersonService.class));
 
         HistoryControllerApi controller = new HistoryControllerApi(projectApiService, historyService, mock(fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver.class));
 

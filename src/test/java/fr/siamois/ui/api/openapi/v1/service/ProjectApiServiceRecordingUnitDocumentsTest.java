@@ -97,7 +97,8 @@ class ProjectApiServiceRecordingUnitDocumentsTest {
                 conceptService,
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService, mock(fr.siamois.domain.services.study.StudyService.class),
-                bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class));
+                bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
+                org.mockito.Mockito.mock(fr.siamois.domain.services.person.PersonService.class));
     }
 
     private ProjectApiCaller caller() {

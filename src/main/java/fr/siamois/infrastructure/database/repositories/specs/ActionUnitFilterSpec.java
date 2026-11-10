@@ -54,7 +54,7 @@ public final class ActionUnitFilterSpec {
 
     /**
      * Case-insensitive {@code LIKE %value%} on a direct string property — {@code name},
-     * {@code fullIdentifier}, {@code oaCode}, {@code scientificManager}.
+     * {@code fullIdentifier}, {@code oaCode}.
      */
     @NonNull
     static Specification<ActionUnit> textContains(@NonNull String property, @NonNull String value) {
@@ -63,7 +63,8 @@ public final class ActionUnitFilterSpec {
     }
 
     /**
-     * {@code root.<property>.id IN (ids)} for a {@code @ManyToOne} concept — {@code status}.
+     * {@code root.<property>.id IN (ids)} for a {@code @ManyToOne} concept — {@code status} — or person —
+     * {@code scientificManager}.
      */
     @NonNull
     static Specification<ActionUnit> conceptOneIn(@NonNull String property, @NonNull Collection<Long> ids) {

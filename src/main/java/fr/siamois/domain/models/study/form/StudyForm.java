@@ -4,6 +4,7 @@ import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
@@ -157,7 +158,14 @@ public abstract class StudyForm {
     protected static final CustomFieldText treatmentPlaceField = text(-812L, B_TREATMENT_PLACE, false);
 
     @Transient
-    protected static final CustomFieldText treatmentManagerField = text(-813L, B_TREATMENT_MANAGER, false);
+    /** A person: the field picks one, or creates on the fly someone who awaits their account. */
+    protected static final CustomFieldSelectOnePerson treatmentManagerField = CustomFieldSelectOnePerson.builder()
+            .label(LABEL_PREFIX + B_TREATMENT_MANAGER)
+            .isSystemField(true)
+            .id(-813L)
+            .valueBinding(B_TREATMENT_MANAGER)
+            .concept(concept(B_TREATMENT_MANAGER))
+            .build();
 
     @Transient
     protected static final CustomFieldText treatmentIdentifierField = text(-814L, B_TREATMENT_IDENTIFIER, false);
