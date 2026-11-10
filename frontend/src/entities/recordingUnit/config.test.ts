@@ -28,7 +28,11 @@ describe("recordingUnitEntityConfig", () => {
     const catalog = await recordingUnitEntityConfig.list.schema!.load({ organizationId: 7 });
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/organizations/7/recording-unit-types");
     expect(Object.keys(catalog.fields)).toEqual(["12"]);
-    expect(catalog.columns).toHaveLength(1);
+    // The default column, then the form's other field (an additional one) offered, hidden until picked.
+    expect(catalog.columns).toEqual([
+      { columnId: "-306", fieldId: "-306", visible: true, order: 0 },
+      { columnId: "12", fieldId: "12", visible: false, order: 1 },
+    ]);
   });
 
   it("registers the fiche, contained-RU and finds tabs, a header, and a patchAnswers write path", () => {

@@ -6,6 +6,7 @@ import {bookmarkChrome} from "../shared/chrome";
 import {fetchSiblings} from "../shared/siblingsApi";
 import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
 import {scopeProjectId} from "../shared/scope";
+import {withFormFieldColumns} from "../shared/typeCatalog";
 import {
   duplicateRecordingUnit,
   duplicateRecordingUnitStructure,
@@ -88,7 +89,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
         else if (!scope && organizationId != null)
           types = await getOrganizationRecordingUnitTypes(organizationId);
         else return { fields: {}, columns: [] };
-        return { fields: types.fields, columns: types.tableColumns };
+        return withFormFieldColumns(types.fields, types.tableColumns);
       },
     },
     typesSegment: "recording-unit-types",
