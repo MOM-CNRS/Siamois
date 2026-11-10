@@ -32,6 +32,7 @@ import {
     referenceTargetOf,
 } from "./optionSources";
 import {t} from "../i18n";
+import {calendarDateFormat, calendarHourFormat} from "../i18n/dates";
 import {useNotify} from "../notify/NotifyProvider";
 import {messageForError} from "../api/errors";
 
@@ -154,9 +155,9 @@ export function DateRenderer({ field, value, readOnly, required, onChange, bound
         // still refuses a typed-in one (CellEditOverlay's bound check).
         minDate={dayBound(bounds?.min, showTime, +1)}
         maxDate={dayBound(bounds?.max, showTime, -1)}
-        dateFormat="dd/mm/yy"
+        dateFormat={calendarDateFormat()}
         showTime={showTime}
-        hourFormat="24"
+        hourFormat={calendarHourFormat()}
         // The panel lives inside the edit overlay's own fixed box instead of being appended to
         // <body>, where it grew the document past the 100vh shell (a page scrollbar) and landed
         // below the fold.
