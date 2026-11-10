@@ -169,6 +169,19 @@ class ProfileServiceTest {
     }
 
     @Test
+    void createOrGetOrganizationManagerProfile_grantsTheValidateRight() {
+        when(profileRepository.findByCodeAndInstitutionId(ProfileConstants.ORGANIZATION_MANAGER, institutionDTO.getId()))
+                .thenReturn(Optional.empty());
+        when(permissionRepository.findByCode(anyString())).thenAnswer(i -> Optional.of(new Permission(null, i.getArgument(0))));
+        when(institutionRepository.findById(institutionDTO.getId())).thenReturn(Optional.of(institution));
+        when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Profile result = profileService.createOrGetOrganizationManagerProfile(institutionDTO);
+
+        assertTrue(permissionCodesOf(result).contains(PermissionConstants.ORGANIZATION_VALIDATE));
+    }
+
+    @Test
     void createOrGetOrganizationProjectManagerProfile_ThrowsExceptionIfInstitutionNotFound() {
         when(profileRepository.findByCodeAndInstitutionId(ProfileConstants.ORGANIZATION_PROJECT_MANAGER, institutionDTO.getId()))
                 .thenReturn(Optional.empty());
@@ -268,7 +281,7 @@ class ProfileServiceTest {
         List<ProfileDTO> result = profileService.findAllProfilesOfInstance();
 
         assertEquals(1, result.size());
-        assertEquals(dto, result.get(0));
+        assertEquals(dto, result.getFirst());
     }
 
     // --- catching the existing project profiles up with the default permissions

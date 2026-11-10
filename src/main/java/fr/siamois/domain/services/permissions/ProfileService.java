@@ -153,7 +153,8 @@ public class ProfileService {
                 PermissionConstants.ORGANIZATION_EDIT_DEFAULT_VIEWS,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_DELETE_ENTITIES,
-                PermissionConstants.ORGANIZATION_DELETE_PROJECT
+                PermissionConstants.ORGANIZATION_DELETE_PROJECT,
+                PermissionConstants.ORGANIZATION_VALIDATE
         ), institutionDTO);
     }
 
