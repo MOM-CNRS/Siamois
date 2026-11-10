@@ -205,7 +205,7 @@ public class InvitationLinkService {
     /** "Organisation personnelle de Ada Lovelace", then "… (2)", "… (3)" on a clash, within the name length limit. */
     static String personalOrganizationName(Person person, int rank) {
         String suffix = rank <= 1 ? "" : " (" + rank + ")";
-        String base = PERSONAL_ORGANIZATION_PREFIX + person.getName() + " " + person.getLastname();
+        String base = person.getName() + " " + person.getLastname();
         int room = Institution.MAX_NAME_LENGTH - suffix.length();
         return (base.length() <= room ? base : base.substring(0, room).strip()) + suffix;
     }
