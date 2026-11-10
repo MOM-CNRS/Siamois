@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The name of an organization goes from 40 to 60 characters (Institution.MAX_NAME_LENGTH), so that a generated
+    personal organization name ("<first name> <last name>") is less often truncated. Widening the column keeps
+    every existing name as is.
+    -->
+
+    <changeSet id="2026-11-10-1-institution-name-length-60" author="Julien Linget">
+        <modifyDataType schemaName="public" tableName="institution" columnName="institution_name"
+                        newDataType="varchar(60)"/>
+    </changeSet>
+
+</databaseChangeLog>

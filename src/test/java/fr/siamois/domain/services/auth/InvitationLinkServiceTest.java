@@ -206,7 +206,7 @@ class InvitationLinkServiceTest {
         assertSame(l, person.getInvitationLink());
         ArgumentCaptor<InstitutionDTO> created = ArgumentCaptor.forClass(InstitutionDTO.class);
         verify(institutionService).createInstitution(created.capture(), eq("https://thesaurus.mom.fr/?idt=th338"));
-        assertEquals("Organisation personnelle de Ada Lovelace", created.getValue().getName());
+        assertEquals("Ada Lovelace", created.getValue().getName());
         assertEquals("perso-ada-lovelace", created.getValue().getIdentifier());
         verify(institutionService).addToManagers(institutionDto, dto);
         assertSame(person, institution.getPersonalOwner());
@@ -216,13 +216,13 @@ class InvitationLinkServiceTest {
     void personalOrganizationName_isTruncatedToTheInstitutionNameLimit() {
         Person person = new Person();
         person.setName("Maximiliano");
-        person.setLastname("Bartholomew-Montgomery");
+        person.setLastname("Bartholomew-Montgomery de la Tour d'Auvergne-Lauraguais");
 
         String name = InvitationLinkService.personalOrganizationName(person, 1);
         String second = InvitationLinkService.personalOrganizationName(person, 2);
 
-        assertTrue(name.length() <= Institution.MAX_NAME_LENGTH);
-        assertTrue(name.startsWith(InvitationLinkService.PERSONAL_ORGANIZATION_PREFIX));
+        assertEquals(Institution.MAX_NAME_LENGTH, name.length());
+        assertTrue(name.startsWith("Maximiliano Bartholomew-Montgomery"));
         assertTrue(second.length() <= Institution.MAX_NAME_LENGTH);
         assertTrue(second.endsWith(" (2)"));
         assertNotEquals(name, second);
@@ -254,7 +254,7 @@ class InvitationLinkServiceTest {
         InstitutionDTO institutionDto = new InstitutionDTO();
         institutionDto.setId(30L);
         // rank 1: the name is taken; rank 2: the name is free but the slug is taken; rank 3: both are free
-        when(institutionRepository.existsByNameIgnoreCase("Organisation personnelle de A B")).thenReturn(true);
+        when(institutionRepository.existsByNameIgnoreCase("A B")).thenReturn(true);
         when(institutionService.findByIdentifier("perso-a-b-2")).thenReturn(Optional.of(new InstitutionDTO()));
         when(institutionService.createInstitution(any(InstitutionDTO.class), any())).thenReturn(institutionDto);
         when(institutionRepository.findById(Long.valueOf(30L))).thenReturn(Optional.of(new Institution()));
@@ -263,7 +263,7 @@ class InvitationLinkServiceTest {
 
         ArgumentCaptor<InstitutionDTO> created = ArgumentCaptor.forClass(InstitutionDTO.class);
         verify(institutionService).createInstitution(created.capture(), any());
-        assertEquals("Organisation personnelle de A B (3)", created.getValue().getName());
+        assertEquals("A B (3)", created.getValue().getName());
         assertEquals("perso-a-b-3", created.getValue().getIdentifier());
     }
 }

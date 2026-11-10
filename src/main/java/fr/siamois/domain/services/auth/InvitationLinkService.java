@@ -47,7 +47,6 @@ public class InvitationLinkService {
     public static final Duration DEFAULT_VALIDITY = Duration.ofHours(24);
     /** Slightly under the one month cap enforced by the database, whatever the length of the month. */
     public static final Duration MAX_VALIDITY = Duration.ofDays(30);
-    public static final String PERSONAL_ORGANIZATION_PREFIX = "Organisation personnelle de ";
     public static final String PERSONAL_ORGANIZATION_IDENTIFIER_PREFIX = "perso-";
 
     private static final int MAX_SLUG_LENGTH = 60;
@@ -180,7 +179,7 @@ public class InvitationLinkService {
 
     private void createPersonalOrganization(PersonDTO personDto, Person person) throws InstitutionAlreadyExistException,
             FailedInstitutionSaveException {
-        // Name and slug share the same rank, so "… de Ada Lovelace (2)" goes with "perso-ada-lovelace-2".
+        // Name and slug share the same rank, so "Ada Lovelace (2)" goes with "perso-ada-lovelace-2".
         int rank = 1;
         while (institutionRepository.existsByNameIgnoreCase(personalOrganizationName(person, rank))
                 || institutionService.findByIdentifier(personalOrganizationIdentifier(person, rank)).isPresent()) {
@@ -202,7 +201,7 @@ public class InvitationLinkService {
         institutionRepository.save(institution);
     }
 
-    /** "Organisation personnelle de Ada Lovelace", then "… (2)", "… (3)" on a clash, within the name length limit. */
+    /** "Ada Lovelace", then "Ada Lovelace (2)", "… (3)" on a clash, within the name length limit. */
     static String personalOrganizationName(Person person, int rank) {
         String suffix = rank <= 1 ? "" : " (" + rank + ")";
         String base = person.getName() + " " + person.getLastname();
