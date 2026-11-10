@@ -103,3 +103,28 @@ export async function loadTypeCatalog(
     columns: order.map((fieldId, index) => ({ fieldId, columnId: fieldId, visible: false, order: index })),
   };
 }
+
+/**
+ * A catalog's default columns plus every other field of the forms (the additional ones above all)
+ * as a toggleable column, hidden until picked. For the lists whose server-side defaults
+ * (`tableColumns`) only name the system fields: without this, a field added on a form through the
+ * tables-and-fields settings would never be offered by the column chooser.
+ */
+export function withFormFieldColumns(
+  fields: Record<string, FieldResource>,
+  defaults: ProjectTableColumnDefault[],
+): FieldCatalog {
+  const known = new Set(defaults.map((c) => c.fieldId));
+  const extra = Object.values(fields)
+    .filter((field) => !known.has(field.id))
+    // Non-system fields last, as the chooser lists them after the system ones.
+    .sort((a, b) => Number(b.isSystemField) - Number(a.isSystemField));
+  const nextOrder = defaults.reduce((max, c) => Math.max(max, c.order), -1) + 1;
+  return {
+    fields,
+    columns: [
+      ...defaults,
+      ...extra.map((field, index) => ({ fieldId: field.id, columnId: field.id, visible: false, order: nextOrder + index })),
+    ],
+  };
+}
