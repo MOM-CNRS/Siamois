@@ -24,6 +24,11 @@ public class PhaseDTO extends AbstractEntityDTO {
     private Integer upperBound;
     private Set<ConceptDTO> periods;
     private Set<ConceptDTO> keywords;
+    /**
+     * Recording units attached to the phase (inverse of their phases). Never filled by the mapper:
+     * null means "not loaded, leave the links untouched" when the phase is saved.
+     */
+    private Set<RecordingUnitSummaryDTO> recordingUnits;
 
     public static List<String> getBindableFieldNames() {
         return List.of(
@@ -37,7 +42,8 @@ public class PhaseDTO extends AbstractEntityDTO {
                 "lowerBound",
                 "upperBound",
                 "periods",
-                "keywords"
+                "keywords",
+                "recordingUnits"
         );
     }
 }

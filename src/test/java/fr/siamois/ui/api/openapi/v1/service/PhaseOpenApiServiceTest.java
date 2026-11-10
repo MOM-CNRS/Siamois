@@ -353,6 +353,46 @@ class PhaseOpenApiServiceTest {
         service.patchPhase(5L, req, personDto, Set.of(10L), "fr");
 
         verify(phaseService).save(phase, additional);
+        // Not written by the patch: the recording units are neither loaded nor touched.
+        verify(phaseService, never()).findRecordingUnits(anyLong());
+        assertThat(phase.getRecordingUnits()).isNull();
+    }
+
+    @Test
+    void patchPhase_writingTheRecordingUnits_loadsTheCurrentOnesBeforeApplyingTheDelta() {
+        PhaseDTO phase = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(phase);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any()))
+                .thenReturn(true);
+        // The phase form's recording units field, as the effective form lays it out.
+        CustomField recordingUnitsField = fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit.builder()
+                .id(-511L).isSystemField(true).valueBinding("recordingUnits").build();
+        fr.siamois.ui.form.dto.CustomColUiDto column = new fr.siamois.ui.form.dto.CustomColUiDto();
+        column.setField(recordingUnitsField);
+        fr.siamois.ui.form.dto.CustomRowUiDto row = new fr.siamois.ui.form.dto.CustomRowUiDto();
+        row.setColumns(java.util.List.of(column));
+        fr.siamois.ui.form.dto.CustomFormPanelUiDto panel = new fr.siamois.ui.form.dto.CustomFormPanelUiDto();
+        panel.setRows(java.util.List.of(row));
+        FormUiDto effectiveForm = new FormUiDto.Builder().addPanels(panel).build();
+        when(effectiveFormResolver.resolveEffectiveForm(7L, ConfigurableTable.PHASE, null)).thenReturn(effectiveForm);
+        Set<RecordingUnitSummaryDTO> current = new java.util.LinkedHashSet<>(Set.of(new RecordingUnitSummaryDTO(3L)));
+        when(phaseService.findRecordingUnits(5L)).thenReturn(current);
+        Map<String, AnswerInput> answers = Map.of("-511",
+                new AnswerInput(null, null, java.util.List.<Object>of(9L), java.util.List.of()));
+        when(fieldAnswerPatchService.apply(phase, effectiveForm, answers, 7L)).thenAnswer(invocation -> {
+            // What the patch reads its delta against: the links held before it.
+            assertThat(phase.getRecordingUnits()).isSameAs(current);
+            return Map.of();
+        });
+
+        PhasePatchRequest req = new PhasePatchRequest();
+        req.setAnswers(answers);
+        service.patchPhase(5L, req, personDto, Set.of(10L), "fr");
+
+        ArgumentCaptor<PhaseDTO> saved = ArgumentCaptor.forClass(PhaseDTO.class);
+        verify(phaseService).save(saved.capture(), eq(Map.of()));
+        assertThat(saved.getValue().getRecordingUnits()).isSameAs(current);
     }
 
     @Test

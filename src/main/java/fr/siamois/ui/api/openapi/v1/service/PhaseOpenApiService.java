@@ -27,6 +27,7 @@ import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.Kind;
 import fr.siamois.ui.api.openapi.v1.service.ProjectTypedCreationService.ProjectContext;
 import fr.siamois.ui.form.dto.FormUiDto;
+import fr.siamois.ui.form.fieldsource.PanelFieldSource;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,9 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class PhaseOpenApiService {
+
+    /** The {@link PhaseDTO} property the recording units field of the phase form is bound to. */
+    private static final String RECORDING_UNITS_BINDING = "recordingUnits";
 
     private final PhaseService phaseService;
     private final ProjectTypedCreationService projectTypedCreationService;
@@ -128,14 +132,30 @@ public class PhaseOpenApiService {
                 // The same effective form the phase-types catalog lays out (system + additional fields).
                 FormUiDto form = effectiveFormResolver.resolveEffectiveForm(projectId,
                         ConfigurableTable.PHASE, phase.getType() != null ? phase.getType().getId() : null);
+                // Loaded only when the patch writes them: left null, the phase's links stay untouched on save.
+                boolean recordingUnitsChange = answersChange && writesRecordingUnits(form, request.getAnswers());
+                if (recordingUnitsChange) {
+                    phase.setRecordingUnits(phaseService.findRecordingUnits(id));
+                }
                 Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                         fieldAnswerPatchService.apply(phase, form, request.getAnswers(), projectId);
+                if (!recordingUnitsChange) {
+                    // The form binds the field anyway: an untouched answer must not unlink the recording units.
+                    phase.setRecordingUnits(null);
+                }
                 return phaseService.save(phase, additionalAnswers);
             });
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidationStatus(), personDto);
         return loadPhase(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /** Whether {@code answers} write the form's field bound to the phase's recording units. */
+    private static boolean writesRecordingUnits(FormUiDto form, Map<String, ?> answers) {
+        return new PanelFieldSource(form).getAllFields().stream()
+                .filter(field -> RECORDING_UNITS_BINDING.equals(field.getValueBinding()))
+                .anyMatch(field -> answers.containsKey(String.valueOf(field.getId())));
     }
 
     private PhaseResource toResourceWithPermissionsAndAnswers(PhaseDTO phase, PersonDTO personDto, String lang) {

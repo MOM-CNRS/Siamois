@@ -58,6 +58,12 @@ class PhaseServiceTest {
     @Mock
     private fr.siamois.domain.services.form.CustomFieldAnswerService customFieldAnswerService;
 
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository recordingUnitRepository;
+
+    @Mock
+    private fr.siamois.mapper.RecordingUnitSummaryMapper recordingUnitSummaryMapper;
+
     @InjectMocks
     private PhaseService phaseService;
 
@@ -806,5 +812,119 @@ class PhaseServiceTest {
         org.junit.jupiter.api.Assertions.assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.PHASE, specCaptor.getValue().table());
         verify(identifierGenerator, never()).generateIdentifierIfRequired(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
         verify(phaseRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    // ------------------------------------------------------------------
+    // recording units (inverse of RecordingUnit.phases)
+    // ------------------------------------------------------------------
+
+    private Phase existingPhaseSavedInProject(PhaseDTO inputDTO, long projectId) {
+        ActionUnit project = new ActionUnit();
+        project.setId(projectId);
+        Phase entity = new Phase();
+        entity.setId(42L);
+        entity.setActionUnit(project);
+        Phase managed = new Phase();
+        managed.setId(42L);
+        Phase saved = new Phase();
+        saved.setId(42L);
+        saved.setActionUnit(project);
+        when(phaseMapper.invertConvert(inputDTO)).thenReturn(entity);
+        when(phaseRepository.findById(42L)).thenReturn(Optional.of(managed));
+        when(phaseRepository.save(managed)).thenReturn(saved);
+        lenient().when(phaseMapper.convert(saved)).thenReturn(new PhaseDTO());
+        return saved;
+    }
+
+    private static fr.siamois.domain.models.recordingunit.RecordingUnit recordingUnit(long id, long projectId, Phase... phases) {
+        ActionUnit project = new ActionUnit();
+        project.setId(projectId);
+        fr.siamois.domain.models.recordingunit.RecordingUnit ru = new fr.siamois.domain.models.recordingunit.RecordingUnit();
+        ru.setId(id);
+        ru.setActionUnit(project);
+        ru.setPhases(new HashSet<>(List.of(phases)));
+        return ru;
+    }
+
+    private static boolean linkedTo(fr.siamois.domain.models.recordingunit.RecordingUnit ru, long phaseId) {
+        return ru.getPhases().stream().anyMatch(p -> p.getId() == phaseId);
+    }
+
+    @Test
+    void save_recordingUnitsNotLoaded_leavesTheLinksUntouched() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(42L);
+        existingPhaseSavedInProject(inputDTO, 7L);
+
+        phaseService.save(inputDTO);
+
+        verifyNoInteractions(recordingUnitRepository);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void save_recordingUnits_unlinksTheRemovedOnesAndLinksTheAddedOnes() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(42L);
+        inputDTO.setRecordingUnits(Set.of(new fr.siamois.dto.entity.RecordingUnitSummaryDTO(1L),
+                new fr.siamois.dto.entity.RecordingUnitSummaryDTO(3L)));
+        Phase saved = existingPhaseSavedInProject(inputDTO, 7L);
+        var kept = recordingUnit(1L, 7L, saved);
+        var removed = recordingUnit(2L, 7L, saved);
+        var added = recordingUnit(3L, 7L);
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(kept, removed));
+        when(recordingUnitRepository.findAllById(Set.of(3L))).thenReturn(List.of(added));
+
+        phaseService.save(inputDTO);
+
+        assertTrue(linkedTo(kept, 42L));
+        assertFalse(linkedTo(removed, 42L));
+        assertTrue(linkedTo(added, 42L));
+        ArgumentCaptor<Iterable<fr.siamois.domain.models.recordingunit.RecordingUnit>> changed = ArgumentCaptor.forClass(Iterable.class);
+        verify(recordingUnitRepository).saveAll(changed.capture());
+        assertEquals(List.of(removed, added), changed.getValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void save_emptyRecordingUnits_unlinksThemAll() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(42L);
+        inputDTO.setRecordingUnits(Set.of());
+        Phase saved = existingPhaseSavedInProject(inputDTO, 7L);
+        var linked = recordingUnit(1L, 7L, saved);
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(linked));
+
+        phaseService.save(inputDTO);
+
+        assertFalse(linkedTo(linked, 42L));
+        verify(recordingUnitRepository, never()).findAllById(any());
+        verify(recordingUnitRepository).saveAll(List.of(linked));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void save_recordingUnitOfAnotherProject_isRefused() {
+        PhaseDTO inputDTO = new PhaseDTO();
+        inputDTO.setId(42L);
+        inputDTO.setRecordingUnits(Set.of(new fr.siamois.dto.entity.RecordingUnitSummaryDTO(3L)));
+        existingPhaseSavedInProject(inputDTO, 7L);
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(recordingUnitRepository.findAllById(Set.of(3L))).thenReturn(List.of(recordingUnit(3L, 8L)));
+
+        assertThrows(IllegalArgumentException.class, () -> phaseService.save(inputDTO));
+
+        verify(recordingUnitRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void findRecordingUnits_mapsThePhasesRecordingUnitsToSummaries() {
+        var ru = recordingUnit(1L, 7L);
+        var summary = new fr.siamois.dto.entity.RecordingUnitSummaryDTO(1L);
+        when(recordingUnitRepository.findAll(any(Specification.class))).thenReturn(List.of(ru));
+        when(recordingUnitSummaryMapper.convert(ru)).thenReturn(summary);
+
+        assertEquals(Set.of(summary), phaseService.findRecordingUnits(42L));
     }
 }
