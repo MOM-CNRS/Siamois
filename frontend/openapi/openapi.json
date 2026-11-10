@@ -12878,6 +12878,106 @@
           }
         }
       }
+    },
+    "/api/v1/projects/{id}/persons": {
+      "post": {
+        "tags": [
+          "Projets - Données"
+        ],
+        "summary": "Créer une personne en attente de création de compte",
+        "description": "Crée, à partir de son seul prénom et nom, une personne sans compte (désactivée, sans e-mail) et l'ajoute aux membres du projet. Si l'organisation compte déjà une personne en attente de ce nom (casse et accents ignorés), c'est elle qui est renvoyée et ajoutée au projet. Droit requis : modifier le projet ou l'une de ses données (unités d'enregistrement, mobiliers, études, documents, phases ou contenants).",
+        "operationId": "create_5",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Personne créée ou réutilisée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Prénom ou nom manquant ou trop long",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Modification des données du projet non autorisée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet introuvable ou non accessible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur interne",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -16289,6 +16389,10 @@
           "lastname": {
             "type": "string",
             "description": "Nom de famille"
+          },
+          "accountPending": {
+            "type": "boolean",
+            "description": "Vrai pour une personne créée à partir de son seul nom, en attente de création de compte"
           }
         },
         "description": "Utilisateur"
@@ -18064,6 +18168,34 @@
         "properties": {
           "bookmarked": {
             "type": "boolean"
+          }
+        }
+      },
+      "PersonCreateRequest": {
+        "required": [
+          "lastname",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Prénom",
+            "example": "Marie"
+          },
+          "lastname": {
+            "type": "string",
+            "description": "Nom de famille",
+            "example": "Curie"
+          }
+        },
+        "description": "Création d'une personne en attente de création de compte"
+      },
+      "PersonResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonResource"
           }
         }
       }

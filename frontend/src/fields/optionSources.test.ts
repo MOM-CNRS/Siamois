@@ -1,11 +1,13 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {apiFetch} from "../api/client";
 import {
+    createPersonAwaitingAccount,
     createPlaceFromSuggestion,
     fetchFieldConceptOptions,
     fetchPlaceOptions,
     fetchPlaceSuggestions,
     optionSourceFor,
+    personNameFromQuery,
     referenceTargetOf,
 } from "./optionSources";
 import type {FieldResource} from "./types";
@@ -127,6 +129,14 @@ describe("optionSourceFor — reference fields", () => {
 
     expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/users?organizationId=100&limit=20&search=doe");
     expect(options).toEqual([{ id: "3", label: "Jane Doe" }]);
+  });
+
+  it("flags a person awaiting the creation of their account", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: [{ id: "4", name: "Jean", lastname: "Dupont", accountPending: true }] });
+
+    const options = await optionSourceFor(field({ answerType: "SELECT_ONE_PERSON" }), 100)!();
+
+    expect(options).toEqual([{ id: "4", label: "Jean Dupont", accountPending: true }]);
   });
 
   it("searches the edited entity's project for a phase field", async () => {
@@ -298,5 +308,28 @@ describe("place suggestions", () => {
     const own = { id: "5", label: "Lyon" };
     expect(await createPlaceFromSuggestion(100, own)).toBe(own);
     expect(mockedApiFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("persons awaiting their account", () => {
+  it("splits a typed text into a first and a last name", () => {
+    expect(personNameFromQuery("  Jean  de La Fontaine ")).toEqual({ name: "Jean", lastname: "de La Fontaine" });
+  });
+
+  it("takes a single word as the last name", () => {
+    expect(personNameFromQuery("Dupont")).toEqual({ name: "", lastname: "Dupont" });
+    expect(personNameFromQuery(undefined)).toEqual({ name: "", lastname: "" });
+  });
+
+  it("creates the person in the project and gives back a pickable option", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "42", name: "Marie", lastname: "Curie", accountPending: true } });
+
+    const option = await createPersonAwaitingAccount("5", { name: " Marie ", lastname: "Curie " });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/projects/5/persons", {
+      method: "POST",
+      body: { name: "Marie", lastname: "Curie" },
+    });
+    expect(option).toEqual({ id: "42", label: "Marie Curie", accountPending: true });
   });
 });
