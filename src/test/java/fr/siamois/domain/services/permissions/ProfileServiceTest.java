@@ -310,11 +310,44 @@ class ProfileServiceTest {
                 permission(PermissionConstants.PROJECT_EDIT_DEFAULT_VIEWS),
                 permission(PermissionConstants.PROJECT_EDIT_STUDIES),
                 permission(PermissionConstants.PROJECT_DELETE_ENTITIES),
-                permission(PermissionConstants.PROJECT_DELETE_PROJECT)))).build();
+                permission(PermissionConstants.PROJECT_DELETE_PROJECT),
+                permission(PermissionConstants.PROJECT_VALIDATE)))).build();
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of(manager));
         when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of());
 
         assertEquals(0, profileService.addMissingDefaultPermissionsToProjectProfiles());
         verify(profileRepository, never()).save(any());
+    }
+
+    @Test
+    void addMissingDefaultPermissionsToProjectProfiles_givesTheValidateRightToExistingProjectManagers() {
+        when(permissionRepository.findByCode(anyString())).thenAnswer(i -> Optional.of(permission(i.getArgument(0))));
+        Profile manager = Profile.builder().code(ProfileConstants.PROJECT_MANAGER).name("Gestionnaire")
+                .permissions(new java.util.HashSet<>(Set.of(permission(PermissionConstants.PROJECT_MANAGE_SETTINGS))))
+                .build();
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MANAGER)).thenReturn(List.of(manager));
+        when(profileRepository.findAllOfProjectScopeByCode(ProfileConstants.PROJECT_MEMBER)).thenReturn(List.of());
+
+        assertEquals(1, profileService.addMissingDefaultPermissionsToProjectProfiles());
+
+        Set<String> codes = manager.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet());
+        assertTrue(codes.contains(PermissionConstants.PROJECT_VALIDATE));
+        verify(profileRepository).save(manager);
+    }
+
+    @Test
+    void createOrGetProjectManagerProfile_grantsTheValidateRight() {
+        when(profileRepository.findByCodeAndInstitutionIdAndActionUnitId(
+                ProfileConstants.PROJECT_MANAGER, institutionDTO.getId(), actionUnitDTO.getId()))
+                .thenReturn(Optional.empty());
+        when(permissionRepository.findByCode(anyString())).thenAnswer(i -> Optional.of(permission(i.getArgument(0))));
+        when(institutionRepository.findById(institutionDTO.getId())).thenReturn(Optional.of(institution));
+        when(actionUnitRepository.findById(actionUnitDTO.getId())).thenReturn(Optional.of(actionUnit));
+        when(profileRepository.save(any(Profile.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Profile result = profileService.createOrGetProjectManagerProfile(actionUnitDTO);
+
+        Set<String> codes = result.getPermissions().stream().map(Permission::getCode).collect(Collectors.toSet());
+        assertTrue(codes.contains(PermissionConstants.PROJECT_VALIDATE));
     }
 }
