@@ -113,4 +113,25 @@ class PendingAccountPersonServiceTest {
         assertFalse(service.isAwaitingAccount(2L));
         assertFalse(service.isAwaitingAccount(3L));
     }
+
+    @Test
+    void giveAccount_delegatesForPersonAwaitingAccount() throws Exception {
+        PersonDTO identity = new PersonDTO();
+        PersonDTO given = new PersonDTO();
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(PendingPerson.awaitingAccountOf(new Person())));
+        when(personService.giveAccountTo(1L, identity, "pwd")).thenReturn(given);
+
+        assertSame(given, service.giveAccount(1L, identity, "pwd"));
+    }
+
+    @Test
+    void giveAccount_refusesPersonNoLongerAwaitingAccount() throws Exception {
+        PendingPerson invited = new PendingPerson();
+        invited.setRegisterToken("token");
+        when(pendingPersonRepository.findByDisabledPersonId(1L)).thenReturn(Optional.of(invited));
+        PersonDTO identity = new PersonDTO();
+
+        assertThrows(IllegalStateException.class, () -> service.giveAccount(1L, identity, null));
+        verify(personService, never()).giveAccountTo(any(), any(), any());
+    }
 }

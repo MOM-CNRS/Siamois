@@ -143,6 +143,52 @@ public class PersonService {
         return personMapper.convert(personRepository.save(person));
     }
 
+    /**
+     * Gives an account to a person created from their name only (see {@link #createAccountlessPerson(PersonName)}):
+     * the very same person takes the identity of the account being created, so every field and membership that
+     * already names them stays attached. With a password the account is enabled straight away (and its pending
+     * state removed); without one it stays disabled until the person completes their invitation.
+     *
+     * @param personId the id of the person awaiting their account
+     * @param identity the account's identity: first and last name, username and e-mail
+     * @param password the account's plain password, or {@code null} to invite the person by e-mail
+     * @return the person, now carrying the account's identity
+     * @throws InvalidUsernameException  if the username is invalid
+     * @throws InvalidEmailException     if the email is invalid or already exists
+     * @throws UserAlreadyExistException if a user with the same username or email already exists
+     * @throws InvalidPasswordException  if the password does not meet the required criteria
+     * @throws InvalidNameException      if the name is invalid
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PersonDTO giveAccountTo(Long personId, PersonDTO identity, String password) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        Person person = personRepository.findById(personId)
+                .orElseThrow(() -> new EntityNotFoundException("Person not found"));
+        // Checked as a new account, so that its username may not be another person's
+        identity.setId(person.getUsername().equalsIgnoreCase(identity.getUsername()) ? personId : null);
+        checkPersonData(identity, true);
+        identity.setId(personId);
+        if (password != null) {
+            checkPassword(password);
+        }
+
+        person.setUsername(identity.getUsername());
+        person.setEmail(identity.getEmail());
+        person.setName(identity.getName());
+        person.setLastname(identity.getLastname());
+        person.setPassToModify(identity.isPassToModify());
+        person.setPassword(passwordEncoder.encode(password != null ? password : generateRandomPassword()));
+        person.setEnabled(password != null);
+        Person saved = personRepository.save(person);
+        if (password != null) {
+            deletePendingInvitation(saved);
+        }
+        return personMapper.convert(saved);
+    }
+
     private static String generateRandomPassword() {
         byte[] bytes = new byte[32];
         SECURE_RANDOM.nextBytes(bytes);

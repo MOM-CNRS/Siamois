@@ -101,7 +101,10 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteFirstName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.firstname')}"
-                                             value="#{dialogBean.inviteFirstName}"/>
+                                             value="#{dialogBean.inviteFirstName}">
+                                    <p:ajax event="change" process="@this" update="inviteLinkPanel"
+                                            listener="#{dialogBean.refreshLinkCandidates()}"/>
+                                </p:inputText>
                             </div>
                             <div class="invite-form-field">
                                 <p:outputLabel class="col-form-label" for="inviteLastName">
@@ -109,7 +112,10 @@
                                 </p:outputLabel>
                                 <p:inputText id="inviteLastName"
                                              placeholder="#{langBean.msg('newOrganizationMember.label.lastname')}"
-                                             value="#{dialogBean.inviteLastName}"/>
+                                             value="#{dialogBean.inviteLastName}">
+                                    <p:ajax event="change" process="@this" update="inviteLinkPanel"
+                                            listener="#{dialogBean.refreshLinkCandidates()}"/>
+                                </p:inputText>
                             </div>
                         </div>
                         <div class="invite-form-row">
@@ -122,6 +128,24 @@
                                              value="#{dialogBean.inviteEmail}"/>
                             </div>
                         </div>
+                        <h:panelGroup id="inviteLinkPanel" layout="block">
+                            <h:panelGroup layout="block" styleClass="invite-link-candidates"
+                                          rendered="#{dialogBean.linkable}">
+                                <p class="invite-link-title">
+                                    <i class="bi bi-link-45deg"/>
+                                    #{langBean.msg('newOrganizationMember.link.title')}
+                                </p>
+                                <p class="invite-link-hint">#{langBean.msg('newOrganizationMember.link.hint')}</p>
+                                <p:selectOneRadio id="inviteLinkChoice" value="#{dialogBean.linkChoice}"
+                                                  layout="pageDirection">
+                                    <f:selectItems value="#{dialogBean.linkCandidates}" var="candidate"
+                                                   itemValue="#{candidate.id.toString()}"
+                                                   itemLabel="#{dialogBean.linkCandidateLabel(candidate)}"/>
+                                    <f:selectItem itemValue="#{dialogBean.linkChoiceNew}"
+                                                  itemLabel="#{langBean.msg('newOrganizationMember.link.createNew')}"/>
+                                </p:selectOneRadio>
+                            </h:panelGroup>
+                        </h:panelGroup>
                     </h:panelGroup>
 
                     <h:panelGroup layout="block" styleClass="csv-import-step"

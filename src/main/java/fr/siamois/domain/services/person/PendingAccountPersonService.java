@@ -3,6 +3,7 @@ package fr.siamois.domain.services.person;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.auth.PersonName;
 import fr.siamois.domain.models.auth.pending.PendingPerson;
+import fr.siamois.domain.models.exceptions.auth.*;
 import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -64,6 +65,34 @@ public class PendingAccountPersonService {
         return personRepository.findAwaitingAccountByName(name.firstName(), name.lastName(), null).stream()
                 .map(personMapper::convert)
                 .toList();
+    }
+
+    /**
+     * Gives an account to a person awaiting it: the person takes the account's identity and keeps every field
+     * and membership that names them. Without password, the caller invites them by e-mail to choose one (their
+     * pending person then receives a registration token).
+     *
+     * @param personId the id of the person awaiting their account
+     * @param identity the account's identity: first and last name, username and e-mail
+     * @param password the account's plain password, or {@code null} to invite the person
+     * @return the person, now carrying the account's identity
+     * @throws IllegalStateException     if the person does not await an account (any more)
+     * @throws InvalidUsernameException  if the username is invalid
+     * @throws InvalidEmailException     if the email is invalid or already exists
+     * @throws UserAlreadyExistException if a user with the same username or email already exists
+     * @throws InvalidPasswordException  if the password does not meet the required criteria
+     * @throws InvalidNameException      if the name is invalid
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PersonDTO giveAccount(Long personId, PersonDTO identity, String password) throws InvalidUsernameException,
+            InvalidEmailException,
+            UserAlreadyExistException,
+            InvalidPasswordException,
+            InvalidNameException {
+        if (!isAwaitingAccount(personId)) {
+            throw new IllegalStateException("Person " + personId + " does not await an account");
+        }
+        return personService.giveAccountTo(personId, identity, password);
     }
 
     /**

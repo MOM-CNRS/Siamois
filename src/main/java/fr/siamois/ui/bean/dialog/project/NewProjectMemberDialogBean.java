@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.dialog.project;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.*;
 import fr.siamois.ui.bean.LangBean;
@@ -37,11 +38,12 @@ public class NewProjectMemberDialogBean extends AbstractNewMemberDialogBean {
 
     public NewProjectMemberDialogBean(PersonService personService,
                                        PendingPersonService pendingPersonService,
+                                       PendingAccountPersonService pendingAccountPersonService,
                                        InvitationMailer invitationMailer,
                                        ProjectMembersServiceInterface projectMembersService,
                                        SessionSettingsBean sessionSettingsBean,
                                        LangBean langBean) {
-        super(personService, pendingPersonService, invitationMailer, sessionSettingsBean, langBean);
+        super(personService, pendingPersonService, pendingAccountPersonService, invitationMailer, sessionSettingsBean, langBean);
         this.projectMembersService = projectMembersService;
     }
 

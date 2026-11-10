@@ -611,6 +611,72 @@ class PersonServiceTest {
     }
 
     @Test
+    void giveAccountTo_withPassword_enablesTheSamePersonAndRemovesItsPendingState() throws Exception {
+        Person awaiting = new Person();
+        awaiting.setId(7L);
+        awaiting.setUsername("marie.curie");
+        awaiting.setEnabled(false);
+        PersonDTO identity = new PersonDTO();
+        identity.setUsername("mcurie");
+        identity.setEmail("marie@curie.fr");
+        identity.setName("Marie");
+        identity.setLastname("Curie");
+        when(personRepository.findById(Long.valueOf(7L))).thenReturn(Optional.of(awaiting));
+        when(personRepository.findByEmailIgnoreCase("marie@curie.fr")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("Password123!")).thenReturn("hashed");
+        when(personRepository.save(awaiting)).thenReturn(awaiting);
+        PersonDTO converted = new PersonDTO();
+        when(personMapper.convert(awaiting)).thenReturn(converted);
+
+        PersonDTO result = personService.giveAccountTo(7L, identity, "Password123!");
+
+        assertSame(converted, result);
+        assertEquals(7L, identity.getId());
+        assertEquals("mcurie", awaiting.getUsername());
+        assertEquals("marie@curie.fr", awaiting.getEmail());
+        assertEquals("hashed", awaiting.getPassword());
+        assertTrue(awaiting.isEnabled());
+        verify(pendingPersonRepository).deleteByDisabledPersonId(7L);
+    }
+
+    @Test
+    void giveAccountTo_withoutPassword_keepsThePersonDisabledForTheInvitation() throws Exception {
+        Person awaiting = new Person();
+        awaiting.setId(7L);
+        awaiting.setUsername("marie.curie");
+        PersonDTO identity = new PersonDTO();
+        identity.setUsername("marie.curie");
+        identity.setEmail("marie@curie.fr");
+        identity.setName("Marie");
+        identity.setLastname("Curie");
+        when(personRepository.findById(Long.valueOf(7L))).thenReturn(Optional.of(awaiting));
+        when(personRepository.findByEmailIgnoreCase("marie@curie.fr")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed");
+        when(personRepository.save(awaiting)).thenReturn(awaiting);
+
+        personService.giveAccountTo(7L, identity, null);
+
+        assertFalse(awaiting.isEnabled());
+        assertEquals("marie@curie.fr", awaiting.getEmail());
+        verify(pendingPersonRepository, never()).deleteByDisabledPersonId(any());
+    }
+
+    @Test
+    void giveAccountTo_rejectsAnEmailAlreadyUsed() {
+        Person awaiting = new Person();
+        awaiting.setId(7L);
+        awaiting.setUsername("marie.curie");
+        PersonDTO identity = new PersonDTO();
+        identity.setUsername("marie.curie");
+        identity.setEmail("marie@curie.fr");
+        when(personRepository.findById(Long.valueOf(7L))).thenReturn(Optional.of(awaiting));
+        when(personRepository.findByEmailIgnoreCase("marie@curie.fr")).thenReturn(Optional.of(new Person()));
+
+        assertThrows(EmailAlreadyExistException.class, () -> personService.giveAccountTo(7L, identity, null));
+        verify(personRepository, never()).save(any());
+    }
+
+    @Test
     void generateUniqueUsername_returnsPlainNameLastname_whenFree() {
         when(personRepository.findByUsernameIgnoreCase("john.doe")).thenReturn(Optional.empty());
 
