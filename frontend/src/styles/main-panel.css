@@ -2046,10 +2046,9 @@ body button.p-button.status-button.status-button-compact {
 
 /* ----------------------------------------- project fiche header: one line
 
-   Primary chip (name), secondary chips (identifier, type, location), then ONE pencil pushed to the
-   far right of the header — before the toolbar buttons in the main layout, at the end in the
-   overview. It only shows while the header is hovered or holds focus, so a stray click can't start
-   an edit; in edit mode it is the one validate button and stays visible. */
+   Primary chip (name), secondary chips (identifier, type, location), then ONE pencil right after the
+   last chip, so it stays next to what it edits however wide the panel is. It is always visible, so
+   the user sees at once that the header can be edited; in edit mode it is the one validate button. */
 .sideview-titlebar > .sia-hstack {
   flex: 1 1 auto;
   /* The status button stays on the main chip's line; only the header's own chips wrap, inside it. */
@@ -2143,18 +2142,6 @@ body button.p-button.status-button.status-button-compact {
 
 .entity-detail-header-secondary-input {
   min-width: 8rem;
-}
-
-.entity-detail-header .entity-detail-header-edit.p-button {
-  margin-left: auto;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.entity-detail-header:hover .entity-detail-header-edit.p-button,
-.entity-detail-header:focus-within .entity-detail-header-edit.p-button,
-.entity-detail-header-edit.p-button:has(.pi-check) {
-  opacity: 1;
 }
 
 /* ----------------------------------------- panel frame: the panels define the border, not the top bar
