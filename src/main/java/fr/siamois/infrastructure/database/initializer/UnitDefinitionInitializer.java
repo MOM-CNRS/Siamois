@@ -48,7 +48,8 @@ public class UnitDefinitionInitializer implements DatabaseInitializer {
             unit(null, "Tonne", "t", UnitDefinition.Dimension.MASS, 1_000_000.0, false),
             unit(null, "Litre", "L", UnitDefinition.Dimension.VOLUME, 1.0, true),
             unit(null, "Millilitre", "mL", UnitDefinition.Dimension.VOLUME, 0.001, false),
-            unit(null, "Mètre cube", "m³", UnitDefinition.Dimension.VOLUME, 1000.0, false)
+            unit(null, "Mètre cube", "m³", UnitDefinition.Dimension.VOLUME, 1000.0, false),
+            unit(null, "Degré", "°", UnitDefinition.Dimension.ANGLE, 1.0, true)
     );
 
     @Override
