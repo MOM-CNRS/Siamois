@@ -139,7 +139,7 @@ public class RecordingUnitOpenApiService {
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
 
-        RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
+        RecordingUnitResource resource = Objects.requireNonNull(recordingUnitResponseMapper.convert(dto));
         if (counts != null && counts.contains("documents") && resource.getCount() != null && dto.getId() != null) {
             resource.getCount().setDocuments(documentService.countLinkedTo(DocumentLinkKind.RECORDING_UNIT, dto.getId()));
         }
