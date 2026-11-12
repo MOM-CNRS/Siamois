@@ -195,6 +195,21 @@ class RecordingUnitStratigraphyWriteServiceTest {
     }
 
     @Test
+    void removingARelationshipTakesItOutOfBothUnits() {
+        StratigraphicRelationship existing = relation(other, owner);
+        other.addRelationshipAsUnit1(existing);
+        owner.addRelationshipAsUnit2(existing);
+        when(relationships.findByUnit1AndUnit2(owner, other)).thenReturn(Optional.empty());
+        when(relationships.findByUnit1AndUnit2(other, owner)).thenReturn(Optional.of(existing));
+
+        service.remove("10", 20L, person, SCOPE);
+
+        assertThat(other.getRelationshipsAsUnit1()).isEmpty();
+        assertThat(owner.getRelationshipsAsUnit2()).isEmpty();
+        verify(relationships).delete(existing);
+    }
+
+    @Test
     void removingAnUnknownRelationshipIsA404() {
         when(relationships.findByUnit1AndUnit2(any(), any())).thenReturn(Optional.empty());
 
