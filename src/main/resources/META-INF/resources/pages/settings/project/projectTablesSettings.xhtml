@@ -11,6 +11,8 @@
         <f:event type="preRenderView" listener="#{projectDetailsBean.checkProjectOrRedirect}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.titleWithContext', langBean.msg('projectSettings.titles.tables'), projectTableFieldSettingsBean.project.name)}</ui:define>
+
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
         <style>

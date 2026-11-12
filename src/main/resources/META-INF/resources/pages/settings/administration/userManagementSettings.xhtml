@@ -13,6 +13,8 @@
         <f:event type="preRenderView" listener="#{invitationLinksBean.onPreRenderView}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.title', langBean.msg('nav.header.administration'))}</ui:define>
+
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
     </ui:define>

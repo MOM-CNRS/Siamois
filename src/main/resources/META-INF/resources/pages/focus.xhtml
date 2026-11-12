@@ -7,12 +7,7 @@
                 xmlns:f="http://xmlns.jcp.org/jsf/core"
 >
 
-    <ui:define name="head">
-
-        <title>#{focusViewBean.mainPanel.resolveTitleOrTitleCode()}</title>
-
-
-    </ui:define>
+    <ui:define name="title">#{focusViewBean.mainPanel.resolveTitleOrTitleCode()}</ui:define>
 
     <ui:define name="metadata">
         <f:event type="preRenderView" listener="#{presentationBean.continueIfLogged()}"/>

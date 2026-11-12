@@ -14,6 +14,8 @@
     <f:event type="preRenderView" listener="#{institutionMembersListBean.reloadOnPageLoad}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.titleWithContext', langBean.msg('organisationSettings.titles.members'), institutionDetailsBean.institution.name)}</ui:define>
+
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
     </ui:define>
