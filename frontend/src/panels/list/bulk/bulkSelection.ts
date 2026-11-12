@@ -146,7 +146,7 @@ export function bulkEditContext(
  * all belong to the same project.
  */
 export function canBulkEdit(field: FieldResource, rows: readonly RowRecord[], entityType: string): boolean {
-  return !isProjectScoped(field) || commonProjectId(rows, entityType) != null;
+  return !isProjectScoped(field) || !spansSeveralProjects(rows, entityType);
 }
 
 /**

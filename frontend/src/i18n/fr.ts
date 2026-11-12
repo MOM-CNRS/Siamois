@@ -433,6 +433,7 @@ export const fr = {
   "bulk.relations": "Relations",
   "bulk.searchField": "Rechercher une propriété…",
   "bulk.noField": "Aucune propriété modifiable",
+  "bulk.noneEditable": "Aucun des éléments sélectionnés n'est modifiable par vous.",
   "bulk.needsOneProject": "La sélection couvre plusieurs projets : cette relation ne peut être modifiée que sur des éléments d'un même projet.",
   "bulk.modeSet": "Remplacer",
   "bulk.modeAdd": "Ajouter",

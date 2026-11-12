@@ -1,9 +1,10 @@
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {BulkApi} from "../../../entities/shared/bulkApi";
-import type {EntityTypeConfig} from "../../../entities/shared/types";
+import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
+import {registerDefaultFieldRenderers} from "../../../fields/registerDefaultRenderers";
 import {notifySpy} from "../../../test/notifySpy";
 import type {RowRecord} from "../useEntityListData";
 import {BulkActionBar} from "./BulkActionBar";
@@ -50,11 +51,16 @@ function selectionOf(selected: RowRecord[], all = false): ListSelection {
 /**
  * Renders the bar over this selection.
  */
-function render(selection: ListSelection, entityConfig: EntityTypeConfig<unknown, unknown> = config) {
+function render(
+  selection: ListSelection,
+  entityConfig: EntityTypeConfig<unknown, unknown> = config,
+  catalog?: FieldCatalog,
+) {
   act(() => {
     root.render(
       <QueryClientProvider client={new QueryClient()}>
-        <BulkActionBar entityType="recordingUnit" config={entityConfig} organizationId={3} selection={selection} />
+        <BulkActionBar entityType="recordingUnit" config={entityConfig} organizationId={3} selection={selection}
+          catalog={catalog} />
       </QueryClientProvider>,
     );
   });
@@ -85,6 +91,8 @@ async function click(el: HTMLElement) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
+
+beforeAll(() => registerDefaultFieldRenderers());
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -157,5 +165,35 @@ describe("BulkActionBar", () => {
     expect(selection.resolve).toHaveBeenCalled();
     expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
     expect(selection.setRows).not.toHaveBeenCalled();
+  });
+
+  it("greys a project-bound relation over several projects, and says why in words", async () => {
+    const catalog: FieldCatalog = {
+      fields: {
+        parents: { id: "parents", resourceType: "field", label: "UE parentes", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: false },
+      },
+      columns: [],
+    };
+    const twoProjects = [rows[0], { id: "4", projectId: 6, _permissions: { canEdit: true, canDelete: true } }];
+    render(selectionOf(twoProjects), config, catalog);
+
+    await click(button("Modifier"));
+
+    expect(button("UE parentes").disabled).toBe(true);
+    expect(document.querySelector(".bulk-field-picker-note")?.textContent).toContain("plusieurs projets");
+  });
+
+  it("says no row is editable rather than blaming the projects", async () => {
+    const catalog: FieldCatalog = {
+      fields: {
+        parents: { id: "parents", resourceType: "field", label: "UE parentes", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: false },
+      },
+      columns: [],
+    };
+    render(selectionOf([rows[2]]), config, catalog);
+
+    await click(button("Modifier"));
+
+    expect(document.querySelector(".bulk-field-picker-note")?.textContent).toContain("Aucun des éléments sélectionnés");
   });
 });

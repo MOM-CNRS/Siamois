@@ -433,6 +433,7 @@ export const en: Record<MessageKey, string> = {
   "bulk.relations": "Relations",
   "bulk.searchField": "Search a property…",
   "bulk.noField": "No editable property",
+  "bulk.noneEditable": "None of the selected items can be edited by you.",
   "bulk.needsOneProject": "The selection spans several projects: this relation can only be changed on items of a single project.",
   "bulk.modeSet": "Replace",
   "bulk.modeAdd": "Add",

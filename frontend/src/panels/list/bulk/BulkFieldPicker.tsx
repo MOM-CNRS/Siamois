@@ -37,6 +37,13 @@ interface PickerItem {
 }
 
 /**
+ * The distinct reasons the greyed items of a group are greyed.
+ */
+function disabledReasonsOf(items: readonly PickerItem[]): string[] {
+  return [...new Set(items.map((item) => item.disabledReason).filter((reason): reason is string => reason != null))];
+}
+
+/**
  * Whether the label holds the typed text, ignoring case and accents.
  */
 function matches(label: string, query: string): boolean {
@@ -109,6 +116,12 @@ export function BulkFieldPicker({ fields, disabledReason, onPick, extraRelations
               <i className={item.icon} aria-hidden="true" />
               <span className="bulk-field-picker-item-label">{item.label}</span>
             </button>
+          ))}
+          {/* Why the greyed lines are greyed, in words: a disabled button shows no tooltip everywhere. */}
+          {disabledReasonsOf(group.items).map((reason) => (
+            <small key={reason} className="bulk-field-picker-note">
+              <i className="bi bi-info-circle" aria-hidden="true" /> {reason}
+            </small>
           ))}
         </div>
       ))}
