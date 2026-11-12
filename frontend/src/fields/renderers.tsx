@@ -849,7 +849,7 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
 
   // The unit is always a selector over the units the field's configuration offers; with a single one
   // it is shown disabled.
-  const offered = resolveOffered;
+  const offered = resolveOffered();
   const onlyOne = offered.length <= 1;
 
   // A small form: the value and its unit on the first line, the comment on the second.
