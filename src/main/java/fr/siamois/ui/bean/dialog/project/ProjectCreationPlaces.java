@@ -47,16 +47,17 @@ public class ProjectCreationPlaces {
      * @param query          the text typed
      * @param dependencies   the places picked in the fields its sources depend on, by field id
      * @param lang           the user's language
-     * @return the places to offer
+     * @return the places to offer, and whether every source could be narrowed
      */
-    public List<PlaceChoice> suggest(long organizationId, PlaceField field, String query,
-                                     Map<Long, Long> dependencies, String lang) {
+    public PlaceSuggestions suggest(long organizationId, PlaceField field, String query,
+                                    Map<Long, Long> dependencies, String lang) {
         PlaceSuggestionApiService.SuggestionRequest request = new PlaceSuggestionApiService.SuggestionRequest(
                 organizationId, field.getId(), null, null, query == null ? "" : query.trim(), dependencies,
                 SUGGESTION_LIMIT, lang);
-        return placeSuggestionApiService.suggest(projectApiService.requireCaller(), request).items().stream()
-                .map(PlaceChoice::of)
-                .toList();
+        PlaceSuggestionApiService.Suggestions suggestions =
+                placeSuggestionApiService.suggest(projectApiService.requireCaller(), request);
+        List<PlaceChoice> choices = suggestions.items().stream().map(PlaceChoice::of).toList();
+        return new PlaceSuggestions(choices, suggestions.unnarrowedSources().isEmpty());
     }
 
     /**

@@ -11,6 +11,7 @@ import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
+import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
@@ -69,13 +70,14 @@ public class NewProjectDialogBean implements Serializable {
     /** The identifier proposed for the organisation: sent only when the user typed another one. */
     private String proposedIdentifier;
     private ConceptAutocompleteDTO typeConcept;
-    /** The thesaurus page of the project type field, linked from its picker. */
-    private String typeConceptUrl;
     private String templateId = ProjectTemplate.DEFAULT_ID;
     private List<TemplateChoice> templates = List.of();
     private ProjectPlaceFields placeFields = ProjectPlaceFields.NONE;
     private PlaceChoice mainLocation;
     private List<PlaceChoice> spatialContext = new ArrayList<>();
+    /** Why the last suggestions of each place picker could not be narrowed, said under them; null when they were. */
+    private String mainLocationHint;
+    private String spatialContextHint;
     /** The places the pickers offered: the converter of the place pickers. */
     private final OfferedPlaces offeredPlaces = new OfferedPlaces();
 
@@ -162,17 +164,15 @@ public class NewProjectDialogBean implements Serializable {
         }
     }
 
-    /** Resets the project type and finds the thesaurus page of the chosen organisation's type field. */
+    /** Resets the project type, and warns when the chosen organisation has no vocabulary for it. */
     public void loadTypes() {
         typeConcept = null;
-        typeConceptUrl = null;
         Optional<UserInfo> info = chosenInstitutionUserInfo();
         if (info.isEmpty()) {
             return;
         }
         try {
             fieldConfigurationService.findConfigurationForFieldCode(info.get(), ActionUnit.TYPE_FIELD_CODE);
-            typeConceptUrl = fieldConfigurationService.getUrlForFieldCode(info.get(), ActionUnit.TYPE_FIELD_CODE);
         } catch (NoConfigForFieldException e) {
             log.warn("No vocabulary configured for the project type field in institution {}", institutionId);
             MessageUtils.displayNoThesaurusConfiguredMessage(langBean);
@@ -199,11 +199,37 @@ public class NewProjectDialogBean implements Serializable {
         }
     }
 
+    /**
+     * The page of a suggested type in the thesaurus, linked from its suggestion like the React concept
+     * pickers do.
+     *
+     * @param concept a suggested type
+     * @return the address of the concept in the thesaurus, or null when it cannot be built
+     */
+    public String thesaurusUrlOf(ConceptAutocompleteDTO concept) {
+        return concept == null ? null : ResolvedConceptResource.from(concept).getThesaurusUrl();
+    }
+
+    /**
+     * The alternative labels of a suggested type, as the React concept pickers list them.
+     *
+     * @param concept a suggested type
+     * @return the alternative labels separated by commas, empty when it has none
+     */
+    public String altLabelsOf(ConceptAutocompleteDTO concept) {
+        if (concept == null || concept.getAltLabels() == null) {
+            return "";
+        }
+        return String.join(", ", concept.getAltLabels());
+    }
+
     /** Finds the place fields of the chosen organisation's project form, and clears the places picked. */
     public void loadPlaceFields() {
         placeFields = ProjectPlaceFields.NONE;
         mainLocation = null;
         spatialContext = new ArrayList<>();
+        mainLocationHint = null;
+        spatialContextHint = null;
         offeredPlaces.forget();
         if (institutionId == null) {
             return;
@@ -223,7 +249,28 @@ public class NewProjectDialogBean implements Serializable {
      * @return the places to offer
      */
     public List<PlaceChoice> completeMainLocation(String query) {
-        return suggestPlaces(placeFields.getMainLocation(), query);
+        PlaceSuggestions suggestions = suggestPlaces(placeFields.getMainLocation(), query);
+        mainLocationHint = narrowHintOf(suggestions);
+        return suggestions.getChoices();
+    }
+
+    /**
+     * The main location as the picks of its picker, which shows the picked place as a chip like the React
+     * picker does: no pick, or one.
+     *
+     * @return the main location picked, in a list
+     */
+    public List<PlaceChoice> getMainLocationPicks() {
+        return mainLocation == null ? new ArrayList<>() : new ArrayList<>(List.of(mainLocation));
+    }
+
+    /**
+     * Sets the main location from the picks of its picker.
+     *
+     * @param picks the picks of the picker: none, or one
+     */
+    public void setMainLocationPicks(List<PlaceChoice> picks) {
+        mainLocation = picks == null || picks.isEmpty() ? null : picks.getFirst();
     }
 
     /**
@@ -233,7 +280,9 @@ public class NewProjectDialogBean implements Serializable {
      * @return the places to offer
      */
     public List<PlaceChoice> completeSpatialContext(String query) {
-        return suggestPlaces(placeFields.getSpatialContext(), query);
+        PlaceSuggestions suggestions = suggestPlaces(placeFields.getSpatialContext(), query);
+        spatialContextHint = narrowHintOf(suggestions);
+        return suggestions.getChoices();
     }
 
     /**
@@ -304,17 +353,32 @@ public class NewProjectDialogBean implements Serializable {
         return offeredPlaces.remember(projectCreationPlaces.placeOf(institutionId, choice, langBean.getLanguageCode()));
     }
 
-    private List<PlaceChoice> suggestPlaces(PlaceField field, String query) {
+    private PlaceSuggestions suggestPlaces(PlaceField field, String query) {
         if (field == null || institutionId == null) {
-            return List.of();
+            return PlaceSuggestions.NONE;
         }
         try {
-            return offeredPlaces.remember(projectCreationPlaces.suggest(institutionId, field, query,
-                    placeFields.dependenciesOn(mainLocation), langBean.getLanguageCode()));
+            PlaceSuggestions suggestions = projectCreationPlaces.suggest(institutionId, field, query,
+                    placeFields.dependenciesOn(mainLocation), langBean.getLanguageCode());
+            offeredPlaces.remember(suggestions.getChoices());
+            return suggestions;
         } catch (RuntimeException e) {
             log.warn("Could not suggest places for field {} of institution {}", field.getId(), institutionId, e);
-            return List.of();
+            return PlaceSuggestions.NONE;
         }
+    }
+
+    /**
+     * Why suggestions could not be narrowed: the main location is still to be filled, or the place picked
+     * there cannot narrow the search. Null when they were narrowed.
+     */
+    private String narrowHintOf(PlaceSuggestions suggestions) {
+        PlaceField narrowingField = placeFields.getMainLocation();
+        if (suggestions.isNarrowed() || narrowingField == null) {
+            return null;
+        }
+        String reason = mainLocation == null ? "projectList.create.place.fillToNarrow" : "projectList.create.place.cannotNarrow";
+        return langBean.msg(reason, narrowingField.getLabel());
     }
 
     private Optional<UserInfo> chosenInstitutionUserInfo() {

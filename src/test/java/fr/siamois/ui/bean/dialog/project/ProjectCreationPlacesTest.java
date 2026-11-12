@@ -41,7 +41,7 @@ class ProjectCreationPlacesTest {
         when(placeSuggestionApiService.suggest(eq(caller), any())).thenReturn(new PlaceSuggestionApiService.Suggestions(
                 List.of(new PlaceSuggestionItemApi(null, "Lyon", "69123", "INSEE", null, null)), List.of()));
 
-        List<PlaceChoice> suggested = places.suggest(5L, COMMUNE, " ly ", Map.of(9L, 4L), LANG);
+        PlaceSuggestions suggested = places.suggest(5L, COMMUNE, " ly ", Map.of(9L, 4L), LANG);
 
         ArgumentCaptor<PlaceSuggestionApiService.SuggestionRequest> request =
                 ArgumentCaptor.forClass(PlaceSuggestionApiService.SuggestionRequest.class);
@@ -50,7 +50,16 @@ class ProjectCreationPlacesTest {
         assertThat(request.getValue().fieldId()).isEqualTo(10L);
         assertThat(request.getValue().query()).isEqualTo("ly");
         assertThat(request.getValue().deps()).isEqualTo(Map.of(9L, 4L));
-        assertThat(suggested).extracting(PlaceChoice::getKey).containsExactly("external:INSEE:69123");
+        assertThat(suggested.getChoices()).extracting(PlaceChoice::getKey).containsExactly("external:INSEE:69123");
+        assertThat(suggested.isNarrowed()).isTrue();
+    }
+
+    @Test
+    void suggest_shouldSayTheSuggestionsWereNotNarrowed_whenASourceLacksTheFieldItDependsOn() {
+        when(placeSuggestionApiService.suggest(eq(caller), any()))
+                .thenReturn(new PlaceSuggestionApiService.Suggestions(List.of(), List.of("GEOPLAT")));
+
+        assertThat(places.suggest(5L, COMMUNE, "rue", Map.of(), LANG).isNarrowed()).isFalse();
     }
 
     @Test

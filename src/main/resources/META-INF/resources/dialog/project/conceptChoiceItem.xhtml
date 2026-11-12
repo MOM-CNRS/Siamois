@@ -1,0 +1,28 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html">
+    <!-- One type offered by the type picker of the new project dialog (variable "concept"), described like a
+         concept suggestion of the React pickers (frontend/src/fields/ConceptOptionItem.tsx): a link to the
+         concept in the thesaurus, its label, its alternative labels, its definition and its parents. -->
+    <div class="concept-item">
+        <!-- The link must not pick the suggestion: the press stops before the list sees it. -->
+        <h:outputLink value="#{newProjectDialogBean.thesaurusUrlOf(concept)}" target="_blank" rel="noopener noreferrer"
+                      styleClass="concept-item-link" title="#{langBean.msg('projectList.create.concept.openInThesaurus')}"
+                      rendered="#{not empty newProjectDialogBean.thesaurusUrlOf(concept)}"
+                      onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+            <i class="bi bi-box-arrow-up-right"/>
+        </h:outputLink>
+        <div class="concept-item-body">
+            <span>#{concept.conceptLabelToDisplay.label}</span>
+            <h:panelGroup rendered="#{not empty newProjectDialogBean.altLabelsOf(concept)}">
+                <small class="concept-item-altlabels">#{langBean.msg('projectList.create.concept.altLabels', newProjectDialogBean.altLabelsOf(concept))}</small>
+            </h:panelGroup>
+            <h:panelGroup rendered="#{not empty concept.definition}">
+                <small class="concept-item-definition" title="#{concept.definition}">#{concept.definition}</small>
+            </h:panelGroup>
+            <h:panelGroup rendered="#{not empty concept.hierarchyPrefLabels}">
+                <small>#{langBean.msg('projectList.create.concept.parents', concept.hierarchyPrefLabels)}</small>
+            </h:panelGroup>
+        </div>
+    </div>
+</ui:composition>

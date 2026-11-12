@@ -1,8 +1,30 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://java.sun.com/jsf/facelets"
              xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
-             xmlns:f="http://java.sun.com/jsf/core"
-             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input">
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!-- What makes the pickers of the dialog open their suggestions on focus, as the React pickers do:
+         PrimeFaces only searches once something is typed. A picker that has just been picked from gets
+         the focus back, and must not reopen. -->
+    <script type="text/javascript">
+        window.siaRefPicker = window.siaRefPicker || {
+            pickedAt: {},
+            open: function (widgetVar) {
+                let widget = PF(widgetVar);
+                if (!widget || widget.panel.is(':visible')) {
+                    return;
+                }
+                let sincePick = Date.now() - (this.pickedAt[widgetVar] || 0);
+                if (400 > sincePick) {
+                    return;
+                }
+                widget.searchWithDropdown();
+            },
+            picked: function (widgetVar) {
+                this.pickedAt[widgetVar] = Date.now();
+            }
+        };
+    </script>
 
     <!-- Same look as the create overlay of the React lists: a coloured top edge, the title with the
          entity's icon, each field with its label ABOVE it, a footer with the actions. -->
@@ -54,14 +76,30 @@
                         </p:selectOneMenu>
                     </h:panelGroup>
 
+                    <!-- The pickers below imitate the React ones of the data side (frontend/src/fields/renderers.tsx,
+                         ResourceRefRenderer): no dropdown button, the suggestions open as soon as the field is
+                         focused, each suggestion is described like there, and a picked place is a chip. -->
                     <h:panelGroup id="type" layout="block" styleClass="sia-create-form-field">
-                        <p:outputLabel for="typeConcept:conceptAutocomplete" value="#{langBean.msg('projectList.create.type')}"
+                        <p:outputLabel for="typeConcept" value="#{langBean.msg('projectList.create.type')}"
                                        styleClass="sia-create-form-label"/>
-                        <sharedInput:conceptAutocomplete id="typeConcept"
-                                                         selectedConcept="#{newProjectDialogBean.typeConcept}"
-                                                         completeMethod="#{newProjectDialogBean.completeType}"
-                                                         editConceptUrl="#{newProjectDialogBean.typeConceptUrl}"
-                                                         required="true"/>
+                        <p:autoComplete id="typeConcept" widgetVar="newProjectTypePicker"
+                                        value="#{newProjectDialogBean.typeConcept}"
+                                        completeMethod="#{newProjectDialogBean.completeType}"
+                                        var="concept" itemValue="#{concept}"
+                                        itemLabel="#{concept.conceptLabelToDisplay.label}"
+                                        converter="#{conceptAutocompleteDTOConverter}"
+                                        required="true" forceSelection="true"
+                                        minQueryLength="0" scrollHeight="300"
+                                        emptyMessage="#{langBean.msg('projectList.create.picker.noResult')}"
+                                        styleClass="sia-ref-picker"
+                                        panelStyleClass="sia-ref-picker-panel sia-ref-picker-panel-concept"
+                                        onfocus="siaRefPicker.open('newProjectTypePicker')">
+                            <p:ajax event="itemSelect" process="@this"
+                                    onstart="siaRefPicker.picked('newProjectTypePicker')"/>
+                            <p:column>
+                                <ui:include src="/dialog/project/conceptChoiceItem.xhtml"/>
+                            </p:column>
+                        </p:autoComplete>
                     </h:panelGroup>
 
                     <!-- The place fields of the organisation's project form, as on the React create form: the
@@ -71,18 +109,29 @@
                                       styleClass="sia-create-form-field">
                             <p:outputLabel for="mainLocation" value="#{newProjectDialogBean.placeFields.mainLocation.label}"
                                            styleClass="sia-create-form-label"/>
-                            <p:autoComplete id="mainLocation"
-                                            value="#{newProjectDialogBean.mainLocation}"
+                            <p:autoComplete id="mainLocation" widgetVar="newProjectMainLocationPicker"
+                                            value="#{newProjectDialogBean.mainLocationPicks}"
                                             completeMethod="#{newProjectDialogBean.completeMainLocation}"
                                             var="place" itemValue="#{place}" itemLabel="#{place.name}"
                                             converter="#{newProjectDialogBean.offeredPlaces}"
-                                            forceSelection="true" dropdown="true" scrollHeight="300"
-                                            panelStyleClass="sia-autocomplete-panel">
+                                            multiple="true" selectLimit="1" unique="true" forceSelection="true"
+                                            minQueryLength="0" scrollHeight="300"
+                                            emptyMessage="#{langBean.msg('projectList.create.picker.noResult')}"
+                                            styleClass="sia-ref-picker sia-ref-picker-place"
+                                            panelStyleClass="sia-ref-picker-panel"
+                                            onfocus="siaRefPicker.open('newProjectMainLocationPicker')">
                                 <p:ajax event="itemSelect" listener="#{newProjectDialogBean.onPlacePicked()}"
-                                        process="@this" update="@this"/>
+                                        process="@this" update="@this"
+                                        onstart="siaRefPicker.picked('newProjectMainLocationPicker')"/>
+                                <p:ajax event="itemUnselect" process="@this"/>
                                 <p:column>
                                     <ui:include src="/dialog/project/placeChoiceItem.xhtml"/>
                                 </p:column>
+                                <f:facet name="footer">
+                                    <h:panelGroup rendered="#{not empty newProjectDialogBean.mainLocationHint}">
+                                        <small class="resource-ref-narrow-hint">#{newProjectDialogBean.mainLocationHint}</small>
+                                    </h:panelGroup>
+                                </f:facet>
                             </p:autoComplete>
                         </h:panelGroup>
                     </h:panelGroup>
@@ -92,19 +141,29 @@
                                       styleClass="sia-create-form-field">
                             <p:outputLabel for="spatialContext" value="#{newProjectDialogBean.placeFields.spatialContext.label}"
                                            styleClass="sia-create-form-label"/>
-                            <p:autoComplete id="spatialContext"
+                            <p:autoComplete id="spatialContext" widgetVar="newProjectSpatialContextPicker"
                                             value="#{newProjectDialogBean.spatialContext}"
                                             completeMethod="#{newProjectDialogBean.completeSpatialContext}"
                                             var="place" itemValue="#{place}" itemLabel="#{place.name}"
                                             converter="#{newProjectDialogBean.offeredPlaces}"
-                                            multiple="true" unique="true" forceSelection="true" dropdown="true"
-                                            scrollHeight="300" panelStyleClass="sia-autocomplete-panel">
+                                            multiple="true" unique="true" forceSelection="true"
+                                            minQueryLength="0" scrollHeight="300"
+                                            emptyMessage="#{langBean.msg('projectList.create.picker.noResult')}"
+                                            styleClass="sia-ref-picker sia-ref-picker-place"
+                                            panelStyleClass="sia-ref-picker-panel"
+                                            onfocus="siaRefPicker.open('newProjectSpatialContextPicker')">
                                 <p:ajax event="itemSelect" listener="#{newProjectDialogBean.onPlacePicked()}"
-                                        process="@this" update="@this"/>
+                                        process="@this" update="@this"
+                                        onstart="siaRefPicker.picked('newProjectSpatialContextPicker')"/>
                                 <p:ajax event="itemUnselect" process="@this"/>
                                 <p:column>
                                     <ui:include src="/dialog/project/placeChoiceItem.xhtml"/>
                                 </p:column>
+                                <f:facet name="footer">
+                                    <h:panelGroup rendered="#{not empty newProjectDialogBean.spatialContextHint}">
+                                        <small class="resource-ref-narrow-hint">#{newProjectDialogBean.spatialContextHint}</small>
+                                    </h:panelGroup>
+                                </f:facet>
                             </p:autoComplete>
                         </h:panelGroup>
                     </h:panelGroup>

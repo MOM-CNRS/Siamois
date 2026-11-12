@@ -4,6 +4,7 @@ import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectCreateRequest;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -37,12 +38,12 @@ class NewProjectDialogBeanTest {
     private final ProjectApiService projectApiService = mock(ProjectApiService.class);
     private final ProjectApiCaller caller = mock(ProjectApiCaller.class);
     private final ProjectCreationPlaces projectCreationPlaces = mock(ProjectCreationPlaces.class);
+    private final LangBean langBean = mock(LangBean.class);
 
     private NewProjectDialogBean bean;
 
     @BeforeEach
     void setUp() {
-        LangBean langBean = mock(LangBean.class);
         when(langBean.getLanguageCode()).thenReturn(LANG);
         bean = new NewProjectDialogBean(mock(InstitutionService.class), mock(ProfilePermissionService.class),
                 mock(FieldConfigurationService.class), projectApiService, projectCreationPlaces, mock(ProjectListBean.class),
@@ -138,12 +139,68 @@ class NewProjectDialogBeanTest {
         bean.setPlaceFields(new ProjectPlaceFields(MAIN_LOCATION, SPATIAL_CONTEXT));
         bean.setMainLocation(place(1L, "Lyon"));
         List<PlaceChoice> offered = List.of(place(2L, "Rue Mercière"));
-        when(projectCreationPlaces.suggest(5L, SPATIAL_CONTEXT, "rue", Map.of(10L, 1L), LANG)).thenReturn(offered);
+        when(projectCreationPlaces.suggest(5L, SPATIAL_CONTEXT, "rue", Map.of(10L, 1L), LANG))
+                .thenReturn(new PlaceSuggestions(offered, true));
 
         List<PlaceChoice> suggested = bean.completeSpatialContext("rue");
 
         assertThat(suggested).isEqualTo(offered);
         assertThat(bean.getOfferedPlaces().getAsObject(null, null, "2")).isEqualTo(offered.getFirst());
+        assertThat(bean.getSpatialContextHint()).isNull();
+    }
+
+    @Test
+    void completeSpatialContext_shouldAskToFillTheMainLocation_whenItsSourcesCouldNotBeNarrowed() {
+        bean.setInstitutionId(5L);
+        bean.setPlaceFields(new ProjectPlaceFields(MAIN_LOCATION, SPATIAL_CONTEXT));
+        when(projectCreationPlaces.suggest(5L, SPATIAL_CONTEXT, "rue", Map.of(), LANG))
+                .thenReturn(new PlaceSuggestions(List.of(), false));
+        when(langBean.msg("projectList.create.place.fillToNarrow", "Commune")).thenReturn("Remplir « Commune »");
+
+        bean.completeSpatialContext("rue");
+
+        assertThat(bean.getSpatialContextHint()).isEqualTo("Remplir « Commune »");
+    }
+
+    @Test
+    void completeSpatialContext_shouldSayTheMainLocationCannotNarrow_whenOneIsPicked() {
+        bean.setInstitutionId(5L);
+        bean.setPlaceFields(new ProjectPlaceFields(MAIN_LOCATION, SPATIAL_CONTEXT));
+        bean.setMainLocation(place(1L, "Lyon"));
+        when(projectCreationPlaces.suggest(5L, SPATIAL_CONTEXT, "rue", Map.of(10L, 1L), LANG))
+                .thenReturn(new PlaceSuggestions(List.of(), false));
+        when(langBean.msg("projectList.create.place.cannotNarrow", "Commune")).thenReturn("« Commune » n'affine pas");
+
+        bean.completeSpatialContext("rue");
+
+        assertThat(bean.getSpatialContextHint()).isEqualTo("« Commune » n'affine pas");
+    }
+
+    @Test
+    void mainLocationPicks_shouldBeTheMainLocationAsTheChipOfItsPicker() {
+        PlaceChoice lyon = place(1L, "Lyon");
+
+        assertThat(bean.getMainLocationPicks()).isEmpty();
+        bean.setMainLocationPicks(List.of(lyon));
+        assertThat(bean.getMainLocation()).isEqualTo(lyon);
+        assertThat(bean.getMainLocationPicks()).containsExactly(lyon);
+        bean.setMainLocationPicks(List.of());
+        assertThat(bean.getMainLocation()).isNull();
+    }
+
+    @Test
+    void altLabelsOf_shouldListTheAlternativeLabelsOfASuggestedType() {
+        ConceptAutocompleteDTO type = ConceptAutocompleteDTO.builder().altLabels(List.of("Sondage", "Tranchée")).build();
+
+        assertThat(bean.altLabelsOf(type)).isEqualTo("Sondage, Tranchée");
+        assertThat(bean.altLabelsOf(ConceptAutocompleteDTO.builder().build())).isEmpty();
+        assertThat(bean.altLabelsOf(null)).isEmpty();
+    }
+
+    @Test
+    void thesaurusUrlOf_shouldGiveNoLink_whenThereIsNoTypeOrNoThesaurusAddress() {
+        assertThat(bean.thesaurusUrlOf(null)).isNull();
+        assertThat(bean.thesaurusUrlOf(ConceptAutocompleteDTO.builder().build())).isNull();
     }
 
     @Test
@@ -210,8 +267,7 @@ class NewProjectDialogBeanTest {
     /** Creates the project, outside of a request: the Faces messages and PrimeFaces are stubbed. */
     private ProjectCreateRequest create() {
         try (MockedStatic<MessageUtils> ignored = mockStatic(MessageUtils.class);
-             MockedStatic<PrimeFaces> primeFaces = mockStatic(PrimeFaces.class)) {
-            primeFaces.when(PrimeFaces::current).thenReturn(RETURNS_DEEP_STUBS);
+             MockedStatic<PrimeFaces> alsoIgnored = mockStatic(PrimeFaces.class, RETURNS_DEEP_STUBS)) {
             bean.create();
         }
         ArgumentCaptor<ProjectCreateRequest> request = ArgumentCaptor.forClass(ProjectCreateRequest.class);
