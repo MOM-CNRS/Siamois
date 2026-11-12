@@ -143,7 +143,7 @@ class NewProjectDialogBeanTest {
         List<PlaceChoice> suggested = bean.completeSpatialContext("rue");
 
         assertThat(suggested).isEqualTo(offered);
-        assertThat(bean.getOfferedPlaces().getAsObject(null, null, "2")).isEqualTo(offered.get(0));
+        assertThat(bean.getOfferedPlaces().getAsObject(null, null, "2")).isEqualTo(offered.getFirst());
     }
 
     @Test

@@ -7,6 +7,7 @@ import org.springframework.lang.Nullable;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -57,7 +58,7 @@ public class ProjectPlaceFields implements Serializable {
         if (mainLocation == null || mainLocationPick == null || mainLocationPick.isExternal()) {
             return Map.of();
         }
-        return Map.of(mainLocation.getId(), mainLocationPick.getId());
+        return Map.of(mainLocation.getId(), Objects.requireNonNull(mainLocationPick.getId()));
     }
 
     private static Optional<PlaceField> placeFieldOf(FieldResource field) {

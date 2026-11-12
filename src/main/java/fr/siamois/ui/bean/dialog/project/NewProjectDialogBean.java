@@ -112,7 +112,7 @@ public class NewProjectDialogBean implements Serializable {
                 .map(InstitutionDTO::getId)
                 .filter(id -> active != null && id.equals(active.getId()))
                 .findFirst()
-                .orElse(creatableInstitutions.get(0).getId());
+                .orElse(creatableInstitutions.getFirst().getId());
         onOrganisationChange();
         PrimeFaces.current().ajax().update("newProjectDialog");
         PrimeFaces.current().executeScript("PF('newProjectDialog').show();");
