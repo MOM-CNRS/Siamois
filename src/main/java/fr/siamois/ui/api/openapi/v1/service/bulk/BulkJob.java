@@ -120,12 +120,17 @@ public final class BulkJob {
     }
 
     /**
-     * The job as clients see it: a consistent snapshot of its progress.
+     * The job as clients see it: a consistent snapshot of its progress. While it runs, only the counts —
+     * a client polls it often, and the lists can hold thousands of elements; once it has ended, the lists.
      *
      * @return the snapshot
      */
     synchronized BulkJobResource toResource() {
+        boolean ended = status != BulkJobStatus.RUNNING;
         return new BulkJobResource(id, status, total, succeeded.size() + failed.size(),
-                List.copyOf(succeeded), List.copyOf(failed), error);
+                succeeded.size(), failed.size(),
+                ended ? List.copyOf(succeeded) : List.of(),
+                ended ? List.copyOf(failed) : List.of(),
+                error);
     }
 }

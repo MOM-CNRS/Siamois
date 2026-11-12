@@ -271,7 +271,7 @@ class BulkActionOpenApiServiceTest {
     void theCallerFollowsTheJobItStarted() {
         BulkJobResource started = service.delete("recording-units", deleteRequest(3L, 4L), CALLER, LANG);
 
-        BulkJobResource followed = service.job(started.id(), CALLER);
+        BulkJobResource followed = service.job(started.id(), CALLER.person());
 
         assertThat(followed.status()).isEqualTo(BulkJobStatus.DONE);
         assertThat(followed.total()).isEqualTo(2);
@@ -286,11 +286,11 @@ class BulkActionOpenApiServiceTest {
     void someoneElsesJobIsNotFound() {
         String jobId = service.delete("recording-units", deleteRequest(3L), CALLER, LANG).id();
 
-        assertThatThrownBy(() -> service.job(jobId, SOMEONE_ELSE))
+        assertThatThrownBy(() -> service.job(jobId, SOMEONE_ELSE.person()))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
-        assertThatThrownBy(() -> service.job("unknown", CALLER))
+        assertThatThrownBy(() -> service.job("unknown", CALLER.person()))
                 .isInstanceOf(ResponseStatusException.class);
     }
 }

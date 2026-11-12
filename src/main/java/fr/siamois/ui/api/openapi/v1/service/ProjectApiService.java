@@ -179,15 +179,26 @@ public class ProjectApiService {
     }
 
     public ProjectApiCaller requireCaller() {
-        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
-        PersonDTO personDto = personMapper.convert(person);
+        PersonDTO personDto = requirePerson();
         List<InstitutionDTO> institutions = List.copyOf(institutionService.findInstitutionsOfPerson(personDto));
         Set<Long> institutionIds = institutions.stream()
                 .map(InstitutionDTO::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
         return new ProjectApiCaller(personDto, institutionIds, institutions);
+    }
+
+    /**
+     * The authenticated person alone, without their organizations: for a call that only needs to know
+     * who asks (following a job they started), not what they may reach.
+     *
+     * @return the caller
+     * @throws ResponseStatusException 401 when nobody is authenticated
+     */
+    public PersonDTO requirePerson() {
+        Person person = AuthenticatedUserUtils.getAuthenticatedUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise"));
+        return personMapper.convert(person);
     }
 
     public void assertOrganizationInCallerScope(Long organizationId, Set<Long> accessibleInstitutionIds) {

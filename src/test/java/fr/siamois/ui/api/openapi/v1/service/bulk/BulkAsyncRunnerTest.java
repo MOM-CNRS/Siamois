@@ -53,4 +53,20 @@ class BulkAsyncRunnerTest {
         assertThat(job.toResource().status()).isEqualTo(BulkJobStatus.FAILED);
         assertThat(job.toResource().error()).isNotBlank();
     }
+
+    /**
+     * While a job runs, only its counts are shared; its lists come once it has ended.
+     */
+    @Test
+    void sharesTheListsOnlyOnceTheJobHasEnded() {
+        BulkJob job = new BulkJob(7L, 2);
+        job.attempt(1L, id -> { }, new BulkFailureTranslator());
+
+        BulkJobResource running = job.toResource();
+        assertThat(running.succeededCount()).isEqualTo(1);
+        assertThat(running.succeeded()).isEmpty();
+
+        job.complete(java.time.Instant.now());
+        assertThat(job.toResource().succeeded()).containsExactly(1L);
+    }
 }

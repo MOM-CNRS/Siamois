@@ -150,7 +150,8 @@ public class BulkActionsControllerApi {
             summary = "Suivre une action en lot",
             description = "Avancement (processed / total) et bilan élément par élément d'une action en lot démarrée par "
                     + "l'appelant. status vaut RUNNING tant que des éléments restent à traiter, puis DONE (ou FAILED si "
-                    + "l'action s'est arrêtée). Le bilan reste disponible une heure après la fin."
+                    + "l'action s'est arrêtée). Pendant l'exécution, seuls les compteurs sont renvoyés ; les listes "
+                    + "succeeded / failed le sont une fois la tâche terminée. Le bilan reste disponible une heure après la fin."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ok"),
@@ -158,8 +159,8 @@ public class BulkActionsControllerApi {
             @ApiResponse(responseCode = "404", description = "Tâche inconnue, expirée ou démarrée par quelqu'un d'autre")
     })
     public ResponseEntity<BulkJobResponse> job(@PathVariable("jobId") String jobId) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        return ResponseEntity.ok(new BulkJobResponse(bulkActionOpenApiService.job(jobId, caller)));
+        // Polled often: only who asks is needed, not their organizations.
+        return ResponseEntity.ok(new BulkJobResponse(bulkActionOpenApiService.job(jobId, projectApiService.requirePerson())));
     }
 
     /**

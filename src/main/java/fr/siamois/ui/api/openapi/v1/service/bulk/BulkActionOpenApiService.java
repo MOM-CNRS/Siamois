@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service.bulk;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
@@ -140,11 +141,11 @@ public class BulkActionOpenApiService {
      * A job the caller started: its progress and, once done, its result.
      *
      * @param jobId  the job's id
-     * @param caller the authenticated caller
+     * @param caller the authenticated person
      * @return the job's current state
      * @throws ResponseStatusException 404 when unknown, forgotten, or started by someone else
      */
-    public BulkJobResource job(String jobId, ProjectApiCaller caller) {
+    public BulkJobResource job(String jobId, PersonDTO caller) {
         return jobRegistry.find(jobId, ownerOf(caller))
                 .map(BulkJob::toResource)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tâche introuvable : " + jobId));
@@ -154,7 +155,7 @@ public class BulkActionOpenApiService {
      * Registers a job for the caller and hands its elements to the background runner.
      */
     private BulkJobResource startJob(ProjectApiCaller caller, List<Long> ids, LongConsumer action) {
-        BulkJob job = jobRegistry.start(ownerOf(caller), ids.size());
+        BulkJob job = jobRegistry.start(ownerOf(caller.person()), ids.size());
         runner.run(job, ids, action);
         return job.toResource();
     }
@@ -162,11 +163,11 @@ public class BulkActionOpenApiService {
     /**
      * The person a job belongs to: the caller.
      */
-    private static long ownerOf(ProjectApiCaller caller) {
-        if (caller.person() == null || caller.person().getId() == null) {
+    private static long ownerOf(PersonDTO person) {
+        if (person == null || person.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise");
         }
-        return caller.person().getId();
+        return person.getId();
     }
 
     /**
